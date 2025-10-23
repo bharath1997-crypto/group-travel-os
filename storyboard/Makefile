@@ -60,3 +60,19 @@ clean:
 	rm -rf $(VENV)
 	rm -rf $(WEB_DIR)/node_modules
 	rm -rf $(WEB_DIR)/.next
+
+# Back-compat aliases (acceptance criteria)
+dev:api: dev-api
+	@:
+
+dev:web: dev-web
+	@:
+
+test:api: test-api
+	@:
+
+export:sample: export-sample
+	@:
+
+deploy:web: deploy-web
+	@:
