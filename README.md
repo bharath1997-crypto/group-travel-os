@@ -4,6 +4,9 @@ Turn a simple idea into a compact storyboard: 6–10 beats with titles, brief de
 
 ### Features
 - **Chat-style web UI**: Gemini/ChatGPT look and feel with chat bubbles, sticky composer, theme toggle, and suggestion chips
+- **Length & style controls**: Choose pages (5/10/15) and style (educational/manga/noir/pixar_like/sketch)
+- **Plan builder**: Converts beats → pages (2 beats/page; 2 panels/beat = 4 panels/page)
+- **PDF export**: 2×2 grid per page via ReportLab; download directly from the UI
 - **Export tools**: Copy or download storyboard as JSON from the UI
 - **CLI tool**: Generate and print/save a storyboard from the terminal
 - **Pluggable providers**: Mock (default) and OpenAI provider
@@ -48,9 +51,25 @@ python3 app.py
 Then open `http://localhost:7860` in your browser.
 
 - Type your idea in the composer (press Enter to send)
+- Choose pages (5/10/15) and style, then Generate
 - Toggle theme with the header button
 - Use suggestion chips to try example prompts
 - Copy or Download the generated storyboard JSON
+- Download PDF (2×2 grid) via the "Download PDF" button
+
+### Quick run checklist
+```bash
+python3 -m pip install -r requirements.txt
+python3 app.py
+# open http://localhost:7860
+# 1) type topic
+# 2) choose 5/10/15 pages + style
+# 3) generate → preview plan
+# 4) download PDF
+```
+
+### API: PDF export (Flask)
+- `POST /export/pdf` — body: plan JSON; returns application/pdf attachment.
 
 ### Use the CLI
 ```bash
@@ -102,6 +121,12 @@ service = StoryboardService(provider=OpenAIProvider())
   - **description**: string
   - **image_prompt**: string
 - **notes**: string (optional)
+
+Derived at runtime for PDF export/UI plan preview:
+- **plan**:
+  - **title**: string
+  - **style**: enum('educational','manga','noir','pixar_like','sketch')
+  - **pages**: [{ page: number, panels: [{ i, caption, dialogue }] }]
 
 ### Troubleshooting
 - If `venv` creation fails with `ensurepip is not available`, install `python3-venv` or use system Python
