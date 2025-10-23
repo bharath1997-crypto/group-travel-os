@@ -1,6 +1,8 @@
-from flask import Flask, render_template_string, request
+from flask import Flask, render_template_string, request, send_file
+import tempfile, os, json
+from pdf_export import build_pdf
 from ai_storyboard.providers.mock import MockProvider
-from ai_storyboard.service import StoryboardService
+from ai_storyboard.service import StoryboardService, beats_to_pages
 
 app = Flask(__name__)
 service = StoryboardService(provider=MockProvider())
@@ -165,6 +167,12 @@ TEMPLATE = """
           <div class="tools">
             <button class="btn" id="btnCopy">Copy JSON</button>
             <button class="btn" id="btnDownload">Download JSON</button>
+            {% if board_data and board_data.plan %}
+            <form action="/export/pdf" method="post" style="display:inline" id="pdfForm">
+              <input type="hidden" name="plan" id="planInput" />
+              <button type="submit" class="btn">Download PDF</button>
+            </form>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -184,6 +192,18 @@ TEMPLATE = """
   <form class="composer" method="post" id="composer">
     <div class="composer-inner">
       <textarea name="idea" id="idea" rows="1" placeholder="Describe your story idea..." required>{{ idea or '' }}</textarea>
+      <select name="pages" id="pages" class="icon-btn" style="padding:10px">
+        <option value="5">5 pages</option>
+        <option value="10">10 pages</option>
+        <option value="15">15 pages</option>
+      </select>
+      <select name="style" id="style" class="icon-btn" style="padding:10px">
+        <option value="educational">educational</option>
+        <option value="manga">manga</option>
+        <option value="noir">noir</option>
+        <option value="pixar_like">pixar_like</option>
+        <option value="sketch">sketch</option>
+      </select>
       <button type="submit" id="sendBtn">Generate</button>
     </div>
   </form>
@@ -210,6 +230,8 @@ TEMPLATE = """
 
       {% if board_data %}
       const data = {{ board_data|tojson }};
+      const planInput = document.getElementById('planInput');
+      if (planInput) { planInput.value = JSON.stringify(data.plan || {}); }
       document.getElementById('btnCopy')?.addEventListener('click', async () => {
         const text = JSON.stringify(data, null, 2);
         try { await navigator.clipboard.writeText(text); } catch(e) {}
@@ -252,14 +274,20 @@ def index():
   ]
   if request.method == 'POST':
     idea = (request.form.get('idea') or '').strip()
+    pages_count = int(request.form.get('pages', 5) or 5)
+    style = (request.form.get('style') or 'educational')
     if idea:
       board = service.generate(idea)
+      beats_json = [
+        { 'title': b.title, 'description': b.description, 'image_prompt': b.image_prompt }
+        for b in board.beats
+      ]
+      pages = beats_to_pages(beats_json, pages=pages_count, panels_per_page=4)
+      plan = { 'title': f"{board.idea} — Storyboard", 'style': style, 'pages': pages }
       board_data = {
         'idea': board.idea,
-        'beats': [
-          { 'title': b.title, 'description': b.description, 'image_prompt': b.image_prompt }
-          for b in board.beats
-        ],
+        'beats': beats_json,
+        'plan': plan,
         'notes': board.notes,
       }
   return render_template_string(TEMPLATE, idea=idea, board=board, board_data=board_data, suggestions=suggestions)
@@ -267,3 +295,18 @@ def index():
 
 if __name__ == '__main__':
   app.run(host='0.0.0.0', port=7860, debug=True)
+
+
+@app.post('/export/pdf')
+def export_pdf():
+  try:
+    if request.is_json:
+      plan = request.get_json(force=True)
+    else:
+      plan = json.loads(request.form.get('plan') or '{}')
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+    tmp.close()
+    build_pdf(plan, tmp.name)
+    return send_file(tmp.name, mimetype='application/pdf', as_attachment=True, download_name='storyboard.pdf')
+  except Exception as e:
+    return { 'ok': False, 'error': str(e) }, 400
