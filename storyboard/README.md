@@ -14,11 +14,13 @@ MVP: Type a topic → get a structured comic plan, edit/preview, export PDF.
 - Install deps:
   - `make setup`
 - Run API:
-  - `make dev:api` → `curl :8000/health` returns `{ok:true}`
+  - `make dev-api` → `curl :8000/health` returns `{ok:true}`
 - Run Web:
-  - `make dev:web` → open http://localhost:3000
+  - `make dev-web` → open http://localhost:3000
 - Export sample PDF:
-  - `make export:sample` → writes `/tmp/storyboard_sample.pdf`
+  - `make export-sample` → writes `/tmp/storyboard_sample.pdf`
+
+If your API runs elsewhere, set `NEXT_PUBLIC_API_ORIGIN` in `.env.web.local` (e.g. `http://localhost:8000`).
 
 ## Notes
 - No secrets committed. Use local env files.
