@@ -1,0 +1,22 @@
+# Node
+node_modules
+.next
+
+# Python
+.venv
+__pycache__
+*.pyc
+
+# OS
+.DS_Store
+
+# Env files (examples are kept at root)
+*.env
+!.env.shared
+!.env.web.local
+!.env.api.local
+
+# Build artifacts
+.storybook-out
+coverage
+*.log
