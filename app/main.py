@@ -118,8 +118,10 @@ def _register_routes(app: FastAPI) -> None:
     app.include_router(trips_router, prefix="/api/v1")
 
     # Step 17 — Locations
-    # from app.routes.locations import router as locations_router
-    # app.include_router(locations_router, prefix="/api/v1")
+    from app.routes.locations import locations_router, trip_locations_router
+
+    app.include_router(locations_router, prefix="/api/v1")
+    app.include_router(trip_locations_router, prefix="/api/v1")
 
     # Step 20 — Polls
     # from app.routes.polls import router as polls_router

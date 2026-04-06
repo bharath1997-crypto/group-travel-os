@@ -22,6 +22,8 @@ email_validator==2.2.0
 # ── Auth ──────────────────────────────────────────────────────────────────────
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+# passlib 1.7.4 is incompatible with bcrypt 4.1+ / 5.x (__about__ removed, broken wrap detection)
+bcrypt==4.2.1
 
 # ── HTTP client (scripts / manual API checks) ─────────────────────────────────
 requests==2.33.1

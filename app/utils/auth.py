@@ -34,7 +34,12 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain: str, hashed: str) -> bool:
     """Returns True if plain matches the bcrypt hash."""
-    return pwd_context.verify(plain, hashed)
+    try:
+        return pwd_context.verify(plain, hashed)
+    except Exception as exc:
+        # Corrupt hash, bcrypt/passlib mismatch, or backend bugs — never 500 on login
+        logger.warning("Password verification failed safely: %s", exc)
+        return False
 
 
 # ── JWT ───────────────────────────────────────────────────────────────────────
