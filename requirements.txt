@@ -1,0 +1,29 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Group Travel OS — Python Dependencies
+# All versions pinned. Run: pip install -r requirements.txt
+# After adding a package: pip freeze > requirements.txt
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Web framework ─────────────────────────────────────────────────────────────
+fastapi==0.111.1
+uvicorn[standard]==0.30.1
+
+# ── Database ──────────────────────────────────────────────────────────────────
+sqlalchemy==2.0.31
+# 2.9.9 has no cp313 Windows wheel — pip tries to compile and often fails. Use 2.9.11+.
+psycopg2-binary==2.9.11
+alembic==1.13.2
+
+# ── Validation & settings ─────────────────────────────────────────────────────
+pydantic==2.8.2
+pydantic-settings==2.3.4
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# ── Dev & testing ─────────────────────────────────────────────────────────────
+pytest==8.3.1
+pytest-asyncio==0.23.8
+httpx==0.27.0
+python-dotenv==1.0.1

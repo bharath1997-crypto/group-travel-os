@@ -1,0 +1,4 @@
+[tool.pyright]
+include = ["app", "tests", "alembic", "config.py", "run.py"]
+venvPath = "."
+venv = ".venv"

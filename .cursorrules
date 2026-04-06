@@ -1,0 +1,212 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Group Travel OS — Cursor AI Standing Instructions
+# ─────────────────────────────────────────────────────────────────────────────
+# READ THIS BEFORE GENERATING ANY CODE.
+# These rules are non-negotiable. Apply them to every file in this project.
+# ─────────────────────────────────────────────────────────────────────────────
+
+## Project context
+Backend API for a group travel planning platform.
+Solo founder build. Clarity and correctness matter more than cleverness.
+
+## Stack (exact versions)
+- Python 3.11+
+- FastAPI 0.111.1
+- SQLAlchemy 2.0.31 — use 2.0 style ONLY (see patterns below)
+- Pydantic 2.8.2 — use v2 style ONLY (see patterns below)
+- Alembic 1.13.2
+- python-jose[cryptography] 3.3.0
+- passlib[bcrypt] 1.7.4
+- PostgreSQL via psycopg2-binary
+
+## Architecture — enforced without exception
+
+### Layer rule
+Routes → Services → Models. Nothing else.
+- Routes: call services, return responses. Zero business logic.
+- Services: all business logic lives here. Call ORM directly.
+- Models: SQLAlchemy ORM classes. No methods that contain business logic.
+
+### Dependency injection
+- DB session: always injected via Depends(get_db) — never created inside a service
+- Current user: always injected via Depends(get_current_user) — never called manually
+- Never import SessionLocal directly in services or routes
+
+### Error handling
+- ALL HTTP errors raised via AppException (from app/utils/exceptions.py)
+- NEVER raise HTTPException directly anywhere in the codebase
+- NEVER use generic `except Exception` — catch specific exceptions
+
+### File naming
+- Models:   app/models/{name}.py         one file per domain entity
+- Routes:   app/routes/{name}.py         one file per domain
+- Services: app/services/{name}_service.py
+- Schemas:  app/schemas/{name}.py
+
+### Model registry
+- Every new model MUST be imported in app/models/__init__.py immediately after creation
+- This is required for Alembic autogenerate to work
+
+## SQLAlchemy 2.0 patterns — use these exactly
+
+### Queries (2.0 style — REQUIRED)
+```python
+from sqlalchemy import select
+
+# Single record — returns None if not found
+result = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+
+# Multiple records
+results = db.execute(select(Trip).where(Trip.group_id == group_id)).scalars().all()
+
+# With joins
+result = db.execute(
+    select(User).join(GroupMember).where(GroupMember.group_id == group_id)
+).scalars().all()
+```
+
+### NEVER use legacy 1.x style
+```python
+# WRONG — do not write this
+db.query(User).filter(User.email == email).first()
+```
+
+### Creating records
+```python
+obj = ModelClass(field=value, other_field=other_value)
+db.add(obj)
+db.commit()
+db.refresh(obj)  # Reload from DB to get server-set values (id, created_at)
+return obj
+```
+
+### Updating records
+```python
+obj.field = new_value
+db.commit()
+db.refresh(obj)
+return obj
+```
+
+### Deleting records
+```python
+db.delete(obj)
+db.commit()
+```
+
+## Pydantic v2 patterns — use these exactly
+
+### Schema definition (v2 style — REQUIRED)
+```python
+from pydantic import BaseModel, ConfigDict, Field
+from uuid import UUID
+
+class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)  # replaces class Config
+    id: UUID
+    email: str
+    full_name: str
+```
+
+### NEVER use v1 style
+```python
+# WRONG — do not write this
+class Config:
+    orm_mode = True
+```
+
+### Input schemas
+```python
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=8, max_length=100)
+    full_name: str = Field(..., min_length=2, max_length=120)
+
+class UserUpdate(BaseModel):
+    # All fields Optional in update schemas
+    full_name: str | None = Field(None, min_length=2, max_length=120)
+    avatar_url: str | None = None
+```
+
+## Schema naming convention
+- Input (POST body): UserCreate, GroupCreate, TripCreate
+- Update (PATCH body): UserUpdate, GroupUpdate, TripUpdate
+- Response: UserOut, GroupOut, TripOut
+- Never expose: hashed_password — never include in any Out schema
+
+## UUID and timestamp rules
+```python
+import uuid
+from datetime import datetime, timezone
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, DateTime
+
+# Primary key
+id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+# Timestamps — always UTC, always timezone-aware
+created_at = Column(DateTime(timezone=True), nullable=False,
+                    default=lambda: datetime.now(timezone.utc))
+updated_at = Column(DateTime(timezone=True), nullable=False,
+                    default=lambda: datetime.now(timezone.utc),
+                    onupdate=lambda: datetime.now(timezone.utc))
+```
+
+## Route structure
+```python
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session
+from app.utils.database import get_db
+from app.utils.auth import get_current_user
+
+router = APIRouter(prefix="/groups", tags=["Groups"])
+
+@router.post("/", response_model=GroupOut, status_code=status.HTTP_201_CREATED)
+def create_group(
+    data: GroupCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> GroupOut:
+    return GroupService.create_group(db, data, current_user)
+```
+
+## Service structure
+```python
+from sqlalchemy.orm import Session
+from app.utils.exceptions import AppException
+
+class GroupService:
+
+    @staticmethod
+    def create_group(db: Session, data: GroupCreate, current_user: User) -> Group:
+        # Business logic here
+        # Raise via AppException — never return error dicts
+        ...
+```
+
+## HTTP status codes
+- POST (create): 201 Created
+- GET (read): 200 OK
+- PATCH (update): 200 OK
+- DELETE (remove): 204 No Content
+- Validation error: 422 (FastAPI handles automatically)
+
+## Code style
+- Full type hints on every function — parameters AND return type
+- Functions max 40 lines — split if longer
+- No print() — use: import logging; logger = logging.getLogger(__name__)
+- No commented-out dead code
+- No hardcoded strings for error messages — use descriptive AppException calls
+- Imports at top of file, grouped: stdlib → third-party → local
+
+## What never to build in Phase 1
+- WebSockets or Firebase
+- Background jobs (APScheduler, Celery)
+- Email sending
+- Redis or caching
+- Docker configuration
+- Frontend code
+- Stripe or payments
+- Repository pattern
+- CQRS, event sourcing, microservices
+- Abstract base classes for services

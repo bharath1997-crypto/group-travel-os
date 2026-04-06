@@ -1,0 +1,61 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# ── Virtual environments ───────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+.env.local
+.env.*.local
+
+# ── Environment & secrets ──────────────────────────────────────────────────────
+# NEVER commit .env — it contains your SECRET_KEY and DATABASE_URL
+.env
+
+# ── IDE ────────────────────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Testing & coverage ─────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+nosetests.xml
+
+# ── Alembic ────────────────────────────────────────────────────────────────────
+# Migration files are committed — only ignore compiled bytecode
+alembic/versions/*.pyc
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.bak
+*.tmp
+.mypy_cache/
+.ruff_cache/

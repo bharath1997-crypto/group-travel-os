@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create .env for CI
+        run: |
+          cp .env.example .env
+          # Override secrets with safe CI values
+          sed -i 's/your-secret-key-minimum-32-characters-change-this-now/ci-test-secret-key-32-chars-minimum/' .env
+          sed -i 's|postgresql://postgres:password@localhost:5432/group_travel_os|sqlite:///./test.db|' .env
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
