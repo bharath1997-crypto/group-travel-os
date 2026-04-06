@@ -52,6 +52,11 @@ class Group(Base):
         back_populates="group",
         cascade="all, delete-orphan",
     )
+    trips: Mapped[list["Trip"]] = relationship(
+        "Trip",
+        back_populates="group",
+        cascade="all, delete-orphan",
+    )
 
 
 class GroupMember(Base):

@@ -18,6 +18,7 @@ from app.utils.database import Base
 
 if TYPE_CHECKING:
     from app.models.group import GroupMember
+    from app.models.trip import Trip
 
 
 class User(Base):
@@ -80,6 +81,11 @@ class User(Base):
         "GroupMember",
         back_populates="user",
         cascade="all, delete-orphan",
+    )
+    created_trips: Mapped[list["Trip"]] = relationship(
+        "Trip",
+        foreign_keys="Trip.created_by",
+        back_populates="creator",
     )
     # Step 16: saved_locations   → Location
     # Step 18: votes             → Vote

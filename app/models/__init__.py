@@ -38,7 +38,7 @@ from app.models.user import User
 from app.models.group import Group, GroupMember, MemberRole
 
 # Step 13 — Uncomment when you create app/models/trip.py
-# from app.models.trip import Trip
+from app.models.trip import Trip, TripStatus
 
 # Step 16 — Uncomment when you create app/models/location.py
 # from app.models.location import Location, TripLocation
@@ -49,4 +49,4 @@ from app.models.group import Group, GroupMember, MemberRole
 # Step 21 — Uncomment when you create app/models/expense.py
 # from app.models.expense import Expense, ExpenseSplit
 
-__all__: list[str] = ["User", "Group", "GroupMember", "MemberRole"  ]
+__all__: list[str] = ["User", "Group", "GroupMember", "MemberRole", "Trip", "TripStatus"]
