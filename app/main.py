@@ -102,8 +102,9 @@ def _register_routes(app: FastAPI) -> None:
     # Always import inside this function to avoid circular imports.
 
     # Step 9 — Auth
-    # from app.routes.auth import router as auth_router
-    # app.include_router(auth_router, prefix="/api/v1")
+    from app.routes.auth import router as auth_router
+
+    app.include_router(auth_router, prefix="/api/v1")
 
     # Step 12 — Groups
     # from app.routes.groups import router as groups_router

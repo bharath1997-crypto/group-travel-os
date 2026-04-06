@@ -4,14 +4,20 @@ app/models/user.py — User model
 The core identity table. Every other model references this.
 No relationships defined here yet — added incrementally as other models are built.
 """
+from __future__ import annotations
+
 import uuid
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.utils.database import Base
+
+if TYPE_CHECKING:
+    from app.models.group import GroupMember
 
 
 class User(Base):
@@ -69,8 +75,12 @@ class User(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    # ── Relationships (added in later steps) ──────────────────────────────────
-    # Step 10: group_memberships → GroupMember
+    # ── Relationships ─────────────────────────────────────────────────────────
+    group_memberships: Mapped[list["GroupMember"]] = relationship(
+        "GroupMember",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
     # Step 16: saved_locations   → Location
     # Step 18: votes             → Vote
 
