@@ -68,3 +68,8 @@ class Trip(Base):
         foreign_keys=[created_by],
         back_populates="created_trips",
     )
+    trip_locations: Mapped[list["TripLocation"]] = relationship(
+        "TripLocation",
+        back_populates="trip",
+        cascade="all, delete-orphan",
+    )
