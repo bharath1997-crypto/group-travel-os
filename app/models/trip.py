@@ -73,3 +73,8 @@ class Trip(Base):
         back_populates="trip",
         cascade="all, delete-orphan",
     )
+    polls: Mapped[list["Poll"]] = relationship(
+        "Poll",
+        back_populates="trip",
+        cascade="all, delete-orphan",
+    )

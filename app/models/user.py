@@ -19,6 +19,7 @@ from app.utils.database import Base
 if TYPE_CHECKING:
     from app.models.group import GroupMember
     from app.models.location import Location
+    from app.models.poll import Vote
     from app.models.trip import Trip
 
 
@@ -94,7 +95,11 @@ class User(Base):
         back_populates="saved_by_user",
         cascade="all, delete-orphan",
     )
-    # Step 18: votes             → Vote
+    votes: Mapped[list["Vote"]] = relationship(
+        "Vote",
+        foreign_keys="Vote.user_id",
+        back_populates="user",
+    )
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email}>"
