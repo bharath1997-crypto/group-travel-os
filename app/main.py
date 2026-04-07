@@ -130,8 +130,9 @@ def _register_routes(app: FastAPI) -> None:
     app.include_router(polls_router, prefix="/api/v1")
 
     # Step 22 — Expenses
-    # from app.routes.expenses import router as expenses_router
-    # app.include_router(expenses_router, prefix="/api/v1")
+    from app.routes.expenses import expenses_router
+
+    app.include_router(expenses_router, prefix="/api/v1")
 
 
 # ── App instance ──────────────────────────────────────────────────────────────

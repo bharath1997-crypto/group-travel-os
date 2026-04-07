@@ -17,6 +17,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.utils.database import Base
 
 if TYPE_CHECKING:
+    from app.models.expense import ExpenseSplit
     from app.models.group import GroupMember
     from app.models.location import Location
     from app.models.poll import Vote
@@ -98,6 +99,11 @@ class User(Base):
     votes: Mapped[list["Vote"]] = relationship(
         "Vote",
         foreign_keys="Vote.user_id",
+        back_populates="user",
+    )
+    expense_splits: Mapped[list["ExpenseSplit"]] = relationship(
+        "ExpenseSplit",
+        foreign_keys="ExpenseSplit.user_id",
         back_populates="user",
     )
 
