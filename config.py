@@ -7,6 +7,7 @@ Import settings anywhere: from config import settings
 """
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -29,6 +30,16 @@ class Settings(BaseSettings):
 
     # ── Database ──────────────────────────────────────────────────────────────
     DATABASE_URL: str
+
+    # ── Firebase (Phase 2) ────────────────────────────────────────────────────
+    firebase_credentials_path: str | None = Field(
+        default=None,
+        validation_alias="FIREBASE_CREDENTIALS_PATH",
+    )
+    firebase_database_url: str | None = Field(
+        default=None,
+        validation_alias="FIREBASE_DATABASE_URL",
+    )
 
     # ── CORS ──────────────────────────────────────────────────────────────────
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]

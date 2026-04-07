@@ -35,6 +35,9 @@ async def lifespan(app: FastAPI):
         # Log but don't crash — health endpoint will surface this
         logger.error("Database connection FAILED on startup — check DATABASE_URL in .env")
 
+    # With a custom lifespan, Starlette does not run on_event handlers unless we call this.
+    await app.router.startup()
+
     yield
 
     # ── Shutdown ──────────────────────────────────────────────────────────────
@@ -57,6 +60,16 @@ def create_app() -> FastAPI:
         redoc_url="/redoc" if settings.DEBUG else None,
         lifespan=lifespan,
     )
+
+    @app.on_event("startup")
+    def _firebase_startup() -> None:
+        try:
+            from app.utils.firebase import get_firebase_app
+
+            get_firebase_app()
+            print("Firebase connected successfully", flush=True)
+        except Exception as exc:
+            print(exc, flush=True)
 
     _add_middleware(app)
     _register_routes(app)
