@@ -25,10 +25,12 @@ jobs:
 
       - name: Create .env for CI
         run: |
-          cp .env.example .env
-          # Override secrets with safe CI values
-          sed -i 's/your-secret-key-minimum-32-characters-change-this-now/ci-test-secret-key-32-chars-minimum/' .env
-          sed -i 's|postgresql://postgres:password@localhost:5432/group_travel_os|sqlite:///./test.db|' .env
+          cat > .env <<'EOF'
+          SECRET_KEY=ci-test-secret-key-32-chars-minimum-x9y8z7
+          DATABASE_URL=sqlite:///./test.db
+          DEBUG=True
+          ENVIRONMENT=development
+          EOF
 
       - name: Run tests
         run: pytest tests/ -v --tb=short
