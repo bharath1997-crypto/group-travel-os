@@ -53,6 +53,11 @@ class User(Base):
         String(2048),
         nullable=True,
     )
+    fcm_token: Mapped[str | None] = mapped_column(
+        String(512),
+        nullable=True,
+        index=True,
+    )
 
     # ── Flags ─────────────────────────────────────────────────────────────────
     is_active: Mapped[bool] = mapped_column(
