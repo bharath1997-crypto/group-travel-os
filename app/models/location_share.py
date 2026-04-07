@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.utils.database import Base
 
@@ -52,13 +52,4 @@ class LocationShare(Base):
     stopped_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
-    )
-
-    user: Mapped["User"] = relationship(
-        "User",
-        foreign_keys=[user_id],
-    )
-    trip: Mapped["Trip"] = relationship(
-        "Trip",
-        foreign_keys=[trip_id],
     )

@@ -5,6 +5,7 @@ from app.models.location import Location, TripLocation
 from app.models.location_share import LocationShare
 from app.models.poll import Poll, PollOption, Vote, PollType, PollStatus
 from app.models.expense import Expense, ExpenseSplit
+from app.models.location_share import LocationShare
 
 __all__: list[str] = [
     "User",
