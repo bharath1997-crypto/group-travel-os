@@ -147,6 +147,10 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(expenses_router, prefix="/api/v1")
 
+    from app.routes.location_shares import router as location_shares_router
+
+    app.include_router(location_shares_router, prefix="/api/v1")
+
 
 # ── App instance ──────────────────────────────────────────────────────────────
 # This is what uvicorn imports. Do not rename.
