@@ -1,0 +1,20 @@
+name: group-travel-os
+services:
+  - name: api
+    type: web
+    git:
+      repository: github.com/bharath1997-crypto/group-travel-os
+      branch: main
+    build:
+      buildpack: python
+    run:
+      command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    ports:
+      - port: 8000
+        protocol: http
+    env:
+      - key: PYTHON_VERSION
+        value: "3.13"
+    health_checks:
+      - path: /health
+        port: 8000

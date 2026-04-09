@@ -4,10 +4,11 @@ alembic/env.py — Alembic migration environment
 This file configures how Alembic connects to your database and detects models.
 
 CRITICAL RULES:
-1. DATABASE_URL is read from settings — never hardcode it here.
+1. DATABASE_URL is read from environment or settings — never hardcode it here.
 2. Base must be imported AFTER app.models (which imports all model classes).
 3. Never edit migration files in alembic/versions/ manually.
 """
+import os
 import sys
 from logging.config import fileConfig
 from pathlib import Path
@@ -37,9 +38,11 @@ if config.config_file_name is not None:
 # Point Alembic at our models' metadata so autogenerate works
 target_metadata = Base.metadata
 
-# Override the sqlalchemy.url from alembic.ini with our settings value
-# This ensures we always use the same DATABASE_URL as the app
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+def get_url() -> str:
+    return os.environ.get("DATABASE_URL", settings.DATABASE_URL)
+
+
+config.set_main_option("sqlalchemy.url", get_url())
 
 
 # ── Migration runners ─────────────────────────────────────────────────────────
