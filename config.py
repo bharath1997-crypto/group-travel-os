@@ -41,8 +41,44 @@ class Settings(BaseSettings):
         validation_alias="FIREBASE_DATABASE_URL",
     )
 
+    # ── OpenWeatherMap (Phase 3) ────────────────────────────────────────────────
+    openweather_api_key: str | None = Field(
+        default=None,
+        validation_alias="OPENWEATHER_API_KEY",
+    )
+
+    # ── Stripe (Phase 3) ───────────────────────────────────────────────────────
+    stripe_secret_key: str | None = Field(
+        default=None,
+        validation_alias="STRIPE_SECRET_KEY",
+    )
+    stripe_webhook_secret: str | None = Field(
+        default=None,
+        validation_alias="STRIPE_WEBHOOK_SECRET",
+    )
+    stripe_pro_price_id: str | None = Field(
+        default=None,
+        validation_alias="STRIPE_PRO_PRICE_ID",
+    )
+
     # ── CORS ──────────────────────────────────────────────────────────────────
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
+
+    # ── OAuth (Google / Facebook) ─────────────────────────────────────────────
+    FRONTEND_URL: str = "http://localhost:3000"
+    API_PUBLIC_URL: str = Field(
+        default="http://localhost:8000",
+        validation_alias="API_PUBLIC_URL",
+        description="Public base URL for OAuth redirect_uri (must match provider console).",
+    )
+    GOOGLE_CLIENT_ID: str | None = Field(default=None, validation_alias="GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET: str | None = Field(
+        default=None, validation_alias="GOOGLE_CLIENT_SECRET"
+    )
+    FACEBOOK_APP_ID: str | None = Field(default=None, validation_alias="FACEBOOK_APP_ID")
+    FACEBOOK_APP_SECRET: str | None = Field(
+        default=None, validation_alias="FACEBOOK_APP_SECRET"
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",

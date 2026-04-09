@@ -38,9 +38,17 @@ async def lifespan(app: FastAPI):
     # With a custom lifespan, Starlette does not run on_event handlers unless we call this.
     await app.router.startup()
 
+    from app.jobs.scheduler import start_scheduler
+
+    start_scheduler()
+
     yield
 
     # ── Shutdown ──────────────────────────────────────────────────────────────
+    from app.jobs.scheduler import stop_scheduler
+
+    stop_scheduler()
+
     logger.info("Shutting down %s", settings.APP_NAME)
 
 
@@ -119,6 +127,11 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(auth_router, prefix="/api/v1")
 
+    # Join requests — register before groups so POST /groups/join uses request flow
+    from app.routes.join_requests import router as join_requests_router
+
+    app.include_router(join_requests_router, prefix="/api/v1")
+
     # Step 12 — Groups
     from app.routes.groups import router as groups_router
 
@@ -159,6 +172,26 @@ def _register_routes(app: FastAPI) -> None:
     from app.routes.timers import router as timers_router
 
     app.include_router(timers_router, prefix="/api/v1")
+
+    from app.routes.feed import router as feed_router
+
+    app.include_router(feed_router, prefix="/api/v1")
+
+    from app.routes.stats import router as stats_router
+
+    app.include_router(stats_router, prefix="/api/v1")
+
+    from app.routes.weather import router as weather_router
+
+    app.include_router(weather_router, prefix="/api/v1")
+
+    from app.routes.subscriptions import router as subscriptions_router
+
+    app.include_router(subscriptions_router, prefix="/api/v1")
+
+    from app.routes.pins import router as pins_router
+
+    app.include_router(pins_router, prefix="/api/v1")
 
 
 # ── App instance ──────────────────────────────────────────────────────────────

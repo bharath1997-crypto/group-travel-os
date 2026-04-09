@@ -18,6 +18,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=100)
     full_name: str = Field(..., min_length=2, max_length=120)
+    username: str | None = Field(None, max_length=50)
 
 
 class UserLogin(BaseModel):
@@ -47,6 +48,7 @@ class UserOut(BaseModel):
     id: UUID
     email: str
     full_name: str
+    username: str | None = None
     avatar_url: str | None
     is_active: bool
     is_verified: bool

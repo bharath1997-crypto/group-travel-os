@@ -49,6 +49,24 @@ class User(Base):
         String(120),
         nullable=False,
     )
+    username: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
+    google_sub: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
+    facebook_sub: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
     avatar_url: Mapped[str | None] = mapped_column(
         String(2048),
         nullable=True,

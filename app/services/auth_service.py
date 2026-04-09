@@ -35,10 +35,22 @@ class AuthService:
         if existing:
             AppException.conflict("An account with this email already exists")
 
+        username_to_store: str | None = None
+        if data.username is not None:
+            stripped = data.username.strip()
+            if stripped:
+                username_to_store = stripped
+                taken = db.execute(
+                    select(User).where(User.username == username_to_store)
+                ).scalar_one_or_none()
+                if taken:
+                    AppException.conflict("Username already taken")
+
         user = User(
             email=data.email.lower(),
             hashed_password=hash_password(data.password),
             full_name=data.full_name,
+            username=username_to_store,
         )
         db.add(user)
         db.commit()

@@ -80,6 +80,22 @@ class AppException:
         )
 
     @staticmethod
+    def bad_gateway(detail: str = "Bad gateway") -> None:
+        """502 — upstream service returned an error (e.g. weather provider)."""
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=detail,
+        )
+
+    @staticmethod
+    def service_unavailable(detail: str = "Service unavailable") -> None:
+        """503 — dependency not configured or temporarily unavailable."""
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=detail,
+        )
+
+    @staticmethod
     def internal(detail: str = "An unexpected error occurred") -> None:
         """500 — something went wrong server-side that should never happen."""
         raise HTTPException(

@@ -18,6 +18,7 @@ from app.schemas.location_share import (
 from app.services.location_share_service import LocationShareService
 from app.utils.auth import get_current_user
 from app.utils.database import get_db
+from app.utils.feature_gate import require_plan
 
 router = APIRouter(prefix="/trips", tags=["Location Sharing"])
 
@@ -33,6 +34,7 @@ def start_location_sharing(
     data: StartSharingRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    _: User = Depends(require_plan("pass_3day")),
 ):
     return LocationShareService.start_sharing(
         db,
@@ -53,6 +55,7 @@ def update_shared_location(
     data: UpdateLocationRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    _: User = Depends(require_plan("pass_3day")),
 ):
     LocationShareService.update_location(
         db,
@@ -73,6 +76,7 @@ def stop_location_sharing(
     trip_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    _: User = Depends(require_plan("pass_3day")),
 ):
     LocationShareService.stop_sharing(db, current_user.id, trip_id)
     return {"detail": "Location sharing stopped"}
@@ -88,6 +92,7 @@ def list_active_sharers(
     trip_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    _: User = Depends(require_plan("pass_3day")),
 ):
     sharers = LocationShareService.get_active_sharers(db, trip_id)
     return sharers
