@@ -11,6 +11,7 @@ import logging
 from collections.abc import Generator
 
 from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from config import settings
@@ -19,18 +20,24 @@ logger = logging.getLogger(__name__)
 
 
 # ── Engine ────────────────────────────────────────────────────────────────────
-engine = create_engine(
-    settings.DATABASE_URL,
+_url = make_url(settings.DATABASE_URL)
+_engine_kw: dict = {
     # Drop and re-test stale connections before handing to a request.
     # Prevents "server closed connection unexpectedly" after idle periods.
-    pool_pre_ping=True,
+    "pool_pre_ping": True,
     # Connections kept open in the pool at all times.
-    pool_size=10,
+    "pool_size": 10,
     # Extra connections allowed above pool_size under load, then discarded.
-    max_overflow=20,
+    "max_overflow": 20,
     # Log every SQL statement when DEBUG=True. Never enable in production.
-    echo=settings.DEBUG,
-)
+    "echo": settings.DEBUG,
+}
+# SQLite + Starlette TestClient: requests run in a thread pool on Linux; without this,
+# sqlite3 raises "SQLite objects created in a thread can only be used in that same thread".
+if _url.drivername.startswith("sqlite"):
+    _engine_kw["connect_args"] = {"check_same_thread": False}
+
+engine = create_engine(settings.DATABASE_URL, **_engine_kw)
 
 
 # ── Session factory ───────────────────────────────────────────────────────────
