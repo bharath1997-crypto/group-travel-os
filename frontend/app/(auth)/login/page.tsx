@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { AppLogo } from "@/components/AppLogo";
 import { AuthMapBackground } from "@/components/AuthMapBackground";
 import { apiFetch } from "@/lib/api";
 import { saveToken } from "@/lib/auth";
@@ -220,10 +221,10 @@ function LoginPageInner() {
       <div className="relative flex h-full min-h-0 flex-col items-center justify-center py-2 sm:py-4">
         <SlateCharacterWithForm compact>
           <div className="text-center">
-            <p className="text-lg font-bold leading-tight text-gray-900 sm:text-xl">
-              <span aria-hidden>✈️</span> Group Travel OS
-            </p>
-            <p className="mt-0.5 text-xs text-gray-600 sm:text-sm">
+            <div className="flex justify-center">
+              <AppLogo variant="onLight" className="h-9 w-auto max-w-[min(85%,220px)] sm:h-10" />
+            </div>
+            <p className="mt-2 text-xs text-gray-600 sm:text-sm">
               Welcome back, traveler!
             </p>
           </div>

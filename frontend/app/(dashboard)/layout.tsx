@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
+import { AppLogo } from "@/components/AppLogo";
 import { Avatar } from "@/components/Avatar";
 import { apiFetch } from "@/lib/api";
 import { clearToken, isLoggedIn } from "@/lib/auth";
@@ -87,10 +88,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen bg-white">
       <aside className="hidden w-56 shrink-0 flex-col border-r border-gray-800 bg-gray-900 text-gray-100 md:flex">
-        <div className="border-b border-gray-800 px-4 py-5">
-          <p className="text-lg font-semibold tracking-tight text-white">
-            Group Travel OS
-          </p>
+        <div className="border-b border-gray-800 px-4 py-4">
+          <Link href="/dashboard" className="inline-block outline-none ring-offset-2 ring-offset-gray-900 focus-visible:ring-2 focus-visible:ring-white/50">
+            <AppLogo variant="onDark" className="h-8 w-auto max-w-[11rem]" />
+          </Link>
         </div>
         <div className="flex flex-col items-center border-b border-gray-800/80 px-3 pb-4 pt-5">
           <div className="rounded-full p-0.5 shadow-[0_8px_24px_rgba(0,0,0,0.35)] ring-2 ring-white/25 ring-offset-2 ring-offset-gray-900">
@@ -139,7 +140,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <div className="rounded-full p-0.5 ring-2 ring-white/20 ring-offset-2 ring-offset-gray-900">
               <Avatar name={seed} size={40} />
             </div>
-            <p className="text-sm font-semibold text-white">Group Travel OS</p>
+            <AppLogo variant="onDark" className="h-7 w-auto max-w-[9rem]" />
           </div>
           <nav className="flex flex-wrap gap-1">
             {nav.map(({ href, label, mapPin }) => (

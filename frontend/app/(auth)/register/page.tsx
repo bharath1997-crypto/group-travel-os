@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, useState } from "react";
 
+import { AppLogo } from "@/components/AppLogo";
 import { AuthMapBackground } from "@/components/AuthMapBackground";
 import { apiFetch } from "@/lib/api";
 import { saveToken } from "@/lib/auth";
@@ -151,10 +152,10 @@ export default function RegisterPage() {
       <div className="relative flex h-full min-h-0 flex-col items-center justify-center px-1 py-1 sm:py-2">
         <SlateCharacterWithForm>
           <div className="text-center">
-            <p className="text-base font-bold leading-tight text-gray-900 sm:text-lg">
-              <span aria-hidden>✈️</span> Group Travel OS
-            </p>
-            <p className="mt-0.5 text-[11px] text-gray-600 sm:text-xs">Join the adventure!</p>
+            <div className="flex justify-center">
+              <AppLogo variant="onLight" className="h-8 w-auto max-w-[min(85%,200px)] sm:h-9" />
+            </div>
+            <p className="mt-2 text-[11px] text-gray-600 sm:text-xs">Join the adventure!</p>
           </div>
 
           <form onSubmit={handleSubmit} className="mt-2 space-y-2 text-left sm:mt-3">
