@@ -1,0 +1,16 @@
+# Used by gcloud builds submit and gcloud run deploy --source.
+# .dockerignore is not applied to the upload tarball — only .gcloudignore (else root .gitignore).
+
+.git
+.env
+.venv
+__pycache__/
+*.pyc
+*.pyo
+*.md
+tests/
+scripts/
+firebase-credentials.json
+
+# Frontend is large; .next dev locks cause Permission denied during upload.
+frontend/
