@@ -5,10 +5,31 @@ Single source of truth for all settings.
 Reads from .env file automatically via Pydantic Settings.
 Import settings anywhere: from config import settings
 """
+import json
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _parse_origins_string(s: str) -> list[str]:
+    """ALLOWED_ORIGINS env: JSON array, comma-separated URLs, or one URL (Cloud Run / gcloud-safe)."""
+    s = s.strip()
+    if not s:
+        return ["http://localhost:3000"]
+    if s.startswith("["):
+        try:
+            parsed = json.loads(s)
+            if isinstance(parsed, list):
+                return [str(x).strip() for x in parsed if str(x).strip()]
+            raise ValueError("ALLOWED_ORIGINS JSON must be an array")
+        except json.JSONDecodeError:
+            if s.endswith("]"):
+                inner = s[1:-1].strip()
+                if inner:
+                    return [p.strip() for p in inner.split(",") if p.strip()]
+            raise ValueError("ALLOWED_ORIGINS is not valid JSON or bracketed URL list") from None
+    return [p.strip() for p in s.split(",") if p.strip()]
 
 
 class Settings(BaseSettings):
@@ -62,7 +83,16 @@ class Settings(BaseSettings):
     )
 
     # ── CORS ──────────────────────────────────────────────────────────────────
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
+    # Stored as str so pydantic-settings does not json.loads before validation (breaks plain URLs).
+    allowed_origins_raw: str = Field(
+        default="http://localhost:3000",
+        validation_alias="ALLOWED_ORIGINS",
+    )
+
+    @computed_field
+    @property
+    def allowed_origins(self) -> list[str]:
+        return _parse_origins_string(self.allowed_origins_raw)
 
     # ── OAuth (Google / Facebook) ─────────────────────────────────────────────
     FRONTEND_URL: str = "http://localhost:3000"

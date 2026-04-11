@@ -89,7 +89,7 @@ def _add_middleware(app: FastAPI) -> None:
     """Register all middleware. Order matters — last added runs first."""
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.ALLOWED_ORIGINS,
+        allow_origins=settings.allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

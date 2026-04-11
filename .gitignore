@@ -29,6 +29,9 @@ ENV/
 # NEVER commit .env — it contains your SECRET_KEY and DATABASE_URL
 .env
 
+# Google OAuth client JSON from Cloud Console (contains client_secret)
+client_secret*.json
+
 # ── IDE ────────────────────────────────────────────────────────────────────────
 .vscode/*
 !.vscode/settings.json
