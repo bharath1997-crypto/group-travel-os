@@ -7,8 +7,9 @@ Import settings anywhere: from config import settings
 """
 import json
 from functools import lru_cache
+from typing import Any
 
-from pydantic import Field, computed_field
+from pydantic import Field, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -109,6 +110,23 @@ class Settings(BaseSettings):
     FACEBOOK_APP_SECRET: str | None = Field(
         default=None, validation_alias="FACEBOOK_APP_SECRET"
     )
+
+    @field_validator(
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "FACEBOOK_APP_ID",
+        "FACEBOOK_APP_SECRET",
+        mode="before",
+    )
+    @classmethod
+    def _strip_optional_oauth(cls, v: Any) -> Any:
+        """Avoid newline/whitespace from Secret Manager or echo breaking token exchange."""
+        if v is None:
+            return None
+        if isinstance(v, str):
+            s = v.strip()
+            return s if s else None
+        return v
 
     model_config = SettingsConfigDict(
         env_file=".env",

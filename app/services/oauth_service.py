@@ -38,6 +38,19 @@ def oauth_redirect_uri(provider: str) -> str:
     return f"{settings.API_PUBLIC_URL.rstrip('/')}/api/v1/auth/oauth/{p}/callback"
 
 
+def _upstream_oauth_error_message(response: httpx.Response, prefix: str) -> str:
+    """Include provider error body when JSON (helps debug redirect_uri / invalid_client)."""
+    try:
+        err = response.json()
+        if isinstance(err, dict):
+            desc = err.get("error_description") or err.get("error")
+            if isinstance(desc, str) and desc.strip():
+                return f"{prefix}: {desc.strip()[:500]}"
+    except (json.JSONDecodeError, ValueError, TypeError):
+        pass
+    return prefix
+
+
 def _urlsafe_b64(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).decode().rstrip("=")
 
@@ -209,7 +222,7 @@ def complete_google(db: Session, code: str) -> tuple[User, str, int]:
         )
         if tok.status_code != 200:
             logger.warning("Google token error: %s %s", tok.status_code, tok.text)
-            AppException.bad_gateway("Google token exchange failed")
+            AppException.bad_gateway(_upstream_oauth_error_message(tok, "Google token exchange failed"))
         body: dict[str, Any] = tok.json()
         access = body.get("access_token")
         if not access:
@@ -262,7 +275,7 @@ def complete_facebook(db: Session, code: str) -> tuple[User, str, int]:
         )
         if tok.status_code != 200:
             logger.warning("Facebook token error: %s %s", tok.status_code, tok.text)
-            AppException.bad_gateway("Facebook token exchange failed")
+            AppException.bad_gateway(_upstream_oauth_error_message(tok, "Facebook token exchange failed"))
         body: dict[str, Any] = tok.json()
         access = body.get("access_token")
         if not access:
