@@ -8,6 +8,7 @@ import hashlib
 import hmac
 import json
 import logging
+import os
 import secrets
 import time
 from typing import Any
@@ -38,6 +39,16 @@ def oauth_redirect_uri(provider: str) -> str:
     return f"{settings.API_PUBLIC_URL.rstrip('/')}/api/v1/auth/oauth/{p}/callback"
 
 
+def _oauth_diagnostics_enabled() -> bool:
+    return os.getenv("OAUTH_DIAGNOSTICS", "").strip().lower() in ("1", "true", "yes")
+
+
+def _google_secret_looks_like_json_blob(s: str) -> bool:
+    """Secret Manager must store the GOCSPX-... string, not the downloaded JSON file."""
+    t = s.strip()
+    return len(t) > 0 and t[0] == "{"
+
+
 def _upstream_oauth_error_message(response: httpx.Response, prefix: str) -> str:
     """Include provider error body when JSON (helps debug redirect_uri / invalid_client)."""
     try:
@@ -62,6 +73,19 @@ def _urlsafe_b64decode(s: str) -> bytes:
     return base64.urlsafe_b64decode(s)
 
 
+def _decode_oauth_state_payload(raw: str) -> dict[str, Any]:
+    """Parse signed OAuth state blob; raises HTTPException via AppException on failure."""
+    try:
+        obj = json.loads(_urlsafe_b64decode(raw).decode("utf-8"))
+    except (json.JSONDecodeError, ValueError):
+        AppException.bad_request("Invalid OAuth state payload")
+        assert False  # AppException.bad_request always raises
+    else:
+        if not isinstance(obj, dict):
+            AppException.bad_request("Invalid OAuth state payload")
+        return obj
+
+
 def sign_oauth_state(provider: str) -> str:
     payload = {
         "p": provider,
@@ -78,10 +102,10 @@ def sign_oauth_state(provider: str) -> str:
 
 
 def verify_oauth_state(state: str, provider: str, max_age: int = 900) -> None:
-    try:
-        raw, sig = state.rsplit(".", 1)
-    except ValueError:
+    parts = state.rsplit(".", 1)
+    if len(parts) != 2:
         AppException.bad_request("Invalid OAuth state")
+    raw, sig = parts[0], parts[1]
     expect = hmac.new(
         settings.SECRET_KEY.encode("utf-8"),
         raw.encode("utf-8"),
@@ -89,10 +113,7 @@ def verify_oauth_state(state: str, provider: str, max_age: int = 900) -> None:
     ).hexdigest()[:32]
     if not hmac.compare_digest(expect, sig):
         AppException.bad_request("Invalid OAuth state signature")
-    try:
-        payload = json.loads(_urlsafe_b64decode(raw).decode("utf-8"))
-    except (json.JSONDecodeError, ValueError):
-        AppException.bad_request("Invalid OAuth state payload")
+    payload = _decode_oauth_state_payload(raw)
     if payload.get("p") != provider:
         AppException.bad_request("OAuth provider mismatch")
     if int(time.time()) - int(payload.get("t", 0)) > max_age:
@@ -208,6 +229,26 @@ def complete_google(db: Session, code: str) -> tuple[User, str, int]:
     if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
         AppException.service_unavailable("Google sign-in is not configured")
     redirect_uri = oauth_redirect_uri("google")
+    sec = settings.GOOGLE_CLIENT_SECRET or ""
+    if _google_secret_looks_like_json_blob(sec):
+        logger.error(
+            "GOOGLE_CLIENT_SECRET looks like JSON; use only the client_secret string (GOCSPX-...) from Google Credentials, not the whole JSON file."
+        )
+        AppException.bad_gateway(
+            "Google OAuth misconfigured: client secret must be the plain GOCSPX-… value, not JSON"
+        )
+    if _oauth_diagnostics_enabled():
+        cid = settings.GOOGLE_CLIENT_ID or ""
+        logger.info(
+            "Google OAuth diagnostics (complete_google): has_client_id=%s client_id_suffix=%s "
+            "client_secret_len=%s redirect_uri=%s API_PUBLIC_URL=%s FRONTEND_URL=%s",
+            bool(cid),
+            cid[-12:] if len(cid) >= 12 else cid,
+            len(sec),
+            redirect_uri,
+            settings.API_PUBLIC_URL,
+            settings.FRONTEND_URL,
+        )
     with httpx.Client(timeout=30.0) as client:
         tok = client.post(
             GOOGLE_TOKEN,
@@ -237,9 +278,10 @@ def complete_google(db: Session, code: str) -> tuple[User, str, int]:
             AppException.bad_gateway("Google userinfo failed")
         info: dict[str, Any] = ui.json()
 
-    email = info.get("email")
-    if not email:
+    email_raw = info.get("email")
+    if not email_raw:
         AppException.bad_request("Google did not return an email for this account")
+    email = str(email_raw)
     sub = str(info.get("id", ""))
     if not sub:
         AppException.bad_request("Google did not return a user id")
@@ -296,11 +338,12 @@ def complete_facebook(db: Session, code: str) -> tuple[User, str, int]:
     sub = str(info.get("id", "")).strip()
     if not sub:
         AppException.bad_request("Facebook did not return a user id")
-    email = info.get("email")
-    if not email:
+    email_raw = info.get("email")
+    if not email_raw:
         AppException.bad_request(
             "Facebook did not return an email — add email to your Facebook account or use Google."
         )
+    email = str(email_raw)
     name = str(info.get("name") or email.split("@")[0])
     pic_url: str | None = None
     pic = info.get("picture")
@@ -311,7 +354,7 @@ def complete_facebook(db: Session, code: str) -> tuple[User, str, int]:
 
     user = _find_or_create_from_oauth(
         db,
-        email=str(email),
+        email=email,
         full_name=name,
         avatar_url=pic_url,
         google_sub=None,
