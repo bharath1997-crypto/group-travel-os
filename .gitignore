@@ -14,8 +14,9 @@ var/
 sdist/
 develop-eggs/
 .installed.cfg
-lib/
-lib64/
+# Python build dirs at repo root only — do not ignore frontend/lib/ (Next.js modules)
+/lib/
+/lib64/
 
 # ── Virtual environments ───────────────────────────────────────────────────────
 venv/
