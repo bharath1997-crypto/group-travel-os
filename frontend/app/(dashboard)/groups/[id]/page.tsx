@@ -354,7 +354,7 @@ export default function GroupDetailPage() {
       {loading ? (
         <div className="mt-10 flex flex-col items-center gap-3 py-16">
           <div
-            className="h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900"
+            className="h-10 w-10 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
             aria-hidden
           />
           <p className="text-sm text-gray-600">Loading…</p>
@@ -366,7 +366,7 @@ export default function GroupDetailPage() {
       ) : group ? (
         <>
           <section className="mt-6">
-            <h2 className="text-lg font-semibold text-gray-900">Members</h2>
+            <h2 className="text-lg font-semibold text-[#0F3460]">Members</h2>
             <p className="mt-1 text-xs text-gray-500">
               Green: active on the website recently. Red: inactive. App icon:
               mobile app logged in.
@@ -387,7 +387,7 @@ export default function GroupDetailPage() {
                     />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-gray-900">
+                    <p className="truncate font-medium text-[#2C3E50]">
                       {m.full_name}
                     </p>
                     <p className="text-xs text-gray-500 capitalize">{m.role}</p>
@@ -411,7 +411,7 @@ export default function GroupDetailPage() {
                   size={36}
                 />
                 <div>
-                  <h1 className="text-2xl font-semibold text-gray-900">
+                  <h1 className="text-2xl font-semibold text-[#0F3460]">
                     {group.name}
                   </h1>
                   <p className="mt-2 font-mono text-sm text-gray-700">
@@ -434,7 +434,7 @@ export default function GroupDetailPage() {
                       aria-checked={accepting}
                       disabled={toggleLoading}
                       onClick={() => void handleToggleAccepting()}
-                      className={`relative h-7 w-12 shrink-0 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 disabled:opacity-50 ${accepting ? "bg-green-500" : "bg-gray-300"}`}
+                      className={`relative h-7 w-12 shrink-0 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#E94560] focus:ring-offset-2 disabled:opacity-50 ${accepting ? "bg-[#2ECC71]" : "bg-gray-300"}`}
                     >
                       <span
                         className={`absolute left-0.5 top-0.5 block h-6 w-6 rounded-full bg-white shadow transition-transform ${accepting ? "translate-x-5" : "translate-x-0"}`}
@@ -494,7 +494,7 @@ export default function GroupDetailPage() {
                                   className="mt-0.5"
                                 />
                                 <div>
-                                  <p className="font-medium text-gray-900">
+                                  <p className="font-medium text-[#2C3E50]">
                                     {req.user_full_name}
                                   </p>
                                   <p className="text-sm text-gray-600">
@@ -532,14 +532,14 @@ export default function GroupDetailPage() {
           </header>
 
           <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Trips</h2>
+            <h2 className="text-lg font-semibold text-[#0F3460]">Trips</h2>
             <button
               type="button"
               onClick={() => {
                 setShowTripForm(true);
                 setTripError(null);
               }}
-              className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+              className="rounded-lg bg-[#E94560] px-4 py-2.5 text-sm font-medium text-white hover:opacity-95"
             >
               Create Trip
             </button>
@@ -550,7 +550,7 @@ export default function GroupDetailPage() {
               onSubmit={handleCreateTrip}
               className="mt-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
             >
-              <h3 className="text-sm font-semibold text-gray-900">New trip</h3>
+              <h3 className="text-sm font-semibold text-[#0F3460]">New trip</h3>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <label
@@ -564,7 +564,7 @@ export default function GroupDetailPage() {
                     value={tripTitle}
                     onChange={(e) => setTripTitle(e.target.value)}
                     required
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                    className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm text-[#2C3E50] shadow-sm focus:border-[#E94560] focus:outline-none focus:ring-1 focus:ring-[#E94560]/40"
                     placeholder="Summer in Lisbon"
                   />
                 </div>
@@ -581,7 +581,7 @@ export default function GroupDetailPage() {
                     value={tripDescription}
                     onChange={(e) => setTripDescription(e.target.value)}
                     rows={2}
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                    className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm text-[#2C3E50] shadow-sm focus:border-[#E94560] focus:outline-none focus:ring-1 focus:ring-[#E94560]/40"
                   />
                 </div>
                 <div>
@@ -596,7 +596,7 @@ export default function GroupDetailPage() {
                     type="date"
                     value={tripStart}
                     onChange={(e) => setTripStart(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                    className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm text-[#2C3E50] shadow-sm focus:border-[#E94560] focus:outline-none focus:ring-1 focus:ring-[#E94560]/40"
                   />
                 </div>
                 <div>
@@ -611,7 +611,7 @@ export default function GroupDetailPage() {
                     type="date"
                     value={tripEnd}
                     onChange={(e) => setTripEnd(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                    className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm text-[#2C3E50] shadow-sm focus:border-[#E94560] focus:outline-none focus:ring-1 focus:ring-[#E94560]/40"
                   />
                 </div>
               </div>
@@ -622,7 +622,7 @@ export default function GroupDetailPage() {
                 <button
                   type="submit"
                   disabled={tripSubmitting}
-                  className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60"
+                  className="rounded-lg bg-[#E94560] px-4 py-2 text-sm font-medium text-white hover:opacity-95 disabled:opacity-60"
                 >
                   {tripSubmitting ? "Creating…" : "Create Trip"}
                 </button>
@@ -651,7 +651,7 @@ export default function GroupDetailPage() {
                     className="flex flex-col gap-3 px-4 py-4 transition hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div>
-                      <p className="font-medium text-gray-900">{t.title}</p>
+                      <p className="font-medium text-[#2C3E50]">{t.title}</p>
                       <p className="mt-1 font-mono text-xs text-gray-500">
                         {t.id}
                       </p>

@@ -14,7 +14,7 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
 export default function MapPage() {
   return (
     <div className="flex h-[calc(100dvh-7rem)] flex-col gap-1 px-4 pb-4 pt-2 md:h-[calc(100dvh-3.5rem)] md:gap-2 md:px-6 md:pt-3">
-      <p className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">
+      <p className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6C757D]">
         My Map
       </p>
       <div className="min-h-0 flex-1">

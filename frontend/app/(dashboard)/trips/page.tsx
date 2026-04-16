@@ -179,7 +179,7 @@ export default function TripsPage() {
     <div className="p-6 md:p-8">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Trips</h1>
+          <h1 className="text-2xl font-semibold text-[#0F3460]">Trips</h1>
           <p className="text-sm text-gray-600">
             Create trips, share the trip ID, preview what others see before they
             join.
@@ -191,7 +191,7 @@ export default function TripsPage() {
             setCreateOpen((v) => !v);
             setCreateErr(null);
           }}
-          className="shrink-0 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+          className="shrink-0 rounded-lg bg-[#E94560] px-4 py-2.5 text-sm font-medium text-white hover:opacity-95"
         >
           {createOpen ? "Close form" : "Create trip"}
         </button>
@@ -213,7 +213,7 @@ export default function TripsPage() {
             value={searchRaw}
             onChange={(e) => setSearchRaw(e.target.value)}
             placeholder="Paste trip UUID"
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+            className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 font-mono text-sm text-[#2C3E50] shadow-sm focus:border-[#E94560] focus:outline-none focus:ring-1 focus:ring-[#E94560]/40"
           />
           {searchErr ? (
             <p className="mt-1 text-xs text-red-700">{searchErr}</p>
@@ -221,7 +221,7 @@ export default function TripsPage() {
         </div>
         <button
           type="submit"
-          className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+          className="rounded-lg bg-[#E94560] px-4 py-2.5 text-sm font-medium text-white hover:opacity-95"
         >
           View trip
         </button>
@@ -232,7 +232,7 @@ export default function TripsPage() {
           onSubmit={onCreateTrip}
           className="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
         >
-          <h2 className="text-sm font-semibold text-gray-900">New trip</h2>
+          <h2 className="text-sm font-semibold text-[#0F3460]">New trip</h2>
           <p className="mt-1 text-xs text-gray-500">
             The trip ID is created automatically — share it so others can preview
             and request to join.
@@ -246,7 +246,7 @@ export default function TripsPage() {
                 value={groupId}
                 onChange={(e) => setGroupId(e.target.value)}
                 required
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm text-[#2C3E50] shadow-sm focus:border-[#E94560] focus:outline-none focus:ring-1 focus:ring-[#E94560]/40"
               >
                 {groups.length === 0 ? (
                   <option value="">No groups — create one under Groups</option>
@@ -267,7 +267,7 @@ export default function TripsPage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm text-[#2C3E50] shadow-sm focus:border-[#E94560] focus:outline-none focus:ring-1 focus:ring-[#E94560]/40"
                 placeholder="Summer in Lisbon"
               />
             </div>
@@ -279,7 +279,7 @@ export default function TripsPage() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm text-[#2C3E50] shadow-sm focus:border-[#E94560] focus:outline-none focus:ring-1 focus:ring-[#E94560]/40"
               />
             </div>
             <div>
@@ -290,7 +290,7 @@ export default function TripsPage() {
                 type="date"
                 value={start}
                 onChange={(e) => setStart(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm text-[#2C3E50] shadow-sm focus:border-[#E94560] focus:outline-none focus:ring-1 focus:ring-[#E94560]/40"
               />
             </div>
             <div>
@@ -301,7 +301,7 @@ export default function TripsPage() {
                 type="date"
                 value={end}
                 onChange={(e) => setEnd(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm text-[#2C3E50] shadow-sm focus:border-[#E94560] focus:outline-none focus:ring-1 focus:ring-[#E94560]/40"
               />
             </div>
           </div>
@@ -317,7 +317,7 @@ export default function TripsPage() {
             <button
               type="submit"
               disabled={createBusy}
-              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60"
+              className="rounded-lg bg-[#E94560] px-4 py-2 text-sm font-medium text-white hover:opacity-95 disabled:opacity-60"
             >
               {createBusy ? "Creating…" : "Create & open"}
             </button>
@@ -328,7 +328,7 @@ export default function TripsPage() {
       {loading ? (
         <div className="mt-10 flex flex-col items-center gap-3 py-16">
           <div
-            className="h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900"
+            className="h-10 w-10 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
             aria-hidden
           />
           <p className="text-sm text-gray-600">Loading trips…</p>
@@ -339,7 +339,7 @@ export default function TripsPage() {
         </p>
       ) : trips.length === 0 ? (
         <div className="mt-16 flex flex-col items-center justify-center text-center">
-          <p className="text-lg font-medium text-gray-900">No trips yet</p>
+          <p className="text-lg font-medium text-[#0F3460]">No trips yet</p>
           <p className="mt-2 max-w-sm text-sm text-gray-600">
             Use <span className="font-medium">Create trip</span> above (pick a
             group first).
@@ -354,7 +354,7 @@ export default function TripsPage() {
                 className="flex flex-col gap-3 px-4 py-4 transition hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
-                  <p className="font-medium text-gray-900">{t.title}</p>
+                  <p className="font-medium text-[#2C3E50]">{t.title}</p>
                   <p className="mt-1 font-mono text-xs text-gray-500">{t.id}</p>
                   <p className="mt-1 text-sm text-gray-600">
                     {formatDate(t.start_date)} → {formatDate(t.end_date)}

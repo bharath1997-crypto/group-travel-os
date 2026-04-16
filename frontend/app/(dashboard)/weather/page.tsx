@@ -82,8 +82,8 @@ export default function WeatherPage() {
 
   return (
     <div className="p-6 md:p-8">
-      <h1 className="text-2xl font-semibold text-gray-900">Weather</h1>
-      <p className="mt-1 text-sm text-gray-600">
+      <h1 className="text-2xl font-semibold text-[#0F3460]">Weather</h1>
+      <p className="mt-1 text-sm text-[#6C757D]">
         Forecast for coordinates and date (requires pass_3day on your account).
       </p>
 
@@ -96,7 +96,7 @@ export default function WeatherPage() {
               setLat(String(p.lat));
               setLng(String(p.lng));
             }}
-            className="rounded-full border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-gray-50"
+            className="rounded-full border border-[#E9ECEF] bg-white px-3 py-1.5 text-sm font-medium text-[#2C3E50] hover:bg-[#F8F9FA]"
           >
             {p.label}
           </button>
@@ -104,7 +104,7 @@ export default function WeatherPage() {
       </div>
 
       <form
-        className="mt-6 max-w-md space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+        className="mt-6 max-w-md space-y-4 rounded-xl border border-[#E9ECEF] bg-white p-5 shadow-sm"
         onSubmit={(e) => {
           e.preventDefault();
           void submit();
@@ -158,7 +158,7 @@ export default function WeatherPage() {
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60"
+          className="rounded-lg bg-[#E94560] px-4 py-2 text-sm font-medium text-white hover:opacity-95 disabled:opacity-60"
         >
           {loading ? "Loading…" : "Get forecast"}
         </button>
@@ -179,34 +179,34 @@ export default function WeatherPage() {
       ) : null}
 
       {result ? (
-        <div className="mt-6 max-w-md rounded-xl border border-sky-100 bg-sky-50/80 p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900">Forecast</h2>
+        <div className="mt-6 max-w-md rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-[#0F3460]">Forecast</h2>
           <dl className="mt-3 grid gap-2 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-gray-600">Temperature</dt>
-              <dd className="font-medium text-gray-900">
+              <dd className="font-medium text-[#2C3E50]">
                 {result.temp_c.toFixed(1)} °C
               </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-gray-600">Feels like</dt>
-              <dd className="font-medium text-gray-900">
+              <dd className="font-medium text-[#2C3E50]">
                 {result.feels_like_c.toFixed(1)} °C
               </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-gray-600">Conditions</dt>
-              <dd className="font-medium capitalize text-gray-900">
+              <dd className="font-medium capitalize text-[#2C3E50]">
                 {result.description}
               </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-gray-600">Humidity</dt>
-              <dd className="font-medium text-gray-900">{result.humidity}%</dd>
+              <dd className="font-medium text-[#2C3E50]">{result.humidity}%</dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-gray-600">Wind</dt>
-              <dd className="font-medium text-gray-900">
+              <dd className="font-medium text-[#2C3E50]">
                 {result.wind_kph.toFixed(1)} km/h
               </dd>
             </div>

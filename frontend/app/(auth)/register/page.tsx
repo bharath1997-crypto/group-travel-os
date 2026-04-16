@@ -158,7 +158,7 @@ function RegisterPageInner() {
   return (
     <div className="flex min-h-svh flex-col bg-slate-100">
       <GradientHeader
-        gradient="linear-gradient(135deg, #FF6B35, #FF8E53, #FF6B9D)"
+        gradient="linear-gradient(135deg, #E94560, #FF6B6B, #FF6B9D)"
         title=""
         subtitle="Create your account"
         height={120}
@@ -273,7 +273,7 @@ function RegisterPageInner() {
           <button
             type="submit"
             disabled={isBusy}
-            className="mt-1 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#FF6B35] to-[#FF6B9D] py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-95 disabled:opacity-60"
+            className="mt-1 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#E94560] to-[#FF6B6B] py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-95 disabled:opacity-60"
           >
             {submitting ? (
               <>
@@ -321,7 +321,7 @@ export default function RegisterPage() {
     <Suspense
       fallback={
         <div className="flex min-h-svh items-center justify-center bg-slate-100">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#FF6B35] border-t-transparent" />
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#E94560] border-t-transparent" />
         </div>
       }
     >

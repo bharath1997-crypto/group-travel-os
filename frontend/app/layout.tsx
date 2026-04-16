@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   },
   description: "Group travel planning, trips, and coordination.",
   icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/icon-512.svg", sizes: "512x512", type: "image/svg+xml" }],
   },
 };

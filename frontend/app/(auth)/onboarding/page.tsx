@@ -9,7 +9,7 @@ const STORAGE_KEY = "travello_onboarded";
 
 const slides = [
   {
-    gradient: "linear-gradient(135deg, #FF6B35, #FF8E53)",
+    gradient: "linear-gradient(135deg, #E94560, #FF6B6B)",
     heading: "Plan trips together",
     subtext:
       "Create groups, add friends, and plan your perfect trip with everyone in one place",

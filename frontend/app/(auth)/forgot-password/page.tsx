@@ -43,7 +43,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="flex min-h-svh flex-col bg-slate-100">
       <GradientHeader
-        gradient="linear-gradient(135deg, #FF6B35, #FF8E53, #FF6B9D)"
+        gradient="linear-gradient(135deg, #E94560, #FF6B6B, #FF6B9D)"
         title=""
         subtitle={sent ? "We emailed you a link" : "Forgot Password?"}
         height={sent ? 100 : 120}
@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={busy}
-              className="mt-2 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#FF6B35] to-[#FF6B9D] py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-95 disabled:opacity-60"
+              className="mt-2 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#E94560] to-[#FF6B6B] py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-95 disabled:opacity-60"
             >
               {busy ? "Sending…" : "Send Reset Link"}
             </button>
@@ -99,7 +99,7 @@ export default function ForgotPasswordPage() {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="none"
-                className="h-20 w-20 text-[#FF6B35]"
+                className="h-20 w-20 text-[#E94560]"
                 aria-hidden
               >
                 <path

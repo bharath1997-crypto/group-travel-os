@@ -64,8 +64,8 @@ export default function FeedPage() {
 
   return (
     <div className="p-6 md:p-8">
-      <h1 className="text-2xl font-semibold text-gray-900">Feed</h1>
-      <p className="mt-1 text-sm text-gray-600">Trending destinations</p>
+      <h1 className="text-2xl font-semibold text-[#0F3460]">Feed</h1>
+      <p className="mt-1 text-sm text-[#6C757D]">Trending destinations</p>
 
       <div className="mt-6 flex flex-wrap gap-2">
         {FILTERS.map(({ label, value }) => {
@@ -78,8 +78,8 @@ export default function FeedPage() {
               onClick={() => setCategory(value)}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
                 selected
-                  ? "bg-gray-900 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  ? "bg-[#E94560] text-white"
+                  : "bg-[#F8F9FA] text-[#6C757D] hover:bg-[#E9ECEF]"
               }`}
             >
               {label}
@@ -91,7 +91,7 @@ export default function FeedPage() {
       {loading ? (
         <div className="mt-10 flex flex-col items-center gap-3 py-16">
           <div
-            className="h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900"
+            className="h-10 w-10 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
             aria-hidden
           />
           <p className="text-sm text-gray-600">Loading destinations…</p>
@@ -105,11 +105,11 @@ export default function FeedPage() {
           {(data?.items ?? []).map((d) => (
             <article
               key={d.id}
-              className="flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+              className="flex flex-col rounded-xl border border-[#E9ECEF] bg-white p-5 shadow-sm"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
+                  <h2 className="text-lg font-semibold text-[#0F3460]">
                     {d.name}
                   </h2>
                   <p className="text-sm text-gray-600">{d.country}</p>
@@ -121,13 +121,13 @@ export default function FeedPage() {
               <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
                 <div>
                   <dt className="text-gray-500">Trending</dt>
-                  <dd className="font-medium text-gray-900">
+                  <dd className="font-medium text-[#2C3E50]">
                     {d.trending_score.toFixed(1)}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-gray-500">Avg / day</dt>
-                  <dd className="font-medium text-gray-900">
+                  <dd className="font-medium text-[#2C3E50]">
                     {d.avg_cost_per_day != null
                       ? `$${d.avg_cost_per_day.toFixed(0)}`
                       : "—"}

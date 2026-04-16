@@ -142,7 +142,7 @@ function CompanionChip({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-full ring-2 ring-gray-200 transition hover:ring-violet-400"
+      className="rounded-full ring-2 ring-[#E9ECEF] transition hover:ring-[#E94560]/40"
       title={fullName}
     >
       <Avatar name={fullName} src={avatarUrl} size={40} />
@@ -268,7 +268,7 @@ export default function DashboardPage() {
     return (
       <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 p-8">
         <div
-          className="h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900"
+          className="h-10 w-10 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
           aria-hidden
         />
         <p className="text-sm text-gray-600">Loading your dashboard…</p>
@@ -311,7 +311,7 @@ export default function DashboardPage() {
       />
 
       {/* Hero */}
-      <section className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-amber-50/40 px-6 py-8 shadow-sm">
+      <section className="rounded-2xl border border-[#E9ECEF] bg-gradient-to-br from-[#F8F9FA] via-white to-[#fff0f3]/30 px-6 py-8 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <Avatar
@@ -322,10 +322,10 @@ export default function DashboardPage() {
               }
               src={me?.avatar_url}
               size={56}
-              className="ring-2 ring-violet-200/80 ring-offset-2 ring-offset-white"
+              className="ring-2 ring-[#E94560]/20 ring-offset-2 ring-offset-white"
             />
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-gray-900 md:text-3xl">
+              <h1 className="text-2xl font-semibold tracking-tight text-[#0F3460] md:text-3xl">
                 Hey {firstName(me?.full_name ?? "")}! 👋 Ready for your next
                 adventure?
               </h1>
@@ -346,20 +346,20 @@ export default function DashboardPage() {
 
       {/* Streak + companions */}
       <section className="mt-8 grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-orange-100 bg-orange-50/60 p-5 shadow-sm">
+        <div className="rounded-xl border border-[#E9ECEF] bg-white p-5 shadow-sm">
           <p className="text-4xl" aria-hidden>
             🔥
           </p>
-          <p className="mt-2 text-3xl font-bold tabular-nums text-gray-900">
+          <p className="mt-2 text-3xl font-bold tabular-nums text-[#2C3E50]">
             {streakN}
           </p>
-          <p className="mt-1 text-sm font-medium text-orange-900/80">
+          <p className="mt-1 text-sm font-medium text-[#E94560]">
             trip streak
           </p>
           <p className="mt-3 text-sm text-gray-700">{streakCopy(streakN)}</p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-900">Companions</h2>
+        <div className="rounded-xl border border-[#E9ECEF] bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold text-[#0F3460]">Companions</h2>
           <p className="mt-1 text-xs text-gray-500">
             People you travel with across your groups
           </p>
@@ -382,29 +382,29 @@ export default function DashboardPage() {
 
       {/* Quick actions */}
       <section className="mt-8">
-        <h2 className="text-sm font-semibold text-gray-900">Quick actions</h2>
+        <h2 className="text-sm font-semibold text-[#0F3460]">Quick actions</h2>
         <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
           <Link
             href="/groups"
-            className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-center text-sm font-medium text-gray-900 shadow-sm transition hover:border-violet-200 hover:bg-violet-50"
+            className="rounded-xl border border-[#E9ECEF] bg-white px-4 py-3 text-center text-sm font-medium text-[#2C3E50] shadow-sm transition hover:border-[#E94560]/30 hover:bg-[#fff0f3]/80"
           >
             + New Trip →
           </Link>
           <Link
             href="/groups"
-            className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-center text-sm font-medium text-gray-900 shadow-sm transition hover:border-violet-200 hover:bg-violet-50"
+            className="rounded-xl border border-[#E9ECEF] bg-white px-4 py-3 text-center text-sm font-medium text-[#2C3E50] shadow-sm transition hover:border-[#E94560]/30 hover:bg-[#fff0f3]/80"
           >
             + New Group →
           </Link>
           <Link
             href="/weather"
-            className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-center text-sm font-medium text-gray-900 shadow-sm transition hover:border-sky-200 hover:bg-sky-50"
+            className="rounded-xl border border-[#E9ECEF] bg-white px-4 py-3 text-center text-sm font-medium text-[#2C3E50] shadow-sm transition hover:border-[#E94560]/30 hover:bg-[#fff0f3]/80"
           >
             🌤 Weather →
           </Link>
           <Link
             href="/feed"
-            className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-center text-sm font-medium text-gray-900 shadow-sm transition hover:border-amber-200 hover:bg-amber-50"
+            className="rounded-xl border border-[#E9ECEF] bg-white px-4 py-3 text-center text-sm font-medium text-[#2C3E50] shadow-sm transition hover:border-[#E94560]/30 hover:bg-[#fff0f3]/80"
           >
             🔍 Explore Feed →
           </Link>
@@ -413,15 +413,15 @@ export default function DashboardPage() {
 
       {/* Upcoming trip */}
       <section className="mt-8">
-        <h2 className="text-sm font-semibold text-gray-900">Upcoming trip</h2>
-        <div className="mt-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="text-sm font-semibold text-[#0F3460]">Upcoming trip</h2>
+        <div className="mt-3 rounded-xl border border-[#E9ECEF] bg-white p-5 shadow-sm">
           {!upcoming ? (
             <p className="text-sm text-gray-600">
               No trips planned yet — create one!
             </p>
           ) : (
             <>
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-lg font-semibold text-[#2C3E50]">
                 {upcoming.trip.title}
               </p>
               <p className="mt-1 text-sm text-gray-600">
@@ -438,7 +438,7 @@ export default function DashboardPage() {
                   {upcoming.trip.status.replace("_", " ")}
                 </span>
                 {upcoming.mode === "ongoing" ? (
-                  <span className="text-sm font-medium text-amber-800">
+                  <span className="text-sm font-medium text-[#E94560]">
                     Ongoing!
                   </span>
                 ) : (
@@ -461,8 +461,8 @@ export default function DashboardPage() {
 
       {/* Trending */}
       <section className="mt-8">
-        <h2 className="text-sm font-semibold text-gray-900">Trending now</h2>
-        <div className="dash-marquee-wrap mt-3 overflow-hidden rounded-xl border border-gray-200 bg-gray-50 py-3">
+        <h2 className="text-sm font-semibold text-[#0F3460]">Trending now</h2>
+        <div className="dash-marquee-wrap mt-3 overflow-hidden rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] py-3">
           {dupTrending.length === 0 ? (
             <p className="px-4 text-sm text-gray-500">No trending data.</p>
           ) : (
@@ -470,11 +470,11 @@ export default function DashboardPage() {
               {dupTrending.map((d, i) => (
                 <div
                   key={`${d.id}-${i}`}
-                  className="w-[200px] shrink-0 rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
+                  className="w-[200px] shrink-0 rounded-lg border border-[#E9ECEF] bg-white p-3 shadow-sm"
                 >
-                  <p className="font-medium text-gray-900">{d.name}</p>
+                  <p className="font-medium text-[#2C3E50]">{d.name}</p>
                   <p className="text-xs text-gray-500">{d.country}</p>
-                  <span className="mt-2 inline-block rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-900">
+                  <span className="mt-2 inline-block rounded-full bg-[#0F3460]/10 px-2 py-0.5 text-xs font-medium text-[#0F3460]">
                     {d.category}
                   </span>
                   <p className="mt-2 text-xs text-gray-600">
@@ -508,17 +508,17 @@ export default function DashboardPage() {
           aria-modal="true"
           aria-labelledby="companion-modal-title"
         >
-          <div className="max-w-sm rounded-2xl border border-gray-200 bg-white p-6 shadow-xl">
+          <div className="max-w-sm rounded-2xl border border-[#E9ECEF] bg-white p-6 shadow-xl">
             <div className="flex flex-col items-center">
               <Avatar
                 name={modalCompanion.full_name}
                 src={modalCompanion.avatar_url}
                 size={48}
-                className="ring-2 ring-violet-200"
+                className="ring-2 ring-[#E94560]/25"
               />
               <h3
                 id="companion-modal-title"
-                className="mt-4 text-lg font-semibold text-gray-900"
+                className="mt-4 text-lg font-semibold text-[#0F3460]"
               >
                 {modalCompanion.full_name}
               </h3>
@@ -545,7 +545,7 @@ export default function DashboardPage() {
                 }
                 className={`rounded-lg py-2 text-center text-sm font-medium ${
                   modalCompanion.email
-                    ? "bg-gray-900 text-white hover:bg-gray-800"
+                    ? "bg-[#E94560] text-white hover:opacity-95"
                     : "cursor-not-allowed bg-gray-100 text-gray-400"
                 }`}
               >
@@ -567,7 +567,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setModalCompanion(null)}
-                className="mt-2 rounded-lg bg-gray-900 py-2 text-sm font-medium text-white hover:bg-gray-800"
+                className="mt-2 rounded-lg bg-[#E94560] py-2 text-sm font-medium text-white hover:opacity-95"
               >
                 Close
               </button>

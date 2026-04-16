@@ -38,7 +38,7 @@ export default function Home() {
     <div
       className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6"
       style={{
-        background: "linear-gradient(135deg, #FF6B35, #FF8E53, #FF6B9D)",
+        background: "linear-gradient(135deg, #E94560, #FF6B6B, #FF6B9D)",
       }}
     >
       <style

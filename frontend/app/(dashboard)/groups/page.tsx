@@ -103,7 +103,7 @@ export default function GroupsIndexPage() {
     <div className="p-6 md:p-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Groups</h1>
+          <h1 className="text-2xl font-semibold text-[#0F3460]">Groups</h1>
           <p className="mt-1 text-sm text-gray-600">
             Select a group on the left to see details, or create a new one.
           </p>
@@ -114,7 +114,7 @@ export default function GroupsIndexPage() {
             setShowCreateForm(true);
             setCreateError(null);
           }}
-          className="shrink-0 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+          className="shrink-0 rounded-lg bg-[#E94560] px-4 py-2.5 text-sm font-medium text-white hover:opacity-95"
         >
           Create Group
         </button>
@@ -125,7 +125,7 @@ export default function GroupsIndexPage() {
           onSubmit={handleCreateGroup}
           className="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
         >
-          <h2 className="text-sm font-semibold text-gray-900">New group</h2>
+          <h2 className="text-sm font-semibold text-[#0F3460]">New group</h2>
           <div className="mt-4 space-y-3">
             <div>
               <label
@@ -140,7 +140,7 @@ export default function GroupsIndexPage() {
                 onChange={(e) => setCreateName(e.target.value)}
                 required
                 autoComplete="off"
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm text-[#2C3E50] shadow-sm focus:border-[#E94560] focus:outline-none focus:ring-1 focus:ring-[#E94560]/40"
                 placeholder="Trip crew, family reunion…"
               />
             </div>
@@ -156,7 +156,7 @@ export default function GroupsIndexPage() {
                 value={createDescription}
                 onChange={(e) => setCreateDescription(e.target.value)}
                 rows={3}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm text-[#2C3E50] shadow-sm focus:border-[#E94560] focus:outline-none focus:ring-1 focus:ring-[#E94560]/40"
                 placeholder="What’s this group for?"
               />
             </div>
@@ -187,7 +187,7 @@ export default function GroupsIndexPage() {
       {loading ? (
         <div className="mt-10 flex flex-col items-center gap-3 py-16">
           <div
-            className="h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900"
+            className="h-10 w-10 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
             aria-hidden
           />
           <p className="text-sm text-gray-600">Loading…</p>
@@ -198,7 +198,7 @@ export default function GroupsIndexPage() {
         </p>
       ) : groups.length === 0 ? (
         <div className="mt-16 text-center">
-          <p className="text-lg font-medium text-gray-900">No groups yet</p>
+          <p className="text-lg font-medium text-[#0F3460]">No groups yet</p>
           <p className="mt-2 text-sm text-gray-600">
             Create a group above, or join with an invite code from the app.
           </p>
@@ -218,7 +218,7 @@ export default function GroupsIndexPage() {
                 >
                   <Avatar name={g.name} size={36} />
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900">{g.name}</p>
+                    <p className="font-medium text-[#2C3E50]">{g.name}</p>
                     <button
                       type="button"
                       onClick={(e) => {

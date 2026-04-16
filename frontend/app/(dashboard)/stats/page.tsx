@@ -78,13 +78,13 @@ export default function StatsPage() {
 
   return (
     <div className="p-6 md:p-8">
-      <h1 className="text-2xl font-semibold text-gray-900">My Stats</h1>
-      <p className="mt-1 text-sm text-gray-600">Your activity overview</p>
+      <h1 className="text-2xl font-semibold text-[#0F3460]">My Stats</h1>
+      <p className="mt-1 text-sm text-[#6C757D]">Your activity overview</p>
 
       {loading ? (
         <div className="mt-10 flex flex-col items-center gap-3 py-16">
           <div
-            className="h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900"
+            className="h-10 w-10 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
             aria-hidden
           />
           <p className="text-sm text-gray-600">Loading…</p>
@@ -113,9 +113,9 @@ export default function StatsPage() {
             {statCards.map(({ key, label }) => (
               <div
                 key={key}
-                className="rounded-xl border border-gray-200 bg-gray-50/80 px-5 py-6 shadow-sm"
+                className="rounded-xl border border-[#E9ECEF] bg-white px-5 py-6 shadow-sm"
               >
-                <p className="text-3xl font-semibold tabular-nums text-gray-900">
+                <p className="text-3xl font-semibold tabular-nums text-[#0F3460]">
                   {stats?.[key] ?? 0}
                 </p>
                 <p className="mt-2 text-sm font-medium text-gray-600">

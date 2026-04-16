@@ -8,7 +8,7 @@ import { AuthInput } from "@/components/auth/AuthInput";
 import { GradientHeader } from "@/components/auth/GradientHeader";
 import { apiFetch } from "@/lib/api";
 
-const ORANGE_GRADIENT = "linear-gradient(135deg, #FF6B35, #FF8E53)";
+const ORANGE_GRADIENT = "linear-gradient(135deg, #E94560, #FF6B6B)";
 const GREEN_GRADIENT = "linear-gradient(135deg, #11998e, #38ef7d)";
 
 function LockIcon() {
@@ -116,7 +116,7 @@ function ResetPasswordInner() {
           </p>
           <Link
             href="/forgot-password"
-            className="mt-6 flex min-h-[48px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#FF6B35] to-[#FF8E53] py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-95"
+            className="mt-6 flex min-h-[48px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#E94560] to-[#FF6B6B] py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-95"
           >
             Request a new link
           </Link>
@@ -244,7 +244,7 @@ function ResetPasswordInner() {
           <button
             type="submit"
             disabled={submitting}
-            className="mt-1 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#FF6B35] to-[#FF8E53] py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-95 disabled:opacity-60"
+            className="mt-1 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#E94560] to-[#FF6B6B] py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-95 disabled:opacity-60"
           >
             {submitting ? "Resetting…" : "Reset Password"}
           </button>
@@ -259,7 +259,7 @@ export default function ResetPasswordPage() {
     <Suspense
       fallback={
         <div className="flex min-h-svh flex-col items-center justify-center bg-slate-100">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#FF6B35] border-t-transparent" aria-hidden />
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#E94560] border-t-transparent" aria-hidden />
           <p className="mt-3 text-sm text-[#1E3A5F]/70">Loading…</p>
         </div>
       }

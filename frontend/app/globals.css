@@ -3,6 +3,17 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --color-primary: #0f3460;
+  --color-accent: #e94560;
+  --color-accent-hover: #c73652;
+  --color-accent-light: #fff0f3;
+  --color-bg: #f8f9fa;
+  --color-card: #ffffff;
+  --color-text: #2c3e50;
+  --color-text-muted: #6c757d;
+  --color-success: #2ecc71;
+  --color-border: #e9ecef;
+  --color-sidebar: #0f3460;
 }
 
 @theme inline {
