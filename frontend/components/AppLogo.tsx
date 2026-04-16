@@ -20,7 +20,7 @@ export function AppLogo({
     // eslint-disable-next-line @next/next/no-img-element -- local SVG wordmarks
     <img
       src={SRC[variant]}
-      alt="Group Travel OS"
+      alt="Travello"
       width={200}
       height={48}
       className={className}

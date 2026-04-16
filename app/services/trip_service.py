@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.models.group import GroupMember, MemberRole
 from app.models.trip import Trip, TripStatus
+from app.models.trip_roster import TripRoster
 from app.models.user import User
 from app.utils.exceptions import AppException
 
@@ -183,3 +184,32 @@ class TripService:
         db.refresh(trip)
         logger.info("Trip %s status -> %s", trip.id, new_status.value)
         return trip
+
+    @staticmethod
+    def set_roster_note(
+        db: Session,
+        trip_id: uuid.UUID,
+        user_id: uuid.UUID,
+        note: str | None,
+    ) -> None:
+        trip = db.execute(select(Trip).where(Trip.id == trip_id)).scalar_one_or_none()
+        if not trip:
+            AppException.not_found("Trip not found")
+
+        TripService._verify_membership(db, trip.group_id, user_id)
+
+        cleaned = (note or "").strip() or None
+        row = db.execute(
+            select(TripRoster).where(
+                TripRoster.trip_id == trip_id,
+                TripRoster.user_id == user_id,
+            )
+        ).scalar_one_or_none()
+        if cleaned:
+            if row:
+                row.note = cleaned
+            else:
+                db.add(TripRoster(trip_id=trip_id, user_id=user_id, note=cleaned))
+        elif row:
+            db.delete(row)
+        db.commit()

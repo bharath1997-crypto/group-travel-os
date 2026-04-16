@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { dicebearAvatarSvgUrl } from "@/lib/dicebearAvatar";
 
 const FALLBACK_COLORS = [
   "#3B82F6",
@@ -27,11 +29,21 @@ export type AvatarProps = {
   name: string;
   size?: number;
   className?: string;
+  /** Profile photo URL when set; falls back to generated avatar on error */
+  src?: string | null;
 };
 
-export function Avatar({ name, size = 40, className = "" }: AvatarProps) {
+export function Avatar({ name, size = 40, className = "", src: srcProp }: AvatarProps) {
+  const [photoFailed, setPhotoFailed] = useState(false);
   const [failed, setFailed] = useState(false);
-  const src = `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(name)}`;
+  const photo = srcProp?.trim();
+  const generated = dicebearAvatarSvgUrl(name);
+  const src = photo && !photoFailed ? photo : generated;
+
+  useEffect(() => {
+    setPhotoFailed(false);
+    setFailed(false);
+  }, [name, srcProp]);
 
   if (failed) {
     return (
@@ -58,7 +70,10 @@ export function Avatar({ name, size = 40, className = "" }: AvatarProps) {
       width={size}
       height={size}
       className={`shrink-0 rounded-full border-2 border-white object-cover shadow-sm ${className}`}
-      onError={() => setFailed(true)}
+      onError={() => {
+        if (photo && !photoFailed) setPhotoFailed(true);
+        else setFailed(true);
+      }}
     />
   );
 }

@@ -83,3 +83,13 @@ class Trip(Base):
         back_populates="trip",
         cascade="all, delete-orphan",
     )
+    roster_entries: Mapped[list["TripRoster"]] = relationship(
+        "TripRoster",
+        back_populates="trip",
+        cascade="all, delete-orphan",
+    )
+    join_requests: Mapped[list["TripJoinRequest"]] = relationship(
+        "TripJoinRequest",
+        back_populates="trip",
+        cascade="all, delete-orphan",
+    )

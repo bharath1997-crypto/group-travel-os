@@ -97,6 +97,10 @@ class GroupMember(Base):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
+    last_seen_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     group: Mapped[Group] = relationship("Group", back_populates="members")
     user: Mapped["User"] = relationship("User", back_populates="group_memberships")

@@ -21,6 +21,9 @@ type GroupMemberOut = {
   avatar_url: string | null;
   role: string;
   joined_at: string;
+  last_seen_at?: string | null;
+  is_online?: boolean;
+  has_mobile_app?: boolean;
 };
 
 type GroupOut = {
@@ -362,10 +365,51 @@ export default function GroupDetailPage() {
         </p>
       ) : group ? (
         <>
-          <header className="mt-6 border-b border-gray-200 pb-6">
+          <section className="mt-6">
+            <h2 className="text-lg font-semibold text-gray-900">Members</h2>
+            <p className="mt-1 text-xs text-gray-500">
+              Green: active on the website recently. Red: inactive. App icon:
+              mobile app logged in.
+            </p>
+            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+              {group.members.map((m) => (
+                <li
+                  key={m.id}
+                  className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm"
+                >
+                  <span className="relative shrink-0">
+                    <Avatar name={m.full_name} src={m.avatar_url} size={36} />
+                    <span
+                      className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white ${
+                        m.is_online ? "bg-emerald-500" : "bg-red-400"
+                      }`}
+                      title={m.is_online ? "Active on site" : "Inactive"}
+                    />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-gray-900">
+                      {m.full_name}
+                    </p>
+                    <p className="text-xs text-gray-500 capitalize">{m.role}</p>
+                  </div>
+                  {m.has_mobile_app ? (
+                    <span className="text-base" title="Mobile app connected">
+                      📱
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <header className="mt-10 border-b border-gray-200 pb-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex flex-wrap items-start gap-3">
-                <Avatar name={creatorSeed} size={36} />
+                <Avatar
+                  name={creatorSeed}
+                  src={creatorMember?.avatar_url ?? null}
+                  size={36}
+                />
                 <div>
                   <h1 className="text-2xl font-semibold text-gray-900">
                     {group.name}
@@ -601,21 +645,26 @@ export default function GroupDetailPage() {
           ) : (
             <ul className="mt-6 divide-y divide-gray-200 rounded-xl border border-gray-200 bg-white">
               {trips.map((t) => (
-                <li
-                  key={t.id}
-                  className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <p className="font-medium text-gray-900">{t.title}</p>
-                    <p className="mt-1 text-sm text-gray-600">
-                      {formatDate(t.start_date)} → {formatDate(t.end_date)}
-                    </p>
-                  </div>
-                  <span
-                    className={`inline-flex w-fit shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusBadgeClass(t.status)}`}
+                <li key={t.id}>
+                  <Link
+                    href={`/trips/${t.id}`}
+                    className="flex flex-col gap-3 px-4 py-4 transition hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    {t.status.replace("_", " ")}
-                  </span>
+                    <div>
+                      <p className="font-medium text-gray-900">{t.title}</p>
+                      <p className="mt-1 font-mono text-xs text-gray-500">
+                        {t.id}
+                      </p>
+                      <p className="mt-1 text-sm text-gray-600">
+                        {formatDate(t.start_date)} → {formatDate(t.end_date)}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex w-fit shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusBadgeClass(t.status)}`}
+                    >
+                      {t.status.replace("_", " ")}
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>

@@ -111,6 +111,21 @@ class Settings(BaseSettings):
         default=None, validation_alias="FACEBOOK_APP_SECRET"
     )
 
+    # ── Email (verification, transactional) ─────────────────────────────────
+    SMTP_HOST: str | None = Field(default=None, validation_alias="SMTP_HOST")
+    SMTP_PORT: int = Field(default=587, validation_alias="SMTP_PORT")
+    SMTP_USER: str | None = Field(default=None, validation_alias="SMTP_USER")
+    SMTP_PASSWORD: str | None = Field(default=None, validation_alias="SMTP_PASSWORD")
+    SMTP_FROM_EMAIL: str | None = Field(
+        default=None,
+        validation_alias="SMTP_FROM_EMAIL",
+        description="From address for verification and system mail.",
+    )
+    EMAIL_VERIFICATION_TOKEN_HOURS: int = Field(
+        default=48,
+        validation_alias="EMAIL_VERIFICATION_TOKEN_HOURS",
+    )
+
     @field_validator(
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",

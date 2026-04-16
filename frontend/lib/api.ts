@@ -40,11 +40,55 @@ export async function apiFetch<T = unknown>(
   const url = `${API_BASE}${normalized}`;
 
   const headers = new Headers(options.headers);
-  headers.set("Content-Type", "application/json");
+  const method = (options.method ?? "GET").toUpperCase();
+  const hasBody =
+    options.body !== undefined &&
+    options.body !== null &&
+    options.body !== "";
+  if (
+    hasBody &&
+    !headers.has("Content-Type") &&
+    ["POST", "PUT", "PATCH", "DELETE"].includes(method)
+  ) {
+    headers.set("Content-Type", "application/json");
+  }
 
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("gt_token");
     if (token) headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const res = await fetch(url, { ...options, headers });
+
+  if (!res.ok) {
+    const message = await errorMessageFromResponse(res);
+    throw new Error(message);
+  }
+
+  if (res.status === 204) return undefined as T;
+
+  return res.json() as Promise<T>;
+}
+
+/** GET (and optional future public methods) without sending auth — for share links. */
+export async function apiFetchPublic<T = unknown>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  const url = `${API_BASE}${normalized}`;
+  const headers = new Headers(options.headers);
+  const method = (options.method ?? "GET").toUpperCase();
+  const hasBody =
+    options.body !== undefined &&
+    options.body !== null &&
+    options.body !== "";
+  if (
+    hasBody &&
+    !headers.has("Content-Type") &&
+    ["POST", "PUT", "PATCH", "DELETE"].includes(method)
+  ) {
+    headers.set("Content-Type", "application/json");
   }
 
   const res = await fetch(url, { ...options, headers });

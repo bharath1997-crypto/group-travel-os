@@ -12,6 +12,7 @@ import logging
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -20,14 +21,23 @@ from config import settings
 from app.models.user import User
 from app.schemas.auth import (
     ChangePasswordRequest,
+    ForgotPasswordRequest,
+    PhoneSendRequest,
+    PhoneVerifyRequest,
     RegisterResponse,
     TokenResponse,
     UserCreate,
     UserLogin,
     UserOut,
     UserUpdate,
+    build_user_out,
 )
 from app.services.auth_service import AuthService
+from app.services.presence_service import PresenceService
+from app.services.email_verification_service import (
+    confirm_verification_token,
+    request_verification_email,
+)
 from app.services.oauth_service import (
     complete_facebook,
     complete_google,
@@ -43,14 +53,40 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
+class ResetPasswordBody(BaseModel):
+    """Body for POST /auth/reset-password (defined here to keep routes self-contained)."""
+
+    token: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8, max_length=100)
+
+
 def _frontend() -> str:
     return settings.FRONTEND_URL.rstrip("/")
 
 
+def _normalize_oauth_start_intent(intent: str | None) -> str:
+    """Maps query intent to internal oauth_intent: login | signup."""
+    if not intent:
+        return "login"
+    i = intent.lower().strip()
+    if i in ("signup", "register"):
+        return "signup"
+    return "login"
+
+
+def _oauth_detail_str(exc: HTTPException) -> str:
+    d = exc.detail
+    if isinstance(d, str):
+        return d
+    return str(d)
+
+
 @router.get("/oauth/google/start", summary="Redirect to Google OAuth")
-def oauth_google_start():
+def oauth_google_start(intent: str = "login"):
+    """intent=login: existing accounts only. intent=signup|register: create account if needed."""
+    oauth_intent = _normalize_oauth_start_intent(intent)
     return RedirectResponse(
-        google_authorize_url(),
+        google_authorize_url(oauth_intent=oauth_intent),
         status_code=status.HTTP_302_FOUND,
     )
 
@@ -68,25 +104,48 @@ def oauth_google_callback(
     if not code or not state:
         return RedirectResponse(f"{fe}/auth/callback?oauth_error=missing_params")
     try:
-        verify_oauth_state(state, "google")
-        _user, token, exp = complete_google(db, code)
+        oauth_intent = verify_oauth_state(state, "google")
     except HTTPException as e:
         return RedirectResponse(
-            f"{fe}/auth/callback?oauth_error={quote(str(e.detail))}"
+            f"{fe}/auth/callback?oauth_error={quote(_oauth_detail_str(e))}"
+        )
+    except Exception:
+        logger.exception("Google OAuth state verification failed")
+        return RedirectResponse(f"{fe}/auth/callback?oauth_error=invalid_state")
+
+    try:
+        _user, token, exp, created_new = complete_google(
+            db, code, oauth_intent=oauth_intent
+        )
+    except HTTPException as e:
+        return RedirectResponse(
+            f"{fe}/auth/callback?oauth_error={quote(_oauth_detail_str(e))}"
+            f"&oauth_intent={quote(oauth_intent)}"
         )
     except Exception:
         logger.exception("Google OAuth callback failed")
-        return RedirectResponse(f"{fe}/auth/callback?oauth_error=server")
+        return RedirectResponse(
+            f"{fe}/auth/callback?oauth_error=server&oauth_intent={quote(oauth_intent)}"
+        )
+    parts = [
+        f"access_token={quote(token)}",
+        f"expires_in={int(exp)}",
+        f"oauth_intent={quote(oauth_intent)}",
+    ]
+    if oauth_intent == "signup" and created_new:
+        parts.append("oauth_new_user=1")
+    q = "&".join(parts)
     return RedirectResponse(
-        f"{fe}/auth/callback?access_token={quote(token)}&expires_in={int(exp)}",
+        f"{fe}/auth/callback?{q}",
         status_code=status.HTTP_302_FOUND,
     )
 
 
 @router.get("/oauth/facebook/start", summary="Redirect to Facebook OAuth")
-def oauth_facebook_start():
+def oauth_facebook_start(intent: str = "login"):
+    oauth_intent = _normalize_oauth_start_intent(intent)
     return RedirectResponse(
-        facebook_authorize_url(),
+        facebook_authorize_url(oauth_intent=oauth_intent),
         status_code=status.HTTP_302_FOUND,
     )
 
@@ -106,17 +165,39 @@ def oauth_facebook_callback(
     if not code or not state:
         return RedirectResponse(f"{fe}/auth/callback?oauth_error=missing_params")
     try:
-        verify_oauth_state(state, "facebook")
-        _user, token, exp = complete_facebook(db, code)
+        oauth_intent = verify_oauth_state(state, "facebook")
     except HTTPException as e:
         return RedirectResponse(
-            f"{fe}/auth/callback?oauth_error={quote(str(e.detail))}"
+            f"{fe}/auth/callback?oauth_error={quote(_oauth_detail_str(e))}"
+        )
+    except Exception:
+        logger.exception("Facebook OAuth state verification failed")
+        return RedirectResponse(f"{fe}/auth/callback?oauth_error=invalid_state")
+
+    try:
+        _user, token, exp, created_new = complete_facebook(
+            db, code, oauth_intent=oauth_intent
+        )
+    except HTTPException as e:
+        return RedirectResponse(
+            f"{fe}/auth/callback?oauth_error={quote(_oauth_detail_str(e))}"
+            f"&oauth_intent={quote(oauth_intent)}"
         )
     except Exception:
         logger.exception("Facebook OAuth callback failed")
-        return RedirectResponse(f"{fe}/auth/callback?oauth_error=server")
+        return RedirectResponse(
+            f"{fe}/auth/callback?oauth_error=server&oauth_intent={quote(oauth_intent)}"
+        )
+    parts = [
+        f"access_token={quote(token)}",
+        f"expires_in={int(exp)}",
+        f"oauth_intent={quote(oauth_intent)}",
+    ]
+    if oauth_intent == "signup" and created_new:
+        parts.append("oauth_new_user=1")
+    q = "&".join(parts)
     return RedirectResponse(
-        f"{fe}/auth/callback?access_token={quote(token)}&expires_in={int(exp)}",
+        f"{fe}/auth/callback?{q}",
         status_code=status.HTTP_302_FOUND,
     )
 
@@ -133,7 +214,7 @@ def register(data: UserCreate, db: Session = Depends(get_db)):
         data,
     )
     return RegisterResponse(
-        user=UserOut.model_validate(user),
+        user=build_user_out(user),
         token=TokenResponse(access_token=token, expires_in=expires_in),
     )
 
@@ -146,7 +227,7 @@ def register(data: UserCreate, db: Session = Depends(get_db)):
 def login(data: UserLogin, db: Session = Depends(get_db)):
     user, token, expires_in = AuthService.login(db, data.email, data.password)
     return RegisterResponse(
-        user=UserOut.model_validate(user),
+        user=build_user_out(user),
         token=TokenResponse(access_token=token, expires_in=expires_in),
     )
 
@@ -157,7 +238,7 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
     summary="Get current user profile",
 )
 def get_me(current_user: User = Depends(get_current_user)):
-    return UserOut.model_validate(AuthService.get_profile(current_user))
+    return build_user_out(AuthService.get_profile(current_user))
 
 
 @router.patch(
@@ -171,7 +252,19 @@ def update_me(
     current_user: User = Depends(get_current_user),
 ):
     user = AuthService.update_profile(db, current_user, data)
-    return UserOut.model_validate(user)
+    return build_user_out(user)
+
+
+@router.post(
+    "/presence",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Record web presence for group memberships (last seen)",
+)
+def post_presence(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    PresenceService.touch_web_presence(db, current_user.id)
 
 
 @router.post(
@@ -186,3 +279,84 @@ def change_password(
 ):
     AuthService.change_password(db, current_user, data)
     return {"message": "Password changed successfully"}
+
+
+@router.post(
+    "/send-verification-email",
+    status_code=status.HTTP_200_OK,
+    summary="Send or resend email verification link",
+)
+def send_verification_email_route(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    request_verification_email(db, current_user)
+    return {"message": "Verification email sent"}
+
+
+@router.get(
+    "/verify-email/confirm",
+    summary="Confirm email from inbox link; redirects to the app",
+)
+def verify_email_confirm(
+    token: str | None = None,
+    db: Session = Depends(get_db),
+):
+    fe = _frontend()
+    if not token:
+        return RedirectResponse(f"{fe}/verify-email?error=missing_token")
+    try:
+        confirm_verification_token(db, token.strip())
+    except HTTPException:
+        return RedirectResponse(f"{fe}/verify-email?error=invalid_or_expired")
+    return RedirectResponse(f"{fe}/verify-email?verified=1")
+
+
+@router.post(
+    "/forgot-password",
+    status_code=status.HTTP_200_OK,
+    summary="Request a password reset email",
+)
+def forgot_password(
+    data: ForgotPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    """Always returns success to avoid leaking whether an email is registered."""
+    AuthService.request_password_reset(db, str(data.email))
+    return {
+        "message": "If an account exists for that email, we've sent a reset link.",
+    }
+
+
+@router.post(
+    "/reset-password",
+    status_code=status.HTTP_200_OK,
+    summary="Complete password reset using token from email",
+)
+def reset_password(data: ResetPasswordBody, db: Session = Depends(get_db)):
+    AuthService.reset_password_with_token(db, data.token, data.new_password)
+    return {"message": "Password has been reset successfully."}
+
+
+@router.post(
+    "/phone/send",
+    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+    summary="Send phone OTP (not implemented)",
+)
+def phone_send_otp_stub(_data: PhoneSendRequest):
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Phone OTP is not available yet.",
+    )
+
+
+@router.post(
+    "/phone/verify",
+    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+    summary="Verify phone OTP (not implemented)",
+)
+def phone_verify_otp_stub(_data: PhoneVerifyRequest):
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Phone OTP is not available yet.",
+    )

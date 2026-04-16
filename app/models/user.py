@@ -7,10 +7,10 @@ No relationships defined here yet — added incrementally as other models are bu
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, Date, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from app.models.location import Location
     from app.models.poll import Vote
     from app.models.trip import Trip
+    from app.models.trip_roster import TripRoster
 
 
 class User(Base):
@@ -71,6 +72,22 @@ class User(Base):
         String(2048),
         nullable=True,
     )
+    phone: Mapped[str | None] = mapped_column(
+        String(32),
+        nullable=True,
+    )
+    country: Mapped[str | None] = mapped_column(
+        String(80),
+        nullable=True,
+    )
+    date_of_birth: Mapped[date | None] = mapped_column(
+        Date,
+        nullable=True,
+    )
+    recovery_email: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
     fcm_token: Mapped[str | None] = mapped_column(
         String(512),
         nullable=True,
@@ -83,10 +100,36 @@ class User(Base):
         default=True,
         nullable=False,
     )
+    # False until email verification; linking an existing account via OAuth sets True.
+    # Optional future: scheduled job may purge stale unverified rows after N days (never on logout).
     is_verified: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
         nullable=False,
+    )
+    # When False, name/avatar are hidden on public trip previews (counts still shown).
+    profile_public: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+    email_verification_token_hash: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+    )
+    email_verification_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    password_reset_token: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+    )
+    password_reset_expires: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
 
     # ── Timestamps ────────────────────────────────────────────────────────────
@@ -128,6 +171,11 @@ class User(Base):
         "ExpenseSplit",
         foreign_keys="ExpenseSplit.user_id",
         back_populates="user",
+    )
+    trip_roster_entries: Mapped[list["TripRoster"]] = relationship(
+        "TripRoster",
+        back_populates="user",
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self) -> str:

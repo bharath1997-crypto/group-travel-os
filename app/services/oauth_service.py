@@ -33,6 +33,11 @@ FACEBOOK_AUTH = "https://www.facebook.com/v21.0/dialog/oauth"
 FACEBOOK_TOKEN = "https://graph.facebook.com/v21.0/oauth/access_token"
 FACEBOOK_ME = "https://graph.facebook.com/v21.0/me"
 
+# Login-only OAuth (intent=login): no account → frontend maps this code to a user-facing message.
+OAUTH_EMAIL_NOT_REGISTERED = "oauth_email_not_registered"
+# Network / Google unreachable / bad JSON — must be HTTPException detail (not bare Exception).
+OAUTH_UPSTREAM_FAILED = "oauth_upstream_failed"
+
 
 def oauth_redirect_uri(provider: str) -> str:
     p = provider.lower()
@@ -86,11 +91,14 @@ def _decode_oauth_state_payload(raw: str) -> dict[str, Any]:
         return obj
 
 
-def sign_oauth_state(provider: str) -> str:
+def sign_oauth_state(provider: str, oauth_intent: str = "login") -> str:
+    if oauth_intent not in ("login", "signup"):
+        oauth_intent = "login"
     payload = {
         "p": provider,
         "t": int(time.time()),
         "n": secrets.token_hex(8),
+        "i": oauth_intent,
     }
     raw = _urlsafe_b64(json.dumps(payload, separators=(",", ":")).encode())
     sig = hmac.new(
@@ -101,7 +109,8 @@ def sign_oauth_state(provider: str) -> str:
     return f"{raw}.{sig}"
 
 
-def verify_oauth_state(state: str, provider: str, max_age: int = 900) -> None:
+def verify_oauth_state(state: str, provider: str, max_age: int = 900) -> str:
+    """Validate signed OAuth state; returns oauth intent: \"login\" or \"signup\"."""
     parts = state.rsplit(".", 1)
     if len(parts) != 2:
         AppException.bad_request("Invalid OAuth state")
@@ -118,12 +127,16 @@ def verify_oauth_state(state: str, provider: str, max_age: int = 900) -> None:
         AppException.bad_request("OAuth provider mismatch")
     if int(time.time()) - int(payload.get("t", 0)) > max_age:
         AppException.bad_request("OAuth state expired — try again")
+    intent = payload.get("i", "login")
+    if intent not in ("login", "signup"):
+        AppException.bad_request("Invalid OAuth state")
+    return str(intent)
 
 
-def google_authorize_url() -> str:
+def google_authorize_url(oauth_intent: str = "login") -> str:
     if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
         AppException.service_unavailable("Google sign-in is not configured")
-    state = sign_oauth_state("google")
+    state = sign_oauth_state("google", oauth_intent)
     q = urlencode(
         {
             "client_id": settings.GOOGLE_CLIENT_ID,
@@ -139,10 +152,10 @@ def google_authorize_url() -> str:
     return f"{GOOGLE_AUTH}?{q}"
 
 
-def facebook_authorize_url() -> str:
+def facebook_authorize_url(oauth_intent: str = "login") -> str:
     if not settings.FACEBOOK_APP_ID or not settings.FACEBOOK_APP_SECRET:
         AppException.service_unavailable("Facebook sign-in is not configured")
-    state = sign_oauth_state("facebook")
+    state = sign_oauth_state("facebook", oauth_intent)
     q = urlencode(
         {
             "client_id": settings.FACEBOOK_APP_ID,
@@ -163,7 +176,8 @@ def _find_or_create_from_oauth(
     avatar_url: str | None,
     google_sub: str | None,
     facebook_sub: str | None,
-) -> User:
+    allow_create: bool = True,
+) -> tuple[User, bool]:
     email_l = email.lower().strip()
 
     if google_sub:
@@ -176,7 +190,7 @@ def _find_or_create_from_oauth(
             u.is_verified = True
             db.commit()
             db.refresh(u)
-            return u
+            return u, False
 
     if facebook_sub:
         u = db.execute(
@@ -188,7 +202,7 @@ def _find_or_create_from_oauth(
             u.is_verified = True
             db.commit()
             db.refresh(u)
-            return u
+            return u, False
 
     u = db.execute(select(User).where(User.email == email_l)).scalar_one_or_none()
     if u:
@@ -207,7 +221,10 @@ def _find_or_create_from_oauth(
             u.full_name = full_name[:120]
         db.commit()
         db.refresh(u)
-        return u
+        return u, False
+
+    if not allow_create:
+        AppException.bad_request(OAUTH_EMAIL_NOT_REGISTERED)
 
     u = User(
         email=email_l,
@@ -215,17 +232,19 @@ def _find_or_create_from_oauth(
         full_name=full_name[:120] if full_name else email_l.split("@")[0][:120],
         google_sub=google_sub,
         facebook_sub=facebook_sub,
-        is_verified=True,
+        is_verified=False,
         avatar_url=avatar_url,
     )
     db.add(u)
     db.commit()
     db.refresh(u)
     logger.info("OAuth user created: %s", email_l)
-    return u
+    return u, True
 
 
-def complete_google(db: Session, code: str) -> tuple[User, str, int]:
+def complete_google(
+    db: Session, code: str, *, oauth_intent: str = "login"
+) -> tuple[User, str, int, bool]:
     if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
         AppException.service_unavailable("Google sign-in is not configured")
     redirect_uri = oauth_redirect_uri("google")
@@ -249,34 +268,48 @@ def complete_google(db: Session, code: str) -> tuple[User, str, int]:
             settings.API_PUBLIC_URL,
             settings.FRONTEND_URL,
         )
-    with httpx.Client(timeout=30.0) as client:
-        tok = client.post(
-            GOOGLE_TOKEN,
-            data={
-                "code": code,
-                "client_id": settings.GOOGLE_CLIENT_ID,
-                "client_secret": settings.GOOGLE_CLIENT_SECRET,
-                "redirect_uri": redirect_uri,
-                "grant_type": "authorization_code",
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-        )
-        if tok.status_code != 200:
-            logger.warning("Google token error: %s %s", tok.status_code, tok.text)
-            AppException.bad_gateway(_upstream_oauth_error_message(tok, "Google token exchange failed"))
-        body: dict[str, Any] = tok.json()
-        access = body.get("access_token")
-        if not access:
-            AppException.bad_gateway("Google did not return an access token")
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            tok = client.post(
+                GOOGLE_TOKEN,
+                data={
+                    "code": code,
+                    "client_id": settings.GOOGLE_CLIENT_ID,
+                    "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                    "redirect_uri": redirect_uri,
+                    "grant_type": "authorization_code",
+                },
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+            if tok.status_code != 200:
+                logger.warning("Google token error: %s %s", tok.status_code, tok.text)
+                AppException.bad_gateway(
+                    _upstream_oauth_error_message(tok, "Google token exchange failed")
+                )
+            try:
+                body: dict[str, Any] = tok.json()
+            except ValueError:
+                logger.warning("Google token response was not valid JSON")
+                AppException.bad_gateway(OAUTH_UPSTREAM_FAILED)
+            access = body.get("access_token")
+            if not access:
+                AppException.bad_gateway("Google did not return an access token")
 
-        ui = client.get(
-            GOOGLE_USERINFO,
-            headers={"Authorization": f"Bearer {access}"},
-        )
-        if ui.status_code != 200:
-            logger.warning("Google userinfo error: %s %s", ui.status_code, ui.text)
-            AppException.bad_gateway("Google userinfo failed")
-        info: dict[str, Any] = ui.json()
+            ui = client.get(
+                GOOGLE_USERINFO,
+                headers={"Authorization": f"Bearer {access}"},
+            )
+            if ui.status_code != 200:
+                logger.warning("Google userinfo error: %s %s", ui.status_code, ui.text)
+                AppException.bad_gateway("Google userinfo failed")
+            try:
+                info: dict[str, Any] = ui.json()
+            except ValueError:
+                logger.warning("Google userinfo response was not valid JSON")
+                AppException.bad_gateway(OAUTH_UPSTREAM_FAILED)
+    except httpx.HTTPError as e:
+        logger.warning("Google OAuth HTTP error: %s", e)
+        AppException.bad_gateway(OAUTH_UPSTREAM_FAILED)
 
     email_raw = info.get("email")
     if not email_raw:
@@ -289,51 +322,69 @@ def complete_google(db: Session, code: str) -> tuple[User, str, int]:
     picture = info.get("picture")
     pic_url = str(picture) if picture else None
 
-    user = _find_or_create_from_oauth(
+    allow_create = oauth_intent == "signup"
+    user, created = _find_or_create_from_oauth(
         db,
         email=email,
         full_name=name,
         avatar_url=pic_url,
         google_sub=sub,
         facebook_sub=None,
+        allow_create=allow_create,
     )
     token, exp = create_access_token(user.id)
-    return user, token, exp
+    return user, token, exp, created
 
 
-def complete_facebook(db: Session, code: str) -> tuple[User, str, int]:
+def complete_facebook(
+    db: Session, code: str, *, oauth_intent: str = "login"
+) -> tuple[User, str, int, bool]:
     if not settings.FACEBOOK_APP_ID or not settings.FACEBOOK_APP_SECRET:
         AppException.service_unavailable("Facebook sign-in is not configured")
     redirect_uri = oauth_redirect_uri("facebook")
-    with httpx.Client(timeout=30.0) as client:
-        tok = client.get(
-            FACEBOOK_TOKEN,
-            params={
-                "client_id": settings.FACEBOOK_APP_ID,
-                "client_secret": settings.FACEBOOK_APP_SECRET,
-                "redirect_uri": redirect_uri,
-                "code": code,
-            },
-        )
-        if tok.status_code != 200:
-            logger.warning("Facebook token error: %s %s", tok.status_code, tok.text)
-            AppException.bad_gateway(_upstream_oauth_error_message(tok, "Facebook token exchange failed"))
-        body: dict[str, Any] = tok.json()
-        access = body.get("access_token")
-        if not access:
-            AppException.bad_gateway("Facebook did not return an access token")
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            tok = client.get(
+                FACEBOOK_TOKEN,
+                params={
+                    "client_id": settings.FACEBOOK_APP_ID,
+                    "client_secret": settings.FACEBOOK_APP_SECRET,
+                    "redirect_uri": redirect_uri,
+                    "code": code,
+                },
+            )
+            if tok.status_code != 200:
+                logger.warning("Facebook token error: %s %s", tok.status_code, tok.text)
+                AppException.bad_gateway(
+                    _upstream_oauth_error_message(tok, "Facebook token exchange failed")
+                )
+            try:
+                body: dict[str, Any] = tok.json()
+            except ValueError:
+                logger.warning("Facebook token response was not valid JSON")
+                AppException.bad_gateway(OAUTH_UPSTREAM_FAILED)
+            access = body.get("access_token")
+            if not access:
+                AppException.bad_gateway("Facebook did not return an access token")
 
-        ui = client.get(
-            FACEBOOK_ME,
-            params={
-                "fields": "id,name,email,picture.type(large)",
-                "access_token": access,
-            },
-        )
-        if ui.status_code != 200:
-            logger.warning("Facebook me error: %s %s", ui.status_code, ui.text)
-            AppException.bad_gateway("Facebook profile fetch failed")
-        info: dict[str, Any] = ui.json()
+            ui = client.get(
+                FACEBOOK_ME,
+                params={
+                    "fields": "id,name,email,picture.type(large)",
+                    "access_token": access,
+                },
+            )
+            if ui.status_code != 200:
+                logger.warning("Facebook me error: %s %s", ui.status_code, ui.text)
+                AppException.bad_gateway("Facebook profile fetch failed")
+            try:
+                info: dict[str, Any] = ui.json()
+            except ValueError:
+                logger.warning("Facebook profile response was not valid JSON")
+                AppException.bad_gateway(OAUTH_UPSTREAM_FAILED)
+    except httpx.HTTPError as e:
+        logger.warning("Facebook OAuth HTTP error: %s", e)
+        AppException.bad_gateway(OAUTH_UPSTREAM_FAILED)
 
     sub = str(info.get("id", "")).strip()
     if not sub:
@@ -352,13 +403,15 @@ def complete_facebook(db: Session, code: str) -> tuple[User, str, int]:
         if isinstance(data, dict) and data.get("url"):
             pic_url = str(data["url"])
 
-    user = _find_or_create_from_oauth(
+    allow_create = oauth_intent == "signup"
+    user, created = _find_or_create_from_oauth(
         db,
         email=email,
         full_name=name,
         avatar_url=pic_url,
         google_sub=None,
         facebook_sub=sub,
+        allow_create=allow_create,
     )
     token, exp = create_access_token(user.id)
-    return user, token, exp
+    return user, token, exp, created

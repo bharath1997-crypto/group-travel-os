@@ -1,12 +1,18 @@
 """
 app/schemas/group.py — Group request and response schemas (Pydantic v2)
 """
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.group import Group, GroupMember, MemberRole
+
+
+def _member_online(last_seen: datetime | None) -> bool:
+    if last_seen is None:
+        return False
+    return datetime.now(timezone.utc) - last_seen < timedelta(minutes=2)
 
 
 class GroupCreate(BaseModel):
@@ -28,6 +34,9 @@ class GroupMemberOut(BaseModel):
     avatar_url: str | None
     role: MemberRole
     joined_at: datetime
+    last_seen_at: datetime | None = None
+    is_online: bool = False
+    has_mobile_app: bool = False
 
 
 class GroupOut(BaseModel):
@@ -37,6 +46,7 @@ class GroupOut(BaseModel):
     name: str
     description: str | None
     invite_code: str
+    is_accepting_members: bool = True
     created_by: UUID
     created_at: datetime
     members: list[GroupMemberOut] = Field(default_factory=list)
@@ -52,13 +62,17 @@ class InviteCodeOut(BaseModel):
 
 def group_member_to_out(member: GroupMember) -> GroupMemberOut:
     """Build GroupMemberOut from ORM (pulls profile fields from member.user)."""
+    u = member.user
     return GroupMemberOut(
         id=member.id,
         user_id=member.user_id,
-        full_name=member.user.full_name,
-        avatar_url=member.user.avatar_url,
+        full_name=u.full_name,
+        avatar_url=u.avatar_url,
         role=member.role,
         joined_at=member.joined_at,
+        last_seen_at=member.last_seen_at,
+        is_online=_member_online(member.last_seen_at),
+        has_mobile_app=bool(u.fcm_token),
     )
 
 
@@ -69,6 +83,7 @@ def group_to_out(group: Group) -> GroupOut:
         name=group.name,
         description=group.description,
         invite_code=group.invite_code,
+        is_accepting_members=group.is_accepting_members,
         created_by=group.created_by,
         created_at=group.created_at,
         members=[group_member_to_out(m) for m in group.members],

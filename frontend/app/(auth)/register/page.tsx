@@ -1,116 +1,117 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { type FormEvent, type ReactNode, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Suspense,
+  type FormEvent,
+  useEffect,
+  useState,
+} from "react";
 
+import { AuthInput } from "@/components/auth/AuthInput";
+import { GradientHeader } from "@/components/auth/GradientHeader";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { AppLogo } from "@/components/AppLogo";
-import { AuthMapBackground } from "@/components/AuthMapBackground";
 import { apiFetch } from "@/lib/api";
 import { saveToken } from "@/lib/auth";
-import { startFacebookOAuth, startGoogleOAuth } from "@/lib/oauth";
+import { syncLocalProfileCache } from "@/lib/profileCache";
+import {
+  oauthErrorToRegisterAlert,
+  type OauthLoginAlert,
+} from "@/lib/oauthLoginErrors";
 
 type RegisterResponse = {
-  user: { full_name: string; email: string };
+  user: {
+    full_name: string;
+    email: string;
+    is_verified?: boolean;
+    avatar_url?: string | null;
+  };
   token: { access_token: string; token_type: string; expires_in: number };
 };
 
-function SlateCharacterWithForm({ children }: { children: ReactNode }) {
-  return (
-    <div
-      className="auth-char-enter relative z-10 mx-auto flex w-full max-w-[380px] flex-col items-center px-2 sm:px-0"
-      style={{ marginBottom: "env(safe-area-inset-bottom, 0)" }}
-    >
-      <div className="relative w-full">
-        <svg
-          viewBox="0 0 320 200"
-          className="mx-auto block w-[120px] max-w-[36vw] shrink-0 sm:w-[132px]"
-          aria-hidden
-        >
-          <ellipse cx="108" cy="128" rx="22" ry="28" fill="#1E3A5F" opacity="0.9" />
-          <rect x="95" y="98" width="26" height="36" rx="6" fill="#334155" />
-          <ellipse cx="160" cy="130" rx="38" ry="44" fill="#3B82F6" />
-          <path
-            d="M 122 118 Q 95 125 78 135 Q 70 142 75 150"
-            fill="none"
-            stroke="#FDBCB4"
-            strokeWidth="14"
-            strokeLinecap="round"
-          />
-          <path
-            d="M 198 118 Q 225 125 242 135 Q 250 142 245 150"
-            fill="none"
-            stroke="#FDBCB4"
-            strokeWidth="14"
-            strokeLinecap="round"
-          />
-          <circle cx="82" cy="148" r="10" fill="#FDBCB4" />
-          <circle cx="238" cy="148" r="10" fill="#FDBCB4" />
-          <path d="M 142 168 L 138 195 L 152 198 L 160 172 L 168 198 L 182 195 L 178 168 Z" fill="#1E293B" />
-          <rect x="150" y="88" width="20" height="14" rx="4" fill="#FDBCB4" />
-          <circle cx="160" cy="72" r="36" fill="#FDBCB4" />
-          <path
-            d="M 128 58 Q 132 28 160 26 Q 188 28 192 58 Q 188 48 160 44 Q 132 48 128 58 Z"
-            fill="#4A3728"
-          />
-          <circle cx="148" cy="70" r="3" fill="#292524" />
-          <circle cx="172" cy="70" r="3" fill="#292524" />
-          <path d="M 148 82 Q 160 90 172 82" fill="none" stroke="#292524" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-
-        <div className="relative -mt-[40px] w-full sm:-mt-[48px]">
-          <div className="rounded-2xl bg-white p-3 shadow-[0_20px_50px_rgba(0,0,0,0.25),0_4px_12px_rgba(0,0,0,0.15)] sm:p-4">
-            {children}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+function ageFromDob(isoDate: string): number {
+  const d = new Date(isoDate + "T12:00:00");
+  if (Number.isNaN(d.getTime())) return -1;
+  const today = new Date();
+  let age = today.getFullYear() - d.getFullYear();
+  const m = today.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age -= 1;
+  return age;
 }
 
 function EyeIcon({ show }: { show: boolean }) {
   if (show) {
     return (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     );
   }
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
     </svg>
   );
 }
 
-export default function RegisterPage() {
+function RegisterPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromOauth = searchParams.get("from") === "oauth";
+
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [dob, setDob] = useState("");
+  const [dobError, setDobError] = useState<string | undefined>();
   const [showPassword, setShowPassword] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
+  const [oauthAlert, setOauthAlert] = useState<OauthLoginAlert | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [oauthBusy, setOauthBusy] = useState(false);
+  const isBusy = submitting || oauthBusy;
+
+  useEffect(() => {
+    const oauthErr = searchParams.get("oauth_error");
+    if (!oauthErr) return;
+    setOauthAlert(oauthErrorToRegisterAlert(oauthErr));
+    setError(null);
+    const from = searchParams.get("from");
+    const qs = new URLSearchParams();
+    if (from === "oauth") qs.set("from", "oauth");
+    router.replace(qs.toString() ? `/register?${qs.toString()}` : "/register", {
+      scroll: false,
+    });
+  }, [searchParams, router]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setOauthAlert(null);
+    setDobError(undefined);
+
+    const age = ageFromDob(dob);
+    if (age < 18) {
+      setDobError("You must be 18 or older to use Travello");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const body: Record<string, string> = {
-        full_name: fullName.trim(),
-        email: email.trim(),
-        password,
-      };
-      const u = username.trim();
-      if (u) body.username = u;
-
       const data = await apiFetch<RegisterResponse>("/auth/register", {
         method: "POST",
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          full_name: fullName.trim(),
+          username: username.trim() || undefined,
+          email: email.trim(),
+          password,
+          date_of_birth: dob,
+        }),
       });
       saveToken(data.token.access_token);
       if (typeof window !== "undefined") {
@@ -118,6 +119,7 @@ export default function RegisterPage() {
           "gt_user_name",
           data.user.full_name.trim() || "Traveler",
         );
+        syncLocalProfileCache(data.user);
       }
       router.replace("/dashboard");
     } catch (err) {
@@ -127,202 +129,203 @@ export default function RegisterPage() {
     }
   }
 
-  const fieldCls =
-    "mt-0.5 w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm outline-none ring-blue-500/30 focus:border-blue-500 focus:ring-1";
+  const personIcon = (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+    </svg>
+  );
+  const atIcon = (
+    <span className="text-base font-bold" aria-hidden>
+      @
+    </span>
+  );
+  const mailIcon = (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+    </svg>
+  );
+  const lockIcon = (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6a2.25 2.25 0 002.25 2.25z" />
+    </svg>
+  );
+  const calIcon = (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5" />
+    </svg>
+  );
 
   return (
-    <div className="auth-page relative h-svh max-h-[100dvh] overflow-hidden">
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-@keyframes auth-char-up {
-  from { transform: translateY(100%); opacity: 0.85; }
-  to { transform: translateY(0); opacity: 1; }
-}
-.auth-char-enter {
-  animation: auth-char-up 0.8s ease-out both;
-}
-`,
-        }}
-      />
+    <div className="flex min-h-svh flex-col bg-slate-100">
+      <GradientHeader
+        gradient="linear-gradient(135deg, #FF6B35, #FF8E53, #FF6B9D)"
+        title=""
+        subtitle="Create your account"
+        height={120}
+      >
+        <AppLogo variant="onLight" className="mx-auto h-9 w-auto max-w-[200px]" />
+      </GradientHeader>
 
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0F172A] to-[#1E3A5F]" aria-hidden />
-      <AuthMapBackground />
+      <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-3xl bg-white px-4 pb-8 pt-6 shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.12)] sm:mx-auto sm:mb-8 sm:max-w-lg sm:rounded-2xl sm:px-8">
+        {fromOauth ? (
+          <p className="mb-4 rounded-2xl border border-[#667eea]/20 bg-[#667eea]/5 px-3 py-2 text-center text-xs text-[#1E3A5F]">
+            Finish creating your Travello account below, or continue with Google or Facebook.
+          </p>
+        ) : null}
 
-      <div className="relative flex h-full min-h-0 flex-col items-center justify-center px-1 py-1 sm:py-2">
-        <SlateCharacterWithForm>
-          <div className="text-center">
-            <div className="flex justify-center">
-              <AppLogo variant="onLight" className="h-8 w-auto max-w-[min(85%,200px)] sm:h-9" />
-            </div>
-            <p className="mt-2 text-[11px] text-gray-600 sm:text-xs">Join the adventure!</p>
-          </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <AuthInput
+            id="reg-full-name"
+            icon={personIcon}
+            placeholder="Full name"
+            autoComplete="name"
+            required
+            minLength={2}
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            disabled={isBusy}
+          />
+          <AuthInput
+            id="reg-username"
+            icon={atIcon}
+            placeholder="Username"
+            autoComplete="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            maxLength={50}
+            disabled={isBusy}
+          />
+          <AuthInput
+            id="reg-email"
+            type="email"
+            icon={mailIcon}
+            placeholder="Email address"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={isBusy}
+          />
 
-          <form onSubmit={handleSubmit} className="mt-2 space-y-2 text-left sm:mt-3">
-            <div>
-              <label htmlFor="reg-name" className="text-[10px] font-semibold uppercase tracking-wide text-gray-700">
-                Full Name
-              </label>
-              <input
-                id="reg-name"
-                name="full_name"
-                type="text"
-                autoComplete="name"
-                required
-                minLength={2}
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className={fieldCls}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="reg-username" className="text-[10px] font-semibold uppercase tracking-wide text-gray-700">
-                Username <span className="font-normal normal-case text-gray-500">(optional)</span>
-              </label>
-              <input
-                id="reg-username"
-                name="username"
-                type="text"
-                autoComplete="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                maxLength={50}
-                className={fieldCls}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="reg-email" className="text-[10px] font-semibold uppercase tracking-wide text-gray-700">
-                Email
-              </label>
-              <input
-                id="reg-email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={fieldCls}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="reg-phone" className="text-[10px] font-semibold uppercase tracking-wide text-gray-700">
-                Phone <span className="font-normal normal-case text-gray-500">(optional)</span>
-              </label>
-              <input
-                id="reg-phone"
-                name="phone"
-                type="tel"
-                autoComplete="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className={fieldCls}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="reg-password" className="text-[10px] font-semibold uppercase tracking-wide text-gray-700">
-                Password
-              </label>
-              <div className="relative mt-0.5">
-                <input
-                  id="reg-password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`${fieldCls} pr-9`}
-                />
+          <div>
+            <AuthInput
+              id="reg-password"
+              type={showPassword ? "text" : "password"}
+              icon={lockIcon}
+              placeholder="Password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isBusy}
+              endAdornment={
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-1 text-gray-500 hover:bg-gray-100"
+                  disabled={isBusy}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-[#1E3A5F]/50 hover:bg-slate-100"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   <EyeIcon show={showPassword} />
                 </button>
-              </div>
-            </div>
+              }
+            />
+          </div>
 
-            {error ? (
-              <p className="text-xs font-medium text-red-600" role="alert">
-                {error}
+          <div>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-[#1E3A5F]/55" aria-hidden>
+                {calIcon}
+              </span>
+              <input
+                id="reg-dob"
+                type="date"
+                required
+                value={dob}
+                onChange={(e) => {
+                  setDob(e.target.value);
+                  setDobError(undefined);
+                }}
+                disabled={isBusy}
+                className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-3 text-sm text-[#1E3A5F] shadow-sm outline-none focus:border-[#667eea]/60 focus:ring-2 focus:ring-[#667eea]/20 disabled:opacity-70"
+              />
+            </div>
+            {dobError ? (
+              <p className="mt-1.5 text-xs font-medium text-red-600" role="alert">
+                {dobError}
               </p>
             ) : null}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-blue-600 disabled:opacity-60"
-            >
-              {submitting ? (
-                <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden />
-                  Creating…
-                </>
-              ) : (
-                <>Create Account →</>
-              )}
-            </button>
-          </form>
-
-          <div className="my-2 flex items-center gap-2">
-            <span className="h-px flex-1 bg-gray-200" />
-            <span className="text-[10px] font-medium text-gray-500">or verify with</span>
-            <span className="h-px flex-1 bg-gray-200" />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => startGoogleOAuth()}
-              className="flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white py-2 text-[11px] font-medium text-gray-800 shadow-sm transition hover:bg-gray-50"
+          {oauthAlert ? (
+            <div
+              className="rounded-2xl border border-red-200/80 bg-red-50 px-3 py-2.5 text-sm text-red-900"
+              role="alert"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/brands/google.svg"
-                alt=""
-                width={20}
-                height={20}
-                className="h-5 w-5 shrink-0"
-              />
-              <span className="truncate">Google</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => startFacebookOAuth()}
-              className="flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white py-2 text-[11px] font-medium text-gray-800 shadow-sm transition hover:bg-gray-50"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/brands/facebook.svg"
-                alt=""
-                width={20}
-                height={20}
-                className="h-5 w-5 shrink-0"
-              />
-              <span className="truncate">Facebook</span>
-            </button>
-          </div>
+              {oauthAlert.title ? (
+                <p className="font-semibold">{oauthAlert.title}</p>
+              ) : null}
+              <p className={oauthAlert.title ? "mt-1" : ""}>{oauthAlert.body}</p>
+            </div>
+          ) : null}
 
-          <p className="mt-1.5 text-center text-[10px] leading-snug text-gray-500">
-            Google and Facebook sign-in confirms your email in one step (no separate email/SMS codes).
-          </p>
+          <button
+            type="submit"
+            disabled={isBusy}
+            className="mt-1 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#FF6B35] to-[#FF6B9D] py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-95 disabled:opacity-60"
+          >
+            {submitting ? (
+              <>
+                <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Creating…
+              </>
+            ) : (
+              "Create Account"
+            )}
+          </button>
+          {error ? (
+            <p className="text-center text-sm font-medium text-red-600" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </form>
 
-          <p className="mt-1.5 text-center text-[11px] text-gray-600">
-            Already a partner?{" "}
-            <Link href="/login" className="font-semibold text-blue-600 hover:underline">
-              Login
-            </Link>
-          </p>
-        </SlateCharacterWithForm>
+        <div className="my-6 flex items-center gap-3">
+          <span className="h-px flex-1 bg-slate-200" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            or sign up with
+          </span>
+          <span className="h-px flex-1 bg-slate-200" />
+        </div>
+
+        <OAuthButtons
+          mode="register"
+          disabled={isBusy}
+          onBusyChange={setOauthBusy}
+        />
+
+        <p className="mt-8 text-center text-sm text-[#1E3A5F]/80">
+          Already have account?{" "}
+          <Link href="/login" className="font-bold text-[#667eea] underline-offset-4 hover:underline">
+            Sign In
+          </Link>
+        </p>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-svh items-center justify-center bg-slate-100">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#FF6B35] border-t-transparent" />
+        </div>
+      }
+    >
+      <RegisterPageInner />
+    </Suspense>
   );
 }

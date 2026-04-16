@@ -11,8 +11,17 @@ from sqlalchemy.orm import Session
 from app.models.trip import TripStatus
 from app.models.user import User
 from app.schemas.trip import TripCreate, TripOut, TripStatusUpdate, TripUpdate
+from app.schemas.trip_public import (
+    PendingTripJoinOut,
+    TripJoinRequestCreate,
+    TripJoinRequestOut,
+    TripPublicPreviewOut,
+    TripRosterUpdate,
+)
+from app.services.trip_join_request_service import TripJoinRequestService
+from app.services.trip_public_service import TripPublicService
 from app.services.trip_service import TripService
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, get_current_user_optional
 from app.utils.database import get_db
 
 group_trips_router = APIRouter(prefix="/groups/{group_id}/trips", tags=["Trips"])
@@ -50,6 +59,132 @@ def list_group_trips(
 ):
     trips = TripService.list_group_trips(db, group_id, current_user, status)
     return trips
+
+
+@trips_router.get(
+    "/{trip_id}/public",
+    response_model=TripPublicPreviewOut,
+    status_code=status.HTTP_200_OK,
+    summary="Public trip preview (share link); optional auth for membership flags",
+)
+def get_trip_public(
+    trip_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    viewer: User | None = Depends(get_current_user_optional),
+):
+    raw = TripPublicService.get_public_preview(
+        db,
+        trip_id,
+        viewer.id if viewer else None,
+    )
+    return TripPublicPreviewOut.model_validate(raw)
+
+
+@trips_router.patch(
+    "/{trip_id}/roster",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Set your public trip note (group members only)",
+)
+def set_trip_roster(
+    trip_id: uuid.UUID,
+    data: TripRosterUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    TripService.set_roster_note(db, trip_id, current_user.id, data.note)
+
+
+@trips_router.post(
+    "/{trip_id}/join-requests",
+    response_model=TripJoinRequestOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Request to join this trip’s group",
+)
+def create_trip_join_request(
+    trip_id: uuid.UUID,
+    body: TripJoinRequestCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    req = TripJoinRequestService.request_join(
+        db, trip_id, current_user.id, body.message
+    )
+    return TripJoinRequestOut(
+        id=str(req.id),
+        trip_id=str(req.trip_id),
+        user_id=str(req.user_id),
+        message=req.message,
+        status=req.status,
+    )
+
+
+@trips_router.get(
+    "/{trip_id}/join-requests",
+    response_model=list[PendingTripJoinOut],
+    status_code=status.HTTP_200_OK,
+    summary="List pending trip join requests (group admins)",
+)
+def list_trip_join_requests(
+    trip_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    rows = TripJoinRequestService.list_pending_for_trip(db, trip_id, current_user.id)
+    return [
+        PendingTripJoinOut(
+            id=str(req.id),
+            trip_id=str(req.trip_id),
+            user_id=str(req.user_id),
+            message=req.message,
+            status=req.status,
+            created_at=req.created_at.isoformat(),
+            user_full_name=user.full_name,
+            user_email=user.email,
+        )
+        for req, user in rows
+    ]
+
+
+@trips_router.patch(
+    "/join-requests/{request_id}/approve",
+    response_model=TripJoinRequestOut,
+    status_code=status.HTTP_200_OK,
+    summary="Approve a trip join request (group admin)",
+)
+def approve_trip_join_request(
+    request_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    req = TripJoinRequestService.approve_request(db, request_id, current_user.id)
+    return TripJoinRequestOut(
+        id=str(req.id),
+        trip_id=str(req.trip_id),
+        user_id=str(req.user_id),
+        message=req.message,
+        status=req.status,
+    )
+
+
+@trips_router.patch(
+    "/join-requests/{request_id}/deny",
+    response_model=TripJoinRequestOut,
+    status_code=status.HTTP_200_OK,
+    summary="Deny a trip join request (group admin)",
+)
+def deny_trip_join_request(
+    request_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    req = TripJoinRequestService.deny_request(db, request_id, current_user.id)
+    return TripJoinRequestOut(
+        id=str(req.id),
+        trip_id=str(req.trip_id),
+        user_id=str(req.user_id),
+        message=req.message,
+        status=req.status,
+    )
 
 
 @trips_router.get(

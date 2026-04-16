@@ -1,6 +1,7 @@
 """Unit tests for app.services.auth_service.AuthService — mocked Session only."""
 from __future__ import annotations
 
+from datetime import date, datetime, timedelta, timezone
 import uuid
 import pytest
 from fastapi import HTTPException
@@ -8,7 +9,7 @@ from fastapi import HTTPException
 from app.models.user import User
 from app.schemas.auth import ChangePasswordRequest, UserCreate, UserUpdate
 from app.services import auth_service
-from app.services.auth_service import AuthService
+from app.services.auth_service import AuthService, _hash_password_reset_token
 from app.utils.auth import hash_password
 from tests.conftest import exec_result
 
@@ -33,11 +34,18 @@ def test_register_creates_user_and_returns_token(db, monkeypatch):
         return "tok", 3600
 
     monkeypatch.setattr(auth_service, "create_access_token", fake_token)
+    # Avoid second db.commit/refresh from post-register email verification (SMTP may be "configured" in CI).
+    monkeypatch.setattr(
+        auth_service,
+        "try_send_verification_on_register",
+        lambda _db, _user: None,
+    )
 
     data = UserCreate(
         email="NEW@example.com",
         password="password12345",
         full_name="New Person",
+        date_of_birth=date(1990, 1, 1),
     )
     user, token, expires = AuthService.register(db, data)
 
@@ -57,6 +65,7 @@ def test_register_conflict_when_email_exists(db, sample_user: User):
         email=sample_user.email,
         password="password12345",
         full_name="Xy",
+        date_of_birth=date(1990, 1, 1),
     )
     with pytest.raises(HTTPException) as ei:
         AuthService.register(db, data)
@@ -124,3 +133,76 @@ def test_change_password_unauthorized_when_old_password_wrong(db, sample_user: U
     with pytest.raises(HTTPException) as ei:
         AuthService.change_password(db, sample_user, data)
     assert ei.value.status_code == 401
+
+
+def test_request_password_reset_unknown_email_no_commit(db):
+    db.execute.return_value = exec_result(scalar_one_or_none=None)
+    AuthService.request_password_reset(db, "missing@example.com")
+    db.commit.assert_not_called()
+
+
+def test_request_password_reset_empty_email_no_commit(db):
+    AuthService.request_password_reset(db, "   ")
+    db.commit.assert_not_called()
+
+
+def test_request_password_reset_without_smtp_no_commit(db, sample_user: User, monkeypatch):
+    db.execute.return_value = exec_result(scalar_one_or_none=sample_user)
+    monkeypatch.setattr(auth_service, "smtp_configured", lambda: False)
+    AuthService.request_password_reset(db, sample_user.email)
+    db.commit.assert_not_called()
+
+
+def test_request_password_reset_stores_token_and_sends_email(db, sample_user: User, monkeypatch):
+    db.execute.return_value = exec_result(scalar_one_or_none=sample_user)
+    monkeypatch.setattr(auth_service, "smtp_configured", lambda: True)
+    monkeypatch.setattr(auth_service.secrets, "token_urlsafe", lambda n=32: "known-token")
+    sent: list[tuple[str, str, str]] = []
+
+    def capture(to: str, subject: str, body: str) -> None:
+        sent.append((to, subject, body))
+
+    monkeypatch.setattr(auth_service, "send_email", capture)
+    AuthService.request_password_reset(db, sample_user.email)
+    db.commit.assert_called_once()
+    assert len(sent) == 1
+    assert sent[0][0] == sample_user.email
+    assert "reset-password" in sent[0][2]
+    assert "known-token" in sent[0][2]
+    assert sample_user.password_reset_token == _hash_password_reset_token("known-token")
+
+
+def test_reset_password_with_token_success(db, sample_user: User):
+    raw = "reset-secret-token"
+    sample_user.password_reset_token = _hash_password_reset_token(raw)
+    sample_user.password_reset_expires = datetime.now(timezone.utc) + timedelta(minutes=30)
+    db.execute.return_value = exec_result(scalar_one_or_none=sample_user)
+
+    AuthService.reset_password_with_token(db, raw, "brandnewpass12345")
+
+    assert auth_service.verify_password("brandnewpass12345", sample_user.hashed_password)
+    assert sample_user.password_reset_token is None
+    assert sample_user.password_reset_expires is None
+    db.commit.assert_called_once()
+
+
+def test_reset_password_invalid_token(db):
+    db.execute.return_value = exec_result(scalar_one_or_none=None)
+    with pytest.raises(HTTPException) as ei:
+        AuthService.reset_password_with_token(db, "bad-token", "newpassword12345")
+    assert ei.value.status_code == 400
+
+
+def test_reset_password_expired_token(db, sample_user: User):
+    sample_user.password_reset_token = _hash_password_reset_token("t")
+    sample_user.password_reset_expires = datetime.now(timezone.utc) - timedelta(hours=1)
+    db.execute.return_value = exec_result(scalar_one_or_none=sample_user)
+    with pytest.raises(HTTPException) as ei:
+        AuthService.reset_password_with_token(db, "t", "newpassword12345")
+    assert ei.value.status_code == 400
+
+
+def test_reset_password_too_short(db):
+    with pytest.raises(HTTPException) as ei:
+        AuthService.reset_password_with_token(db, "any-token", "short")
+    assert ei.value.status_code == 400

@@ -6,115 +6,26 @@ import {
   Suspense,
   useEffect,
   useState,
-  type CSSProperties,
   type FormEvent,
-  type ReactNode,
 } from "react";
 
+import { AuthInput } from "@/components/auth/AuthInput";
+import { GradientHeader } from "@/components/auth/GradientHeader";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { AppLogo } from "@/components/AppLogo";
-import { AuthMapBackground } from "@/components/AuthMapBackground";
 import { apiFetch } from "@/lib/api";
 import { saveToken } from "@/lib/auth";
-import { startFacebookOAuth, startGoogleOAuth } from "@/lib/oauth";
+import { syncLocalProfileCache } from "@/lib/profileCache";
+import { oauthErrorToAlert, type OauthLoginAlert } from "@/lib/oauthLoginErrors";
 
 type LoginResponse = {
-  user: { full_name: string; email: string };
+  user: { full_name: string; email: string; avatar_url?: string | null };
   token: { access_token: string; token_type: string; expires_in: number };
 };
 
 function safeNextPath(raw: string | null): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
   return raw;
-}
-
-const FLOAT_ICONS: { emoji: string; style: CSSProperties }[] = [
-  { emoji: "📍", style: { top: "8%", left: "6%", fontSize: 28, animationDuration: "5s", animationDelay: "0.2s" } },
-  { emoji: "✈️", style: { top: "14%", right: "12%", fontSize: 36, animationDuration: "4s", animationDelay: "1s" } },
-  { emoji: "🧭", style: { top: "42%", left: "4%", fontSize: 32, animationDuration: "6s", animationDelay: "0s" } },
-  { emoji: "👥", style: { top: "28%", right: "8%", fontSize: 26, animationDuration: "5.5s", animationDelay: "2.1s" } },
-  { emoji: "✏️", style: { top: "55%", left: "18%", fontSize: 24, animationDuration: "3.5s", animationDelay: "0.8s" } },
-  { emoji: "🗺️", style: { top: "62%", right: "22%", fontSize: 30, animationDuration: "7s", animationDelay: "1.5s" } },
-  { emoji: "⭐", style: { top: "18%", left: "44%", fontSize: 22, animationDuration: "4.2s", animationDelay: "2.8s" } },
-  { emoji: "💬", style: { bottom: "28%", left: "10%", fontSize: 34, animationDuration: "5s", animationDelay: "0.5s" } },
-  { emoji: "✈️", style: { bottom: "22%", right: "6%", fontSize: 28, animationDuration: "3.8s", animationDelay: "1.2s" } },
-  { emoji: "📍", style: { top: "48%", right: "38%", fontSize: 26, animationDuration: "6.2s", animationDelay: "2.4s" } },
-];
-
-function SlateCharacterWithForm({
-  children,
-  compact,
-}: {
-  children: ReactNode;
-  compact?: boolean;
-}) {
-  const svgCls = compact
-    ? "mx-auto block w-[140px] max-w-[min(42vw,160px)] shrink-0"
-    : "mx-auto block w-[200px] max-w-[min(55vw,220px)] shrink-0";
-  const slateMt = compact ? "-mt-[52px] sm:-mt-[56px]" : "-mt-[72px] sm:-mt-[80px]";
-  const pad = compact ? "p-4" : "p-6";
-  return (
-    <div
-      className="auth-char-enter relative z-10 mx-auto flex w-full max-w-[380px] flex-col items-center px-3 sm:px-0"
-      style={{ marginBottom: "env(safe-area-inset-bottom, 0)" }}
-    >
-      <div className="relative w-full">
-        <svg
-          viewBox="0 0 320 200"
-          className={svgCls}
-          aria-hidden
-        >
-          <title>Traveler</title>
-          {/* Backpack */}
-          <ellipse cx="108" cy="128" rx="22" ry="28" fill="#1E3A5F" opacity="0.9" />
-          <rect x="95" y="98" width="26" height="36" rx="6" fill="#334155" />
-          {/* Body */}
-          <ellipse cx="160" cy="130" rx="38" ry="44" fill="#3B82F6" />
-          {/* Arms (behind slate visually — extend from sides) */}
-          <path
-            d="M 122 118 Q 95 125 78 135 Q 70 142 75 150"
-            fill="none"
-            stroke="#FDBCB4"
-            strokeWidth="14"
-            strokeLinecap="round"
-          />
-          <path
-            d="M 198 118 Q 225 125 242 135 Q 250 142 245 150"
-            fill="none"
-            stroke="#FDBCB4"
-            strokeWidth="14"
-            strokeLinecap="round"
-          />
-          {/* Hands gripping slate corners */}
-          <circle cx="82" cy="148" r="10" fill="#FDBCB4" />
-          <circle cx="238" cy="148" r="10" fill="#FDBCB4" />
-          {/* Pants */}
-          <path d="M 142 168 L 138 195 L 152 198 L 160 172 L 168 198 L 182 195 L 178 168 Z" fill="#1E293B" />
-          {/* Neck */}
-          <rect x="150" y="88" width="20" height="14" rx="4" fill="#FDBCB4" />
-          {/* Head */}
-          <circle cx="160" cy="72" r="36" fill="#FDBCB4" />
-          {/* Hair */}
-          <path
-            d="M 128 58 Q 132 28 160 26 Q 188 28 192 58 Q 188 48 160 44 Q 132 48 128 58 Z"
-            fill="#4A3728"
-          />
-          {/* Face */}
-          <circle cx="148" cy="70" r="3" fill="#292524" />
-          <circle cx="172" cy="70" r="3" fill="#292524" />
-          <path d="M 148 82 Q 160 90 172 82" fill="none" stroke="#292524" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-
-        {/* Slate / form card — overlaps character hands */}
-        <div className={`relative w-full ${slateMt}`}>
-          <div
-            className={`rounded-2xl bg-white shadow-[0_20px_50px_rgba(0,0,0,0.25),0_4px_12px_rgba(0,0,0,0.15)] ${pad}`}
-          >
-            {children}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function EyeIcon({ show }: { show: boolean }) {
@@ -140,17 +51,45 @@ function LoginPageInner() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [oauthAlert, setOauthAlert] = useState<OauthLoginAlert | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [oauthBusy, setOauthBusy] = useState(false);
+  const [verifiedNotice, setVerifiedNotice] = useState(false);
+
+  const isBusy = submitting || oauthBusy;
 
   useEffect(() => {
-    const o = searchParams.get("oauth_error");
-    if (o) {
-      setError(decodeURIComponent(o.replace(/\+/g, " ")));
+    const oauthErr = searchParams.get("oauth_error");
+    if (!oauthErr) return;
+
+    setOauthAlert(oauthErrorToAlert(oauthErr));
+    setError(null);
+
+    const next = searchParams.get("next");
+    const qs = new URLSearchParams();
+    if (next && next.startsWith("/") && !next.startsWith("//")) {
+      qs.set("next", next);
     }
-  }, [searchParams]);
+    const path = qs.toString() ? `/login?${qs.toString()}` : "/login";
+    router.replace(path, { scroll: false });
+  }, [searchParams, router]);
+
+  useEffect(() => {
+    if (searchParams.get("verified") !== "1") return;
+
+    setVerifiedNotice(true);
+    const next = searchParams.get("next");
+    const qs = new URLSearchParams();
+    if (next && next.startsWith("/") && !next.startsWith("//")) {
+      qs.set("next", next);
+    }
+    const path = qs.toString() ? `/login?${qs.toString()}` : "/login";
+    router.replace(path, { scroll: false });
+  }, [searchParams, router]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    setOauthAlert(null);
     setError(null);
     setSubmitting(true);
     try {
@@ -164,189 +103,189 @@ function LoginPageInner() {
       saveToken(data.token.access_token);
       if (typeof window !== "undefined") {
         localStorage.setItem("gt_user_name", data.user.full_name.trim() || "Traveler");
+        syncLocalProfileCache(data.user);
       }
       const params = new URLSearchParams(window.location.search);
       const next = safeNextPath(params.get("next"));
       router.replace(next);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+    } catch {
+      setError("Invalid email or password");
     } finally {
       setSubmitting(false);
     }
   }
 
+  const mailIcon = (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+    </svg>
+  );
+  const lockIcon = (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6a2.25 2.25 0 002.25 2.25z" />
+    </svg>
+  );
+
   return (
-    <div className="auth-page relative h-svh max-h-[100dvh] overflow-hidden">
+    <div className="relative flex min-h-svh flex-col bg-slate-100">
       <style
         dangerouslySetInnerHTML={{
           __html: `
-@keyframes auth-float {
-  0% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(5deg); }
-  100% { transform: translateY(0px) rotate(0deg); }
-}
-.auth-float-icon {
-  animation: auth-float ease-in-out infinite;
+.login-float-dot {
   position: absolute;
-  opacity: 0.6;
-  pointer-events: none;
-  user-select: none;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.35);
+  animation: login-dot-float 6s ease-in-out infinite;
 }
-@media (max-width: 1023px) {
-  .auth-float-icon { display: none; }
-}
-@keyframes auth-char-up {
-  from { transform: translateY(100%); opacity: 0.85; }
-  to { transform: translateY(0); opacity: 1; }
-}
-.auth-char-enter {
-  animation: auth-char-up 0.8s ease-out both;
+@keyframes login-dot-float {
+  0%, 100% { transform: translate(0, 0); opacity: 0.5; }
+  50% { transform: translate(6px, -10px); opacity: 0.85; }
 }
 `,
         }}
       />
 
-      <div
-        className="absolute inset-0 bg-gradient-to-b from-[#0F172A] to-[#1E3A5F]"
-        aria-hidden
-      />
-      <AuthMapBackground />
+      <div className="relative overflow-hidden" style={{ minHeight: 140 }}>
+        <div
+          className="absolute inset-0 rounded-b-3xl"
+          style={{
+            background: "linear-gradient(135deg, #667eea, #764ba2)",
+            minHeight: 140,
+          }}
+        />
+        <span className="login-float-dot left-[8%] top-[20%] h-2 w-2" style={{ animationDelay: "0s" }} aria-hidden />
+        <span className="login-float-dot left-[22%] top-[60%] h-3 w-3" style={{ animationDelay: "0.5s" }} aria-hidden />
+        <span className="login-float-dot right-[15%] top-[25%] h-2.5 w-2.5" style={{ animationDelay: "1s" }} aria-hidden />
+        <span className="login-float-dot right-[28%] top-[55%] h-2 w-2" style={{ animationDelay: "1.5s" }} aria-hidden />
+        <span className="login-float-dot left-[45%] top-[12%] h-1.5 w-1.5" style={{ animationDelay: "0.3s" }} aria-hidden />
 
-      {FLOAT_ICONS.map(({ emoji, style }, i) => (
-        <span key={i} className="auth-float-icon" style={style}>
-          {emoji}
-        </span>
-      ))}
+        <GradientHeader
+          gradient="transparent"
+          title=""
+          subtitle="Welcome back, traveler!"
+          height={140}
+        >
+          <AppLogo variant="onLight" className="mx-auto h-10 w-auto max-w-[220px]" />
+        </GradientHeader>
+      </div>
 
-      <div className="relative flex h-full min-h-0 flex-col items-center justify-center py-2 sm:py-4">
-        <SlateCharacterWithForm compact>
-          <div className="text-center">
-            <div className="flex justify-center">
-              <AppLogo variant="onLight" className="h-9 w-auto max-w-[min(85%,220px)] sm:h-10" />
-            </div>
-            <p className="mt-2 text-xs text-gray-600 sm:text-sm">
-              Welcome back, traveler!
-            </p>
-          </div>
+      <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-3xl bg-white px-4 pb-10 pt-6 shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.12)] sm:mx-auto sm:mb-8 sm:max-w-lg sm:rounded-2xl sm:px-8">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <AuthInput
+            id="login-email"
+            icon={mailIcon}
+            placeholder="Email or username"
+            autoComplete="username"
+            required
+            value={emailOrUser}
+            onChange={(e) => setEmailOrUser(e.target.value)}
+            disabled={isBusy}
+          />
 
-          <form onSubmit={handleSubmit} className="mt-4 space-y-3 text-left sm:mt-5">
-            <div>
-              <label htmlFor="login-identifier" className="block text-xs font-semibold uppercase tracking-wide text-gray-700">
-                Email or Username
-              </label>
-              <input
-                id="login-identifier"
-                name="identifier"
-                type="text"
-                autoComplete="username"
-                required
-                value={emailOrUser}
-                onChange={(e) => setEmailOrUser(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-2.5 py-2 text-sm text-gray-900 shadow-sm outline-none ring-blue-500/30 transition focus:border-blue-500 focus:ring-2"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="login-password" className="block text-xs font-semibold uppercase tracking-wide text-gray-700">
-                Password
-              </label>
-              <div className="relative mt-1">
-                <input
-                  id="login-password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-2.5 pr-10 text-sm text-gray-900 shadow-sm outline-none ring-blue-500/30 transition focus:border-blue-500 focus:ring-2"
-                />
+          <div>
+            <AuthInput
+              id="login-password"
+              type={showPassword ? "text" : "password"}
+              icon={lockIcon}
+              placeholder="Password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isBusy}
+              endAdornment={
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                  disabled={isBusy}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-[#1E3A5F]/50 hover:bg-slate-100"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   <EyeIcon show={showPassword} />
                 </button>
-              </div>
+              }
+            />
+            <div className="mt-2 flex justify-end">
+              <Link
+                href="/forgot-password"
+                className="text-xs font-semibold text-[#667eea] hover:underline"
+              >
+                Forgot password?
+              </Link>
             </div>
-
-            {error ? (
-              <p className="text-sm font-medium text-red-600" role="alert">
-                {error}
-              </p>
-            ) : null}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-blue-600 disabled:opacity-60"
-            >
-              {submitting ? (
-                <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden />
-                  Signing in…
-                </>
-              ) : (
-                <>Sign In →</>
-              )}
-            </button>
-          </form>
-
-          <div className="my-3 flex items-center gap-2 sm:my-4">
-            <span className="h-px flex-1 bg-gray-200" />
-            <span className="text-[10px] font-medium text-gray-500">or</span>
-            <span className="h-px flex-1 bg-gray-200" />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => startGoogleOAuth()}
-              className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white py-2 text-xs font-medium text-gray-800 shadow-sm transition hover:bg-gray-50"
+          {verifiedNotice ? (
+            <div
+              className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-950"
+              role="status"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/brands/google.svg"
-                alt=""
-                width={22}
-                height={22}
-                className="h-[22px] w-[22px] shrink-0"
-              />
-              <span className="truncate">Google</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => startFacebookOAuth()}
-              className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white py-2 text-xs font-medium text-gray-800 shadow-sm transition hover:bg-gray-50"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/brands/facebook.svg"
-                alt=""
-                width={22}
-                height={22}
-                className="h-[22px] w-[22px] shrink-0"
-              />
-              <span className="truncate">Facebook</span>
-            </button>
-          </div>
+              Your email is verified. Sign in with your password to continue.
+            </div>
+          ) : null}
 
-          <p className="mt-2 text-center text-[10px] leading-snug text-gray-500">
-            Google and Facebook verify your email — one tap, no separate codes.
-          </p>
-
-          <p className="mt-2 text-center text-xs text-gray-600">
-            New here?{" "}
-            <Link
-              href="/register"
-              className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+          {oauthAlert ? (
+            <div
+              className={`rounded-2xl border px-3 py-2.5 text-sm shadow-sm ${
+                oauthAlert.variant === "warning"
+                  ? "border-amber-200 bg-amber-50 text-amber-950"
+                  : "border-red-200 bg-red-50 text-red-900"
+              }`}
+              role="alert"
             >
-              Create your account
-            </Link>
-          </p>
-        </SlateCharacterWithForm>
+              {oauthAlert.title ? <p className="font-semibold">{oauthAlert.title}</p> : null}
+              <p className={oauthAlert.title ? "mt-1" : ""}>{oauthAlert.body}</p>
+              {oauthAlert.showCreateAccount ? (
+                <p className="mt-2 text-xs">
+                  <Link href="/register?from=oauth" className="font-semibold text-amber-900 underline-offset-2 hover:underline">
+                    Create account
+                  </Link>
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={isBusy}
+            className="mt-1 flex min-h-[52px] w-full items-center justify-center rounded-2xl py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-95 disabled:opacity-60"
+            style={{
+              background: "linear-gradient(135deg, #667eea, #764ba2)",
+            }}
+          >
+            {submitting ? (
+              <>
+                <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Signing in…
+              </>
+            ) : (
+              "Sign In"
+            )}
+          </button>
+
+          {error ? (
+            <p className="text-center text-sm font-medium text-red-600" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </form>
+
+        <div className="my-6 flex items-center gap-3">
+          <span className="h-px flex-1 bg-slate-200" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            or continue with
+          </span>
+          <span className="h-px flex-1 bg-slate-200" />
+        </div>
+
+        <OAuthButtons mode="login" disabled={isBusy} onBusyChange={setOauthBusy} />
+
+        <p className="mt-8 text-center text-sm text-[#1E3A5F]/80">
+          New here?{" "}
+          <Link href="/register" className="font-bold text-[#667eea] underline-offset-4 hover:underline">
+            Create account
+          </Link>
+        </p>
       </div>
     </div>
   );
@@ -356,8 +295,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-svh items-center justify-center bg-[#0F172A] text-white">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+        <div className="flex min-h-svh items-center justify-center bg-slate-100">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#667eea] border-t-transparent" />
         </div>
       }
     >

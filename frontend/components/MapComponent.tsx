@@ -18,6 +18,8 @@ import {
 } from "react-leaflet";
 
 import { apiFetch } from "@/lib/api";
+import { dicebearAvatarSvgUrl } from "@/lib/dicebearAvatar";
+import { getCachedProfileAvatarUrl } from "@/lib/profileCache";
 
 import "leaflet/dist/leaflet.css";
 
@@ -190,8 +192,8 @@ function UserLocationLayers({ lat, lng }: { lat: number; lng: number }) {
         ? localStorage.getItem("gt_user_name")?.trim() || "You"
         : "You";
     const safeName = escapeHtml(userName);
-    const avatarSeed = encodeURIComponent(userName);
-    const avatarSrc = `https://api.dicebear.com/7.x/lorelei/svg?seed=${avatarSeed}`;
+    const cached = getCachedProfileAvatarUrl();
+    const avatarSrc = cached?.trim() || dicebearAvatarSvgUrl(userName);
 
     const popupHtml = `
     <div style="text-align:center; padding: 8px;">

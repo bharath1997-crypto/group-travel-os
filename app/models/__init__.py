@@ -2,6 +2,8 @@ from app.models.user import User
 from app.models.group import Group, GroupMember, MemberRole
 from app.models.group_join_request import GroupJoinRequest
 from app.models.trip import Trip, TripStatus
+from app.models.trip_join_request import TripJoinRequest
+from app.models.trip_roster import TripRoster
 from app.models.location import Location, TripLocation
 from app.models.location_share import LocationShare
 from app.models.meet_point import MeetPoint, MeetPointAttendance
@@ -19,6 +21,8 @@ __all__: list[str] = [
     "MemberRole",
     "Trip",
     "TripStatus",
+    "TripJoinRequest",
+    "TripRoster",
     "Location",
     "TripLocation",
     "LocationShare",

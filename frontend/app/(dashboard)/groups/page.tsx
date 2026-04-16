@@ -6,26 +6,15 @@ import { useCallback, useEffect, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { apiFetch } from "@/lib/api";
 
-type GroupMemberOut = {
-  id: string;
-  user_id: string;
-  full_name: string;
-  avatar_url: string | null;
-  role: string;
-  joined_at: string;
-};
-
 type GroupOut = {
   id: string;
   name: string;
   description: string | null;
   invite_code: string;
-  created_by: string;
   created_at: string;
-  members: GroupMemberOut[];
 };
 
-export default function GroupsPage() {
+export default function GroupsIndexPage() {
   const router = useRouter();
   const [groups, setGroups] = useState<GroupOut[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,7 +78,7 @@ export default function GroupsPage() {
       setCreateError(null);
       setCreateSubmitting(true);
       try {
-        await apiFetch("/groups", {
+        const created = await apiFetch<GroupOut>("/groups", {
           method: "POST",
           body: JSON.stringify({
             name,
@@ -98,6 +87,7 @@ export default function GroupsPage() {
         });
         await refreshGroups();
         closeCreateForm();
+        router.push(`/groups/${created.id}`);
       } catch (err) {
         setCreateError(
           err instanceof Error ? err.message : "Failed to create group",
@@ -106,12 +96,7 @@ export default function GroupsPage() {
         setCreateSubmitting(false);
       }
     },
-    [
-      createName,
-      createDescription,
-      refreshGroups,
-      closeCreateForm,
-    ],
+    [createName, createDescription, refreshGroups, closeCreateForm, router],
   );
 
   return (
@@ -119,7 +104,9 @@ export default function GroupsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Groups</h1>
-          <p className="mt-1 text-sm text-gray-600">Groups you belong to</p>
+          <p className="mt-1 text-sm text-gray-600">
+            Select a group on the left to see details, or create a new one.
+          </p>
         </div>
         <button
           type="button"
@@ -203,7 +190,7 @@ export default function GroupsPage() {
             className="h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900"
             aria-hidden
           />
-          <p className="text-sm text-gray-600">Loading groups…</p>
+          <p className="text-sm text-gray-600">Loading…</p>
         </div>
       ) : error ? (
         <p className="mt-10 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -213,56 +200,45 @@ export default function GroupsPage() {
         <div className="mt-16 text-center">
           <p className="text-lg font-medium text-gray-900">No groups yet</p>
           <p className="mt-2 text-sm text-gray-600">
-            Use Create Group above, or join with an invite code.
+            Create a group above, or join with an invite code from the app.
           </p>
         </div>
       ) : (
-        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {groups.map((g) => {
-            const memberCount = g.members?.length ?? 0;
-            return (
-              <article
-                key={g.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => router.push(`/groups/${g.id}`)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    router.push(`/groups/${g.id}`);
-                  }
-                }}
-                className="relative cursor-pointer rounded-xl border border-gray-200 bg-white p-5 pr-16 shadow-sm transition hover:border-gray-300 hover:shadow-md"
-              >
-                <div className="absolute right-4 top-4">
-                  <Avatar name={g.name} size={32} />
-                </div>
-                <h2 className="text-lg font-semibold text-gray-900">{g.name}</h2>
-                {g.description ? (
-                  <p className="mt-2 text-sm text-gray-600">{g.description}</p>
-                ) : null}
+        <div className="mt-8 rounded-xl border border-gray-200 bg-gray-50/50 p-4">
+          <p className="text-sm text-gray-600">
+            Quick open — or use the list on the left.
+          </p>
+          <ul className="mt-4 space-y-3">
+            {groups.map((g) => (
+              <li key={g.id}>
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void copyCode(g.id, g.invite_code);
-                  }}
-                  className="mt-4 w-full rounded-lg bg-gray-50 px-3 py-2 text-left font-mono text-sm text-gray-900 ring-1 ring-gray-200 hover:bg-gray-100"
-                  title="Click to copy invite code"
+                  onClick={() => router.push(`/groups/${g.id}`)}
+                  className="flex w-full items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-sm transition hover:border-gray-300"
                 >
-                  {g.invite_code}
-                  {copiedId === g.id ? (
-                    <span className="ml-2 text-xs font-sans text-green-700">
-                      Copied!
-                    </span>
-                  ) : null}
+                  <Avatar name={g.name} size={36} />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-gray-900">{g.name}</p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void copyCode(g.id, g.invite_code);
+                      }}
+                      className="mt-1 font-mono text-xs text-gray-600 hover:text-gray-900"
+                    >
+                      {g.invite_code}
+                      {copiedId === g.id ? (
+                        <span className="ml-2 font-sans text-green-700">
+                          Copied
+                        </span>
+                      ) : null}
+                    </button>
+                  </div>
                 </button>
-                <p className="mt-3 text-xs text-gray-500">
-                  {memberCount} member{memberCount === 1 ? "" : "s"}
-                </p>
-              </article>
-            );
-          })}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

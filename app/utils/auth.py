@@ -44,6 +44,10 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 # ── JWT ───────────────────────────────────────────────────────────────────────
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(
+    tokenUrl="/api/v1/auth/login",
+    auto_error=False,
+)
 
 
 def create_access_token(user_id: UUID) -> tuple[str, int]:
@@ -84,6 +88,18 @@ def decode_token(token: str) -> dict:
         AppException.unauthorized("Invalid or expired token")
 
 
+def decode_token_optional(token: str) -> dict | None:
+    """Returns payload or None if token is invalid/expired (no exception)."""
+    try:
+        return jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
+        )
+    except JWTError:
+        return None
+
+
 # ── FastAPI dependency ────────────────────────────────────────────────────────
 def get_current_user(
     token: str = Depends(oauth2_scheme),
@@ -116,4 +132,30 @@ def get_current_user(
     if not user:
         AppException.unauthorized("User not found or inactive")
 
+    return user
+
+
+def get_current_user_optional(
+    token: str | None = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db),
+):
+    """
+    Returns User if Authorization header has a valid token, else None.
+    """
+    from app.models.user import User
+
+    if not token:
+        return None
+    payload = decode_token_optional(token)
+    if not payload:
+        return None
+    user_id = payload.get("sub")
+    if not user_id:
+        return None
+    user = db.execute(
+        select(User).where(
+            User.id == UUID(user_id),
+            User.is_active.is_(True),
+        )
+    ).scalar_one_or_none()
     return user

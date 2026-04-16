@@ -6,7 +6,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { apiFetch } from "@/lib/api";
 
-type UserMe = { id: string; full_name: string; email: string };
+type UserMe = {
+  id: string;
+  full_name: string;
+  email: string;
+  avatar_url: string | null;
+};
 
 type PlanOut = {
   plan: string;
@@ -61,7 +66,8 @@ type TrendingApi = {
 type Companion = {
   user_id: string;
   full_name: string;
-  /** Not provided by group member API — reserved for future. */
+  avatar_url: string | null;
+  /** Not shown in chip — modal may omit if privacy changes. */
   email: string;
 };
 
@@ -125,9 +131,11 @@ function daysBetween(from: Date, to: Date): number {
 
 function CompanionChip({
   fullName,
+  avatarUrl,
   onClick,
 }: {
   fullName: string;
+  avatarUrl: string | null;
   onClick: () => void;
 }) {
   return (
@@ -137,7 +145,7 @@ function CompanionChip({
       className="rounded-full ring-2 ring-gray-200 transition hover:ring-violet-400"
       title={fullName}
     >
-      <Avatar name={fullName} size={40} />
+      <Avatar name={fullName} src={avatarUrl} size={40} />
     </button>
   );
 }
@@ -217,6 +225,7 @@ export default function DashboardPage() {
           byId.set(m.user_id, {
             user_id: m.user_id,
             full_name: m.full_name,
+            avatar_url: m.avatar_url,
             email: "",
           });
         }
@@ -311,6 +320,7 @@ export default function DashboardPage() {
                 me?.email?.trim() ||
                 "Traveler"
               }
+              src={me?.avatar_url}
               size={56}
               className="ring-2 ring-violet-200/80 ring-offset-2 ring-offset-white"
             />
@@ -361,6 +371,7 @@ export default function DashboardPage() {
                 <CompanionChip
                   key={c.user_id}
                   fullName={c.full_name}
+                  avatarUrl={c.avatar_url}
                   onClick={() => setModalCompanion(c)}
                 />
               ))
@@ -501,6 +512,7 @@ export default function DashboardPage() {
             <div className="flex flex-col items-center">
               <Avatar
                 name={modalCompanion.full_name}
+                src={modalCompanion.avatar_url}
                 size={48}
                 className="ring-2 ring-violet-200"
               />
