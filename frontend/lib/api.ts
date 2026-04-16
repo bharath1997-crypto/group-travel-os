@@ -1,3 +1,5 @@
+import { getToken } from "@/lib/auth";
+
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
@@ -68,6 +70,27 @@ export async function apiFetch<T = unknown>(
   if (res.status === 204) return undefined as T;
 
   return res.json() as Promise<T>;
+}
+
+export async function apiFetchWithStatus<T>(
+  path: string,
+  options?: RequestInit,
+): Promise<{ data: T | null; status: number }> {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  const url = `${API_BASE}${normalized}`;
+  const token = getToken();
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...((options?.headers as Record<string, string>) ?? {}),
+    },
+  });
+  if (!res.ok) return { data: null, status: res.status };
+  if (res.status === 204) return { data: null, status: res.status };
+  const data = (await res.json()) as T;
+  return { data, status: res.status };
 }
 
 /** GET (and optional future public methods) without sending auth — for share links. */

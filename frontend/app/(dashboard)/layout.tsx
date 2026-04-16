@@ -7,7 +7,6 @@ import type { ReactElement, ReactNode } from "react";
 
 import { NotificationBell } from "@/components/NotificationBell";
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
-import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { VerificationBanner } from "@/components/VerificationBanner";
 import {
@@ -16,15 +15,23 @@ import {
   type DashboardUser,
 } from "@/contexts/dashboard-user-context";
 import { clearToken } from "@/lib/auth";
-import { clearLocalProfileCache } from "@/lib/profileCache";
 
-/** Google / Facebook and other OAuth providers store the picture in avatar_url. */
-function userAvatarSrc(user: DashboardUser | null | undefined): string {
-  const url = user?.avatar_url?.trim();
-  if (url) return url;
+function dicebearLoreleiAvatarSrc(userId: string | null | undefined): string {
   const seed =
-    user?.id && user.id.length > 0 ? user.id : "travello-user";
+    userId && userId.length > 0 ? userId : "travello-user";
   return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;
+}
+
+function formatDisplayName(full: string | null | undefined): string {
+  if (!full?.trim()) return "Traveler";
+  return full
+    .trim()
+    .split(/\s+/)
+    .map(
+      (w) =>
+        w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
+    )
+    .join(" ");
 }
 
 type NavDef = { href: string; label: string; Icon: () => ReactElement };
@@ -180,8 +187,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
   function handleLogout() {
     clearToken();
-    clearLocalProfileCache();
-    router.replace("/login");
+    router.push("/login");
   }
 
   const profileFilled = user?.profile_completion_filled ?? 0;
@@ -250,30 +256,33 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         <div className="border-t border-white/30 px-4 py-4">
           <div className="flex items-start gap-3">
             <img
-              src={userAvatarSrc(user)}
+              src={dicebearLoreleiAvatarSrc(user?.id)}
               alt=""
               width={36}
               height={36}
               className="h-9 w-9 shrink-0 rounded-full border-2 border-white/30 bg-white/10 object-cover"
             />
-            <div className="min-w-0 flex-1 pt-0.5">
+            <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-white">
-                {user?.full_name ?? "Traveler"}
+                {formatDisplayName(user?.full_name)}
               </p>
               {username ? (
-                <p className="truncate text-xs text-white/70">@{username}</p>
+                <p className="truncate text-xs text-[rgba(255,255,255,0.5)]">
+                  @{username}
+                </p>
               ) : null}
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="mt-3 flex w-full items-center gap-2 text-left text-[rgba(255,255,255,0.5)] transition-colors hover:text-white"
+              >
+                <span className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center [&_svg]:h-full [&_svg]:w-full">
+                  <IconDoor />
+                </span>
+                <span className="text-xs font-medium">Sign out</span>
+              </button>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-            aria-label="Sign out"
-          >
-            <IconDoor />
-            <span className="text-sm font-medium">Sign out</span>
-          </button>
         </div>
       </aside>
 
@@ -295,7 +304,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <div className="hidden justify-end border-b border-[#E9ECEF] bg-white px-6 py-2 md:flex">
+        <div className="hidden border-b border-[#E9ECEF] bg-white px-6 py-2 md:flex md:justify-end">
           <NotificationBell variant="light" />
         </div>
 
@@ -305,10 +314,31 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             <PostOAuthWelcomeModal />
             <VerificationBanner />
             {showProfileBanner ? (
-              <ProfileCompletionBanner
-                filled={profileFilled}
-                total={profileTotal}
-              />
+              <div className="border-b border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-emerald-50/40 px-4 py-3">
+                <div className="flex max-w-4xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span
+                      className="mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-slate-400 ring-4 ring-slate-200/80"
+                      aria-hidden
+                    />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-900">
+                        Complete your profile
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-600">
+                        {profileFilled} of {profileTotal} details added — finish
+                        anytime for recovery and a better experience.
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/complete-profile"
+                    className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#E94560] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
+                  >
+                    Complete now
+                  </Link>
+                </div>
+              </div>
             ) : null}
             <div className="w-full">{children}</div>
           </div>
