@@ -117,8 +117,19 @@ const MAIN_NAV: {
   },
 ];
 
-const SECONDARY_NAV: { href: string; label: string; emoji: string }[] = [
+const SECONDARY_NAV: {
+  href: string;
+  label: string;
+  emoji: string;
+  upgradeBadge?: boolean;
+}[] = [
   { href: "/settings", label: "Settings", emoji: "⚙️" },
+  {
+    href: "/subscription",
+    label: "Subscription",
+    emoji: "⭐",
+    upgradeBadge: true,
+  },
   { href: "/help", label: "Help", emoji: "❓" },
 ];
 
@@ -138,6 +149,7 @@ function SidebarNavLink({
   messageUnread,
   notifCount,
   kind,
+  showUpgradeBadge,
 }: {
   href: string;
   label: string;
@@ -146,6 +158,7 @@ function SidebarNavLink({
   messageUnread: boolean;
   notifCount: number;
   kind?: "messages" | "notifications";
+  showUpgradeBadge?: boolean;
 }) {
   return (
     <Link
@@ -161,6 +174,16 @@ function SidebarNavLink({
         {emoji}
       </span>
       <span className="min-w-0 flex-1 truncate">{label}</span>
+      {showUpgradeBadge ? (
+        <span
+          className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
+            active ? "bg-white/25 text-white" : "text-white"
+          }`}
+          style={active ? undefined : { backgroundColor: CORAL }}
+        >
+          Upgrade
+        </span>
+      ) : null}
       {kind === "messages" && messageUnread ? (
         <span
           className="absolute right-2 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-red-500 ring-2 ring-[#0F3460]"
@@ -330,6 +353,10 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               active={isActive(pathname, item.href)}
               messageUnread={messageUnread}
               notifCount={notifCount}
+              showUpgradeBadge={
+                Boolean(item.upgradeBadge) &&
+                (plan?.plan ?? "free") === "free"
+              }
             />
           ))}
         </nav>
