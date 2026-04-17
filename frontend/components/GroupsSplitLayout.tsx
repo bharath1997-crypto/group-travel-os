@@ -48,11 +48,11 @@ export function GroupsSplitLayout({ children }: { children: ReactNode }) {
       <aside className="w-full shrink-0 border-b border-gray-200 bg-gray-50 md:w-72 md:border-b-0 md:border-r">
         <div className="flex items-center justify-between border-b border-gray-200 bg-white px-3 py-3 md:sticky md:top-0">
           <div>
-            <h2 className="text-sm font-semibold text-gray-900">Groups</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Travel Hub</h2>
             <p className="text-xs text-gray-500">Yours</p>
           </div>
           <Link
-            href="/groups"
+            href="/travel-hub"
             className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-800 hover:bg-gray-100"
           >
             Home

@@ -24,7 +24,7 @@ type NavItem = {
 const nav: NavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/trips", label: "Trips" },
-  { href: "/groups", label: "Groups" },
+  { href: "/travel-hub", label: "Travel Hub" },
   { href: "/feed", label: "Feed" },
   { href: "/map", label: "Map", mapPin: true },
   { href: "/weather", label: "Weather" },

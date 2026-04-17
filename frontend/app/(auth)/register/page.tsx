@@ -74,6 +74,7 @@ function RegisterPageInner() {
   const [oauthAlert, setOauthAlert] = useState<OauthLoginAlert | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [oauthBusy, setOauthBusy] = useState(false);
+  const [socialToast, setSocialToast] = useState<string | null>(null);
   const isBusy = submitting || oauthBusy;
 
   useEffect(() => {
@@ -303,7 +304,20 @@ function RegisterPageInner() {
           mode="register"
           disabled={isBusy}
           onBusyChange={setOauthBusy}
+          onInstagramClick={() => {
+            setSocialToast("Instagram login coming soon");
+            window.setTimeout(() => setSocialToast(null), 3200);
+          }}
         />
+
+        {socialToast ? (
+          <p
+            className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-center text-sm text-amber-950"
+            role="status"
+          >
+            {socialToast}
+          </p>
+        ) : null}
 
         <p className="mt-8 text-center text-sm text-[#1E3A5F]/80">
           Already have account?{" "}

@@ -55,6 +55,12 @@ function LoginPageInner() {
   const [submitting, setSubmitting] = useState(false);
   const [oauthBusy, setOauthBusy] = useState(false);
   const [verifiedNotice, setVerifiedNotice] = useState(false);
+  const [oauthHints, setOauthHints] = useState<{
+    google: string | null;
+    fb: string | null;
+    photo: string | null;
+  }>({ google: null, fb: null, photo: null });
+  const [socialToast, setSocialToast] = useState<string | null>(null);
 
   const isBusy = submitting || oauthBusy;
 
@@ -73,6 +79,19 @@ function LoginPageInner() {
     const path = qs.toString() ? `/login?${qs.toString()}` : "/login";
     router.replace(path, { scroll: false });
   }, [searchParams, router]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      setOauthHints({
+        google: localStorage.getItem("travello_google_hint"),
+        fb: localStorage.getItem("travello_fb_hint"),
+        photo: localStorage.getItem("travello_google_photo"),
+      });
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     if (searchParams.get("verified") !== "1") return;
@@ -278,7 +297,27 @@ function LoginPageInner() {
           <span className="h-px flex-1 bg-slate-200" />
         </div>
 
-        <OAuthButtons mode="login" disabled={isBusy} onBusyChange={setOauthBusy} />
+        <OAuthButtons
+          mode="login"
+          disabled={isBusy}
+          onBusyChange={setOauthBusy}
+          googleHint={oauthHints.google}
+          googlePhotoUrl={oauthHints.photo}
+          facebookHint={oauthHints.fb}
+          onInstagramClick={() => {
+            setSocialToast("Instagram login coming soon");
+            window.setTimeout(() => setSocialToast(null), 3200);
+          }}
+        />
+
+        {socialToast ? (
+          <p
+            className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-center text-sm text-amber-950"
+            role="status"
+          >
+            {socialToast}
+          </p>
+        ) : null}
 
         <p className="mt-8 text-center text-sm text-[#1E3A5F]/80">
           New here?{" "}

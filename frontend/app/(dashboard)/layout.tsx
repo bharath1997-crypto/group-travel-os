@@ -3,18 +3,31 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactElement, ReactNode } from "react";
+import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 
-import { NotificationBell } from "@/components/NotificationBell";
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { VerificationBanner } from "@/components/VerificationBanner";
 import {
   DashboardUserProvider,
   useDashboardUser,
-  type DashboardUser,
 } from "@/contexts/dashboard-user-context";
+import { apiFetch } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
+
+const CORAL = "#E94560";
+
+type PlanOut = {
+  plan: string;
+  status: string;
+  current_period_end: string | null;
+};
+
+type NavBadges = {
+  has_unread_messages?: boolean;
+  unread_notifications?: number;
+};
 
 function dicebearLoreleiAvatarSrc(userId: string | null | undefined): string {
   const seed =
@@ -26,112 +39,35 @@ function formatDisplayName(full: string | null | undefined): string {
   if (!full?.trim()) return "Traveler";
   return full
     .trim()
-    .split(/\s+/)
+    .split(" ")
+    .filter(Boolean)
     .map(
-      (w) =>
-        w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
+      (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
     )
     .join(" ");
 }
 
-type NavDef = { href: string; label: string; Icon: () => ReactElement };
-
-function IconHome() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-      <polyline points="9 22 9 12 15 12 15 22" />
-    </svg>
-  );
+function isActive(pathname: string, href: string): boolean {
+  if (href === "/dashboard") return pathname === "/dashboard";
+  if (href === "/travel-hub") {
+    return pathname === "/travel-hub" || pathname.startsWith("/groups/");
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function IconPlane() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
-    </svg>
-  );
-}
-
-function IconPeople() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-
-function IconPin() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M12 21c-4-3-7-6-7-9a7 7 0 1114 0c0 3-3 6-7 9z" />
-      <circle cx="12" cy="11" r="2" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-function IconCompass() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="12" cy="12" r="10" />
-      <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-    </svg>
-  );
-}
-
-function IconMap() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
-      <line x1="8" y1="2" x2="8" y2="18" />
-      <line x1="16" y1="6" x2="16" y2="22" />
-    </svg>
-  );
-}
-
-function IconCloud() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
-    </svg>
-  );
-}
-
-function IconChart() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <line x1="18" y1="20" x2="18" y2="10" />
-      <line x1="12" y1="20" x2="12" y2="4" />
-      <line x1="6" y1="20" x2="6" y2="14" />
-    </svg>
-  );
-}
-
-function IconPerson() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 20c1.5-4 4-6 8-6s6.5 2 8 6" />
-    </svg>
-  );
-}
-
-function IconSettings() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-    </svg>
-  );
-}
-
-/** Door + exit — sign out */
 function IconDoor() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
       <path d="M4 4h9a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z" />
       <circle cx="10" cy="12" r="1" fill="currentColor" stroke="none" />
       <path d="M16 12h4M18 10l2 2-2 2" />
@@ -139,40 +75,135 @@ function IconDoor() {
   );
 }
 
-function IconUserCircle() {
+function BellIcon({ className }: { className?: string }) {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="9" r="3.5" />
-      <path d="M6.5 19.5c.8-3.5 3.5-5.5 5.5-5.5s4.7 2 5.5 5.5" />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
     </svg>
   );
 }
 
-const SIDEBAR_NAV: NavDef[] = [
-  { href: "/dashboard", label: "Dashboard", Icon: IconHome },
-  { href: "/trips", label: "Trips", Icon: IconPlane },
-  { href: "/groups", label: "Groups", Icon: IconPeople },
-  { href: "/live", label: "Live", Icon: IconPin },
-  { href: "/feed", label: "Explore", Icon: IconCompass },
-  { href: "/map", label: "Map", Icon: IconMap },
-  { href: "/weather", label: "Weather", Icon: IconCloud },
-  { href: "/stats", label: "Stats", Icon: IconChart },
-  { href: "/profile", label: "Profile", Icon: IconPerson },
-  { href: "/settings", label: "Settings", Icon: IconSettings },
+const MAIN_NAV: {
+  href: string;
+  label: string;
+  emoji: string;
+  kind?: "messages" | "notifications";
+}[] = [
+  { href: "/dashboard", label: "Dashboard", emoji: "🏠" },
+  { href: "/trips", label: "Trips", emoji: "✈️" },
+  { href: "/travel-hub", label: "Travel Hub", emoji: "👥" },
+  { href: "/live", label: "Live", emoji: "📍" },
+  { href: "/feed", label: "Explore", emoji: "🧭" },
+  { href: "/map", label: "Map", emoji: "🗺️" },
+  { href: "/weather", label: "Weather", emoji: "🌤️" },
+  { href: "/stats", label: "Stats", emoji: "📊" },
+  { href: "/messages", label: "Messages", emoji: "💬", kind: "messages" },
+  {
+    href: "/notifications",
+    label: "Notifications",
+    emoji: "🔔",
+    kind: "notifications",
+  },
 ];
 
-const MOBILE_NAV: { href: string; label: string; Icon: () => ReactElement }[] = [
-  { href: "/dashboard", label: "Home", Icon: IconHome },
-  { href: "/trips", label: "Trips", Icon: IconPlane },
-  { href: "/groups", label: "Groups", Icon: IconPeople },
-  { href: "/live", label: "Live", Icon: IconPin },
-  { href: "/profile", label: "Profile", Icon: IconUserCircle },
+const SECONDARY_NAV: { href: string; label: string; emoji: string }[] = [
+  { href: "/settings", label: "Settings", emoji: "⚙️" },
+  { href: "/help", label: "Help", emoji: "❓" },
 ];
 
-function isActive(pathname: string, href: string): boolean {
-  if (href === "/dashboard") return pathname === "/dashboard";
-  return pathname === href || pathname.startsWith(`${href}/`);
+const MOBILE_NAV: { href: string; label: string; emoji: string }[] = [
+  { href: "/dashboard", label: "Home", emoji: "🏠" },
+  { href: "/trips", label: "Trips", emoji: "✈️" },
+  { href: "/travel-hub", label: "Travel Hub", emoji: "👥" },
+  { href: "/messages", label: "Messages", emoji: "💬" },
+  { href: "/profile", label: "Profile", emoji: "👤" },
+];
+
+function SidebarNavLink({
+  href,
+  label,
+  emoji,
+  active,
+  messageUnread,
+  notifCount,
+  kind,
+}: {
+  href: string;
+  label: string;
+  emoji: string;
+  active: boolean;
+  messageUnread: boolean;
+  notifCount: number;
+  kind?: "messages" | "notifications";
+}) {
+  return (
+    <Link
+      href={href}
+      className={[
+        "relative flex items-center gap-2.5 rounded-lg border-l-[3px] py-[9px] pl-[9px] pr-3 text-[13px] font-medium transition-colors duration-150",
+        active
+          ? "border-white bg-[#E94560] text-white"
+          : "border-transparent text-[rgba(255,255,255,0.65)] hover:bg-[rgba(255,255,255,0.1)] hover:text-white",
+      ].join(" ")}
+    >
+      <span className="inline-flex w-5 shrink-0 justify-center text-base leading-none">
+        {emoji}
+      </span>
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {kind === "messages" && messageUnread ? (
+        <span
+          className="absolute right-2 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-red-500 ring-2 ring-[#0F3460]"
+          aria-hidden
+        />
+      ) : null}
+      {kind === "notifications" && notifCount > 0 ? (
+        <span className="inline-flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white">
+          {notifCount > 99 ? "99+" : notifCount}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
+function PlanBadgeFooter({ plan }: { plan: string | null }) {
+  const p = plan ?? "free";
+  if (p === "free")
+    return (
+      <span className="inline-flex max-w-full truncate rounded-full bg-[rgba(255,255,255,0.15)] px-2 py-0.5 text-[10px] font-semibold text-[rgba(255,255,255,0.85)]">
+        Free
+      </span>
+    );
+  if (p === "pass_3day" || p === "pass_7day")
+    return (
+      <span
+        className="inline-flex max-w-full truncate rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
+        style={{ backgroundColor: CORAL }}
+      >
+        {p === "pass_3day" ? "3-Day Pass" : "7-Day Pass"}
+      </span>
+    );
+  if (p === "pro" || p === "enterprise")
+    return (
+      <span className="inline-flex max-w-full truncate rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-900">
+        Pro
+      </span>
+    );
+  return (
+    <span className="inline-flex max-w-full truncate rounded-full bg-[rgba(255,255,255,0.15)] px-2 py-0.5 text-[10px] font-semibold text-[rgba(255,255,255,0.85)]">
+      {p}
+    </span>
+  );
 }
 
 function DashboardChrome({ children }: { children: ReactNode }) {
@@ -180,10 +211,10 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, loading } = useDashboardUser();
 
-  const username =
-    user && typeof user === "object" && "username" in user
-      ? (user as { username?: string | null }).username
-      : null;
+  const [plan, setPlan] = useState<PlanOut | null>(null);
+  const [planLoading, setPlanLoading] = useState(true);
+  const [messageUnread, setMessageUnread] = useState(false);
+  const [notifCount, setNotifCount] = useState(0);
 
   function handleLogout() {
     clearToken();
@@ -198,6 +229,45 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     !profileComplete &&
     pathname !== "/complete-profile";
 
+  useEffect(() => {
+    if (loading || !user) return;
+    let c = false;
+    setPlanLoading(true);
+    (async () => {
+      try {
+        const p = await apiFetch<PlanOut>("/subscriptions/me");
+        if (!c) setPlan(p);
+      } catch {
+        if (!c) setPlan(null);
+      } finally {
+        if (!c) setPlanLoading(false);
+      }
+    })();
+    return () => {
+      c = true;
+    };
+  }, [loading, user]);
+
+  useEffect(() => {
+    if (loading || !user) return;
+    let c = false;
+    (async () => {
+      try {
+        const b = await apiFetch<NavBadges>("/users/me/nav-badges");
+        if (c) return;
+        setMessageUnread(Boolean(b.has_unread_messages));
+        setNotifCount(
+          Math.max(0, Math.floor(b.unread_notifications ?? 0)),
+        );
+      } catch {
+        /* Optional endpoint — keep defaults */
+      }
+    })();
+    return () => {
+      c = true;
+    };
+  }, [loading, user]);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F8F9FA]">
@@ -210,85 +280,109 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="min-h-screen min-h-[100dvh] bg-[#F8F9FA]">
+      {/* Desktop sidebar */}
       <aside
-        className="hidden w-[240px] shrink-0 flex-col bg-[#0F3460] md:flex"
+        className="fixed left-0 top-0 z-40 hidden h-full min-h-screen w-[220px] flex-col bg-[#0F3460] md:flex"
       >
-        <div className="px-4 pt-6">
+        <div className="shrink-0 border-b border-[rgba(255,255,255,0.1)] px-4 py-5">
           <Link
             href="/dashboard"
-            className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+            className="flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/50"
           >
             <Image
               src="/logo-dark.svg"
-              alt="Travello"
-              width={200}
-              height={60}
-              className="h-10 w-auto max-w-[200px]"
-              priority
-            />
-          </Link>
-        </div>
-
-        <nav className="mt-8 flex flex-1 flex-col gap-1 overflow-y-auto px-3 pb-4">
-          {SIDEBAR_NAV.map(({ href, label, Icon }) => {
-            const active = isActive(pathname, href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={[
-                  "flex items-center gap-3 rounded-lg border-l-[3px] px-3 py-2.5 text-sm font-semibold transition-colors",
-                  active
-                    ? "border-l-white bg-[#E94560] text-white shadow-sm"
-                    : "border-l-transparent text-white/70 hover:bg-[rgba(255,255,255,0.1)] hover:text-white",
-                ].join(" ")}
-              >
-                <span className={active ? "text-white" : "text-inherit"}>
-                  <Icon />
-                </span>
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="border-t border-white/30 px-4 py-4">
-          <div className="flex items-start gap-3">
-            <img
-              src={dicebearLoreleiAvatarSrc(user?.id)}
               alt=""
               width={36}
               height={36}
-              className="h-9 w-9 shrink-0 rounded-full border-2 border-white/30 bg-white/10 object-cover"
+              className="h-9 w-9 shrink-0 rounded-md object-contain"
+              priority
             />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-white">
-                {formatDisplayName(user?.full_name)}
-              </p>
-              {username ? (
-                <p className="truncate text-xs text-[rgba(255,255,255,0.5)]">
-                  @{username}
+            <span className="text-lg font-bold tracking-tight text-white">
+              travello
+            </span>
+          </Link>
+        </div>
+
+        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden px-3 py-3">
+          {MAIN_NAV.map((item) => (
+            <SidebarNavLink
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              emoji={item.emoji}
+              active={isActive(pathname, item.href)}
+              messageUnread={messageUnread}
+              notifCount={notifCount}
+              kind={item.kind}
+            />
+          ))}
+          <div
+            className="my-2 h-px shrink-0 bg-[rgba(255,255,255,0.1)]"
+            aria-hidden
+          />
+          {SECONDARY_NAV.map((item) => (
+            <SidebarNavLink
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              emoji={item.emoji}
+              active={isActive(pathname, item.href)}
+              messageUnread={messageUnread}
+              notifCount={notifCount}
+            />
+          ))}
+        </nav>
+
+        <div className="shrink-0 border-t border-[rgba(255,255,255,0.1)] p-3">
+          <div className="flex items-center gap-2">
+            <div
+              role="button"
+              tabIndex={0}
+              className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg p-1 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+              onClick={() => router.push("/profile")}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  router.push("/profile");
+                }
+              }}
+            >
+              <img
+                src={dicebearLoreleiAvatarSrc(user?.id)}
+                alt=""
+                width={34}
+                height={34}
+                className="h-[34px] w-[34px] shrink-0 rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-bold text-white">
+                  {formatDisplayName(user?.full_name)}
                 </p>
-              ) : null}
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="mt-3 flex w-full items-center gap-2 text-left text-[rgba(255,255,255,0.5)] transition-colors hover:text-white"
-              >
-                <span className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center [&_svg]:h-full [&_svg]:w-full">
-                  <IconDoor />
-                </span>
-                <span className="text-xs font-medium">Sign out</span>
-              </button>
+                <div className="mt-0.5">
+                  {planLoading ? (
+                    <span className="inline-block h-4 w-14 animate-pulse rounded-full bg-[rgba(255,255,255,0.15)]" />
+                  ) : (
+                    <PlanBadgeFooter plan={plan?.plan ?? null} />
+                  )}
+                </div>
+              </div>
             </div>
+            <button
+              type="button"
+              title="Sign out"
+              onClick={handleLogout}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[rgba(255,255,255,0.4)] transition-colors hover:text-[rgba(255,255,255,0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+              aria-label="Sign out"
+            >
+              <IconDoor />
+            </button>
           </div>
         </div>
       </aside>
 
-      <div className="flex min-h-screen min-h-[100dvh] flex-1 flex-col pb-[72px] md:pb-0">
-        <header className="sticky top-0 z-20 grid w-full grid-cols-[1fr_auto_1fr] items-center border-b border-[#E9ECEF] bg-white px-3 py-2.5 md:hidden">
-          <span className="w-9" aria-hidden />
+      <div className="flex min-h-screen min-h-[100dvh] flex-col pb-[72px] md:ml-[220px] md:pb-0">
+        <header className="relative sticky top-0 z-30 flex h-[52px] items-center justify-center border-b border-[#E9ECEF] bg-white px-3 md:hidden">
           <div className="flex justify-center">
             <Image
               src="/logo-light.svg"
@@ -299,16 +393,16 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               priority
             />
           </div>
-          <div className="flex justify-end pr-1">
-            <NotificationBell variant="light" />
-          </div>
+          <Link
+            href="/notifications"
+            className="absolute right-3 inline-flex h-10 w-10 items-center justify-center rounded-xl text-[#6C757D] transition-colors hover:bg-[#F8F9FA] hover:text-[#0F3460] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
+            aria-label="Notifications"
+          >
+            <BellIcon className="h-6 w-6" />
+          </Link>
         </header>
 
-        <div className="hidden border-b border-[#E9ECEF] bg-white px-6 py-2 md:flex md:justify-end">
-          <NotificationBell variant="light" />
-        </div>
-
-        <main className="min-h-0 flex-1 bg-[#F8F9FA] p-6">
+        <main className="min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-5">
           <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
             <PresenceHeartbeat />
             <PostOAuthWelcomeModal />
@@ -346,7 +440,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
         <nav className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-[#E9ECEF] bg-white px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden">
           <div className="mx-auto flex w-full max-w-lg justify-between">
-            {MOBILE_NAV.map(({ href, label, Icon }) => {
+            {MOBILE_NAV.map(({ href, label, emoji }) => {
               const active = isActive(pathname, href);
               return (
                 <Link
@@ -355,9 +449,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   className="flex min-w-0 flex-1 flex-col items-center gap-1 py-1"
                 >
                   <span
-                    className={active ? "text-[#E94560]" : "text-[#6C757D]"}
+                    className={`text-lg leading-none ${
+                      active ? "text-[#E94560]" : "text-[#6C757D]"
+                    }`}
+                    aria-hidden
                   >
-                    <Icon />
+                    {emoji}
                   </span>
                   <span
                     className={`max-w-full truncate text-[10px] font-semibold ${

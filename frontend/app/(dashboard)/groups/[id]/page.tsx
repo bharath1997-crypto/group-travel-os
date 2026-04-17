@@ -345,7 +345,7 @@ export default function GroupDetailPage() {
   return (
     <div className="p-6 md:p-8">
       <Link
-        href="/groups"
+        href="/travel-hub"
         className="inline-flex text-sm font-medium text-gray-700 hover:text-gray-900"
       >
         ← Back to groups
