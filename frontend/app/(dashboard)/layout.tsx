@@ -252,6 +252,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     !profileComplete &&
     pathname !== "/complete-profile";
 
+  const isMapPage = pathname === "/map";
+
   useEffect(() => {
     if (loading || !user) return;
     let c = false;
@@ -408,61 +410,88 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex min-h-screen min-h-[100dvh] flex-col pb-[72px] md:ml-[220px] md:pb-0">
-        <header className="relative sticky top-0 z-30 flex h-[52px] items-center justify-center border-b border-[#E9ECEF] bg-white px-3 md:hidden">
-          <div className="flex justify-center">
-            <Image
-              src="/logo-light.svg"
-              alt="Travello"
-              width={200}
-              height={60}
-              className="h-8 w-auto max-w-[160px]"
-              priority
-            />
-          </div>
-          <Link
-            href="/notifications"
-            className="absolute right-3 inline-flex h-10 w-10 items-center justify-center rounded-xl text-[#6C757D] transition-colors hover:bg-[#F8F9FA] hover:text-[#0F3460] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
-            aria-label="Notifications"
-          >
-            <BellIcon className="h-6 w-6" />
-          </Link>
-        </header>
+      <div
+        className={
+          isMapPage
+            ? "flex min-h-screen min-h-[100dvh] flex-col md:ml-[220px]"
+            : "flex min-h-screen min-h-[100dvh] flex-col pb-[72px] md:ml-[220px] md:pb-0"
+        }
+      >
+        {!isMapPage && (
+          <header className="relative sticky top-0 z-30 flex h-[52px] items-center justify-center border-b border-[#E9ECEF] bg-white px-3 md:hidden">
+            <div className="flex justify-center">
+              <Image
+                src="/logo-light.svg"
+                alt="Travello"
+                width={200}
+                height={60}
+                className="h-8 w-auto max-w-[160px]"
+                priority
+              />
+            </div>
+            <Link
+              href="/notifications"
+              className="absolute right-3 inline-flex h-10 w-10 items-center justify-center rounded-xl text-[#6C757D] transition-colors hover:bg-[#F8F9FA] hover:text-[#0F3460] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
+              aria-label="Notifications"
+            >
+              <BellIcon className="h-6 w-6" />
+            </Link>
+          </header>
+        )}
 
-        <main className="min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-5">
-          <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-            <PresenceHeartbeat />
-            <PostOAuthWelcomeModal />
-            <VerificationBanner />
-            {showProfileBanner ? (
-              <div className="border-b border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-emerald-50/40 px-4 py-3">
-                <div className="flex max-w-4xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <span
-                      className="mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-slate-400 ring-4 ring-slate-200/80"
-                      aria-hidden
-                    />
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-900">
-                        Complete your profile
-                      </p>
-                      <p className="mt-0.5 text-xs text-slate-600">
-                        {profileFilled} of {profileTotal} details added — finish
-                        anytime for recovery and a better experience.
-                      </p>
-                    </div>
-                  </div>
-                  <Link
-                    href="/complete-profile"
-                    className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#E94560] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
-                  >
-                    Complete now
-                  </Link>
-                </div>
+        <main
+          className={
+            isMapPage
+              ? "flex min-h-0 flex-1 flex-col overflow-hidden bg-white p-0"
+              : "min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-5"
+          }
+        >
+          {isMapPage ? (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+              <div className="sr-only" aria-hidden>
+                <PresenceHeartbeat />
               </div>
-            ) : null}
-            <div className="w-full">{children}</div>
-          </div>
+              <PostOAuthWelcomeModal />
+              <VerificationBanner />
+              <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+                {children}
+              </div>
+            </div>
+          ) : (
+            <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+              <PresenceHeartbeat />
+              <PostOAuthWelcomeModal />
+              <VerificationBanner />
+              {showProfileBanner ? (
+                <div className="border-b border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-emerald-50/40 px-4 py-3">
+                  <div className="flex max-w-4xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span
+                        className="mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-slate-400 ring-4 ring-slate-200/80"
+                        aria-hidden
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-900">
+                          Complete your profile
+                        </p>
+                        <p className="mt-0.5 text-xs text-slate-600">
+                          {profileFilled} of {profileTotal} details added — finish
+                          anytime for recovery and a better experience.
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      href="/complete-profile"
+                      className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#E94560] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
+                    >
+                      Complete now
+                    </Link>
+                  </div>
+                </div>
+              ) : null}
+              <div className="w-full">{children}</div>
+            </div>
+          )}
         </main>
 
         <nav className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-[#E9ECEF] bg-white px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden">
