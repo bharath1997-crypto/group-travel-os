@@ -147,6 +147,8 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
+        # Monorepo .env often includes Next.js NEXT_PUBLIC_* and other keys the API does not model.
+        extra="ignore",
     )
 
 
