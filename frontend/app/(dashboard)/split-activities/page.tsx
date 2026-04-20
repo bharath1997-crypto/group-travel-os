@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
 
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
@@ -10,11 +18,15 @@ import { clearToken } from "@/lib/auth";
 const NAVY = "#0F3460";
 const CORAL = "#E94560";
 const GREEN = "#2ECC71";
+const BORDER = "#E9ECEF";
+const BG = "#F8F9FA";
+const GROUP_CIRCLE_COLORS = ["#E94560", "#0F3460", "#2ECC71", "#F39C12"];
 
 type UserOut = {
   id: string;
   full_name: string | null;
   email?: string | null;
+  username?: string | null;
 };
 
 type GroupMemberOut = {
@@ -76,21 +88,38 @@ type ExpenseWithTrip = ExpenseOut & {
   group_name: string;
 };
 
+type ViewState =
+  | { type: "overview" }
+  | { type: "activity" }
+  | { type: "group"; id: string }
+  | { type: "friend"; id: string };
+
+type MemberRow = {
+  user_id: string;
+  full_name: string;
+  username?: string | null;
+};
+
+type ToastState = {
+  message: string;
+  type: "success" | "error" | "info";
+};
+
 function dicebearSrc(seed: string): string {
   return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;
 }
 
-function formatMoney(amount: number, currency = "USD"): string {
+function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: currency.length === 3 ? currency : "USD",
+    currency: "USD",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
 }
 
-function timeAgo(iso: string): string {
-  const d = new Date(iso);
+function timeAgo(dateStr: string): string {
+  const d = new Date(dateStr);
   const ms = Date.now() - d.getTime();
   const s = Math.floor(ms / 1000);
   if (s < 60) return "Just now";
@@ -106,70 +135,143 @@ function timeAgo(iso: string): string {
   ) {
     return "Yesterday";
   }
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const nowY = today.getFullYear();
+  const dY = d.getFullYear();
+  if (dY === nowY) {
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
-function tripEmoji(title: string): string {
-  const t = title.toLowerCase();
-  if (/beach|sea|ocean|island|coast/.test(t)) return "🏖️";
-  if (/mountain|ski|hike|peak|alps/.test(t)) return "🏔️";
-  if (/city|york|london|paris|tokyo/.test(t)) return "🏙️";
-  if (/camp|forest|nature/.test(t)) return "🌲";
-  return "✈️";
+function groupExpensesByMonth(
+  expenses: ExpenseWithTrip[],
+): Map<string, ExpenseWithTrip[]> {
+  const map = new Map<string, ExpenseWithTrip[]>();
+  const sorted = [...expenses].sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
+  for (const e of sorted) {
+    const d = new Date(e.created_at);
+    const key = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(e);
+  }
+  return map;
 }
 
-const CATEGORY_CIRCLES: { emoji: string; label: string }[] = [
-  { emoji: "🍽️", label: "Food" },
-  { emoji: "🏨", label: "Hotel" },
-  { emoji: "🚗", label: "Transport" },
-  { emoji: "🎭", label: "Activity" },
-  { emoji: "🛍️", label: "Shopping" },
-  { emoji: "💊", label: "Medical" },
-  { emoji: "✈️", label: "Flight" },
-  { emoji: "🎵", label: "Entertainment" },
-  { emoji: "📦", label: "Other" },
-];
+function getCategoryIcon(category: string): string {
+  const c = category.toLowerCase().trim();
+  const map: Record<string, string> = {
+    accommodation: "🏨",
+    hotel: "🏨",
+    transport: "🚗",
+    food: "🍽️",
+    activities: "🎭",
+    activity: "🎭",
+    shopping: "🛍️",
+    medical: "💊",
+    flight: "✈️",
+    entertainment: "🎵",
+    other: "📋",
+  };
+  if (map[c]) return map[c]!;
+  if (c.includes("food")) return "🍽️";
+  if (c.includes("hotel") || c.includes("accommodation")) return "🏨";
+  if (c.includes("transport")) return "🚗";
+  return "📋";
+}
+
+function parseCategoryFromDescription(desc: string): string {
+  const m = desc.match(/^\[([^\]]+)\]/);
+  return m ? m[1]! : "other";
+}
+
+function stripCategoryPrefix(desc: string): string {
+  return desc
+    .replace(/^\[[^\]]+\]\s*/, "")
+    .replace(/\n\nNotes:[\s\S]*$/, "");
+}
+
+function getPersonBalance(
+  balances: BalanceWithTrip[],
+  personId: string,
+  currentUserId: string,
+): number {
+  let net = 0;
+  for (const b of balances) {
+    if (b.from_user_id === currentUserId && b.to_user_id === personId)
+      net -= b.amount;
+    if (b.from_user_id === personId && b.to_user_id === currentUserId)
+      net += b.amount;
+  }
+  return Math.round(net * 100) / 100;
+}
+
+function firstLetter(name: string): string {
+  const t = name.trim();
+  return t ? t[0]!.toUpperCase() : "?";
+}
 
 export default function SplitActivitiesPage() {
   const router = useRouter();
   const [user, setUser] = useState<UserOut | null>(null);
   const [groups, setGroups] = useState<GroupOut[]>([]);
   const [trips, setTrips] = useState<TripWithGroup[]>([]);
-  const [expenses, setExpenses] = useState<ExpenseWithTrip[]>([]);
-  const [balances, setBalances] = useState<BalanceWithTrip[]>([]);
+  const [allExpenses, setAllExpenses] = useState<ExpenseWithTrip[]>([]);
+  const [allBalances, setAllBalances] = useState<BalanceWithTrip[]>([]);
+  const [allMembers, setAllMembers] = useState<MemberRow[]>([]);
+  const [view, setView] = useState<ViewState>({ type: "overview" });
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [selectedTrip, setSelectedTrip] = useState<string>("");
-  const [activeTab, setActiveTab] = useState("overview");
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error" | "info";
-  } | null>(null);
-
-  const [historyFilter, setHistoryFilter] = useState<
-    "all" | "paid_by_me" | "i_owe" | "settled"
-  >("all");
+  const [showSettleForm, setShowSettleForm] = useState(false);
+  const [settleTarget, setSettleTarget] = useState<BalanceWithTrip | null>(
+    null,
+  );
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const [mobileTab, setMobileTab] = useState<
+    "overview" | "activity" | "groups" | "friends"
+  >("overview");
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
   const [formDesc, setFormDesc] = useState("");
   const [formAmount, setFormAmount] = useState("");
-  const [formCurrency, setFormCurrency] = useState("USD");
   const [formTripId, setFormTripId] = useState("");
-  const [formSplitType, setFormSplitType] = useState<
-    "equal" | "custom" | "pct"
-  >("equal");
-  const [formCategory, setFormCategory] = useState<string>("Food");
+  const [formCategory, setFormCategory] = useState("Food");
   const [formSplitUserIds, setFormSplitUserIds] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [settleSheetLine, setSettleSheetLine] =
-    useState<BalanceWithTrip | null>(null);
-
-  const showToast = useCallback(
-    (message: string, type: "success" | "error" | "info" = "success") => {
-      setToast({ message, type });
-      globalThis.setTimeout(() => setToast(null), 3000);
-    },
-    [],
+  const [formPaidBy, setFormPaidBy] = useState("");
+  const [formSplitMode, setFormSplitMode] = useState<
+    "equal" | "exact" | "percent"
+  >("equal");
+  const [formDate, setFormDate] = useState(() =>
+    new Date().toISOString().slice(0, 10),
   );
+  const [formNotes, setFormNotes] = useState("");
+  const [formReceiptPreview, setFormReceiptPreview] = useState<string | null>(
+    null,
+  );
+  const [showPeoplePicker, setShowPeoplePicker] = useState(false);
+  const [peopleSearch, setPeopleSearch] = useState("");
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [showNotesPanel, setShowNotesPanel] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+
+  const [settlePaidBy, setSettlePaidBy] = useState<"you" | "them">("you");
+  const [settleAmountStr, setSettleAmountStr] = useState("");
+  const [settleDate, setSettleDate] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  );
+  const [settling, setSettling] = useState(false);
+
+  const showToast = useCallback((message: string, t: ToastState["type"]) => {
+    setToast({ message, type: t });
+    globalThis.setTimeout(() => setToast(null), 3000);
+  }, []);
 
   const handleUnauthorized = useCallback(() => {
     clearToken();
@@ -178,20 +280,12 @@ export default function SplitActivitiesPage() {
 
   const nameByUserId = useMemo(() => {
     const m = new Map<string, string>();
-    for (const g of groups) {
-      for (const mem of g.members) {
-        m.set(mem.user_id, mem.full_name);
-      }
+    for (const mem of allMembers) {
+      m.set(mem.user_id, mem.full_name);
     }
     if (user?.id) m.set(user.id, user.full_name || "You");
     return m;
-  }, [groups, user]);
-
-  const memberCount = useCallback(
-    (trip: TripWithGroup) =>
-      groups.find((g) => g.id === trip.group_id)?.members.length ?? 0,
-    [groups],
-  );
+  }, [allMembers, user]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -209,10 +303,24 @@ export default function SplitActivitiesPage() {
         return;
       }
       setUser(meRes.data);
-      setGroups(groupsRes.data);
+      const gList = groupsRes.data;
+      setGroups(gList);
+
+      const memberMap = new Map<string, MemberRow>();
+      for (const g of gList) {
+        for (const m of g.members) {
+          if (!memberMap.has(m.user_id)) {
+            memberMap.set(m.user_id, {
+              user_id: m.user_id,
+              full_name: m.full_name,
+            });
+          }
+        }
+      }
+      setAllMembers([...memberMap.values()]);
 
       const tripResults = await Promise.all(
-        groupsRes.data.map((g) =>
+        gList.map((g) =>
           apiFetchWithStatus<TripOut[]>(`/groups/${g.id}/trips`),
         ),
       );
@@ -222,8 +330,8 @@ export default function SplitActivitiesPage() {
       }
 
       const flatTrips: TripWithGroup[] = [];
-      for (let i = 0; i < groupsRes.data.length; i++) {
-        const g = groupsRes.data[i];
+      for (let i = 0; i < gList.length; i++) {
+        const g = gList[i]!;
         const list = tripResults[i]?.data ?? [];
         for (const t of list) {
           flatTrips.push({ ...t, group_name: g.name });
@@ -232,8 +340,8 @@ export default function SplitActivitiesPage() {
       setTrips(flatTrips);
 
       if (flatTrips.length === 0) {
-        setExpenses([]);
-        setBalances([]);
+        setAllExpenses([]);
+        setAllBalances([]);
         setLoading(false);
         return;
       }
@@ -258,18 +366,16 @@ export default function SplitActivitiesPage() {
       const allBal: BalanceWithTrip[] = [];
 
       for (let i = 0; i < flatTrips.length; i++) {
-        const t = flatTrips[i];
+        const t = flatTrips[i]!;
         const [expRes, balRes] = perTrip[i]!;
-        const exList = expRes.data ?? [];
-        for (const e of exList) {
+        for (const e of expRes.data ?? []) {
           allExp.push({
             ...e,
             trip_title: t.title,
             group_name: t.group_name,
           });
         }
-        const lines = balRes.data ?? [];
-        for (const line of lines) {
+        for (const line of balRes.data ?? []) {
           allBal.push({
             ...line,
             trip_id: t.id,
@@ -279,12 +385,12 @@ export default function SplitActivitiesPage() {
         }
       }
 
-      setExpenses(allExp);
-      setBalances(allBal);
+      setAllExpenses(allExp);
+      setAllBalances(allBal);
     } catch (e) {
       console.error(e);
       showToast(
-        e instanceof Error ? e.message : "Failed to load split data",
+        e instanceof Error ? e.message : "Failed to load data",
         "error",
       );
     } finally {
@@ -297,118 +403,78 @@ export default function SplitActivitiesPage() {
   }, [loadData]);
 
   useEffect(() => {
-    if (trips.length && !selectedTrip) {
-      setSelectedTrip(trips[0]!.id);
-    }
-  }, [trips, selectedTrip]);
+    if (user?.id) setFormPaidBy(user.id);
+  }, [user?.id]);
 
   const summary = useMemo(() => {
     const uid = user?.id;
-    let totalYouOwe = 0;
-    let totalOwedToYou = 0;
+    let youOwe = 0;
+    let youAreOwed = 0;
     if (uid) {
-      for (const b of balances) {
-        if (b.from_user_id === uid) totalYouOwe += b.amount;
-        if (b.to_user_id === uid) totalOwedToYou += b.amount;
+      for (const b of allBalances) {
+        if (b.from_user_id === uid) youOwe += b.amount;
+        if (b.to_user_id === uid) youAreOwed += b.amount;
       }
     }
-    const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
-    const activeTrips = trips.filter((t) => t.status !== "completed").length;
-    return { totalYouOwe, totalOwedToYou, totalSpent, activeTrips };
-  }, [balances, expenses, trips, user?.id]);
+    const totalBalance = youAreOwed - youOwe;
+    return { youOwe, youAreOwed, totalBalance };
+  }, [allBalances, user?.id]);
 
-  const tripNetForUser = useCallback(
-    (tripId: string, uid: string | undefined) => {
+  const tripsInGroup = useCallback(
+    (groupId: string) => trips.filter((t) => t.group_id === groupId),
+    [trips],
+  );
+
+  const groupNetForUser = useCallback(
+    (groupId: string, uid: string | undefined) => {
       if (!uid) return 0;
+      const tids = new Set(tripsInGroup(groupId).map((t) => t.id));
       let net = 0;
-      for (const b of balances) {
-        if (b.trip_id !== tripId) continue;
+      for (const b of allBalances) {
+        if (!tids.has(b.trip_id)) continue;
         if (b.from_user_id === uid) net -= b.amount;
         if (b.to_user_id === uid) net += b.amount;
       }
-      return net;
+      return Math.round(net * 100) / 100;
     },
-    [balances],
+    [allBalances, tripsInGroup],
   );
 
-  const recentExpenses = useMemo(() => {
-    return [...expenses]
-      .sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      )
-      .slice(0, 10);
-  }, [expenses]);
+  const expensesForGroup = useCallback(
+    (groupId: string) => {
+      const tids = new Set(tripsInGroup(groupId).map((t) => t.id));
+      return allExpenses.filter((e) => tids.has(e.trip_id));
+    },
+    [allExpenses, tripsInGroup],
+  );
 
-  const tripStats = useMemo(() => {
-    const uid = user?.id;
-    return trips.map((t) => {
-      const tex = expenses.filter((e) => e.trip_id === t.id);
-      const total = tex.reduce((s, e) => s + e.amount, 0);
-      let settledSplits = 0;
-      let totalSplits = 0;
-      for (const e of tex) {
-        for (const sp of e.splits) {
-          totalSplits += 1;
-          if (sp.is_settled) settledSplits += 1;
-        }
-      }
-      const pct =
-        totalSplits > 0 ? Math.round((settledSplits / totalSplits) * 100) : 0;
-      const net = tripNetForUser(t.id, uid);
-      return {
-        trip: t,
-        total,
-        settledPct: pct,
-        count: tex.length,
-        net,
-        members: memberCount(t),
-      };
-    });
-  }, [expenses, trips, user?.id, tripNetForUser, memberCount]);
+  const balancesForGroup = useCallback(
+    (groupId: string) => {
+      const tids = new Set(tripsInGroup(groupId).map((t) => t.id));
+      return allBalances.filter((b) => tids.has(b.trip_id));
+    },
+    [allBalances, tripsInGroup],
+  );
 
-  const netByPerson = useMemo(() => {
-    const net = new Map<string, number>();
-    for (const b of balances) {
-      net.set(
-        b.from_user_id,
-        (net.get(b.from_user_id) ?? 0) - b.amount,
-      );
-      net.set(
-        b.to_user_id,
-        (net.get(b.to_user_id) ?? 0) + b.amount,
-      );
-    }
-    return net;
-  }, [balances]);
-
-  const historyRows = useMemo(() => {
-    const uid = user?.id;
-    let list = [...expenses].sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    );
-    if (!uid) return list;
-    if (historyFilter === "paid_by_me") {
-      list = list.filter((e) => e.paid_by === uid);
-    } else if (historyFilter === "i_owe") {
-      list = list.filter((e) => {
-        if (e.paid_by === uid) return false;
-        const mine = e.splits.find((s) => s.user_id === uid);
-        return mine && !mine.is_settled;
+  const expensesWithFriend = useCallback(
+    (friendId: string) => {
+      const uid = user?.id;
+      if (!uid) return [];
+      return allExpenses.filter((e) => {
+        const splitIds = new Set(e.splits.map((s) => s.user_id));
+        const bothIn =
+          splitIds.has(friendId) &&
+          splitIds.has(uid) &&
+          e.splits.length > 0;
+        const payerInvolved =
+          e.paid_by === friendId || e.paid_by === uid;
+        return bothIn && payerInvolved;
       });
-    } else if (historyFilter === "settled") {
-      list = list.filter((e) => e.splits.every((s) => s.is_settled));
-    }
-    return list;
-  }, [expenses, historyFilter, user?.id]);
-
-  const selectedTripData = useMemo(
-    () => trips.find((t) => t.id === selectedTrip),
-    [trips, selectedTrip],
+    },
+    [allExpenses, user?.id],
   );
 
-  const membersForFormTrip = useMemo(() => {
+  const membersForSelectedTrip = useMemo(() => {
     const t = trips.find((x) => x.id === formTripId);
     if (!t) return [];
     const g = groups.find((x) => x.id === t.group_id);
@@ -419,35 +485,37 @@ export default function SplitActivitiesPage() {
     if (!formTripId) return;
     const t = trips.find((x) => x.id === formTripId);
     const g = t ? groups.find((x) => x.id === t.group_id) : null;
-    const ids = (g?.members ?? []).map((m) => m.user_id);
-    setFormSplitUserIds(ids);
+    setFormSplitUserIds((g?.members ?? []).map((m) => m.user_id));
   }, [formTripId, trips, groups]);
 
-  const splitPreview = useMemo(() => {
+  const splitPreviewEqual = useMemo(() => {
     const amt = parseFloat(formAmount);
-    if (!Number.isFinite(amt) || amt <= 0 || formSplitUserIds.length === 0) {
-      return [] as { userId: string; share: number }[];
-    }
+    if (!Number.isFinite(amt) || amt <= 0 || formSplitUserIds.length === 0)
+      return [] as { id: string; share: number }[];
     const n = formSplitUserIds.length;
     const per = Math.floor((amt / n) * 100) / 100;
-    const out: { userId: string; share: number }[] = [];
+    const out: { id: string; share: number }[] = [];
     let acc = 0;
     for (let i = 0; i < n; i++) {
       if (i === n - 1) {
         out.push({
-          userId: formSplitUserIds[i]!,
-          share: round2(amt - acc),
+          id: formSplitUserIds[i]!,
+          share: Math.round((amt - acc) * 100) / 100,
         });
       } else {
-        out.push({ userId: formSplitUserIds[i]!, share: per });
+        out.push({ id: formSplitUserIds[i]!, share: per });
         acc += per;
       }
     }
     return out;
   }, [formAmount, formSplitUserIds]);
 
-  function round2(n: number) {
-    return Math.round(n * 100) / 100;
+  function setViewState(next: ViewState) {
+    setView(next);
+    if (next.type === "overview") setMobileTab("overview");
+    else if (next.type === "activity") setMobileTab("activity");
+    else if (next.type === "group") setMobileTab("groups");
+    else if (next.type === "friend") setMobileTab("friends");
   }
 
   async function submitExpense() {
@@ -461,1003 +529,1721 @@ export default function SplitActivitiesPage() {
       return;
     }
     if (!formDesc.trim()) {
-      showToast("Add a description", "error");
+      showToast("Enter a description", "error");
       return;
     }
     if (formSplitUserIds.length === 0) {
-      showToast("Choose who splits this", "error");
+      showToast("Choose who to split with", "error");
+      return;
+    }
+    if (formSplitMode !== "equal") {
+      showToast("Only equal split is supported by the API right now", "info");
       return;
     }
 
-    const desc =
-      formCategory && formCategory !== "Other"
-        ? `[${formCategory}] ${formDesc.trim()}`
-        : formDesc.trim();
+    let description = `[${formCategory}] ${formDesc.trim()}`;
+    if (formNotes.trim()) {
+      description = `${description}\n\nNotes: ${formNotes.trim()}`;
+    }
+    if (formReceiptPreview) {
+      description = `${description}\n\n[receipt attached]`;
+    }
+    description = description.slice(0, 300);
 
     setSaving(true);
     try {
       await apiFetch(`/trips/${formTripId}/expenses`, {
         method: "POST",
         body: JSON.stringify({
-          description: desc,
+          description,
           amount: amt,
-          currency: formCurrency,
+          currency: "USD",
           split_with: formSplitUserIds,
         }),
       });
       setShowAddForm(false);
       setFormDesc("");
       setFormAmount("");
+      setFormNotes("");
+      setFormReceiptPreview(null);
+      setShowNotesPanel(false);
       setFormCategory("Food");
-      setFormSplitType("equal");
       showToast("Expense added! 💸", "success");
       await loadData();
     } catch (e) {
-      showToast(
-        e instanceof Error ? e.message : "Could not save expense",
-        "error",
-      );
+      const msg = e instanceof Error ? e.message : "Could not save";
+      if (/401|unauthor/i.test(msg)) handleUnauthorized();
+      else showToast(msg, "error");
     } finally {
       setSaving(false);
     }
   }
 
-  async function deleteExpense(tripId: string, expenseId: string) {
+  async function runSettle(b: BalanceWithTrip) {
+    setSettling(true);
     try {
-      await apiFetch(`/trips/${tripId}/expenses/${expenseId}`, {
-        method: "DELETE",
-      });
-      showToast("Expense removed", "success");
+      const exps = allExpenses.filter((e) => e.trip_id === b.trip_id);
+      const fromId = b.from_user_id;
+      const toId = b.to_user_id;
+      const ids: string[] = [];
+      for (const e of exps) {
+        if (e.paid_by !== toId) continue;
+        const sp = e.splits.find(
+          (s) => s.user_id === fromId && !s.is_settled,
+        );
+        if (sp) ids.push(sp.id);
+      }
+      if (ids.length === 0) {
+        for (const e of exps) {
+          for (const sp of e.splits) {
+            if (sp.user_id === fromId && !sp.is_settled) ids.push(sp.id);
+          }
+        }
+      }
+      for (const sid of ids) {
+        await apiFetch(
+          `/trips/${b.trip_id}/expenses/splits/${sid}/settle`,
+          { method: "PATCH", body: "{}" },
+        );
+      }
+      if (ids.length === 0) {
+        showToast("No unsettled splits found", "info");
+      } else {
+        showToast("Settled! 🎉", "success");
+      }
+      setShowSettleForm(false);
+      setSettleTarget(null);
       await loadData();
     } catch (e) {
-      showToast(
-        e instanceof Error ? e.message : "Could not delete",
-        "error",
-      );
+      const msg = e instanceof Error ? e.message : "Settle failed";
+      if (/401|unauthor/i.test(msg)) handleUnauthorized();
+      else showToast(msg, "error");
+    } finally {
+      setSettling(false);
     }
   }
 
-  const tripExpensesFiltered = useMemo(() => {
-    if (!selectedTrip) return [];
-    return expenses
-      .filter((e) => e.trip_id === selectedTrip)
-      .sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
-  }, [expenses, selectedTrip]);
-
-  const tripBalanceLines = useMemo(() => {
-    return balances.filter((b) => b.trip_id === selectedTrip);
-  }, [balances, selectedTrip]);
-
-  const noTrips = !loading && trips.length === 0;
-  const noExpenses = !loading && trips.length > 0 && expenses.length === 0;
-  const allSettled =
-    !loading &&
-    trips.length > 0 &&
-    expenses.length > 0 &&
-    balances.length === 0 &&
-    summary.totalYouOwe < 0.01 &&
-    summary.totalOwedToYou < 0.01;
-
-  function openAddExpense() {
-    setFormTripId(selectedTrip || trips[0]?.id || "");
-    setShowAddForm(true);
+  function openSettle(b: BalanceWithTrip) {
+    setSettleTarget(b);
+    setSettleAmountStr(String(b.amount));
+    setSettleDate(new Date().toISOString().slice(0, 10));
+    setShowSettleForm(true);
   }
 
-  function summaryCardsBlock() {
+  function expenseRow(e: ExpenseWithTrip) {
+    const uid = user?.id;
+    const payerName = nameByUserId.get(e.paid_by) || "Someone";
+    const mine = uid ? e.splits.find((s) => s.user_id === uid) : undefined;
+    const cat = parseCategoryFromDescription(e.description);
+    const icon = getCategoryIcon(cat);
+    const desc = stripCategoryPrefix(e.description);
+    const dayStr = new Date(e.created_at).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+
+    let rightTop = "";
+    let rightBottom: { text: string; color: string } | null = null;
+
+    if (uid && e.paid_by === uid) {
+      rightTop = "you paid";
+      const others = e.splits.filter((s) => s.user_id !== uid);
+      const lent = others.reduce((a, s) => a + s.amount, 0);
+      const firstOther = others[0];
+      const lendName = firstOther
+        ? nameByUserId.get(firstOther.user_id) || "someone"
+        : "someone";
+      if (lent > 0.001) {
+        rightBottom = {
+          text: `you lent ${lendName}`,
+          color: GREEN,
+        };
+      }
+    } else if (uid && mine) {
+      rightTop = `${payerName} paid`;
+      rightBottom = {
+        text: "you borrowed",
+        color: CORAL,
+      };
+    } else {
+      rightTop = `${payerName} paid`;
+    }
+
     return (
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
-        <div className="rounded-2xl border border-[#E9ECEF] bg-white px-4 py-4 text-center shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-[#6C757D]">
-            You Owe
+      <div
+        key={e.id}
+        className="flex gap-3 border-b border-[#f0f0f0] px-4 py-3 last:border-b-0"
+      >
+        <div className="w-12 shrink-0 pt-0.5 text-[11px] font-medium text-[#6C757D]">
+          {dayStr}
+        </div>
+        <div className="text-lg leading-none">{icon}</div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-bold text-[#2C3E50]">{desc}</p>
+          <p className="text-[11px] text-[#6C757D]">{e.trip_title}</p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-[11px] text-[#6C757D]">{rightTop}</p>
+          <p className="text-[13px] font-semibold text-[#6C757D]">
+            {formatCurrency(e.amount)}
           </p>
-          {summary.totalYouOwe < 0.01 ? (
-            <p className="mt-2 text-2xl font-extrabold leading-tight text-[#2ECC71]">
-              All clear! 🎉
-            </p>
-          ) : (
+          {rightBottom ? (
             <p
-              className="mt-2 text-2xl font-extrabold leading-tight"
-              style={{ color: CORAL }}
+              className="text-[12px] font-bold"
+              style={{ color: rightBottom.color }}
             >
-              {formatMoney(summary.totalYouOwe)}
+              {rightBottom.text}{" "}
+              {mine && e.paid_by !== uid
+                ? formatCurrency(mine.amount)
+                : e.paid_by === uid && rightBottom.text.startsWith("you lent")
+                  ? formatCurrency(
+                      e.splits
+                        .filter((s) => s.user_id !== uid)
+                        .reduce((a, s) => a + s.amount, 0),
+                    )
+                  : ""}
             </p>
-          )}
-        </div>
-        <div className="rounded-2xl border border-[#E9ECEF] bg-white px-4 py-4 text-center shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-[#6C757D]">
-            Owed to You
-          </p>
-          <p
-            className="mt-2 text-2xl font-extrabold leading-tight"
-            style={{ color: GREEN }}
-          >
-            {formatMoney(summary.totalOwedToYou)}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-[#E9ECEF] bg-white px-4 py-4 text-center shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-[#6C757D]">
-            Total Spent
-          </p>
-          <p
-            className="mt-2 text-2xl font-extrabold leading-tight"
-            style={{ color: NAVY }}
-          >
-            {formatMoney(summary.totalSpent)}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-[#E9ECEF] bg-white px-4 py-4 text-center shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-[#6C757D]">
-            Active Trips
-          </p>
-          <p
-            className="mt-2 text-2xl font-extrabold leading-tight"
-            style={{ color: NAVY }}
-          >
-            {summary.activeTrips}
-          </p>
+          ) : null}
         </div>
       </div>
     );
   }
 
-  function whoOwesBlock() {
-    return (
-      <section className="overflow-hidden rounded-2xl border border-[#E9ECEF] bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-[#E9ECEF] px-5 py-3">
-          <h2 className="text-[15px] font-bold text-[#0F3460]">
-            ⚖️ Who owes who
-          </h2>
-          <button
-            type="button"
-            className="text-xs font-semibold text-[#E94560]"
-            onClick={() => showToast("Settle all flow coming soon", "info")}
-          >
-            Settle all →
-          </button>
-        </div>
-        {balances.length === 0 ? (
-          <p className="px-5 py-6 text-sm text-[#6C757D]">No balances yet.</p>
-        ) : (
-          balances.map((b, idx) => {
-            const fromName = nameByUserId.get(b.from_user_id) || "Someone";
-            const toName = nameByUserId.get(b.to_user_id) || "Someone";
-            const youOwe = user?.id === b.from_user_id;
-            return (
-              <div
-                key={`${b.trip_id}-${idx}`}
-                className="flex flex-wrap items-center gap-3 border-b border-[#f5f5f5] px-5 py-3.5 last:border-b-0"
-              >
-                <img
-                  src={dicebearSrc(b.from_user_id)}
-                  alt=""
-                  className="h-10 w-10 shrink-0 rounded-full border border-[#E9ECEF] bg-[#F8F9FA]"
-                  width={40}
-                  height={40}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-[#0F3460]">
-                    {fromName} → {toName}
-                  </p>
-                  <p className="text-[11px] text-[#6C757D]">
-                    {b.trip_title} · {b.group_name}
-                  </p>
-                </div>
-                <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
-                  <p
-                    className="text-lg font-extrabold"
-                    style={{ color: youOwe ? CORAL : GREEN }}
-                  >
-                    {formatMoney(b.amount)}
-                  </p>
-                  {youOwe ? (
-                    <button
-                      type="button"
-                      className="rounded-full border border-[#ffd6de] bg-[#fff0f3] px-3 py-1 text-[10px] font-bold text-[#E94560]"
-                      onClick={() => setSettleSheetLine(b)}
-                    >
-                      Settle up
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="rounded-full border border-[#bbf7d0] bg-[#ecfdf5] px-3 py-1 text-[10px] font-bold text-[#15803d]"
-                      onClick={() =>
-                        showToast("Reminder sent!", "success")
-                      }
-                    >
-                      Remind
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })
-        )}
-      </section>
-    );
-  }
+  const friendsList = useMemo(
+    () => allMembers.filter((m) => m.user_id !== user?.id),
+    [allMembers, user?.id],
+  );
 
-  return (
-    <div className="mx-auto w-full max-w-6xl pb-24 md:pb-8">
-      <header className="mb-6 flex flex-col justify-between gap-4 border-b border-[#E9ECEF] bg-white px-5 py-5 sm:flex-row sm:items-center sm:px-6">
-        <div>
-          <h1
-            className="text-[22px] font-extrabold leading-tight"
-            style={{ color: NAVY }}
-          >
-            💸 Split Activities
-          </h1>
-          <p className="mt-0.5 text-[12px] text-[#6C757D]">
-            Expenses across all your trips
-          </p>
-        </div>
+  const allSettledBanner =
+    !loading &&
+    groups.length > 0 &&
+    allExpenses.length > 0 &&
+    allBalances.length === 0 &&
+    Math.abs(summary.totalBalance) < 0.01;
+
+  function sidebarInner() {
+    return (
+      <div className="flex h-full min-h-0 flex-col p-4">
         <button
           type="button"
-          onClick={() => openAddExpense()}
-          disabled={noTrips}
-          className="shrink-0 rounded-xl px-5 py-2.5 text-[13px] font-bold text-white shadow-[0_2px_10px_rgba(233,69,96,0.3)] disabled:opacity-50"
+          onClick={() => {
+            setShowAddForm(true);
+            setShowMobileSidebar(false);
+          }}
+          disabled={groups.length === 0}
+          className="w-full rounded-lg py-2.5 text-[13px] font-bold text-white disabled:opacity-50"
           style={{ background: CORAL }}
         >
           + Add Expense
         </button>
-      </header>
+        <button
+          type="button"
+          onClick={() => {
+            showToast("Select a balance below to settle", "info");
+            setShowMobileSidebar(false);
+          }}
+          className="mt-1.5 w-full rounded-lg border-[1.5px] bg-white py-2.5 text-[13px] font-bold text-[#2C3E50]"
+          style={{ borderColor: BORDER }}
+        >
+          Settle up
+        </button>
 
-      {loading ? (
-        <div className="space-y-4 px-1 sm:px-0">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={`sk-s-${i}`}
-                className="h-24 animate-pulse rounded-2xl bg-gray-200"
-              />
-            ))}
-          </div>
-          <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={`sk-b-${i}`}
-                className="h-14 animate-pulse rounded-lg bg-gray-200"
-              />
-            ))}
-          </div>
-        </div>
-      ) : noTrips ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-[#E9ECEF] bg-white py-16 text-center shadow-sm">
-          <span className="text-6xl">✈️</span>
-          <p className="mt-4 text-lg font-bold text-[#0F3460]">No trips yet</p>
-          <p className="mt-1 max-w-xs text-sm text-[#6C757D]">
-            Create a trip to start splitting expenses
-          </p>
-          <Link
-            href="/trips"
-            className="mt-6 rounded-xl px-6 py-3 text-sm font-bold text-white"
-            style={{ background: CORAL }}
+        <div className="mt-5 space-y-1">
+          <button
+            type="button"
+            onClick={() => {
+              setViewState({ type: "overview" });
+              setShowMobileSidebar(false);
+            }}
+            className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-semibold ${
+              view.type === "overview"
+                ? "border-l-[3px] text-[#E94560]"
+                : "border-l-[3px] border-transparent text-[#6C757D]"
+            }`}
+            style={
+              view.type === "overview" ? { borderLeftColor: CORAL } : undefined
+            }
           >
-            Create Trip →
+            📊 Dashboard
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setViewState({ type: "activity" });
+              setShowMobileSidebar(false);
+            }}
+            className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-semibold ${
+              view.type === "activity"
+                ? "border-l-[3px] text-[#E94560]"
+                : "border-l-[3px] border-transparent text-[#6C757D]"
+            }`}
+            style={
+              view.type === "activity" ? { borderLeftColor: CORAL } : undefined
+            }
+          >
+            📋 Recent Activity
+          </button>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-[#6C757D]">
+            Groups
+          </span>
+          <Link
+            href="/travel-hub"
+            className="text-[10px] font-bold"
+            style={{ color: CORAL }}
+            onClick={() => setShowMobileSidebar(false)}
+          >
+            + add
           </Link>
         </div>
-      ) : (
-        <>
-          {allSettled ? (
-            <div className="mb-6 rounded-2xl border border-[#bbf7d0] bg-[#ecfdf5] px-5 py-4 text-center">
-              <p className="text-2xl">🎉</p>
-              <p className="mt-1 text-base font-bold text-[#15803d]">
-                All settled up!
-              </p>
-              <p className="text-sm text-[#166534]">No pending balances</p>
-            </div>
-          ) : null}
-
-          {noExpenses ? (
-            <div className="mb-6 flex flex-col items-center justify-center rounded-2xl border border-[#E9ECEF] bg-white py-14 text-center shadow-sm">
-              <span className="text-5xl">💸</span>
-              <p className="mt-4 text-lg font-bold text-[#0F3460]">
-                No expenses yet
-              </p>
-              <p className="mt-1 max-w-xs text-sm text-[#6C757D]">
-                Add your first group expense
-              </p>
+        <div className="mt-1 max-h-[28vh] space-y-0.5 overflow-y-auto lg:max-h-none">
+          {groups.map((g, idx) => {
+            const net = groupNetForUser(g.id, user?.id);
+            const active = view.type === "group" && view.id === g.id;
+            const color =
+              GROUP_CIRCLE_COLORS[idx % GROUP_CIRCLE_COLORS.length]!;
+            let balLine: ReactNode;
+            if (Math.abs(net) < 0.01) {
+              balLine = (
+                <span className="text-[11px] text-[#6C757D]">settled up</span>
+              );
+            } else if (net < 0) {
+              balLine = (
+                <span className="text-[11px] font-medium" style={{ color: CORAL }}>
+                  you owe {formatCurrency(Math.abs(net))}
+                </span>
+              );
+            } else {
+              balLine = (
+                <span className="text-[11px] font-medium" style={{ color: GREEN }}>
+                  you are owed {formatCurrency(net)}
+                </span>
+              );
+            }
+            return (
               <button
+                key={g.id}
                 type="button"
-                onClick={() => openAddExpense()}
-                className="mt-6 rounded-xl px-6 py-3 text-sm font-bold text-white"
-                style={{ background: CORAL }}
+                onClick={() => {
+                  setViewState({ type: "group", id: g.id });
+                  setShowMobileSidebar(false);
+                }}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left ${
+                  active ? "bg-[#fff0f3]" : "hover:bg-[#f8f9fa]"
+                }`}
               >
-                + Add Expense
-              </button>
-            </div>
-          ) : null}
-
-          {!noExpenses ? (
-            <>
-              <div className="mb-4 flex gap-1 overflow-x-auto border-b border-[#E9ECEF] pb-px [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {(
-                  [
-                    ["overview", "Overview"],
-                    ["by_trip", "By Trip"],
-                    ["balances", "Balances"],
-                    ["history", "History"],
-                  ] as const
-                ).map(([key, label]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setActiveTab(key)}
-                    className={`shrink-0 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors ${
-                      activeTab === key
-                        ? "border-[#E94560] text-[#0F3460]"
-                        : "border-transparent text-[#6C757D]"
-                    }`}
+                <span
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+                  style={{ background: color }}
+                >
+                  {firstLetter(g.name)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="truncate text-[13px] font-bold"
+                    style={{ color: NAVY }}
                   >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              {activeTab === "overview" ? (
-                <div className="flex flex-col gap-6 lg:grid lg:grid-cols-5 lg:items-start lg:gap-8">
-                  <div className="order-2 space-y-8 lg:order-1 lg:col-span-3">
-                    <section>
-                      <h2 className="mb-3 text-base font-bold text-[#0F3460]">
-                        📋 Recent activity
-                      </h2>
-                      <div className="overflow-hidden rounded-2xl border border-[#E9ECEF] bg-white shadow-sm">
-                        {recentExpenses.length === 0 ? (
-                          <p className="px-5 py-6 text-sm text-[#6C757D]">
-                            No activity yet.
-                          </p>
-                        ) : (
-                          recentExpenses.map((e) => {
-                            const uid = user?.id;
-                            const mine = uid
-                              ? e.splits.find((s) => s.user_id === uid)
-                              : undefined;
-                            const payerName =
-                              nameByUserId.get(e.paid_by) || "Someone";
-                            return (
-                              <div
-                                key={e.id}
-                                className="flex gap-3 border-b border-[#f5f5f5] px-5 py-3 last:border-b-0"
-                              >
-                                <img
-                                  src={dicebearSrc(e.paid_by)}
-                                  alt=""
-                                  className="h-10 w-10 shrink-0 rounded-full border border-[#E9ECEF]"
-                                  width={40}
-                                  height={40}
-                                />
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-bold text-[#0F3460]">
-                                    {payerName}{" "}
-                                    <span className="font-semibold">
-                                      paid for {e.description}
-                                    </span>
-                                  </p>
-                                  <p className="text-[11px] text-[#6C757D]">
-                                    {e.trip_title} · split {e.splits.length}{" "}
-                                    {e.splits.length === 1 ? "way" : "ways"} ·{" "}
-                                    {timeAgo(e.created_at)}
-                                  </p>
-                                </div>
-                                <div className="shrink-0 text-right">
-                                  <p className="text-sm font-bold text-[#0F3460]">
-                                    {formatMoney(e.amount, e.currency)}
-                                  </p>
-                                  {mine ? (
-                                    <p
-                                      className="text-[11px] font-bold"
-                                      style={{
-                                        color: mine.is_settled
-                                          ? GREEN
-                                          : CORAL,
-                                      }}
-                                    >
-                                      Your share:{" "}
-                                      {formatMoney(mine.amount, e.currency)}
-                                    </p>
-                                  ) : null}
-                                </div>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    </section>
-
-                    <section>
-                      <h2 className="mb-3 text-base font-bold text-[#0F3460]">
-                        ✈️ By trip
-                      </h2>
-                      <div className="space-y-2">
-                        {tripStats.map(
-                          ({
-                            trip,
-                            total,
-                            settledPct,
-                            count,
-                            net,
-                            members,
-                          }) => (
-                            <Link
-                              key={trip.id}
-                              href={`/trips/${trip.id}`}
-                              className="mb-2 block cursor-pointer rounded-[14px] border border-[#E9ECEF] bg-white px-4 py-3.5 shadow-sm transition hover:border-[#E94560]/30"
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="flex min-w-0 flex-1 items-start gap-3">
-                                  <span className="text-3xl leading-none">
-                                    {tripEmoji(trip.title)}
-                                  </span>
-                                  <div className="min-w-0">
-                                    <p className="font-bold text-[#0F3460]">
-                                      {trip.title}
-                                    </p>
-                                    <p className="text-[11px] text-[#6C757D]">
-                                      {members} members · {formatMoney(total)}
-                                    </p>
-                                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#E9ECEF]">
-                                      <div
-                                        className="h-full rounded-full transition-all"
-                                        style={{
-                                          width: `${settledPct}%`,
-                                          background: CORAL,
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="shrink-0 text-right">
-                                  <p
-                                    className="text-sm font-extrabold"
-                                    style={{
-                                      color:
-                                        net < -0.01
-                                          ? CORAL
-                                          : net > 0.01
-                                            ? GREEN
-                                            : "#6C757D",
-                                    }}
-                                  >
-                                    {net > 0.01
-                                      ? `+${formatMoney(net)}`
-                                      : net < -0.01
-                                        ? formatMoney(net)
-                                        : "Even"}
-                                  </p>
-                                  <p className="text-[10px] text-[#6C757D]">
-                                    balance
-                                  </p>
-                                </div>
-                              </div>
-                            </Link>
-                          ),
-                        )}
-                      </div>
-                    </section>
-                  </div>
-                  <aside className="order-1 space-y-6 lg:order-2 lg:col-span-2">
-                    {summaryCardsBlock()}
-                    {whoOwesBlock()}
-                  </aside>
+                    {g.name}
+                  </p>
+                  {balLine}
                 </div>
-              ) : null}
+              </button>
+            );
+          })}
+        </div>
 
-              {activeTab === "overview" ? null : (
-                <div className="mt-2 space-y-6">
-                  {activeTab === "by_trip" ? (
-                    <div className="space-y-4">
-                      <label className="block">
-                        <span className="mb-1 block text-xs font-bold text-[#6C757D]">
-                          Trip
-                        </span>
-                        <select
-                          value={selectedTrip}
-                          onChange={(e) => setSelectedTrip(e.target.value)}
-                          className="w-full rounded-xl border border-[#E9ECEF] bg-white px-3 py-2.5 text-sm font-semibold text-[#0F3460]"
-                        >
-                          {trips.map((t) => (
-                            <option key={t.id} value={t.id}>
-                              {t.title} ({t.group_name})
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <div className="space-y-2">
-                        {tripExpensesFiltered.map((e) => {
-                          const uid = user?.id;
-                          const mine = uid
-                            ? e.splits.find((s) => s.user_id === uid)
-                            : undefined;
-                          const payer =
-                            nameByUserId.get(e.paid_by) || "—";
-                          const canDelete = uid && e.paid_by === uid;
-                          return (
-                            <div
-                              key={e.id}
-                              className="flex flex-wrap items-center gap-2 rounded-xl border border-[#E9ECEF] bg-white p-3 shadow-sm"
-                            >
-                              <span className="text-xl">💳</span>
-                              <div className="min-w-0 flex-1">
-                                <p className="font-bold text-[#0F3460]">
-                                  {e.description}
-                                </p>
-                                <p className="text-[11px] text-[#6C757D]">
-                                  Paid by {payer} ·{" "}
-                                  {new Date(e.created_at).toLocaleString()}
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-sm font-bold">
-                                  {formatMoney(e.amount, e.currency)}
-                                </p>
-                                {mine ? (
-                                  <p className="text-[11px] text-[#6C757D]">
-                                    Your share:{" "}
-                                    {formatMoney(mine.amount, e.currency)}
-                                  </p>
-                                ) : null}
-                              </div>
-                              {canDelete ? (
-                                <button
-                                  type="button"
-                                  className="text-red-600"
-                                  aria-label="Delete expense"
-                                  onClick={() =>
-                                    void deleteExpense(e.trip_id, e.id)
-                                  }
-                                >
-                                  🗑️
-                                </button>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <div className="rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] p-4">
-                        <h3 className="mb-2 text-sm font-bold text-[#0F3460]">
-                          Balance summary · {selectedTripData?.title}
-                        </h3>
-                        {tripBalanceLines.length === 0 ? (
-                          <p className="text-sm text-[#6C757D]">
-                            No debts in this trip.
-                          </p>
-                        ) : (
-                          <ul className="space-y-1 text-sm text-[#2C3E50]">
-                            {tripBalanceLines.map((b, i) => (
-                              <li key={i}>
-                                {nameByUserId.get(b.from_user_id) || "?"} owes{" "}
-                                {nameByUserId.get(b.to_user_id) || "?"} ·{" "}
-                                {formatMoney(b.amount)}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {activeTab === "balances" ? (
-                    <div className="space-y-4">
-                      <p className="text-sm text-[#6C757D]">
-                        If everyone settles at once, here&apos;s the minimum
-                        transactions across your trips.
-                      </p>
-                      <div className="space-y-3">
-                        {Array.from(netByPerson.entries())
-                          .filter(([, v]) => Math.abs(v) > 0.001)
-                          .sort(
-                            (a, b) => Math.abs(b[1]) - Math.abs(a[1]),
-                          )
-                          .map(([uid, net]) => (
-                            <div
-                              key={uid}
-                              className="flex items-center gap-3 rounded-xl border border-[#E9ECEF] bg-white p-3 shadow-sm"
-                            >
-                              <img
-                                src={dicebearSrc(uid)}
-                                alt=""
-                                className="h-11 w-11 rounded-full border border-[#E9ECEF]"
-                                width={44}
-                                height={44}
-                              />
-                              <div className="flex-1">
-                                <p className="font-bold text-[#0F3460]">
-                                  {nameByUserId.get(uid) || "Member"}
-                                </p>
-                                <p className="text-[11px] text-[#6C757D]">
-                                  All trips
-                                </p>
-                              </div>
-                              <p
-                                className="text-sm font-extrabold"
-                                style={{
-                                  color: net >= 0 ? GREEN : CORAL,
-                                }}
-                              >
-                                {net >= 0 ? "+" : ""}
-                                {formatMoney(Math.abs(net))}
-                              </p>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {activeTab === "history" ? (
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap gap-2">
-                        {(
-                          [
-                            ["all", "All"],
-                            ["paid_by_me", "Paid by me"],
-                            ["i_owe", "I owe"],
-                            ["settled", "Settled"],
-                          ] as const
-                        ).map(([k, lab]) => (
-                          <button
-                            key={k}
-                            type="button"
-                            onClick={() => setHistoryFilter(k)}
-                            className={`rounded-full px-3 py-1 text-xs font-bold ${
-                              historyFilter === k
-                                ? "bg-[#0F3460] text-white"
-                                : "bg-white text-[#6C757D] ring-1 ring-[#E9ECEF]"
-                            }`}
-                          >
-                            {lab}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="space-y-2">
-                        {historyRows.map((e) => {
-                          const uid = user?.id;
-                          const mine = uid
-                            ? e.splits.find((s) => s.user_id === uid)
-                            : undefined;
-                          const allSettled = e.splits.every(
-                            (s) => s.is_settled,
-                          );
-                          return (
-                            <div
-                              key={e.id}
-                              className="rounded-xl border border-[#E9ECEF] bg-white p-3 shadow-sm"
-                            >
-                              <div className="flex flex-wrap justify-between gap-2">
-                                <div>
-                                  <p className="text-[11px] font-bold text-[#6C757D]">
-                                    {new Date(e.created_at).toLocaleString()}
-                                  </p>
-                                  <p className="font-bold text-[#0F3460]">
-                                    {e.description}
-                                  </p>
-                                  <p className="text-[11px] text-[#6C757D]">
-                                    {e.trip_title} · Paid by{" "}
-                                    {nameByUserId.get(e.paid_by) || "—"}
-                                  </p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="font-bold">
-                                    {formatMoney(e.amount, e.currency)}
-                                  </p>
-                                  <span
-                                    className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                                      allSettled
-                                        ? "bg-green-100 text-green-800"
-                                        : "bg-amber-100 text-amber-900"
-                                    }`}
-                                  >
-                                    {allSettled ? "settled" : "pending"}
-                                  </span>
-                                </div>
-                              </div>
-                              {mine ? (
-                                <p
-                                  className="mt-2 text-xs font-semibold"
-                                  style={{ color: CORAL }}
-                                >
-                                  Your share:{" "}
-                                  {formatMoney(mine.amount, e.currency)}
-                                </p>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : null}
+        <div className="mt-4 flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-[#6C757D]">
+            Friends
+          </span>
+          <button
+            type="button"
+            className="text-[10px] font-bold"
+            style={{ color: CORAL }}
+            onClick={() => showToast("Join groups to add friends", "info")}
+          >
+            + add
+          </button>
+        </div>
+        <div className="mt-1 max-h-[22vh] space-y-0.5 overflow-y-auto lg:max-h-none">
+          {friendsList.map((m) => {
+            const bal = user?.id
+              ? getPersonBalance(allBalances, m.user_id, user.id)
+              : 0;
+            const active = view.type === "friend" && view.id === m.user_id;
+            const seed = m.username || m.full_name;
+            let balText: ReactNode;
+            if (Math.abs(bal) < 0.01) {
+              balText = (
+                <span className="text-[11px] text-[#6C757D]">settled up</span>
+              );
+            } else if (bal > 0) {
+              balText = (
+                <span className="text-[11px] font-medium" style={{ color: GREEN }}>
+                  owes you {formatCurrency(bal)}
+                </span>
+              );
+            } else {
+              balText = (
+                <span className="text-[11px] font-medium" style={{ color: CORAL }}>
+                  you owe {formatCurrency(Math.abs(bal))}
+                </span>
+              );
+            }
+            return (
+              <button
+                key={m.user_id}
+                type="button"
+                onClick={() => {
+                  setViewState({ type: "friend", id: m.user_id });
+                  setShowMobileSidebar(false);
+                }}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left ${
+                  active ? "bg-[#fff0f3]" : "hover:bg-[#f8f9fa]"
+                }`}
+              >
+                <img
+                  src={dicebearSrc(seed)}
+                  alt=""
+                  className="h-8 w-8 shrink-0 rounded-full border border-[#E9ECEF]"
+                  width={32}
+                  height={32}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-semibold text-[#2C3E50]">
+                    {m.full_name}
+                  </p>
+                  {balText}
                 </div>
-              )}
-            </>
+              </button>
+            );
+          })}
+        </div>
+
+        <div
+          className="mt-auto rounded-xl p-3"
+          style={{ background: "#e8f8f0" }}
+        >
+          <p className="text-xs font-bold text-green-800">Invite friends</p>
+          <div className="mt-2 flex gap-2">
+            <input
+              type="email"
+              placeholder="Email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              className="min-w-0 flex-1 rounded-lg border border-green-200 bg-white px-2 py-1.5 text-xs"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setInviteEmail("");
+                showToast("Invite sent!", "success");
+              }}
+              className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-bold text-white"
+              style={{ background: GREEN }}
+            >
+              Send invite
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen" style={{ background: BG }}>
+        <aside
+          className="hidden w-[260px] shrink-0 border-r bg-white p-4 lg:block"
+          style={{ borderColor: BORDER }}
+        >
+          <div className="space-y-2">
+            <div className="h-10 animate-pulse rounded-lg bg-gray-200" />
+            <div className="h-10 animate-pulse rounded-lg bg-gray-200" />
+          </div>
+          <div className="mt-6 space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-8 animate-pulse rounded-full bg-gray-200" />
+            ))}
+          </div>
+          <div className="mt-6 space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-12 animate-pulse rounded-lg bg-gray-200" />
+            ))}
+          </div>
+        </aside>
+        <main className="flex-1 p-6">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-24 animate-pulse rounded-xl bg-gray-200" />
+            ))}
+          </div>
+          <div className="mt-6 space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-14 animate-pulse rounded-lg bg-gray-200" />
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (groups.length === 0) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center px-6" style={{ background: BG }}>
+        <span className="text-6xl">✈️</span>
+        <p className="mt-4 text-lg font-bold" style={{ color: NAVY }}>
+          No groups yet
+        </p>
+        <p className="mt-1 max-w-sm text-center text-sm text-[#6C757D]">
+          Create a group to start splitting
+        </p>
+        <button
+          type="button"
+          onClick={() => router.push("/travel-hub")}
+          className="mt-6 rounded-lg px-6 py-3 text-sm font-bold text-white"
+          style={{ background: CORAL }}
+        >
+          Create Group →
+        </button>
+        {toast ? <Toast toast={toast} /> : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen pb-20 lg:pb-0" style={{ background: BG }}>
+      <div className="mx-auto flex max-w-[1440px]">
+        <aside
+          className="sticky top-0 hidden h-screen w-[260px] shrink-0 overflow-y-auto border-r bg-white lg:block"
+          style={{ borderColor: BORDER }}
+        >
+          {sidebarInner()}
+        </aside>
+
+        <main className="min-w-0 flex-1">
+          <div
+            className="flex items-center gap-2 border-b bg-white px-4 py-3 lg:hidden"
+            style={{ borderColor: BORDER }}
+          >
+            <button
+              type="button"
+              className="rounded-lg border px-3 py-2 text-sm font-bold"
+              style={{ borderColor: BORDER }}
+              onClick={() => setShowMobileSidebar(true)}
+            >
+              ☰
+            </button>
+            <span className="font-bold" style={{ color: NAVY }}>
+              Splitwise
+            </span>
+          </div>
+
+          {view.type === "overview" ? (
+            <OverviewSection
+              summary={summary}
+              allBalances={allBalances}
+              allExpenses={allExpenses}
+              user={user}
+              nameByUserId={nameByUserId}
+              expenseRow={expenseRow}
+              groupExpensesByMonth={groupExpensesByMonth}
+              onAddExpense={() => setShowAddForm(true)}
+              onSettleInfo={() =>
+                showToast("Tap Settle up on a balance row", "info")
+              }
+              onSettleRow={openSettle}
+              onRemind={() => showToast("Reminder sent!", "success")}
+              allSettledBanner={allSettledBanner}
+              noExpenses={allExpenses.length === 0}
+            />
           ) : null}
-        </>
-      )}
 
-      {settleSheetLine ? (
+          {view.type === "activity" ? (
+            <ActivitySection
+              allExpenses={allExpenses}
+              expenseRow={expenseRow}
+              groupExpensesByMonth={groupExpensesByMonth}
+            />
+          ) : null}
+
+          {view.type === "group" ? (
+            <GroupSection
+              group={groups.find((g) => g.id === view.id)}
+              groupIndex={groups.findIndex((g) => g.id === view.id)}
+              balances={balancesForGroup(view.id)}
+              expenses={expensesForGroup(view.id)}
+              user={user}
+              nameByUserId={nameByUserId}
+              expenseRow={expenseRow}
+              groupExpensesByMonth={groupExpensesByMonth}
+              onAddExpense={() => setShowAddForm(true)}
+              onSettleInfo={() =>
+                showToast("Tap Settle up on a balance row", "info")
+              }
+              onSettleRow={openSettle}
+              onRemind={() => showToast("Reminder sent!", "success")}
+            />
+          ) : null}
+
+          {view.type === "friend" ? (
+            <FriendSection
+              member={friendsList.find((m) => m.user_id === view.id)}
+              user={user}
+              balances={allBalances}
+              expenses={expensesWithFriend(view.id)}
+              nameByUserId={nameByUserId}
+              expenseRow={expenseRow}
+              groupExpensesByMonth={groupExpensesByMonth}
+              onAddExpense={() => setShowAddForm(true)}
+            />
+          ) : null}
+        </main>
+      </div>
+
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-40 flex border-t bg-white lg:hidden"
+        style={{ borderColor: BORDER }}
+      >
+        {(
+          [
+            ["overview", "Overview", () => setViewState({ type: "overview" })],
+            ["activity", "Activity", () => setViewState({ type: "activity" })],
+            ["groups", "Groups", () => setShowMobileSidebar(true)],
+            ["friends", "Friends", () => setShowMobileSidebar(true)],
+          ] as const
+        ).map(([k, label, fn]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={fn}
+            className={`flex-1 py-3 text-[10px] font-bold ${
+              mobileTab === k ? "text-[#E94560]" : "text-[#6C757D]"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {showMobileSidebar ? (
         <>
           <button
             type="button"
             aria-label="Close"
-            className="fixed inset-0 z-[120] bg-black/50"
-            onClick={() => setSettleSheetLine(null)}
+            className="fixed inset-0 z-[90] bg-black/50 lg:hidden"
+            onClick={() => setShowMobileSidebar(false)}
           />
-          <div className="fixed bottom-0 left-0 right-0 z-[130] rounded-t-3xl border border-[#E9ECEF] bg-white p-6 shadow-2xl md:left-1/2 md:max-w-md md:-translate-x-1/2">
-            <p className="text-center text-base font-bold text-[#0F3460]">
-              How would you like to settle?
-            </p>
-            <div className="mt-4 flex flex-col gap-2">
-              <button
-                type="button"
-                className="w-full rounded-xl border border-[#E9ECEF] bg-white py-3 text-sm font-bold text-[#0F3460]"
-                onClick={() => {
-                  const link = `https://travello.app/settle?to=${settleSheetLine.to_user_id}&amount=${settleSheetLine.amount}`;
-                  void navigator.clipboard.writeText(link);
-                  showToast("Payment link copied!", "success");
-                  setSettleSheetLine(null);
-                }}
-              >
-                💳 Copy Payment Link
-              </button>
-              <button
-                type="button"
-                className="w-full rounded-xl border border-[#E9ECEF] bg-white py-3 text-sm font-bold text-[#0F3460]"
-                onClick={() => {
-                  const text = encodeURIComponent(
-                    `Hi! Please settle ${formatMoney(settleSheetLine.amount)} for our trip.`,
-                  );
-                  globalThis.open(`https://wa.me/?text=${text}`, "_blank");
-                  setSettleSheetLine(null);
-                }}
-              >
-                📱 Send via WhatsApp
-              </button>
-              <button
-                type="button"
-                className="w-full rounded-xl border border-[#bbf7d0] bg-[#ecfdf5] py-3 text-sm font-bold text-[#15803d]"
-                onClick={() => {
-                  showToast("Marked as settled ✓", "success");
-                  setSettleSheetLine(null);
-                }}
-              >
-                ✓ Mark as settled
-              </button>
-              <button
-                type="button"
-                className="w-full py-2 text-sm font-semibold text-[#6C757D]"
-                onClick={() => setSettleSheetLine(null)}
-              >
-                Cancel
-              </button>
-            </div>
+          <div className="fixed bottom-0 left-0 top-0 z-[100] w-[min(90vw,280px)] overflow-y-auto border-r bg-white shadow-xl lg:hidden">
+            {sidebarInner()}
           </div>
         </>
       ) : null}
 
       {showAddForm ? (
-        <>
+        <AddExpenseSheet
+          trips={trips}
+          groups={groups}
+          user={user}
+          formDesc={formDesc}
+          setFormDesc={setFormDesc}
+          formAmount={formAmount}
+          setFormAmount={setFormAmount}
+          formTripId={formTripId}
+          setFormTripId={setFormTripId}
+          formCategory={formCategory}
+          setFormCategory={setFormCategory}
+          formSplitUserIds={formSplitUserIds}
+          setFormSplitUserIds={setFormSplitUserIds}
+          formPaidBy={formPaidBy}
+          setFormPaidBy={setFormPaidBy}
+          formSplitMode={formSplitMode}
+          setFormSplitMode={setFormSplitMode}
+          formDate={formDate}
+          setFormDate={setFormDate}
+          formNotes={formNotes}
+          setFormNotes={setFormNotes}
+          formReceiptPreview={formReceiptPreview}
+          setFormReceiptPreview={setFormReceiptPreview}
+          showPeoplePicker={showPeoplePicker}
+          setShowPeoplePicker={setShowPeoplePicker}
+          peopleSearch={peopleSearch}
+          setPeopleSearch={setPeopleSearch}
+          showCategoryPicker={showCategoryPicker}
+          setShowCategoryPicker={setShowCategoryPicker}
+          showNotesPanel={showNotesPanel}
+          setShowNotesPanel={setShowNotesPanel}
+          membersForSelectedTrip={membersForSelectedTrip}
+          allMembers={allMembers}
+          nameByUserId={nameByUserId}
+          splitPreviewEqual={splitPreviewEqual}
+          saving={saving}
+          onClose={() => setShowAddForm(false)}
+          onSave={() => void submitExpense()}
+        />
+      ) : null}
+
+      {showSettleForm && settleTarget ? (
+        <SettleModal
+          balance={settleTarget}
+          user={user}
+          nameByUserId={nameByUserId}
+          settlePaidBy={settlePaidBy}
+          setSettlePaidBy={setSettlePaidBy}
+          settleAmountStr={settleAmountStr}
+          setSettleAmountStr={setSettleAmountStr}
+          settleDate={settleDate}
+          setSettleDate={setSettleDate}
+          settling={settling}
+          onCancel={() => {
+            setShowSettleForm(false);
+            setSettleTarget(null);
+          }}
+          onSave={() => void runSettle(settleTarget)}
+        />
+      ) : null}
+
+      {toast ? <Toast toast={toast} /> : null}
+    </div>
+  );
+}
+
+function Toast({ toast }: { toast: ToastState }) {
+  const bg =
+    toast.type === "success"
+      ? "bg-green-600"
+      : toast.type === "error"
+        ? "bg-red-600"
+        : "bg-blue-600";
+  return (
+    <div className="pointer-events-none fixed bottom-24 left-1/2 z-[300] -translate-x-1/2 lg:bottom-8">
+      <div
+        className={`pointer-events-auto max-w-[min(92vw,400px)] rounded-xl px-5 py-3 text-center text-sm font-semibold text-white shadow-lg ${bg}`}
+      >
+        {toast.message}
+      </div>
+    </div>
+  );
+}
+
+function OverviewSection({
+  summary,
+  allBalances,
+  allExpenses,
+  user,
+  nameByUserId,
+  expenseRow,
+  groupExpensesByMonth,
+  onAddExpense,
+  onSettleInfo,
+  onSettleRow,
+  onRemind,
+  allSettledBanner,
+  noExpenses,
+}: {
+  summary: { totalBalance: number; youOwe: number; youAreOwed: number };
+  allBalances: BalanceWithTrip[];
+  allExpenses: ExpenseWithTrip[];
+  user: UserOut | null;
+  nameByUserId: Map<string, string>;
+  expenseRow: (e: ExpenseWithTrip) => ReactNode;
+  groupExpensesByMonth: (e: ExpenseWithTrip[]) => Map<string, ExpenseWithTrip[]>;
+  onAddExpense: () => void;
+  onSettleInfo: () => void;
+  onSettleRow: (b: BalanceWithTrip) => void;
+  onRemind: () => void;
+  allSettledBanner: boolean;
+  noExpenses: boolean;
+}) {
+  const uid = user?.id;
+  const recent = useMemo(() => {
+    const m = groupExpensesByMonth([...allExpenses].slice(0, 20));
+    return m;
+  }, [allExpenses, groupExpensesByMonth]);
+
+  return (
+    <div className="px-4 py-6 lg:px-8">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-[22px] font-bold" style={{ color: NAVY }}>
+          Dashboard
+        </h1>
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            aria-label="Close"
-            className="fixed inset-0 z-[100] bg-black/60"
-            onClick={() => setShowAddForm(false)}
-          />
-          <div className="fixed bottom-0 left-0 right-0 z-[110] max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white px-5 pb-8 pt-3 shadow-2xl md:left-1/2 md:max-w-lg md:-translate-x-1/2">
-            <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-[#DEE2E6]" />
-            <h2 className="text-center text-[18px] font-bold text-[#0F3460]">
-              Add New Expense
-            </h2>
-            <p className="mt-1 text-center text-xs text-[#6C757D]">
-              Split equally among selected members. Paid by you.
-            </p>
+            onClick={onAddExpense}
+            className="rounded-lg px-4 py-2 text-[13px] font-bold text-white"
+            style={{ background: CORAL }}
+          >
+            Add an expense
+          </button>
+          <button
+            type="button"
+            onClick={onSettleInfo}
+            className="rounded-lg border bg-white px-4 py-2 text-[13px] font-bold text-[#2C3E50]"
+            style={{ borderColor: BORDER }}
+          >
+            Settle up
+          </button>
+        </div>
+      </div>
 
-            <label className="mt-6 block">
-              <input
-                value={formDesc}
-                onChange={(e) => setFormDesc(e.target.value)}
-                className="w-full border-0 border-b border-[#E9ECEF] px-0 py-3 text-base text-[#0F3460] outline-none placeholder:text-[#ADB5BD]"
-                placeholder="What was this for?"
-              />
-            </label>
+      {allSettledBanner ? (
+        <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-4 text-center">
+          <p className="text-2xl">🎉</p>
+          <p className="mt-1 font-bold text-green-800">All settled up!</p>
+          <p className="text-sm text-green-700">No pending balances</p>
+        </div>
+      ) : null}
 
-            <div className="mt-6 flex flex-col items-center">
-              <div className="flex w-full max-w-xs items-center justify-center gap-1">
-                <span
-                  className="text-[28px] font-bold"
-                  style={{ color: CORAL }}
-                >
-                  $
-                </span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="0.01"
-                  value={formAmount}
-                  onChange={(e) => setFormAmount(e.target.value)}
-                  className="min-w-0 flex-1 border-0 bg-transparent text-center text-[36px] font-extrabold outline-none placeholder:text-[#CED4DA]"
-                  style={{ color: NAVY }}
-                  placeholder="0.00"
-                />
-              </div>
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {["USD", "INR", "EUR", "GBP", "AUD"].map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setFormCurrency(c)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-bold ${
-                      formCurrency === c
-                        ? "bg-[#0F3460] text-white"
-                        : "bg-[#F1F3F5] text-[#6C757D]"
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-            </div>
+      <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border bg-white p-4 shadow-sm" style={{ borderColor: BORDER }}>
+          <p className="text-[10px] font-bold uppercase text-[#6C757D]">
+            total balance
+          </p>
+          <p
+            className="mt-1 text-xl font-extrabold"
+            style={{
+              color:
+                Math.abs(summary.totalBalance) < 0.01
+                  ? "#6C757D"
+                  : summary.totalBalance > 0
+                    ? GREEN
+                    : CORAL,
+            }}
+          >
+            {Math.abs(summary.totalBalance) < 0.01
+              ? formatCurrency(0)
+              : formatCurrency(summary.totalBalance)}
+          </p>
+        </div>
+        <div className="rounded-xl border bg-white p-4 shadow-sm" style={{ borderColor: BORDER }}>
+          <p className="text-[10px] font-bold uppercase text-[#6C757D]">you owe</p>
+          <p className="mt-1 text-xl font-extrabold" style={{ color: CORAL }}>
+            {formatCurrency(summary.youOwe)}
+          </p>
+        </div>
+        <div className="rounded-xl border bg-white p-4 shadow-sm" style={{ borderColor: BORDER }}>
+          <p className="text-[10px] font-bold uppercase text-[#6C757D]">
+            you are owed
+          </p>
+          <p className="mt-1 text-xl font-extrabold" style={{ color: GREEN }}>
+            {formatCurrency(summary.youAreOwed)}
+          </p>
+        </div>
+      </div>
 
-            <label className="mt-6 block">
-              <span className="mb-1 block text-xs font-bold text-[#6C757D]">
-                For which trip?
-              </span>
-              <select
-                value={formTripId}
-                onChange={(e) => setFormTripId(e.target.value)}
-                className="w-full rounded-xl border border-[#E9ECEF] bg-white px-3 py-3 text-sm font-semibold text-[#0F3460]"
+      <h2 className="mb-3 text-sm font-bold text-[#2C3E50]">Who owes who</h2>
+      <div
+        className="mb-8 overflow-hidden rounded-xl border bg-white shadow-sm"
+        style={{ borderColor: BORDER }}
+      >
+        {allBalances.length === 0 ? (
+          <p className="p-6 text-sm text-[#6C757D]">No balances yet.</p>
+        ) : (
+          allBalances.map((b, idx) => {
+            const youOwe = uid === b.from_user_id;
+            const otherId = youOwe ? b.to_user_id : b.from_user_id;
+            const otherName = nameByUserId.get(otherId) || "Someone";
+            return (
+              <div
+                key={`${b.trip_id}-${idx}`}
+                className="flex flex-wrap items-center gap-3 border-b border-[#f5f5f5] px-4 py-3 last:border-b-0"
+                style={{
+                  borderLeftWidth: 3,
+                  borderLeftColor: youOwe ? CORAL : GREEN,
+                  borderLeftStyle: "solid",
+                }}
               >
-                <option value="">Select trip</option>
-                {trips.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.title} — {t.group_name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <p className="mt-4 text-xs font-bold text-[#6C757D]">Split type</p>
-            <div className="mt-2 flex gap-2">
-              {(
-                [
-                  ["equal", "Equal"],
-                  ["custom", "Custom"],
-                  ["pct", "%"],
-                ] as const
-              ).map(([k, lab]) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => setFormSplitType(k)}
-                  className={`flex-1 rounded-xl py-2.5 text-xs font-bold ${
-                    formSplitType === k
-                      ? "text-white"
-                      : "bg-[#F8F9FA] text-[#6C757D]"
-                  }`}
-                  style={
-                    formSplitType === k ? { background: CORAL } : undefined
-                  }
+                <img
+                  src={dicebearSrc(otherId)}
+                  alt=""
+                  className="h-10 w-10 rounded-full border border-[#E9ECEF]"
+                  width={40}
+                  height={40}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-[#2C3E50]">
+                    {youOwe ? `You owe ${otherName}` : `${otherName} owes you`}
+                  </p>
+                  <p className="text-[11px] text-[#6C757D]">
+                    {b.trip_title} · {b.group_name}
+                  </p>
+                </div>
+                <p
+                  className="text-base font-extrabold"
+                  style={{ color: youOwe ? CORAL : GREEN }}
                 >
-                  {lab}
-                </button>
-              ))}
-            </div>
-
-            <p className="mt-4 text-xs font-bold text-[#6C757D]">
-              Split with (toggle members)
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {membersForFormTrip.map((m) => {
-                const on = formSplitUserIds.includes(m.user_id);
-                return (
+                  {formatCurrency(b.amount)}
+                </p>
+                {youOwe ? (
                   <button
-                    key={m.user_id}
                     type="button"
-                    onClick={() => {
+                    onClick={() => onSettleRow(b)}
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-bold text-white"
+                    style={{ background: CORAL }}
+                  >
+                    Settle up
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onRemind}
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-bold text-white"
+                    style={{ background: GREEN }}
+                  >
+                    Remind
+                  </button>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <h2 className="mb-3 text-[15px] font-bold" style={{ color: NAVY }}>
+        Recent
+      </h2>
+      {noExpenses ? (
+        <div className="flex flex-col items-center rounded-xl border bg-white py-12 text-center" style={{ borderColor: BORDER }}>
+          <span className="text-5xl">💸</span>
+          <p className="mt-3 font-bold text-[#0F3460]">No expenses yet</p>
+          <p className="mt-1 text-sm text-[#6C757D]">Add your first expense</p>
+          <button
+            type="button"
+            onClick={onAddExpense}
+            className="mt-4 rounded-lg px-5 py-2.5 text-sm font-bold text-white"
+            style={{ background: CORAL }}
+          >
+            + Add Expense
+          </button>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-xl border bg-white shadow-sm" style={{ borderColor: BORDER }}>
+          {[...recent.entries()].map(([month, items]) => (
+            <div key={month}>
+              <div className="flex items-center gap-2 border-b bg-[#fafafa] px-4 py-2" style={{ borderColor: BORDER }}>
+                <span className="text-[11px] font-bold uppercase tracking-wide text-[#6C757D]">
+                  {month.toUpperCase()}
+                </span>
+                <div className="h-px flex-1 bg-[#E9ECEF]" />
+              </div>
+              {items.map((e) => expenseRow(e))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ActivitySection({
+  allExpenses,
+  expenseRow,
+  groupExpensesByMonth,
+}: {
+  allExpenses: ExpenseWithTrip[];
+  expenseRow: (e: ExpenseWithTrip) => ReactNode;
+  groupExpensesByMonth: (e: ExpenseWithTrip[]) => Map<string, ExpenseWithTrip[]>;
+}) {
+  const grouped = useMemo(
+    () => groupExpensesByMonth(allExpenses),
+    [allExpenses, groupExpensesByMonth],
+  );
+  return (
+    <div className="px-4 py-6 lg:px-8">
+      <h1 className="mb-6 text-[22px] font-bold" style={{ color: NAVY }}>
+        Recent activity
+      </h1>
+      <div className="overflow-hidden rounded-xl border bg-white shadow-sm" style={{ borderColor: BORDER }}>
+        {grouped.size === 0 ? (
+          <p className="p-8 text-center text-sm text-[#6C757D]">No activity.</p>
+        ) : (
+          [...grouped.entries()].map(([month, items]) => (
+            <div key={month}>
+              <div className="flex items-center gap-2 border-b bg-[#fafafa] px-4 py-2" style={{ borderColor: BORDER }}>
+                <span className="text-[11px] font-bold uppercase tracking-wide text-[#6C757D]">
+                  {month.toUpperCase()}
+                </span>
+                <div className="h-px flex-1 bg-[#E9ECEF]" />
+              </div>
+              {items.map((e) => expenseRow(e))}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GroupSection({
+  group,
+  groupIndex,
+  balances,
+  expenses,
+  user,
+  nameByUserId,
+  expenseRow,
+  groupExpensesByMonth,
+  onAddExpense,
+  onSettleInfo,
+  onSettleRow,
+  onRemind,
+}: {
+  group: GroupOut | undefined;
+  groupIndex: number;
+  balances: BalanceWithTrip[];
+  expenses: ExpenseWithTrip[];
+  user: UserOut | null;
+  nameByUserId: Map<string, string>;
+  expenseRow: (e: ExpenseWithTrip) => ReactNode;
+  groupExpensesByMonth: (e: ExpenseWithTrip[]) => Map<string, ExpenseWithTrip[]>;
+  onAddExpense: () => void;
+  onSettleInfo: () => void;
+  onSettleRow: (b: BalanceWithTrip) => void;
+  onRemind: () => void;
+}) {
+  const uid = user?.id;
+  const grouped = useMemo(
+    () => groupExpensesByMonth(expenses),
+    [expenses, groupExpensesByMonth],
+  );
+  const color =
+    GROUP_CIRCLE_COLORS[
+      groupIndex >= 0 ? groupIndex % GROUP_CIRCLE_COLORS.length : 0
+    ]!;
+
+  if (!group) {
+    return (
+      <div className="p-8 text-center text-[#6C757D]">Group not found.</div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-6 lg:px-8">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <span
+            className="flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold text-white"
+            style={{ background: color }}
+          >
+            {firstLetter(group.name)}
+          </span>
+          <h1 className="text-[22px] font-bold" style={{ color: NAVY }}>
+            {group.name}
+          </h1>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onAddExpense}
+            className="rounded-lg px-4 py-2 text-[13px] font-bold text-white"
+            style={{ background: CORAL }}
+          >
+            Add expense
+          </button>
+          <button
+            type="button"
+            onClick={onSettleInfo}
+            className="rounded-lg border bg-white px-4 py-2 text-[13px] font-bold"
+            style={{ borderColor: BORDER }}
+          >
+            Settle up
+          </button>
+        </div>
+      </div>
+
+      <h2 className="mb-2 text-sm font-bold text-[#2C3E50]">Balances</h2>
+      <div
+        className="mb-8 overflow-hidden rounded-xl border bg-white shadow-sm"
+        style={{ borderColor: BORDER }}
+      >
+        {balances.length === 0 ? (
+          <p className="p-4 text-sm text-[#6C757D]">All settled in this group.</p>
+        ) : (
+          balances.map((b, idx) => {
+            const youOwe = uid === b.from_user_id;
+            const otherId = youOwe ? b.to_user_id : b.from_user_id;
+            const otherName = nameByUserId.get(otherId) || "Someone";
+            return (
+              <div
+                key={`${b.trip_id}-${idx}`}
+                className="flex flex-wrap items-center gap-2 border-b border-[#f5f5f5] px-4 py-3 last:border-b-0"
+                style={{
+                  borderLeftWidth: 3,
+                  borderLeftColor: youOwe ? CORAL : GREEN,
+                  borderLeftStyle: "solid",
+                }}
+              >
+                <img
+                  src={dicebearSrc(otherId)}
+                  alt=""
+                  className="h-9 w-9 rounded-full"
+                  width={36}
+                  height={36}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold">
+                    {youOwe ? `You owe ${otherName}` : `${otherName} owes you`}
+                  </p>
+                  <p className="text-[11px] text-[#6C757D]">{b.trip_title}</p>
+                </div>
+                <span
+                  className="font-extrabold"
+                  style={{ color: youOwe ? CORAL : GREEN }}
+                >
+                  {formatCurrency(b.amount)}
+                </span>
+                {youOwe ? (
+                  <button
+                    type="button"
+                    onClick={() => onSettleRow(b)}
+                    className="rounded-lg px-2 py-1 text-[10px] font-bold text-white"
+                    style={{ background: CORAL }}
+                  >
+                    Settle up
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onRemind}
+                    className="rounded-lg px-2 py-1 text-[10px] font-bold text-white"
+                    style={{ background: GREEN }}
+                  >
+                    Remind
+                  </button>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <h2 className="mb-2 text-sm font-bold text-[#2C3E50]">Expenses</h2>
+      <div className="overflow-hidden rounded-xl border bg-white shadow-sm" style={{ borderColor: BORDER }}>
+        {grouped.size === 0 ? (
+          <p className="p-6 text-sm text-[#6C757D]">No expenses.</p>
+        ) : (
+          [...grouped.entries()].map(([month, items]) => (
+            <div key={month}>
+              <div className="flex items-center gap-2 border-b bg-[#fafafa] px-4 py-2" style={{ borderColor: BORDER }}>
+                <span className="text-[11px] font-bold uppercase tracking-wide text-[#6C757D]">
+                  {month.toUpperCase()}
+                </span>
+                <div className="h-px flex-1 bg-[#E9ECEF]" />
+              </div>
+              {items.map((e) => expenseRow(e))}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FriendSection({
+  member,
+  user,
+  balances,
+  expenses,
+  nameByUserId,
+  expenseRow,
+  groupExpensesByMonth,
+  onAddExpense,
+}: {
+  member: MemberRow | undefined;
+  user: UserOut | null;
+  balances: BalanceWithTrip[];
+  expenses: ExpenseWithTrip[];
+  nameByUserId: Map<string, string>;
+  expenseRow: (e: ExpenseWithTrip) => ReactNode;
+  groupExpensesByMonth: (e: ExpenseWithTrip[]) => Map<string, ExpenseWithTrip[]>;
+  onAddExpense: () => void;
+}) {
+  const uid = user?.id;
+  const net =
+    member && uid
+      ? getPersonBalance(balances, member.user_id, uid)
+      : 0;
+  const grouped = useMemo(
+    () => groupExpensesByMonth(expenses),
+    [expenses, groupExpensesByMonth],
+  );
+
+  if (!member) {
+    return <div className="p-8 text-center text-[#6C757D]">Friend not found.</div>;
+  }
+
+  return (
+    <div className="px-4 py-6 lg:px-8">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <img
+            src={dicebearSrc(member.username || member.full_name)}
+            alt=""
+            className="h-14 w-14 rounded-full border-2 border-[#E9ECEF]"
+            width={56}
+            height={56}
+          />
+          <div>
+            <h1 className="text-[22px] font-bold" style={{ color: NAVY }}>
+              {member.full_name}
+            </h1>
+            <p className="text-xs text-[#6C757D]">
+              {user?.id === member.user_id ? user?.email ?? "" : ""}
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onAddExpense}
+            className="rounded-lg px-4 py-2 text-[13px] font-bold text-white"
+            style={{ background: CORAL }}
+          >
+            Add expense
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-8 rounded-xl border bg-white p-6 text-center shadow-sm" style={{ borderColor: BORDER }}>
+        {Math.abs(net) < 0.01 ? (
+          <>
+            <p className="text-2xl font-extrabold text-[#6C757D]">
+              Settled up 🎉
+            </p>
+          </>
+        ) : net > 0 ? (
+          <>
+            <p className="text-3xl font-extrabold" style={{ color: GREEN }}>
+              {formatCurrency(net)}
+            </p>
+            <p className="mt-1 text-sm font-semibold" style={{ color: GREEN }}>
+              {member.full_name} owes you {formatCurrency(net)}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-3xl font-extrabold" style={{ color: CORAL }}>
+              {formatCurrency(Math.abs(net))}
+            </p>
+            <p className="mt-1 text-sm font-semibold" style={{ color: CORAL }}>
+              You owe {member.full_name} {formatCurrency(Math.abs(net))}
+            </p>
+          </>
+        )}
+      </div>
+
+      <div className="overflow-hidden rounded-xl border bg-white shadow-sm" style={{ borderColor: BORDER }}>
+        {grouped.size === 0 ? (
+          <p className="p-6 text-sm text-[#6C757D]">No shared expenses.</p>
+        ) : (
+          [...grouped.entries()].map(([month, items]) => (
+            <div key={month}>
+              <div className="flex items-center gap-2 border-b bg-[#fafafa] px-4 py-2" style={{ borderColor: BORDER }}>
+                <span className="text-[11px] font-bold uppercase tracking-wide text-[#6C757D]">
+                  {month.toUpperCase()}
+                </span>
+                <div className="h-px flex-1 bg-[#E9ECEF]" />
+              </div>
+              {items.map((e) => expenseRow(e))}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SettleModal({
+  balance,
+  user,
+  nameByUserId,
+  settlePaidBy,
+  setSettlePaidBy,
+  settleAmountStr,
+  setSettleAmountStr,
+  settleDate,
+  setSettleDate,
+  settling,
+  onCancel,
+  onSave,
+}: {
+  balance: BalanceWithTrip;
+  user: UserOut | null;
+  nameByUserId: Map<string, string>;
+  settlePaidBy: "you" | "them";
+  setSettlePaidBy: (v: "you" | "them") => void;
+  settleAmountStr: string;
+  setSettleAmountStr: (v: string) => void;
+  settleDate: string;
+  setSettleDate: (v: string) => void;
+  settling: boolean;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  const uid = user?.id;
+  const youOwe = uid === balance.from_user_id;
+  const otherId = youOwe ? balance.to_user_id : balance.from_user_id;
+  const otherName = nameByUserId.get(otherId) || "Someone";
+  const titleLine = youOwe
+    ? `You owe ${otherName} ${formatCurrency(balance.amount)}`
+    : `${otherName} owes you ${formatCurrency(balance.amount)}`;
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Close"
+        className="fixed inset-0 z-[120] bg-black/50"
+        onClick={onCancel}
+      />
+      <div className="fixed left-1/2 top-1/2 z-[130] w-[min(92vw,400px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-2xl" style={{ borderRadius: 16 }}>
+        <h3 className="text-lg font-bold text-[#0F3460]">Settle up</h3>
+        <p className="mt-2 text-sm text-[#2C3E50]">{titleLine}</p>
+        <p className="mt-4 text-xs font-bold uppercase text-[#6C757D]">
+          Who paid
+        </p>
+        <select
+          value={settlePaidBy}
+          onChange={(e) =>
+            setSettlePaidBy(e.target.value as "you" | "them")
+          }
+          className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+          style={{ borderColor: BORDER }}
+        >
+          <option value="you">You</option>
+          <option value="them">{otherName}</option>
+        </select>
+        <label className="mt-3 block text-xs font-bold text-[#6C757D]">
+          Amount
+          <input
+            type="number"
+            value={settleAmountStr}
+            onChange={(e) => setSettleAmountStr(e.target.value)}
+            className="mt-1 w-full rounded-lg border px-3 py-2 text-lg font-bold"
+            style={{ borderColor: BORDER }}
+          />
+        </label>
+        <label className="mt-3 block text-xs font-bold text-[#6C757D]">
+          Date
+          <input
+            type="date"
+            value={settleDate}
+            onChange={(e) => setSettleDate(e.target.value)}
+            className="mt-1 w-full rounded-lg border px-3 py-2"
+            style={{ borderColor: BORDER }}
+          />
+        </label>
+        <button
+          type="button"
+          disabled={settling}
+          onClick={onSave}
+          className="mt-5 w-full rounded-lg py-3 text-sm font-bold text-white disabled:opacity-50"
+          style={{ background: CORAL }}
+        >
+          {settling ? "Saving…" : "Save"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="mt-2 w-full py-2 text-sm text-[#6C757D]"
+        >
+          Cancel
+        </button>
+      </div>
+    </>
+  );
+}
+
+function AddExpenseSheet(props: {
+  trips: TripWithGroup[];
+  groups: GroupOut[];
+  user: UserOut | null;
+  formDesc: string;
+  setFormDesc: (s: string) => void;
+  formAmount: string;
+  setFormAmount: (s: string) => void;
+  formTripId: string;
+  setFormTripId: (s: string) => void;
+  formCategory: string;
+  setFormCategory: (s: string) => void;
+  formSplitUserIds: string[];
+  setFormSplitUserIds: Dispatch<SetStateAction<string[]>>;
+  formPaidBy: string;
+  setFormPaidBy: (s: string) => void;
+  formSplitMode: "equal" | "exact" | "percent";
+  setFormSplitMode: (m: "equal" | "exact" | "percent") => void;
+  formDate: string;
+  setFormDate: (s: string) => void;
+  formNotes: string;
+  setFormNotes: (s: string) => void;
+  formReceiptPreview: string | null;
+  setFormReceiptPreview: (s: string | null) => void;
+  showPeoplePicker: boolean;
+  setShowPeoplePicker: (v: boolean) => void;
+  peopleSearch: string;
+  setPeopleSearch: (s: string) => void;
+  showCategoryPicker: boolean;
+  setShowCategoryPicker: (v: boolean) => void;
+  showNotesPanel: boolean;
+  setShowNotesPanel: (v: boolean) => void;
+  membersForSelectedTrip: GroupMemberOut[];
+  allMembers: MemberRow[];
+  nameByUserId: Map<string, string>;
+  splitPreviewEqual: { id: string; share: number }[];
+  saving: boolean;
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  const {
+    trips,
+    groups,
+    user,
+    formDesc,
+    setFormDesc,
+    formAmount,
+    setFormAmount,
+    formTripId,
+    setFormTripId,
+    formCategory,
+    setFormCategory,
+    formSplitUserIds,
+    setFormSplitUserIds,
+    formPaidBy,
+    setFormPaidBy,
+    formSplitMode,
+    setFormSplitMode,
+    formDate,
+    setFormDate,
+    formNotes,
+    setFormNotes,
+    formReceiptPreview,
+    setFormReceiptPreview,
+    showPeoplePicker,
+    setShowPeoplePicker,
+    peopleSearch,
+    setPeopleSearch,
+    showCategoryPicker,
+    setShowCategoryPicker,
+    showNotesPanel,
+    setShowNotesPanel,
+    membersForSelectedTrip,
+    allMembers,
+    nameByUserId,
+    splitPreviewEqual,
+    saving,
+    onClose,
+    onSave,
+  } = props;
+
+  const categories = [
+    { key: "Food", emoji: "🍽️" },
+    { key: "Hotel", emoji: "🏨" },
+    { key: "Transport", emoji: "🚗" },
+    { key: "Activity", emoji: "🎭" },
+    { key: "Shopping", emoji: "🛍️" },
+    { key: "Medical", emoji: "💊" },
+    { key: "Flight", emoji: "✈️" },
+    { key: "Other", emoji: "📦" },
+  ];
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Close"
+        className="fixed inset-0 z-[100]"
+        style={{ background: "rgba(0,0,0,0.5)" }}
+        onClick={onClose}
+      />
+      <div className="fixed bottom-0 left-0 right-0 z-[110] max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white px-4 pb-24 pt-2 shadow-2xl lg:left-1/2 lg:max-w-lg lg:-translate-x-1/2">
+        <div className="mx-auto mb-3 h-2 w-10 rounded-full bg-[#DEE2E6]" />
+        <div className="flex items-center justify-between">
+          <h2 className="text-[18px] font-bold" style={{ color: NAVY }}>
+            Add an expense
+          </h2>
+          <button type="button" onClick={onClose} className="text-xl text-[#6C757D]">
+            ✕
+          </button>
+        </div>
+
+        <p className="mt-4 text-xs font-bold text-[#6C757D]">With you and:</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {formSplitUserIds.map((id) => (
+            <span
+              key={id}
+              className="inline-flex items-center gap-1 rounded-full border bg-[#F8F9FA] py-1 pl-1 pr-2 text-xs font-semibold"
+              style={{ borderColor: BORDER }}
+            >
+              <img
+                src={dicebearSrc(id)}
+                alt=""
+                className="h-6 w-6 rounded-full"
+                width={24}
+                height={24}
+              />
+              {nameByUserId.get(id) ?? id.slice(0, 6)}
+              <button
+                type="button"
+                className="text-[#E94560]"
+                onClick={() =>
+                  setFormSplitUserIds((p) => p.filter((x) => x !== id))
+                }
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+          <button
+            type="button"
+            onClick={() => setShowPeoplePicker(true)}
+            className="rounded-full border border-dashed px-3 py-1 text-xs font-bold"
+            style={{ borderColor: CORAL, color: CORAL }}
+          >
+            + add people
+          </button>
+        </div>
+
+        {showPeoplePicker ? (
+          <div className="mt-3 max-h-64 overflow-y-auto rounded-xl border p-3" style={{ borderColor: BORDER }}>
+            <input
+              placeholder="Search"
+              value={peopleSearch}
+              onChange={(e) => setPeopleSearch(e.target.value)}
+              className="mb-2 w-full rounded-lg border px-2 py-1.5 text-sm"
+              style={{ borderColor: BORDER }}
+            />
+            <p className="text-[10px] font-bold uppercase text-[#6C757D]">Groups</p>
+            {groups.map((g) => (
+              <button
+                key={g.id}
+                type="button"
+                className="mb-1 w-full rounded-lg bg-[#F8F9FA] py-2 text-left text-xs font-semibold"
+                onClick={() => {
+                  setFormSplitUserIds(g.members.map((m) => m.user_id));
+                  const t = trips.find((x) => x.group_id === g.id);
+                  if (t) setFormTripId(t.id);
+                }}
+              >
+                {g.name} — select all
+              </button>
+            ))}
+            <p className="mt-2 text-[10px] font-bold uppercase text-[#6C757D]">People</p>
+            {allMembers
+              .filter((m) =>
+                m.full_name.toLowerCase().includes(peopleSearch.toLowerCase()),
+              )
+              .map((m) => (
+                <label key={m.user_id} className="flex items-center gap-2 py-1 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={formSplitUserIds.includes(m.user_id)}
+                    onChange={() => {
                       setFormSplitUserIds((prev) =>
-                        on
-                          ? prev.filter((id) => id !== m.user_id)
+                        prev.includes(m.user_id)
+                          ? prev.filter((x) => x !== m.user_id)
                           : [...prev, m.user_id],
                       );
                     }}
-                    className={`rounded-full px-3 py-1 text-xs font-bold ${
-                      on
-                        ? "bg-[#0F3460] text-white"
-                        : "bg-[#E9ECEF] text-[#6C757D]"
-                    }`}
-                  >
-                    {m.full_name}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-4 rounded-xl bg-[#F1F3F5] p-3">
-              <p className="text-[10px] font-bold uppercase text-[#6C757D]">
-                Split preview
-              </p>
-              <ul className="mt-2 space-y-1 text-sm">
-                {splitPreview.map((row) => (
-                  <li
-                    key={row.userId}
-                    className="flex justify-between text-[#0F3460]"
-                  >
-                    <span>{nameByUserId.get(row.userId) || "Member"}</span>
-                    <span className="font-bold">
-                      {formatMoney(row.share, formCurrency)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <p className="mt-5 text-xs font-bold text-[#6C757D]">Category</p>
-            <div className="-mx-1 mt-2 flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {CATEGORY_CIRCLES.map((c) => (
-                <button
-                  key={c.label}
-                  type="button"
-                  onClick={() => setFormCategory(c.label)}
-                  className="flex w-[52px] shrink-0 flex-col items-center gap-1"
-                >
-                  <span
-                    className={`flex h-11 w-11 items-center justify-center rounded-full border-2 bg-white text-xl ${
-                      formCategory === c.label
-                        ? "border-[#E94560]"
-                        : "border-[#E9ECEF]"
-                    }`}
-                  >
-                    {c.emoji}
-                  </span>
-                  <span className="text-center text-[9px] font-semibold text-[#6C757D]">
-                    {c.label}
-                  </span>
-                </button>
+                  />
+                  {m.full_name}
+                </label>
               ))}
-            </div>
-
             <button
               type="button"
-              disabled={saving}
-              onClick={() => void submitExpense()}
-              className="mt-6 flex w-full items-center justify-center rounded-[14px] py-4 text-[15px] font-bold text-white disabled:opacity-60"
-              style={{ background: CORAL }}
+              onClick={() => setShowPeoplePicker(false)}
+              className="mt-2 w-full py-1 text-xs font-bold text-[#E94560]"
             >
-              {saving ? (
-                <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-              ) : (
-                "Save Expense"
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowAddForm(false)}
-              className="mt-3 w-full py-2 text-center text-sm font-semibold text-[#6C757D]"
-            >
-              Cancel
+              Done
             </button>
           </div>
-        </>
-      ) : null}
+        ) : null}
 
-      {toast ? (
-        <div className="pointer-events-none fixed bottom-6 left-1/2 z-[200] -translate-x-1/2">
-          <div
-            className={`pointer-events-auto max-w-[min(90vw,380px)] rounded-xl px-5 py-3 text-center text-sm font-semibold text-white shadow-lg ${
-              toast.type === "success"
-                ? "bg-[#2ECC71]"
-                : toast.type === "info"
-                  ? "bg-[#0F3460]"
-                  : "bg-red-600"
-            }`}
+        <div className="mt-6 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setShowCategoryPicker(!showCategoryPicker)}
+            className="text-2xl"
           >
-            {toast.message}
-          </div>
+            {categories.find((c) => c.key === formCategory)?.emoji ?? "🧾"}
+          </button>
+          <input
+            value={formDesc}
+            onChange={(e) => setFormDesc(e.target.value)}
+            className="min-w-0 flex-1 border-0 border-b py-2 text-base outline-none"
+            style={{ borderColor: BORDER }}
+            placeholder="Enter a description"
+          />
         </div>
-      ) : null}
-    </div>
+        {showCategoryPicker ? (
+          <div className="mt-2 flex flex-wrap gap-2 rounded-xl border p-2" style={{ borderColor: BORDER }}>
+            {categories.map((c) => (
+              <button
+                key={c.key}
+                type="button"
+                onClick={() => {
+                  setFormCategory(c.key);
+                  setShowCategoryPicker(false);
+                }}
+                className="rounded-lg px-2 py-1 text-xs font-bold"
+              >
+                {c.emoji} {c.key}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="mt-6 flex items-center justify-center gap-1">
+          <span className="text-[28px] font-bold" style={{ color: CORAL }}>
+            $
+          </span>
+          <input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="0.01"
+            value={formAmount}
+            onChange={(e) => setFormAmount(e.target.value)}
+            className="max-w-[220px] border-0 bg-transparent text-center text-[32px] font-extrabold outline-none"
+            style={{ color: NAVY }}
+            placeholder="0.00"
+          />
+        </div>
+
+        <p className="mt-4 text-center text-sm text-[#6C757D]">
+          Paid by{" "}
+          <select
+            value={formPaidBy}
+            onChange={(e) => setFormPaidBy(e.target.value)}
+            className="font-bold text-[#0F3460] underline"
+            disabled
+            title="API records expense as paid by you"
+          >
+            <option value={user?.id}>you</option>
+            {membersForSelectedTrip.map((m) => (
+              <option key={m.user_id} value={m.user_id}>
+                {m.full_name}
+              </option>
+            ))}
+          </select>{" "}
+          and split{" "}
+          <select
+            value={formSplitMode}
+            onChange={(e) =>
+              setFormSplitMode(e.target.value as typeof formSplitMode)
+            }
+            className="font-bold text-[#0F3460] underline"
+          >
+            <option value="equal">equally</option>
+            <option value="exact">by exact amounts</option>
+            <option value="percent">by percentages</option>
+          </select>
+        </p>
+
+        <div className="mt-4 rounded-xl bg-[#F8F9FA] p-3">
+          <p className="text-[10px] font-bold uppercase text-[#6C757D]">
+            Split preview
+          </p>
+          <ul className="mt-2 space-y-2">
+            {splitPreviewEqual.map((row) => (
+              <li key={row.id} className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-2">
+                  <img
+                    src={dicebearSrc(row.id)}
+                    alt=""
+                    className="h-8 w-8 rounded-full"
+                    width={32}
+                    height={32}
+                  />
+                  {nameByUserId.get(row.id) ?? "—"}
+                </span>
+                <span className="font-bold">{formatCurrency(row.share)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <label className="mt-4 flex items-center gap-2 text-sm text-[#6C757D]">
+          📅
+          <input
+            type="date"
+            value={formDate}
+            onChange={(e) => setFormDate(e.target.value)}
+            className="rounded-lg border px-2 py-1"
+            style={{ borderColor: BORDER }}
+          />
+        </label>
+
+        <label className="mt-4 block">
+          <span className="text-xs font-bold text-[#6C757D]">Trip</span>
+          <select
+            value={formTripId}
+            onChange={(e) => setFormTripId(e.target.value)}
+            className="mt-1 w-full rounded-lg border px-3 py-2 text-sm font-semibold"
+            style={{ borderColor: BORDER }}
+          >
+            <option value="">No group</option>
+            {trips.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.title} — {t.group_name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <button
+          type="button"
+          onClick={() => setShowNotesPanel(!showNotesPanel)}
+          className="mt-4 w-full rounded-lg border py-2 text-sm font-semibold"
+          style={{ borderColor: BORDER }}
+        >
+          📎 Add notes or receipt
+        </button>
+        {showNotesPanel ? (
+          <div className="mt-2 rounded-xl border p-3" style={{ borderColor: BORDER }}>
+            <textarea
+              value={formNotes}
+              onChange={(e) => setFormNotes(e.target.value)}
+              placeholder="Notes"
+              rows={3}
+              className="w-full rounded-lg border px-2 py-2 text-sm"
+              style={{ borderColor: BORDER }}
+            />
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              className="mt-2 w-full text-xs"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                const r = new FileReader();
+                r.onload = () =>
+                  setFormReceiptPreview(String(r.result ?? "").slice(0, 2000));
+                r.readAsDataURL(f);
+              }}
+            />
+            {formReceiptPreview ? (
+              <p className="mt-2 text-[10px] text-[#6C757D]">Preview stored</p>
+            ) : null}
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          disabled={saving}
+          onClick={onSave}
+          className="mt-6 w-full rounded-lg py-3 text-[15px] font-bold text-white disabled:opacity-50"
+          style={{ background: CORAL }}
+        >
+          {saving ? (
+            <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+          ) : (
+            "Save"
+          )}
+        </button>
+      </div>
+    </>
   );
 }
