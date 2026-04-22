@@ -193,6 +193,10 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(pins_router, prefix="/api/v1")
 
+    from app.routes.ai_assistant import router as ai_assistant_router
+
+    app.include_router(ai_assistant_router, prefix="/api/v1")
+
 
 # ── App instance ──────────────────────────────────────────────────────────────
 # This is what uvicorn imports. Do not rename.

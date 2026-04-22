@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
@@ -49,6 +49,15 @@ type PlanOut = {
   current_period_end: string | null;
 };
 
+type ProfileBadge = {
+  id: string;
+  icon: string;
+  name: string;
+  earned: boolean;
+  tier: "bronze" | "silver" | "gold";
+  unlockLevel: number;
+};
+
 type ToastState =
   | { kind: "success"; message: string }
   | { kind: "error"; message: string }
@@ -68,8 +77,6 @@ const AVATAR_EMOJIS = [
   "🧑‍🦳",
   "👩‍🦱",
 ];
-
-const GRID_EMOJIS = ["🏖️", "🏔️", "🌴", "🌅", "✈️", "🗺️", "🎉", "🌊"];
 
 function weekId(d: Date): string {
   const start = new Date(d.getFullYear(), 0, 1);
@@ -169,6 +176,16 @@ export default function ProfilePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const [shareSheetOpen, setShareSheetOpen] = useState(false);
+  const [addFriendOpen, setAddFriendOpen] = useState(false);
+  const [addFriendTab, setAddFriendTab] = useState<"hub" | "contacts">("hub");
+  const [contactSearch, setContactSearch] = useState("");
+  const [badgeStripExpanded, setBadgeStripExpanded] = useState(false);
+  const [badgeTip, setBadgeTip] = useState<string | null>(null);
+  const [freezePopoverOpen, setFreezePopoverOpen] = useState(false);
+  const [dmComposeOpen, setDmComposeOpen] = useState(false);
+  const [dmComposeBody, setDmComposeBody] = useState("");
+  const freezePopoverRef = useRef<HTMLDivElement>(null);
 
   const [editName, setEditName] = useState("");
   const [editUsername, setEditUsername] = useState("");
@@ -177,7 +194,9 @@ export default function ProfilePage() {
   const [editTravelStatus, setEditTravelStatus] = useState("");
   const [saveBusy, setSaveBusy] = useState(false);
 
-  const [activeTab, setActiveTab] = useState(0);
+  const [highlightTab, setHighlightTab] = useState<
+    "posts" | "reels" | "trips" | "saved"
+  >("posts");
 
   const showToast = useCallback((t: ToastState) => {
     if (!t) return;
@@ -316,7 +335,8 @@ export default function ProfilePage() {
       setHomeLocal(editHome.trim());
       setTravelStatusLocal(editTravelStatus.trim());
       setEditOpen(false);
-      showToast({ kind: "success", message: "Profile updated ✓" });
+      setAvatarPickerOpen(false);
+      showToast({ kind: "success", message: "Profile updated" });
     } catch (e) {
       showToast({
         kind: "error",
@@ -327,17 +347,53 @@ export default function ProfilePage() {
     }
   }
 
-  function copyProfileUrl() {
+  function copyTravelloProfileLink() {
     const u = me?.username?.trim();
     if (!u) {
       showToast({ kind: "error", message: "Set a username first" });
       return;
     }
-    const url = `${window.location.origin}/u/${encodeURIComponent(u)}`;
+    const url = `https://travello.app/@${encodeURIComponent(u)}`;
     void navigator.clipboard.writeText(url).then(
       () => showToast({ kind: "success", message: "Link copied" }),
       () => showToast({ kind: "error", message: "Could not copy" }),
     );
+  }
+
+  function openDmComposeWithLink() {
+    const u = me?.username?.trim();
+    if (!u) {
+      showToast({ kind: "error", message: "Set a username first" });
+      return;
+    }
+    setDmComposeBody(`https://travello.app/@${encodeURIComponent(u)}`);
+    setShareSheetOpen(false);
+    setDmComposeOpen(true);
+  }
+
+  async function shareNativeProfile() {
+    const u = me?.username?.trim();
+    if (!u) {
+      showToast({ kind: "error", message: "Set a username first" });
+      return;
+    }
+    const url = `https://travello.app/@${encodeURIComponent(u)}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${me?.full_name ?? "Travello"} on Travello`,
+          text: `Check out my Travello profile`,
+          url,
+        });
+        setShareSheetOpen(false);
+      } else {
+        await navigator.clipboard.writeText(url);
+        showToast({ kind: "success", message: "Link copied" });
+        setShareSheetOpen(false);
+      }
+    } catch {
+      /* user cancelled share */
+    }
   }
 
   function selectAvatarEmoji(e: string) {
@@ -376,21 +432,158 @@ export default function ProfilePage() {
     });
   }, []);
 
-  const badges = useMemo(() => {
+  const badges = useMemo((): ProfileBadge[] => {
     const tc = stats?.trips_created ?? 0;
     const gj = stats?.groups_joined ?? 0;
     const cc = countriesCount;
     return [
-      { icon: "🏖️", name: "Beach Lover", earned: cc >= 1 },
-      { icon: "👑", name: "Group Leader", earned: gj >= 2 },
-      { icon: "🌍", name: "World Traveler", earned: cc >= 5 },
-      { icon: "✈️", name: "Frequent Flyer", earned: tc >= 5 },
-      { icon: "🏔️", name: "Trekker", earned: false },
-      { icon: "💰", name: "Fair Splitter", earned: false },
-      { icon: "🎒", name: "Backpacker", earned: false },
-      { icon: "⭐", name: "Early Adopter", earned: true },
+      {
+        id: "beach",
+        icon: "🏖️",
+        name: "Beach Lover",
+        earned: cc >= 1,
+        tier: "bronze",
+        unlockLevel: 2,
+      },
+      {
+        id: "leader",
+        icon: "👑",
+        name: "Group Leader",
+        earned: gj >= 2,
+        tier: "silver",
+        unlockLevel: 3,
+      },
+      {
+        id: "world",
+        icon: "🌍",
+        name: "World Traveler",
+        earned: cc >= 5,
+        tier: "gold",
+        unlockLevel: 5,
+      },
+      {
+        id: "flyer",
+        icon: "✈️",
+        name: "Frequent Flyer",
+        earned: tc >= 5,
+        tier: "gold",
+        unlockLevel: 4,
+      },
+      {
+        id: "trekker",
+        icon: "🏔️",
+        name: "Trekker",
+        earned: false,
+        tier: "silver",
+        unlockLevel: 4,
+      },
+      {
+        id: "splitter",
+        icon: "💰",
+        name: "Fair Splitter",
+        earned: false,
+        tier: "bronze",
+        unlockLevel: 2,
+      },
+      {
+        id: "backpacker",
+        icon: "🎒",
+        name: "Backpacker",
+        earned: false,
+        tier: "bronze",
+        unlockLevel: 3,
+      },
+      {
+        id: "early",
+        icon: "⭐",
+        name: "Early Adopter",
+        earned: true,
+        tier: "silver",
+        unlockLevel: 1,
+      },
     ];
   }, [stats, countriesCount]);
+
+  const sortedBadges = useMemo(() => {
+    const earned = badges.filter((b) => b.earned);
+    const locked = badges.filter((b) => !b.earned);
+    return [...earned, ...locked];
+  }, [badges]);
+
+  const tierPillBg = (tier: ProfileBadge["tier"]) => {
+    if (tier === "bronze") return "#CD7F32";
+    if (tier === "silver") return "#C0C0C0";
+    return "#FFD700";
+  };
+
+  const tripHighlightCards = useMemo(() => {
+    const tc = stats?.trips_created ?? 0;
+    const countries = stats?.countries_from_trips ?? [];
+    if (tc === 0 && countries.length === 0) return [];
+    const n = Math.min(12, Math.max(tc, countries.length, 1));
+    const gradients = [
+      "linear-gradient(145deg,#0F3460 0%,#E94560 100%)",
+      "linear-gradient(145deg,#1a4d7a 0%,#25D366 100%)",
+      "linear-gradient(145deg,#7C3AED 0%,#F59E0B 100%)",
+      "linear-gradient(145deg,#0891B2 0%,#EC4899 100%)",
+    ];
+    return Array.from({ length: n }, (_, i) => {
+      const dest =
+        countries[i % Math.max(countries.length, 1)] || `Destination ${i + 1}`;
+      const title =
+        countries.length > 0
+          ? `${dest} getaway`
+          : tc > 0
+            ? `Trip ${i + 1}`
+            : `Memory ${i + 1}`;
+      return {
+        id: i,
+        title,
+        dest,
+        bg: gradients[i % gradients.length]!,
+      };
+    });
+  }, [stats]);
+
+  useEffect(() => {
+    if (!freezePopoverOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (
+        freezePopoverRef.current &&
+        !freezePopoverRef.current.contains(e.target as Node)
+      ) {
+        setFreezePopoverOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [freezePopoverOpen]);
+
+  const mockContactResults = useMemo(() => {
+    const q = contactSearch.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return [
+      {
+        id: "m1",
+        name: "Arjun Mehta",
+        username: "arjunm",
+        mutual: 2,
+        avatar: "AM",
+        bg: "#2563EB",
+      },
+      {
+        id: "m2",
+        name: "Priya Sharma",
+        username: "priyatravels",
+        mutual: 1,
+        avatar: "PS",
+        bg: "#7C3AED",
+      },
+    ].filter(
+      (r) =>
+        r.name.toLowerCase().includes(q) || r.username.toLowerCase().includes(q),
+    );
+  }, [contactSearch]);
 
   const firstEarnedBadge = badges.find((b) => b.earned);
 
@@ -441,6 +634,17 @@ export default function ProfilePage() {
   const atHandle = displayAtUsername(me);
   const postsCount = stats?.polls_created ?? 0;
   const memoriesCount = stats?.locations_saved ?? 0;
+  const freezeRemaining = freezeUsedToday ? 0 : 1;
+
+  const openEditProfileModal = () => {
+    setEditName(me.full_name);
+    setEditUsername(me.username ?? "");
+    setEditBio(bioLocal);
+    setEditHome(me.home_city?.trim() || homeLocal);
+    setEditTravelStatus(me.travel_status?.trim() || travelStatusLocal);
+    setAvatarPickerOpen(false);
+    setEditOpen(true);
+  };
 
   return (
     <div className="min-h-screen w-full pb-24" style={{ backgroundColor: BG }}>
@@ -480,9 +684,8 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <div className="w-full px-4 pb-8 md:mx-auto md:max-w-[680px] lg:mx-0 lg:flex lg:max-w-none lg:items-start lg:gap-6 lg:px-4 xl:px-6">
-        {/* LEFT — profile, highlights, streak, badges, freeze (desktop) */}
-        <div className="w-full min-w-0 lg:w-[400px] lg:shrink-0">
+      <div className="flex w-full flex-col gap-4 px-4 pb-8 lg:flex-row lg:items-start lg:gap-6 lg:px-4 xl:px-6">
+        <div className="flex w-full min-w-0 flex-col gap-4 lg:w-[45%] lg:max-w-none lg:shrink-0">
           <div
             className="overflow-hidden bg-white lg:rounded-xl lg:border"
             style={{ borderColor: BORDER }}
@@ -513,10 +716,14 @@ export default function ProfilePage() {
                 </button>
               </div>
             </div>
-            {/* Profile header */}
             <section className="px-4 py-4 lg:bg-white" style={{ color: NAVY }}>
-          <div className="flex flex-col items-center gap-4 md:flex-row md:items-start md:gap-4">
-            <div className="relative shrink-0">
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-4">
+            <button
+              type="button"
+              onClick={openEditProfileModal}
+              className="relative shrink-0 rounded-full outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#E94560]"
+              aria-label="Edit profile photo"
+            >
               <div
                 className="flex h-[86px] w-[86px] items-center justify-center overflow-hidden rounded-full bg-[#F8F9FA] text-5xl"
                 style={{
@@ -537,17 +744,8 @@ export default function ProfilePage() {
                   />
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => setAvatarPickerOpen((v) => !v)}
-                className="absolute -bottom-0.5 -right-0.5 flex h-[22px] w-[22px] items-center justify-center rounded-full text-[11px] text-white shadow"
-                style={{ backgroundColor: CORAL }}
-                aria-label="Edit avatar"
-              >
-                ✏️
-              </button>
-            </div>
-            <div className="grid w-full max-w-xs grid-cols-4 gap-2 text-center md:max-w-none md:flex-1">
+            </button>
+            <div className="grid w-full max-w-xs grid-cols-4 gap-2 text-center sm:max-w-none sm:flex-1">
               {[
                 { n: stats?.trips_created ?? 0, l: "Trips" },
                 { n: postsCount, l: "Posts" },
@@ -564,50 +762,11 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {avatarPickerOpen ? (
-            <div className="mt-4 rounded-xl border p-4" style={{ borderColor: BORDER }}>
-              <p className="text-sm font-semibold" style={{ color: NAVY }}>
-                Choose travel avatar
-              </p>
-              <div className="mt-3 grid grid-cols-6 gap-2">
-                {AVATAR_EMOJIS.map((e) => (
-                  <button
-                    key={e}
-                    type="button"
-                    onClick={() => selectAvatarEmoji(e)}
-                    className={`flex aspect-square items-center justify-center rounded-lg border-2 text-2xl ${
-                      avatarEmoji === e ? "bg-[#fff0f3]" : "bg-white"
-                    }`}
-                    style={{
-                      borderColor: avatarEmoji === e ? CORAL : BORDER,
-                    }}
-                  >
-                    {e}
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={resetAvatarDicebear}
-                className="mt-3 text-sm font-medium text-[#6C757D] underline"
-              >
-                Or use auto avatar
-              </button>
-              <button
-                type="button"
-                onClick={() => setAvatarPickerOpen(false)}
-                className="mt-4 w-full rounded-xl py-2.5 text-sm font-semibold text-white"
-                style={{ backgroundColor: CORAL }}
-              >
-                Done
-              </button>
-            </div>
-          ) : null}
-
-          <div className="mt-4">
-            <p className="text-[14px] font-bold" style={{ color: NAVY }}>
+          <div className="mt-4 text-center sm:text-left">
+            <p className="text-[15px] font-bold" style={{ color: NAVY }}>
               {formatDisplayName(me.full_name)}
             </p>
+            <p className="mt-0.5 text-[13px] text-[#6C757D]">{atHandle}</p>
             <p className="mt-1 text-[13px]">
               <span className="text-[#6C757D]">📍</span>{" "}
               <span style={{ color: NAVY }}>{homeLine}</span>
@@ -662,133 +821,98 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {(badgeStripExpanded ? sortedBadges : sortedBadges.slice(0, 4)).map(
+              (b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => setBadgeTip(badgeTip === b.id ? null : b.id)}
+                  className="relative flex h-11 min-w-[44px] shrink-0 items-center justify-center rounded-full px-2 transition-transform active:scale-95"
+                  style={{
+                    background: tierPillBg(b.tier),
+                    boxShadow: b.earned
+                      ? "0 0 14px rgba(233, 69, 96, 0.35)"
+                      : undefined,
+                  }}
+                  aria-label={b.name}
+                >
+                  <span
+                    className="text-[28px] leading-none"
+                    style={{
+                      filter: b.earned ? undefined : "grayscale(1)",
+                      opacity: b.earned ? 1 : 0.85,
+                    }}
+                  >
+                    {b.icon}
+                  </span>
+                  {!b.earned ? (
+                    <span className="absolute bottom-0.5 right-0.5 text-[10px] leading-none">
+                      🔒
+                    </span>
+                  ) : null}
+                </button>
+              ),
+            )}
+            {sortedBadges.length > 4 ? (
+              <button
+                type="button"
+                onClick={() => setBadgeStripExpanded((v) => !v)}
+                className="shrink-0 rounded-full border px-3 py-2 text-xs font-bold"
+                style={{
+                  borderColor: BORDER,
+                  color: CORAL,
+                  minHeight: 44,
+                }}
+              >
+                {badgeStripExpanded
+                  ? "Less"
+                  : `+${sortedBadges.length - 4} more`}
+              </button>
+            ) : null}
+          </div>
+          {badgeTip ? (
+            <p
+              className="mt-2 rounded-lg px-3 py-2 text-center text-xs leading-snug"
+              style={{ background: "#F1F3F5", color: "#2C3E50" }}
+            >
+              {(() => {
+                const b = sortedBadges.find((x) => x.id === badgeTip);
+                if (!b) return null;
+                return b.earned
+                  ? b.name
+                  : `Reach Level ${b.unlockLevel} to unlock — ${b.name}`;
+              })()}
+            </p>
+          ) : null}
+
+          <div className="mt-4 grid grid-cols-3 gap-2">
             <button
               type="button"
-              onClick={() => {
-                setEditOpen((v) => !v);
-                setEditName(me.full_name);
-                setEditUsername(me.username ?? "");
-                setEditBio(bioLocal);
-                setEditHome(me.home_city?.trim() || homeLocal);
-                setEditTravelStatus(me.travel_status?.trim() || travelStatusLocal);
-              }}
-              className="rounded-lg border px-4 py-1.5 text-sm font-semibold"
+              onClick={openEditProfileModal}
+              className="min-h-[44px] rounded-lg border text-sm font-semibold"
               style={{ borderColor: BORDER, color: NAVY }}
             >
               Edit profile
             </button>
             <button
               type="button"
-              onClick={copyProfileUrl}
-              className="rounded-lg border px-4 py-1.5 text-sm font-semibold"
+              onClick={() => setShareSheetOpen(true)}
+              className="min-h-[44px] rounded-lg border text-sm font-semibold"
               style={{ borderColor: BORDER, color: NAVY }}
             >
               Share profile
             </button>
             <button
               type="button"
-              onClick={() => router.push("/travel-hub")}
-              className="rounded-lg border px-3 py-1.5 text-sm font-semibold"
+              onClick={() => setAddFriendOpen(true)}
+              className="min-h-[44px] rounded-lg border text-sm font-semibold"
               style={{ borderColor: BORDER, color: NAVY }}
-              aria-label="Invite"
+              aria-label="Add friend"
             >
               👤+
             </button>
           </div>
-
-          {editOpen ? (
-            <div className="mt-4 space-y-3 rounded-xl border p-4" style={{ borderColor: BORDER }}>
-              <label className="block">
-                <span className="text-xs font-semibold text-[#6C757D]">Full name</span>
-                <input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm outline-none focus:border-[#E94560]"
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs font-semibold text-[#6C757D]">Username</span>
-                <div className="mt-1 flex rounded-lg border border-[#E9ECEF]">
-                  <span className="flex items-center border-r border-[#E9ECEF] bg-[#F8F9FA] px-3 text-sm text-[#6C757D]">
-                    @
-                  </span>
-                  <input
-                    value={editUsername}
-                    onChange={(e) => setEditUsername(e.target.value)}
-                    className="min-w-0 flex-1 px-3 py-2 text-sm outline-none"
-                  />
-                </div>
-              </label>
-              <label className="block">
-                <span className="text-xs font-semibold text-[#6C757D]">Bio</span>
-                <textarea
-                  value={editBio}
-                  maxLength={150}
-                  onChange={(e) => setEditBio(e.target.value)}
-                  rows={3}
-                  className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm outline-none focus:border-[#E94560]"
-                />
-                <span className="text-[10px] text-[#6C757D]">
-                  {editBio.length}/150
-                </span>
-              </label>
-              <label className="block">
-                <span className="text-xs font-semibold text-[#6C757D]">
-                  Home city
-                </span>
-                <input
-                  value={editHome}
-                  onChange={(e) => setEditHome(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm outline-none focus:border-[#E94560]"
-                  placeholder="City you call home"
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs font-semibold text-[#6C757D]">
-                  Travel status
-                </span>
-                <input
-                  value={editTravelStatus}
-                  onChange={(e) => setEditTravelStatus(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm outline-none focus:border-[#E94560]"
-                  placeholder="e.g. Planning Japan 2026"
-                />
-              </label>
-              <div className="flex items-center gap-1 text-sm text-[#6C757D]">
-                <span aria-hidden>🔒</span>
-                {me.email}
-              </div>
-              <div className="flex flex-wrap gap-2 pt-2">
-                <button
-                  type="button"
-                  disabled={saveBusy}
-                  onClick={saveProfile}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white disabled:opacity-60"
-                  style={{ backgroundColor: CORAL }}
-                >
-                  {saveBusy ? (
-                    <>
-                      <span
-                        className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
-                        aria-hidden
-                      />
-                      Saving…
-                    </>
-                  ) : (
-                    "Save changes"
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditOpen(false)}
-                  className="text-sm font-medium text-[#6C757D]"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : null}
             </section>
           </div>
 
@@ -832,7 +956,10 @@ export default function ProfilePage() {
         </section>
 
         {/* Travel streak */}
-        <section className="mt-4 overflow-hidden rounded-xl border bg-white shadow-sm" style={{ borderColor: BORDER }}>
+        <section
+          className="relative mt-4 overflow-hidden rounded-xl border bg-white shadow-sm"
+          style={{ borderColor: BORDER }}
+        >
           <div
             className="px-4 py-6 text-center"
             style={{
@@ -892,7 +1019,10 @@ export default function ProfilePage() {
               <p className="text-[10px] text-[#6C757D]">weeks planning</p>
             </div>
           </div>
-          <div className="border-t px-3 py-4" style={{ borderColor: BORDER }}>
+          <div
+            className="relative border-t px-3 pb-14 pt-4"
+            style={{ borderColor: BORDER }}
+          >
             <div className="flex justify-between gap-1">
               {weekDays.map((wd, i) => (
                 <div key={i} className="flex flex-1 flex-col items-center gap-1">
@@ -951,124 +1081,546 @@ export default function ProfilePage() {
                 {pointsToNext} points to next level
               </p>
             </div>
-          </div>
-        </section>
-
-        {/* Badges */}
-        <section className="mt-4 rounded-xl border bg-white p-4 shadow-sm" style={{ borderColor: BORDER }}>
-          <h2 className="text-sm font-bold" style={{ color: NAVY }}>
-            🏆 Travel badges
-          </h2>
-          <div className="mt-3 grid grid-cols-4 gap-3">
-            {badges.map((b) => (
-              <div
-                key={b.name}
-                className={`text-center ${!b.earned ? "opacity-40" : ""}`}
+            <div className="absolute bottom-3 right-3 z-10" ref={freezePopoverRef}>
+              {freezePopoverOpen ? (
+                <div
+                  className="absolute bottom-full right-0 mb-2 w-56 rounded-xl border bg-white p-3 shadow-lg"
+                  style={{ borderColor: BORDER }}
+                >
+                  <p className="text-xs font-medium text-[#2C3E50]">
+                    Use your streak freeze? ({freezeRemaining} remaining)
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        activateFreeze();
+                        setFreezePopoverOpen(false);
+                      }}
+                      disabled={freezeRemaining === 0}
+                      className="min-h-[40px] flex-1 rounded-lg px-2 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                      style={{ background: NAVY }}
+                    >
+                      Yes, use it
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFreezePopoverOpen(false)}
+                      className="min-h-[40px] flex-1 rounded-lg border px-2 py-2 text-xs font-semibold text-[#6C757D]"
+                      style={{ borderColor: BORDER }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                disabled={freezeRemaining === 0}
+                onClick={() =>
+                  freezeRemaining > 0 && setFreezePopoverOpen((o) => !o)
+                }
+                className="min-h-[44px] rounded-full border px-3 py-2 text-left text-xs font-semibold shadow-sm disabled:cursor-not-allowed"
+                style={{
+                  borderColor: BORDER,
+                  background: "#fff",
+                  color: freezeRemaining === 0 ? "#ADB5BD" : NAVY,
+                }}
               >
-                <div className="text-2xl">{b.icon}</div>
-                <p className="mt-1 text-[9px] font-medium leading-tight text-[#2C3E50]">
-                  {b.name}
-                </p>
-              </div>
-            ))}
+                {freezeRemaining > 0
+                  ? `❄️ ${freezeRemaining} Freeze left`
+                  : "❄️ No freezes left"}
+              </button>
+            </div>
           </div>
-          <Link
-            href="/stats"
-            className="mt-4 inline-block text-sm font-semibold"
-            style={{ color: CORAL }}
-          >
-            View all badges →
-          </Link>
-        </section>
-
-        {/* Streak freeze */}
-        <section className="mt-4 rounded-xl border bg-white p-4 shadow-sm" style={{ borderColor: BORDER }}>
-          <p className="text-sm font-semibold" style={{ color: NAVY }}>
-            🧊 Streak Freeze
-          </p>
-          <p className="mt-1 text-xs text-[#6C757D]">
-            Miss a day without losing your streak
-          </p>
-          <p className="mt-2 text-xs text-[#6C757D]">1 freeze remaining</p>
-          {freezeUsedToday ? (
-            <p className="mt-2 text-sm font-medium text-green-700">
-              Freeze used today ✓
-            </p>
-          ) : (
-            <button
-              type="button"
-              onClick={activateFreeze}
-              className="mt-3 rounded-lg px-4 py-2 text-sm font-semibold text-white"
-              style={{ backgroundColor: NAVY }}
-            >
-              Activate freeze
-            </button>
-          )}
         </section>
         </div>
 
-        {/* RIGHT — post tabs + grid (desktop) */}
-        <div className="mt-4 min-w-0 flex-1 lg:mt-0">
+        <div className="mt-4 min-h-[280px] w-full min-w-0 lg:mt-0 lg:w-[55%] lg:flex-1">
           <section
             className="border-t bg-white lg:rounded-xl lg:border lg:border-t lg:shadow-sm"
             style={{ borderColor: BORDER }}
           >
-            <div className="flex justify-around border-b" style={{ borderColor: BORDER }}>
+            <div className="flex flex-wrap border-b" style={{ borderColor: BORDER }}>
               {(
                 [
-                  { id: 0 as const, icon: "▦", label: "Grid" },
-                  { id: 1 as const, icon: "▶", label: "Reels" },
-                  { id: 2 as const, icon: "🔖", label: "Saved" },
-                  { id: 3 as const, icon: "🧳", label: "Trips" },
+                  { id: "posts" as const, icon: "📷", label: "Posts" },
+                  { id: "reels" as const, icon: "🎬", label: "Reels" },
+                  { id: "trips" as const, icon: "🗺️", label: "Trips" },
+                  { id: "saved" as const, icon: "🔖", label: "Saved" },
                 ] as const
               ).map((t) => (
                 <button
                   key={t.id}
                   type="button"
-                  aria-label={t.label}
-                  aria-pressed={activeTab === t.id}
-                  onClick={() => setActiveTab(t.id)}
-                  className={`flex-1 py-3 text-center text-lg ${
-                    activeTab === t.id ? "border-b-2 font-semibold" : "text-[#6C757D]"
+                  aria-pressed={highlightTab === t.id}
+                  onClick={() => setHighlightTab(t.id)}
+                  className={`flex min-h-[48px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-center sm:flex-row sm:gap-1 ${
+                    highlightTab === t.id
+                      ? "border-b-2 font-semibold"
+                      : "text-[#6C757D]"
                   }`}
                   style={
-                    activeTab === t.id
+                    highlightTab === t.id
                       ? { color: NAVY, borderBottomColor: NAVY }
                       : {}
                   }
                 >
-                  {t.icon}
+                  <span className="text-base" aria-hidden>
+                    {t.icon}
+                  </span>
+                  <span className="text-[11px] sm:text-xs">{t.label}</span>
                 </button>
               ))}
             </div>
-            <div className="p-0.5">
-              {activeTab === 0 ? (
-                <div className="grid grid-cols-3 gap-0.5">
-                  {GRID_EMOJIS.map((e, i) => (
-                    <div
-                      key={i}
-                      className="flex aspect-square items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-2xl"
-                    >
-                      {e}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => router.push("/feed")}
-                    className="flex aspect-square items-center justify-center border-2 border-dashed border-[#CED4DA] text-2xl text-[#6C757D]"
+            <div className="p-2 sm:p-3">
+              {highlightTab === "posts" || highlightTab === "trips" ? (
+                tripHighlightCards.length === 0 ? (
+                  <div
+                    className="flex min-h-[220px] flex-col items-center justify-center gap-3 px-4 py-12 text-center"
+                    style={{ color: "#6C757D" }}
                   >
-                    +
-                  </button>
-                </div>
+                    <span className="text-5xl" aria-hidden>
+                      🧳
+                    </span>
+                    <p className="max-w-xs text-sm font-medium text-[#2C3E50]">
+                      No posts yet — complete a trip to share memories!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 sm:gap-2 lg:grid-cols-3">
+                    {tripHighlightCards.map((card) => (
+                      <button
+                        key={card.id}
+                        type="button"
+                        onClick={() => router.push("/trips")}
+                        className="group relative aspect-square w-full overflow-hidden rounded-lg text-left outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#E94560]"
+                        style={{ background: card.bg }}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+                        <p className="absolute bottom-2 left-2 right-2 text-[12px] font-bold leading-tight text-white drop-shadow-sm">
+                          {card.title}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )
               ) : (
-                <div className="flex min-h-[120px] items-center justify-center py-8 text-sm text-[#6C757D]">
-                  Coming soon
+                <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 py-10 text-sm text-[#6C757D]">
+                  <span className="text-3xl">
+                    {highlightTab === "reels" ? "🎬" : "🔖"}
+                  </span>
+                  <p>No {highlightTab} yet — check back soon!</p>
                 </div>
               )}
             </div>
           </section>
         </div>
       </div>
+
+      {editOpen ? (
+        <div
+          className="fixed inset-0 z-[220] flex flex-col bg-white"
+          style={{
+            animation: "profileModalSlide 0.2s ease-out forwards",
+          }}
+        >
+          <style
+            dangerouslySetInnerHTML={{
+              __html:
+                "@keyframes profileModalSlide{from{transform:translateY(100%)}to{transform:translateY(0)}}",
+            }}
+          />
+          <header
+            className="flex shrink-0 items-center gap-2 border-b px-3 py-3"
+            style={{ borderColor: BORDER }}
+          >
+            <button
+              type="button"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center text-xl text-[#2C3E50]"
+              aria-label="Close"
+              onClick={() => {
+                setEditOpen(false);
+                setAvatarPickerOpen(false);
+              }}
+            >
+              ←
+            </button>
+            <h1 className="flex-1 text-center text-[17px] font-bold" style={{ color: NAVY }}>
+              Edit Profile
+            </h1>
+            <button
+              type="button"
+              disabled={saveBusy}
+              onClick={() => void saveProfile()}
+              className="min-h-[44px] px-2 text-[15px] font-semibold disabled:opacity-50"
+              style={{ color: CORAL }}
+            >
+              {saveBusy ? "…" : "Save"}
+            </button>
+          </header>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
+            <button
+              type="button"
+              onClick={() => setAvatarPickerOpen((v) => !v)}
+              className="mx-auto flex flex-col items-center gap-2"
+            >
+              <div
+                className="flex h-[96px] w-[96px] items-center justify-center overflow-hidden rounded-full bg-[#F8F9FA] text-5xl"
+                style={{
+                  borderWidth: 3,
+                  borderStyle: "solid",
+                  borderColor: CORAL,
+                }}
+              >
+                {avatarEmoji ? (
+                  <span className="leading-none">{avatarEmoji}</span>
+                ) : (
+                  <img
+                    src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(me.id)}`}
+                    alt=""
+                    width={96}
+                    height={96}
+                    className="h-full w-full object-cover"
+                  />
+                )}
+              </div>
+              <span className="text-sm font-semibold" style={{ color: CORAL }}>
+                Change profile photo
+              </span>
+            </button>
+            {avatarPickerOpen ? (
+              <div className="mt-4 rounded-xl border p-4" style={{ borderColor: BORDER }}>
+                <p className="text-sm font-semibold" style={{ color: NAVY }}>
+                  Choose travel avatar
+                </p>
+                <div className="mt-3 grid grid-cols-6 gap-2">
+                  {AVATAR_EMOJIS.map((e) => (
+                    <button
+                      key={e}
+                      type="button"
+                      onClick={() => selectAvatarEmoji(e)}
+                      className={`flex aspect-square min-h-[44px] items-center justify-center rounded-lg border-2 text-2xl ${
+                        avatarEmoji === e ? "bg-[#fff0f3]" : "bg-white"
+                      }`}
+                      style={{
+                        borderColor: avatarEmoji === e ? CORAL : BORDER,
+                      }}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={resetAvatarDicebear}
+                  className="mt-3 text-sm font-medium text-[#6C757D] underline"
+                >
+                  Or use auto avatar
+                </button>
+              </div>
+            ) : null}
+            <label className="mt-6 block">
+              <span className="text-xs font-semibold text-[#6C757D]">Full name</span>
+              <input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="mt-1 min-h-[44px] w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm outline-none focus:border-[#E94560]"
+              />
+            </label>
+            <label className="mt-4 block">
+              <span className="text-xs font-semibold text-[#6C757D]">Username</span>
+              <div className="mt-1 flex min-h-[44px] rounded-lg border border-[#E9ECEF]">
+                <span className="flex items-center border-r border-[#E9ECEF] bg-[#F8F9FA] px-3 text-sm text-[#6C757D]">
+                  @
+                </span>
+                <input
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
+                  className="min-w-0 flex-1 px-3 py-2 text-sm outline-none"
+                />
+              </div>
+            </label>
+            <label className="mt-4 block">
+              <span className="text-xs font-semibold text-[#6C757D]">Bio</span>
+              <textarea
+                value={editBio}
+                maxLength={150}
+                onChange={(e) => setEditBio(e.target.value)}
+                rows={4}
+                className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm outline-none focus:border-[#E94560]"
+              />
+              <span className="text-[10px] text-[#6C757D]">{editBio.length}/150</span>
+            </label>
+            <label className="mt-4 block">
+              <span className="text-xs font-semibold text-[#6C757D]">Home city</span>
+              <input
+                value={editHome}
+                onChange={(e) => setEditHome(e.target.value)}
+                className="mt-1 min-h-[44px] w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm outline-none focus:border-[#E94560]"
+                placeholder="City you call home"
+              />
+            </label>
+            <label className="mt-4 block">
+              <span className="text-xs font-semibold text-[#6C757D]">Travel status</span>
+              <input
+                value={editTravelStatus}
+                onChange={(e) => setEditTravelStatus(e.target.value)}
+                className="mt-1 min-h-[44px] w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm outline-none focus:border-[#E94560]"
+                placeholder="e.g. Planning Japan 2026"
+              />
+            </label>
+            <div className="mt-4 flex items-center gap-1 text-sm text-[#6C757D]">
+              <span aria-hidden>🔒</span>
+              {me.email}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {shareSheetOpen ? (
+        <div className="fixed inset-0 z-[210] flex flex-col justify-end">
+          <style
+            dangerouslySetInnerHTML={{
+              __html:
+                "@keyframes profileSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}",
+            }}
+          />
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            aria-label="Close"
+            onClick={() => setShareSheetOpen(false)}
+          />
+          <div
+            className="relative rounded-t-2xl bg-white px-4 pb-6 pt-2 shadow-xl"
+            style={{ animation: "profileSheetUp 0.2s ease-out forwards" }}
+          >
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#DEE2E6]" />
+            <p className="mb-3 text-center text-sm font-bold" style={{ color: NAVY }}>
+              Share profile
+            </p>
+            <div className="space-y-1">
+              <button
+                type="button"
+                className="flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-[#F8F9FA]"
+                onClick={() => {
+                  copyTravelloProfileLink();
+                  setShareSheetOpen(false);
+                }}
+              >
+                <span className="text-xl">📋</span>
+                Copy profile link
+              </button>
+              <button
+                type="button"
+                className="flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-[#F8F9FA]"
+                onClick={() => openDmComposeWithLink()}
+              >
+                <span className="text-xl">💬</span>
+                Send as Message
+              </button>
+              <button
+                type="button"
+                className="flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-[#F8F9FA]"
+                onClick={() => void shareNativeProfile()}
+              >
+                <span className="text-xl">📤</span>
+                Share via…
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {dmComposeOpen ? (
+        <div className="fixed inset-0 z-[215] flex flex-col justify-end">
+          <style
+            dangerouslySetInnerHTML={{
+              __html:
+                "@keyframes profileSheetUpDm{from{transform:translateY(100%)}to{transform:translateY(0)}}",
+            }}
+          />
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            aria-label="Close"
+            onClick={() => setDmComposeOpen(false)}
+          />
+          <div
+            className="relative rounded-t-2xl bg-white px-4 pb-8 pt-2 shadow-xl"
+            style={{ animation: "profileSheetUpDm 0.2s ease-out forwards" }}
+          >
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#DEE2E6]" />
+            <p className="mb-2 text-sm font-bold" style={{ color: NAVY }}>
+              New message
+            </p>
+            <textarea
+              value={dmComposeBody}
+              onChange={(e) => setDmComposeBody(e.target.value)}
+              rows={3}
+              className="w-full rounded-xl border border-[#E9ECEF] px-3 py-2 text-sm outline-none"
+            />
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setDmComposeOpen(false)}
+                className="min-h-[44px] flex-1 rounded-xl border text-sm font-semibold"
+                style={{ borderColor: BORDER, color: "#6C757D" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    sessionStorage.setItem("travelhub_compose_prefill", dmComposeBody);
+                  } catch {
+                    /* ignore */
+                  }
+                  setDmComposeOpen(false);
+                  router.push("/travel-hub");
+                }}
+                className="min-h-[44px] flex-1 rounded-xl text-sm font-semibold text-white"
+                style={{ background: CORAL }}
+              >
+                Open Travel Hub
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {addFriendOpen ? (
+        <div className="fixed inset-0 z-[210] flex flex-col justify-end">
+          <style
+            dangerouslySetInnerHTML={{
+              __html:
+                "@keyframes profileSheetUpFriend{from{transform:translateY(100%)}to{transform:translateY(0)}}",
+            }}
+          />
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            aria-label="Close"
+            onClick={() => setAddFriendOpen(false)}
+          />
+          <div
+            className="relative max-h-[88vh] overflow-hidden rounded-t-2xl bg-white shadow-xl"
+            style={{ animation: "profileSheetUpFriend 0.2s ease-out forwards" }}
+          >
+            <div className="mx-auto mb-2 mt-2 h-1 w-10 rounded-full bg-[#DEE2E6]" />
+            <p className="px-4 pb-2 text-center text-sm font-bold" style={{ color: NAVY }}>
+              Add Friend
+            </p>
+            <div className="flex border-b" style={{ borderColor: BORDER }}>
+              <button
+                type="button"
+                className={`min-h-[48px] flex-1 text-sm font-semibold ${
+                  addFriendTab === "hub" ? "border-b-2" : "text-[#6C757D]"
+                }`}
+                style={
+                  addFriendTab === "hub"
+                    ? { borderBottomColor: NAVY, color: NAVY }
+                    : {}
+                }
+                onClick={() => setAddFriendTab("hub")}
+              >
+                Travello Hub
+              </button>
+              <button
+                type="button"
+                className={`min-h-[48px] flex-1 text-sm font-semibold ${
+                  addFriendTab === "contacts" ? "border-b-2" : "text-[#6C757D]"
+                }`}
+                style={
+                  addFriendTab === "contacts"
+                    ? { borderBottomColor: NAVY, color: NAVY }
+                    : {}
+                }
+                onClick={() => setAddFriendTab("contacts")}
+              >
+                From Contacts
+              </button>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto px-4 py-4">
+              {addFriendTab === "hub" ? (
+                <div className="space-y-3 text-sm text-[#6C757D]">
+                  <p>
+                    Discover travelers in Travel Hub — browse the{" "}
+                    <span className="font-semibold text-[#2C3E50]">Contacts</span> tab
+                    to find people from your groups.
+                  </p>
+                  <Link
+                    href="/travel-hub?tab=contacts"
+                    onClick={() => setAddFriendOpen(false)}
+                    className="flex min-h-[48px] items-center justify-center rounded-xl text-sm font-bold text-white"
+                    style={{ background: CORAL }}
+                  >
+                    Open Travello Hub
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <input
+                    value={contactSearch}
+                    onChange={(e) => setContactSearch(e.target.value)}
+                    placeholder="Search name or phone…"
+                    className="min-h-[44px] w-full rounded-xl border border-[#E9ECEF] px-3 text-sm outline-none"
+                  />
+                  {contactSearch.trim().length < 2 ? (
+                    <p className="text-center text-xs text-[#6C757D]">
+                      Type at least 2 characters
+                    </p>
+                  ) : mockContactResults.length === 0 ? (
+                    <p className="text-center text-sm text-[#6C757D]">
+                      No matches on Travello yet.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {mockContactResults.map((r) => (
+                        <li
+                          key={r.id}
+                          className="flex items-center gap-3 rounded-xl border p-3"
+                          style={{ borderColor: BORDER }}
+                        >
+                          <span
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+                            style={{ background: r.bg }}
+                          >
+                            {r.avatar}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-bold text-[#2C3E50]">
+                              {r.name}
+                            </p>
+                            <p className="truncate text-xs text-[#6C757D]">
+                              @{r.username} · {r.mutual} mutual trips
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className="min-h-[40px] shrink-0 rounded-full px-4 text-xs font-bold text-white"
+                            style={{ background: NAVY }}
+                            onClick={() =>
+                              showToast({
+                                kind: "success",
+                                message: "Friend request sent",
+                              })
+                            }
+                          >
+                            Add
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <footer className="mt-8 w-full px-4 pb-8 text-center text-[11px] text-[#6C757D]">
         Travello v1.0.0 · Made for travelers ✈️
@@ -1110,6 +1662,7 @@ export default function ProfilePage() {
                     desc: "Customize your look",
                     onClick: () => {
                       setSettingsOpen(false);
+                      openEditProfileModal();
                       setAvatarPickerOpen(true);
                     },
                   },

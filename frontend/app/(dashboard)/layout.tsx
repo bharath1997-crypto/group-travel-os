@@ -1,5 +1,6 @@
 "use client";
 
+import { AIAssistantSidecar } from "@/components/ai/AIAssistantSidecar";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -739,6 +740,29 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           </div>
         </nav>
       </div>
+
+      {user ? (
+        <AIAssistantSidecar
+          page={
+            pathname
+              .replace(/^\//, "")
+              .replace(/\//g, "_")
+              .slice(0, 100) || "dashboard"
+          }
+          tripId={(() => {
+            const p = pathname.split("/").filter(Boolean);
+            if (p[0] === "trips" && p[1] && p[1] !== "plan") return p[1];
+            return undefined;
+          })()}
+          groupId={(() => {
+            const p = pathname.split("/").filter(Boolean);
+            if (p[0] === "groups" && p[1] && p[1] !== "new") return p[1];
+            return undefined;
+          })()}
+          context={{ pathname }}
+          className="!z-[100] max-md:bottom-20"
+        />
+      ) : null}
     </div>
   );
 }
