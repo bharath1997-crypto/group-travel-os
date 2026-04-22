@@ -18,6 +18,11 @@ const LS_HOME = "travello_home_city";
 const LS_TRAVEL_STATUS = "travello_travel_status";
 const LS_AVATAR_EMOJI = "travello_avatar_emoji";
 const LS_STREAK_DAYS = "travello_streak_days";
+const PINK_RING = "#EC4899";
+const CRIMSON = "#DC2626";
+const PROFILE_BG_BAR = "#F3F4F6";
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const DICEBEAR_LORELEI = "https://api.dicebear.com/7.x/lorelei/svg";
 const LS_LAST_OPENED = "travello_last_opened";
 const LS_FREEZE_USED = "travello_freeze_used_date";
 const LS_FREEZE_WEEK = "travello_streak_freeze_week";
@@ -29,6 +34,7 @@ type UserMe = {
   username: string | null;
   is_verified: boolean;
   profile_public: boolean;
+  avatar_url?: string | null;
   country?: string | null;
   home_city?: string | null;
   travel_status?: string | null;
@@ -153,6 +159,95 @@ function displayAtUsername(me: UserMe): string {
   return "@traveler";
 }
 
+function initialsFromName(full: string | null | undefined): string {
+  const parts = (full ?? "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0]!.charAt(0).toUpperCase();
+  return (
+    (parts[0]!.charAt(0) + parts[parts.length - 1]!.charAt(0)).toUpperCase()
+  );
+}
+
+function isHttpOrDataAvatar(s: string): boolean {
+  const t = s.trim();
+  return t.startsWith("data:") || t.startsWith("http://") || t.startsWith("https://");
+}
+
+type AvatarDisplaySource = {
+  avatarUrl: string | null | undefined;
+  localEmojiFallback: string | null;
+  idSeed: string;
+  fullName: string;
+};
+
+function ProfileAvatarView({
+  src,
+  size,
+}: {
+  src: AvatarDisplaySource;
+  size: number;
+}) {
+  const au = src.avatarUrl?.trim();
+  if (au) {
+    if (isHttpOrDataAvatar(au)) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={au}
+          alt=""
+          width={size}
+          height={size}
+          className="h-full w-full object-cover"
+        />
+      );
+    }
+    return <span className="select-none text-[length:2.1rem] leading-none">{au}</span>;
+  }
+  if (src.localEmojiFallback) {
+    return (
+      <span className="select-none leading-none" style={{ fontSize: size * 0.55 }}>
+        {src.localEmojiFallback}
+      </span>
+    );
+  }
+  return (
+    <span
+      className="flex h-full w-full select-none items-center justify-center text-sm font-bold text-white"
+      style={{ backgroundColor: CORAL, fontSize: size * 0.3 }}
+    >
+      {initialsFromName(src.fullName)}
+    </span>
+  );
+}
+
+const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
+
+function isUsernamePatternValid(u: string): boolean {
+  return u.length === 0 || USERNAME_RE.test(u);
+}
+
+function profileFieldScore(args: {
+  avatarSet: boolean;
+  fullName: string;
+  username: string;
+  bio: string;
+  home: string;
+  travelStatus: string;
+}): { filled: number; total: number; pct: number } {
+  const total = 6;
+  let filled = 0;
+  if (args.avatarSet) filled += 1;
+  if (args.fullName.trim().length >= 2) filled += 1;
+  if (args.username.trim() && USERNAME_RE.test(args.username.trim())) filled += 1;
+  if (args.bio.trim().length > 0) filled += 1;
+  if (args.home.trim().length > 0) filled += 1;
+  if (args.travelStatus.trim().length > 0) filled += 1;
+  return { filled, total, pct: Math.round((filled / total) * 100) };
+}
+
 export default function ProfilePage() {
   const router = useRouter();
 
@@ -175,7 +270,16 @@ export default function ProfilePage() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  const [photoAccordion, setPhotoAccordion] = useState<"upload" | "emoji" | "auto" | null>(
+    null,
+  );
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+  const [uploadSaveBusy, setUploadSaveBusy] = useState(false);
+  const [emojiSaveBusy, setEmojiSaveBusy] = useState(false);
+  const [autoSaveBusy, setAutoSaveBusy] = useState(false);
+  const [modalEmojiPick, setModalEmojiPick] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
   const [addFriendOpen, setAddFriendOpen] = useState(false);
   const [addFriendTab, setAddFriendTab] = useState<"hub" | "contacts">("hub");
@@ -316,15 +420,176 @@ export default function ProfilePage() {
 
   const isPro = plan?.plan === "pro" || plan?.plan === "enterprise";
 
+  const autoDicebearUrl = useMemo(() => {
+    const seed =
+      editUsername.trim() ||
+      editName.trim() ||
+      me?.username?.trim() ||
+      me?.full_name?.trim() ||
+      me?.id ||
+      "traveler";
+    return `${DICEBEAR_LORELEI}?seed=${encodeURIComponent(seed)}`;
+  }, [editUsername, editName, me?.username, me?.full_name, me?.id]);
+
+  const editCompletion = useMemo(
+    () =>
+      profileFieldScore({
+        avatarSet:
+          Boolean(me?.avatar_url?.trim()) ||
+          Boolean(avatarEmoji && !me?.avatar_url?.trim()),
+        fullName: editName,
+        username: editUsername,
+        bio: editBio,
+        home: editHome,
+        travelStatus: editTravelStatus,
+      }),
+    [
+      me?.avatar_url,
+      avatarEmoji,
+      editName,
+      editUsername,
+      editBio,
+      editHome,
+      editTravelStatus,
+    ],
+  );
+
+  const patchMeAvatar = useCallback(
+    async (avatar_url: string) => {
+      const u = await apiFetch<UserMe>("/auth/me", {
+        method: "PATCH",
+        body: JSON.stringify({ avatar_url }),
+      });
+      setMe(u);
+      if (u.avatar_url && !isHttpOrDataAvatar(u.avatar_url)) {
+        localStorage.setItem(LS_AVATAR_EMOJI, u.avatar_url);
+        setAvatarEmoji(u.avatar_url);
+      } else {
+        localStorage.removeItem(LS_AVATAR_EMOJI);
+        setAvatarEmoji(null);
+      }
+      return u;
+    },
+    [],
+  );
+
+  const openPhotoModal = useCallback(() => {
+    setUploadPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    const a = me?.avatar_url?.trim();
+    if (a) {
+      if (!isHttpOrDataAvatar(a)) {
+        setModalEmojiPick(a);
+      } else {
+        setModalEmojiPick(AVATAR_EMOJIS[0] ?? "🧑‍🦱");
+      }
+    } else {
+      setModalEmojiPick(avatarEmoji ?? AVATAR_EMOJIS[0] ?? "🧑‍🦱");
+    }
+    setPhotoModalOpen(true);
+  }, [me?.avatar_url, avatarEmoji]);
+
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = () => reject(new Error("Could not read file"));
+      r.readAsDataURL(file);
+    });
+
+  const onProfilePhotoFile = useCallback(
+    async (fileList: FileList | null) => {
+      const file = fileList?.[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/")) {
+        showToast({ kind: "error", message: "File too large or unsupported format" });
+        return;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        showToast({ kind: "error", message: "File too large or unsupported format" });
+        return;
+      }
+      try {
+        const dataUrl = await readFileAsDataUrl(file);
+        setUploadPreview(dataUrl);
+      } catch {
+        showToast({ kind: "error", message: "File too large or unsupported format" });
+      }
+    },
+    [showToast],
+  );
+
+  const onUploadPreviewSave = useCallback(async () => {
+    if (!uploadPreview) return;
+    setUploadSaveBusy(true);
+    try {
+      await patchMeAvatar(uploadPreview);
+      setPhotoModalOpen(false);
+      setUploadPreview(null);
+      setPhotoAccordion(null);
+      showToast({ kind: "success", message: "Profile photo updated!" });
+    } catch (e) {
+      showToast({
+        kind: "error",
+        message: e instanceof Error ? e.message : "Update failed",
+      });
+    } finally {
+      setUploadSaveBusy(false);
+    }
+  }, [uploadPreview, patchMeAvatar, showToast]);
+
+  const onModalEmojiSave = useCallback(async () => {
+    if (!modalEmojiPick) return;
+    setEmojiSaveBusy(true);
+    try {
+      await patchMeAvatar(modalEmojiPick);
+      setPhotoModalOpen(false);
+      setPhotoAccordion(null);
+      showToast({ kind: "success", message: "Profile photo updated!" });
+    } catch (e) {
+      showToast({
+        kind: "error",
+        message: e instanceof Error ? e.message : "Update failed",
+      });
+    } finally {
+      setEmojiSaveBusy(false);
+    }
+  }, [modalEmojiPick, patchMeAvatar, showToast]);
+
+  const onAutoAvatarSave = useCallback(async () => {
+    setAutoSaveBusy(true);
+    try {
+      await patchMeAvatar(autoDicebearUrl);
+      setPhotoModalOpen(false);
+      setPhotoAccordion(null);
+      showToast({ kind: "success", message: "Profile photo updated!" });
+    } catch (e) {
+      showToast({
+        kind: "error",
+        message: e instanceof Error ? e.message : "Update failed",
+      });
+    } finally {
+      setAutoSaveBusy(false);
+    }
+  }, [autoDicebearUrl, patchMeAvatar, showToast]);
+
   async function saveProfile() {
     if (!me) return;
+    const uTrim = editUsername.trim();
+    if (uTrim && !USERNAME_RE.test(uTrim)) {
+      showToast({
+        kind: "error",
+        message: "Username must be 3–20 characters: lowercase letters, numbers, underscores only",
+      });
+      return;
+    }
     setSaveBusy(true);
     try {
       const u = await apiFetch<UserMe>("/auth/me", {
         method: "PATCH",
         body: JSON.stringify({
           full_name: editName.trim(),
-          username: editUsername.trim() || null,
+          username: uTrim || null,
         }),
       });
       setMe(u);
@@ -335,8 +600,9 @@ export default function ProfilePage() {
       setHomeLocal(editHome.trim());
       setTravelStatusLocal(editTravelStatus.trim());
       setEditOpen(false);
-      setAvatarPickerOpen(false);
-      showToast({ kind: "success", message: "Profile updated" });
+      setPhotoModalOpen(false);
+      showToast({ kind: "success", message: "Profile saved!" });
+      router.back();
     } catch (e) {
       showToast({
         kind: "error",
@@ -394,16 +660,6 @@ export default function ProfilePage() {
     } catch {
       /* user cancelled share */
     }
-  }
-
-  function selectAvatarEmoji(e: string) {
-    localStorage.setItem(LS_AVATAR_EMOJI, e);
-    setAvatarEmoji(e);
-  }
-
-  function resetAvatarDicebear() {
-    localStorage.removeItem(LS_AVATAR_EMOJI);
-    setAvatarEmoji(null);
   }
 
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -636,15 +892,23 @@ export default function ProfilePage() {
   const memoriesCount = stats?.locations_saved ?? 0;
   const freezeRemaining = freezeUsedToday ? 0 : 1;
 
-  const openEditProfileModal = () => {
+  const openEditProfileModal = useCallback(() => {
+    if (!me) return;
     setEditName(me.full_name);
     setEditUsername(me.username ?? "");
     setEditBio(bioLocal);
     setEditHome(me.home_city?.trim() || homeLocal);
     setEditTravelStatus(me.travel_status?.trim() || travelStatusLocal);
-    setAvatarPickerOpen(false);
+    setPhotoModalOpen(false);
     setEditOpen(true);
-  };
+  }, [me, bioLocal, homeLocal, travelStatusLocal]);
+
+  useEffect(() => {
+    if (!photoModalOpen) {
+      setUploadPreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, [photoModalOpen]);
 
   return (
     <div className="min-h-screen w-full pb-24" style={{ backgroundColor: BG }}>
@@ -725,24 +989,23 @@ export default function ProfilePage() {
               aria-label="Edit profile photo"
             >
               <div
-                className="flex h-[86px] w-[86px] items-center justify-center overflow-hidden rounded-full bg-[#F8F9FA] text-5xl"
+                className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-[#F8F9FA] text-5xl"
                 style={{
-                  borderWidth: 3,
+                  borderWidth: 2,
                   borderStyle: "solid",
-                  borderColor: CORAL,
+                  borderColor: PINK_RING,
                 }}
               >
-                {avatarEmoji ? (
-                  <span className="leading-none">{avatarEmoji}</span>
-                ) : (
-                  <img
-                    src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(me.id)}`}
-                    alt=""
-                    width={86}
-                    height={86}
-                    className="h-full w-full object-cover"
-                  />
-                )}
+                <ProfileAvatarView
+                  src={{
+                    avatarUrl: me.avatar_url,
+                    localEmojiFallback:
+                      !me.avatar_url?.trim() && avatarEmoji ? avatarEmoji : null,
+                    idSeed: me.id,
+                    fullName: me.full_name,
+                  }}
+                  size={80}
+                />
               </div>
             </button>
             <div className="grid w-full max-w-xs grid-cols-4 gap-2 text-center sm:max-w-none sm:flex-1">
@@ -1220,7 +1483,7 @@ export default function ProfilePage() {
 
       {editOpen ? (
         <div
-          className="fixed inset-0 z-[220] flex flex-col bg-white"
+          className="fixed inset-0 z-[220] flex h-[100dvh] max-h-[100dvh] flex-col bg-white"
           style={{
             animation: "profileModalSlide 0.2s ease-out forwards",
           }}
@@ -1241,7 +1504,7 @@ export default function ProfilePage() {
               aria-label="Close"
               onClick={() => {
                 setEditOpen(false);
-                setAvatarPickerOpen(false);
+                setPhotoModalOpen(false);
               }}
             >
               ←
@@ -1249,77 +1512,65 @@ export default function ProfilePage() {
             <h1 className="flex-1 text-center text-[17px] font-bold" style={{ color: NAVY }}>
               Edit Profile
             </h1>
-            <button
-              type="button"
-              disabled={saveBusy}
-              onClick={() => void saveProfile()}
-              className="min-h-[44px] px-2 text-[15px] font-semibold disabled:opacity-50"
-              style={{ color: CORAL }}
-            >
-              {saveBusy ? "…" : "Save"}
-            </button>
+            <div className="min-h-[44px] min-w-[44px] shrink-0" aria-hidden />
           </header>
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
-            <button
-              type="button"
-              onClick={() => setAvatarPickerOpen((v) => !v)}
-              className="mx-auto flex flex-col items-center gap-2"
-            >
+            <div className="flex flex-col items-center">
+              <button
+                type="button"
+                onClick={openPhotoModal}
+                className="flex flex-col items-center gap-2 outline-none"
+              >
+                <div
+                  className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-[#F8F9FA] text-5xl"
+                  style={{
+                    borderWidth: 2,
+                    borderStyle: "solid",
+                    borderColor: PINK_RING,
+                  }}
+                >
+                  <ProfileAvatarView
+                    src={{
+                      avatarUrl: me.avatar_url,
+                      localEmojiFallback:
+                        !me.avatar_url?.trim() && avatarEmoji ? avatarEmoji : null,
+                      idSeed: me.id,
+                      fullName: me.full_name,
+                    }}
+                    size={80}
+                  />
+                </div>
+                <span className="text-sm font-semibold" style={{ color: CORAL }}>
+                  Change profile photo
+                </span>
+              </button>
+              <p
+                className="mt-3 text-center text-xs font-medium"
+                style={{ color: "#6B7280" }}
+              >
+                Profile {editCompletion.pct}% complete
+              </p>
               <div
-                className="flex h-[96px] w-[96px] items-center justify-center overflow-hidden rounded-full bg-[#F8F9FA] text-5xl"
+                className="mx-auto mt-1 overflow-hidden rounded-sm"
                 style={{
-                  borderWidth: 3,
-                  borderStyle: "solid",
-                  borderColor: CORAL,
+                  width: 200,
+                  height: 4,
+                  backgroundColor: PROFILE_BG_BAR,
+                  borderRadius: 2,
                 }}
               >
-                {avatarEmoji ? (
-                  <span className="leading-none">{avatarEmoji}</span>
-                ) : (
-                  <img
-                    src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(me.id)}`}
-                    alt=""
-                    width={96}
-                    height={96}
-                    className="h-full w-full object-cover"
-                  />
-                )}
+                <div
+                  className="h-full rounded-sm transition-all duration-300"
+                  style={{ width: `${editCompletion.pct}%`, backgroundColor: CRIMSON }}
+                />
               </div>
-              <span className="text-sm font-semibold" style={{ color: CORAL }}>
-                Change profile photo
-              </span>
-            </button>
-            {avatarPickerOpen ? (
-              <div className="mt-4 rounded-xl border p-4" style={{ borderColor: BORDER }}>
-                <p className="text-sm font-semibold" style={{ color: NAVY }}>
-                  Choose travel avatar
-                </p>
-                <div className="mt-3 grid grid-cols-6 gap-2">
-                  {AVATAR_EMOJIS.map((e) => (
-                    <button
-                      key={e}
-                      type="button"
-                      onClick={() => selectAvatarEmoji(e)}
-                      className={`flex aspect-square min-h-[44px] items-center justify-center rounded-lg border-2 text-2xl ${
-                        avatarEmoji === e ? "bg-[#fff0f3]" : "bg-white"
-                      }`}
-                      style={{
-                        borderColor: avatarEmoji === e ? CORAL : BORDER,
-                      }}
-                    >
-                      {e}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={resetAvatarDicebear}
-                  className="mt-3 text-sm font-medium text-[#6C757D] underline"
-                >
-                  Or use auto avatar
-                </button>
-              </div>
-            ) : null}
+              <p
+                className="mt-1.5 text-center text-[12px]"
+                style={{ color: "#6B7280" }}
+              >
+                {editCompletion.filled} of 6 details added
+              </p>
+            </div>
             <label className="mt-6 block">
               <span className="text-xs font-semibold text-[#6C757D]">Full name</span>
               <input
@@ -1336,12 +1587,33 @@ export default function ProfilePage() {
                 </span>
                 <input
                   value={editUsername}
-                  onChange={(e) => setEditUsername(e.target.value)}
+                  onChange={(e) =>
+                    setEditUsername(
+                      e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20),
+                    )
+                  }
+                  maxLength={20}
+                  autoCapitalize="off"
+                  autoCorrect="off"
                   className="min-w-0 flex-1 px-3 py-2 text-sm outline-none"
                 />
+                {editUsername.trim().length > 0 ? (
+                  <span
+                    className="flex items-center pr-2 text-base"
+                    aria-hidden
+                    style={{
+                      color: isUsernamePatternValid(editUsername) ? "#16A34A" : "#DC2626",
+                    }}
+                  >
+                    {isUsernamePatternValid(editUsername) ? "✓" : "✕"}
+                  </span>
+                ) : null}
               </div>
+              <p className="mt-0.5 text-right text-[11px] text-[#6C757D]">
+                {editUsername.length}/20
+              </p>
             </label>
-            <label className="mt-4 block">
+            <label className="mt-2 block">
               <span className="text-xs font-semibold text-[#6C757D]">Bio</span>
               <textarea
                 value={editBio}
@@ -1350,7 +1622,21 @@ export default function ProfilePage() {
                 rows={4}
                 className="mt-1 w-full rounded-lg border border-[#E9ECEF] px-3 py-2 text-sm outline-none focus:border-[#E94560]"
               />
-              <span className="text-[10px] text-[#6C757D]">{editBio.length}/150</span>
+              <div className="mt-0.5 flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
+                <span
+                  className="text-[10px] text-[#6C757D]"
+                  style={{
+                    color: editBio.length > 130 ? "#DC2626" : "#6C757D",
+                  }}
+                >
+                  {editBio.length}/150
+                </span>
+                {editBio.length >= 50 && editBio.length <= 150 ? (
+                  <span className="text-[10px] font-medium text-green-600">
+                    🔥 Great bio!
+                  </span>
+                ) : null}
+              </div>
             </label>
             <label className="mt-4 block">
               <span className="text-xs font-semibold text-[#6C757D]">Home city</span>
@@ -1373,6 +1659,260 @@ export default function ProfilePage() {
             <div className="mt-4 flex items-center gap-1 text-sm text-[#6C757D]">
               <span aria-hidden>🔒</span>
               {me.email}
+            </div>
+          </div>
+          <div
+            className="sticky bottom-0 z-10 border-t bg-white p-4"
+            style={{ borderColor: "#F3F4F6" }}
+          >
+            <button
+              type="button"
+              disabled={saveBusy}
+              onClick={() => void saveProfile()}
+              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold text-white disabled:opacity-60"
+              style={{ backgroundColor: CRIMSON }}
+            >
+              {saveBusy ? (
+                <>
+                  <span
+                    className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                    aria-hidden
+                  />
+                  Saving…
+                </>
+              ) : (
+                "Save changes"
+              )}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {photoModalOpen ? (
+        <div className="fixed inset-0 z-[230] flex items-end justify-center md:items-center md:px-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50"
+            aria-label="Close"
+            onClick={() => {
+              setPhotoModalOpen(false);
+              setPhotoAccordion(null);
+            }}
+          />
+          <div
+            className="relative z-10 flex h-full w-full max-h-full flex-col overflow-hidden bg-white md:h-auto md:max-h-[90vh] md:max-w-sm md:rounded-2xl md:shadow-2xl"
+            style={{ borderTopLeftRadius: 16, borderTopRightRadius: 16 }}
+          >
+            <div
+              className="grid shrink-0 grid-cols-[44px_1fr_44px] items-center border-b px-2 py-2"
+              style={{ borderColor: BORDER }}
+            >
+              <div aria-hidden className="min-h-[44px]" />
+              <h2
+                className="text-center text-[17px] font-bold"
+                style={{ color: NAVY }}
+              >
+                Change profile photo
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setPhotoModalOpen(false);
+                  setPhotoAccordion(null);
+                }}
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center text-2xl leading-none text-[#2C3E50]"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  void onProfilePhotoFile(e.target.files);
+                }}
+              />
+              {(
+                [
+                  {
+                    id: "upload" as const,
+                    icon: "📷",
+                    title: "Upload from device",
+                    desc: "JPG, PNG, WEBP",
+                  },
+                  {
+                    id: "emoji" as const,
+                    icon: "🎭",
+                    title: "Choose travel avatar",
+                    desc: "Pick a fun emoji",
+                  },
+                  {
+                    id: "auto" as const,
+                    icon: "✨",
+                    title: "Auto avatar from name",
+                    desc: "Generate from your name",
+                  },
+                ] as const
+              ).map((row) => (
+                <div key={row.id} className="mb-2 border-b last:border-0" style={{ borderColor: "#F3F4F6" }}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPhotoAccordion((c) => (c === row.id ? null : row.id))
+                    }
+                    className="flex w-full min-h-[52px] items-center gap-3 rounded-lg px-2 py-2 text-left"
+                  >
+                    <span className="text-2xl" aria-hidden>
+                      {row.icon}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-[#111827]">{row.title}</p>
+                      <p className="text-xs text-[#6B7280]">{row.desc}</p>
+                    </div>
+                    <span className="text-[#9CA3AF]">{photoAccordion === row.id ? "▴" : "▾"}</span>
+                  </button>
+                  {photoAccordion === "upload" && row.id === "upload" ? (
+                    <div className="px-1 pb-4">
+                      {uploadPreview ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <div
+                            className="h-[100px] w-[100px] shrink-0 overflow-hidden rounded-full bg-gray-100"
+                            style={{ border: `2px solid ${PINK_RING}` }}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={uploadPreview}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            disabled={uploadSaveBusy}
+                            onClick={() => void onUploadPreviewSave()}
+                            className="flex min-h-[44px] w-full max-w-xs items-center justify-center gap-2 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                            style={{ backgroundColor: CRIMSON }}
+                          >
+                            {uploadSaveBusy ? (
+                              <span
+                                className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                                aria-hidden
+                              />
+                            ) : null}
+                            Looks good — Save
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#D1D5DB] bg-[#FAFAFA] px-4 py-8"
+                        >
+                          <span className="text-[#4B5563]">
+                            <svg
+                              width={32}
+                              height={32}
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              aria-hidden
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M3 9.75V17.25A2.25 2.25 0 0 0 5.25 19.5H18.75A2.25 2.25 0 0 0 21 17.25V9.75M3 9.75 6.75A2.25 2.25 0 0 1 5.25 4.5H7.2l1-1.5h5.2l1 1.5h1.05A2.25 2.25 0 0 1 16.5 6.75v3H3v0Z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M12 16.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"
+                              />
+                            </svg>
+                          </span>
+                          <p className="text-[14px] font-bold text-[#111827]">Upload from device</p>
+                          <p className="text-[12px] text-[#6B7280]">JPG, PNG, WEBP — max 5MB</p>
+                        </button>
+                      )}
+                    </div>
+                  ) : null}
+                  {photoAccordion === "emoji" && row.id === "emoji" ? (
+                    <div className="px-1 pb-4">
+                      <div className="grid grid-cols-6 gap-2">
+                        {AVATAR_EMOJIS.map((e) => (
+                          <button
+                            key={e}
+                            type="button"
+                            onClick={() => setModalEmojiPick(e)}
+                            className={`flex aspect-square min-h-[44px] items-center justify-center rounded-lg border-2 text-2xl ${
+                              modalEmojiPick === e ? "bg-[#fff0f3]" : "bg-white"
+                            }`}
+                            style={{
+                              borderColor: modalEmojiPick === e ? CORAL : BORDER,
+                            }}
+                          >
+                            {e}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={emojiSaveBusy || !modalEmojiPick}
+                        onClick={() => void onModalEmojiSave()}
+                        className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                        style={{ backgroundColor: CRIMSON }}
+                      >
+                        {emojiSaveBusy ? (
+                          <span
+                            className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                            aria-hidden
+                          />
+                        ) : null}
+                        Use this avatar
+                      </button>
+                    </div>
+                  ) : null}
+                  {photoAccordion === "auto" && row.id === "auto" ? (
+                    <div className="px-1 pb-4">
+                      <p className="text-xs font-medium text-[#6B7280]">Generate from my name</p>
+                      <div className="mt-2 flex flex-col items-center gap-3">
+                        <div
+                          className="h-20 w-20 overflow-hidden rounded-full border-2"
+                          style={{ borderColor: PINK_RING }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={autoDicebearUrl}
+                            alt=""
+                            className="h-full w-full object-cover"
+                            width={80}
+                            height={80}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          disabled={autoSaveBusy}
+                          onClick={() => void onAutoAvatarSave()}
+                          className="flex min-h-[48px] w-full max-w-xs items-center justify-center gap-2 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                          style={{ backgroundColor: CRIMSON }}
+                        >
+                          {autoSaveBusy ? (
+                            <span
+                              className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                              aria-hidden
+                            />
+                          ) : null}
+                          Use auto avatar
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -1663,7 +2203,7 @@ export default function ProfilePage() {
                     onClick: () => {
                       setSettingsOpen(false);
                       openEditProfileModal();
-                      setAvatarPickerOpen(true);
+                      window.setTimeout(() => openPhotoModal(), 0);
                     },
                   },
                   { icon: "🗺️", label: "Travel identity", href: "/settings#travel" },
