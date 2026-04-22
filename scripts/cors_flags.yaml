@@ -1,0 +1,3 @@
+# Dict form for --update-env-vars (see gcloud topic flags-file).
+--update-env-vars:
+  ALLOWED_ORIGINS: "https://group-travel-os.vercel.app,http://localhost:3000"

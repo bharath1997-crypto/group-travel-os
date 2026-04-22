@@ -34,11 +34,10 @@ def test_register_creates_user_and_returns_token(db, monkeypatch):
         return "tok", 3600
 
     monkeypatch.setattr(auth_service, "create_access_token", fake_token)
-    # Avoid second db.commit/refresh from post-register email verification (SMTP may be "configured" in CI).
     monkeypatch.setattr(
         auth_service,
-        "try_send_verification_on_register",
-        lambda _db, _user: None,
+        "send_verification_email",
+        lambda *_a, **_k: None,
     )
 
     data = UserCreate(
@@ -54,8 +53,9 @@ def test_register_creates_user_and_returns_token(db, monkeypatch):
     assert expires == 3600
     assert captured["uid"] == user.id
     db.add.assert_called_once()
-    db.commit.assert_called_once()
-    db.refresh.assert_called_once_with(user)
+    # register + _issue_verification_token each commit/refresh
+    assert db.commit.call_count == 2
+    assert db.refresh.call_count == 2
 
 
 def test_register_conflict_when_email_exists(db, sample_user: User):
@@ -146,15 +146,26 @@ def test_request_password_reset_empty_email_no_commit(db):
     db.commit.assert_not_called()
 
 
-def test_request_password_reset_without_smtp_no_commit(db, sample_user: User, monkeypatch):
+def test_request_password_reset_without_smtp_uses_dev_link(
+    db, sample_user: User, monkeypatch
+):
     db.execute.return_value = exec_result(scalar_one_or_none=sample_user)
     monkeypatch.setattr(auth_service, "smtp_configured", lambda: False)
+    monkeypatch.setattr(auth_service.settings, "resend_api_key", "")
+    monkeypatch.setattr(
+        auth_service,
+        "send_password_reset_email",
+        lambda *_a, **_k: None,
+    )
+    monkeypatch.setattr(auth_service.secrets, "token_urlsafe", lambda n=32: "dev-token")
     AuthService.request_password_reset(db, sample_user.email)
-    db.commit.assert_not_called()
+    db.commit.assert_called_once()
+    assert sample_user.password_reset_token == _hash_password_reset_token("dev-token")
 
 
 def test_request_password_reset_stores_token_and_sends_email(db, sample_user: User, monkeypatch):
     db.execute.return_value = exec_result(scalar_one_or_none=sample_user)
+    monkeypatch.setattr(auth_service.settings, "resend_api_key", "")
     monkeypatch.setattr(auth_service, "smtp_configured", lambda: True)
     monkeypatch.setattr(auth_service.secrets, "token_urlsafe", lambda n=32: "known-token")
     sent: list[tuple[str, str, str]] = []
