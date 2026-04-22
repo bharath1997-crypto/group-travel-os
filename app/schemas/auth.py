@@ -89,6 +89,7 @@ class UserOut(BaseModel):
     avatar_url: str | None
     is_active: bool
     is_verified: bool
+    email_verified: bool
     profile_public: bool = True
     created_at: datetime
     updated_at: datetime
@@ -141,12 +142,30 @@ def build_user_out(user: User) -> UserOut:
         avatar_url=user.avatar_url,
         is_active=user.is_active,
         is_verified=user.is_verified,
+        email_verified=user.is_verified,
         profile_public=user.profile_public,
         created_at=user.created_at,
         updated_at=user.updated_at,
         profile_completion_filled=filled,
         profile_completion_total=6,
     )
+
+
+class VerifyEmailRequest(BaseModel):
+    """Body for POST /auth/verify-email"""
+
+    token: str = Field(..., min_length=1)
+
+
+class ResendVerificationPublicRequest(BaseModel):
+    """Body for POST /auth/resend-verification"""
+
+    email: EmailStr
+
+
+class VerifyEmailSuccessResponse(BaseModel):
+    message: str
+    user: UserOut
 
 
 class TokenResponse(BaseModel):

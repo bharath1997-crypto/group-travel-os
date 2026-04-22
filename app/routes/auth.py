@@ -25,11 +25,14 @@ from app.schemas.auth import (
     PhoneSendRequest,
     PhoneVerifyRequest,
     RegisterResponse,
+    ResendVerificationPublicRequest,
     TokenResponse,
     UserCreate,
     UserLogin,
     UserOut,
     UserUpdate,
+    VerifyEmailRequest,
+    VerifyEmailSuccessResponse,
     build_user_out,
 )
 from app.services.auth_service import AuthService
@@ -230,6 +233,33 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
         user=build_user_out(user),
         token=TokenResponse(access_token=token, expires_in=expires_in),
     )
+
+
+@router.post(
+    "/verify-email",
+    response_model=VerifyEmailSuccessResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Verify email using token from inbox link",
+)
+def verify_email_post(data: VerifyEmailRequest, db: Session = Depends(get_db)):
+    user = AuthService.verify_email(db, data.token)
+    return VerifyEmailSuccessResponse(
+        message="Email verified successfully",
+        user=build_user_out(user),
+    )
+
+
+@router.post(
+    "/resend-verification",
+    status_code=status.HTTP_200_OK,
+    summary="Resend verification email (no hint if email is unknown)",
+)
+def resend_verification_public_route(
+    data: ResendVerificationPublicRequest,
+    db: Session = Depends(get_db),
+):
+    AuthService.resend_verification_public(db, str(data.email))
+    return {"message": "Verification email sent if account exists"}
 
 
 @router.get(

@@ -2,285 +2,277 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { AppLogo } from "@/components/AppLogo";
 import { apiFetch } from "@/lib/api";
-import { isLoggedIn } from "@/lib/auth";
-import { requestVerificationEmail } from "@/lib/verification";
 
-type Me = {
-  full_name: string;
+type UserOut = {
+  id: string;
   email: string;
+  full_name: string;
+  email_verified?: boolean;
   is_verified?: boolean;
 };
 
-const successGradient = "linear-gradient(135deg, #11998e, #38ef7d)";
-const errorGradient = "linear-gradient(135deg, #f5576c, #f093fb)";
+type VerifySuccess = {
+  message: string;
+  user: UserOut;
+};
 
-function VerifyEmailContent() {
+type ViewState = "loading" | "success" | "error" | "missing";
+
+function extractErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  return "Something went wrong.";
+}
+
+function VerifyEmailInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [user, setUser] = useState<Me | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [banner, setBanner] = useState<{ kind: "success" | "error"; text: string } | null>(
-    null,
+  const token = searchParams.get("token");
+  const legacyVerified = searchParams.get("verified") === "1";
+  const legacyErr = searchParams.get("error");
+
+  const [view, setView] = useState<ViewState>(() => {
+    if (legacyVerified) return "success";
+    if (!token) return legacyErr ? "error" : "missing";
+    return "loading";
+  });
+  const [errorMsg, setErrorMsg] = useState<string | null>(() =>
+    legacyErr === "invalid_or_expired"
+      ? "Invalid or expired verification link"
+      : legacyErr === "missing_token"
+        ? "The verification link was incomplete."
+        : null,
   );
-  const [status, setStatus] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [user, setUser] = useState<UserOut | null>(null);
+  const [resendEmail, setResendEmail] = useState("");
+  const [resendBusy, setResendBusy] = useState(false);
+  const [resendOk, setResendOk] = useState(false);
+  const ranRef = useRef(false);
 
-  const errParam = searchParams.get("error");
-  const isVerifyCallback =
-    searchParams.get("verified") === "1" ||
-    errParam === "invalid_or_expired" ||
-    errParam === "missing_token";
-
-  useEffect(() => {
-    if (!isLoggedIn()) {
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const me = await apiFetch<Me>("/auth/me");
-        if (!cancelled) setUser(me);
-      } catch {
-        if (!cancelled) setUser(null);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    const verified = searchParams.get("verified");
-    const err = searchParams.get("error");
-    if (verified === "1") {
-      setBanner({
-        kind: "success",
-        text: isLoggedIn()
-          ? "Your email is verified. You can continue using the app."
-          : "Your email is verified. Sign in with your password to continue.",
-      });
-      void (async () => {
-        if (isLoggedIn()) {
-          try {
-            const me = await apiFetch<Me>("/auth/me");
-            setUser(me);
-          } catch {
-            /* ignore */
-          }
-        }
-        router.replace("/verify-email", { scroll: false });
-      })();
-      return;
-    }
-    if (err === "invalid_or_expired") {
-      setBanner({
-        kind: "error",
-        text: "That verification link is invalid or has expired. Request a new one below if you're signed in.",
-      });
-      router.replace("/verify-email", { scroll: false });
-      return;
-    }
-    if (err === "missing_token") {
-      setBanner({
-        kind: "error",
-        text: "The verification link was incomplete. Use Resend below if you're signed in.",
-      });
-      router.replace("/verify-email", { scroll: false });
-    }
-  }, [searchParams, router]);
-
-  useEffect(() => {
-    if (loading) return;
-    if (!user?.is_verified) return;
-    if (searchParams.get("verified") || searchParams.get("error")) return;
-    router.replace("/dashboard");
-  }, [loading, user, router, searchParams]);
-
-  async function onResend() {
-    setStatus(null);
-    setBusy(true);
+  const runVerify = useCallback(async (t: string) => {
+    setView("loading");
+    setErrorMsg(null);
     try {
-      const r = await requestVerificationEmail();
-      setStatus(
-        r.ok
-          ? "Check your inbox for a verification link. It may take a minute to arrive."
-          : r.message ??
-              "Verification email could not be sent. Check that the server has SMTP configured.",
-      );
-      await apiFetch<Me>("/auth/me").then(setUser).catch(() => {});
+      const data = await apiFetch<VerifySuccess>("/auth/verify-email", {
+        method: "POST",
+        body: JSON.stringify({ token: t }),
+      });
+      setUser(data.user);
+      setView("success");
+      router.replace("/verify-email", { scroll: false });
     } catch (e) {
-      setStatus(
-        e instanceof Error
-          ? e.message
-          : "Could not send email right now. Try again later.",
-      );
+      setErrorMsg(extractErrorMessage(e));
+      setView("error");
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (legacyVerified) {
+      setView("success");
+      router.replace("/verify-email", { scroll: false });
+      return;
+    }
+    if (!token) {
+      return;
+    }
+    if (ranRef.current) return;
+    ranRef.current = true;
+    void runVerify(token);
+  }, [token, legacyVerified, router, runVerify]);
+
+  async function onResend(e: React.FormEvent) {
+    e.preventDefault();
+    setResendOk(false);
+    setResendBusy(true);
+    try {
+      await apiFetch("/auth/resend-verification", {
+        method: "POST",
+        body: JSON.stringify({ email: resendEmail.trim() }),
+      });
+      setResendOk(true);
+    } catch (err) {
+      setErrorMsg(extractErrorMessage(err));
     } finally {
-      setBusy(false);
+      setResendBusy(false);
     }
   }
-
-  if (loading && !isVerifyCallback && !banner) {
-    return (
-      <div className="flex min-h-svh flex-col bg-slate-100">
-        <div
-          className="flex min-h-[120px] items-center justify-center rounded-b-3xl text-white"
-          style={{ background: successGradient }}
-        >
-          <p className="text-sm font-medium">Loading…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (user?.is_verified) {
-    return (
-      <div className="flex min-h-svh flex-col bg-slate-100">
-        <div
-          className="flex min-h-[100px] items-center justify-center rounded-b-3xl text-white"
-          style={{ background: successGradient }}
-        >
-          <p className="text-sm font-medium">Redirecting…</p>
-        </div>
-      </div>
-    );
-  }
-
-  const hasSession = isLoggedIn();
-  const accountReady = user !== null;
-  const waitingForAccount = hasSession && !accountReady && loading;
-  const loggedIn = Boolean(user && hasSession);
-
-  const headerStyle =
-    banner?.kind === "error" ? errorGradient : successGradient;
 
   return (
-    <div className="flex min-h-svh flex-col bg-slate-100">
-      <div
-        className="relative flex min-h-[140px] flex-col items-center justify-center rounded-b-3xl px-4 pb-8 pt-10 text-center text-white shadow-lg"
-        style={{ background: headerStyle }}
-      >
-        {banner?.kind === "success" ? (
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/25 text-3xl shadow-inner" aria-hidden>
-            ✓
-          </div>
-        ) : banner?.kind === "error" ? (
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/25 text-3xl font-bold shadow-inner" aria-hidden>
-            ✕
-          </div>
-        ) : (
+    <div className="min-h-svh bg-white">
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+@keyframes verify-pop {
+  0% { opacity: 0; transform: scale(0.94); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes confetti-burst {
+  0% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: var(--tx) scale(0.3); }
+}
+.verify-animate { animation: verify-pop 300ms ease-out forwards; }
+.confetti-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  left: 50%;
+  top: 50%;
+  margin-left: -5px;
+  margin-top: -5px;
+  opacity: 0;
+  animation: confetti-burst 1.5s ease-out forwards;
+}
+`,
+        }}
+      />
+
+      <div className="flex min-h-svh flex-col items-center justify-center px-4 py-10">
+        <div className="mb-8 flex flex-col items-center gap-2 text-center verify-animate">
           <AppLogo variant="onLight" className="h-9 w-auto max-w-[200px]" />
-        )}
-        <h1 className="mt-4 text-lg font-bold leading-snug">
-          {banner?.kind === "success"
-            ? "Email verified! Welcome to Travello"
-            : banner?.kind === "error"
-              ? "Verification issue"
-              : "Verify your email"}
-        </h1>
-      </div>
+          <span className="text-3xl" aria-hidden>
+            ✈️
+          </span>
+        </div>
 
-      <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-3xl bg-white px-4 pb-10 pt-6 shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.12)] sm:mx-auto sm:mb-8 sm:max-w-lg sm:rounded-2xl sm:px-8">
-        {banner && banner.kind === "error" ? (
-          <div
-            role="status"
-            className="rounded-2xl border border-red-100 bg-red-50/90 px-3 py-2.5 text-sm leading-relaxed text-red-900"
-          >
-            {banner.text}
-          </div>
-        ) : null}
-
-        {banner?.kind === "success" ? (
-          <p className="text-center text-sm leading-relaxed text-[#1E3A5F]/85">{banner.text}</p>
-        ) : null}
-
-        {waitingForAccount && (isVerifyCallback || banner) ? (
-          <p className="mt-4 text-center text-sm text-[#1E3A5F]/80">Loading your account…</p>
-        ) : loggedIn ? (
-          <>
-            {!banner ? (
-              <>
-                <p className="text-center text-sm leading-relaxed text-[#1E3A5F]/85">
-                  We&apos;ll use <span className="font-semibold">{user?.email}</span> to secure your account.
-                  Complete verification to unlock all features.
-                </p>
-                <p className="mt-3 text-center text-sm text-[#1E3A5F]/80">
-                  Open the link we send to your inbox. You can resend if you didn&apos;t get the message.
-                </p>
-              </>
-            ) : null}
-            {banner?.kind === "success" ? (
-              <Link
-                href="/dashboard"
-                className="mt-6 flex w-full items-center justify-center rounded-2xl py-3 text-sm font-bold text-white shadow-md transition hover:opacity-95"
-                style={{ background: successGradient }}
-              >
-                Go to dashboard
-              </Link>
-            ) : (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={onResend}
-                className="mt-6 w-full rounded-2xl py-3 text-sm font-bold text-white shadow-md transition hover:opacity-95 disabled:opacity-60"
-                style={{ background: successGradient }}
-              >
-                {busy ? "Sending…" : "Resend verification email"}
-              </button>
-            )}
-            {status ? (
-              <p className="mt-3 text-center text-sm text-[#1E3A5F]/80" role="status">
-                {status}
+        <div
+          className="verify-animate w-full max-w-md rounded-2xl bg-white p-12 shadow-sm ring-1 ring-slate-200/80"
+          style={{ transition: "opacity 300ms, transform 300ms" }}
+        >
+          {view === "loading" ? (
+            <div className="flex flex-col items-center justify-center py-6">
+              <div
+                className="h-10 w-10 animate-spin rounded-full border-4 border-[#DC2626] border-t-transparent"
+                style={{ width: 40, height: 40 }}
+                aria-hidden
+              />
+              <p className="mt-6 text-center text-base text-gray-500">
+                Verifying your email...
               </p>
-            ) : null}
-            {!banner?.kind || banner.kind === "error" ? (
+            </div>
+          ) : null}
+
+          {view === "success" ? (
+            <div className="relative flex flex-col items-center text-center">
+              <div className="relative mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#22C55E] text-4xl text-white">
+                ✓
+                <span
+                  className="confetti-dot bg-amber-400"
+                  style={{ "--tx": "translate(48px, -72px)" } as React.CSSProperties}
+                />
+                <span
+                  className="confetti-dot bg-pink-500"
+                  style={{ animationDelay: "0.05s", "--tx": "translate(-52px, -60px)" } as React.CSSProperties}
+                />
+                <span
+                  className="confetti-dot bg-sky-500"
+                  style={{ animationDelay: "0.1s", "--tx": "translate(60px, 40px)" } as React.CSSProperties}
+                />
+                <span
+                  className="confetti-dot bg-violet-500"
+                  style={{ animationDelay: "0.12s", "--tx": "translate(-48px, 52px)" } as React.CSSProperties}
+                />
+                <span
+                  className="confetti-dot bg-lime-400"
+                  style={{ animationDelay: "0.08s", "--tx": "translate(0px, -80px)" } as React.CSSProperties}
+                />
+                <span
+                  className="confetti-dot bg-red-400"
+                  style={{ animationDelay: "0.15s", "--tx": "translate(-70px, 10px)" } as React.CSSProperties}
+                />
+                <span
+                  className="confetti-dot bg-teal-400"
+                  style={{ animationDelay: "0.18s", "--tx": "translate(72px, 8px)" } as React.CSSProperties}
+                />
+                <span
+                  className="confetti-dot bg-orange-400"
+                  style={{ animationDelay: "0.2s", "--tx": "translate(0px, 70px)" } as React.CSSProperties}
+                />
+              </div>
+              <h1 className="text-2xl font-bold text-slate-900">Email verified!</h1>
+              <p className="mt-3 text-base text-gray-500">
+                Your Travello account is ready. Start planning your first trip!
+              </p>
+              {user?.email ? (
+                <p className="mt-2 text-sm text-gray-400">{user.email}</p>
+              ) : null}
+              <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-[#DC2626] px-6 text-sm font-bold text-white shadow hover:opacity-95"
+                >
+                  Go to Dashboard
+                </Link>
+                <Link
+                  href="/profile"
+                  className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-6 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50"
+                >
+                  Complete your profile
+                </Link>
+              </div>
+            </div>
+          ) : null}
+
+          {view === "error" || view === "missing" ? (
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-100 text-4xl font-bold text-red-600">
+                ✕
+              </div>
+              <h1 className="text-2xl font-bold text-slate-900">
+                {view === "missing" ? "No verification token" : "Link expired or invalid"}
+              </h1>
+              <p className="mt-3 text-base text-gray-500">
+                {view === "missing"
+                  ? "Open the link from your email, or request a new verification message below."
+                  : errorMsg ?? "This link is no longer valid."}
+              </p>
+
+              <form
+                onSubmit={onResend}
+                className="mt-8 w-full space-y-3 text-left"
+              >
+                <label className="block text-sm font-medium text-slate-700">
+                  Request new verification email
+                  <input
+                    type="email"
+                    required
+                    value={resendEmail}
+                    onChange={(e) => setResendEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#DC2626]/50 focus:ring-2 focus:ring-[#DC2626]/20"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={resendBusy}
+                  className="flex w-full min-h-[48px] items-center justify-center rounded-xl bg-[#DC2626] text-sm font-bold text-white hover:opacity-95 disabled:opacity-60"
+                >
+                  {resendBusy ? "Sending…" : "Send verification link"}
+                </button>
+              </form>
+              {resendOk ? (
+                <p className="mt-4 text-sm font-medium text-green-600" role="status">
+                  Check your inbox for a new link
+                </p>
+              ) : null}
               <Link
-                href="/dashboard"
-                className="mt-6 inline-block w-full text-center text-sm font-semibold text-[#667eea] hover:underline"
+                href="/login"
+                className="mt-8 text-sm font-semibold text-slate-500 hover:text-slate-800"
               >
-                ← Back to dashboard
+                ← Back to login
               </Link>
-            ) : null}
-          </>
-        ) : (
-          <>
-            <p className="text-center text-sm leading-relaxed text-[#1E3A5F]/85">
-              {banner?.kind === "success"
-                ? "You can close this tab and sign in on the device where you use Travello."
-                : "Sign in to resend a verification email, or open the link from your inbox if you haven't yet."}
-            </p>
-            {banner?.kind === "error" ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={onResend}
-                className="mt-6 w-full rounded-2xl py-3 text-sm font-bold text-white shadow-md transition hover:opacity-95 disabled:opacity-60"
-                style={{ background: errorGradient }}
-              >
-                {busy ? "Sending…" : "Resend verification email"}
-              </button>
-            ) : null}
-            <Link
-              href="/login?verified=1"
-              className="mt-6 flex w-full items-center justify-center rounded-2xl py-3 text-sm font-bold text-white shadow-md transition hover:opacity-95"
-              style={{ background: successGradient }}
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/register"
-              className="mt-4 block w-full text-center text-sm font-medium text-[#1E3A5F]/70 hover:text-[#667eea]"
-            >
-              Create an account
-            </Link>
-          </>
-        )}
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -290,12 +282,15 @@ export default function VerifyEmailPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-svh items-center justify-center bg-slate-100">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#11998e] border-t-transparent" />
+        <div className="flex min-h-svh items-center justify-center bg-white">
+          <div
+            className="h-10 w-10 animate-spin rounded-full border-4 border-[#DC2626] border-t-transparent"
+            style={{ width: 40, height: 40 }}
+          />
         </div>
       }
     >
-      <VerifyEmailContent />
+      <VerifyEmailInner />
     </Suspense>
   );
 }

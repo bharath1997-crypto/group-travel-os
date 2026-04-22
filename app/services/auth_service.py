@@ -19,15 +19,23 @@ from config import settings
 
 from app.models.user import User
 from app.schemas.auth import UserCreate, UserUpdate, ChangePasswordRequest
-from app.services.email_verification_service import try_send_verification_on_register
 from app.utils.auth import hash_password, verify_password, create_access_token
-from app.utils.email import send_email, smtp_configured
+from app.utils.email import (
+    send_email,
+    send_password_reset_email,
+    send_verification_email,
+    smtp_configured,
+)
 from app.utils.exceptions import AppException
 
 logger = logging.getLogger(__name__)
 
 
 def _hash_password_reset_token(raw: str) -> str:
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _hash_verification_token(raw: str) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
@@ -83,7 +91,11 @@ class AuthService:
         db.commit()
         db.refresh(user)
 
-        try_send_verification_on_register(db, user)
+        try:
+            raw = AuthService._issue_verification_token(db, user)
+            send_verification_email(user.email, user.full_name, raw)
+        except Exception as e:
+            logger.warning("Verification email not sent on register: %s", e)
 
         token, expires_in = create_access_token(user.id)
         logger.info("New user registered: %s", user.email)
@@ -120,6 +132,87 @@ class AuthService:
         token, expires_in = create_access_token(user.id)
         logger.info("User logged in: %s", user.email)
         return user, token, expires_in
+
+    @staticmethod
+    def _issue_verification_token(db: Session, user: User) -> str:
+        """Store a new plaintext verification token (24h). Clears legacy hash fields."""
+        raw = secrets.token_urlsafe(32)
+        user.verification_token = raw
+        user.verification_token_expires = datetime.now(timezone.utc) + timedelta(hours=24)
+        user.email_verification_token_hash = None
+        user.email_verification_expires_at = None
+        db.commit()
+        db.refresh(user)
+        return raw
+
+    @staticmethod
+    def verify_email(db: Session, token: str) -> User:
+        raw = (token or "").strip()
+        if not raw:
+            AppException.bad_request("Invalid or expired verification link")
+
+        user = db.execute(
+            select(User).where(User.verification_token == raw)
+        ).scalar_one_or_none()
+
+        if user:
+            exp = user.verification_token_expires
+            if exp is None or exp < datetime.now(timezone.utc):
+                AppException.bad_request(
+                    "Verification link has expired. Request a new one."
+                )
+        else:
+            h = _hash_verification_token(raw)
+            user = db.execute(
+                select(User).where(User.email_verification_token_hash == h)
+            ).scalar_one_or_none()
+            if not user:
+                AppException.bad_request("Invalid or expired verification link")
+            exp = user.email_verification_expires_at
+            if exp is None or exp < datetime.now(timezone.utc):
+                AppException.bad_request(
+                    "Verification link has expired. Request a new one."
+                )
+
+        user.is_verified = True
+        user.verification_token = None
+        user.verification_token_expires = None
+        user.email_verification_token_hash = None
+        user.email_verification_expires_at = None
+        db.commit()
+        db.refresh(user)
+        logger.info("Email verified for user %s", user.email)
+        return user
+
+    @staticmethod
+    def resend_verification_public(db: Session, email: str) -> None:
+        """Resend link; no-op if email unknown (do not reveal registration)."""
+        normalized = (email or "").strip().lower()
+        if not normalized:
+            return
+        user = db.execute(
+            select(User).where(User.email == normalized)
+        ).scalar_one_or_none()
+        if not user:
+            return
+        if user.is_verified:
+            AppException.bad_request("Email already verified")
+        raw = AuthService._issue_verification_token(db, user)
+        try:
+            send_verification_email(user.email, user.full_name, raw)
+        except Exception as e:
+            logger.warning("Resend verification email failed: %s", e)
+
+    @staticmethod
+    def resend_verification_for_logged_in_user(db: Session, user: User) -> None:
+        if user.is_verified:
+            AppException.bad_request("Email is already verified")
+        raw = AuthService._issue_verification_token(db, user)
+        try:
+            send_verification_email(user.email, user.full_name, raw)
+        except Exception as e:
+            logger.exception("Failed to send verification email to %s", user.email)
+            raise
 
     @staticmethod
     def get_profile(user: User) -> User:
@@ -200,26 +293,28 @@ class AuthService:
         ).scalar_one_or_none()
         if not user:
             return
-        if not smtp_configured():
-            logger.warning("Password reset requested but SMTP is not configured")
-            return
         raw = secrets.token_urlsafe(32)
         user.password_reset_token = _hash_password_reset_token(raw)
         user.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)
         db.commit()
         db.refresh(user)
-        fe = settings.FRONTEND_URL.rstrip("/")
-        link = f"{fe}/reset-password?token={quote(raw, safe='')}"
-        subject = f"Reset your password — {settings.APP_NAME}"
-        body = (
-            f"Hi {user.full_name},\n\n"
-            f"Use the link below to set a new password for your Travello account. "
-            f"This link expires in 1 hour.\n\n"
-            f"{link}\n\n"
-            f"If you did not request this, you can ignore this email.\n"
-        )
         try:
-            send_email(to=user.email, subject=subject, body=body)
+            if settings.resend_api_key:
+                send_password_reset_email(user.email, user.full_name, raw)
+            elif smtp_configured():
+                fe = settings.frontend_url.rstrip("/")
+                link = f"{fe}/reset-password?token={quote(raw, safe='')}"
+                subject = f"Reset your password — {settings.APP_NAME}"
+                body = (
+                    f"Hi {user.full_name},\n\n"
+                    f"Use the link below to set a new password for your Travello account. "
+                    f"This link expires in 1 hour.\n\n"
+                    f"{link}\n\n"
+                    f"If you did not request this, you can ignore this email.\n"
+                )
+                send_email(to=user.email, subject=subject, body=body)
+            else:
+                send_password_reset_email(user.email, user.full_name, raw)
         except Exception:
             logger.exception("Failed to send password reset email to %s", user.email)
 

@@ -131,6 +131,16 @@ class User(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    # Plaintext token for inbox links (POST /auth/verify-email); legacy hash in email_verification_token_hash
+    verification_token: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        index=True,
+    )
+    verification_token_expires: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     # ── Timestamps ────────────────────────────────────────────────────────────
     created_at: Mapped[datetime] = mapped_column(

@@ -102,6 +102,13 @@ class Settings(BaseSettings):
     def allowed_origins(self) -> list[str]:
         return _parse_origins_string(self.allowed_origins_raw)
 
+    @computed_field
+    @property
+    def frontend_url(self) -> str:
+        """Public web app origin (no trailing slash) — used in email deep links."""
+        base = (self.FRONTEND_URL or "").strip()
+        return base.rstrip("/") if base else "http://localhost:3000"
+
     # ── OAuth (Google / Facebook) ─────────────────────────────────────────────
     FRONTEND_URL: str = "http://localhost:3000"
     API_PUBLIC_URL: str = Field(
@@ -116,6 +123,13 @@ class Settings(BaseSettings):
     FACEBOOK_APP_ID: str | None = Field(default=None, validation_alias="FACEBOOK_APP_ID")
     FACEBOOK_APP_SECRET: str | None = Field(
         default=None, validation_alias="FACEBOOK_APP_SECRET"
+    )
+
+    # ── Resend (verification, password reset HTML email) ─────────────────────
+    resend_api_key: str = Field(default="", validation_alias="RESEND_API_KEY")
+    from_email: str = Field(
+        default="noreply@travello.app",
+        validation_alias="FROM_EMAIL",
     )
 
     # ── Email (verification, transactional) ─────────────────────────────────

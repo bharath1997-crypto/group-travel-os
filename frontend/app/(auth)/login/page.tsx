@@ -19,7 +19,13 @@ import { syncLocalProfileCache } from "@/lib/profileCache";
 import { oauthErrorToAlert, type OauthLoginAlert } from "@/lib/oauthLoginErrors";
 
 type LoginResponse = {
-  user: { full_name: string; email: string; avatar_url?: string | null };
+  user: {
+    full_name: string;
+    email: string;
+    avatar_url?: string | null;
+    email_verified?: boolean;
+    is_verified?: boolean;
+  };
   token: { access_token: string; token_type: string; expires_in: number };
 };
 
@@ -61,6 +67,8 @@ function LoginPageInner() {
     photo: string | null;
   }>({ google: null, fb: null, photo: null });
   const [socialToast, setSocialToast] = useState<string | null>(null);
+  const [unverifiedBanner, setUnverifiedBanner] = useState(false);
+  const [pendingNext, setPendingNext] = useState<string | null>(null);
 
   const isBusy = submitting || oauthBusy;
 
@@ -126,6 +134,13 @@ function LoginPageInner() {
       }
       const params = new URLSearchParams(window.location.search);
       const next = safeNextPath(params.get("next"));
+      const verified =
+        data.user.email_verified !== false && data.user.is_verified !== false;
+      if (!verified) {
+        setPendingNext(next);
+        setUnverifiedBanner(true);
+        return;
+      }
       router.replace(next);
     } catch {
       setError("Invalid email or password");
@@ -240,6 +255,32 @@ function LoginPageInner() {
               role="status"
             >
               Your email is verified. Sign in with your password to continue.
+            </div>
+          ) : null}
+
+          {unverifiedBanner ? (
+            <div
+              className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950"
+              role="status"
+            >
+              <p>
+                ⚠️ Your email is not verified.{" "}
+                <Link
+                  href="/resend-verification"
+                  className="font-bold text-amber-900 underline-offset-2 hover:underline"
+                >
+                  Resend verification email
+                </Link>
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (pendingNext) router.replace(pendingNext);
+                }}
+                className="mt-2 text-xs font-semibold text-amber-900/80 hover:underline"
+              >
+                Continue to app →
+              </button>
             </div>
           ) : null}
 

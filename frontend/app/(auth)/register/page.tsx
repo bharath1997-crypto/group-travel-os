@@ -26,6 +26,7 @@ type RegisterResponse = {
     full_name: string;
     email: string;
     is_verified?: boolean;
+    email_verified?: boolean;
     avatar_url?: string | null;
   };
   token: { access_token: string; token_type: string; expires_in: number };
@@ -75,6 +76,7 @@ function RegisterPageInner() {
   const [submitting, setSubmitting] = useState(false);
   const [oauthBusy, setOauthBusy] = useState(false);
   const [socialToast, setSocialToast] = useState<string | null>(null);
+  const [checkEmailFor, setCheckEmailFor] = useState<string | null>(null);
   const isBusy = submitting || oauthBusy;
 
   useEffect(() => {
@@ -122,7 +124,7 @@ function RegisterPageInner() {
         );
         syncLocalProfileCache(data.user);
       }
-      router.replace("/dashboard");
+      setCheckEmailFor(data.user.email.trim());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -155,6 +157,42 @@ function RegisterPageInner() {
       <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5" />
     </svg>
   );
+
+  if (checkEmailFor) {
+    return (
+      <div className="flex min-h-svh flex-col items-center justify-center bg-white px-4 py-12">
+        <AppLogo variant="onLight" className="h-9 w-auto max-w-[200px]" />
+        <p className="mt-6 text-5xl" aria-hidden>
+          ✉️
+        </p>
+        <h1 className="mt-4 text-center text-2xl font-bold text-slate-900">
+          Check your email
+        </h1>
+        <p className="mt-3 max-w-md text-center text-base text-slate-600">
+          We sent a verification link to{" "}
+          <span className="font-semibold text-slate-900">{checkEmailFor}</span>
+        </p>
+        <Link
+          href="/resend-verification"
+          className="mt-6 text-sm font-semibold text-[#DC2626] hover:underline"
+        >
+          Didn&apos;t receive it?
+        </Link>
+        <Link
+          href="/dashboard"
+          className="mt-8 text-sm text-slate-500 hover:text-slate-800"
+        >
+          Continue to app →
+        </Link>
+        <Link
+          href="/login"
+          className="mt-4 text-sm font-medium text-slate-400 hover:text-slate-600"
+        >
+          Sign in instead
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-svh flex-col bg-slate-100">
