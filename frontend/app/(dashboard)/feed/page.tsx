@@ -16,6 +16,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { API_BASE } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 
 const TM_KEY = process.env.NEXT_PUBLIC_TICKETMASTER_KEY || "";
 const PREDICTHQ_TOKEN = process.env.NEXT_PUBLIC_PREDICTHQ_TOKEN || "";
@@ -64,7 +65,7 @@ async function apiFetchWithTimeout<T>(
     headers.set("Content-Type", "application/json");
   }
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("gt_token");
+    const token = getToken();
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
   const res = await fetchWithTimeout(url, { ...options, headers }, timeoutMs);

@@ -132,12 +132,6 @@ function initFirebase(): { app: FirebaseApp | null; db: Database | null; ok: boo
   }
 }
 
-function ensureApiAuthFromToken(): void {
-  if (typeof window === "undefined") return;
-  const t = localStorage.getItem("token");
-  if (t) localStorage.setItem("gt_token", t);
-}
-
 function getDiceBearUrl(seed: string): string {
   return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;
 }
@@ -379,7 +373,6 @@ export default function GroupChatPage() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      ensureApiAuthFromToken();
       try {
         const [me, g, tripList] = await Promise.all([
           apiFetch<UserMe>("/auth/me"),
@@ -527,7 +520,6 @@ export default function GroupChatPage() {
     ) => {
       if (!db || !user) return;
       if (type === "text" && !content.trim()) return;
-      ensureApiAuthFromToken();
       const messagesRef = ref(db, `chats/${chatId}/messages`);
       const seed = user.username || user.full_name || user.id;
       const avatarUrl = getDiceBearUrl(seed);
@@ -672,7 +664,6 @@ export default function GroupChatPage() {
       return;
     }
     setSplitPosting(true);
-    ensureApiAuthFromToken();
     try {
       const created = await apiFetch<{
         id: string;

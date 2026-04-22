@@ -841,6 +841,24 @@ export default function ProfilePage() {
     );
   }, [contactSearch]);
 
+  const openEditProfileModal = useCallback(() => {
+    if (!me) return;
+    setEditName(me.full_name);
+    setEditUsername(me.username ?? "");
+    setEditBio(bioLocal);
+    setEditHome(me.home_city?.trim() || homeLocal);
+    setEditTravelStatus(me.travel_status?.trim() || travelStatusLocal);
+    setPhotoModalOpen(false);
+    setEditOpen(true);
+  }, [me, bioLocal, homeLocal, travelStatusLocal]);
+
+  useEffect(() => {
+    if (!photoModalOpen) {
+      setUploadPreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, [photoModalOpen]);
+
   const firstEarnedBadge = badges.find((b) => b.earned);
 
   if (bootLoading && !me) {
@@ -891,24 +909,6 @@ export default function ProfilePage() {
   const postsCount = stats?.polls_created ?? 0;
   const memoriesCount = stats?.locations_saved ?? 0;
   const freezeRemaining = freezeUsedToday ? 0 : 1;
-
-  const openEditProfileModal = useCallback(() => {
-    if (!me) return;
-    setEditName(me.full_name);
-    setEditUsername(me.username ?? "");
-    setEditBio(bioLocal);
-    setEditHome(me.home_city?.trim() || homeLocal);
-    setEditTravelStatus(me.travel_status?.trim() || travelStatusLocal);
-    setPhotoModalOpen(false);
-    setEditOpen(true);
-  }, [me, bioLocal, homeLocal, travelStatusLocal]);
-
-  useEffect(() => {
-    if (!photoModalOpen) {
-      setUploadPreview(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }, [photoModalOpen]);
 
   return (
     <div className="min-h-screen w-full pb-24" style={{ backgroundColor: BG }}>
