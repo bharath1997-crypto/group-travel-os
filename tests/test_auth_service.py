@@ -53,9 +53,8 @@ def test_register_creates_user_and_returns_token(db, monkeypatch):
     assert expires == 3600
     assert captured["uid"] == user.id
     db.add.assert_called_once()
-    # register + _issue_verification_token each commit/refresh
-    assert db.commit.call_count == 2
-    assert db.refresh.call_count == 2
+    assert db.commit.call_count == 1
+    assert db.refresh.call_count == 1
 
 
 def test_register_conflict_when_email_exists(db, sample_user: User):
@@ -150,8 +149,7 @@ def test_request_password_reset_without_smtp_uses_dev_link(
     db, sample_user: User, monkeypatch
 ):
     db.execute.return_value = exec_result(scalar_one_or_none=sample_user)
-    monkeypatch.setattr(auth_service, "smtp_configured", lambda: False)
-    monkeypatch.setattr(auth_service.settings, "resend_api_key", "")
+    monkeypatch.setattr(auth_service.settings, "brevo_api_key", "")
     monkeypatch.setattr(
         auth_service,
         "send_password_reset_email",
@@ -165,21 +163,20 @@ def test_request_password_reset_without_smtp_uses_dev_link(
 
 def test_request_password_reset_stores_token_and_sends_email(db, sample_user: User, monkeypatch):
     db.execute.return_value = exec_result(scalar_one_or_none=sample_user)
-    monkeypatch.setattr(auth_service.settings, "resend_api_key", "")
-    monkeypatch.setattr(auth_service, "smtp_configured", lambda: True)
+    monkeypatch.setattr(auth_service.settings, "brevo_api_key", "test-key")
     monkeypatch.setattr(auth_service.secrets, "token_urlsafe", lambda n=32: "known-token")
     sent: list[tuple[str, str, str]] = []
 
-    def capture(to: str, subject: str, body: str) -> None:
-        sent.append((to, subject, body))
+    def capture(to: str, name: str, raw: str) -> None:
+        sent.append((to, name, raw))
 
-    monkeypatch.setattr(auth_service, "send_email", capture)
+    monkeypatch.setattr(auth_service, "send_password_reset_email", capture)
     AuthService.request_password_reset(db, sample_user.email)
     db.commit.assert_called_once()
     assert len(sent) == 1
     assert sent[0][0] == sample_user.email
-    assert "reset-password" in sent[0][2]
-    assert "known-token" in sent[0][2]
+    assert sent[0][1] == sample_user.full_name
+    assert sent[0][2] == "known-token"
     assert sample_user.password_reset_token == _hash_password_reset_token("known-token")
 
 

@@ -125,11 +125,15 @@ class Settings(BaseSettings):
         default=None, validation_alias="FACEBOOK_APP_SECRET"
     )
 
-    # ── Resend (verification, password reset HTML email) ─────────────────────
-    resend_api_key: str = Field(default="", validation_alias="RESEND_API_KEY")
+    # ── Brevo (verification, password reset HTML email) ──────────────────────
+    brevo_api_key: str = Field(default="", validation_alias="BREVO_API_KEY")
     from_email: str = Field(
         default="noreply@travello.app",
         validation_alias="FROM_EMAIL",
+    )
+    from_name: str = Field(
+        default="Travello",
+        validation_alias="FROM_NAME",
     )
 
     # ── Email (verification, transactional) ─────────────────────────────────

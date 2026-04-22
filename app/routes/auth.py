@@ -259,7 +259,7 @@ def resend_verification_public_route(
     db: Session = Depends(get_db),
 ):
     AuthService.resend_verification_public(db, str(data.email))
-    return {"message": "Verification email sent if account exists"}
+    return {"message": "If that email exists, a link was sent"}
 
 
 @router.get(

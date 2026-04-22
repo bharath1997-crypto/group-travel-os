@@ -118,6 +118,8 @@ function RegisterPageInner() {
       });
       saveToken(data.token.access_token);
       if (typeof window !== "undefined") {
+        const em = data.user.email.trim();
+        localStorage.setItem("pending_verification_email", em);
         localStorage.setItem(
           "gt_user_name",
           data.user.full_name.trim() || "Traveler",
@@ -160,36 +162,90 @@ function RegisterPageInner() {
 
   if (checkEmailFor) {
     return (
-      <div className="flex min-h-svh flex-col items-center justify-center bg-white px-4 py-12">
-        <AppLogo variant="onLight" className="h-9 w-auto max-w-[200px]" />
-        <p className="mt-6 text-5xl" aria-hidden>
-          ✉️
-        </p>
-        <h1 className="mt-4 text-center text-2xl font-bold text-slate-900">
-          Check your email
-        </h1>
-        <p className="mt-3 max-w-md text-center text-base text-slate-600">
-          We sent a verification link to{" "}
-          <span className="font-semibold text-slate-900">{checkEmailFor}</span>
-        </p>
-        <Link
-          href="/resend-verification"
-          className="mt-6 text-sm font-semibold text-[#DC2626] hover:underline"
-        >
-          Didn&apos;t receive it?
-        </Link>
-        <Link
-          href="/dashboard"
-          className="mt-8 text-sm text-slate-500 hover:text-slate-800"
-        >
-          Continue to app →
-        </Link>
-        <Link
-          href="/login"
-          className="mt-4 text-sm font-medium text-slate-400 hover:text-slate-600"
-        >
-          Sign in instead
-        </Link>
+      <div className="flex min-h-svh flex-col items-center justify-center bg-white px-4 py-10">
+        <div className="w-full max-w-md">
+          <div className="mb-6 flex items-center justify-between">
+            <AppLogo variant="onLight" className="h-8 w-auto max-w-[180px]" />
+            <span className="text-2xl" aria-hidden>
+              ✈️
+            </span>
+          </div>
+          <div className="reg-envelope-wrap relative flex justify-center" aria-hidden>
+            <style
+              dangerouslySetInnerHTML={{
+                __html: `
+@keyframes reg-envelope-flap {
+  0%, 100% { transform: rotateX(0deg); }
+  50% { transform: rotateX(-18deg); }
+}
+.reg-envelope-flap { transform-origin: top center; animation: reg-envelope-flap 2.2s ease-in-out infinite; }
+`,
+              }}
+            />
+            <svg
+              className="h-20 w-20 text-[#DC2626]"
+              viewBox="0 0 64 64"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <rect
+                x="6"
+                y="18"
+                width="52"
+                height="36"
+                rx="4"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                fill="white"
+              />
+              <path
+                className="reg-envelope-flap"
+                d="M8 20 L32 36 L56 20"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                fill="white"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+          <h1 className="mt-6 text-center text-2xl font-bold text-slate-900">
+            Check your email
+          </h1>
+          <p className="mt-2 text-center text-slate-500">We sent a link to</p>
+          <div className="mt-2 flex justify-center">
+            <span className="inline-flex rounded-full bg-red-50 px-4 py-1.5 text-sm font-semibold text-[#DC2626]">
+              {checkEmailFor}
+            </span>
+          </div>
+          <div className="mt-8 flex items-center justify-center gap-2 text-xs text-slate-500">
+            <span className="text-emerald-600">Register ✓</span>
+            <span className="text-slate-300">|</span>
+            <span className="font-semibold text-[#DC2626]">Verify email</span>
+            <span className="text-slate-300">|</span>
+            <span>Start planning</span>
+          </div>
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <Link
+              href="/resend-verification"
+              className="text-sm font-medium text-slate-500 hover:text-[#DC2626] hover:underline"
+            >
+              Resend email
+            </Link>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard")}
+              className="text-xs text-slate-400 transition hover:text-slate-600"
+            >
+              Skip for now →
+            </button>
+          </div>
+          <Link
+            href="/login"
+            className="mt-6 block text-center text-sm text-slate-400 hover:text-slate-600"
+          >
+            Sign in instead
+          </Link>
+        </div>
       </div>
     );
   }

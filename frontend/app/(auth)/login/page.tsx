@@ -175,6 +175,11 @@ function LoginPageInner() {
   0%, 100% { transform: translate(0, 0); opacity: 0.5; }
   50% { transform: translate(6px, -10px); opacity: 0.85; }
 }
+@keyframes login-verify-slide {
+  0% { opacity: 0; transform: translateY(-8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.login-verify-slide { animation: login-verify-slide 0.35s ease-out forwards; }
 `,
         }}
       />
@@ -258,32 +263,6 @@ function LoginPageInner() {
             </div>
           ) : null}
 
-          {unverifiedBanner ? (
-            <div
-              className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950"
-              role="status"
-            >
-              <p>
-                ⚠️ Your email is not verified.{" "}
-                <Link
-                  href="/resend-verification"
-                  className="font-bold text-amber-900 underline-offset-2 hover:underline"
-                >
-                  Resend verification email
-                </Link>
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  if (pendingNext) router.replace(pendingNext);
-                }}
-                className="mt-2 text-xs font-semibold text-amber-900/80 hover:underline"
-              >
-                Continue to app →
-              </button>
-            </div>
-          ) : null}
-
           {oauthAlert ? (
             <div
               className={`rounded-2xl border px-3 py-2.5 text-sm shadow-sm ${
@@ -302,6 +281,32 @@ function LoginPageInner() {
                   </Link>
                 </p>
               ) : null}
+            </div>
+          ) : null}
+
+          {unverifiedBanner ? (
+            <div
+              className="login-verify-slide mt-1 rounded-xl border border-[#f59e0b] bg-[#fffbeb] px-4 py-3 text-sm text-amber-950"
+              role="status"
+            >
+              <p className="font-medium text-[#92400e]">
+                📧 Please verify your email address
+              </p>
+              <Link
+                href="/resend-verification"
+                className="mt-1 inline-block text-sm font-bold text-[#b45309] underline-offset-2 hover:underline"
+              >
+                Resend verification link
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  if (pendingNext) router.replace(pendingNext);
+                }}
+                className="mt-2 block w-full text-left text-xs font-medium text-amber-800/90 hover:underline"
+              >
+                Skip for now →
+              </button>
             </div>
           ) : null}
 

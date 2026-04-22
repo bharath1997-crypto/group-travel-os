@@ -10,23 +10,16 @@ import hashlib
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
-from urllib.parse import quote
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from config import settings
-
 from app.models.user import User
 from app.schemas.auth import UserCreate, UserUpdate, ChangePasswordRequest
 from app.utils.auth import hash_password, verify_password, create_access_token
-from app.utils.email import (
-    send_email,
-    send_password_reset_email,
-    send_verification_email,
-    smtp_configured,
-)
+from app.utils.email import send_password_reset_email, send_verification_email
 from app.utils.exceptions import AppException
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -87,15 +80,20 @@ class AuthService:
             country=country_to_store,
             date_of_birth=data.date_of_birth,
         )
+        user.is_verified = False
         db.add(user)
+        db.flush()
+        raw = secrets.token_urlsafe(32)
+        user.verification_token = raw
+        user.verification_token_expires = datetime.now(timezone.utc) + timedelta(hours=24)
+        user.email_verification_token_hash = None
+        user.email_verification_expires_at = None
+        try:
+            send_verification_email(user.email, user.full_name, raw)
+        except Exception:  # noqa: S110 — never block registration on email
+            pass
         db.commit()
         db.refresh(user)
-
-        try:
-            raw = AuthService._issue_verification_token(db, user)
-            send_verification_email(user.email, user.full_name, raw)
-        except Exception as e:
-            logger.warning("Verification email not sent on register: %s", e)
 
         token, expires_in = create_access_token(user.id)
         logger.info("New user registered: %s", user.email)
@@ -149,7 +147,7 @@ class AuthService:
     def verify_email(db: Session, token: str) -> User:
         raw = (token or "").strip()
         if not raw:
-            AppException.bad_request("Invalid or expired verification link")
+            AppException.bad_request("Invalid or expired link")
 
         user = db.execute(
             select(User).where(User.verification_token == raw)
@@ -158,21 +156,17 @@ class AuthService:
         if user:
             exp = user.verification_token_expires
             if exp is None or exp < datetime.now(timezone.utc):
-                AppException.bad_request(
-                    "Verification link has expired. Request a new one."
-                )
+                AppException.bad_request("Link expired — request a new one")
         else:
             h = _hash_verification_token(raw)
             user = db.execute(
                 select(User).where(User.email_verification_token_hash == h)
             ).scalar_one_or_none()
             if not user:
-                AppException.bad_request("Invalid or expired verification link")
+                AppException.bad_request("Invalid or expired link")
             exp = user.email_verification_expires_at
             if exp is None or exp < datetime.now(timezone.utc):
-                AppException.bad_request(
-                    "Verification link has expired. Request a new one."
-                )
+                AppException.bad_request("Link expired — request a new one")
 
         user.is_verified = True
         user.verification_token = None
@@ -186,17 +180,15 @@ class AuthService:
 
     @staticmethod
     def resend_verification_public(db: Session, email: str) -> None:
-        """Resend link; no-op if email unknown (do not reveal registration)."""
+        """Resend link; no-op if email unknown or already verified (do not reveal)."""
         normalized = (email or "").strip().lower()
         if not normalized:
             return
         user = db.execute(
             select(User).where(User.email == normalized)
         ).scalar_one_or_none()
-        if not user:
+        if not user or user.is_verified:
             return
-        if user.is_verified:
-            AppException.bad_request("Email already verified")
         raw = AuthService._issue_verification_token(db, user)
         try:
             send_verification_email(user.email, user.full_name, raw)
@@ -299,22 +291,7 @@ class AuthService:
         db.commit()
         db.refresh(user)
         try:
-            if settings.resend_api_key:
-                send_password_reset_email(user.email, user.full_name, raw)
-            elif smtp_configured():
-                fe = settings.frontend_url.rstrip("/")
-                link = f"{fe}/reset-password?token={quote(raw, safe='')}"
-                subject = f"Reset your password — {settings.APP_NAME}"
-                body = (
-                    f"Hi {user.full_name},\n\n"
-                    f"Use the link below to set a new password for your Travello account. "
-                    f"This link expires in 1 hour.\n\n"
-                    f"{link}\n\n"
-                    f"If you did not request this, you can ignore this email.\n"
-                )
-                send_email(to=user.email, subject=subject, body=body)
-            else:
-                send_password_reset_email(user.email, user.full_name, raw)
+            send_password_reset_email(user.email, user.full_name, raw)
         except Exception:
             logger.exception("Failed to send password reset email to %s", user.email)
 
