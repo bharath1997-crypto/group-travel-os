@@ -88,6 +88,12 @@ type ChatInfo = {
   last_message_sender?: string;
 };
 
+type MenuItem = {
+  label: string;
+  fn: () => void;
+  icon?: string;
+};
+
 type ChatMessage = {
   id: string;
   sender_id: string;
@@ -950,39 +956,59 @@ export default function GroupChatPage() {
                   boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
                 }}
               >
-                {[
-                  ["Add to a list", () => showToast("Added to list (demo)")],
-                  ["Group info", () => setGroupInfoOpen(true)],
-                  ["Group media", () => showToast("Open media gallery (demo)")],
-                  ["Search in chat", () => setSearchOpen(true)],
-                  ["Mute notifications", () => showToast("Notifications muted (local)")],
-                  ["Notification settings", () => showToast("Opening settings (demo)")],
+                {(
                   [
-                    "Chat theme",
-                    () => {
-                      setThemeOpen(true);
-                      setMenuOpen(false);
+                    {
+                      label: "Add to a list",
+                      fn: () => showToast("Added to list (demo)"),
                     },
-                  ],
-                  [
-                    "Clear chat",
-                    () => {
-                      setConfirmModal("clear");
-                      setMenuOpen(false);
+                    { label: "Group info", fn: () => setGroupInfoOpen(true) },
+                    {
+                      label: "Group media",
+                      fn: () => showToast("Open media gallery (demo)"),
                     },
-                  ],
-                  ["Add shortcut", () => showToast("Shortcut added (demo)")],
-                  ["Report group", () => showToast("Report submitted (demo)")],
-                  [
-                    "Exit group",
-                    () => {
-                      setConfirmModal("exit");
-                      setMenuOpen(false);
+                    { label: "Search in chat", fn: () => setSearchOpen(true) },
+                    {
+                      label: "Mute notifications",
+                      fn: () => showToast("Notifications muted (local)"),
                     },
-                  ],
-                ].map(([label, fn]) => (
+                    {
+                      label: "Notification settings",
+                      fn: () => showToast("Opening settings (demo)"),
+                    },
+                    {
+                      label: "Chat theme",
+                      fn: () => {
+                        setThemeOpen(true);
+                        setMenuOpen(false);
+                      },
+                    },
+                    {
+                      label: "Clear chat",
+                      fn: () => {
+                        setConfirmModal("clear");
+                        setMenuOpen(false);
+                      },
+                    },
+                    {
+                      label: "Add shortcut",
+                      fn: () => showToast("Shortcut added (demo)"),
+                    },
+                    {
+                      label: "Report group",
+                      fn: () => showToast("Report submitted (demo)"),
+                    },
+                    {
+                      label: "Exit group",
+                      fn: () => {
+                        setConfirmModal("exit");
+                        setMenuOpen(false);
+                      },
+                    },
+                  ] satisfies MenuItem[]
+                ).map(({ label, fn }) => (
                   <button
-                    key={String(label)}
+                    key={label}
                     type="button"
                     className="flex h-11 w-full items-center px-4 text-left text-sm text-white/90 hover:bg-white/5"
                     onClick={() => {
@@ -1605,21 +1631,21 @@ export default function GroupChatPage() {
           >
             {(
               [
-                ["Reply", () => showToast("Reply (demo)")],
-                ["React", () => setReactPickerFor(contextMsg.id)],
-                ["Forward", () => showToast("Forward (demo)")],
-                ["Copy", () => copyText(contextMsg.text ?? "")],
-                ["Pin", () => void pinMessage(contextMsg)],
-                ["Star", () => showToast("Starred (demo)")],
-                [
-                  "Delete",
-                  () => {
+                { label: "Reply", fn: () => showToast("Reply (demo)") },
+                { label: "React", fn: () => setReactPickerFor(contextMsg.id) },
+                { label: "Forward", fn: () => showToast("Forward (demo)") },
+                { label: "Copy", fn: () => copyText(contextMsg.text ?? "") },
+                { label: "Pin", fn: () => void pinMessage(contextMsg) },
+                { label: "Star", fn: () => showToast("Starred (demo)") },
+                {
+                  label: "Delete",
+                  fn: () => {
                     if (db) remove(ref(db, `chats/${chatId}/messages/${contextMsg.id}`));
                     showToast("Deleted");
                   },
-                ],
-              ] as const
-            ).map(([label, fn]) => (
+                },
+              ] satisfies MenuItem[]
+            ).map(({ label, fn }) => (
               <button
                 key={label}
                 type="button"
