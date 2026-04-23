@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
@@ -35,9 +41,12 @@ type UserMe = {
   is_verified: boolean;
   profile_public: boolean;
   avatar_url?: string | null;
+  profile_picture?: string | null;
   country?: string | null;
   home_city?: string | null;
   travel_status?: string | null;
+  profile_completion_filled?: number;
+  profile_completion_total?: number;
 };
 
 type TravelStats = {
@@ -176,12 +185,47 @@ function isHttpOrDataAvatar(s: string): boolean {
   return t.startsWith("data:") || t.startsWith("http://") || t.startsWith("https://");
 }
 
+function isLikelyGoogleHostedImageUrl(url: string): boolean {
+  try {
+    const h = new URL(url).hostname.toLowerCase();
+    return h.endsWith("googleusercontent.com") || h.endsWith("ggpht.com");
+  } catch {
+    return false;
+  }
+}
+
+/** OAuth / linked image from GET /auth/me: profile_picture, or Google-hosted avatar_url. */
+function linkedAccountPhotoFromProfile(payload: {
+  profile_picture?: string | null;
+  avatar_url?: string | null;
+}): string | null {
+  const pp = payload.profile_picture?.trim();
+  if (pp && isHttpOrDataAvatar(pp)) return pp;
+  const au = payload.avatar_url?.trim();
+  if (au && isHttpOrDataAvatar(au) && isLikelyGoogleHostedImageUrl(au)) return au;
+  return null;
+}
+
 type AvatarDisplaySource = {
   avatarUrl: string | null | undefined;
+  /** Google (or other) provider URL when different from avatar_url */
+  profilePictureUrl?: string | null;
   localEmojiFallback: string | null;
   idSeed: string;
   fullName: string;
 };
+
+function httpAvatarCandidates(
+  avatarUrl: string | null | undefined,
+  profilePictureUrl: string | null | undefined,
+): string[] {
+  const a = avatarUrl?.trim();
+  const p = profilePictureUrl?.trim();
+  const out: string[] = [];
+  if (a && isHttpOrDataAvatar(a)) out.push(a);
+  if (p && isHttpOrDataAvatar(p) && p !== a) out.push(p);
+  return out;
+}
 
 function ProfileAvatarView({
   src,
@@ -191,20 +235,33 @@ function ProfileAvatarView({
   size: number;
 }) {
   const au = src.avatarUrl?.trim();
+  const candidates = httpAvatarCandidates(src.avatarUrl, src.profilePictureUrl);
+  const [httpAttempt, setHttpAttempt] = useState(0);
+
+  useEffect(() => {
+    setHttpAttempt(0);
+  }, [src.avatarUrl, src.profilePictureUrl]);
+
+  if (httpAttempt < candidates.length) {
+    const href = candidates[httpAttempt]!;
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        key={`${href}-${httpAttempt}`}
+        src={href}
+        alt=""
+        width={size}
+        height={size}
+        className="h-full w-full object-cover"
+        onError={() => setHttpAttempt((i) => i + 1)}
+      />
+    );
+  }
+
   if (au) {
-    if (isHttpOrDataAvatar(au)) {
-      return (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={au}
-          alt=""
-          width={size}
-          height={size}
-          className="h-full w-full object-cover"
-        />
-      );
+    if (!isHttpOrDataAvatar(au)) {
+      return <span className="select-none text-[length:2.1rem] leading-none">{au}</span>;
     }
-    return <span className="select-none text-[length:2.1rem] leading-none">{au}</span>;
   }
   if (src.localEmojiFallback) {
     return (
@@ -252,6 +309,8 @@ export default function ProfilePage() {
   const router = useRouter();
 
   const [me, setMe] = useState<UserMe | null>(null);
+  const meRef = useRef<UserMe | null>(null);
+  meRef.current = me;
   const [stats, setStats] = useState<TravelStats | null>(null);
   const [plan, setPlan] = useState<PlanOut | null>(null);
   const [bootLoading, setBootLoading] = useState(true);
@@ -271,13 +330,16 @@ export default function ProfilePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
-  const [photoAccordion, setPhotoAccordion] = useState<"upload" | "emoji" | "auto" | null>(
-    null,
-  );
+  const [photoAccordion, setPhotoAccordion] = useState<
+    "upload" | "emoji" | "auto" | "google" | null
+  >(null);
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [uploadSaveBusy, setUploadSaveBusy] = useState(false);
   const [emojiSaveBusy, setEmojiSaveBusy] = useState(false);
   const [autoSaveBusy, setAutoSaveBusy] = useState(false);
+  const [googleLinkedUrl, setGoogleLinkedUrl] = useState<string | null>(null);
+  const [googleLinkedLoading, setGoogleLinkedLoading] = useState(false);
+  const [googleSaveBusy, setGoogleSaveBusy] = useState(false);
   const [modalEmojiPick, setModalEmojiPick] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
@@ -573,6 +635,40 @@ export default function ProfilePage() {
     }
   }, [autoDicebearUrl, patchMeAvatar, showToast]);
 
+  const applyMeAfterAvatarPatch = useCallback((u: UserMe) => {
+    setMe(u);
+    if (u.avatar_url && !isHttpOrDataAvatar(u.avatar_url)) {
+      localStorage.setItem(LS_AVATAR_EMOJI, u.avatar_url);
+      setAvatarEmoji(u.avatar_url);
+    } else {
+      localStorage.removeItem(LS_AVATAR_EMOJI);
+      setAvatarEmoji(null);
+    }
+  }, []);
+
+  const onGoogleLinkedPhotoSave = useCallback(async () => {
+    if (!googleLinkedUrl) return;
+    setGoogleSaveBusy(true);
+    try {
+      const u = await apiFetch<UserMe>("/auth/me", {
+        method: "PATCH",
+        body: JSON.stringify({ avatar_url: googleLinkedUrl }),
+      });
+      applyMeAfterAvatarPatch(u);
+      setPhotoModalOpen(false);
+      setPhotoAccordion(null);
+      setGoogleLinkedUrl(null);
+      showToast({ kind: "success", message: "Profile photo updated!" });
+    } catch (e) {
+      showToast({
+        kind: "error",
+        message: e instanceof Error ? e.message : "Update failed",
+      });
+    } finally {
+      setGoogleSaveBusy(false);
+    }
+  }, [googleLinkedUrl, applyMeAfterAvatarPatch, showToast]);
+
   async function saveProfile() {
     if (!me) return;
     const uTrim = editUsername.trim();
@@ -856,10 +952,49 @@ export default function ProfilePage() {
     if (!photoModalOpen) {
       setUploadPreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      setGoogleLinkedUrl(null);
+      setGoogleLinkedLoading(false);
     }
   }, [photoModalOpen]);
 
+  useEffect(() => {
+    if (!photoModalOpen || photoAccordion !== "google") return;
+    let cancelled = false;
+    setGoogleLinkedLoading(true);
+    const current = meRef.current;
+    setGoogleLinkedUrl(current ? linkedAccountPhotoFromProfile(current) : null);
+    (async () => {
+      try {
+        const data = await apiFetch<UserMe>("/auth/me");
+        if (cancelled) return;
+        const url = linkedAccountPhotoFromProfile(data);
+        setGoogleLinkedUrl(url);
+      } catch {
+        if (!cancelled) {
+          const fallback = meRef.current;
+          setGoogleLinkedUrl(
+            fallback ? linkedAccountPhotoFromProfile(fallback) : null,
+          );
+          showToast({ kind: "error", message: "Could not load account photo." });
+        }
+      } finally {
+        if (!cancelled) setGoogleLinkedLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [photoModalOpen, photoAccordion, showToast]);
+
   const firstEarnedBadge = badges.find((b) => b.earned);
+
+  const profileDrawerComplete = useMemo(() => {
+    if (!me) return false;
+    const filled = me.profile_completion_filled ?? 0;
+    const total = me.profile_completion_total;
+    const cap = total === undefined ? 6 : total;
+    return filled >= cap;
+  }, [me]);
 
   if (bootLoading && !me) {
     return (
@@ -999,6 +1134,7 @@ export default function ProfilePage() {
                 <ProfileAvatarView
                   src={{
                     avatarUrl: me.avatar_url,
+                    profilePictureUrl: me.profile_picture,
                     localEmojiFallback:
                       !me.avatar_url?.trim() && avatarEmoji ? avatarEmoji : null,
                     idSeed: me.id,
@@ -1532,6 +1668,7 @@ export default function ProfilePage() {
                   <ProfileAvatarView
                     src={{
                       avatarUrl: me.avatar_url,
+                      profilePictureUrl: me.profile_picture,
                       localEmojiFallback:
                         !me.avatar_url?.trim() && avatarEmoji ? avatarEmoji : null,
                       idSeed: me.id,
@@ -1756,6 +1893,12 @@ export default function ProfilePage() {
                     title: "Auto avatar from name",
                     desc: "Generate from your name",
                   },
+                  {
+                    id: "google" as const,
+                    icon: "",
+                    title: "Use linked account photo",
+                    desc: "From your Google account",
+                  },
                 ] as const
               ).map((row) => (
                 <div key={row.id} className="mb-2 border-b last:border-0" style={{ borderColor: "#F3F4F6" }}>
@@ -1766,8 +1909,37 @@ export default function ProfilePage() {
                     }
                     className="flex w-full min-h-[52px] items-center gap-3 rounded-lg px-2 py-2 text-left"
                   >
-                    <span className="text-2xl" aria-hidden>
-                      {row.icon}
+                    <span
+                      className="flex h-8 w-8 shrink-0 items-center justify-center"
+                      aria-hidden
+                    >
+                      {row.id === "google" ? (
+                        <svg
+                          width={28}
+                          height={28}
+                          viewBox="0 0 48 48"
+                          aria-hidden
+                        >
+                          <path
+                            fill="#FFC107"
+                            d="M43.611 20.083H42V20H24v8h11.303C33.654 32.657 29.223 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
+                          />
+                          <path
+                            fill="#FF3D00"
+                            d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"
+                          />
+                          <path
+                            fill="#4CAF50"
+                            d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"
+                          />
+                          <path
+                            fill="#1976D2"
+                            d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"
+                          />
+                        </svg>
+                      ) : (
+                        <span className="text-2xl">{row.icon}</span>
+                      )}
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-bold text-[#111827]">{row.title}</p>
@@ -1909,6 +2081,52 @@ export default function ProfilePage() {
                           Use auto avatar
                         </button>
                       </div>
+                    </div>
+                  ) : null}
+                  {photoAccordion === "google" && row.id === "google" ? (
+                    <div className="px-1 pb-4">
+                      {googleLinkedLoading ? (
+                        <div className="flex flex-col items-center gap-3 py-6">
+                          <span
+                            className="h-8 w-8 animate-spin rounded-full border-2 border-[#E94560]/30 border-t-[#E94560]"
+                            aria-hidden
+                          />
+                          <p className="text-xs text-[#6B7280]">Loading…</p>
+                        </div>
+                      ) : googleLinkedUrl ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <div
+                            className="h-[100px] w-[100px] shrink-0 overflow-hidden rounded-full bg-gray-100"
+                            style={{ border: `2px solid ${PINK_RING}` }}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={googleLinkedUrl}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            disabled={googleSaveBusy}
+                            onClick={() => void onGoogleLinkedPhotoSave()}
+                            className="flex min-h-[44px] w-full max-w-xs items-center justify-center gap-2 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                            style={{ backgroundColor: CRIMSON }}
+                          >
+                            {googleSaveBusy ? (
+                              <span
+                                className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                                aria-hidden
+                              />
+                            ) : null}
+                            Use this photo
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="py-2 text-center text-sm leading-snug text-[#6B7280]">
+                          No linked account photo found. Try signing in with Google.
+                        </p>
+                      )}
                     </div>
                   ) : null}
                 </div>
@@ -2194,6 +2412,30 @@ export default function ProfilePage() {
           <div className="relative max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white px-4 pb-8 pt-2 shadow-xl">
             <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-[#DEE2E6]" />
             <nav className="space-y-1 pb-4 text-sm">
+              <button
+                type="button"
+                onClick={() => {
+                  setSettingsOpen(false);
+                  router.push("/onboarding");
+                }}
+                className="flex w-full items-center gap-3 rounded-lg py-2.5 text-left"
+              >
+                {profileDrawerComplete ? (
+                  <span
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700"
+                    aria-hidden
+                  >
+                    ✓
+                  </span>
+                ) : (
+                  <span
+                    className="inline-block h-4 w-4 shrink-0 rounded-full border-2 border-red-500 bg-white"
+                    aria-hidden
+                  />
+                )}
+                <p className="font-semibold text-[#2C3E50]">Complete Profile</p>
+              </button>
+              <div className="my-2 h-px bg-[#E9ECEF]" role="separator" />
               {(
                 [
                   {

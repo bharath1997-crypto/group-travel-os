@@ -249,6 +249,10 @@ class AuthService:
             else:
                 user.recovery_email = str(r).strip().lower()
             del payload["recovery_email"]
+        if "instagram_handle" in payload:
+            ih = payload["instagram_handle"]
+            user.instagram_handle = (ih.strip() if isinstance(ih, str) and ih.strip() else None)
+            del payload["instagram_handle"]
         for field, value in payload.items():
             setattr(user, field, value)
 

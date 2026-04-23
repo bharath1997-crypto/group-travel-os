@@ -136,6 +136,20 @@ class Settings(BaseSettings):
         validation_alias="FROM_NAME",
     )
 
+    # ── Twilio (SMS / WhatsApp OTP) ───────────────────────────────────────────
+    twilio_account_sid: str | None = Field(
+        default=None,
+        validation_alias="TWILIO_ACCOUNT_SID",
+    )
+    twilio_auth_token: str | None = Field(
+        default=None,
+        validation_alias="TWILIO_AUTH_TOKEN",
+    )
+    twilio_phone_number: str | None = Field(
+        default=None,
+        validation_alias="TWILIO_PHONE_NUMBER",
+    )
+
     # ── Email (verification, transactional) ─────────────────────────────────
     SMTP_HOST: str | None = Field(default=None, validation_alias="SMTP_HOST")
     SMTP_PORT: int = Field(default=587, validation_alias="SMTP_PORT")

@@ -55,10 +55,13 @@ export function ProfileDropdown({ avatarSize, layout, onLogout }: Props) {
 
   const seed = avatarSeed(user);
   const profileFilled = user?.profile_completion_filled ?? 0;
-  const profileTotal = user?.profile_completion_total ?? 6;
+  const profileTotal = user?.profile_completion_total;
   const needsVerify = user?.is_verified === false;
-  const profileComplete = profileFilled >= profileTotal;
-  const avatarHrefTarget = profileComplete ? "/settings" : "/complete-profile";
+  const profileComplete =
+    profileTotal === undefined ||
+    profileTotal === 0 ||
+    profileFilled >= profileTotal;
+  const avatarHrefTarget = profileComplete ? "/settings" : "/onboarding";
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -151,6 +154,31 @@ export function ProfileDropdown({ avatarSize, layout, onLogout }: Props) {
               </button>
             </div>
           ) : null}
+
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              router.push("/onboarding");
+            }}
+            className="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+          >
+            <span>Complete Profile</span>
+            <span
+              className="flex shrink-0 items-center"
+              title={profileComplete ? "Profile complete" : "Profile incomplete"}
+              aria-hidden
+            >
+              {profileComplete ? (
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-sm text-emerald-700">
+                  ✓
+                </span>
+              ) : (
+                <span className="inline-block h-3.5 w-3.5 rounded-full border-2 border-red-500 bg-white" />
+              )}
+            </span>
+          </button>
 
           <Link
             href={avatarHrefTarget}

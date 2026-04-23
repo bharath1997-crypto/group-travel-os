@@ -64,6 +64,7 @@ class UserUpdate(BaseModel):
     phone: str | None = Field(None, max_length=32)
     country: str | None = Field(None, max_length=80)
     recovery_email: EmailStr | None = None
+    instagram_handle: str | None = Field(None, max_length=100)
     profile_public: bool | None = None
 
 
@@ -86,7 +87,10 @@ class UserOut(BaseModel):
     phone: str | None = None
     country: str | None = None
     recovery_email: str | None = None
+    instagram_handle: str | None = None
     avatar_url: str | None
+    profile_picture: str | None = None
+    google_sub: str | None = None
     is_active: bool
     is_verified: bool
     email_verified: bool
@@ -139,7 +143,10 @@ def build_user_out(user: User) -> UserOut:
         phone=user.phone,
         country=user.country,
         recovery_email=user.recovery_email,
+        instagram_handle=user.instagram_handle,
         avatar_url=user.avatar_url,
+        profile_picture=user.profile_picture,
+        google_sub=user.google_sub,
         is_active=user.is_active,
         is_verified=user.is_verified,
         email_verified=user.is_verified,

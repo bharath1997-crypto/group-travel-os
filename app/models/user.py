@@ -10,7 +10,7 @@ import uuid
 from datetime import date, datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Date, DateTime, String
+from sqlalchemy import Boolean, Date, DateTime, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -68,8 +68,14 @@ class User(Base):
         unique=True,
         index=True,
     )
+    # May store http(s) URLs or inline data: URLs (upload preview); unbounded in DB.
     avatar_url: Mapped[str | None] = mapped_column(
-        String(2048),
+        Text,
+        nullable=True,
+    )
+    # URL from the identity provider (e.g. Google `picture`); may differ from avatar_url.
+    profile_picture: Mapped[str | None] = mapped_column(
+        Text,
         nullable=True,
     )
     phone: Mapped[str | None] = mapped_column(
@@ -86,6 +92,10 @@ class User(Base):
     )
     recovery_email: Mapped[str | None] = mapped_column(
         String(255),
+        nullable=True,
+    )
+    instagram_handle: Mapped[str | None] = mapped_column(
+        String(100),
         nullable=True,
     )
     fcm_token: Mapped[str | None] = mapped_column(

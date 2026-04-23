@@ -7,7 +7,6 @@ import type { ReactNode } from "react";
 import { AppLogo } from "@/components/AppLogo";
 import { NotificationBell } from "@/components/NotificationBell";
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
-import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
 import { VerificationBanner } from "@/components/VerificationBanner";
@@ -61,14 +60,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     clearLocalProfileCache();
     router.replace("/login");
   }
-
-  const profileFilled = user?.profile_completion_filled ?? 0;
-  const profileTotal = user?.profile_completion_total ?? 6;
-  const profileComplete = profileFilled >= profileTotal;
-  const showProfileBanner =
-    Boolean(user) &&
-    !profileComplete &&
-    pathname !== "/complete-profile";
 
   if (loading) {
     return (
@@ -155,9 +146,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           <PresenceHeartbeat />
           <PostOAuthWelcomeModal />
           <VerificationBanner />
-          {showProfileBanner ? (
-            <ProfileCompletionBanner filled={profileFilled} total={profileTotal} />
-          ) : null}
           {children}
         </main>
       </div>

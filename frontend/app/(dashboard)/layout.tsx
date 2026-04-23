@@ -257,12 +257,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   }
 
   const profileFilled = user?.profile_completion_filled ?? 0;
-  const profileTotal = user?.profile_completion_total ?? 6;
-  const profileComplete = profileFilled >= profileTotal;
-  const showProfileBanner =
-    Boolean(user) &&
-    !profileComplete &&
-    pathname !== "/complete-profile";
+  const profileTotal = user?.profile_completion_total;
+  const profileComplete =
+    profileTotal === undefined ||
+    profileTotal === 0 ||
+    profileFilled >= profileTotal;
+  const profileTarget = "/profile";
 
   const isMapPage = pathname === "/map";
 
@@ -373,22 +373,35 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             <div
               role="button"
               tabIndex={0}
+              title={!profileComplete ? "Complete profile" : undefined}
               className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg p-1 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
-              onClick={() => router.push("/profile")}
+              onClick={() => router.push(profileTarget)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  router.push("/profile");
+                  router.push(profileTarget);
                 }
               }}
             >
-              <img
-                src={dicebearLoreleiAvatarSrc(user?.id)}
-                alt=""
-                width={34}
-                height={34}
-                className="h-[34px] w-[34px] shrink-0 rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover"
-              />
+              <span className="relative inline-flex shrink-0">
+                <img
+                  src={dicebearLoreleiAvatarSrc(user?.id)}
+                  alt=""
+                  width={34}
+                  height={34}
+                  className={`h-[34px] w-[34px] rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover ${
+                    !profileComplete
+                      ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-[#0F3460]"
+                      : ""
+                  }`}
+                />
+                {!profileComplete ? (
+                  <span
+                    className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2 ring-[#0F3460]"
+                    aria-hidden
+                  />
+                ) : null}
+              </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-bold text-white">
                   {formatDisplayName(user?.full_name)}
@@ -474,20 +487,36 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         <div className="mt-auto flex shrink-0 flex-col items-center gap-2 border-t border-[rgba(255,255,255,0.1)] p-2">
           <button
             type="button"
-            title={formatDisplayName(user?.full_name)}
+            title={
+              !profileComplete
+                ? "Complete profile"
+                : formatDisplayName(user?.full_name)
+            }
             className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             onClick={() => {
-              router.push("/profile");
+              router.push(profileTarget);
               afterNav();
             }}
           >
-            <img
-              src={dicebearLoreleiAvatarSrc(user?.id)}
-              alt=""
-              width={32}
-              height={32}
-              className="h-8 w-8 rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover"
-            />
+            <span className="relative inline-flex">
+              <img
+                src={dicebearLoreleiAvatarSrc(user?.id)}
+                alt=""
+                width={32}
+                height={32}
+                className={`h-8 w-8 rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover ${
+                  !profileComplete
+                    ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-[#0F3460]"
+                    : ""
+                }`}
+              />
+              {!profileComplete ? (
+                <span
+                  className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-amber-400 ring-2 ring-[#0F3460]"
+                  aria-hidden
+                />
+              ) : null}
+            </span>
           </button>
           <button
             type="button"
@@ -563,26 +592,39 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                 <div
                   role="button"
                   tabIndex={0}
+                  title={!profileComplete ? "Complete profile" : undefined}
                   className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg p-1 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
                   onClick={() => {
-                    router.push("/profile");
+                    router.push(profileTarget);
                     afterNav();
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      router.push("/profile");
+                      router.push(profileTarget);
                       afterNav();
                     }
                   }}
                 >
-                  <img
-                    src={dicebearLoreleiAvatarSrc(user?.id)}
-                    alt=""
-                    width={34}
-                    height={34}
-                    className="h-[34px] w-[34px] shrink-0 rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover"
-                  />
+                  <span className="relative inline-flex shrink-0">
+                    <img
+                      src={dicebearLoreleiAvatarSrc(user?.id)}
+                      alt=""
+                      width={34}
+                      height={34}
+                      className={`h-[34px] w-[34px] rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover ${
+                        !profileComplete
+                          ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-[#0F3460]"
+                          : ""
+                      }`}
+                    />
+                    {!profileComplete ? (
+                      <span
+                        className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2 ring-[#0F3460]"
+                        aria-hidden
+                      />
+                    ) : null}
+                  </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-bold text-white">
                       {formatDisplayName(user?.full_name)}
@@ -677,33 +719,6 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               <PresenceHeartbeat />
               <PostOAuthWelcomeModal />
               <VerificationBanner />
-              {showProfileBanner ? (
-                <div className="border-b border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-emerald-50/40 px-4 py-3">
-                  <div className="flex max-w-4xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <span
-                        className="mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-slate-400 ring-4 ring-slate-200/80"
-                        aria-hidden
-                      />
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-900">
-                          Complete your profile
-                        </p>
-                        <p className="mt-0.5 text-xs text-slate-600">
-                          {profileFilled} of {profileTotal} details added — finish
-                          anytime for recovery and a better experience.
-                        </p>
-                      </div>
-                    </div>
-                    <Link
-                      href="/complete-profile"
-                      className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#E94560] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
-                    >
-                      Complete now
-                    </Link>
-                  </div>
-                </div>
-              ) : null}
               <div className="w-full">{children}</div>
             </div>
           )}
