@@ -72,6 +72,21 @@ def _otp_key_wa(phone: str) -> str:
 def _generate_otp6() -> str:
     return f"{secrets.randbelow(900_000) + 100_000:06d}"
 
+
+def _normalize_e164(phone: str) -> str:
+    """
+    E.164 for Twilio: leading + and digits only.
+    Stops mismatches when the client omits + or adds spaces.
+    """
+    s = (phone or "").strip()
+    if not s:
+        return ""
+    digits = "".join(c for c in s if c.isdigit())
+    if not digits:
+        return ""
+    return f"+{digits}"
+
+
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
@@ -390,25 +405,41 @@ def reset_password(data: ResetPasswordBody, db: Session = Depends(get_db)):
 @router.post(
     "/phone/send",
     status_code=status.HTTP_200_OK,
-    summary="Send phone OTP via Twilio SMS (console fallback if not configured)",
+    summary="Send phone OTP (Twilio SMS; console + dev_mode fallback on failure or in development)",
 )
 def phone_send_otp(data: PhoneSendRequest):
-    phone = data.phone.strip()
+    phone = _normalize_e164(data.phone)
+    if not phone or len(phone) < 10:
+        AppException.bad_request("Invalid phone number")
     otp = _generate_otp6()
     OTP_STORE[_otp_key_sms(phone)] = otp
-    if settings.twilio_account_sid and settings.twilio_auth_token:
+    from_num = (settings.twilio_phone_number or "").strip()
+    has_twilio = bool(
+        settings.twilio_account_sid
+        and settings.twilio_auth_token
+        and from_num
+    )
+    if has_twilio:
+        if not from_num.startswith("+"):
+            from_num = f"+{from_num.lstrip('+')}"
         try:
             client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
-            client.messages.create(
+            msg = client.messages.create(
                 body=f"Your Group Travel OS verification code is: {otp}",
-                from_=settings.twilio_phone_number,
+                from_=from_num,
                 to=phone,
             )
-        except Exception as e:
-            logger.exception("Twilio SMS send failed: %s", e)
-    else:
-        print(f"[phone OTP] {phone} -> {otp}", flush=True)
-    return {"message": "OTP sent"}
+            logger.info("Twilio SMS API accepted: sid=%s to=%s", msg.sid, phone)
+        except Exception:
+            logger.exception("Twilio SMS send failed to=%s", phone)
+            print(f"[DEV OTP] phone={phone} otp={otp}", flush=True)
+            return {"message": "OTP sent", "dev_mode": True}
+        if settings.ENVIRONMENT == "development":
+            print(f"[DEV OTP] phone={phone} otp={otp}", flush=True)
+            return {"message": "OTP sent", "dev_mode": True}
+        return {"message": "OTP sent"}
+    print(f"[DEV OTP] phone={phone} otp={otp}", flush=True)
+    return {"message": "OTP sent", "dev_mode": True}
 
 
 @router.post(
@@ -417,7 +448,7 @@ def phone_send_otp(data: PhoneSendRequest):
     summary="Verify phone OTP",
 )
 def phone_verify_otp(data: PhoneVerifyRequest):
-    phone = data.phone.strip()
+    phone = _normalize_e164(data.phone)
     otp = data.otp.strip()
     key = _otp_key_sms(phone)
     if OTP_STORE.get(key) == otp:
@@ -432,7 +463,9 @@ def phone_verify_otp(data: PhoneVerifyRequest):
     summary="Send WhatsApp OTP via Twilio (sandbox; console fallback if not configured)",
 )
 def whatsapp_send_otp(data: PhoneSendRequest):
-    phone = data.phone.strip()
+    phone = _normalize_e164(data.phone)
+    if not phone or len(phone) < 10:
+        AppException.bad_request("Invalid phone number")
     otp = _generate_otp6()
     OTP_STORE[_otp_key_wa(phone)] = otp
     if settings.twilio_account_sid and settings.twilio_auth_token:
@@ -445,6 +478,16 @@ def whatsapp_send_otp(data: PhoneSendRequest):
             )
         except Exception as e:
             logger.exception("Twilio WhatsApp send failed: %s", e)
+            # Do not return 200: clients must know delivery failed (sandbox not joined, wrong number, etc.)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=(
+                    "Could not send WhatsApp. If you use Twilio's sandbox, open WhatsApp, send your "
+                    "join message to the Twilio sandbox number (see Twilio Console → Messaging), "
+                    "then try again. You must also enter the same mobile number in the WhatsApp "
+                    "field on this page (it is separate from the SMS field)."
+                ),
+            ) from e
     else:
         print(f"[WhatsApp OTP] {phone} -> {otp}", flush=True)
     return {"message": "WhatsApp OTP sent"}
@@ -456,7 +499,7 @@ def whatsapp_send_otp(data: PhoneSendRequest):
     summary="Verify WhatsApp OTP",
 )
 def whatsapp_verify_otp(data: PhoneVerifyRequest):
-    phone = data.phone.strip()
+    phone = _normalize_e164(data.phone)
     otp = data.otp.strip()
     key = _otp_key_wa(phone)
     if OTP_STORE.get(key) == otp:

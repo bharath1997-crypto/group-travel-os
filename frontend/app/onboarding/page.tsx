@@ -454,6 +454,12 @@ export default function OnboardingWizardPage() {
     }
   }, [waPhone, waOtp, refetchMe]);
 
+  const onCopyPhoneToWhatsApp = useCallback(() => {
+    setWaDial(phoneDial);
+    setWaLocal(phoneLocal);
+    setWaErr(null);
+  }, [phoneDial, phoneLocal]);
+
   const onSaveInstagram = useCallback(async () => {
     const h = normalizeInstagramHandle(instagram);
     if (!h) {
@@ -1049,6 +1055,20 @@ export default function OnboardingWizardPage() {
                 {showWaFlow ? (
                   <>
                     <p className="mt-0.5 text-xs text-slate-600">We&apos;ll send a one-time code</p>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                      Add your mobile number in the fields below (this is <strong>not</strong> the same
+                      box as <strong>Phone (SMS)</strong> — you must type it here too). If you use
+                      Twilio&apos;s <strong>WhatsApp sandbox</strong>, open WhatsApp, send your{" "}
+                      <strong>join</strong> message to the Twilio sandbox first (see your Twilio Console →
+                      Messaging), or messages will not arrive.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={onCopyPhoneToWhatsApp}
+                      className="mt-1 text-left text-xs font-semibold text-[#0D9488] underline-offset-2 hover:underline"
+                    >
+                      Copy number from Phone (SMS) above
+                    </button>
                     <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-stretch">
                       <label className="shrink-0 sm:w-48">
                         <span className="sr-only">Country</span>
