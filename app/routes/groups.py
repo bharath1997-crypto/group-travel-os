@@ -11,9 +11,11 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.group import (
     GroupCreate,
+    GroupMemberOut,
     GroupOut,
     InviteCodeOut,
     JoinGroupRequest,
+    group_member_to_out,
     group_to_out,
 )
 from app.services.group_service import GroupService
@@ -65,6 +67,21 @@ def join_group(
 ):
     group = GroupService.join_group(db, data.invite_code, current_user)
     return group_to_out(group)
+
+
+@router.get(
+    "/{group_id}/members",
+    response_model=list[GroupMemberOut],
+    status_code=status.HTTP_200_OK,
+    summary="List members of a group (you must be a member)",
+)
+def list_group_members(
+    group_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    group = GroupService.get_group(db, group_id, current_user)
+    return [group_member_to_out(m) for m in group.members]
 
 
 @router.get(

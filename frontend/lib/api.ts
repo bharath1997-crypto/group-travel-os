@@ -79,18 +79,35 @@ export async function apiFetchWithStatus<T>(
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const url = `${API_BASE}${normalized}`;
   const token = getToken();
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...((options?.headers as Record<string, string>) ?? {}),
-    },
-  });
-  if (!res.ok) return { data: null, status: res.status };
-  if (res.status === 204) return { data: null, status: res.status };
-  const data = (await res.json()) as T;
-  return { data, status: res.status };
+
+  const headers = new Headers(options?.headers);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const method = (options?.method ?? "GET").toUpperCase();
+  const hasBody =
+    options?.body !== undefined &&
+    options?.body !== null &&
+    options?.body !== "";
+  if (
+    hasBody &&
+    !headers.has("Content-Type") &&
+    ["POST", "PUT", "PATCH", "DELETE"].includes(method)
+  ) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  try {
+    const res = await fetch(url, { ...options, headers });
+    if (!res.ok) return { data: null, status: res.status };
+    if (res.status === 204) return { data: null, status: res.status };
+    try {
+      const data = (await res.json()) as T;
+      return { data, status: res.status };
+    } catch {
+      return { data: null, status: res.status };
+    }
+  } catch {
+    return { data: null, status: 0 };
+  }
 }
 
 /** GET (and optional future public methods) without sending auth — for share links. */

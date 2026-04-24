@@ -169,6 +169,7 @@ type ContactPerson = {
   id: string;
   full_name: string;
   username?: string | null;
+  avatar_url?: string | null;
 };
 
 type ChatPrefs = {
@@ -663,6 +664,7 @@ function HubChatsTab({
   activeChatId,
   chatPrefs,
   onSelectChat,
+  onNavigateToGroup,
   updateChatPref,
   markChatDeleted,
   showToast,
@@ -677,6 +679,7 @@ function HubChatsTab({
   activeChatId?: string;
   chatPrefs: Record<string, ChatPrefs>;
   onSelectChat: (c: ChatInfo) => void;
+  onNavigateToGroup: (groupId: string) => void;
   updateChatPref: (id: string, p: Partial<ChatPrefs>) => void;
   markChatDeleted: (id: string) => void;
   showToast: (m: string, t?: "success" | "error") => void;
@@ -692,8 +695,10 @@ function HubChatsTab({
   const filteredReal = q
     ? mainChatList.filter((c) => c.name?.toLowerCase().includes(q))
     : mainChatList;
-  const groupSection = filteredReal.filter((c) => c.type === "group");
   const dmSection = filteredReal.filter((c) => c.type !== "group");
+  const qGroups = q
+    ? groups.filter((g) => g.name.toLowerCase().includes(q))
+    : groups;
 
   const openContext = (chat: ChatInfo, clientX: number, clientY: number) => {
     setContextMenu({ x: clientX, y: clientY, chat });
@@ -883,7 +888,7 @@ function HubChatsTab({
             </div>,
           ),
         )}
-        {groupSection.length > 0 ? (
+        {qGroups.length > 0 ? (
           <>
             <li
               className="sticky top-0 z-[1] list-none py-2 pl-4 pr-4 text-[11px] font-semibold uppercase tracking-wide"
@@ -894,14 +899,26 @@ function HubChatsTab({
             >
               Your groups
             </li>
-            {groupSection.map((c) =>
-              wrapSwipe(
-                c,
-                <div key={c.id} className="block w-full">
-                  {rowInner(c)}
-                </div>,
-              ),
-            )}
+            {qGroups.map((g) => (
+              <li key={g.id} className="list-none">
+                <ChatListRow72
+                  active={activeChatId === `group_${g.id}`}
+                  onClick={() => onNavigateToGroup(g.id)}
+                  avatar={
+                    <span
+                      className="flex h-12 w-12 items-center justify-center rounded-full text-[17px] font-bold text-white"
+                      style={{ background: listAvatarColor(g.name) }}
+                    >
+                      {(g.name.trim()[0] ?? "?").toUpperCase()}
+                    </span>
+                  }
+                  name={g.name}
+                  preview="No messages yet"
+                  time=""
+                  unread={0}
+                />
+              </li>
+            ))}
           </>
         ) : null}
         {dmSection.length > 0 ? (
@@ -926,7 +943,7 @@ function HubChatsTab({
           </>
         ) : null}
         {demosFiltered.length === 0 &&
-        groupSection.length === 0 &&
+        qGroups.length === 0 &&
         dmSection.length === 0 ? (
           <li
             className="list-none px-4 py-16 text-center text-sm"
@@ -949,7 +966,8 @@ function HubGroupsTab({
   activeChatId,
   chatPrefs,
   onSelectChat,
-  onCreateGroup,
+  reloadGroups,
+  onUnauthorized,
   updateChatPref,
   markChatDeleted,
   showToast,
@@ -964,13 +982,19 @@ function HubGroupsTab({
   activeChatId?: string;
   chatPrefs: Record<string, ChatPrefs>;
   onSelectChat: (c: ChatInfo) => void;
-  onCreateGroup: () => void;
+  reloadGroups: () => Promise<void>;
+  onUnauthorized: () => void;
   updateChatPref: (id: string, p: Partial<ChatPrefs>) => void;
   markChatDeleted: (id: string) => void;
   showToast: (m: string, t?: "success" | "error") => void;
   setContextMenu: (v: { x: number; y: number; chat: ChatInfo } | null) => void;
   longPressTimerRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
 }) {
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupDesc, setNewGroupDesc] = useState("");
+  const [creating, setCreating] = useState(false);
+
   const q = searchQuery.trim().toLowerCase();
   const filtered = q
     ? groupsOnlyList.filter((c) => c.name?.toLowerCase().includes(q))
@@ -1119,12 +1143,135 @@ function HubGroupsTab({
       ) : null}
       <button
         type="button"
-        onClick={onCreateGroup}
+        onClick={() => setCreateOpen(true)}
         className="sticky bottom-0 z-10 h-12 w-full shrink-0 rounded-none text-sm font-semibold text-white"
         style={{ background: ACCENT }}
       >
         + Create Group
       </button>
+      {createOpen ? (
+        <div
+          className="fixed inset-0 z-[600] flex items-end justify-center sm:items-center sm:p-6"
+          style={{ background: "rgba(0,0,0,0.65)" }}
+          role="presentation"
+          onClick={() => !creating && setCreateOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="hub-create-group-title"
+            className="w-full max-w-md rounded-t-2xl border p-4 shadow-2xl sm:rounded-2xl"
+            style={{
+              background: SURFACE,
+              borderColor: MSG_BORDER,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              id="hub-create-group-title"
+              className="text-lg font-semibold text-white"
+            >
+              New group
+            </h2>
+            <p className="mt-1 text-xs" style={{ color: TEXT_MUTED }}>
+              Name is required. Add an optional description for your members.
+            </p>
+            <label className="mt-4 block text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              Group name
+            </label>
+            <input
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              placeholder="e.g. Weekend in Lisbon"
+              maxLength={120}
+              className="mt-1.5 w-full rounded-lg border px-3 py-2.5 text-[15px] text-white outline-none placeholder:text-slate-500"
+              style={{
+                background: BG,
+                borderColor: MSG_BORDER,
+              }}
+            />
+            <label className="mt-3 block text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              Description (optional)
+            </label>
+            <textarea
+              value={newGroupDesc}
+              onChange={(e) => setNewGroupDesc(e.target.value)}
+              placeholder="What's this group for?"
+              maxLength={500}
+              rows={3}
+              className="mt-1.5 w-full resize-none rounded-lg border px-3 py-2.5 text-[14px] text-white outline-none placeholder:text-slate-500"
+              style={{
+                background: BG,
+                borderColor: MSG_BORDER,
+              }}
+            />
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                disabled={creating}
+                onClick={() => {
+                  if (!creating) {
+                    setCreateOpen(false);
+                    setNewGroupName("");
+                    setNewGroupDesc("");
+                  }
+                }}
+                className="flex-1 rounded-lg py-2.5 text-sm font-medium text-slate-300"
+                style={{
+                  background: BG,
+                  border: `0.5px solid ${MSG_BORDER}`,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={creating}
+                onClick={() => {
+                  void (async () => {
+                    const nm = newGroupName.trim();
+                    if (nm.length < 2) {
+                      showToast("Name must be at least 2 characters", "error");
+                      return;
+                    }
+                    setCreating(true);
+                    try {
+                      const res = await apiFetchWithStatus<GroupOut>("/groups", {
+                        method: "POST",
+                        body: JSON.stringify({
+                          name: nm,
+                          description: newGroupDesc.trim() || null,
+                        }),
+                      });
+                      if (res.status === 401) {
+                        onUnauthorized();
+                        return;
+                      }
+                      if (res.status !== 201 || !res.data) {
+                        showToast("Could not create group", "error");
+                        return;
+                      }
+                      showToast("Group created", "success");
+                      setCreateOpen(false);
+                      setNewGroupName("");
+                      setNewGroupDesc("");
+                      await reloadGroups();
+                    } catch {
+                      showToast("Could not create group", "error");
+                    } finally {
+                      setCreating(false);
+                    }
+                  })();
+                }}
+                className="flex-1 rounded-lg py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                style={{ background: ACCENT }}
+              >
+                {creating ? "Creating…" : "Create"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1388,13 +1535,23 @@ function HubContactsTab({
           style={{ borderColor: BORDER_SUB, borderBottomWidth: 0.5 }}
         >
           <div className="flex h-[72px] items-center gap-3 px-4">
-            <img
-              src={getDiceBearUrl(c.full_name)}
-              alt=""
-              className="h-12 w-12 shrink-0 rounded-full"
-              width={48}
-              height={48}
-            />
+            {c.avatar_url && c.avatar_url.trim() ? (
+              <img
+                src={c.avatar_url}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-full object-cover"
+                width={48}
+                height={48}
+              />
+            ) : (
+              <img
+                src={getDiceBearUrl(c.id)}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-full"
+                width={48}
+                height={48}
+              />
+            )}
             <div className="min-w-0 flex-1">
               <p className="truncate text-[14px] font-bold text-white">
                 {c.full_name}
@@ -2414,22 +2571,59 @@ export default function TravelHubPage() {
         handleUnauthorized();
         return;
       }
+      if (meRes.status === 0 || groupsRes.status === 0) {
+        showToast(
+          "Cannot reach the server. Check that the API is running (e.g. localhost:8000) and try again.",
+          "error",
+        );
+        return;
+      }
       if (!meRes.data) {
         showToast("Could not load profile", "error");
         return;
       }
       setUser(meRes.data);
       const gList = groupsRes.data ?? [];
-      setGroups(gList);
+
+      let enrichUnauthorized = false;
+      const enrichedGroups: GroupOut[] = await Promise.all(
+        gList.map(async (gFromList) => {
+          const memRes = await apiFetchWithStatus<GroupMemberOut[]>(
+            `/groups/${gFromList.id}/members`,
+          );
+          if (memRes.status === 401) {
+            enrichUnauthorized = true;
+            return { ...gFromList, members: gFromList.members ?? [] };
+          }
+          if (memRes.status === 200 && memRes.data) {
+            return { ...gFromList, members: memRes.data };
+          }
+          const full = await apiFetchWithStatus<GroupOut>(
+            `/groups/${gFromList.id}`,
+          );
+          if (full.status === 401) {
+            enrichUnauthorized = true;
+            return { ...gFromList, members: gFromList.members ?? [] };
+          }
+          if (full.status === 200 && full.data) return full.data;
+          return { ...gFromList, members: gFromList.members ?? [] };
+        }),
+      );
+      if (enrichUnauthorized) {
+        handleUnauthorized();
+        return;
+      }
+      setGroups(enrichedGroups);
 
       const memberSet = new Map<string, ContactPerson>();
-      for (const g of gList) {
-        for (const m of g.members) {
+      for (const g of enrichedGroups) {
+        for (const m of g.members ?? []) {
           if (m.user_id !== meRes.data.id && !memberSet.has(m.user_id)) {
             memberSet.set(m.user_id, {
               id: m.user_id,
               full_name: m.full_name,
               username: null,
+              avatar_url: m.avatar_url ?? null,
             });
           }
         }
@@ -2437,7 +2631,7 @@ export default function TravelHubPage() {
       setContacts([...memberSet.values()]);
 
       const tripLists = await Promise.all(
-        gList.map((g) =>
+        enrichedGroups.map((g) =>
           apiFetchWithStatus<TripOut[]>(`/groups/${g.id}/trips`),
         ),
       );
@@ -2452,8 +2646,8 @@ export default function TravelHubPage() {
       setTrips(flat);
 
       if (db && meRes.data.id) {
-        for (const g of gList) {
-          await initGroupChat(db, g, g.members, meRes.data);
+        for (const g of enrichedGroups) {
+          await initGroupChat(db, g, g.members ?? [], meRes.data);
         }
       }
     } catch (e) {
@@ -3000,7 +3194,7 @@ export default function TravelHubPage() {
             }}
           >
             <span className="text-[17px] font-medium text-white">
-              Travel Hub
+              Connect
             </span>
             <div className="flex items-center gap-5 text-white">
               <button
@@ -3062,6 +3256,9 @@ export default function TravelHubPage() {
                 activeChatId={activeChat?.id}
                 chatPrefs={chatPrefs}
                 onSelectChat={selectChat}
+                onNavigateToGroup={(gid) => {
+                  router.push(`/groups/${gid}`);
+                }}
                 updateChatPref={updateChatPref}
                 markChatDeleted={markChatDeleted}
                 showToast={showToast}
@@ -3079,9 +3276,8 @@ export default function TravelHubPage() {
                 activeChatId={activeChat?.id}
                 chatPrefs={chatPrefs}
                 onSelectChat={selectChat}
-                onCreateGroup={() => {
-                  router.push("/groups/new");
-                }}
+                reloadGroups={loadBackend}
+                onUnauthorized={handleUnauthorized}
                 updateChatPref={updateChatPref}
                 markChatDeleted={markChatDeleted}
                 showToast={showToast}
@@ -3092,7 +3288,9 @@ export default function TravelHubPage() {
             {activeTab === "contacts" ? (
               <HubContactsTab
                 contacts={contactsWithGroupCounts}
-                onMessage={(p) => void openDirectChat(p)}
+                onMessage={() => {
+                  showToast("Chat coming soon", "success");
+                }}
                 onOpenDemo={openDemoDm}
                 currentUser={user}
               />

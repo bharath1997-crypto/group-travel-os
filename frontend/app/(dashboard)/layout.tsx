@@ -125,7 +125,7 @@ const MAIN_NAV: {
 }[] = [
   { href: "/dashboard", label: "Dashboard", emoji: "🏠" },
   { href: "/trips", label: "Trips", emoji: "✈️" },
-  { href: "/travel-hub", label: "Travel Hub", emoji: "👥" },
+  { href: "/travel-hub", label: "Connect", emoji: "👥" },
   { href: "/split-activities", label: "Split Activities", emoji: "💸" },
   { href: "/live", label: "Live", emoji: "📍" },
   { href: "/feed", label: "Explore", emoji: "🧭" },
