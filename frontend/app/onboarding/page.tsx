@@ -51,6 +51,25 @@ const COUNTRY_DIAL_OPTIONS: { label: string; value: string }[] = [
   { label: "Netherlands (+31)", value: "+31" },
 ];
 
+/** Split E.164 into country dial (longest COUNTRY_DIAL_OPTIONS match) and national digits for pre-fill. */
+function e164ToDialAndLocal(
+  e164: string,
+): { dial: string; local: string } | null {
+  const d = (e164 || "").replace(/\D/g, "");
+  if (!d) return null;
+  const sorted = [...COUNTRY_DIAL_OPTIONS].sort(
+    (a, b) => b.value.replace(/\D/g, "").length - a.value.replace(/\D/g, "").length,
+  );
+  for (const o of sorted) {
+    const cc = o.value.replace(/\D/g, "");
+    if (cc && d.length > cc.length && d.startsWith(cc)) {
+      const dial = o.value.trim().startsWith("+") ? o.value : `+${o.value}`;
+      return { dial, local: d.slice(cc.length) };
+    }
+  }
+  return { dial: "+1", local: d };
+}
+
 const NAVY = "#0F3460";
 const CORAL = "#E94560";
 const TEAL = "#0D9488";
@@ -93,6 +112,7 @@ type Me = {
   recovery_email?: string | null;
   username?: string | null;
   instagram_handle?: string | null;
+  whatsapp_number?: string | null;
   whatsapp_verified?: boolean;
   profile_completion_filled?: number;
   profile_completion_total?: number;
@@ -189,6 +209,14 @@ export default function OnboardingWizardPage() {
   const refetchMe = useCallback(async () => {
     const u = await apiFetch<Me>("/auth/me");
     setMe(u);
+    const wn = (u.whatsapp_number ?? "").trim();
+    if (wn) {
+      const sp = e164ToDialAndLocal(wn);
+      if (sp) {
+        setWaDial(sp.dial);
+        setWaLocal(sp.local);
+      }
+    }
     return u;
   }, []);
 
@@ -208,6 +236,14 @@ export default function OnboardingWizardPage() {
         setCountry((u.country ?? "").trim());
         setRecoveryEmail((u.recovery_email ?? "").trim());
         setInstagram((u.instagram_handle ?? "").trim());
+        const wn = (u.whatsapp_number ?? "").trim();
+        if (wn) {
+          const sp = e164ToDialAndLocal(wn);
+          if (sp) {
+            setWaDial(sp.dial);
+            setWaLocal(sp.local);
+          }
+        }
         const cur = (u.currency ?? "").trim().toUpperCase();
         if (cur.length === 3 && CURRENCY_OPTIONS.some((c) => c.code === cur)) {
           setCurrency(cur);
@@ -345,7 +381,7 @@ export default function OnboardingWizardPage() {
     (me?.phone && String(me.phone).trim()) || phoneVerifiedLocal,
   );
   const googleOk = (me?.avatar_url ?? "").includes("googleusercontent.com");
-  const waOk = Boolean(me?.whatsapp_verified) || waVerifiedLocal;
+  const waOk = me?.whatsapp_verified === true || waVerifiedLocal;
   const igOk = Boolean((me?.instagram_handle ?? "").trim());
   const gdriveOk = googleDriveConnected;
 

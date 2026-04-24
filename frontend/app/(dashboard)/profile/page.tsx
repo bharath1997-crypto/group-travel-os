@@ -39,9 +39,14 @@ type UserMe = {
   full_name: string;
   username: string | null;
   is_verified: boolean;
+  email_verified?: boolean;
   profile_public: boolean;
   avatar_url?: string | null;
   profile_picture?: string | null;
+  phone?: string | null;
+  google_sub?: string | null;
+  whatsapp_verified?: boolean;
+  instagram_handle?: string | null;
   country?: string | null;
   home_city?: string | null;
   travel_status?: string | null;
@@ -988,13 +993,16 @@ export default function ProfilePage() {
 
   const firstEarnedBadge = badges.find((b) => b.earned);
 
-  const profileDrawerComplete = useMemo(() => {
-    if (!me) return false;
-    const filled = me.profile_completion_filled ?? 0;
-    const total = me.profile_completion_total;
-    const cap = total === undefined ? 6 : total;
-    return filled >= cap;
-  }, [me]);
+  const completeProfileHamburger =
+    Boolean(me) &&
+    Boolean(
+      me?.email_verified &&
+        me?.phone &&
+        me?.google_sub &&
+        me?.whatsapp_verified &&
+        me?.instagram_handle &&
+        me?.username,
+    );
 
   if (bootLoading && !me) {
     return (
@@ -2420,16 +2428,16 @@ export default function ProfilePage() {
                 }}
                 className="flex w-full items-center gap-3 rounded-lg py-2.5 text-left"
               >
-                {profileDrawerComplete ? (
+                {completeProfileHamburger ? (
                   <span
-                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700"
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-white"
                     aria-hidden
                   >
                     ✓
                   </span>
                 ) : (
                   <span
-                    className="inline-block h-4 w-4 shrink-0 rounded-full border-2 border-red-500 bg-white"
+                    className="inline-block h-8 w-8 shrink-0 rounded-full border-2 border-red-500 bg-white"
                     aria-hidden
                   />
                 )}

@@ -97,6 +97,9 @@ class GroupService:
         db.add(member)
         db.commit()
         db.refresh(group)
+        from app.services.notification_service import NotificationService
+
+        NotificationService.on_user_joined_group(db, group, current_user)
         logger.info("User %s joined group %s", current_user.id, group.id)
         return group
 

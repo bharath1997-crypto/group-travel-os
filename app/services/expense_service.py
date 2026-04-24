@@ -164,6 +164,10 @@ class ExpenseService:
 
         db.commit()
 
+        from app.services.notification_service import NotificationService
+
+        NotificationService.on_expense_added(db, trip, expense, current_user)
+
         out = db.execute(
             select(Expense)
             .where(Expense.id == expense.id)

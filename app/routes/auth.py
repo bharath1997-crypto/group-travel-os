@@ -445,14 +445,21 @@ def phone_send_otp(data: PhoneSendRequest):
 @router.post(
     "/phone/verify",
     status_code=status.HTTP_200_OK,
-    summary="Verify phone OTP",
+    summary="Verify phone OTP and save number on the authenticated user",
 )
-def phone_verify_otp(data: PhoneVerifyRequest):
+def phone_verify_otp(
+    data: PhoneVerifyRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     phone = _normalize_e164(data.phone)
     otp = data.otp.strip()
     key = _otp_key_sms(phone)
     if OTP_STORE.get(key) == otp:
         del OTP_STORE[key]
+        current_user.phone = phone
+        db.commit()
+        db.refresh(current_user)
         return {"message": "Phone verified", "verified": True}
     AppException.bad_request("Invalid or expired OTP")
 
@@ -496,13 +503,21 @@ def whatsapp_send_otp(data: PhoneSendRequest):
 @router.post(
     "/whatsapp/verify",
     status_code=status.HTTP_200_OK,
-    summary="Verify WhatsApp OTP",
+    summary="Verify WhatsApp OTP and save number on the authenticated user",
 )
-def whatsapp_verify_otp(data: PhoneVerifyRequest):
+def whatsapp_verify_otp(
+    data: PhoneVerifyRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     phone = _normalize_e164(data.phone)
     otp = data.otp.strip()
     key = _otp_key_wa(phone)
     if OTP_STORE.get(key) == otp:
         del OTP_STORE[key]
+        current_user.whatsapp_number = phone
+        current_user.whatsapp_verified = True
+        db.commit()
+        db.refresh(current_user)
         return {"message": "Phone verified", "verified": True}
     AppException.bad_request("Invalid or expired OTP")

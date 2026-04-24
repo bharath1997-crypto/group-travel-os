@@ -85,6 +85,8 @@ class UserOut(BaseModel):
     full_name: str
     username: str | None = None
     phone: str | None = None
+    whatsapp_number: str | None = None
+    whatsapp_verified: bool = False
     country: str | None = None
     recovery_email: str | None = None
     instagram_handle: str | None = None
@@ -141,6 +143,8 @@ def build_user_out(user: User) -> UserOut:
         full_name=user.full_name,
         username=user.username,
         phone=user.phone,
+        whatsapp_number=user.whatsapp_number,
+        whatsapp_verified=bool(user.whatsapp_verified),
         country=user.country,
         recovery_email=user.recovery_email,
         instagram_handle=user.instagram_handle,

@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from app.models.expense import ExpenseSplit
     from app.models.group import GroupMember
     from app.models.location import Location
+    from app.models.notification import Notification
     from app.models.poll import Vote
     from app.models.trip import Trip
     from app.models.trip_roster import TripRoster
@@ -80,6 +81,15 @@ class User(Base):
     )
     phone: Mapped[str | None] = mapped_column(
         String(32),
+        nullable=True,
+    )
+    whatsapp_number: Mapped[str | None] = mapped_column(
+        String(32),
+        nullable=True,
+    )
+    whatsapp_verified: Mapped[bool | None] = mapped_column(
+        Boolean,
+        default=False,
         nullable=True,
     )
     country: Mapped[str | None] = mapped_column(
@@ -194,6 +204,11 @@ class User(Base):
     )
     trip_roster_entries: Mapped[list["TripRoster"]] = relationship(
         "TripRoster",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification",
         back_populates="user",
         cascade="all, delete-orphan",
     )

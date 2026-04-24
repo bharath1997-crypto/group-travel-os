@@ -41,8 +41,15 @@ def test_add_expense_success_splits_all_members(db, mock_user):
         if n["i"] == 3:
             return exec_result(scalars_all=[mock_user.id, uid_other])
         if n["i"] == 4:
+            # NotificationService.on_expense_added — other group members (excl. payer)
+            return exec_result(scalars_all=[uid_other])
+        if n["i"] == 5:
             expense = db.add.call_args_list[0][0][0]
-            splits = [c[0][0] for c in db.add.call_args_list[1:]]
+            splits = [
+                c[0][0]
+                for c in db.add.call_args_list[1:]
+                if isinstance(c[0][0], ExpenseSplit)
+            ]
             expense.splits = splits
             return exec_result(scalar_one=expense)
         raise AssertionError("unexpected execute")
@@ -60,7 +67,8 @@ def test_add_expense_success_splits_all_members(db, mock_user):
     )
     assert out.amount == 30.0
     assert len(out.splits) == 2
-    db.commit.assert_called_once()
+    # Expense commit + one in-app notification commit per recipient
+    assert db.commit.call_count == 2
 
 
 def test_add_expense_bad_request_non_positive_amount(db, mock_user):

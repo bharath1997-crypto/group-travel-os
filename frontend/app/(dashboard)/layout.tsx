@@ -25,10 +25,7 @@ type PlanOut = {
   current_period_end: string | null;
 };
 
-type NavBadges = {
-  has_unread_messages?: boolean;
-  unread_notifications?: number;
-};
+const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
 
 function dicebearLoreleiAvatarSrc(userId: string | null | undefined): string {
   const seed =
@@ -57,6 +54,28 @@ function isActive(pathname: string, href: string): boolean {
     return pathname === "/split-activities";
   }
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/** All six verifications from GET /auth/me — not profile_completion_filled. */
+function isProfileFullyComplete(
+  u: {
+    email_verified?: boolean;
+    is_verified?: boolean;
+    phone?: string | null;
+    google_sub?: string | null;
+    whatsapp_verified?: boolean;
+    instagram_handle?: string | null;
+    username?: string | null;
+  } | null | undefined,
+): boolean {
+  if (!u) return false;
+  const emailOk = u.email_verified === true || u.is_verified === true;
+  const phoneOk = Boolean(u.phone && String(u.phone).trim());
+  const googleOk = Boolean(u.google_sub && String(u.google_sub).trim());
+  const waOk = u.whatsapp_verified === true;
+  const igOk = Boolean(u.instagram_handle && String(u.instagram_handle).trim());
+  const userOk = Boolean(u.username && String(u.username).trim());
+  return emailOk && phoneOk && googleOk && waOk && igOk && userOk;
 }
 
 function IconDoor() {
@@ -167,7 +186,11 @@ function SidebarNavLink({
       ].join(" ")}
     >
       <span className="inline-flex w-5 shrink-0 justify-center text-base leading-none">
-        {emoji}
+        {kind === "notifications" ? (
+          <BellIcon className="h-5 w-5 text-current" />
+        ) : (
+          emoji
+        )}
       </span>
       <span
         className={
@@ -184,7 +207,9 @@ function SidebarNavLink({
         </span>
       ) : null}
       {iconOnly && kind === "notifications" && notifCount > 0 ? (
-        <span className="absolute right-0.5 top-1 h-1.5 w-1.5 rounded-full bg-red-500 ring-1 ring-[#0F3460]" />
+        <span className="absolute -right-1 -top-1 flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold leading-none text-white ring-2 ring-[#0F3460]">
+          {notifCount > 99 ? "99+" : notifCount}
+        </span>
       ) : null}
     </Link>
   );
@@ -256,12 +281,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     router.push("/login");
   }
 
-  const profileFilled = user?.profile_completion_filled ?? 0;
-  const profileTotal = user?.profile_completion_total;
-  const profileComplete =
-    profileTotal === undefined ||
-    profileTotal === 0 ||
-    profileFilled >= profileTotal;
+  const profileComplete = isProfileFullyComplete(user);
   const profileTarget = "/profile";
 
   const isMapPage = pathname === "/map";
@@ -290,19 +310,30 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     let c = false;
     (async () => {
       try {
-        const b = await apiFetch<NavBadges>("/users/me/nav-badges");
-        if (c) return;
-        setNotifCount(
-          Math.max(0, Math.floor(b.unread_notifications ?? 0)),
+        const u = await apiFetch<{ count: number }>(
+          "/notifications/unread-count",
         );
+        if (c) return;
+        setNotifCount(Math.max(0, Math.floor(u.count)));
       } catch {
-        /* Optional endpoint — keep defaults */
+        /* keep previous count */
       }
     })();
     return () => {
       c = true;
     };
   }, [loading, user]);
+
+  useEffect(() => {
+    function onUnread(e: Event) {
+      const ce = e as CustomEvent<{ count?: number }>;
+      if (typeof ce.detail?.count === "number") {
+        setNotifCount(Math.max(0, Math.floor(ce.detail.count)));
+      }
+    }
+    window.addEventListener(GT_NOTIFICATIONS_UNREAD, onUnread);
+    return () => window.removeEventListener(GT_NOTIFICATIONS_UNREAD, onUnread);
+  }, []);
 
   if (loading) {
     return (
@@ -390,17 +421,24 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   width={34}
                   height={34}
                   className={`h-[34px] w-[34px] rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover ${
-                    !profileComplete
-                      ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-[#0F3460]"
-                      : ""
+                    profileComplete
+                      ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0F3460]"
+                      : "ring-2 ring-red-500 ring-offset-2 ring-offset-[#0F3460]"
                   }`}
                 />
-                {!profileComplete ? (
+                {profileComplete ? (
                   <span
-                    className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2 ring-[#0F3460]"
+                    className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold leading-none text-white ring-2 ring-[#0F3460]"
+                    aria-hidden
+                  >
+                    ✓
+                  </span>
+                ) : (
+                  <span
+                    className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-red-500 bg-[#0F3460] ring-2 ring-[#0F3460]"
                     aria-hidden
                   />
-                ) : null}
+                )}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-bold text-white">
@@ -505,17 +543,24 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                 width={32}
                 height={32}
                 className={`h-8 w-8 rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover ${
-                  !profileComplete
-                    ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-[#0F3460]"
-                    : ""
+                  profileComplete
+                    ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0F3460]"
+                    : "ring-2 ring-red-500 ring-offset-2 ring-offset-[#0F3460]"
                 }`}
               />
-              {!profileComplete ? (
+              {profileComplete ? (
                 <span
-                  className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-amber-400 ring-2 ring-[#0F3460]"
+                  className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-emerald-500 text-[8px] font-bold leading-none text-white ring-2 ring-[#0F3460]"
+                  aria-hidden
+                >
+                  ✓
+                </span>
+              ) : (
+                <span
+                  className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border-2 border-red-500 bg-[#0F3460] ring-2 ring-[#0F3460]"
                   aria-hidden
                 />
-              ) : null}
+              )}
             </span>
           </button>
           <button
@@ -613,17 +658,24 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                       width={34}
                       height={34}
                       className={`h-[34px] w-[34px] rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover ${
-                        !profileComplete
-                          ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-[#0F3460]"
-                          : ""
+                        profileComplete
+                          ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0F3460]"
+                          : "ring-2 ring-red-500 ring-offset-2 ring-offset-[#0F3460]"
                       }`}
                     />
-                    {!profileComplete ? (
+                    {profileComplete ? (
                       <span
-                        className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2 ring-[#0F3460]"
+                        className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold leading-none text-white ring-2 ring-[#0F3460]"
+                        aria-hidden
+                      >
+                        ✓
+                      </span>
+                    ) : (
+                      <span
+                        className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-red-500 bg-[#0F3460] ring-2 ring-[#0F3460]"
                         aria-hidden
                       />
-                    ) : null}
+                    )}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-bold text-white">
@@ -688,10 +740,15 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             </div>
             <Link
               href="/notifications"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#6C757D] transition-colors hover:bg-[#F8F9FA] hover:text-[#0F3460] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
+              className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#6C757D] transition-colors hover:bg-[#F8F9FA] hover:text-[#0F3460] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
               aria-label="Notifications"
             >
               <BellIcon className="h-6 w-6" />
+              {notifCount > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white">
+                  {notifCount > 99 ? "99+" : notifCount}
+                </span>
+              ) : null}
             </Link>
           </header>
         ) : null}
