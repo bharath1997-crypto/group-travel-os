@@ -32,6 +32,64 @@ const DICEBEAR_LORELEI = "https://api.dicebear.com/7.x/lorelei/svg";
 const LS_LAST_OPENED = "travello_last_opened";
 const LS_FREEZE_USED = "travello_freeze_used_date";
 const LS_FREEZE_WEEK = "travello_streak_freeze_week";
+const GROUP_TRAVEL_PROFILE_ORIGIN = "https://group-travel-os.vercel.app";
+const TRAVEL_HUB_SHARE_INTENT_KEY = "travelHubShareIntent";
+
+function buildPublicProfileUrl(username: string): string {
+  const u = username.trim();
+  return `${GROUP_TRAVEL_PROFILE_ORIGIN}/u/@${encodeURIComponent(u)}`;
+}
+
+type SocialUserOut = {
+  id: string;
+  full_name: string;
+  username: string | null;
+  avatar_url: string | null;
+  profile_picture: string | null;
+  friend_status?:
+    | "none"
+    | "pending_sent"
+    | "pending_received"
+    | "accepted"
+    | "blocked";
+  plan?: string;
+};
+
+type FriendRequestOut = {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  status: string;
+  created_at: string;
+};
+
+function socialAvatarUrl(u: {
+  id: string;
+  profile_picture?: string | null;
+  avatar_url?: string | null;
+}): string {
+  const p = u.profile_picture?.trim();
+  if (p && (p.startsWith("data:") || p.startsWith("http"))) return p;
+  const a = u.avatar_url?.trim();
+  if (a && (a.startsWith("data:") || a.startsWith("http"))) return a;
+  return `${DICEBEAR_LORELEI}/svg?seed=${encodeURIComponent(u.id)}`;
+}
+
+function poolSender(
+  pool: Record<string, SocialUserOut>,
+  senderId: string,
+): SocialUserOut {
+  const s = String(senderId);
+  return (
+    pool[s] ?? {
+      id: s,
+      full_name: "Traveler",
+      username: null,
+      avatar_url: null,
+      profile_picture: null,
+    }
+  );
+}
 
 type UserMe = {
   id: string;
@@ -347,15 +405,13 @@ export default function ProfilePage() {
   const [googleSaveBusy, setGoogleSaveBusy] = useState(false);
   const [modalEmojiPick, setModalEmojiPick] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [shareSheetOpen, setShareSheetOpen] = useState(false);
+  const [qrShareOpen, setQrShareOpen] = useState(false);
   const [addFriendOpen, setAddFriendOpen] = useState(false);
   const [addFriendTab, setAddFriendTab] = useState<"hub" | "contacts">("hub");
   const [contactSearch, setContactSearch] = useState("");
   const [badgeStripExpanded, setBadgeStripExpanded] = useState(false);
   const [badgeTip, setBadgeTip] = useState<string | null>(null);
   const [freezePopoverOpen, setFreezePopoverOpen] = useState(false);
-  const [dmComposeOpen, setDmComposeOpen] = useState(false);
-  const [dmComposeBody, setDmComposeBody] = useState("");
   const freezePopoverRef = useRef<HTMLDivElement>(null);
 
   const [editName, setEditName] = useState("");
@@ -368,6 +424,13 @@ export default function ProfilePage() {
   const [highlightTab, setHighlightTab] = useState<
     "posts" | "reels" | "trips" | "saved"
   >("posts");
+
+  const [buddiesCount, setBuddiesCount] = useState(0);
+  const [userPool, setUserPool] = useState<Record<string, SocialUserOut>>({});
+  const [pendingIncoming, setPendingIncoming] = useState<FriendRequestOut[]>(
+    [],
+  );
+  const [frActionId, setFrActionId] = useState<string | null>(null);
 
   const showToast = useCallback((t: ToastState) => {
     if (!t) return;
@@ -461,6 +524,95 @@ export default function ProfilePage() {
       c = true;
     };
   }, [router, showToast]);
+
+  const loadSocial = useCallback(async () => {
+    const u = meRef.current;
+    if (!u?.id) return;
+    try {
+      const [cRes, frRes] = await Promise.all([
+        apiFetchWithStatus<SocialUserOut[]>("/social/connections"),
+        apiFetchWithStatus<FriendRequestOut[]>("/social/friend-requests"),
+      ]);
+      if (cRes.status === 401) {
+        clearToken();
+        router.replace("/login");
+        return;
+      }
+      const connections =
+        cRes.status === 200 && Array.isArray(cRes.data) ? cRes.data : [];
+      const frs =
+        frRes.status === 200 && Array.isArray(frRes.data) ? frRes.data : [];
+      const byId: Record<string, SocialUserOut> = {};
+      for (const x of connections) {
+        byId[String(x.id)] = { ...x, id: String(x.id) };
+      }
+      for (const fr of frs) {
+        const sid = String(fr.sender_id);
+        if (!byId[sid]) {
+          byId[sid] = {
+            id: sid,
+            full_name: "Traveler",
+            username: null,
+            avatar_url: null,
+            profile_picture: null,
+          };
+        }
+      }
+      setUserPool(byId);
+      setBuddiesCount(connections.length);
+      setPendingIncoming(frs);
+    } catch {
+      /* ignore */
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (!me?.id) return;
+    void loadSocial();
+  }, [me?.id, loadSocial]);
+
+  const acceptPendingRequest = useCallback(
+    async (fr: FriendRequestOut) => {
+      setFrActionId(String(fr.id));
+      try {
+        await apiFetch(`/social/friend-requests/${String(fr.id)}/accept`, {
+          method: "PATCH",
+        });
+        setPendingIncoming((p) => p.filter((x) => x.id !== fr.id));
+        showToast({ kind: "success", message: "You are now connected" });
+        void loadSocial();
+      } catch (e) {
+        showToast({
+          kind: "error",
+          message: e instanceof Error ? e.message : "Could not accept",
+        });
+      } finally {
+        setFrActionId(null);
+      }
+    },
+    [loadSocial, showToast],
+  );
+
+  const declinePendingRequest = useCallback(
+    async (fr: FriendRequestOut) => {
+      setFrActionId(String(fr.id));
+      try {
+        await apiFetch(`/social/friend-requests/${String(fr.id)}/decline`, {
+          method: "PATCH",
+        });
+        setPendingIncoming((p) => p.filter((x) => x.id !== fr.id));
+        void loadSocial();
+      } catch (e) {
+        showToast({
+          kind: "error",
+          message: e instanceof Error ? e.message : "Could not decline",
+        });
+      } finally {
+        setFrActionId(null);
+      }
+    },
+    [loadSocial, showToast],
+  );
 
   const countriesCount = stats?.countries_from_trips?.length ?? 0;
   const globeScore = useMemo(() => {
@@ -714,55 +866,6 @@ export default function ProfilePage() {
     }
   }
 
-  function copyTravelloProfileLink() {
-    const u = me?.username?.trim();
-    if (!u) {
-      showToast({ kind: "error", message: "Set a username first" });
-      return;
-    }
-    const url = `https://travello.app/@${encodeURIComponent(u)}`;
-    void navigator.clipboard.writeText(url).then(
-      () => showToast({ kind: "success", message: "Link copied" }),
-      () => showToast({ kind: "error", message: "Could not copy" }),
-    );
-  }
-
-  function openDmComposeWithLink() {
-    const u = me?.username?.trim();
-    if (!u) {
-      showToast({ kind: "error", message: "Set a username first" });
-      return;
-    }
-    setDmComposeBody(`https://travello.app/@${encodeURIComponent(u)}`);
-    setShareSheetOpen(false);
-    setDmComposeOpen(true);
-  }
-
-  async function shareNativeProfile() {
-    const u = me?.username?.trim();
-    if (!u) {
-      showToast({ kind: "error", message: "Set a username first" });
-      return;
-    }
-    const url = `https://travello.app/@${encodeURIComponent(u)}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `${me?.full_name ?? "Travello"} on Travello`,
-          text: `Check out my Travello profile`,
-          url,
-        });
-        setShareSheetOpen(false);
-      } else {
-        await navigator.clipboard.writeText(url);
-        showToast({ kind: "success", message: "Link copied" });
-        setShareSheetOpen(false);
-      }
-    } catch {
-      /* user cancelled share */
-    }
-  }
-
   const todayIso = new Date().toISOString().slice(0, 10);
   const freezeUsedToday = freezeUsedDate === todayIso;
 
@@ -1012,8 +1115,8 @@ export default function ProfilePage() {
             <div className="h-10 animate-pulse rounded-lg bg-gray-200" />
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
               <div className="h-[86px] w-[86px] shrink-0 animate-pulse rounded-full bg-gray-200" />
-              <div className="grid w-full max-w-xs grid-cols-4 gap-2 sm:max-w-none sm:flex-1">
-                {[1, 2, 3, 4].map((i) => (
+              <div className="grid w-full max-w-xs grid-cols-5 gap-1 sm:max-w-none sm:flex-1 sm:gap-2">
+                {[1, 2, 3, 4, 5].map((i) => (
                   <div key={i} className="h-14 animate-pulse rounded bg-gray-200" />
                 ))}
               </div>
@@ -1152,7 +1255,41 @@ export default function ProfilePage() {
                 />
               </div>
             </button>
-            <div className="grid w-full max-w-xs grid-cols-4 gap-2 text-center sm:max-w-none sm:flex-1">
+            <div className="grid w-full max-w-xs grid-cols-5 gap-1 text-center sm:max-w-none sm:flex-1 sm:gap-2">
+              <div>
+                <div className="flex min-h-9 items-center justify-center gap-0.5 sm:min-h-10">
+                  {pendingIncoming.length > 0 ? (
+                    <Link
+                      href="/buddies?tab=requests"
+                      className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white"
+                      aria-label={`${pendingIncoming.length} pending friend requests. Open requests.`}
+                    >
+                      {pendingIncoming.length}
+                    </Link>
+                  ) : null}
+                  <Link
+                    href="/buddies"
+                    className="text-lg font-bold leading-tight"
+                    style={{ color: NAVY }}
+                  >
+                    {buddiesCount}
+                  </Link>
+                </div>
+                <Link
+                  href="/buddies"
+                  className="text-[10px] text-[#6C757D] underline-offset-2 hover:underline"
+                >
+                  Buddies
+                </Link>
+                {pendingIncoming.length > 0 ? (
+                  <Link
+                    href="/buddies?tab=requests"
+                    className="mt-0.5 block text-[9px] font-medium leading-tight text-red-600"
+                  >
+                    pending
+                  </Link>
+                ) : null}
+              </div>
               {[
                 { n: stats?.trips_created ?? 0, l: "Trips" },
                 { n: postsCount, l: "Posts" },
@@ -1304,7 +1441,16 @@ export default function ProfilePage() {
             </button>
             <button
               type="button"
-              onClick={() => setShareSheetOpen(true)}
+              onClick={() => {
+                if (!me.username?.trim()) {
+                  showToast({
+                    kind: "error",
+                    message: "Set a username first",
+                  });
+                  return;
+                }
+                setQrShareOpen(true);
+              }}
               className="min-h-[44px] rounded-lg border text-sm font-semibold"
               style={{ borderColor: BORDER, color: NAVY }}
             >
@@ -1322,6 +1468,68 @@ export default function ProfilePage() {
           </div>
             </section>
           </div>
+
+          {pendingIncoming.length > 0 ? (
+            <section
+              className="mt-4 rounded-xl border bg-white p-4"
+              style={{ borderColor: BORDER }}
+            >
+              <h2
+                className="mb-3 text-sm font-bold"
+                style={{ color: NAVY }}
+              >
+                Pending Requests
+              </h2>
+              <ul className="space-y-3">
+                {pendingIncoming.map((fr) => {
+                  const sender = poolSender(userPool, String(fr.sender_id));
+                  return (
+                    <li
+                      key={String(fr.id)}
+                      className="flex items-center gap-3 rounded-lg border p-3"
+                      style={{ borderColor: BORDER }}
+                    >
+                      <img
+                        src={socialAvatarUrl(sender)}
+                        alt=""
+                        className="h-12 w-12 shrink-0 rounded-full object-cover"
+                      />
+                      <div className="min-w-0 flex-1 text-left">
+                        <p
+                          className="truncate text-sm font-semibold"
+                          style={{ color: NAVY }}
+                        >
+                          {formatDisplayName(sender.full_name)}
+                        </p>
+                        <p className="truncate text-xs text-[#6C757D]">
+                          @
+                          {sender.username?.trim() ? sender.username : "user"}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                        <button
+                          type="button"
+                          disabled={frActionId === String(fr.id)}
+                          onClick={() => void acceptPendingRequest(fr)}
+                          className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          type="button"
+                          disabled={frActionId === String(fr.id)}
+                          onClick={() => void declinePendingRequest(fr)}
+                          className="rounded-lg bg-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-800 disabled:opacity-50"
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ) : null}
 
         {/* Story highlights */}
         <section className="mt-4 overflow-x-auto rounded-xl border bg-white py-3 pb-2 lg:border" style={{ borderColor: BORDER }}>
@@ -2144,118 +2352,149 @@ export default function ProfilePage() {
         </div>
       ) : null}
 
-      {shareSheetOpen ? (
-        <div className="fixed inset-0 z-[210] flex flex-col justify-end">
-          <style
-            dangerouslySetInnerHTML={{
-              __html:
-                "@keyframes profileSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}",
-            }}
-          />
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/40"
-            aria-label="Close"
-            onClick={() => setShareSheetOpen(false)}
-          />
-          <div
-            className="relative rounded-t-2xl bg-white px-4 pb-6 pt-2 shadow-xl"
-            style={{ animation: "profileSheetUp 0.2s ease-out forwards" }}
-          >
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#DEE2E6]" />
-            <p className="mb-3 text-center text-sm font-bold" style={{ color: NAVY }}>
-              Share profile
-            </p>
-            <div className="space-y-1">
-              <button
-                type="button"
-                className="flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-[#F8F9FA]"
-                onClick={() => {
-                  copyTravelloProfileLink();
-                  setShareSheetOpen(false);
-                }}
-              >
-                <span className="text-xl">📋</span>
-                Copy profile link
-              </button>
-              <button
-                type="button"
-                className="flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-[#F8F9FA]"
-                onClick={() => openDmComposeWithLink()}
-              >
-                <span className="text-xl">💬</span>
-                Send as Message
-              </button>
-              <button
-                type="button"
-                className="flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-[#F8F9FA]"
-                onClick={() => void shareNativeProfile()}
-              >
-                <span className="text-xl">📤</span>
-                Share via…
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {dmComposeOpen ? (
-        <div className="fixed inset-0 z-[215] flex flex-col justify-end">
-          <style
-            dangerouslySetInnerHTML={{
-              __html:
-                "@keyframes profileSheetUpDm{from{transform:translateY(100%)}to{transform:translateY(0)}}",
-            }}
-          />
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/40"
-            aria-label="Close"
-            onClick={() => setDmComposeOpen(false)}
-          />
-          <div
-            className="relative rounded-t-2xl bg-white px-4 pb-8 pt-2 shadow-xl"
-            style={{ animation: "profileSheetUpDm 0.2s ease-out forwards" }}
-          >
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#DEE2E6]" />
-            <p className="mb-2 text-sm font-bold" style={{ color: NAVY }}>
-              New message
-            </p>
-            <textarea
-              value={dmComposeBody}
-              onChange={(e) => setDmComposeBody(e.target.value)}
-              rows={3}
-              className="w-full rounded-xl border border-[#E9ECEF] px-3 py-2 text-sm outline-none"
+      {qrShareOpen && me?.username?.trim() ? (() => {
+        const u = me.username!.trim();
+        const profileUrl = buildPublicProfileUrl(u);
+        const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(profileUrl)}`;
+        const openShare = (kind: "wa" | "fb" | "x") => {
+          if (kind === "wa") {
+            window.open(
+              `https://wa.me/?text=${encodeURIComponent(profileUrl)}`,
+              "_blank",
+              "noopener,noreferrer",
+            );
+            return;
+          }
+          if (kind === "fb") {
+            window.open(
+              `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(profileUrl)}`,
+              "_blank",
+              "noopener,noreferrer",
+            );
+            return;
+          }
+          window.open(
+            `https://twitter.com/intent/tweet?url=${encodeURIComponent(profileUrl)}`,
+            "_blank",
+            "noopener,noreferrer",
+          );
+        };
+        return (
+          <div className="fixed inset-0 z-[240] flex items-center justify-center p-4">
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/50"
+              aria-label="Close"
+              onClick={() => setQrShareOpen(false)}
             />
-            <div className="mt-3 flex gap-2">
+            <div
+              className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="qr-share-title"
+            >
               <button
                 type="button"
-                onClick={() => setDmComposeOpen(false)}
-                className="min-h-[44px] flex-1 rounded-xl border text-sm font-semibold"
-                style={{ borderColor: BORDER, color: "#6C757D" }}
+                onClick={() => setQrShareOpen(false)}
+                className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-lg text-2xl leading-none text-[#6C757D] transition hover:bg-[#F8F9FA]"
+                aria-label="Close"
               >
-                Cancel
+                ×
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  try {
-                    sessionStorage.setItem("travelhub_compose_prefill", dmComposeBody);
-                  } catch {
-                    /* ignore */
-                  }
-                  setDmComposeOpen(false);
-                  router.push("/travel-hub");
-                }}
-                className="min-h-[44px] flex-1 rounded-xl text-sm font-semibold text-white"
-                style={{ background: CORAL }}
-              >
-                Open Travel Hub
-              </button>
+              <h2 id="qr-share-title" className="sr-only">
+                Share profile
+              </h2>
+              <div className="flex flex-col items-center">
+                <div className="mt-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={qrSrc}
+                    alt="Profile link QR code"
+                    width={200}
+                    height={200}
+                    className="h-[200px] w-[200px]"
+                  />
+                </div>
+                <p
+                  className="mt-4 text-lg font-bold"
+                  style={{ color: NAVY }}
+                >{`@${u}`}</p>
+                <p className="mt-1 max-w-full break-all px-1 text-center text-xs text-[#6C757D]">
+                  {profileUrl}
+                </p>
+                <div className="mt-5 flex w-full flex-wrap items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void navigator.clipboard
+                        .writeText(profileUrl)
+                        .then(
+                          () =>
+                            showToast({
+                              kind: "success",
+                              message: "Link copied!",
+                            }),
+                          () =>
+                            showToast({
+                              kind: "error",
+                              message: "Could not copy",
+                            }),
+                        );
+                    }}
+                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] px-3 py-2 text-xs font-semibold text-[#2C3E50] transition active:scale-[0.98]"
+                  >
+                    <span aria-hidden>📋</span> Copy Link
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        sessionStorage.setItem(
+                          TRAVEL_HUB_SHARE_INTENT_KEY,
+                          JSON.stringify({
+                            type: "profile",
+                            profileUrl,
+                            username: u,
+                            source: "profile_qr",
+                          }),
+                        );
+                      } catch {
+                        /* ignore */
+                      }
+                      setQrShareOpen(false);
+                      router.push("/travel-hub");
+                    }}
+                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] px-3 py-2 text-xs font-semibold text-[#2C3E50] transition active:scale-[0.98]"
+                  >
+                    <span aria-hidden>💬</span> Share to Connect
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openShare("wa")}
+                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] px-3 py-2 text-xs font-semibold text-[#2C3E50] transition active:scale-[0.98]"
+                  >
+                    <span aria-hidden>🟢</span> WhatsApp
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openShare("fb")}
+                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] px-3 py-2 text-xs font-semibold text-[#2C3E50] transition active:scale-[0.98]"
+                  >
+                    <span aria-hidden>📘</span> Facebook
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openShare("x")}
+                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] px-3 py-2 text-xs font-semibold text-[#2C3E50] transition active:scale-[0.98]"
+                  >
+                    <span aria-hidden>🐦</span> Twitter/X
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      ) : null}
+        );
+      })() : null}
 
       {addFriendOpen ? (
         <div className="fixed inset-0 z-[210] flex flex-col justify-end">

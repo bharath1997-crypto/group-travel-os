@@ -8,6 +8,7 @@ import {
   ref,
   push,
   onValue,
+  onDisconnect,
   set,
   update,
   get,
@@ -29,6 +30,22 @@ import {
   type TouchEvent,
 } from "react";
 
+import {
+  Ban,
+  BellOff,
+  Check,
+  CheckCheck,
+  LogOut,
+  MoreVertical,
+  Phone,
+  Search,
+  SendHorizontal,
+  Trash2,
+  User,
+  Users,
+  Video,
+} from "lucide-react";
+
 import { apiFetchWithStatus } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
 
@@ -42,20 +59,28 @@ const TEXT_SECONDARY = "#94A3B8";
 const SECTION_LABEL = "#475569";
 const ACCENT = "#DC2626";
 const ONLINE = "#22C55E";
+/** Expense lines (with white label text; amounts use these) */
+const MONEY_LINE_RED = "#F87171";
+const MONEY_LINE_GREEN = "#4ADE80";
+const MONEY_LINE_BLUE = "#60A5FA";
+const MONEY_TOTAL_POS = "#4ADE80";
+const MONEY_TOTAL_NEG = "#F87171";
+const MONEY_TOTAL_ZERO = "#94A3B8";
 const RIGHT_PANEL_BG = "#0A0F1E";
 
 const CHAT_PREFS_KEY = "travelhub_chat_prefs_v1";
 const DELETED_CHATS_KEY = "travelhub_deleted_chats_v1";
 const GT_BUDDY_FAVOURITES = "gt_buddy_favourites";
 const GT_TRAVELHUB_OPEN_PROFILE = "gt_travelhub_open_profile";
+const GT_OPEN_DM_USER_ID = "gt_open_dm_user_id";
 
-const AVATAR_PALETTE = [
-  "#DC2626",
-  "#2563EB",
-  "#059669",
-  "#D97706",
-  "#7C3AED",
-  "#0891B2",
+/** Initials-avatar background colors (name hash) */
+const INITIALS_AVATAR_COLORS = [
+  "#E8385A",
+  "#0EA5E9",
+  "#10B981",
+  "#F59E0B",
+  "#8B5CF6",
 ] as const;
 
 const DEMO_CHAT_TRAVELLO_HELP_ID = "__demo_travello_help__";
@@ -103,7 +128,35 @@ type UserMe = {
   email?: string | null;
   full_name: string | null;
   username?: string | null;
+  /** ISO 4217, e.g. USD — used for split / currency display when present */
+  preferred_currency?: string | null;
 };
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  INR: "₹",
+  JPY: "¥",
+  AUD: "A$",
+  CAD: "C$",
+  CHF: "CHF ",
+  CNY: "¥",
+  KRW: "₩",
+  NZD: "NZ$",
+  SEK: "kr ",
+  SGD: "S$",
+};
+
+function getCurrencyCodeFromUser(u: UserMe | null): string {
+  const c = u?.preferred_currency?.trim();
+  if (c && c.length >= 3) return c.toUpperCase().slice(0, 3);
+  return "USD";
+}
+
+function getCurrencySymbolFromUser(u: UserMe | null): string {
+  return CURRENCY_SYMBOLS[getCurrencyCodeFromUser(u)] ?? "$";
+}
 
 type GroupMemberOut = {
   id: string;
@@ -154,6 +207,20 @@ type ChatInfo = {
   demoUnread?: number;
   listAvatarBg?: string;
   listInitials?: string;
+  /** Realtime DB `chats/{id}/metadata` for DM display (name + avatars) */
+  metadata?: {
+    name?: string;
+    profile_picture?: string | null;
+    avatar_url?: string | null;
+  };
+};
+
+type UserProfileIdOut = {
+  id: string;
+  full_name: string;
+  username: string | null;
+  profile_picture?: string | null;
+  avatar_url?: string | null;
 };
 
 type ChatMessage = {
@@ -199,6 +266,142 @@ type ChatPrefs = {
   archived?: boolean;
   lastReadAt?: number;
 };
+
+/** e.g. "Traveler ac899a" from bad client defaults */
+function isTravelerFragmentName(name: string | undefined | null): boolean {
+  if (name == null) return false;
+  return /^Traveler [a-zA-Z0-9]+$/i.test(name.trim());
+}
+
+function hasUsableContactFullName(s: string | undefined | null): boolean {
+  if (s == null) return false;
+  const t = s.trim();
+  if (!t) return false;
+  if (t === "Traveler") return false;
+  if (isTravelerFragmentName(t)) return false;
+  if (/^Traveler\s+/i.test(t)) return false;
+  return true;
+}
+
+function dmStoredNameNeedsApiRepair(
+  name: string | undefined | null,
+  metaName: string | undefined | null,
+): boolean {
+  return (
+    isTravelerFragmentName(name) ||
+    isTravelerFragmentName(metaName) ||
+    (name ?? "").trim() === "Traveler" ||
+    (metaName ?? "").trim() === "Traveler"
+  );
+}
+
+/** Shown in DM list row + header: metadata name wins over `info.name`. */
+function chatRowDisplayName(c: ChatInfo): string {
+  if (c.type === "group") return c.name;
+  const m = c.metadata?.name?.trim();
+  if (m) return m;
+  return c.name;
+}
+
+function chatRowDmAvatarUrl(c: ChatInfo): string | null {
+  if (c.type !== "individual") return null;
+  const p = c.metadata?.profile_picture?.trim();
+  if (p && !isInlineSvgDataUrlToSkipForPhoto(p) && !isLegacyDicebearUrl(p)) {
+    return p;
+  }
+  const a = c.metadata?.avatar_url?.trim();
+  if (a && !isInlineSvgDataUrlToSkipForPhoto(a) && !isLegacyDicebearUrl(a)) {
+    return a;
+  }
+  return null;
+}
+
+function buildPeerSearchRowFromChat(
+  chat: ChatInfo,
+  peerId: string,
+  connectionsList: UserSearchResultRow[],
+): UserSearchResultRow {
+  const conn = connectionsList.find((c) => c.id === peerId);
+  if (conn) return conn;
+  return {
+    id: peerId,
+    full_name: chatRowDisplayName(chat),
+    username: null,
+    profile_picture: chat.metadata?.profile_picture ?? null,
+    avatar_url: chat.metadata?.avatar_url ?? null,
+    friend_status: "accepted",
+  };
+}
+
+async function resolvePeerForDm(
+  other: ContactPerson,
+  connections: UserSearchResultRow[],
+): Promise<{
+  full_name: string;
+  profile_picture: string | null;
+  avatar_url: string | null;
+}> {
+  const fromConn = connections.find((r) => r.id === other.id);
+  let fullName = "";
+  let profilePicture: string | null = null;
+  let avatarUrl: string | null = null;
+
+  if (hasUsableContactFullName(other.full_name)) {
+    fullName = other.full_name.trim();
+    avatarUrl = other.avatar_url ?? null;
+  } else if (fromConn && hasUsableContactFullName(fromConn.full_name)) {
+    fullName = fromConn.full_name.trim();
+    profilePicture = fromConn.profile_picture;
+    avatarUrl = fromConn.avatar_url ?? fromConn.profile_picture;
+  } else {
+    const r = await apiFetchWithStatus<UserProfileIdOut>(`/users/${other.id}`);
+    if (r.status === 200 && r.data) {
+      const fn = r.data.full_name?.trim();
+      if (fn) {
+        fullName = fn;
+        profilePicture = r.data.profile_picture ?? null;
+        avatarUrl = r.data.avatar_url ?? null;
+      }
+    }
+  }
+  if (!fullName) fullName = "Unknown";
+  if (!avatarUrl && profilePicture) avatarUrl = profilePicture;
+  return {
+    full_name: fullName,
+    profile_picture: profilePicture,
+    avatar_url: avatarUrl,
+  };
+}
+
+/** Smaller name label above other members' bubbles in group chat */
+const BUBBLE_SENDER_CORAL = "#FF7F50";
+
+function isInlineSvgDataUrlToSkipForPhoto(url: string): boolean {
+  const u = url.trim().toLowerCase();
+  return (
+    u.startsWith("data:image/svg+xml;base64,") ||
+    u.startsWith("data:image/svg+xml,")
+  );
+}
+
+function isLegacyDicebearUrl(url: string): boolean {
+  return url.toLowerCase().includes("dicebear.com");
+}
+
+/** Profile panel / list rows: use photo URL, or `null` to show initials. */
+function profileOrAvatarPublicUrl(p: {
+  full_name: string;
+  profile_picture: string | null;
+  avatar_url: string | null;
+}): string | null {
+  const pp = p.profile_picture?.trim();
+  if (pp) return pp;
+  const av = p.avatar_url?.trim();
+  if (av && !isInlineSvgDataUrlToSkipForPhoto(av) && !isLegacyDicebearUrl(av)) {
+    return av;
+  }
+  return null;
+}
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -254,10 +457,6 @@ function formatListTimestamp(ts: number): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function getDiceBearUrl(seed: string): string {
-  return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;
-}
-
 function readBuddyFavourites(): string[] {
   if (typeof window === "undefined") return [];
   try {
@@ -296,7 +495,38 @@ function formatDisplayNameHub(full: string | null | undefined): string {
 }
 
 function listAvatarColor(name: string): string {
-  return AVATAR_PALETTE[hashString(name) % AVATAR_PALETTE.length]!;
+  return INITIALS_AVATAR_COLORS[hashString(name) % INITIALS_AVATAR_COLORS.length]!;
+}
+
+function InitialsAvatar({
+  name,
+  size,
+  className = "",
+}: {
+  name: string;
+  size: 32 | 40 | 80;
+  className?: string;
+}) {
+  const label = (name.trim() || "?").toUpperCase();
+  const letter = label.charAt(0) || "?";
+  const bg = listAvatarColor(name.trim() || "?");
+  const textClass =
+    size === 32 ? "text-sm" : size === 40 ? "text-base" : "text-3xl";
+  return (
+    <span
+      className={`inline-flex shrink-0 select-none items-center justify-center rounded-full font-bold text-white ${textClass} ${className}`.trim()}
+      style={{
+        width: size,
+        height: size,
+        minWidth: size,
+        minHeight: size,
+        background: bg,
+      }}
+      aria-hidden
+    >
+      {letter}
+    </span>
+  );
 }
 
 const DEMO_CHAT_TRAVELLO_HELP: ChatInfo = {
@@ -379,24 +609,6 @@ function getUnreadCount(chat: ChatInfo, pref: ChatPrefs | undefined): number {
   const msg = (chat.last_message ?? "").trim();
   if (!msg) return 0;
   return 1;
-}
-
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width={20}
-      height={20}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      aria-hidden
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="M20 20l-3.5-3.5" strokeLinecap="round" />
-    </svg>
-  );
 }
 
 function MenuIcon({ className }: { className?: string }) {
@@ -599,7 +811,7 @@ function HubSearchField({
         style={{ background: SURFACE }}
       >
         <span style={{ color: TEXT_MUTED }} aria-hidden>
-          <SearchIcon className="opacity-80" />
+          <Search className="h-5 w-5 opacity-80" strokeWidth={2} />
         </span>
         <input
           value={value}
@@ -655,7 +867,9 @@ function ChatListRow72({
         borderLeft: active ? `3px solid ${ACCENT}` : "3px solid transparent",
       }}
     >
-      <div className="relative h-12 w-12 shrink-0">{avatar}</div>
+      <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
+        {avatar}
+      </div>
       <div className="flex min-w-0 flex-1 flex-col justify-center">
         <div className="flex min-w-0 items-center gap-2">
           <span className="min-w-0 truncate text-[14px] font-medium text-white">
@@ -696,8 +910,6 @@ function ChatListRow72({
 }
 
 function HubChatsTab({
-  searchQuery,
-  onSearchChange,
   groups,
   user,
   mainChatList,
@@ -711,8 +923,6 @@ function HubChatsTab({
   setContextMenu,
   longPressTimerRef,
 }: {
-  searchQuery: string;
-  onSearchChange: (v: string) => void;
   groups: GroupOut[];
   user: UserMe | null;
   mainChatList: ChatInfo[];
@@ -726,19 +936,10 @@ function HubChatsTab({
   setContextMenu: (v: { x: number; y: number; chat: ChatInfo } | null) => void;
   longPressTimerRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
 }) {
-  const q = searchQuery.trim().toLowerCase();
   const demosAlways = [DEMO_CHAT_TRAVELLO_HELP, DEMO_CHAT_COMMUNITY];
-  const demosFiltered = q
-    ? demosAlways.filter((d) => d.name.toLowerCase().includes(q))
-    : demosAlways;
-
-  const filteredReal = q
-    ? mainChatList.filter((c) => c.name?.toLowerCase().includes(q))
-    : mainChatList;
+  const filteredReal = mainChatList;
   const dmSection = filteredReal.filter((c) => c.type !== "group");
-  const qGroups = q
-    ? groups.filter((g) => g.name.toLowerCase().includes(q))
-    : groups;
+  const qGroups = groups;
 
   const openContext = (chat: ChatInfo, clientX: number, clientY: number) => {
     setContextMenu({ x: clientX, y: clientY, chat });
@@ -764,17 +965,14 @@ function HubChatsTab({
     if (c.isBot) {
       return (
         <span
-          className="flex h-12 w-12 items-center justify-center rounded-full"
+          className="flex h-10 w-10 items-center justify-center rounded-full"
           style={{ background: ACCENT }}
         >
-          <BotFaceIcon size={26} />
+          <BotFaceIcon size={24} />
         </span>
       );
     }
-    const bg =
-      c.listAvatarBg ?? listAvatarColor(c.name);
-    const initials =
-      c.listInitials ?? initialsFromName(c.name);
+    const rowLabel = chatRowDisplayName(c);
     const isGroup = c.type === "group";
     const gMeta = c.group_id
       ? groups.find((g) => g.id === c.group_id)
@@ -783,16 +981,30 @@ function HubChatsTab({
       isGroup && user && !c.isAnnouncement
         ? memberOnlineRecently(gMeta?.members ?? [], user.id)
         : false;
-    if (!isGroup && !c.listInitials) {
+    const dmAv = !isGroup ? chatRowDmAvatarUrl(c) : null;
+    if (dmAv) {
       return (
         <div className="relative">
           <img
-            src={getDiceBearUrl(c.name)}
+            src={dmAv}
             alt=""
-            className="h-12 w-12 rounded-full"
-            width={48}
-            height={48}
+            className="h-10 w-10 rounded-full object-cover"
+            width={40}
+            height={40}
           />
+          {online ? (
+            <span
+              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-[#0F172A]"
+              style={{ background: ONLINE }}
+            />
+          ) : null}
+        </div>
+      );
+    }
+    if (!isGroup) {
+      return (
+        <div className="relative">
+          <InitialsAvatar name={rowLabel} size={40} />
           {online ? (
             <span
               className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-[#0F172A]"
@@ -804,12 +1016,7 @@ function HubChatsTab({
     }
     return (
       <div className="relative">
-        <span
-          className="flex h-12 w-12 items-center justify-center rounded-full text-[15px] font-bold text-white"
-          style={{ background: bg }}
-        >
-          {initials}
-        </span>
+        <InitialsAvatar name={rowLabel} size={40} />
         {online ? (
           <span
             className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-[#0F172A]"
@@ -841,7 +1048,7 @@ function HubChatsTab({
         active={activeChatId === c.id}
         onClick={() => onSelectChat(c)}
         avatar={renderAvatar(c)}
-        name={c.name}
+        name={chatRowDisplayName(c)}
         preview={preview}
         time={timeStr}
         unread={unread}
@@ -918,9 +1125,8 @@ function HubChatsTab({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <HubSearchField value={searchQuery} onChange={onSearchChange} />
       <ul className="m-0 min-h-0 flex-1 list-none overflow-y-auto p-0">
-        {demosFiltered.map((c) =>
+        {demosAlways.map((c) =>
           wrapSwipe(
             c,
             <div key={c.id} className="block w-full">
@@ -982,14 +1188,12 @@ function HubChatsTab({
             )}
           </>
         ) : null}
-        {demosFiltered.length === 0 &&
-        qGroups.length === 0 &&
-        dmSection.length === 0 ? (
+        {qGroups.length === 0 && dmSection.length === 0 ? (
           <li
-            className="list-none px-4 py-16 text-center text-sm"
+            className="list-none px-4 py-8 text-center text-sm"
             style={{ color: TEXT_MUTED }}
           >
-            No chats yet
+            No other conversations yet — use search to find people and groups
           </li>
         ) : null}
       </ul>
@@ -1575,22 +1779,19 @@ function HubContactsTab({
           style={{ borderColor: BORDER_SUB, borderBottomWidth: 0.5 }}
         >
           <div className="flex h-[72px] items-center gap-3 px-4">
-            {c.avatar_url && c.avatar_url.trim() ? (
+            {c.avatar_url &&
+            c.avatar_url.trim() &&
+            !isInlineSvgDataUrlToSkipForPhoto(c.avatar_url) &&
+            !isLegacyDicebearUrl(c.avatar_url) ? (
               <img
                 src={c.avatar_url}
                 alt=""
-                className="h-12 w-12 shrink-0 rounded-full object-cover"
-                width={48}
-                height={48}
+                className="h-10 w-10 shrink-0 rounded-full object-cover"
+                width={40}
+                height={40}
               />
             ) : (
-              <img
-                src={getDiceBearUrl(c.id)}
-                alt=""
-                className="h-12 w-12 shrink-0 rounded-full"
-                width={48}
-                height={48}
-              />
+              <InitialsAvatar name={c.full_name} size={40} />
             )}
             <div className="min-w-0 flex-1">
               <p className="truncate text-[14px] font-bold text-white">
@@ -1696,12 +1897,11 @@ function HubCallsTab({ showToast }: { showToast: (m: string) => void }) {
           background: "transparent",
         }}
       >
-        <span
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
-          style={{ background: listAvatarColor("Goa Gang") }}
-        >
-          GG
-        </span>
+        <InitialsAvatar
+          className="shrink-0"
+          name="Goa Gang"
+          size={40}
+        />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[14px] font-medium text-white">
             Goa Gang · Group call
@@ -1961,20 +2161,22 @@ function DemoDmChatPanel({
             Demo account · for testing
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-4 text-lg text-[#94A3B8]">
+        <div className="flex shrink-0 items-center gap-4 text-white">
           <button
             type="button"
             aria-label="Video call"
+            className="text-white"
             onClick={() => showToast("Calls coming soon", "success")}
           >
-            📹
+            <Video className="h-6 w-6" strokeWidth={2} />
           </button>
           <button
             type="button"
             aria-label="Voice call"
+            className="text-white"
             onClick={() => showToast("Calls coming soon", "success")}
           >
-            📞
+            <Phone className="h-6 w-6" strokeWidth={2} />
           </button>
         </div>
       </header>
@@ -2448,6 +2650,11 @@ export default function TravelHubPage() {
     "chats" | "groups" | "contacts" | "calls"
   >("chats");
   const [showAttach, setShowAttach] = useState(false);
+  const [showSplitPopup, setShowSplitPopup] = useState(false);
+  const [splitAmount, setSplitAmount] = useState("");
+  const [splitEqually, setSplitEqually] = useState(true);
+  const [attachMiniOpen, setAttachMiniOpen] = useState(false);
+  const attachMenuRef = useRef<HTMLDivElement | null>(null);
   const [showNewChat, setShowNewChat] = useState(false);
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
   const [showMenuDrawer, setShowMenuDrawer] = useState(false);
@@ -2486,14 +2693,17 @@ export default function TravelHubPage() {
     null,
   );
   const streamRef = useRef<MediaStream | null>(null);
-  const userSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
   const userSearchSeq = useRef(0);
   const [userSearchResults, setUserSearchResults] = useState<
     UserSearchResultRow[]
   >([]);
-  const [userSearchLoading, setUserSearchLoading] = useState(false);
+  const [connectionsList, setConnectionsList] = useState<
+    UserSearchResultRow[]
+  >([]);
+  const [discoverGroupsList, setDiscoverGroupsList] = useState<GroupOut[]>(
+    [],
+  );
+  const [searchOverlayLoading, setSearchOverlayLoading] = useState(false);
   const [incomingFrIdBySender, setIncomingFrIdBySender] = useState<
     Record<string, string>
   >({});
@@ -2502,10 +2712,31 @@ export default function TravelHubPage() {
   );
   const [searchProfileFor, setSearchProfileFor] =
     useState<UserSearchResultRow | null>(null);
+  const [profileReportDialogOpen, setProfileReportDialogOpen] =
+    useState(false);
+  const [searchProfileSubTab, setSearchProfileSubTab] = useState<
+    "media" | "links" | "docs" | "trips" | "activities"
+  >("media");
   const [buddiesMenuOpenId, setBuddiesMenuOpenId] = useState<string | null>(
     null,
   );
   const showSearchOverlayPrev = useRef(false);
+  const dmHandoffFromBuddiesDone = useRef(false);
+  const chatSearchInputRef = useRef<HTMLInputElement | null>(null);
+  const [showInChatSearch, setShowInChatSearch] = useState(false);
+  const [inChatSearchQuery, setInChatSearchQuery] = useState("");
+  const [groupMemberPanelGroupId, setGroupMemberPanelGroupId] = useState<
+    string | null
+  >(null);
+  const [peerLastReadAt, setPeerLastReadAt] = useState(0);
+  /** Firebase /presence/{peerId}/online for active DM header */
+  const [dmHeaderPeerOnline, setDmHeaderPeerOnline] = useState<boolean | null>(
+    null,
+  );
+  /** Firebase /presence/{id}/online for open profile panel */
+  const [profilePanelPeerOnline, setProfilePanelPeerOnline] = useState<
+    boolean | null
+  >(null);
 
   const showToast = useCallback(
     (message: string, type: "success" | "error" = "success") => {
@@ -2556,11 +2787,71 @@ export default function TravelHubPage() {
       const p = JSON.parse(raw) as UserSearchResultRow;
       sessionStorage.removeItem(GT_TRAVELHUB_OPEN_PROFILE);
       setSearchProfileFor(p);
+      setSearchProfileSubTab("media");
       void tryEnrichOpenProfile(p);
     } catch {
       /* ignore */
     }
   }, [tryEnrichOpenProfile]);
+
+  useEffect(() => {
+    if (searchProfileFor) setSearchProfileSubTab("media");
+  }, [searchProfileFor?.id]);
+
+  useEffect(() => {
+    if (!db || !user?.id) return;
+    const r = ref(db, `presence/${user.id}/online`);
+    set(r, true)
+      .then(() => onDisconnect(r).set(false))
+      .catch(() => {
+        /* rules / offline */
+      });
+    return () => {
+      set(r, false).catch(() => {});
+    };
+  }, [db, user?.id]);
+
+  useEffect(() => {
+    if (!db || !user?.id) {
+      setDmHeaderPeerOnline(null);
+      return;
+    }
+    if (
+      !activeChat ||
+      activeChat.isDemo ||
+      activeChat.isBot ||
+      activeChat.type !== "individual"
+    ) {
+      setDmHeaderPeerOnline(null);
+      return;
+    }
+    const peerId = activeChat.members.find((m) => m !== user.id);
+    if (!peerId) {
+      setDmHeaderPeerOnline(null);
+      return;
+    }
+    const r = ref(db, `presence/${peerId}/online`);
+    const unsub = onValue(r, (snap) => {
+      setDmHeaderPeerOnline(snap.val() === true);
+    });
+    return () => {
+      unsub();
+    };
+  }, [db, user?.id, activeChat]);
+
+  useEffect(() => {
+    if (!db || !searchProfileFor?.id) {
+      setProfilePanelPeerOnline(null);
+      return;
+    }
+    const r = ref(db, `presence/${searchProfileFor.id}/online`);
+    const unsub = onValue(r, (snap) => {
+      setProfilePanelPeerOnline(snap.val() === true);
+    });
+    return () => {
+      unsub();
+    };
+  }, [db, searchProfileFor?.id]);
 
   useEffect(() => {
     if (buddiesMenuOpenId == null) return;
@@ -2571,6 +2862,16 @@ export default function TravelHubPage() {
     document.addEventListener("mousedown", on);
     return () => document.removeEventListener("mousedown", on);
   }, [buddiesMenuOpenId]);
+
+  useEffect(() => {
+    if (!attachMiniOpen) return;
+    const on = (e: MouseEvent) => {
+      const el = attachMenuRef.current;
+      if (el && !el.contains(e.target as Node)) setAttachMiniOpen(false);
+    };
+    document.addEventListener("mousedown", on);
+    return () => document.removeEventListener("mousedown", on);
+  }, [attachMiniOpen]);
 
   useEffect(() => {
     const { db: d, ok } = initFirebase();
@@ -2797,7 +3098,8 @@ export default function TravelHubPage() {
         const u = onValue(infoRef, (snapInfo) => {
           if (!snapInfo.exists()) return;
           const data = snapInfo.val() as ChatInfo;
-          merged[chatId] = { ...data, id: chatId };
+          const prev = merged[chatId];
+          merged[chatId] = { ...data, id: chatId, metadata: prev?.metadata };
           const list = Object.values(merged).sort(
             (a, b) =>
               (b.last_message_time ?? 0) - (a.last_message_time ?? 0),
@@ -2805,6 +3107,21 @@ export default function TravelHubPage() {
           setChats(list);
         });
         chatInfoUnsubsRef.current.push(u);
+
+        const metaRef = ref(db, `chats/${chatId}/metadata`);
+        const uMeta = onValue(metaRef, (snapMeta) => {
+          if (!merged[chatId]) return;
+          const val = snapMeta.exists()
+            ? (snapMeta.val() as NonNullable<ChatInfo["metadata"]>)
+            : undefined;
+          merged[chatId] = { ...merged[chatId]!, metadata: val };
+          const list = Object.values(merged).sort(
+            (a, b) =>
+              (b.last_message_time ?? 0) - (a.last_message_time ?? 0),
+          );
+          setChats(list);
+        });
+        chatInfoUnsubsRef.current.push(uMeta);
       });
 
       if (chatIds.length === 0) setChats([]);
@@ -2816,6 +3133,22 @@ export default function TravelHubPage() {
       chatInfoUnsubsRef.current = [];
     };
   }, [db, user?.id]);
+
+  useEffect(() => {
+    setActiveChat((prev) => {
+      if (!prev) return prev;
+      const row = chats.find((c) => c.id === prev.id);
+      if (!row) return prev;
+      const mPrev = prev.metadata;
+      const mRow = row.metadata;
+      const metaEq =
+        (mPrev?.name ?? null) === (mRow?.name ?? null) &&
+        (mPrev?.profile_picture ?? null) === (mRow?.profile_picture ?? null) &&
+        (mPrev?.avatar_url ?? null) === (mRow?.avatar_url ?? null);
+      if (metaEq && prev.name === row.name) return prev;
+      return { ...prev, name: row.name, metadata: row.metadata };
+    });
+  }, [chats]);
 
   useEffect(() => {
     if (!user) return;
@@ -2846,34 +3179,92 @@ export default function TravelHubPage() {
     if (showSearchOverlayPrev.current && !showSearchOverlay) {
       userSearchSeq.current += 1;
       setUserSearchResults([]);
-      setUserSearchLoading(false);
+      setConnectionsList([]);
+      setDiscoverGroupsList([]);
+      setSearchOverlayLoading(false);
     }
     showSearchOverlayPrev.current = showSearchOverlay;
   }, [showSearchOverlay]);
 
   useEffect(() => {
     if (!showSearchOverlay) return;
-    if (searchQuery.trim().length < 2) {
+    const q = searchQuery.trim();
+    if (q.length < 2) {
       setUserSearchResults([]);
+      setConnectionsList([]);
+      setDiscoverGroupsList([]);
+      setSearchOverlayLoading(false);
       return;
     }
-    const timer = setTimeout(async () => {
-      setUserSearchLoading(true);
-      try {
-        const token = localStorage.getItem('gt_token');
-        const res = await fetch(`http://localhost:8000/api/v1/users/search?q=${encodeURIComponent(searchQuery.trim())}&limit=20`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-        setUserSearchResults(Array.isArray(data) ? data : []);
-      } catch (e) {
-        setUserSearchResults([]);
-      } finally {
-        setUserSearchLoading(false);
-      }
+    const timer = setTimeout(() => {
+      const seq = ++userSearchSeq.current;
+      void (async () => {
+        setSearchOverlayLoading(true);
+        try {
+          const [connRes, searchRes, groupsParamRes] = await Promise.all([
+            apiFetchWithStatus<UserSearchResultRow[]>("/social/connections"),
+            apiFetchWithStatus<UserSearchResultRow[]>(
+              `/users/search?q=${encodeURIComponent(q)}&limit=20`,
+            ),
+            apiFetchWithStatus<GroupOut[]>(
+              `/groups?search=${encodeURIComponent(q)}`,
+            ),
+          ]);
+          if (userSearchSeq.current !== seq) return;
+          if (
+            connRes.status === 401 ||
+            searchRes.status === 401 ||
+            groupsParamRes.status === 401
+          ) {
+            handleUnauthorized();
+            return;
+          }
+          const connections = Array.isArray(connRes.data) ? connRes.data : [];
+          setConnectionsList(connections);
+          const people = Array.isArray(searchRes.data) ? searchRes.data : [];
+          setUserSearchResults(people);
+
+          const myIds = new Set(groups.map((g) => g.id));
+          const qLower = q.toLowerCase();
+          let discover: GroupOut[] = [];
+          if (groupsParamRes.status === 200 && Array.isArray(groupsParamRes.data)) {
+            discover = groupsParamRes.data.filter(
+              (g) =>
+                !myIds.has(g.id) &&
+                (g.name?.toLowerCase().includes(qLower) ?? false),
+            );
+          }
+          if (discover.length === 0) {
+            const allRes = await apiFetchWithStatus<GroupOut[]>("/groups");
+            if (userSearchSeq.current !== seq) return;
+            if (allRes.status === 401) {
+              handleUnauthorized();
+              return;
+            }
+            if (allRes.status === 200 && Array.isArray(allRes.data)) {
+              discover = allRes.data.filter(
+                (g) =>
+                  !myIds.has(g.id) &&
+                  (g.name?.toLowerCase().includes(qLower) ?? false),
+              );
+            }
+          }
+          setDiscoverGroupsList(discover);
+        } catch {
+          if (userSearchSeq.current === seq) {
+            setUserSearchResults([]);
+            setConnectionsList([]);
+            setDiscoverGroupsList([]);
+          }
+        } finally {
+          if (userSearchSeq.current === seq) {
+            setSearchOverlayLoading(false);
+          }
+        }
+      })();
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery, showSearchOverlay]);
+  }, [searchQuery, showSearchOverlay, groups, handleUnauthorized]);
 
   const loadMessages = useCallback(
     (chatId: string) => {
@@ -2931,16 +3322,22 @@ export default function TravelHubPage() {
     ) => {
       if (!db || !user || !activeChat || activeChat.isDemo) return;
       if (type === "text" && !content.trim()) return;
+      if (type === "split") {
+        const raw = metadata?.amount;
+        const n =
+          typeof raw === "number" ? raw : parseFloat(String(raw ?? ""));
+        if (!Number.isFinite(n) || n <= 0) {
+          showToast("Enter a valid amount", "error");
+          return;
+        }
+      }
 
       const chatId = activeChat.id;
       const messagesRef = ref(db, `chats/${chatId}/messages`);
-      const seed = user.username || user.full_name || user.id;
-      const avatarUrl = getDiceBearUrl(seed);
 
       const message: Record<string, unknown> = {
         sender_id: user.id,
         sender_name: user.full_name || "You",
-        sender_avatar: avatarUrl,
         text: content,
         type,
         timestamp: Date.now(),
@@ -2951,14 +3348,24 @@ export default function TravelHubPage() {
 
       try {
         await push(messagesRef, message);
+        const preview =
+          type === "text"
+            ? content
+            : type === "split"
+              ? content
+              : `📎 ${type}`;
         await update(ref(db, `chats/${chatId}/info`), {
-          last_message:
-            type === "text" ? content : `📎 ${type}`,
+          last_message: preview,
           last_message_time: Date.now(),
           last_message_sender: user.full_name || "You",
         });
         setMessageText("");
         setShowAttach(false);
+        if (type === "split") {
+          setShowSplitPopup(false);
+          setSplitAmount("");
+          setSplitEqually(true);
+        }
       } catch (e) {
         console.error(e);
         showToast("Could not send message", "error");
@@ -3002,18 +3409,162 @@ export default function TravelHubPage() {
     };
   }, [db, activeChat?.id, user?.id]);
 
+  useEffect(() => {
+    if (!db || !user?.id || !activeChat?.id) return;
+    if (activeChat.isDemo || activeChat.isBot || activeChat.isAnnouncement)
+      return;
+    void set(
+      ref(db, `chats/${activeChat.id}/read/${user.id}`),
+      Date.now(),
+    );
+  }, [
+    db,
+    user?.id,
+    activeChat?.id,
+    activeChat?.isDemo,
+    activeChat?.isBot,
+    activeChat?.isAnnouncement,
+  ]);
+
+  useEffect(() => {
+    if (!db || !user?.id || !activeChat || activeChat.type !== "individual") {
+      setPeerLastReadAt(0);
+      return;
+    }
+    if (activeChat.isDemo || activeChat.isBot || activeChat.isAnnouncement) {
+      setPeerLastReadAt(0);
+      return;
+    }
+    const peerId = activeChat.members.find((m) => m !== user.id);
+    if (!peerId) {
+      setPeerLastReadAt(0);
+      return;
+    }
+    const rref = ref(db, `chats/${activeChat.id}/read/${peerId}`);
+    const unsub = onValue(rref, (snap) => {
+      const v = snap.val();
+      const n =
+        typeof v === "number"
+          ? v
+          : typeof v === "string"
+            ? parseInt(v, 10) || 0
+            : 0;
+      setPeerLastReadAt(n);
+    });
+    return () => {
+      unsub();
+    };
+  }, [db, activeChat, user?.id]);
+
+  useLayoutEffect(() => {
+    if (showInChatSearch) {
+      globalThis.setTimeout(() => {
+        chatSearchInputRef.current?.focus();
+      }, 0);
+    }
+  }, [showInChatSearch]);
+
+  const openPeerProfileFromActiveChat = useCallback(async () => {
+    if (!activeChat || activeChat.type !== "individual" || !user) return;
+    const peerId = activeChat.members.find((m) => m !== user.id);
+    if (!peerId) return;
+    const base = buildPeerSearchRowFromChat(
+      activeChat,
+      peerId,
+      connectionsList,
+    );
+    const contact: ContactPerson = {
+      id: base.id,
+      full_name: base.full_name,
+      username: base.username,
+      avatar_url: base.avatar_url,
+    };
+    const resolved = await resolvePeerForDm(contact, connectionsList);
+    setSearchProfileFor({
+      ...base,
+      full_name: resolved.full_name,
+      profile_picture: resolved.profile_picture,
+      avatar_url: resolved.avatar_url ?? base.avatar_url,
+    });
+  }, [activeChat, user, connectionsList]);
+
+  const clearActiveChatMessages = useCallback(async () => {
+    if (!db || !activeChat) return;
+    if (activeChat.isDemo) return;
+    if (!window.confirm("Clear all messages in this chat?")) return;
+    try {
+      await remove(ref(db, `chats/${activeChat.id}/messages`));
+      setMessages([]);
+      showToast("Chat cleared", "success");
+    } catch (e) {
+      console.error(e);
+      showToast("Could not clear chat", "error");
+    }
+  }, [db, activeChat, showToast]);
+
+  const blockActiveChatPeer = useCallback(async () => {
+    if (!activeChat || activeChat.type !== "individual" || !user) return;
+    const peerId = activeChat.members.find((m) => m !== user.id);
+    if (!peerId) return;
+    const r = await apiFetchWithStatus<unknown>("/social/block", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: peerId }),
+    });
+    if (r.status === 401) {
+      handleUnauthorized();
+      return;
+    }
+    if (r.status < 400) {
+      showToast("User blocked", "success");
+      setActiveChat(null);
+    } else {
+      showToast("Could not block user", "error");
+    }
+  }, [activeChat, user, showToast, handleUnauthorized]);
+
+  const leaveActiveGroupChat = useCallback(async () => {
+    if (!activeChat || activeChat.type !== "group" || !user?.id) return;
+    const gid = activeChat.group_id;
+    if (!gid) return;
+    if (!window.confirm("Leave this group?")) return;
+    const r = await apiFetchWithStatus<unknown>(
+      `/groups/${gid}/members/${user.id}`,
+      { method: "DELETE" },
+    );
+    if (r.status === 401) {
+      handleUnauthorized();
+      return;
+    }
+    if (r.status === 204 || r.status === 200) {
+      showToast("You left the group", "success");
+      setActiveChat(null);
+      void loadBackend();
+    } else {
+      showToast("Could not leave group", "error");
+    }
+  }, [activeChat, user?.id, showToast, handleUnauthorized, loadBackend]);
+
   const openDirectChat = useCallback(
     async (other: ContactPerson) => {
       if (!db || !user) return;
+      const resolved = await resolvePeerForDm(other, connectionsList);
+      const realName = resolved.full_name;
+      const meta = {
+        name: realName,
+        profile_picture: resolved.profile_picture,
+        avatar_url: resolved.avatar_url,
+      };
       const ids = [user.id, other.id].sort();
       const chatId = `dm_${ids[0]}_${ids[1]}`;
       const chatRef = ref(db, `chats/${chatId}/info`);
+      const metadataPath = ref(db, `chats/${chatId}/metadata`);
       try {
         const snapshot = await get(chatRef);
         if (!snapshot.exists()) {
           await set(chatRef, {
             id: chatId,
-            name: other.full_name,
+            name: realName,
             type: "individual",
             members: [user.id, other.id],
             created_by: user.id,
@@ -3024,18 +3575,31 @@ export default function TravelHubPage() {
           });
           await set(ref(db, `user_chats/${user.id}/${chatId}`), true);
           await set(ref(db, `user_chats/${other.id}/${chatId}`), true);
+        } else {
+          await update(chatRef, { name: realName });
         }
+        // /chats/{id}/info/name and /chats/{id}/metadata/name (via update) — always
+        await update(metadataPath, {
+          name: realName,
+          profile_picture: meta.profile_picture,
+          avatar_url: meta.avatar_url,
+        });
         const info = snapshot.exists()
           ? (snapshot.val() as ChatInfo)
           : {
               id: chatId,
-              name: other.full_name,
+              name: realName,
               type: "individual" as const,
               members: [user.id, other.id],
               created_by: user.id,
               created_at: Date.now(),
             };
-        setActiveChat({ ...info, id: chatId });
+        setActiveChat({
+          ...info,
+          id: chatId,
+          name: realName,
+          metadata: meta,
+        });
         setActiveTab("chats");
         updateChatPref(chatId, { lastReadAt: Date.now() });
         loadMessages(chatId);
@@ -3044,8 +3608,31 @@ export default function TravelHubPage() {
         showToast("Could not open chat", "error");
       }
     },
-    [db, user, loadMessages, showToast, updateChatPref],
+    [db, user, loadMessages, showToast, updateChatPref, connectionsList],
   );
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !db || !user?.id) return;
+    if (dmHandoffFromBuddiesDone.current) return;
+    const raw = sessionStorage.getItem(GT_OPEN_DM_USER_ID);
+    if (!raw?.trim()) return;
+    sessionStorage.removeItem(GT_OPEN_DM_USER_ID);
+    dmHandoffFromBuddiesDone.current = true;
+    const handoffId = raw.trim();
+    void (async () => {
+      const r = await apiFetchWithStatus<UserProfileIdOut>(
+        `/users/${handoffId}`,
+      );
+      if (r.status !== 200 || !r.data) return;
+      const d = r.data;
+      await openDirectChat({
+        id: String(d.id),
+        full_name: d.full_name,
+        username: d.username,
+        avatar_url: d.profile_picture ?? d.avatar_url ?? null,
+      });
+    })();
+  }, [db, user?.id, openDirectChat]);
 
   const connectUserSearchRow = useCallback(
     async (row: UserSearchResultRow) => {
@@ -3114,6 +3701,17 @@ export default function TravelHubPage() {
             : u,
         ),
       );
+      setConnectionsList((prev) => {
+        const has = prev.some((p) => p.id === row.id);
+        if (has) {
+          return prev.map((p) =>
+            p.id === row.id
+              ? { ...p, friend_status: "accepted" as const }
+              : p,
+          );
+        }
+        return [...prev, { ...row, friend_status: "accepted" as const }];
+      });
       setSearchProfileFor((p) =>
         p?.id === row.id
           ? { ...p, friend_status: "accepted" as const }
@@ -3172,14 +3770,90 @@ export default function TravelHubPage() {
   const selectChat = useCallback(
     (c: ChatInfo) => {
       setActiveChat(c);
+      setShowInChatSearch(false);
+      setInChatSearchQuery("");
       messagesUnsubRef.current?.();
       messagesUnsubRef.current = null;
       setMessages([]);
       updateChatPref(c.id, { lastReadAt: Date.now() });
       if (c.isBot || c.isAnnouncement || c.isDemo) return;
       loadMessages(c.id);
+      if (
+        db &&
+        user?.id &&
+        c.type === "individual" &&
+        c.id.startsWith("dm_")
+      ) {
+        const peerId = c.members.find((m) => m !== user.id);
+        if (
+          peerId != null &&
+          dmStoredNameNeedsApiRepair(c.name, c.metadata?.name)
+        ) {
+          void (async () => {
+            const r = await apiFetchWithStatus<UserProfileIdOut>(
+              `/users/${peerId}`,
+            );
+            if (r.status !== 200 || !r.data) return;
+            const fn = r.data.full_name?.trim();
+            if (!fn) return;
+            const nextMeta = {
+              name: fn,
+              profile_picture: r.data.profile_picture ?? null,
+              avatar_url: r.data.avatar_url ?? null,
+            };
+            try {
+              await update(ref(db, `chats/${c.id}/info`), { name: fn });
+              await update(ref(db, `chats/${c.id}/metadata`), nextMeta);
+            } catch (e) {
+              console.warn("dm name repair", e);
+            }
+            setActiveChat((prev) => {
+              if (!prev || prev.id !== c.id) return prev;
+              return {
+                ...prev,
+                name: fn,
+                metadata: { ...prev.metadata, ...nextMeta },
+              };
+            });
+          })();
+        }
+      }
     },
-    [loadMessages, updateChatPref],
+    [loadMessages, updateChatPref, db, user?.id],
+  );
+
+  const openGroupChatFromSearch = useCallback(
+    (c: ChatInfo) => {
+      setShowSearchOverlay(false);
+      setSearchQuery("");
+      selectChat(c);
+    },
+    [selectChat],
+  );
+
+  const joinDiscoverGroup = useCallback(
+    async () => {
+      const code = window.prompt("Enter the group invite code");
+      if (code == null || !String(code).trim()) return;
+      const r = await apiFetchWithStatus<GroupOut>("/groups/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invite_code: String(code).trim() }),
+      });
+      if (r.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      if (r.status === 200 && r.data) {
+        showToast(`Joined ${r.data.name}`, "success");
+        setShowSearchOverlay(false);
+        setSearchQuery("");
+        void loadBackend();
+      } else {
+        showToast("Could not join. Check the code.", "error");
+      }
+    },
+    [handleUnauthorized, showToast, loadBackend],
   );
 
   const openDemoDm = useCallback(
@@ -3214,11 +3888,15 @@ export default function TravelHubPage() {
     [],
   );
 
-  const filteredChats = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return chats;
-    return chats.filter((c) => c.name?.toLowerCase().includes(q));
-  }, [chats, searchQuery]);
+  const filteredChats = useMemo(() => chats, [chats]);
+
+  const filteredChatMessages = useMemo(() => {
+    const q = inChatSearchQuery.trim().toLowerCase();
+    if (!q) return messages;
+    return messages.filter((m) =>
+      (m.text || "").toLowerCase().includes(q),
+    );
+  }, [messages, inChatSearchQuery]);
 
   const chatsWithoutDeleted = useMemo(
     () => filteredChats.filter((c) => !deletedChatIds.includes(c.id)),
@@ -3248,6 +3926,36 @@ export default function TravelHubPage() {
     () => mainChatList.filter((c) => c.type === "group"),
     [mainChatList],
   );
+
+  const overlayChats = useMemo(() => {
+    const n = searchQuery.trim().toLowerCase();
+    if (n.length < 2) return [] as ChatInfo[];
+    return mainChatList.filter(
+      (c) =>
+        c.type === "group" && (c.name?.toLowerCase().includes(n) ?? false),
+    );
+  }, [mainChatList, searchQuery]);
+
+  const overlayContacts = useMemo(() => {
+    const n = searchQuery.trim().toLowerCase();
+    if (n.length < 2) return [] as UserSearchResultRow[];
+    return connectionsList.filter((c) => {
+      const fn = (c.full_name ?? "").toLowerCase();
+      const un = (c.username ?? "").toLowerCase();
+      return fn.includes(n) || un.includes(n);
+    });
+  }, [connectionsList, searchQuery]);
+
+  const connectionIdSet = useMemo(
+    () => new Set(connectionsList.map((c) => c.id)),
+    [connectionsList],
+  );
+
+  const overlayPeople = useMemo(() => {
+    const n = searchQuery.trim().toLowerCase();
+    if (n.length < 2) return [] as UserSearchResultRow[];
+    return userSearchResults.filter((u) => !connectionIdSet.has(u.id));
+  }, [userSearchResults, connectionIdSet, searchQuery]);
 
   const contactsWithGroupCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -3495,7 +4203,7 @@ export default function TravelHubPage() {
                 className="flex items-center justify-center text-white"
                 onClick={() => setShowSearchOverlay(true)}
               >
-                <SearchIcon />
+                <Search className="h-5 w-5" strokeWidth={2} />
               </button>
               <button
                 type="button"
@@ -3540,8 +4248,6 @@ export default function TravelHubPage() {
             ) : null}
             {activeTab === "chats" ? (
               <HubChatsTab
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
                 groups={groups}
                 user={user}
                 mainChatList={mainChatList}
@@ -3639,18 +4345,89 @@ export default function TravelHubPage() {
             <>
             <ChatHeader
               chat={activeChat}
-              userId={user?.id}
               onBack={() => setActiveChat(null)}
               groups={groups}
+              dmPeerIsOnline={
+                activeChat.type === "individual"
+                  ? dmHeaderPeerOnline
+                  : null
+              }
+              onDmHeaderClick={openPeerProfileFromActiveChat}
+              onGroupHeaderClick={() => {
+                if (activeChat.group_id)
+                  setGroupMemberPanelGroupId(activeChat.group_id);
+              }}
+              onMuteChat={() => {
+                if (activeChat) {
+                  updateChatPref(activeChat.id, { muted: true });
+                  showToast("Muted", "success");
+                }
+              }}
+              onSearchInChat={() => {
+                setShowInChatSearch(true);
+              }}
+              onClearChat={() => void clearActiveChatMessages()}
+              onBlockPeer={() => void blockActiveChatPeer()}
+              onLeaveGroup={() => void leaveActiveGroupChat()}
+              onReport={() => showToast("Report submitted", "success")}
+              onDmVoiceCall={() =>
+                showToast("Voice call coming soon", "success")
+              }
+              onDmVideoCall={() =>
+                showToast("Video call coming soon", "success")
+              }
             />
+
+            {showInChatSearch ? (
+              <div
+                className="flex shrink-0 items-center gap-2 border-b px-3 py-2"
+                style={{
+                  borderColor: BORDER_SUB,
+                  background: SURFACE,
+                }}
+              >
+                <Search
+                  className="h-4 w-4 shrink-0 text-slate-500"
+                  strokeWidth={2}
+                />
+                <input
+                  ref={chatSearchInputRef}
+                  value={inChatSearchQuery}
+                  onChange={(e) => setInChatSearchQuery(e.target.value)}
+                  placeholder="Search in chat…"
+                  className="min-w-0 flex-1 border-0 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+                />
+                <button
+                  type="button"
+                  className="shrink-0 text-slate-400 hover:text-white"
+                  onClick={() => {
+                    setShowInChatSearch(false);
+                    setInChatSearchQuery("");
+                  }}
+                  aria-label="Close search"
+                >
+                  ×
+                </button>
+              </div>
+            ) : null}
 
             <div
               className="min-h-0 flex-1 overflow-y-auto px-4 py-3"
               style={{ background: RIGHT_PANEL_BG }}
             >
-              {messages.map((m, i) => {
-                const showSep = shouldShowDateSeparator(messages, i);
+              {filteredChatMessages.map((m, i) => {
+                const showSep = shouldShowDateSeparator(
+                  filteredChatMessages,
+                  i,
+                );
                 const mine = m.sender_id === user?.id;
+                const isDm = activeChat.type === "individual";
+                const readReceipt: "none" | "sent" | "read" =
+                  mine && isDm && !activeChat.isDemo
+                    ? peerLastReadAt > 0 && peerLastReadAt >= m.timestamp
+                      ? "read"
+                      : "sent"
+                    : "none";
                 return (
                   <div key={m.id || i}>
                     {showSep ? (
@@ -3671,6 +4448,13 @@ export default function TravelHubPage() {
                       msg={m}
                       mine={mine}
                       isGroup={activeChat.type === "group"}
+                      readReceipt={readReceipt}
+                      dmPeerAvatarUrl={
+                        !mine && activeChat.type === "individual"
+                          ? chatRowDmAvatarUrl(activeChat)
+                          : null
+                      }
+                      dmPeerDisplayName={chatRowDisplayName(activeChat)}
                     />
                   </div>
                 );
@@ -3724,7 +4508,83 @@ export default function TravelHubPage() {
               </div>
             ) : (
               <>
-                {showEmoji ? (
+                {showSplitPopup ? (
+                  <div
+                    className="fixed inset-0 z-[240] flex items-end justify-center bg-black/50 p-4 pb-24 sm:items-center sm:pb-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Add split"
+                    onClick={() => setShowSplitPopup(false)}
+                  >
+                    <div
+                      className="w-full max-w-sm rounded-2xl border p-4 shadow-2xl"
+                      style={{ borderColor: MSG_BORDER, background: SURFACE }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <p className="text-sm font-bold text-white">Add split</p>
+                      <label className="mt-3 block text-[11px] font-medium uppercase"
+                        style={{ color: TEXT_MUTED }}
+                      >
+                        Amount ({getCurrencyCodeFromUser(user)})
+                      </label>
+                      <input
+                        value={splitAmount}
+                        onChange={(e) => setSplitAmount(e.target.value)}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="mt-1 w-full rounded-lg border-0 px-3 py-2.5 text-sm text-white outline-none"
+                        style={{ background: BG }}
+                        placeholder="0.00"
+                      />
+                      <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-slate-200">
+                        <input
+                          type="checkbox"
+                          checked={splitEqually}
+                          onChange={(e) => setSplitEqually(e.target.checked)}
+                          className="rounded border-slate-500"
+                        />
+                        Split equally
+                      </label>
+                      <div className="mt-4 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          className="rounded-lg px-3 py-2 text-sm"
+                          style={{ color: TEXT_MUTED }}
+                          onClick={() => setShowSplitPopup(false)}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-lg px-4 py-2 text-sm font-semibold text-white"
+                          style={{ background: BUBBLE_SENDER_CORAL }}
+                          onClick={() => {
+                            const n = parseFloat(splitAmount);
+                            if (!Number.isFinite(n) || n <= 0) {
+                              showToast("Enter a valid amount", "error");
+                              return;
+                            }
+                            const sym = getCurrencySymbolFromUser(user);
+                            const code = getCurrencyCodeFromUser(user);
+                            const t = splitEqually
+                              ? `Split ${sym}${n.toFixed(2)} equally`
+                              : `Split ${sym}${n.toFixed(2)}`;
+                            void sendMessage("split", t, {
+                              amount: n,
+                              currency: code,
+                              split_equally: splitEqually,
+                            });
+                          }}
+                        >
+                          Add Split
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {showEmoji && !messageText.trim() ? (
                   <div
                     className="mx-4 mb-2 grid max-h-36 grid-cols-6 gap-1 overflow-y-auto rounded-xl border p-3 shadow-md"
                     style={{
@@ -3739,7 +4599,6 @@ export default function TravelHubPage() {
                         className="rounded p-1 text-2xl hover:bg-white/10"
                         onClick={() => {
                           setMessageText((p) => p + em);
-                          setShowEmoji(false);
                         }}
                       >
                         {em}
@@ -3748,58 +4607,53 @@ export default function TravelHubPage() {
                   </div>
                 ) : null}
 
-                {showAttach ? (
-                  <AttachMenu
-                    trips={trips}
-                    onClose={() => setShowAttach(false)}
-                    onPickImage={(b64) => {
-                      void sendMessage("image", "", { url: b64 });
-                    }}
-                    onLocation={(lat, lon, name) => {
-                      void sendMessage("location", name, {
-                        lat,
-                        lon,
-                        name,
-                      });
-                    }}
-                    onExpense={() =>
-                      showToast("Open Split Activities to add expenses", "success")
-                    }
-                    onTrip={(t) => {
-                      void sendMessage("trip", t.title, {
-                        trip_name: t.title,
-                        destination: t.description ?? "",
-                        dates: `${t.start_date ?? ""} – ${t.end_date ?? ""}`,
-                        trip_id: t.id,
-                      });
-                    }}
-                    onLiveLocation={() =>
-                      showToast("Live location coming soon", "success")
-                    }
-                    onAudio={() => {
-                      setShowAttach(false);
-                      startRecording();
-                    }}
-                  />
-                ) : null}
-
                 <div
-                  className={`flex shrink-0 items-center gap-2 border-t px-3 py-2 ${
+                  className={`flex shrink-0 items-center gap-1.5 border-t px-2 py-2 ${
                     keyboardOpen ? "hidden md:flex" : "flex"
                   }`}
                   style={{ borderColor: BORDER_SUB, background: BG }}
                 >
-                  <button
-                    type="button"
-                    className="text-xl"
-                    onClick={() => setShowEmoji((e) => !e)}
-                  >
-                    😊
-                  </button>
+                  {messageText.trim() ? null : (
+                    <>
+                      <button
+                        type="button"
+                        className="flex shrink-0 items-center gap-0.5 rounded-full px-2.5 py-2 text-xs font-bold text-white"
+                        style={{ background: BUBBLE_SENDER_CORAL }}
+                        aria-label="Split"
+                        onClick={() => {
+                          setShowSplitPopup(true);
+                          setShowEmoji(false);
+                        }}
+                      >
+                        <span className="text-sm" aria-hidden>
+                          💰
+                        </span>
+                        <span className="max-w-[2rem] truncate">
+                          {getCurrencySymbolFromUser(user)}
+                        </span>
+                        <span>Split</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="shrink-0 rounded-full p-2 text-xl leading-none"
+                        aria-label="Emoji"
+                        onClick={() => {
+                          setShowEmoji((e) => !e);
+                          setShowSplitPopup(false);
+                        }}
+                      >
+                        😊
+                      </button>
+                    </>
+                  )}
                   <input
                     value={messageText}
                     onChange={(e) => {
                       setMessageText(e.target.value);
+                      if (e.target.value.trim()) {
+                        setShowEmoji(false);
+                        setShowSplitPopup(false);
+                      }
                       handleTyping();
                     }}
                     onKeyDown={(e) => {
@@ -3808,38 +4662,76 @@ export default function TravelHubPage() {
                         void sendMessage("text", messageText);
                       }
                     }}
-                    placeholder="Type a message"
-                    className="min-w-0 flex-1 rounded-full border-0 px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500"
+                    placeholder="Type a message…"
+                    className="min-w-0 flex-1 rounded-full border-0 px-3 py-2.5 text-sm text-white outline-none placeholder:text-slate-500"
                     style={{ background: SURFACE }}
                   />
+                  {messageText.trim() ? null : (
+                    <>
+                      <button
+                        type="button"
+                        className="shrink-0 rounded-full p-2 text-lg"
+                        aria-label="Camera"
+                        onClick={() => showToast("Camera coming soon", "success")}
+                      >
+                        📷
+                      </button>
+                      <div
+                        className="relative flex shrink-0"
+                        ref={attachMenuRef}
+                      >
+                        <button
+                          type="button"
+                          className="shrink-0 rounded-full p-2 text-lg"
+                          aria-label="Attach"
+                          onClick={() => setAttachMiniOpen((o) => !o)}
+                        >
+                          📎
+                        </button>
+                        {attachMiniOpen ? (
+                          <div
+                            className="absolute bottom-full right-0 z-[200] mb-1 min-w-[10rem] overflow-hidden rounded-lg border py-1 shadow-xl"
+                            style={{
+                              background: SURFACE,
+                              borderColor: MSG_BORDER,
+                            }}
+                          >
+                            {(
+                              [
+                                "Image",
+                                "Document",
+                                "Location",
+                                "Trip",
+                              ] as const
+                            ).map((label) => (
+                              <button
+                                key={label}
+                                type="button"
+                                className="block w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
+                                onClick={() => {
+                                  setAttachMiniOpen(false);
+                                  showToast("Coming soon", "success");
+                                }}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    </>
+                  )}
                   {messageText.trim() ? (
                     <button
                       type="button"
                       onClick={() => void sendMessage("text", messageText)}
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
-                      style={{ background: ACCENT }}
+                      style={{ background: BUBBLE_SENDER_CORAL }}
                       aria-label="Send"
                     >
-                      ➤
+                      <SendHorizontal className="h-5 w-5" strokeWidth={2.5} />
                     </button>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        className="text-xl"
-                        onClick={() => setShowAttach(true)}
-                      >
-                        📎
-                      </button>
-                      <button
-                        type="button"
-                        className="text-xl"
-                        onClick={startRecording}
-                      >
-                        🎤
-                      </button>
-                    </>
-                  )}
+                  ) : null}
                 </div>
               </>
             )}
@@ -3872,7 +4764,10 @@ export default function TravelHubPage() {
               type="button"
               aria-label="Close search"
               className="px-2 py-1 text-lg text-white"
-              onClick={() => setShowSearchOverlay(false)}
+              onClick={() => {
+                setShowSearchOverlay(false);
+                setSearchQuery("");
+              }}
             >
               ←
             </button>
@@ -3880,12 +4775,14 @@ export default function TravelHubPage() {
               className="flex min-w-0 flex-1 items-center gap-2 rounded-full px-3 py-2"
               style={{ background: SURFACE }}
             >
-              <SearchIcon className="shrink-0 text-slate-400" />
+              <span className="shrink-0 text-lg" aria-hidden>
+                🔍
+              </span>
               <input
                 autoFocus
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search people by name, @user, or phone…"
+                placeholder="Search chats, people, and groups…"
                 className="min-w-0 flex-1 border-0 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
               />
               {searchQuery ? (
@@ -3909,203 +4806,477 @@ export default function TravelHubPage() {
                 Type 2+ characters to search
               </p>
             ) : null}
-            {userSearchLoading ? (
-              <div className="flex items-center justify-center py-12">
+            {searchQuery.trim().length >= 2 && searchOverlayLoading ? (
+              <div className="flex flex-1 items-center justify-center py-20">
                 <div
-                  className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-white"
+                  className="h-10 w-10 animate-spin rounded-full border-2 border-slate-600 border-t-white"
                   aria-hidden
                 />
               </div>
             ) : null}
-            {!userSearchLoading &&
-            searchQuery.trim().length >= 2 &&
-            userSearchResults.length === 0 ? (
-              <p
-                className="px-2 py-8 text-center text-sm"
-                style={{ color: TEXT_MUTED }}
-              >
-                No users found
-              </p>
-            ) : null}
-            {!userSearchLoading
-              ? userSearchResults.map((u) => {
-                  const thumb =
-                    u.profile_picture ||
-                    u.avatar_url ||
-                    getDiceBearUrl(u.full_name);
-                  const st = u.friend_status;
-                  return (
-                    <div
-                      key={u.id}
-                      className="mb-1 flex min-h-[56px] items-center gap-3 rounded-lg px-2 py-2"
-                      style={{ background: SURFACE }}
+            {searchQuery.trim().length >= 2 && !searchOverlayLoading ? (
+              <>
+                {overlayChats.length > 0 ? (
+                  <div className="mb-3">
+                    <p
+                      className="px-2 pb-2 text-xs font-bold"
+                      style={{ color: "#E94560" }}
                     >
-                      <button
-                        type="button"
-                        className="shrink-0 border-0 bg-transparent p-0"
-                        aria-label="View profile"
-                        onClick={() => setSearchProfileFor(u)}
-                      >
-                        <img
-                          src={thumb}
-                          alt=""
-                          className="h-11 w-11 rounded-full object-cover"
-                        />
-                      </button>
-                      <button
-                        type="button"
-                        className="min-w-0 flex-1 border-0 bg-transparent p-0 text-left"
-                        onClick={() => setSearchProfileFor(u)}
-                      >
-                        <p className="truncate text-sm font-bold text-white">
-                          {u.full_name}
-                        </p>
-                        {u.username ? (
-                          <p
-                            className="truncate text-xs"
-                            style={{ color: TEXT_MUTED }}
+                      Chats
+                    </p>
+                    {overlayChats.map((c) => {
+                      const gMeta = c.group_id
+                        ? groups.find((g) => g.id === c.group_id)
+                        : undefined;
+                      const n = gMeta?.members?.length ?? 0;
+                      const bg = listAvatarColor(c.name);
+                      const ini =
+                        c.listInitials ?? initialsFromName(c.name);
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => openGroupChatFromSearch(c)}
+                          className="mb-1 flex w-full min-h-[56px] items-center gap-3 rounded-lg px-2 py-2 text-left"
+                          style={{ background: SURFACE }}
+                        >
+                          <span
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+                            style={{ background: bg }}
                           >
-                            @{u.username}
-                          </p>
-                        ) : null}
-                      </button>
-                      <div
-                        className="shrink-0"
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => e.stopPropagation()}
-                        role="presentation"
-                      >
-                        {st === "none" ? (
-                          <button
-                            type="button"
-                            className="rounded-lg px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-                            style={{ background: "#2563EB" }}
-                            disabled={userSearchActionId === u.id}
-                            onClick={() => void connectUserSearchRow(u)}
-                          >
-                            Connect
-                          </button>
-                        ) : null}
-                        {st === "pending_sent" ? (
-                          <button
-                            type="button"
-                            className="cursor-not-allowed rounded-lg bg-slate-600/50 px-3 py-1.5 text-xs font-medium text-slate-400"
-                            disabled
-                          >
-                            Requested
-                          </button>
-                        ) : null}
-                        {st === "pending_received" ? (
-                          <button
-                            type="button"
-                            className="rounded-lg px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-                            style={{ background: "#16A34A" }}
-                            disabled={userSearchActionId === u.id}
-                            onClick={() => void acceptUserSearchRow(u)}
-                          >
-                            Accept
-                          </button>
-                        ) : null}
-                        {st === "accepted" ? (
-                          <div className="relative" data-buddies-root>
-                            <button
-                              type="button"
-                              className="rounded-lg px-3 py-1.5 text-xs font-medium text-white"
-                              style={{ background: "#16A34A" }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setBuddiesMenuOpenId((x) =>
-                                  x === u.id ? null : u.id,
-                                );
-                              }}
+                            {ini}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-bold text-white">
+                              {c.name}
+                            </p>
+                            <p
+                              className="truncate text-xs"
+                              style={{ color: TEXT_MUTED }}
                             >
-                              Buddies ✓
-                            </button>
-                            {buddiesMenuOpenId === u.id ? (
-                              <div
-                                className="absolute right-0 top-full z-[410] mt-1 min-w-[11rem] rounded-lg border py-1 shadow-xl"
-                                style={{
-                                  background: SURFACE,
-                                  borderColor: BORDER_SUB,
-                                }}
-                                data-buddies-root
+                              {n} {n === 1 ? "member" : "members"}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                {overlayContacts.length > 0 ? (
+                  <div className="mb-3">
+                    <p
+                      className="px-2 pb-2 text-xs font-bold"
+                      style={{ color: "#E94560" }}
+                    >
+                      Contacts
+                    </p>
+                    {overlayContacts.map((c) => {
+                      const contactPhoto = profileOrAvatarPublicUrl(c);
+                      return (
+                        <div
+                          key={c.id}
+                          className="mb-1 flex min-h-[56px] items-center gap-3 rounded-lg px-2 py-2"
+                          style={{ background: SURFACE }}
+                        >
+                          {contactPhoto ? (
+                            <img
+                              src={contactPhoto}
+                              alt=""
+                              className="h-10 w-10 shrink-0 rounded-full object-cover"
+                            />
+                          ) : (
+                            <InitialsAvatar name={c.full_name} size={40} />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-bold text-white">
+                              {c.full_name}
+                            </p>
+                            {c.username ? (
+                              <p
+                                className="truncate text-xs"
+                                style={{ color: TEXT_MUTED }}
                               >
-                                <button
-                                  type="button"
-                                  className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    messageUserSearchRow(u);
-                                  }}
-                                >
-                                  💬 Message
-                                </button>
-                                <button
-                                  type="button"
-                                  className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (readBuddyFavourites().includes(u.id)) {
-                                      showToast("Already a favourite", "success");
-                                    } else {
-                                      addBuddyFavourite(u.id);
-                                      showToast("Added to favourites", "success");
-                                    }
-                                    setBuddiesMenuOpenId(null);
-                                  }}
-                                >
-                                  ⭐ Favourite
-                                </button>
-                                <button
-                                  type="button"
-                                  className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setBuddiesMenuOpenId(null);
-                                    showToast("Muted", "success");
-                                  }}
-                                >
-                                  🔕 Mute
-                                </button>
-                                <button
-                                  type="button"
-                                  className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setBuddiesMenuOpenId(null);
-                                    void blockUserSearch(u);
-                                  }}
-                                >
-                                  🚫 Block
-                                </button>
-                              </div>
+                                @{c.username}
+                              </p>
                             ) : null}
                           </div>
-                        ) : null}
-                        {st === "blocked" ? (
-                          <span
-                            className="px-2 text-xs"
-                            style={{ color: TEXT_MUTED }}
+                          <button
+                            type="button"
+                            className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-white"
+                            style={{ background: "#2563EB" }}
+                            onClick={() => {
+                              setShowSearchOverlay(false);
+                              setSearchQuery("");
+                              void openDirectChat({
+                                id: c.id,
+                                full_name: c.full_name,
+                                username: c.username,
+                                avatar_url:
+                                  c.profile_picture ?? c.avatar_url ?? null,
+                              });
+                            }}
                           >
-                            Blocked
+                            Message
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                {overlayPeople.length > 0 ? (
+                  <div className="mb-3">
+                    <p
+                      className="px-2 pb-2 text-xs font-bold"
+                      style={{ color: "#E94560" }}
+                    >
+                      People
+                    </p>
+                    {overlayPeople.map((u) => {
+                      const uPhoto = profileOrAvatarPublicUrl(u);
+                      const st = u.friend_status;
+                      const pl = (u.plan ?? "free").replace(/_/g, " ");
+                      return (
+                        <div
+                          key={u.id}
+                          className="mb-1 flex min-h-[56px] items-center gap-3 rounded-lg px-2 py-2"
+                          style={{ background: SURFACE }}
+                        >
+                          <button
+                            type="button"
+                            className="shrink-0 border-0 bg-transparent p-0"
+                            aria-label="View profile"
+                            onClick={() => setSearchProfileFor(u)}
+                          >
+                            {uPhoto ? (
+                              <img
+                                src={uPhoto}
+                                alt=""
+                                className="h-10 w-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <InitialsAvatar name={u.full_name} size={40} />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-left"
+                            onClick={() => setSearchProfileFor(u)}
+                          >
+                            <p className="truncate text-sm font-bold text-white">
+                              {u.full_name}
+                            </p>
+                            {u.username ? (
+                              <p
+                                className="truncate text-xs"
+                                style={{ color: TEXT_MUTED }}
+                              >
+                                @{u.username}
+                              </p>
+                            ) : null}
+                            <span className="mt-0.5 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white/90"
+                              style={{ background: "#334155" }}
+                            >
+                              {pl}
+                            </span>
+                          </button>
+                          <div
+                            className="shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            role="presentation"
+                          >
+                            {st === "none" ? (
+                              <button
+                                type="button"
+                                className="rounded-lg px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                                style={{ background: "#2563EB" }}
+                                disabled={userSearchActionId === u.id}
+                                onClick={() => void connectUserSearchRow(u)}
+                              >
+                                Connect
+                              </button>
+                            ) : null}
+                            {st === "pending_sent" ? (
+                              <button
+                                type="button"
+                                className="cursor-not-allowed rounded-lg bg-slate-600/50 px-3 py-1.5 text-xs font-medium text-slate-400"
+                                disabled
+                              >
+                                Requested
+                              </button>
+                            ) : null}
+                            {st === "pending_received" ? (
+                              <button
+                                type="button"
+                                className="rounded-lg px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                                style={{ background: "#16A34A" }}
+                                disabled={userSearchActionId === u.id}
+                                onClick={() => void acceptUserSearchRow(u)}
+                              >
+                                Accept
+                              </button>
+                            ) : null}
+                            {st === "accepted" ? (
+                              <div className="relative" data-buddies-root>
+                                <button
+                                  type="button"
+                                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-white"
+                                  style={{ background: "#16A34A" }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setBuddiesMenuOpenId((x) =>
+                                      x === u.id ? null : u.id,
+                                    );
+                                  }}
+                                >
+                                  Buddies ✓
+                                </button>
+                                {buddiesMenuOpenId === u.id ? (
+                                  <div
+                                    className="absolute right-0 top-full z-[410] mt-1 min-w-[11rem] rounded-lg border py-1 shadow-xl"
+                                    style={{
+                                      background: SURFACE,
+                                      borderColor: BORDER_SUB,
+                                    }}
+                                    data-buddies-root
+                                  >
+                                    <button
+                                      type="button"
+                                      className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        messageUserSearchRow(u);
+                                      }}
+                                    >
+                                      💬 Message
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (
+                                          readBuddyFavourites().includes(u.id)
+                                        ) {
+                                          showToast(
+                                            "Already a favourite",
+                                            "success",
+                                          );
+                                        } else {
+                                          addBuddyFavourite(u.id);
+                                          showToast(
+                                            "Added to favourites",
+                                            "success",
+                                          );
+                                        }
+                                        setBuddiesMenuOpenId(null);
+                                      }}
+                                    >
+                                      ⭐ Favourite
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setBuddiesMenuOpenId(null);
+                                        showToast("Muted", "success");
+                                      }}
+                                    >
+                                      🔕 Mute
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setBuddiesMenuOpenId(null);
+                                        void blockUserSearch(u);
+                                      }}
+                                    >
+                                      🚫 Block
+                                    </button>
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
+                            {st === "blocked" ? (
+                              <span
+                                className="px-2 text-xs"
+                                style={{ color: TEXT_MUTED }}
+                              >
+                                Blocked
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                {discoverGroupsList.length > 0 ? (
+                  <div className="mb-3">
+                    <p
+                      className="px-2 pb-2 text-xs font-bold"
+                      style={{ color: "#E94560" }}
+                    >
+                      Groups
+                    </p>
+                    {discoverGroupsList.map((g) => {
+                      const n = g.members?.length ?? 0;
+                      const bg = listAvatarColor(g.name);
+                      const ch = (g.name.trim()[0] ?? "?").toUpperCase();
+                      return (
+                        <div
+                          key={g.id}
+                          className="mb-1 flex min-h-[56px] items-center gap-3 rounded-lg px-2 py-2"
+                          style={{ background: SURFACE }}
+                        >
+                          <span
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+                            style={{ background: bg }}
+                          >
+                            {ch}
                           </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  );
-                })
-              : null}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-bold text-white">
+                              {g.name}
+                            </p>
+                            <p
+                              className="truncate text-xs"
+                              style={{ color: TEXT_MUTED }}
+                            >
+                              {n} {n === 1 ? "member" : "members"}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-white"
+                            style={{ background: ACCENT }}
+                            onClick={() => void joinDiscoverGroup()}
+                          >
+                            Join
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                {searchQuery.trim().length >= 2 &&
+                !searchOverlayLoading &&
+                overlayChats.length === 0 &&
+                overlayContacts.length === 0 &&
+                overlayPeople.length === 0 &&
+                discoverGroupsList.length === 0 ? (
+                  <p
+                    className="px-2 py-12 text-center text-sm"
+                    style={{ color: TEXT_MUTED }}
+                  >
+                    No results found
+                  </p>
+                ) : null}
+              </>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {groupMemberPanelGroupId ? (
+        <div className="fixed inset-0 z-[400] flex justify-end">
+          <button
+            type="button"
+            aria-label="Close group info"
+            className="min-h-0 flex-1 bg-black/55"
+            onClick={() => setGroupMemberPanelGroupId(null)}
+          />
+          <div
+            className="flex h-full max-h-screen w-[min(100%,400px)] shrink-0 flex-col overflow-y-auto border-l shadow-2xl"
+            style={{ background: BG, borderColor: BORDER_SUB }}
+          >
+            {(() => {
+              const g = groups.find((x) => x.id === groupMemberPanelGroupId);
+              if (!g) {
+                return (
+                  <p className="p-4 text-sm text-slate-400">Group not found</p>
+                );
+              }
+              return (
+                <>
+                  <div
+                    className="flex shrink-0 items-center justify-between border-b px-3 py-2"
+                    style={{ borderColor: BORDER_SUB }}
+                  >
+                    <span className="text-sm font-medium text-white">
+                      Group members
+                    </span>
+                    <button
+                      type="button"
+                      className="text-2xl leading-none text-slate-400 hover:text-white"
+                      onClick={() => setGroupMemberPanelGroupId(null)}
+                      aria-label="Close"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <p className="border-b px-4 py-2 text-sm font-bold text-white"
+                    style={{ borderColor: BORDER_SUB }}
+                  >
+                    {g.name}
+                  </p>
+                  <ul className="px-2 py-2">
+                    {(g.members ?? []).map((m) => (
+                      <li
+                        key={m.user_id}
+                        className="mb-1 flex items-center gap-3 rounded-lg px-2 py-2"
+                        style={{ background: SURFACE }}
+                      >
+                        {m.avatar_url?.trim() &&
+                        !isInlineSvgDataUrlToSkipForPhoto(m.avatar_url) &&
+                        !isLegacyDicebearUrl(m.avatar_url) ? (
+                          <img
+                            src={m.avatar_url}
+                            alt=""
+                            className="h-10 w-10 rounded-full object-cover"
+                            width={40}
+                            height={40}
+                          />
+                        ) : (
+                          <InitialsAvatar name={m.full_name} size={40} />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-white">
+                            {m.full_name}
+                          </p>
+                          {m.role ? (
+                            <p
+                              className="text-[11px] capitalize"
+                              style={{ color: TEXT_MUTED }}
+                            >
+                              {m.role}
+                            </p>
+                          ) : null}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              );
+            })()}
           </div>
         </div>
       ) : null}
 
       {searchProfileFor ? (
+        <>
         <div className="fixed inset-0 z-[400] flex justify-end">
           <button
             type="button"
             aria-label="Close profile"
             className="min-h-0 flex-1 bg-black/55"
-            onClick={() => setSearchProfileFor(null)}
+            onClick={() => {
+              setProfileReportDialogOpen(false);
+              setSearchProfileFor(null);
+            }}
           />
           <div
             className="flex h-full max-h-screen w-[min(100%,400px)] shrink-0 flex-col overflow-y-auto border-l shadow-2xl"
@@ -4113,12 +5284,32 @@ export default function TravelHubPage() {
           >
             {(() => {
               const p = searchProfileFor;
-              const thumb =
-                p.profile_picture ||
-                p.avatar_url ||
-                getDiceBearUrl(p.full_name);
               const st = p.friend_status;
               const planLabel = (p.plan ?? "free").replace(/_/g, " ");
+              const photo = profileOrAvatarPublicUrl(p);
+              const inDmWithPeer =
+                activeChat?.type === "individual" &&
+                p.id != null &&
+                (activeChat.members ?? []).includes(p.id);
+              const isPending =
+                st === "pending_sent" || st === "pending_received";
+              const youOweThem = 0;
+              const theyOweYou = 0;
+              const totalNet = theyOweYou - youOweThem;
+              const moneyAllZero =
+                youOweThem + theyOweYou === 0 && totalNet === 0;
+              const fmtTotal = (n: number) => {
+                if (n > 0) return `+$${n.toFixed(2)}`;
+                if (n < 0) return `-$${Math.abs(n).toFixed(2)}`;
+                return "$0.00";
+              };
+              const tabList = [
+                "media",
+                "links",
+                "docs",
+                "trips",
+                "activities",
+              ] as const;
               return (
                 <>
                   <div
@@ -4131,64 +5322,265 @@ export default function TravelHubPage() {
                     <button
                       type="button"
                       className="text-2xl leading-none text-slate-400 hover:text-white"
-                      onClick={() => setSearchProfileFor(null)}
+                      onClick={() => {
+                        setProfileReportDialogOpen(false);
+                        setSearchProfileFor(null);
+                      }}
                       aria-label="Close"
                     >
                       ×
                     </button>
                   </div>
-                  <div className="flex flex-col items-center px-4 pb-4 pt-2">
-                    <img
-                      src={thumb}
-                      alt=""
-                      className="h-32 w-32 rounded-full object-cover"
-                    />
+                  <div className="flex flex-col items-center px-4 pb-2 pt-4">
+                    {photo ? (
+                      <img
+                        src={photo}
+                        alt=""
+                        className="h-20 w-20 rounded-full object-cover"
+                        width={80}
+                        height={80}
+                      />
+                    ) : (
+                      <InitialsAvatar name={p.full_name} size={80} />
+                    )}
                     <h2 className="mt-4 text-center text-lg font-bold text-white">
                       {p.full_name}
                     </h2>
+                    <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5">
+                      {st === "accepted" ? (
+                        <span
+                          className="rounded-full border border-green-500/40 bg-green-500/15 px-2.5 py-0.5 text-xs font-semibold text-green-300"
+                        >
+                          Buddy ✓
+                        </span>
+                      ) : isPending ? (
+                        <span
+                          className="rounded-full border border-sky-500/40 bg-sky-500/15 px-2.5 py-0.5 text-xs font-semibold text-sky-300"
+                        >
+                          Request Pending
+                        </span>
+                      ) : inDmWithPeer && st === "blocked" ? (
+                        <span className="rounded-full border border-red-500/40 bg-red-500/15 px-2.5 py-0.5 text-xs font-semibold text-red-300">
+                          Blocked
+                        </span>
+                      ) : inDmWithPeer && st === "none" ? (
+                        <span
+                          className="rounded-full border border-slate-500/40 bg-slate-600/25 px-2.5 py-0.5 text-xs font-semibold text-slate-300"
+                        >
+                          Private Chat
+                        </span>
+                      ) : null}
+                    </div>
                     {p.username ? (
                       <p
-                        className="mt-1 text-sm"
+                        className="mt-0.5 text-sm"
                         style={{ color: TEXT_MUTED }}
                       >
                         @{p.username}
                       </p>
                     ) : null}
-                    <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                    <p
+                      className="mt-1 flex items-center justify-center gap-1.5 text-center text-sm"
+                      style={{ color: TEXT_MUTED }}
+                    >
+                      {profilePanelPeerOnline === true ? (
+                        <span
+                          className="inline-block h-2 w-2 shrink-0 rounded-full"
+                          style={{ background: ONLINE }}
+                          aria-hidden
+                        />
+                      ) : (
+                        <span
+                          className="inline-block h-2 w-2 shrink-0 rounded-full bg-slate-500"
+                          aria-hidden
+                        />
+                      )}
+                      {profilePanelPeerOnline === true
+                        ? "Active now"
+                        : "Last seen recently"}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
                       <span
-                        className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white"
+                        className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
                         style={{ background: SURFACE }}
                       >
                         {planLabel}
                       </span>
                       {p.is_verified ? (
-                        <span className="rounded-full bg-sky-600/80 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                        <span className="rounded-full bg-sky-600/80 px-2.5 py-0.5 text-[10px] font-semibold text-white">
                           Verified
                         </span>
                       ) : null}
                     </div>
                   </div>
-                  <div className="flex gap-2 px-4 pb-2">
-                    <button
-                      type="button"
-                      className="flex-1 rounded-lg py-2 text-xs font-medium text-white"
-                      style={{ background: SURFACE }}
-                      onClick={() =>
-                        showToast("Voice call coming soon", "success")
-                      }
+                  <div
+                    className="flex border-b px-1 pb-3 pt-1"
+                    style={{ borderColor: BORDER_SUB }}
+                  >
+                    {(
+                      [
+                        [Phone, "Phone", () => showToast("Calls coming soon", "success")],
+                        [
+                          Video,
+                          "Video",
+                          () => showToast("Video call coming soon", "success"),
+                        ],
+                        [
+                          Search,
+                          "Search",
+                          () => {
+                            setProfileReportDialogOpen(false);
+                            setSearchProfileFor(null);
+                            if (inDmWithPeer) {
+                              setShowInChatSearch(true);
+                            } else {
+                              setShowSearchOverlay(true);
+                            }
+                          },
+                        ],
+                        [
+                          Ban,
+                          "Block",
+                          () => {
+                            if (st === "blocked") {
+                              showToast("Already blocked", "success");
+                              return;
+                            }
+                            void blockUserSearch(p);
+                          },
+                        ],
+                      ] as const
+                    ).map(([Icon, label, onClick], i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={onClick}
+                        disabled={st === "blocked" && label === "Block"}
+                        className="flex min-w-0 flex-1 flex-col items-center gap-1.5 p-1 text-white disabled:opacity-40"
+                      >
+                        <Icon className="h-6 w-6 text-white" strokeWidth={2} />
+                        <span className="text-center text-[10px] text-white/90">
+                          {label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <div
+                    className="mx-3 mt-2 rounded-xl border p-3"
+                    style={{ borderColor: BORDER_SUB, background: SURFACE }}
+                  >
+                    <p
+                      className="text-center text-[11px] font-semibold uppercase tracking-wide"
+                      style={{ color: TEXT_MUTED }}
                     >
-                      Voice Call
-                    </button>
-                    <button
-                      type="button"
-                      className="flex-1 rounded-lg py-2 text-xs font-medium text-white"
-                      style={{ background: SURFACE }}
-                      onClick={() =>
-                        showToast("Video call coming soon", "success")
-                      }
+                      Total balance
+                    </p>
+                    <p
+                      className="mt-1 text-center text-2xl font-bold tabular-nums"
+                      style={{
+                        color:
+                          totalNet > 0
+                            ? MONEY_TOTAL_POS
+                            : totalNet < 0
+                              ? MONEY_TOTAL_NEG
+                              : MONEY_TOTAL_ZERO,
+                      }}
                     >
-                      Video Call
-                    </button>
+                      {fmtTotal(totalNet)}
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-white/10 pt-3 text-center text-xs">
+                      <div>
+                        <p
+                          className="mb-1 flex items-center justify-center gap-1"
+                          style={{ color: MONEY_LINE_GREEN }}
+                        >
+                          <span aria-hidden>💚</span> You receive
+                        </p>
+                        <p
+                          className="text-base font-bold tabular-nums"
+                          style={{
+                            color:
+                              theyOweYou > 0
+                                ? MONEY_LINE_GREEN
+                                : MONEY_TOTAL_ZERO,
+                          }}
+                        >
+                          ${theyOweYou.toFixed(2)}
+                        </p>
+                      </div>
+                      <div>
+                        <p
+                          className="mb-1 flex items-center justify-center gap-1"
+                          style={{ color: MONEY_LINE_RED }}
+                        >
+                          <span aria-hidden>❤️</span> You owe
+                        </p>
+                        <p
+                          className="text-base font-bold tabular-nums"
+                          style={{
+                            color:
+                              youOweThem > 0
+                                ? MONEY_LINE_RED
+                                : MONEY_TOTAL_ZERO,
+                          }}
+                        >
+                          ${youOweThem.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                    <p
+                      className="mt-3 text-[11px] leading-relaxed"
+                      style={{ color: TEXT_MUTED }}
+                    >
+                      {moneyAllZero
+                        ? "No shared group expenses yet"
+                        : "Split activity totals are summarized here when you share a group."}
+                    </p>
+                  </div>
+                  <div
+                    className="mt-1 flex shrink-0 flex-wrap border-b"
+                    style={{ borderColor: BORDER_SUB }}
+                  >
+                    {tabList.map((tab) => (
+                      <button
+                        key={tab}
+                        type="button"
+                        onClick={() => setSearchProfileSubTab(tab)}
+                        className="min-w-0 flex-1 px-1.5 py-2.5 text-center text-[10px] font-semibold uppercase tracking-wide"
+                        style={{
+                          color:
+                            searchProfileSubTab === tab
+                              ? BUBBLE_SENDER_CORAL
+                              : TEXT_MUTED,
+                          borderBottom:
+                            searchProfileSubTab === tab
+                              ? `2px solid ${BUBBLE_SENDER_CORAL}`
+                              : "2px solid transparent",
+                        }}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
+                  <div
+                    className="min-h-[88px] px-4 py-3 text-sm"
+                    style={{ color: TEXT_MUTED }}
+                  >
+                    {searchProfileSubTab === "media" ? (
+                      <p>Nothing in Media</p>
+                    ) : null}
+                    {searchProfileSubTab === "links" ? (
+                      <p>Nothing in Links</p>
+                    ) : null}
+                    {searchProfileSubTab === "docs" ? (
+                      <p>Nothing in Docs</p>
+                    ) : null}
+                    {searchProfileSubTab === "trips" ? (
+                      <p>Nothing in Trips</p>
+                    ) : null}
+                    {searchProfileSubTab === "activities" ? (
+                      <p>Nothing in Activities</p>
+                    ) : null}
                   </div>
                   <div
                     className="border-t px-4 py-3"
@@ -4226,75 +5618,6 @@ export default function TravelHubPage() {
                           Accept
                         </button>
                       ) : null}
-                      {st === "accepted" ? (
-                        <div className="relative" data-buddies-root>
-                          <button
-                            type="button"
-                            className="rounded-lg px-4 py-2 text-sm font-medium text-white"
-                            style={{ background: "#16A34A" }}
-                            onClick={() =>
-                              setBuddiesMenuOpenId((x) =>
-                                x === p.id ? null : p.id,
-                              )
-                            }
-                          >
-                            Buddies ✓
-                          </button>
-                          {buddiesMenuOpenId === p.id ? (
-                            <div
-                              className="absolute left-1/2 top-full z-[410] mt-1 min-w-[11rem] -translate-x-1/2 rounded-lg border py-1 shadow-xl"
-                              style={{
-                                background: SURFACE,
-                                borderColor: BORDER_SUB,
-                              }}
-                              data-buddies-root
-                            >
-                              <button
-                                type="button"
-                                className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
-                                onClick={() => messageUserSearchRow(p)}
-                              >
-                                💬 Message
-                              </button>
-                              <button
-                                type="button"
-                                className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
-                                onClick={() => {
-                                  if (readBuddyFavourites().includes(p.id)) {
-                                    showToast("Already a favourite", "success");
-                                  } else {
-                                    addBuddyFavourite(p.id);
-                                    showToast("Added to favourites", "success");
-                                  }
-                                  setBuddiesMenuOpenId(null);
-                                }}
-                              >
-                                ⭐ Favourite
-                              </button>
-                              <button
-                                type="button"
-                                className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
-                                onClick={() => {
-                                  setBuddiesMenuOpenId(null);
-                                  showToast("Muted", "success");
-                                }}
-                              >
-                                🔕 Mute
-                              </button>
-                              <button
-                                type="button"
-                                className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
-                                onClick={() => {
-                                  setBuddiesMenuOpenId(null);
-                                  void blockUserSearch(p);
-                                }}
-                              >
-                                🚫 Block
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : null}
                       {st === "blocked" ? (
                         <span
                           className="text-sm"
@@ -4306,40 +5629,74 @@ export default function TravelHubPage() {
                     </div>
                   </div>
                   <div
-                    className="mt-auto flex flex-col gap-2 border-t px-4 py-4"
+                    className="mt-auto border-t px-4 py-3"
                     style={{ borderColor: BORDER_SUB }}
                   >
-                    <button
-                      type="button"
-                      className="w-full rounded-lg border py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
-                      style={{
-                        borderColor: BORDER_SUB,
-                        background: "transparent",
-                      }}
-                      disabled={st === "blocked"}
-                      onClick={() => void blockUserSearch(p)}
-                    >
-                      Block
-                    </button>
-                    <button
-                      type="button"
-                      className="w-full rounded-lg border py-2.5 text-sm font-medium text-white"
-                      style={{
-                        borderColor: BORDER_SUB,
-                        background: "transparent",
-                      }}
-                      onClick={() =>
-                        showToast("Report: coming soon", "success")
-                      }
-                    >
-                      Report
-                    </button>
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={() => setProfileReportDialogOpen(true)}
+                        className="text-center text-xs font-medium underline-offset-2 hover:underline"
+                        style={{
+                          color: "#E8385A",
+                          background: "none",
+                          border: "none",
+                        }}
+                      >
+                        Report
+                      </button>
+                    </div>
                   </div>
                 </>
               );
             })()}
           </div>
         </div>
+        {profileReportDialogOpen ? (
+          <div
+            className="fixed inset-0 z-[500] flex items-center justify-center bg-black/60 px-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-report-title"
+          >
+            <div
+              className="w-full max-w-sm rounded-2xl border p-4 shadow-2xl"
+              style={{ background: SURFACE, borderColor: BORDER_SUB }}
+            >
+              <p
+                id="profile-report-title"
+                className="text-center text-sm text-white"
+              >
+                Are you sure you want to report{" "}
+                <span className="font-semibold">
+                  {searchProfileFor?.full_name ?? "this person"}
+                </span>
+                ?
+              </p>
+              <div className="mt-4 flex justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setProfileReportDialogOpen(false)}
+                  className="rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileReportDialogOpen(false);
+                    showToast("Report submitted. We'll review this.", "success");
+                  }}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-white"
+                  style={{ background: "#E8385A" }}
+                >
+                  Report
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+        </>
       ) : null}
 
       {showMenuDrawer ? (
@@ -4510,16 +5867,60 @@ function ChatHeader({
   chat,
   onBack,
   groups,
+  dmPeerIsOnline,
+  onDmHeaderClick,
+  onGroupHeaderClick,
+  onMuteChat,
+  onSearchInChat,
+  onClearChat,
+  onBlockPeer,
+  onLeaveGroup,
+  onReport,
+  onDmVoiceCall,
+  onDmVideoCall,
 }: {
   chat: ChatInfo;
-  userId?: string;
   onBack: () => void;
   groups: GroupOut[];
+  /** DM only: peer `presence/{id}/online` (null = unknown) */
+  dmPeerIsOnline: boolean | null;
+  onDmHeaderClick: () => void;
+  onGroupHeaderClick: () => void;
+  onMuteChat: () => void;
+  onSearchInChat: () => void;
+  onClearChat: () => void;
+  onBlockPeer: () => void;
+  onLeaveGroup: () => void;
+  onReport: () => void;
+  onDmVoiceCall: () => void;
+  onDmVideoCall: () => void;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuWrapRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (e: MouseEvent) => {
+      const el = menuWrapRef.current;
+      if (el && !el.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [menuOpen]);
+
   const g = chat.group_id
     ? groups.find((x) => x.id === chat.group_id)
     : undefined;
   const memberCount = g?.members?.length ?? chat.members?.length ?? 0;
+  const headerTitle = chatRowDisplayName(chat);
+  const dmHeaderAvatar =
+    chat.type === "individual" ? chatRowDmAvatarUrl(chat) : null;
+
+  const headerMainClick = () => {
+    if (chat.type === "group") onGroupHeaderClick();
+    else onDmHeaderClick();
+  };
+
   return (
     <header
       className="flex shrink-0 items-center gap-3 border-b px-3 py-3 md:px-4"
@@ -4533,45 +5934,211 @@ function ChatHeader({
       >
         ←
       </button>
-      {chat.type === "group" ? (
-        <span
-          className="flex h-12 w-12 items-center justify-center rounded-full text-[15px] font-bold text-white"
-          style={{
-            background: g
-              ? listAvatarColor(g.name)
-              : listAvatarColor(chat.name),
-          }}
+      <button
+        type="button"
+        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+        onClick={headerMainClick}
+      >
+        {chat.type === "group" ? (
+          <InitialsAvatar name={headerTitle} size={40} />
+        ) : dmHeaderAvatar ? (
+          <img
+            src={dmHeaderAvatar}
+            alt=""
+            className="h-10 w-10 shrink-0 rounded-full object-cover"
+            width={40}
+            height={40}
+          />
+        ) : (
+          <InitialsAvatar name={headerTitle} size={40} />
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[15px] font-medium text-white">
+            {headerTitle}
+          </p>
+          <p
+            className="flex min-w-0 items-center gap-1.5 text-[12px]"
+            style={{ color: TEXT_MUTED }}
+          >
+            {chat.type === "group" ? (
+              `${memberCount} members`
+            ) : (
+              <>
+                {dmPeerIsOnline === true ? (
+                  <span
+                    className="inline-block h-2 w-2 shrink-0 rounded-full"
+                    style={{ background: ONLINE }}
+                    aria-hidden
+                  />
+                ) : (
+                  <span
+                    className="inline-block h-2 w-2 shrink-0 rounded-full bg-slate-500"
+                    aria-hidden
+                  />
+                )}
+                {dmPeerIsOnline === true
+                  ? "Active now"
+                  : "Last seen recently"}
+              </>
+            )}
+          </p>
+        </div>
+      </button>
+      {chat.type === "individual" ? (
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            type="button"
+            className="rounded p-1.5 text-white hover:bg-white/10"
+            aria-label="Voice call"
+            onClick={onDmVoiceCall}
+          >
+            <Phone className="h-5 w-5" strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            className="rounded p-1.5 text-white hover:bg-white/10"
+            aria-label="Video call"
+            onClick={onDmVideoCall}
+          >
+            <Video className="h-5 w-5" strokeWidth={2} />
+          </button>
+        </div>
+      ) : null}
+      <div className="relative flex shrink-0 items-center" ref={menuWrapRef}>
+        <button
+          type="button"
+          className="rounded p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
+          aria-label="Chat menu"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((o) => !o)}
         >
-          {initialsFromName(chat.name)}
-        </span>
-      ) : (
-        <img
-          src={getDiceBearUrl(chat.name)}
-          alt=""
-          className="h-12 w-12 rounded-full"
-          width={48}
-          height={48}
-        />
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-medium text-white">
-          {chat.name}
-        </p>
-        <p className="text-[12px]" style={{ color: TEXT_MUTED }}>
-          {chat.type === "group"
-            ? `${memberCount} members`
-            : "Active now"}
-        </p>
-      </div>
-      <div className="flex gap-2 text-lg" style={{ color: TEXT_MUTED }}>
-        <span className="opacity-50">🔍</span>
-        <span className="opacity-50" title="Coming soon">
-          📞
-        </span>
-        <span className="opacity-50" title="Coming soon">
-          📹
-        </span>
-        <span>⋮</span>
+          <MoreVertical className="h-6 w-6" strokeWidth={2} />
+        </button>
+        {menuOpen ? (
+          <div
+            className="absolute right-0 top-full z-[120] mt-1 min-w-[14rem] overflow-hidden rounded-lg border py-1 shadow-xl"
+            style={{
+              background: SURFACE,
+              borderColor: BORDER_SUB,
+            }}
+          >
+            {chat.type === "individual" ? (
+              <>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white hover:bg-white/10"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onDmHeaderClick();
+                  }}
+                >
+                  <User className="h-4 w-4 shrink-0 opacity-80" />
+                  View Profile
+                </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white hover:bg-white/10"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onMuteChat();
+                  }}
+                >
+                  <BellOff className="h-4 w-4 shrink-0 opacity-80" />
+                  Mute notifications
+                </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white hover:bg-white/10"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onSearchInChat();
+                  }}
+                >
+                  <Search className="h-4 w-4 shrink-0 opacity-80" />
+                  Search in chat
+                </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white hover:bg-white/10"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    void onClearChat();
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 shrink-0 opacity-80" />
+                  Clear chat
+                </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-red-300 hover:bg-white/10"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    void onBlockPeer();
+                  }}
+                >
+                  <Ban className="h-4 w-4 shrink-0 opacity-80" />
+                  Block user
+                </button>
+                <button
+                  type="button"
+                  className="w-full px-3 py-2.5 text-left text-sm font-medium text-red-500 hover:bg-white/10"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onReport();
+                  }}
+                >
+                  Report
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white hover:bg-white/10"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onGroupHeaderClick();
+                  }}
+                >
+                  <Users className="h-4 w-4 shrink-0 opacity-80" />
+                  View Members
+                </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white hover:bg-white/10"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onMuteChat();
+                  }}
+                >
+                  <BellOff className="h-4 w-4 shrink-0 opacity-80" />
+                  Mute
+                </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-amber-200 hover:bg-white/10"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    void onLeaveGroup();
+                  }}
+                >
+                  <LogOut className="h-4 w-4 shrink-0 opacity-80" />
+                  Leave group
+                </button>
+                <button
+                  type="button"
+                  className="w-full px-3 py-2.5 text-left text-sm font-medium text-red-500 hover:bg-white/10"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onReport();
+                  }}
+                >
+                  Report
+                </button>
+              </>
+            )}
+          </div>
+        ) : null}
       </div>
     </header>
   );
@@ -4581,32 +6148,66 @@ function MessageBubble({
   msg,
   mine,
   isGroup,
+  readReceipt,
+  dmPeerAvatarUrl,
+  dmPeerDisplayName,
 }: {
   msg: ChatMessage;
   mine: boolean;
   isGroup: boolean;
+  readReceipt: "none" | "sent" | "read";
+  /** Other user in 1:1 (for avatar when !mine) */
+  dmPeerAvatarUrl: string | null;
+  dmPeerDisplayName: string;
 }) {
   const meta = msg.metadata as Record<string, unknown> | undefined;
+
+  const otherPhotoUrl = (() => {
+    if (isGroup) {
+      const sa = msg.sender_avatar?.trim();
+      if (
+        sa &&
+        !isInlineSvgDataUrlToSkipForPhoto(sa) &&
+        !isLegacyDicebearUrl(sa)
+      ) {
+        return sa;
+      }
+      return null;
+    }
+    const dm = dmPeerAvatarUrl?.trim();
+    if (dm && !isInlineSvgDataUrlToSkipForPhoto(dm) && !isLegacyDicebearUrl(dm)) {
+      return dm;
+    }
+    return null;
+  })();
+  const otherInitialsName = isGroup
+    ? msg.sender_name || "?"
+    : dmPeerDisplayName || "?";
+
   return (
     <div
-      className={`mb-2 flex w-full gap-2 ${mine ? "justify-end" : "justify-start"}`}
+      className={`mb-2 flex w-full items-end gap-2 ${mine ? "justify-end" : "justify-start"}`}
     >
       {!mine ? (
-        <img
-          src={msg.sender_avatar || getDiceBearUrl(msg.sender_name || "?")}
-          alt=""
-          className="mt-auto h-7 w-7 shrink-0 rounded-full"
-          width={28}
-          height={28}
-        />
-      ) : (
-        <span className="w-7 shrink-0" />
-      )}
-      <div className="max-w-[70%]">
+        otherPhotoUrl ? (
+          <img
+            src={otherPhotoUrl}
+            alt=""
+            className="h-8 w-8 shrink-0 rounded-full object-cover"
+            width={32}
+            height={32}
+          />
+        ) : (
+          <InitialsAvatar name={otherInitialsName} size={32} />
+        )
+      ) : null}
+      <div
+        className={`flex min-w-0 max-w-[70%] flex-col ${mine ? "items-end" : "items-start"}`}
+      >
         {isGroup && !mine ? (
           <p
             className="mb-0.5 text-[11px] font-semibold"
-            style={{ color: TEXT_MUTED }}
+            style={{ color: BUBBLE_SENDER_CORAL }}
           >
             {msg.sender_name}
           </p>
@@ -4623,6 +6224,63 @@ function MessageBubble({
             border: mine ? "none" : `1px solid ${MSG_BORDER}`,
           }}
         >
+          {msg.type === "split" ? (
+            <div
+              className="min-w-[200px] max-w-[min(100%,280px)] rounded-xl border-2 px-3 py-3"
+              style={{
+                borderColor: BUBBLE_SENDER_CORAL,
+                background: "rgba(255,127,80,0.1)",
+              }}
+            >
+              <div
+                className="mb-1.5 flex items-center justify-between gap-2"
+                style={{ color: BUBBLE_SENDER_CORAL }}
+              >
+                <span className="text-lg" aria-hidden>
+                  💰
+                </span>
+                <div className="min-w-0 text-right">
+                  <span className="text-base font-bold tabular-nums">
+                    {(() => {
+                      const code = String(
+                        (meta as { currency?: string } | undefined)
+                          ?.currency ?? "USD",
+                      );
+                      const sym = CURRENCY_SYMBOLS[code] ?? "$";
+                      const raw = (meta as { amount?: number } | undefined)
+                        ?.amount;
+                      const n =
+                        typeof raw === "number" ? raw : parseFloat(String(raw));
+                      if (!Number.isFinite(n)) return "—";
+                      return `${sym}${n.toFixed(2)}`;
+                    })()}
+                  </span>{" "}
+                  <span
+                    className="text-[10px] font-medium opacity-80"
+                    style={{ color: TEXT_MUTED }}
+                  >
+                    {String(
+                      (meta as { currency?: string } | undefined)?.currency ??
+                        "USD",
+                    )}
+                  </span>
+                </div>
+              </div>
+              {msg.text ? (
+                <p className="text-sm leading-snug text-slate-100">
+                  {msg.text}
+                </p>
+              ) : null}
+              {meta && (meta as { split_equally?: boolean }).split_equally ? (
+                <p
+                  className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide"
+                  style={{ color: BUBBLE_SENDER_CORAL }}
+                >
+                  Split equally
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           {msg.type === "text" ? (
             <p className="text-sm text-slate-100">{msg.text}</p>
           ) : null}
@@ -4697,14 +6355,35 @@ function MessageBubble({
             </div>
           ) : null}
           <div
-            className="mt-1 flex justify-end gap-1 text-[10px]"
+            className={`mt-1 flex items-center gap-1 text-[10px] ${mine ? "justify-end" : "justify-start"}`}
             style={{ color: TEXT_MUTED }}
           >
-            {new Date(msg.timestamp).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-            {mine ? <span>✓✓</span> : null}
+            <span>
+              {new Date(msg.timestamp).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+            {mine && readReceipt !== "none" ? (
+              <span
+                className="inline-flex shrink-0 items-center"
+                title={readReceipt === "read" ? "Read" : "Sent"}
+                aria-hidden
+              >
+                {readReceipt === "read" ? (
+                  <CheckCheck
+                    className="h-3.5 w-3.5"
+                    style={{ color: "#38BDF8" }}
+                    strokeWidth={2.5}
+                  />
+                ) : (
+                  <Check
+                    className="h-3.5 w-3.5 text-slate-500"
+                    strokeWidth={2.5}
+                  />
+                )}
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
@@ -4925,24 +6604,37 @@ function NewChatOverlay({
         </button>
       </div>
       <ul className="flex-1 overflow-y-auto px-4">
-        {filtered.map((c) => (
-          <li key={c.id}>
-            <button
-              type="button"
-              onClick={() => onPick(c)}
-              className="flex w-full items-center gap-3 py-3 text-left"
-            >
-              <img
-                src={getDiceBearUrl(c.full_name)}
-                alt=""
-                className="h-10 w-10 rounded-full"
-                width={40}
-                height={40}
-              />
-              <span className="font-semibold text-white">{c.full_name}</span>
-            </button>
-          </li>
-        ))}
+            {filtered.map((c) => {
+          const cPhoto =
+            c.avatar_url &&
+            c.avatar_url.trim() &&
+            !isInlineSvgDataUrlToSkipForPhoto(c.avatar_url) &&
+            !isLegacyDicebearUrl(c.avatar_url)
+              ? c.avatar_url
+              : null;
+          return (
+            <li key={c.id}>
+              <button
+                type="button"
+                onClick={() => onPick(c)}
+                className="flex w-full items-center gap-3 py-3 text-left"
+              >
+                {cPhoto ? (
+                  <img
+                    src={cPhoto}
+                    alt=""
+                    className="h-10 w-10 rounded-full object-cover"
+                    width={40}
+                    height={40}
+                  />
+                ) : (
+                  <InitialsAvatar name={c.full_name} size={40} />
+                )}
+                <span className="font-semibold text-white">{c.full_name}</span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

@@ -44,6 +44,16 @@ class UserSearchOut(BaseModel):
     friend_status: FriendStatus
 
 
+class UserPublicProfileOut(BaseModel):
+    """Minimal profile for clients (e.g. DM display)."""
+
+    id: UUID
+    full_name: str
+    username: str | None
+    avatar_url: str | None
+    profile_picture: str | None
+
+
 class FriendRequestCreate(BaseModel):
     receiver_id: UUID
 

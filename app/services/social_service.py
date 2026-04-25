@@ -13,7 +13,12 @@ from app.models.blocked_user import BlockedUser
 from app.models.friend_request import FriendRequest
 from app.models.subscription import Subscription
 from app.models.user import User
-from app.schemas.social import FriendRequestOut, FriendStatus, UserSearchOut
+from app.schemas.social import (
+    FriendRequestOut,
+    FriendStatus,
+    UserPublicProfileOut,
+    UserSearchOut,
+)
 from app.services.notification_service import NotificationService
 from app.utils.exceptions import AppException
 
@@ -245,6 +250,40 @@ def list_received_friend_requests(db: Session, current_user: User) -> list[Frien
     return [FriendRequestOut.model_validate(r) for r in rows]
 
 
+def list_sent_friend_requests(db: Session, current_user: User) -> list[FriendRequestOut]:
+    rows = (
+        db.execute(
+            select(FriendRequest)
+            .where(
+                FriendRequest.sender_id == current_user.id,
+                FriendRequest.status == "pending",
+            )
+            .order_by(FriendRequest.created_at.desc()),
+        )
+        .scalars()
+        .all()
+    )
+    return [FriendRequestOut.model_validate(r) for r in rows]
+
+
+def cancel_sent_friend_request(
+    db: Session,
+    current_user: User,
+    request_id: uuid.UUID,
+) -> None:
+    row = db.execute(
+        select(FriendRequest).where(FriendRequest.id == request_id),
+    ).scalar_one_or_none()
+    if not row:
+        AppException.not_found("Friend request not found")
+    if row.sender_id != current_user.id:
+        AppException.forbidden("Only the sender can cancel this request")
+    if row.status != "pending":
+        AppException.conflict("This request is no longer pending")
+    db.delete(row)
+    db.commit()
+
+
 def accept_friend_request(
     db: Session,
     current_user: User,
@@ -399,3 +438,50 @@ def list_connections(db: Session, current_user: User) -> list[UserSearchOut]:
         )
     out.sort(key=lambda x: x.full_name.lower())
     return out
+
+
+def get_user_public_profile(
+    db: Session,
+    current_user: User,
+    user_id: uuid.UUID,
+) -> UserPublicProfileOut:
+    """
+    Return display fields for another user (or self). Hidden if blocked.
+    """
+    if user_id == current_user.id:
+        u = current_user
+    else:
+        u = db.execute(
+            select(User).where(
+                User.id == user_id,
+                User.is_active.is_(True),
+            ),
+        ).scalar_one_or_none()
+    if u is None:
+        AppException.not_found("User not found")
+
+    if user_id != current_user.id:
+        blocked = db.execute(
+            select(BlockedUser).where(
+                or_(
+                    and_(
+                        BlockedUser.blocker_id == current_user.id,
+                        BlockedUser.blocked_id == user_id,
+                    ),
+                    and_(
+                        BlockedUser.blocker_id == user_id,
+                        BlockedUser.blocked_id == current_user.id,
+                    ),
+                ),
+            ),
+        ).scalar_one_or_none()
+        if blocked:
+            AppException.not_found("User not found")
+
+    return UserPublicProfileOut(
+        id=u.id,
+        full_name=u.full_name,
+        username=u.username,
+        avatar_url=u.avatar_url,
+        profile_picture=u.profile_picture,
+    )
