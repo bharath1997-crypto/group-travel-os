@@ -1,8 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
+
+const GT_TRAVELHUB_OPEN_PROFILE = "gt_travelhub_open_profile";
 
 const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
 
@@ -135,6 +138,7 @@ function EmptyAirplane() {
 }
 
 export default function NotificationsPage() {
+  const router = useRouter();
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -214,6 +218,54 @@ export default function NotificationsPage() {
   }
 
   async function onCardClick(n: NotificationRow) {
+    const t = (n.type || "").toLowerCase();
+    if (
+      t === "system" &&
+      n.title === "New connection request" &&
+      n.data &&
+      typeof n.data === "object"
+    ) {
+      const d = n.data as Record<string, unknown>;
+      const senderId = typeof d.sender_id === "string" ? d.sender_id : null;
+      if (senderId) {
+        const m = n.body.match(/^(.+?)\s+wants to connect with you\.?/i) ?? n.body.match(/^(.+?)\s+wants to connect/i);
+        const fullName = m?.[1]?.trim() ?? "User";
+        try {
+          sessionStorage.setItem(
+            GT_TRAVELHUB_OPEN_PROFILE,
+            JSON.stringify({
+              id: senderId,
+              full_name: fullName,
+              username: null,
+              profile_picture: null,
+              avatar_url: null,
+              is_verified: false,
+              plan: "free",
+              friend_status: "pending_received" as const,
+            }),
+          );
+        } catch {
+          /* ignore */
+        }
+        if (!n.is_read) {
+          try {
+            await apiFetch<NotificationRow>(`/notifications/${n.id}/read`, {
+              method: "PATCH",
+            });
+            setItems((prev) =>
+              prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)),
+            );
+            await fetchAndEmitUnread();
+          } catch (e) {
+            setError(
+              e instanceof Error ? e.message : "Could not mark as read",
+            );
+          }
+        }
+        router.push("/travel-hub");
+        return;
+      }
+    }
     if (n.is_read) return;
     try {
       await apiFetch<NotificationRow>(`/notifications/${n.id}/read`, {

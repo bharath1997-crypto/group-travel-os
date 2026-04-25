@@ -20,6 +20,7 @@ import {
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -45,6 +46,8 @@ const RIGHT_PANEL_BG = "#0A0F1E";
 
 const CHAT_PREFS_KEY = "travelhub_chat_prefs_v1";
 const DELETED_CHATS_KEY = "travelhub_deleted_chats_v1";
+const GT_BUDDY_FAVOURITES = "gt_buddy_favourites";
+const GT_TRAVELHUB_OPEN_PROFILE = "gt_travelhub_open_profile";
 
 const AVATAR_PALETTE = [
   "#DC2626",
@@ -172,6 +175,24 @@ type ContactPerson = {
   avatar_url?: string | null;
 };
 
+type UserSearchFriendStatus =
+  | "none"
+  | "pending_sent"
+  | "pending_received"
+  | "accepted"
+  | "blocked";
+
+type UserSearchResultRow = {
+  id: string;
+  full_name: string;
+  username: string | null;
+  profile_picture: string | null;
+  avatar_url: string | null;
+  friend_status: UserSearchFriendStatus;
+  is_verified?: boolean;
+  plan?: string;
+};
+
 type ChatPrefs = {
   muted?: boolean;
   pinned?: boolean;
@@ -235,6 +256,25 @@ function formatListTimestamp(ts: number): string {
 
 function getDiceBearUrl(seed: string): string {
   return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;
+}
+
+function readBuddyFavourites(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const v = localStorage.getItem(GT_BUDDY_FAVOURITES);
+    const p = v ? (JSON.parse(v) as unknown) : [];
+    return Array.isArray(p) && p.every((x) => typeof x === "string")
+      ? (p as string[])
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function addBuddyFavourite(id: string) {
+  const s = new Set(readBuddyFavourites());
+  s.add(id);
+  localStorage.setItem(GT_BUDDY_FAVOURITES, JSON.stringify([...s]));
 }
 
 function hashString(s: string): number {
@@ -2446,6 +2486,26 @@ export default function TravelHubPage() {
     null,
   );
   const streamRef = useRef<MediaStream | null>(null);
+  const userSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const userSearchSeq = useRef(0);
+  const [userSearchResults, setUserSearchResults] = useState<
+    UserSearchResultRow[]
+  >([]);
+  const [userSearchLoading, setUserSearchLoading] = useState(false);
+  const [incomingFrIdBySender, setIncomingFrIdBySender] = useState<
+    Record<string, string>
+  >({});
+  const [userSearchActionId, setUserSearchActionId] = useState<string | null>(
+    null,
+  );
+  const [searchProfileFor, setSearchProfileFor] =
+    useState<UserSearchResultRow | null>(null);
+  const [buddiesMenuOpenId, setBuddiesMenuOpenId] = useState<string | null>(
+    null,
+  );
+  const showSearchOverlayPrev = useRef(false);
 
   const showToast = useCallback(
     (message: string, type: "success" | "error" = "success") => {
@@ -2459,6 +2519,58 @@ export default function TravelHubPage() {
     clearToken();
     router.push("/login");
   }, [router]);
+
+  const tryEnrichOpenProfile = useCallback(async (row: UserSearchResultRow) => {
+    const token = localStorage.getItem("gt_token");
+    if (!token) return;
+    const first =
+      (row.full_name || "").trim().split(/\s+/).filter(Boolean)[0] ?? "";
+    if (first.length < 2) return;
+    try {
+      const res = await fetch(
+        `http://localhost:8000/api/v1/users/search?q=${encodeURIComponent(first)}&limit=20`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!res.ok) return;
+      const data: unknown = await res.json();
+      if (!Array.isArray(data)) return;
+      const found = data.find(
+        (x: { id: string }) => (x as UserSearchResultRow).id === row.id,
+      ) as UserSearchResultRow | undefined;
+      if (found) {
+        setSearchProfileFor((prev) => {
+          if (prev?.id !== row.id) return prev;
+          return { ...found, friend_status: prev.friend_status };
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = sessionStorage.getItem(GT_TRAVELHUB_OPEN_PROFILE);
+    if (!raw) return;
+    try {
+      const p = JSON.parse(raw) as UserSearchResultRow;
+      sessionStorage.removeItem(GT_TRAVELHUB_OPEN_PROFILE);
+      setSearchProfileFor(p);
+      void tryEnrichOpenProfile(p);
+    } catch {
+      /* ignore */
+    }
+  }, [tryEnrichOpenProfile]);
+
+  useEffect(() => {
+    if (buddiesMenuOpenId == null) return;
+    const on = (e: MouseEvent) => {
+      const t = e.target as Element | null;
+      if (t && !t.closest("[data-buddies-root]")) setBuddiesMenuOpenId(null);
+    };
+    document.addEventListener("mousedown", on);
+    return () => document.removeEventListener("mousedown", on);
+  }, [buddiesMenuOpenId]);
 
   useEffect(() => {
     const { db: d, ok } = initFirebase();
@@ -2705,6 +2817,64 @@ export default function TravelHubPage() {
     };
   }, [db, user?.id]);
 
+  useEffect(() => {
+    if (!user) return;
+    const needIncomingMap =
+      showSearchOverlay ||
+      (searchProfileFor != null &&
+        searchProfileFor.friend_status === "pending_received");
+    if (!needIncomingMap) return;
+    void (async () => {
+      const r = await apiFetchWithStatus<
+        { id: string; sender_id: string; status: string }[]
+      >("/social/friend-requests");
+      if (r.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      if (r.status === 200 && Array.isArray(r.data)) {
+        const m: Record<string, string> = {};
+        for (const fr of r.data) {
+          if (fr.status === "pending") m[fr.sender_id] = fr.id;
+        }
+        setIncomingFrIdBySender(m);
+      }
+    })();
+  }, [showSearchOverlay, searchProfileFor, user, handleUnauthorized]);
+
+  useEffect(() => {
+    if (showSearchOverlayPrev.current && !showSearchOverlay) {
+      userSearchSeq.current += 1;
+      setUserSearchResults([]);
+      setUserSearchLoading(false);
+    }
+    showSearchOverlayPrev.current = showSearchOverlay;
+  }, [showSearchOverlay]);
+
+  useEffect(() => {
+    if (!showSearchOverlay) return;
+    if (searchQuery.trim().length < 2) {
+      setUserSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setUserSearchLoading(true);
+      try {
+        const token = localStorage.getItem('gt_token');
+        const res = await fetch(`http://localhost:8000/api/v1/users/search?q=${encodeURIComponent(searchQuery.trim())}&limit=20`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setUserSearchResults(Array.isArray(data) ? data : []);
+      } catch (e) {
+        setUserSearchResults([]);
+      } finally {
+        setUserSearchLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, showSearchOverlay]);
+
   const loadMessages = useCallback(
     (chatId: string) => {
       if (!db) return;
@@ -2875,6 +3045,128 @@ export default function TravelHubPage() {
       }
     },
     [db, user, loadMessages, showToast, updateChatPref],
+  );
+
+  const connectUserSearchRow = useCallback(
+    async (row: UserSearchResultRow) => {
+      setUserSearchActionId(row.id);
+      const r = await apiFetchWithStatus<{ id: string }>("/social/friend-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ receiver_id: row.id }),
+      });
+      setUserSearchActionId(null);
+      if (r.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      if (r.status >= 400 || !r.data) {
+        showToast("Could not send request", "error");
+        return;
+      }
+      setUserSearchResults((prev) =>
+        prev.map((u) =>
+          u.id === row.id
+            ? { ...u, friend_status: "pending_sent" as const }
+            : u,
+        ),
+      );
+      setSearchProfileFor((p) =>
+        p?.id === row.id
+          ? { ...p, friend_status: "pending_sent" as const }
+          : p,
+      );
+      showToast("Request sent", "success");
+    },
+    [handleUnauthorized, showToast],
+  );
+
+  const acceptUserSearchRow = useCallback(
+    async (row: UserSearchResultRow) => {
+      const frId = incomingFrIdBySender[row.id];
+      if (!frId) {
+        showToast("Request not found. Try closing and opening search again.", "error");
+        return;
+      }
+      setUserSearchActionId(row.id);
+      const r = await apiFetchWithStatus<unknown>(
+        `/social/friend-requests/${frId}/accept`,
+        { method: "PATCH" },
+      );
+      setUserSearchActionId(null);
+      if (r.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      if (r.status >= 400) {
+        showToast("Could not accept request", "error");
+        return;
+      }
+      setIncomingFrIdBySender((prev) => {
+        const n = { ...prev };
+        delete n[row.id];
+        return n;
+      });
+      setUserSearchResults((prev) =>
+        prev.map((u) =>
+          u.id === row.id
+            ? { ...u, friend_status: "accepted" as const }
+            : u,
+        ),
+      );
+      setSearchProfileFor((p) =>
+        p?.id === row.id
+          ? { ...p, friend_status: "accepted" as const }
+          : p,
+      );
+      setBuddiesMenuOpenId(null);
+      showToast("You are now connected", "success");
+    },
+    [incomingFrIdBySender, handleUnauthorized, showToast],
+  );
+
+  const messageUserSearchRow = useCallback(
+    (row: UserSearchResultRow) => {
+      setBuddiesMenuOpenId(null);
+      setSearchProfileFor(null);
+      setShowSearchOverlay(false);
+      void openDirectChat({
+        id: row.id,
+        full_name: row.full_name,
+        username: row.username,
+        avatar_url: row.profile_picture ?? row.avatar_url ?? null,
+      });
+    },
+    [openDirectChat],
+  );
+
+  const blockUserSearch = useCallback(
+    async (row: UserSearchResultRow) => {
+      const r = await apiFetchWithStatus<unknown>("/social/block", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: row.id }),
+      });
+      if (r.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      if (r.status < 400) {
+        showToast("User blocked", "success");
+        setBuddiesMenuOpenId(null);
+        setSearchProfileFor((p) => (p?.id === row.id ? null : p));
+        setUserSearchResults((prev) =>
+          prev.map((u) =>
+            u.id === row.id
+              ? { ...u, friend_status: "blocked" as const }
+              : u,
+          ),
+        );
+      } else {
+        showToast("Could not block user", "error");
+      }
+    },
+    [handleUnauthorized, showToast],
   );
 
   const selectChat = useCallback(
@@ -3569,7 +3861,7 @@ export default function TravelHubPage() {
 
       {showSearchOverlay ? (
         <div
-          className="fixed inset-0 z-[360] flex flex-col"
+          className="fixed inset-0 z-[360] flex min-h-0 flex-col"
           style={{ background: BG }}
         >
           <div
@@ -3593,7 +3885,7 @@ export default function TravelHubPage() {
                 autoFocus
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search chats..."
+                placeholder="Search people by name, @user, or phone…"
                 className="min-w-0 flex-1 border-0 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
               />
               {searchQuery ? (
@@ -3608,9 +3900,445 @@ export default function TravelHubPage() {
               ) : null}
             </div>
           </div>
-          <p className="px-4 py-6 text-center text-sm" style={{ color: TEXT_MUTED }}>
-            Results update in the Chats / Groups tabs. Tap back to continue.
-          </p>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-2">
+            {searchQuery.trim().length < 2 ? (
+              <p
+                className="px-2 py-8 text-center text-sm"
+                style={{ color: TEXT_MUTED }}
+              >
+                Type 2+ characters to search
+              </p>
+            ) : null}
+            {userSearchLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div
+                  className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-white"
+                  aria-hidden
+                />
+              </div>
+            ) : null}
+            {!userSearchLoading &&
+            searchQuery.trim().length >= 2 &&
+            userSearchResults.length === 0 ? (
+              <p
+                className="px-2 py-8 text-center text-sm"
+                style={{ color: TEXT_MUTED }}
+              >
+                No users found
+              </p>
+            ) : null}
+            {!userSearchLoading
+              ? userSearchResults.map((u) => {
+                  const thumb =
+                    u.profile_picture ||
+                    u.avatar_url ||
+                    getDiceBearUrl(u.full_name);
+                  const st = u.friend_status;
+                  return (
+                    <div
+                      key={u.id}
+                      className="mb-1 flex min-h-[56px] items-center gap-3 rounded-lg px-2 py-2"
+                      style={{ background: SURFACE }}
+                    >
+                      <button
+                        type="button"
+                        className="shrink-0 border-0 bg-transparent p-0"
+                        aria-label="View profile"
+                        onClick={() => setSearchProfileFor(u)}
+                      >
+                        <img
+                          src={thumb}
+                          alt=""
+                          className="h-11 w-11 rounded-full object-cover"
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        className="min-w-0 flex-1 border-0 bg-transparent p-0 text-left"
+                        onClick={() => setSearchProfileFor(u)}
+                      >
+                        <p className="truncate text-sm font-bold text-white">
+                          {u.full_name}
+                        </p>
+                        {u.username ? (
+                          <p
+                            className="truncate text-xs"
+                            style={{ color: TEXT_MUTED }}
+                          >
+                            @{u.username}
+                          </p>
+                        ) : null}
+                      </button>
+                      <div
+                        className="shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        role="presentation"
+                      >
+                        {st === "none" ? (
+                          <button
+                            type="button"
+                            className="rounded-lg px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                            style={{ background: "#2563EB" }}
+                            disabled={userSearchActionId === u.id}
+                            onClick={() => void connectUserSearchRow(u)}
+                          >
+                            Connect
+                          </button>
+                        ) : null}
+                        {st === "pending_sent" ? (
+                          <button
+                            type="button"
+                            className="cursor-not-allowed rounded-lg bg-slate-600/50 px-3 py-1.5 text-xs font-medium text-slate-400"
+                            disabled
+                          >
+                            Requested
+                          </button>
+                        ) : null}
+                        {st === "pending_received" ? (
+                          <button
+                            type="button"
+                            className="rounded-lg px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                            style={{ background: "#16A34A" }}
+                            disabled={userSearchActionId === u.id}
+                            onClick={() => void acceptUserSearchRow(u)}
+                          >
+                            Accept
+                          </button>
+                        ) : null}
+                        {st === "accepted" ? (
+                          <div className="relative" data-buddies-root>
+                            <button
+                              type="button"
+                              className="rounded-lg px-3 py-1.5 text-xs font-medium text-white"
+                              style={{ background: "#16A34A" }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setBuddiesMenuOpenId((x) =>
+                                  x === u.id ? null : u.id,
+                                );
+                              }}
+                            >
+                              Buddies ✓
+                            </button>
+                            {buddiesMenuOpenId === u.id ? (
+                              <div
+                                className="absolute right-0 top-full z-[410] mt-1 min-w-[11rem] rounded-lg border py-1 shadow-xl"
+                                style={{
+                                  background: SURFACE,
+                                  borderColor: BORDER_SUB,
+                                }}
+                                data-buddies-root
+                              >
+                                <button
+                                  type="button"
+                                  className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    messageUserSearchRow(u);
+                                  }}
+                                >
+                                  💬 Message
+                                </button>
+                                <button
+                                  type="button"
+                                  className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (readBuddyFavourites().includes(u.id)) {
+                                      showToast("Already a favourite", "success");
+                                    } else {
+                                      addBuddyFavourite(u.id);
+                                      showToast("Added to favourites", "success");
+                                    }
+                                    setBuddiesMenuOpenId(null);
+                                  }}
+                                >
+                                  ⭐ Favourite
+                                </button>
+                                <button
+                                  type="button"
+                                  className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setBuddiesMenuOpenId(null);
+                                    showToast("Muted", "success");
+                                  }}
+                                >
+                                  🔕 Mute
+                                </button>
+                                <button
+                                  type="button"
+                                  className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setBuddiesMenuOpenId(null);
+                                    void blockUserSearch(u);
+                                  }}
+                                >
+                                  🚫 Block
+                                </button>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+                        {st === "blocked" ? (
+                          <span
+                            className="px-2 text-xs"
+                            style={{ color: TEXT_MUTED }}
+                          >
+                            Blocked
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })
+              : null}
+          </div>
+        </div>
+      ) : null}
+
+      {searchProfileFor ? (
+        <div className="fixed inset-0 z-[400] flex justify-end">
+          <button
+            type="button"
+            aria-label="Close profile"
+            className="min-h-0 flex-1 bg-black/55"
+            onClick={() => setSearchProfileFor(null)}
+          />
+          <div
+            className="flex h-full max-h-screen w-[min(100%,400px)] shrink-0 flex-col overflow-y-auto border-l shadow-2xl"
+            style={{ background: BG, borderColor: BORDER_SUB }}
+          >
+            {(() => {
+              const p = searchProfileFor;
+              const thumb =
+                p.profile_picture ||
+                p.avatar_url ||
+                getDiceBearUrl(p.full_name);
+              const st = p.friend_status;
+              const planLabel = (p.plan ?? "free").replace(/_/g, " ");
+              return (
+                <>
+                  <div
+                    className="flex shrink-0 items-center justify-between border-b px-3 py-2"
+                    style={{ borderColor: BORDER_SUB }}
+                  >
+                    <span className="text-sm font-medium text-white">
+                      Profile
+                    </span>
+                    <button
+                      type="button"
+                      className="text-2xl leading-none text-slate-400 hover:text-white"
+                      onClick={() => setSearchProfileFor(null)}
+                      aria-label="Close"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="flex flex-col items-center px-4 pb-4 pt-2">
+                    <img
+                      src={thumb}
+                      alt=""
+                      className="h-32 w-32 rounded-full object-cover"
+                    />
+                    <h2 className="mt-4 text-center text-lg font-bold text-white">
+                      {p.full_name}
+                    </h2>
+                    {p.username ? (
+                      <p
+                        className="mt-1 text-sm"
+                        style={{ color: TEXT_MUTED }}
+                      >
+                        @{p.username}
+                      </p>
+                    ) : null}
+                    <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                      <span
+                        className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white"
+                        style={{ background: SURFACE }}
+                      >
+                        {planLabel}
+                      </span>
+                      {p.is_verified ? (
+                        <span className="rounded-full bg-sky-600/80 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                          Verified
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 px-4 pb-2">
+                    <button
+                      type="button"
+                      className="flex-1 rounded-lg py-2 text-xs font-medium text-white"
+                      style={{ background: SURFACE }}
+                      onClick={() =>
+                        showToast("Voice call coming soon", "success")
+                      }
+                    >
+                      Voice Call
+                    </button>
+                    <button
+                      type="button"
+                      className="flex-1 rounded-lg py-2 text-xs font-medium text-white"
+                      style={{ background: SURFACE }}
+                      onClick={() =>
+                        showToast("Video call coming soon", "success")
+                      }
+                    >
+                      Video Call
+                    </button>
+                  </div>
+                  <div
+                    className="border-t px-4 py-3"
+                    style={{ borderColor: BORDER_SUB }}
+                  >
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      {st === "none" ? (
+                        <button
+                          type="button"
+                          className="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                          style={{ background: "#2563EB" }}
+                          disabled={userSearchActionId === p.id}
+                          onClick={() => void connectUserSearchRow(p)}
+                        >
+                          Connect
+                        </button>
+                      ) : null}
+                      {st === "pending_sent" ? (
+                        <button
+                          type="button"
+                          className="cursor-not-allowed rounded-lg bg-slate-600/50 px-4 py-2 text-sm font-medium text-slate-400"
+                          disabled
+                        >
+                          Requested
+                        </button>
+                      ) : null}
+                      {st === "pending_received" ? (
+                        <button
+                          type="button"
+                          className="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                          style={{ background: "#16A34A" }}
+                          disabled={userSearchActionId === p.id}
+                          onClick={() => void acceptUserSearchRow(p)}
+                        >
+                          Accept
+                        </button>
+                      ) : null}
+                      {st === "accepted" ? (
+                        <div className="relative" data-buddies-root>
+                          <button
+                            type="button"
+                            className="rounded-lg px-4 py-2 text-sm font-medium text-white"
+                            style={{ background: "#16A34A" }}
+                            onClick={() =>
+                              setBuddiesMenuOpenId((x) =>
+                                x === p.id ? null : p.id,
+                              )
+                            }
+                          >
+                            Buddies ✓
+                          </button>
+                          {buddiesMenuOpenId === p.id ? (
+                            <div
+                              className="absolute left-1/2 top-full z-[410] mt-1 min-w-[11rem] -translate-x-1/2 rounded-lg border py-1 shadow-xl"
+                              style={{
+                                background: SURFACE,
+                                borderColor: BORDER_SUB,
+                              }}
+                              data-buddies-root
+                            >
+                              <button
+                                type="button"
+                                className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
+                                onClick={() => messageUserSearchRow(p)}
+                              >
+                                💬 Message
+                              </button>
+                              <button
+                                type="button"
+                                className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
+                                onClick={() => {
+                                  if (readBuddyFavourites().includes(p.id)) {
+                                    showToast("Already a favourite", "success");
+                                  } else {
+                                    addBuddyFavourite(p.id);
+                                    showToast("Added to favourites", "success");
+                                  }
+                                  setBuddiesMenuOpenId(null);
+                                }}
+                              >
+                                ⭐ Favourite
+                              </button>
+                              <button
+                                type="button"
+                                className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
+                                onClick={() => {
+                                  setBuddiesMenuOpenId(null);
+                                  showToast("Muted", "success");
+                                }}
+                              >
+                                🔕 Mute
+                              </button>
+                              <button
+                                type="button"
+                                className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
+                                onClick={() => {
+                                  setBuddiesMenuOpenId(null);
+                                  void blockUserSearch(p);
+                                }}
+                              >
+                                🚫 Block
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {st === "blocked" ? (
+                        <span
+                          className="text-sm"
+                          style={{ color: TEXT_MUTED }}
+                        >
+                          Blocked
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div
+                    className="mt-auto flex flex-col gap-2 border-t px-4 py-4"
+                    style={{ borderColor: BORDER_SUB }}
+                  >
+                    <button
+                      type="button"
+                      className="w-full rounded-lg border py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+                      style={{
+                        borderColor: BORDER_SUB,
+                        background: "transparent",
+                      }}
+                      disabled={st === "blocked"}
+                      onClick={() => void blockUserSearch(p)}
+                    >
+                      Block
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full rounded-lg border py-2.5 text-sm font-medium text-white"
+                      style={{
+                        borderColor: BORDER_SUB,
+                        background: "transparent",
+                      }}
+                      onClick={() =>
+                        showToast("Report: coming soon", "success")
+                      }
+                    >
+                      Report
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
         </div>
       ) : null}
 
