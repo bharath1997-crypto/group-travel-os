@@ -28,6 +28,9 @@ class Group(Base):
         default=uuid.uuid4,
     )
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    group_type: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="regular"
+    )
     description: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

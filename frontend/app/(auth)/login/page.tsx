@@ -8,6 +8,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import { Mail } from "lucide-react";
 
 import { AuthInput } from "@/components/auth/AuthInput";
 import { GradientHeader } from "@/components/auth/GradientHeader";
@@ -289,8 +290,9 @@ function LoginPageInner() {
               className="login-verify-slide mt-1 rounded-xl border border-[#f59e0b] bg-[#fffbeb] px-4 py-3 text-sm text-amber-950"
               role="status"
             >
-              <p className="font-medium text-[#92400e]">
-                📧 Please verify your email address
+              <p className="flex items-center gap-2 font-medium text-[#92400e]">
+                <Mail className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+                Please verify your email address
               </p>
               <Link
                 href="/resend-verification"

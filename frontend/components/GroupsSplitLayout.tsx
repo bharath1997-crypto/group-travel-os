@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 
 import { Avatar } from "@/components/Avatar";
@@ -14,7 +13,6 @@ type GroupListItem = {
 };
 
 export function GroupsSplitLayout({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
   const [groups, setGroups] = useState<GroupListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,34 +69,23 @@ export function GroupsSplitLayout({ children }: { children: ReactNode }) {
           </p>
         ) : (
           <ul className="max-h-[40vh] overflow-y-auto py-2 md:max-h-none">
-            {groups.map((g) => {
-              const active =
-                pathname === `/groups/${g.id}` || pathname.startsWith(`/groups/${g.id}/`);
-              return (
-                <li key={g.id}>
-                  <Link
-                    href={`/groups/${g.id}`}
-                    className={`flex items-start gap-2 px-3 py-2.5 text-left text-sm transition ${
-                      active
-                        ? "bg-white font-medium text-gray-900 shadow-sm ring-1 ring-gray-200"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    <span className="relative shrink-0">
-                      <Avatar name={g.name} size={32} />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate">{g.name}</span>
-                      {g.description ? (
-                        <span className="mt-0.5 line-clamp-2 text-xs font-normal text-gray-500">
-                          {g.description}
-                        </span>
-                      ) : null}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
+            {groups.map((g) => (
+              <li key={g.id}>
+                <div className="flex items-start gap-2 px-3 py-2.5 text-left text-sm text-gray-700">
+                  <span className="relative shrink-0">
+                    <Avatar name={g.name} size={32} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">{g.name}</span>
+                    {g.description ? (
+                      <span className="mt-0.5 line-clamp-2 text-xs font-normal text-gray-500">
+                        {g.description}
+                      </span>
+                    ) : null}
+                  </span>
+                </div>
+              </li>
+            ))}
           </ul>
         )}
       </aside>

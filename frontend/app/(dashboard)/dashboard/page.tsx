@@ -2,7 +2,34 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AlertTriangle,
+  Building2,
+  Camera,
+  Check,
+  Clapperboard,
+  Cloud,
+  CloudFog,
+  CloudLightning,
+  CloudRain,
+  CloudSnow,
+  CloudSun,
+  Globe,
+  Hotel,
+  Map as MapIcon,
+  MapPin,
+  Mountain,
+  Palmtree,
+  Plane,
+  ShoppingBag,
+  Sparkles,
+  Sun,
+  Trees,
+  Users,
+  Utensils,
+  Vote,
+} from "lucide-react";
 
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
@@ -172,30 +199,103 @@ function subtextDayDate(): string {
   });
 }
 
-function destinationEmoji(title: string): string {
-  const t = title.toLowerCase();
-  if (/goa|beach|coastal|sea|sand|maldives|bali|coast/.test(t)) return "🏖️";
-  if (/manali|trek|mountain|himalaya|hiking|nepal|peak/.test(t)) return "🏔️";
-  if (/delhi|mumbai|bangalore|city|metro|urban|paris|tokyo|london/.test(t))
-    return "🌆";
-  if (/international|abroad|overseas/.test(t)) return "✈️";
-  return "📍";
+const Shimmer = ({
+  width = "100%",
+  height = 16,
+}: {
+  width?: string | number;
+  height?: number;
+}) => (
+  <div
+    style={{
+      width,
+      height,
+      background:
+        "linear-gradient(90deg, #1e2538 25%, #2a3248 50%, #1e2538 75%)",
+      backgroundSize: "200% 100%",
+      borderRadius: 8,
+      animation: "shimmer 1.5s infinite",
+    }}
+  />
+);
+
+async function apiFetchWithDeadline<T>(
+  path: string,
+  pageSignal: AbortSignal,
+): Promise<T> {
+  const t = new AbortController();
+  const timer = setTimeout(() => t.abort(), 8000);
+  const onPageAbort = () => t.abort();
+  pageSignal.addEventListener("abort", onPageAbort);
+  try {
+    if (pageSignal.aborted) throw new DOMException("Aborted", "AbortError");
+    return await apiFetch<T>(path, { signal: t.signal });
+  } finally {
+    clearTimeout(timer);
+    pageSignal.removeEventListener("abort", onPageAbort);
+  }
 }
 
-function weatherCodeToEmoji(code: number): string {
-  const m: Record<number, string> = {
-    0: "☀️",
-    1: "🌤️",
-    2: "⛅",
-    3: "☁️",
-    45: "🌫️",
-    51: "🌦️",
-    61: "🌧️",
-    71: "❄️",
-    80: "🌦️",
-    95: "⛈️",
-  };
-  return m[code] ?? "🌤️";
+async function apiFetchWithStatusDeadline<T>(
+  path: string,
+  pageSignal: AbortSignal,
+): Promise<{ data: T | null; status: number }> {
+  const t = new AbortController();
+  const timer = setTimeout(() => t.abort(), 8000);
+  const onPageAbort = () => t.abort();
+  pageSignal.addEventListener("abort", onPageAbort);
+  try {
+    if (pageSignal.aborted) return { data: null, status: 0 };
+    return await apiFetchWithStatus<T>(path, { signal: t.signal });
+  } finally {
+    clearTimeout(timer);
+    pageSignal.removeEventListener("abort", onPageAbort);
+  }
+}
+
+function DestinationGlyph({
+  title,
+  className = "h-4 w-4",
+}: {
+  title: string;
+  className?: string;
+}) {
+  const t = title.toLowerCase();
+  const cls = `${className} shrink-0 text-current`;
+  if (/goa|beach|coastal|sea|sand|maldives|bali|coast/.test(t))
+    return <Palmtree className={cls} strokeWidth={1.5} aria-hidden />;
+  if (/manali|trek|mountain|himalaya|hiking|nepal|peak/.test(t))
+    return <Mountain className={cls} strokeWidth={1.5} aria-hidden />;
+  if (/delhi|mumbai|bangalore|city|metro|urban|paris|tokyo|london/.test(t))
+    return <Building2 className={cls} strokeWidth={1.5} aria-hidden />;
+  if (/international|abroad|overseas/.test(t))
+    return <Plane className={cls} strokeWidth={1.5} aria-hidden />;
+  return <MapPin className={cls} strokeWidth={1.5} aria-hidden />;
+}
+
+function WeatherGlyph({
+  code,
+  className = "h-6 w-6",
+}: {
+  code: number;
+  className?: string;
+}) {
+  const c = `${className} shrink-0 text-current`;
+  if (code === 0) return <Sun className={c} strokeWidth={1.5} aria-hidden />;
+  if (code === 1 || code === 2)
+    return <CloudSun className={c} strokeWidth={1.5} aria-hidden />;
+  if (code === 3) return <Cloud className={c} strokeWidth={1.5} aria-hidden />;
+  if (code === 45 || code === 48)
+    return <CloudFog className={c} strokeWidth={1.5} aria-hidden />;
+  if ([51, 53, 55, 56, 57].includes(code))
+    return <CloudRain className={c} strokeWidth={1.5} aria-hidden />;
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code))
+    return <CloudRain className={c} strokeWidth={1.5} aria-hidden />;
+  if ([71, 73, 75, 77].includes(code))
+    return <CloudSnow className={c} strokeWidth={1.5} aria-hidden />;
+  if ([95, 96, 99].includes(code))
+    return <CloudLightning className={c} strokeWidth={1.5} aria-hidden />;
+  return <CloudSun className={c} strokeWidth={1.5} aria-hidden />;
 }
 
 function isRainCode(code: number): boolean {
@@ -238,14 +338,26 @@ function stringHue(s: string): string {
   return `hsl(${h} 55% 42%)`;
 }
 
-function categoryEmoji(cat: string | null): string {
-  if (!cat) return "📍";
-  const c = cat.toLowerCase();
-  if (/food|restaurant|cafe/.test(c)) return "🍽️";
-  if (/hotel|stay|lodg/.test(c)) return "🏨";
-  if (/shop|mall/.test(c)) return "🛍️";
-  if (/nature|park|view/.test(c)) return "🌿";
-  return "📍";
+function CategoryGlyph({ category }: { category: string | null }) {
+  if (!category)
+    return (
+      <MapPin
+        className="mr-1 inline h-4 w-4 shrink-0 align-text-bottom"
+        strokeWidth={1.5}
+        aria-hidden
+      />
+    );
+  const c = category.toLowerCase();
+  const cls = "mr-1 inline h-4 w-4 shrink-0 align-text-bottom";
+  if (/food|restaurant|cafe/.test(c))
+    return <Utensils className={cls} strokeWidth={1.5} aria-hidden />;
+  if (/hotel|stay|lodg/.test(c))
+    return <Hotel className={cls} strokeWidth={1.5} aria-hidden />;
+  if (/shop|mall/.test(c))
+    return <ShoppingBag className={cls} strokeWidth={1.5} aria-hidden />;
+  if (/nature|park|view/.test(c))
+    return <Trees className={cls} strokeWidth={1.5} aria-hidden />;
+  return <MapPin className={cls} strokeWidth={1.5} aria-hidden />;
 }
 
 function pickSoonestTrip(trips: TripWithMeta[]): TripWithMeta | null {
@@ -303,7 +415,7 @@ function tripBannerBadge(trip: TripWithMeta): {
   bg: string;
 } {
   if (trip.status === "ongoing") {
-    return { text: "Live now 🔴", bg: SUCCESS };
+    return { text: "Live now", bg: SUCCESS };
   }
   const sd = parseYmd(trip.start_date);
   if (!sd) return { text: "—", bg: CORAL };
@@ -326,9 +438,13 @@ function destinationLine(
   return dest;
 }
 
-async function geocodeCity(q: string): Promise<{ lat: number; lon: number } | null> {
+async function geocodeCity(
+  q: string,
+  signal?: AbortSignal,
+): Promise<{ lat: number; lon: number } | null> {
   const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`;
   const res = await fetch(url, {
+    signal,
     headers: {
       "User-Agent": "TravelloDashboard/1.0 (travello.app)",
       Accept: "application/json",
@@ -347,6 +463,7 @@ async function geocodeCity(q: string): Promise<{ lat: number; lon: number } | nu
 async function fetchOpenMeteo(
   lat: number,
   lon: number,
+  signal?: AbortSignal,
 ): Promise<WeatherBundle | null> {
   const u = new URL("https://api.open-meteo.com/v1/forecast");
   u.searchParams.set("latitude", String(lat));
@@ -358,7 +475,7 @@ async function fetchOpenMeteo(
   u.searchParams.set("daily", "temperature_2m_max,temperature_2m_min,weathercode");
   u.searchParams.set("timezone", "auto");
   u.searchParams.set("forecast_days", "5");
-  const res = await fetch(u.toString());
+  const res = await fetch(u.toString(), { signal });
   if (!res.ok) return null;
   const json = (await res.json()) as {
     current?: OpenMeteoCurrent;
@@ -389,49 +506,23 @@ function findRainDayLabel(
   return null;
 }
 
-function StatCardSkeleton() {
-  return (
-    <div
-      className="flex flex-col items-center rounded-xl border px-2 py-4 text-center shadow-sm"
-      style={{ borderColor: BORDER, backgroundColor: CARD }}
-    >
-      <div className="h-[18px] w-[18px] animate-pulse rounded bg-gray-200" />
-      <div className="mt-2 h-7 w-10 animate-pulse rounded bg-gray-200" />
-      <div className="mt-2 h-2.5 w-16 animate-pulse rounded bg-gray-200" />
-    </div>
-  );
-}
-
-function CardSkeleton({ lines = 3 }: { lines?: number }) {
-  return (
-    <div
-      className="rounded-xl border p-4 shadow-sm"
-      style={{ borderColor: BORDER, backgroundColor: CARD }}
-    >
-      <div className="h-4 w-28 animate-pulse rounded bg-gray-200" />
-      {Array.from({ length: lines }).map((_, i) => (
-        <div
-          key={i}
-          className="mt-3 h-3 w-full animate-pulse rounded bg-gray-200"
-        />
-      ))}
-    </div>
-  );
-}
-
 export default function DashboardPage() {
   const router = useRouter();
+  const pageAbortRef = useRef<AbortController | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
 
   const [me, setMe] = useState<UserMe | null>(null);
-  const [authReady, setAuthReady] = useState(false);
 
   const [stats, setStats] = useState<TravelStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
   const [groups, setGroups] = useState<GroupOut[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(true);
+  const [groupsError, setGroupsError] = useState<string | null>(null);
 
   const [tripsLoading, setTripsLoading] = useState(true);
+  const [tripsError, setTripsError] = useState<string | null>(null);
   const [tripsList, setTripsList] = useState<TripWithMeta[]>([]);
 
   const [smartTrip, setSmartTrip] = useState<TripWithMeta | null>(null);
@@ -445,17 +536,17 @@ export default function DashboardPage() {
   /** True while loading pins/expenses/weather for the selected trip only. */
   const [smartTripDetailsLoading, setSmartTripDetailsLoading] = useState(true);
 
-  const [skeletonDeadline, setSkeletonDeadline] = useState(false);
-
   const [pollItems, setPollItems] = useState<
     { poll: PollOut; tripId: string }[]
   >([]);
   const [pollsLoading, setPollsLoading] = useState(true);
+  const [pollsError, setPollsError] = useState<string | null>(null);
 
   const [expenseLines, setExpenseLines] = useState<
     { row: BalanceRow; tripId: string; tripTitle: string }[]
   >([]);
   const [expensesLoading, setExpensesLoading] = useState(true);
+  const [expensesError, setExpensesError] = useState<string | null>(null);
 
   const userNameMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -541,38 +632,52 @@ export default function DashboardPage() {
   }, [tripsList]);
 
   useEffect(() => {
-    const t = window.setTimeout(() => setSkeletonDeadline(true), 5000);
-    return () => window.clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
+    pageAbortRef.current?.abort();
+    const ac = new AbortController();
+    pageAbortRef.current = ac;
+    const pageSignal = ac.signal;
     let cancelled = false;
+
+    const emptyStats: TravelStats = {
+      trips_created: 0,
+      groups_joined: 0,
+      locations_saved: 0,
+      expenses_paid: 0,
+      countries_from_trips: [],
+    };
 
     async function loadSmartTripExtras(soonest: TripWithMeta) {
       try {
         const [locs, exps, bal] = await Promise.all([
-          apiFetch<LocationOut[]>(`/trips/${soonest.id}/locations`).catch(
-            () => [] as LocationOut[],
-          ),
-          apiFetch<ExpenseOut[]>(`/trips/${soonest.id}/expenses`).catch(
-            () => [] as ExpenseOut[],
-          ),
-          apiFetch<BalanceRow[]>(`/trips/${soonest.id}/expenses/summary`).catch(
-            () => [] as BalanceRow[],
-          ),
+          apiFetchWithDeadline<LocationOut[]>(
+            `/trips/${soonest.id}/locations`,
+            pageSignal,
+          ).catch(() => [] as LocationOut[]),
+          apiFetchWithDeadline<ExpenseOut[]>(
+            `/trips/${soonest.id}/expenses`,
+            pageSignal,
+          ).catch(() => [] as ExpenseOut[]),
+          apiFetchWithDeadline<BalanceRow[]>(
+            `/trips/${soonest.id}/expenses/summary`,
+            pageSignal,
+          ).catch(() => [] as BalanceRow[]),
         ]);
-        if (cancelled) return;
+        if (cancelled || pageSignal.aborted) return;
         setTripPins(locs);
         setTripExpensesList(exps);
         setTripBalanceSummary(bal);
         const geoQuery = locs[0]?.name ?? soonest.title ?? "India";
-        const coords = await geocodeCity(geoQuery).catch(() => null);
-        if (cancelled) return;
+        const coords = await geocodeCity(geoQuery, pageSignal).catch(
+          () => null,
+        );
+        if (cancelled || pageSignal.aborted) return;
         if (coords) {
-          const wx = await fetchOpenMeteo(coords.lat, coords.lon).catch(
-            () => null,
-          );
-          if (cancelled) return;
+          const wx = await fetchOpenMeteo(
+            coords.lat,
+            coords.lon,
+            pageSignal,
+          ).catch(() => null);
+          if (cancelled || pageSignal.aborted) return;
           if (wx) {
             setWeather(wx);
             setRainDayLabel(
@@ -590,12 +695,21 @@ export default function DashboardPage() {
           setWeather(null);
           setRainDayLabel(null);
         }
+      } catch (e) {
+        if ((e as Error)?.name === "AbortError") return;
       } finally {
-        if (!cancelled) setSmartTripDetailsLoading(false);
+        if (!cancelled && !pageSignal.aborted) {
+          setSmartTripDetailsLoading(false);
+        }
       }
     }
 
     async function run() {
+      setStatsError(null);
+      setGroupsError(null);
+      setTripsError(null);
+      setPollsError(null);
+      setExpensesError(null);
       setStatsLoading(true);
       setGroupsLoading(true);
       setTripsLoading(true);
@@ -603,44 +717,74 @@ export default function DashboardPage() {
       setExpensesLoading(true);
       setSmartTripDetailsLoading(true);
 
-      const meRes = await apiFetchWithStatus<UserMe>("/auth/me");
-      if (cancelled) return;
+      const meRes = await apiFetchWithStatusDeadline<UserMe>(
+        "/auth/me",
+        pageSignal,
+      );
+      if (cancelled || pageSignal.aborted) return;
       if (meRes.status === 401) {
         clearToken();
         router.replace("/login");
         return;
       }
       if (!meRes.data) {
-        setAuthReady(true);
+        setMe(null);
+        setStatsLoading(false);
+        setGroupsLoading(false);
+        setTripsLoading(false);
+        setPollsLoading(false);
+        setExpensesLoading(false);
+        setSmartTripDetailsLoading(false);
         return;
       }
       setMe(meRes.data);
-      setAuthReady(true);
 
-      const [st, grpList] = await Promise.all([
-        apiFetch<TravelStats>("/users/me/travel-stats").catch(() => null),
-        apiFetch<GroupOut[]>("/groups").catch(() => []),
+      const settled = await Promise.allSettled([
+        apiFetchWithDeadline<TravelStats>("/users/me/travel-stats", pageSignal),
+        apiFetchWithDeadline<GroupOut[]>("/groups", pageSignal),
       ]);
-      if (cancelled) return;
+      if (cancelled || pageSignal.aborted) return;
+
+      let st: TravelStats | null = null;
+      if (settled[0]!.status === "fulfilled") {
+        st = settled[0]!.value;
+      } else {
+        const err = settled[0]!.reason as Error | undefined;
+        if (err?.name === "AbortError" || pageSignal.aborted) return;
+        setStatsError("Could not load data. Tap to retry.");
+      }
+
+      let grpList: GroupOut[] = [];
+      if (settled[1]!.status === "fulfilled") {
+        grpList = settled[1]!.value;
+      } else {
+        const err = settled[1]!.reason as Error | undefined;
+        if (err?.name === "AbortError" || pageSignal.aborted) return;
+        setGroupsError("Could not load data. Tap to retry.");
+      }
+
       setStats(
         st ?? {
-          trips_created: 0,
-          groups_joined: 0,
-          locations_saved: 0,
-          expenses_paid: 0,
-          countries_from_trips: [],
+          ...emptyStats,
         },
       );
       setStatsLoading(false);
       setGroups(grpList);
       setGroupsLoading(false);
 
-      const tripLists = await Promise.all(
-        grpList.map((g) =>
-          apiFetch<TripOut[]>(`/groups/${g.id}/trips`).catch(() => []),
-        ),
-      );
-      if (cancelled) return;
+      let tripLists: TripOut[][];
+      try {
+        tripLists = await Promise.all(
+          grpList.map((g) =>
+            apiFetchWithDeadline<TripOut[]>(`/groups/${g.id}/trips`, pageSignal),
+          ),
+        );
+      } catch (e) {
+        if ((e as Error)?.name === "AbortError" || pageSignal.aborted) return;
+        setTripsError("Could not load data. Tap to retry.");
+        tripLists = grpList.map(() => []);
+      }
+      if (cancelled || pageSignal.aborted) return;
 
       const merged: TripWithMeta[] = [];
       grpList.forEach((g, i) => {
@@ -679,14 +823,23 @@ export default function DashboardPage() {
       }
 
       void (async () => {
-        const pollLists = await Promise.all(
-          activeOrdered.map((trip) =>
-            apiFetch<PollOut[]>(`/trips/${trip.id}/polls`).catch(
-              () => [] as PollOut[],
+        let pollLists: PollOut[][];
+        try {
+          pollLists = await Promise.all(
+            activeOrdered.map((trip) =>
+              apiFetchWithDeadline<PollOut[]>(
+                `/trips/${trip.id}/polls`,
+                pageSignal,
+              ).catch(() => [] as PollOut[]),
             ),
-          ),
-        );
-        if (cancelled) return;
+          );
+        } catch (e) {
+          if ((e as Error)?.name === "AbortError" || pageSignal.aborted) return;
+          setPollsError("Could not load data. Tap to retry.");
+          setPollsLoading(false);
+          return;
+        }
+        if (cancelled || pageSignal.aborted) return;
         const pollsAccum: { poll: PollOut; tripId: string }[] = [];
         activeOrdered.forEach((trip, idx) => {
           for (const pol of pollLists[idx] ?? []) {
@@ -700,14 +853,23 @@ export default function DashboardPage() {
 
       void (async () => {
         const expTripIds = activeOrdered.slice(0, 8);
-        const expResults = await Promise.all(
-          expTripIds.map((trip) =>
-            apiFetch<BalanceRow[]>(`/trips/${trip.id}/expenses/summary`).catch(
-              () => [] as BalanceRow[],
+        let expResults: BalanceRow[][];
+        try {
+          expResults = await Promise.all(
+            expTripIds.map((trip) =>
+              apiFetchWithDeadline<BalanceRow[]>(
+                `/trips/${trip.id}/expenses/summary`,
+                pageSignal,
+              ).catch(() => [] as BalanceRow[]),
             ),
-          ),
-        );
-        if (cancelled) return;
+          );
+        } catch (e) {
+          if ((e as Error)?.name === "AbortError" || pageSignal.aborted) return;
+          setExpensesError("Could not load data. Tap to retry.");
+          setExpensesLoading(false);
+          return;
+        }
+        if (cancelled || pageSignal.aborted) return;
         const flatExp: {
           row: BalanceRow;
           tripId: string;
@@ -726,34 +888,22 @@ export default function DashboardPage() {
     void run();
     return () => {
       cancelled = true;
+      ac.abort();
     };
-  }, [router]);
+  }, [router, reloadTick]);
 
-  if (!authReady) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center p-8">
-        <div
-          className="h-10 w-10 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
-          aria-hidden
-        />
-      </div>
-    );
-  }
-
-  if (!me) return null;
-
-  const fn = firstToken(me.full_name ?? me.email ?? "");
+  const fn = me
+    ? firstToken(me.full_name ?? me.email ?? "")
+    : "there";
   const tripCount = stats?.trips_created ?? 0;
   const groupCount = stats?.groups_joined ?? groups.length;
 
-  const showStatsSkeleton = statsLoading && !skeletonDeadline;
   const showSmartSkeleton =
-    !skeletonDeadline &&
-    (tripsLoading || (Boolean(smartTrip) && smartTripDetailsLoading));
-  const showPollsSkeleton = pollsLoading && !skeletonDeadline;
-  const showExpensesSkeleton = expensesLoading && !skeletonDeadline;
-  const showCompanionsSkeleton = groupsLoading && !skeletonDeadline;
-  const showUpcomingSkeleton = tripsLoading && !skeletonDeadline;
+    tripsLoading || (Boolean(smartTrip) && smartTripDetailsLoading);
+  const showPollsSkeleton = pollsLoading;
+  const showExpensesSkeleton = expensesLoading;
+  const showCompanionsSkeleton = groupsLoading;
+  const showUpcomingSkeleton = tripsLoading;
 
   const smartFirstPinName = tripPins[0]?.name ?? null;
 
@@ -763,12 +913,13 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-bold leading-snug tracking-tight md:text-2xl">
-            Hey <span style={{ color: CORAL }}>{fn}</span>! 👋 Ready for your
-            next adventure?
+            Hey <span style={{ color: CORAL }}>{fn}</span>! Ready for your next
+            adventure?
           </h1>
           <p className="mt-1 text-sm" style={{ color: MUTED }}>
-            Today is {subtextDayDate()} · {tripCount} trips · {groupCount}{" "}
-            groups
+            Today is {subtextDayDate()} ·{" "}
+            {statsLoading ? "—" : tripCount} trips ·{" "}
+            {groupsLoading ? "—" : groupCount} groups
           </p>
         </div>
         <Link
@@ -796,66 +947,78 @@ export default function DashboardPage() {
 
       {/* ROW 1 — 6 STAT CARDS */}
       <section>
+        {statsError && !statsLoading ? (
+          <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <p>Could not load data. Tap to retry.</p>
+            <button
+              type="button"
+              onClick={() => setReloadTick((x) => x + 1)}
+              className="mt-1 font-semibold text-[#0F3460] underline"
+            >
+              Retry
+            </button>
+          </div>
+        ) : null}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {showStatsSkeleton ? (
-            <>
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-            </>
-          ) : (
-            <>
-              {[
-                {
-                  icon: "✈️",
-                  n: stats?.trips_created ?? 0,
-                  label: "Trips created",
-                },
-                {
-                  icon: "👥",
-                  n: stats?.groups_joined ?? 0,
-                  label: "Groups joined",
-                },
-                {
-                  icon: "🌍",
-                  n: stats?.countries_from_trips?.length ?? 0,
-                  label: "Countries visited",
-                },
-                { icon: "📸", n: 0, label: "Posts" },
-                { icon: "🎬", n: 0, label: "Memories" },
-                {
-                  icon: "📍",
-                  n: stats?.locations_saved ?? 0,
-                  label: "Pins saved",
-                },
-              ].map((c) => (
-                <div
-                  key={c.label}
-                  className="flex flex-col items-center rounded-xl border px-2 py-4 text-center shadow-sm"
-                  style={{ borderColor: BORDER, backgroundColor: CARD }}
+          {(
+            [
+              {
+                Icon: Plane,
+                n: stats?.trips_created ?? 0,
+                label: "Trips created",
+                dash: statsLoading,
+              },
+              {
+                Icon: Users,
+                n: stats?.groups_joined ?? 0,
+                label: "Groups joined",
+                dash: statsLoading,
+              },
+              {
+                Icon: Globe,
+                n: stats?.countries_from_trips?.length ?? 0,
+                label: "Countries visited",
+                dash: statsLoading,
+              },
+              { Icon: Camera, n: 0, label: "Posts", dash: false },
+              { Icon: Clapperboard, n: 0, label: "Memories", dash: false },
+              {
+                Icon: MapPin,
+                n: stats?.locations_saved ?? 0,
+                label: "Pins saved",
+                dash: statsLoading,
+              },
+            ] as const
+          ).map((c) => {
+            const SIcon = c.Icon;
+            const show = c.dash ? "—" : c.n;
+            return (
+              <div
+                key={c.label}
+                className="flex flex-col items-center rounded-xl border px-2 py-4 text-center shadow-sm"
+                style={{ borderColor: BORDER, backgroundColor: CARD }}
+              >
+                <span
+                  className="inline-flex text-[#0F3460] leading-none"
+                  aria-hidden
                 >
-                  <span className="text-[18px] leading-none" aria-hidden>
-                    {c.icon}
-                  </span>
-                  <p
-                    className="mt-2 text-[22px] font-bold tabular-nums"
-                    style={{ color: NAVY }}
-                  >
-                    {c.n}
-                  </p>
-                  <p
-                    className="mt-1 text-[10px] font-medium uppercase tracking-wide"
-                    style={{ color: MUTED }}
-                  >
-                    {c.label}
-                  </p>
-                </div>
-              ))}
-            </>
-          )}
+                  <SIcon className="h-[18px] w-[18px]" strokeWidth={1.5} />
+                </span>
+                <p
+                  className="mt-2 text-[22px] font-bold tabular-nums"
+                  style={{ color: NAVY }}
+                >
+                  {show}
+                </p>
+                <p
+                  className="mt-1 text-[10px] font-medium uppercase tracking-wide"
+                  style={{ color: MUTED }}
+                >
+                  {c.label}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -864,31 +1027,83 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {(
             [
-              { icon: "✈️", label: "+ New Trip", href: "/trips" },
-              { icon: "👥", label: "+ New Group", href: "/travel-hub" },
-              { icon: "📸", label: "+ New Post", href: "/profile" },
-              { icon: "🗺️", label: "Open Map", href: "/map" },
+              { Icon: Plane, label: "+ New Trip", href: "/trips" },
+              { Icon: Users, label: "+ New Group", href: "/travel-hub" },
+              { Icon: Camera, label: "+ New Post", href: "/profile" },
+              { Icon: MapIcon, label: "Open Map", href: "/map" },
             ] as const
-          ).map((a) => (
+          ).map((a) => {
+            const QIcon = a.Icon;
+            return (
             <Link
               key={a.label}
               href={a.href}
-              className="rounded-xl border border-[#ffd6de] bg-[#fff0f3] px-3 py-4 text-center text-[11px] font-bold text-[#E94560] transition-colors duration-150 hover:border-[#E94560] hover:bg-[#E94560] hover:text-white"
+              className="group rounded-xl border border-[#ffd6de] bg-[#fff0f3] px-3 py-4 text-center text-[11px] font-bold text-[#E94560] transition-colors duration-150 hover:border-[#E94560] hover:bg-[#E94560] hover:text-white"
             >
-              <span className="block text-[18px] leading-none" aria-hidden>
-                {a.icon}
+              <span
+                className="flex justify-center text-current leading-none"
+                aria-hidden
+              >
+                <QIcon
+                  className="h-[18px] w-[18px]"
+                  strokeWidth={1.5}
+                />
               </span>
               <span className="mt-2 block">{a.label}</span>
             </Link>
-          ))}
+            );
+          })}
         </div>
       </section>
 
       {/* ROW 3 — Upcoming Trips | Active Polls */}
       <section className="grid gap-4 md:grid-cols-2">
         <div>
-          {showUpcomingSkeleton ? (
-            <CardSkeleton lines={4} />
+          {tripsError && !showUpcomingSkeleton ? (
+            <div
+              className="rounded-xl border p-4 shadow-sm"
+              style={{ borderColor: BORDER, backgroundColor: CARD }}
+            >
+              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                Upcoming trips
+              </h2>
+              <p className="mt-3 text-sm" style={{ color: MUTED }}>
+                Could not load data. Tap to retry.
+              </p>
+              <button
+                type="button"
+                onClick={() => setReloadTick((x) => x + 1)}
+                className="mt-2 text-sm font-semibold"
+                style={{ color: CORAL }}
+              >
+                Retry
+              </button>
+            </div>
+          ) : showUpcomingSkeleton ? (
+            <div
+              className="rounded-xl border p-4 shadow-sm"
+              style={{ borderColor: BORDER, backgroundColor: CARD }}
+            >
+              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                Upcoming trips
+              </h2>
+              <ul className="mt-3 space-y-3">
+                <li className="flex gap-2">
+                  <Shimmer width={20} height={20} />
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <Shimmer height={16} width="80%" />
+                    <Shimmer height={12} width="50%" />
+                  </div>
+                </li>
+                <li className="flex gap-2">
+                  <Shimmer width={20} height={20} />
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <Shimmer height={16} width="70%" />
+                    <Shimmer height={12} width="45%" />
+                  </div>
+                </li>
+              </ul>
+            </div>
           ) : (
             <div
               className="rounded-xl border p-4 shadow-sm"
@@ -910,8 +1125,8 @@ export default function DashboardPage() {
                         key={t.id}
                         className="flex gap-2 border-b border-[#E9ECEF] pb-3 last:border-0 last:pb-0"
                       >
-                        <span className="text-lg leading-none" aria-hidden>
-                          {destinationEmoji(t.title)}
+                        <span className="inline-flex text-lg leading-none text-[#0F3460]" aria-hidden>
+                          <DestinationGlyph title={t.title} />
                         </span>
                         <div className="min-w-0 flex-1">
                           <p
@@ -948,8 +1163,39 @@ export default function DashboardPage() {
         </div>
 
         <div>
-          {showPollsSkeleton ? (
-            <CardSkeleton lines={4} />
+          {pollsError && !showPollsSkeleton ? (
+            <div
+              className="rounded-xl border p-4 shadow-sm"
+              style={{ borderColor: BORDER, backgroundColor: CARD }}
+            >
+              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                Active polls
+              </h2>
+              <p className="mt-3 text-sm" style={{ color: MUTED }}>
+                Could not load data. Tap to retry.
+              </p>
+              <button
+                type="button"
+                onClick={() => setReloadTick((x) => x + 1)}
+                className="mt-2 text-sm font-semibold"
+                style={{ color: CORAL }}
+              >
+                Retry
+              </button>
+            </div>
+          ) : showPollsSkeleton ? (
+            <div
+              className="rounded-xl border p-4 shadow-sm"
+              style={{ borderColor: BORDER, backgroundColor: CARD }}
+            >
+              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                Active polls
+              </h2>
+              <div className="mt-3 space-y-1.5">
+                <Shimmer height={14} width="85%" />
+                <Shimmer height={8} width="100%" />
+              </div>
+            </div>
           ) : (
             <div
               className="rounded-xl border p-4 shadow-sm"
@@ -960,9 +1206,9 @@ export default function DashboardPage() {
               </h2>
               {pollItems.length === 0 ? (
                 <div className="mt-4">
-                  <p className="text-2xl leading-none" aria-hidden>
-                    🗳️
-                  </p>
+                  <span className="inline-flex text-[#0F3460]" aria-hidden>
+                    <Vote className="h-8 w-8" strokeWidth={1.5} />
+                  </span>
                   <p className="mt-3 text-sm" style={{ color: MUTED }}>
                     No active polls right now
                   </p>
@@ -1048,8 +1294,39 @@ export default function DashboardPage() {
       {/* ROW 4 — Pending Expenses | Group Companions */}
       <section className="grid gap-4 md:grid-cols-2">
         <div>
-          {showExpensesSkeleton ? (
-            <CardSkeleton lines={4} />
+          {expensesError && !showExpensesSkeleton ? (
+            <div
+              className="rounded-xl border p-4 shadow-sm"
+              style={{ borderColor: BORDER, backgroundColor: CARD }}
+            >
+              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                Pending expenses
+              </h2>
+              <p className="mt-3 text-sm" style={{ color: MUTED }}>
+                Could not load data. Tap to retry.
+              </p>
+              <button
+                type="button"
+                onClick={() => setReloadTick((x) => x + 1)}
+                className="mt-2 text-sm font-semibold"
+                style={{ color: CORAL }}
+              >
+                Retry
+              </button>
+            </div>
+          ) : showExpensesSkeleton ? (
+            <div
+              className="rounded-xl border p-4 shadow-sm"
+              style={{ borderColor: BORDER, backgroundColor: CARD }}
+            >
+              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                Pending expenses
+              </h2>
+              <div className="mt-3 space-y-1.5">
+                <Shimmer height={14} width="90%" />
+                <Shimmer height={8} width="100%" />
+              </div>
+            </div>
           ) : (
             <div
               className="rounded-xl border p-4 shadow-sm"
@@ -1060,9 +1337,9 @@ export default function DashboardPage() {
               </h2>
               {myPendingExpenses.length === 0 ? (
                 <div className="mt-4">
-                  <p className="text-2xl leading-none" aria-hidden>
-                    🎉
-                  </p>
+                  <span className="inline-flex text-[#22C55E]" aria-hidden>
+                    <Sparkles className="h-8 w-8" strokeWidth={1.5} />
+                  </span>
                   <p className="mt-3 text-sm font-bold" style={{ color: NAVY }}>
                     All settled up!
                   </p>
@@ -1077,8 +1354,11 @@ export default function DashboardPage() {
                       userNameMap.get(row.from_user_id) ?? row.from_user_id;
                     const toN =
                       userNameMap.get(row.to_user_id) ?? row.to_user_id;
-                    const youOwe =
-                      row.from_user_id === me.id && row.amount > 0.01;
+                    const youOwe = Boolean(
+                      me &&
+                        row.from_user_id === me.id &&
+                        row.amount > 0.01,
+                    );
                     const other = youOwe ? toN : fromN;
                     const label = youOwe
                       ? `You owe ${other}`
@@ -1126,8 +1406,38 @@ export default function DashboardPage() {
         </div>
 
         <div>
-          {showCompanionsSkeleton ? (
-            <CardSkeleton lines={4} />
+          {groupsError && !showCompanionsSkeleton ? (
+            <div
+              className="rounded-xl border p-4 shadow-sm"
+              style={{ borderColor: BORDER, backgroundColor: CARD }}
+            >
+              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                Group companions
+              </h2>
+              <p className="mt-3 text-sm" style={{ color: MUTED }}>
+                Could not load data. Tap to retry.
+              </p>
+              <button
+                type="button"
+                onClick={() => setReloadTick((x) => x + 1)}
+                className="mt-2 text-sm font-semibold"
+                style={{ color: CORAL }}
+              >
+                Retry
+              </button>
+            </div>
+          ) : showCompanionsSkeleton ? (
+            <div
+              className="rounded-xl border p-4 shadow-sm"
+              style={{ borderColor: BORDER, backgroundColor: CARD }}
+            >
+              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                Group companions
+              </h2>
+              <div className="mt-3 space-y-2">
+                <Shimmer height={40} width="100%" />
+              </div>
+            </div>
           ) : (
             <div
               className="rounded-xl border p-4 shadow-sm"
@@ -1138,9 +1448,9 @@ export default function DashboardPage() {
               </h2>
               {companions.length === 0 ? (
                 <div className="mt-4">
-                  <p className="text-2xl leading-none" aria-hidden>
-                    👥
-                  </p>
+                  <span className="inline-flex text-[#6C757D]" aria-hidden>
+                    <Users className="h-8 w-8" strokeWidth={1.5} />
+                  </span>
                   <p className="mt-3 text-sm" style={{ color: MUTED }}>
                     No companions yet
                   </p>
@@ -1208,15 +1518,34 @@ export default function DashboardPage() {
       <section className="grid gap-4 md:grid-cols-2">
         <div>
           {showSmartSkeleton ? (
-            <CardSkeleton lines={6} />
+            <div
+              className="overflow-hidden rounded-xl border shadow-sm"
+              style={{ borderColor: BORDER, backgroundColor: CARD }}
+            >
+              <div className="space-y-3 p-4" style={{ backgroundColor: NAVY }}>
+                <Shimmer height={24} width="60%" />
+                <Shimmer height={14} width="90%" />
+                <div className="mt-4 flex gap-2">
+                  <Shimmer height={64} width={64} />
+                  <div className="flex-1 space-y-2">
+                    <Shimmer height={16} width="40%" />
+                    <Shimmer height={12} width="70%" />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-3 p-4">
+                <Shimmer height={14} width="100%" />
+                <Shimmer height={14} width="85%" />
+              </div>
+            </div>
           ) : !smartTrip ? (
             <div
               className="rounded-xl border bg-white p-8 text-center shadow-sm"
               style={{ borderColor: BORDER }}
             >
-              <p className="text-5xl leading-none" aria-hidden>
-                ✈️
-              </p>
+              <span className="inline-flex justify-center text-[#0F3460]" aria-hidden>
+                <Plane className="h-14 w-14" strokeWidth={1.5} />
+              </span>
               <p className="mt-4 text-[15px] font-bold" style={{ color: NAVY }}>
                 No upcoming trips
               </p>
@@ -1240,8 +1569,11 @@ export default function DashboardPage() {
               {/* A + B — navy banner + weather */}
               <div className="px-4 pb-4 pt-4 sm:px-5" style={{ backgroundColor: NAVY }}>
                 <div className="relative flex flex-wrap items-start gap-3">
-                  <span className="text-2xl leading-none" aria-hidden>
-                    {destinationEmoji(smartTrip.title)}
+                  <span className="inline-flex text-white" aria-hidden>
+                    <DestinationGlyph
+                      title={smartTrip.title}
+                      className="h-7 w-7"
+                    />
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-[15px] font-bold leading-tight text-white">
@@ -1273,8 +1605,11 @@ export default function DashboardPage() {
                   {weather ? (
                     <>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-2xl leading-none" aria-hidden>
-                          {weatherCodeToEmoji(weather.current.weathercode ?? 0)}
+                        <span className="inline-flex text-white" aria-hidden>
+                          <WeatherGlyph
+                            code={weather.current.weathercode ?? 0}
+                            className="h-7 w-7"
+                          />
                         </span>
                         <span className="text-2xl font-bold tabular-nums text-white">
                           {weather.current.temperature_2m != null
@@ -1308,8 +1643,11 @@ export default function DashboardPage() {
                               <span className="text-[9px] font-semibold uppercase text-[rgba(255,255,255,0.85)]">
                                 {label}
                               </span>
-                              <span className="text-base leading-tight">
-                                {weatherCodeToEmoji(code)}
+                              <span className="inline-flex justify-center text-white">
+                                <WeatherGlyph
+                                  code={code}
+                                  className="h-4 w-4"
+                                />
                               </span>
                               <span className="text-[10px] font-bold tabular-nums text-white">
                                 {max != null ? `${Math.round(max)}°` : "—"}
@@ -1320,12 +1658,14 @@ export default function DashboardPage() {
                       </div>
                     </>
                   ) : smartTripDetailsLoading ? (
-                    <p className="text-[11px] text-[rgba(255,255,255,0.75)]">
-                      🌤️ Weather loading...
+                    <p className="flex items-center gap-1.5 text-[11px] text-[rgba(255,255,255,0.75)]">
+                      <CloudSun className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
+                      Weather loading...
                     </p>
                   ) : (
-                    <p className="text-[11px] text-[rgba(255,255,255,0.75)]">
-                      🌤️ Weather loading...
+                    <p className="flex items-center gap-1.5 text-[11px] text-[rgba(255,255,255,0.75)]">
+                      <CloudSun className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
+                      Weather loading...
                     </p>
                   )}
                 </div>
@@ -1335,7 +1675,14 @@ export default function DashboardPage() {
                 {/* C — Rain */}
                 {rainDayLabel ? (
                   <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
-                    <p className="font-medium">⚠️ Rain expected on {rainDayLabel}</p>
+                    <p className="flex items-center gap-1.5 font-medium">
+                      <AlertTriangle
+                        className="h-4 w-4 shrink-0"
+                        strokeWidth={1.5}
+                        aria-hidden
+                      />
+                      Rain expected on {rainDayLabel}
+                    </p>
                     <p className="mt-1 text-xs text-amber-800">
                       Plan indoor activities for that day
                     </p>
@@ -1362,7 +1709,7 @@ export default function DashboardPage() {
                           >
                             <div className="min-w-0">
                               <p className="text-sm font-semibold" style={{ color: NAVY }}>
-                                <span className="mr-1">{categoryEmoji(loc.category)}</span>
+                                <CategoryGlyph category={loc.category} />
                                 {loc.name}
                               </p>
                             </div>
@@ -1420,9 +1767,11 @@ export default function DashboardPage() {
                           aria-hidden
                         >
                           {row.done ? (
-                            <span className="text-[11px] font-bold leading-none text-white">
-                              ✓
-                            </span>
+                            <Check
+                              className="h-3 w-3 text-white"
+                              strokeWidth={2.5}
+                              aria-hidden
+                            />
                           ) : null}
                         </span>
                         <span
@@ -1465,7 +1814,7 @@ export default function DashboardPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="text-sm font-bold" style={{ color: NAVY }}>
-                      🏖️ Goa weekend
+                      Goa weekend
                     </p>
                     <p className="mt-1 text-[10px]" style={{ color: MUTED }}>
                       Apr 18–20 · 5 members · 2 spots left
@@ -1483,7 +1832,7 @@ export default function DashboardPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="text-sm font-bold" style={{ color: NAVY }}>
-                      🏔️ Manali trek
+                      Manali trek
                     </p>
                     <p className="mt-1 text-[10px]" style={{ color: MUTED }}>
                       May 2–6 · 8 members · 4 spots left

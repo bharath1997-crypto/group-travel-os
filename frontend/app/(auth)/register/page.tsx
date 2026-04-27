@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Plane } from "lucide-react";
 import {
   Suspense,
   type FormEvent,
@@ -166,8 +167,8 @@ function RegisterPageInner() {
         <div className="w-full max-w-md">
           <div className="mb-6 flex items-center justify-between">
             <AppLogo variant="onLight" className="h-8 w-auto max-w-[180px]" />
-            <span className="text-2xl" aria-hidden>
-              ✈️
+            <span className="inline-flex text-slate-800" aria-hidden>
+              <Plane className="h-7 w-7" strokeWidth={1.5} />
             </span>
           </div>
           <div className="reg-envelope-wrap relative flex justify-center" aria-hidden>

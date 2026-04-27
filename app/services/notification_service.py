@@ -1,5 +1,5 @@
 """
-app/services/notification_service.py — FCM push notifications
+app/services/notification_service.py — In-app feed, FCM push notifications
 
 Firebase messaging only inside send_to_token. DB queries use injected Session.
 """
@@ -7,8 +7,9 @@ from __future__ import annotations
 
 import logging
 import uuid
+from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.models.expense import Expense
@@ -17,11 +18,138 @@ from app.models.notification import Notification
 from app.models.poll import Poll
 from app.models.trip import Trip
 from app.models.user import User
+from app.utils.exceptions import AppException
 
 logger = logging.getLogger(__name__)
 
+_MAX_TITLE = 200
+_MAX_BODY = 500
+
+
+def _clip(s: str, n: int) -> str:
+    t = s.strip() if s else ""
+    if len(t) <= n:
+        return t
+    return t[: n - 1] + "…"
+
 
 class NotificationService:
+
+    @staticmethod
+    def append_in_app(
+        db: Session,
+        user_id: uuid.UUID,
+        notif_type: str,
+        title: str,
+        body: str,
+        data: dict[str, Any] | None = None,
+    ) -> Notification:
+        """Add an in-app notification to the session; caller commits and sends FCM."""
+        row = Notification(
+            user_id=user_id,
+            type=notif_type,
+            title=_clip(title, _MAX_TITLE),
+            body=_clip(body, _MAX_BODY),
+            data=data,
+        )
+        db.add(row)
+        return row
+
+    @staticmethod
+    def try_fcm_for_user(
+        db: Session,
+        user_id: uuid.UUID,
+        title: str,
+        body: str,
+        *,
+        notif_type: str,
+        notification_id: uuid.UUID,
+        data: dict[str, Any] | None = None,
+    ) -> None:
+        try:
+            u = db.get(User, user_id)
+            if u and u.fcm_token and u.fcm_token.strip():
+                fcm_data: dict[str, str] = {
+                    "type": notif_type,
+                    "notification_id": str(notification_id),
+                }
+                if data:
+                    fcm_data.update({k: str(v) for k, v in data.items()})
+                NotificationService.send_to_token(
+                    u.fcm_token,
+                    _clip(title, _MAX_TITLE),
+                    _clip(body, _MAX_BODY),
+                    fcm_data,
+                )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("FCM after in-app notification failed: %s", exc)
+
+    @staticmethod
+    def get_notifications(
+        db: Session,
+        current_user: User,
+        *,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> list[Notification]:
+        return list(
+            db.execute(
+                select(Notification)
+                .where(Notification.user_id == current_user.id)
+                .order_by(Notification.created_at.desc())
+                .offset(offset)
+                .limit(limit),
+            )
+            .scalars()
+            .all(),
+        )
+
+    @staticmethod
+    def get_unread_count(db: Session, current_user: User) -> int:
+        c = (
+            db.execute(
+                select(func.count())
+                .select_from(Notification)
+                .where(
+                    Notification.user_id == current_user.id,
+                    Notification.is_read.is_(False),
+                ),
+            ).scalar()
+            or 0
+        )
+        return int(c)
+
+    @staticmethod
+    def mark_as_read(
+        db: Session,
+        notification_id: uuid.UUID,
+        current_user: User,
+    ) -> Notification:
+        row = db.execute(
+            select(Notification).where(Notification.id == notification_id),
+        ).scalar_one_or_none()
+        if not row:
+            AppException.not_found("Notification not found")
+        if row.user_id != current_user.id:
+            AppException.forbidden("You cannot change this notification")
+        if not row.is_read:
+            row.is_read = True
+            db.commit()
+            db.refresh(row)
+        return row
+
+    @staticmethod
+    def mark_all_read(db: Session, current_user: User) -> int:
+        res = db.execute(
+            update(Notification)
+            .where(
+                Notification.user_id == current_user.id,
+                Notification.is_read.is_(False),
+            )
+            .values(is_read=True),
+        )
+        db.commit()
+        return int(res.rowcount or 0)
 
     @staticmethod
     def create_notification(
@@ -35,8 +163,8 @@ class NotificationService:
         row = Notification(
             user_id=user_id,
             type=notif_type,
-            title=title,
-            body=body,
+            title=_clip(title, _MAX_TITLE),
+            body=_clip(body, _MAX_BODY),
             data=data,
         )
         db.add(row)
@@ -53,8 +181,8 @@ class NotificationService:
                     fcm_data.update({k: str(v) for k, v in data.items()})
                 NotificationService.send_to_token(
                     u.fcm_token,
-                    title,
-                    body,
+                    row.title,
+                    row.body,
                     fcm_data,
                 )
         except Exception as exc:  # noqa: BLE001 — log and keep in-app record

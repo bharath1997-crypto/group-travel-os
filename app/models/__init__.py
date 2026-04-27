@@ -12,6 +12,7 @@ from app.models.poll import Poll, PollOption, Vote, PollType, PollStatus
 from app.models.expense import Expense, ExpenseSplit
 from app.models.saved_pin import SavedPin
 from app.models.subscription import Subscription
+from app.models.group_invitation import GroupInvitation
 from app.models.notification import Notification
 from app.models.friend_request import FriendRequest
 from app.models.blocked_user import BlockedUser
@@ -41,6 +42,7 @@ __all__: list[str] = [
     "ExpenseSplit",
     "SavedPin",
     "Subscription",
+    "GroupInvitation",
     "Notification",
     "FriendRequest",
     "BlockedUser",

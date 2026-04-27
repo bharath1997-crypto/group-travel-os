@@ -68,6 +68,7 @@ def search_users(
             or_(
                 User.full_name.ilike(f"%{q_norm}%"),
                 User.username.ilike(f"%{q_norm}%"),
+                User.email.ilike(f"%{q_norm}%"),
                 User.phone == phone_term,
             ),
         )

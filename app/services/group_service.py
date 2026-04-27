@@ -14,7 +14,9 @@ import uuid
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.models.expense import Expense, ExpenseSplit
 from app.models.group import Group, GroupMember, MemberRole
+from app.models.trip import Trip
 from app.models.user import User
 from app.utils.exceptions import AppException
 
@@ -45,11 +47,13 @@ class GroupService:
         name: str,
         description: str | None,
         current_user: User,
+        group_type: str = "regular",
     ) -> Group:
         invite_code = _generate_unique_invite_code(db)
         group = Group(
             name=name,
             description=description,
+            group_type=group_type,
             created_by=current_user.id,
             invite_code=invite_code,
         )
@@ -205,3 +209,197 @@ class GroupService:
         db.refresh(group)
         logger.info("Invite code regenerated for group %s", group_id)
         return group
+
+    @staticmethod
+    def leave_group(
+        db: Session,
+        group_id: uuid.UUID,
+        current_user: User,
+    ) -> None:
+        member = db.execute(
+            select(GroupMember).where(
+                GroupMember.group_id == group_id,
+                GroupMember.user_id == current_user.id,
+            )
+        ).scalar_one_or_none()
+        if not member:
+            AppException.not_found("Not a member of this group")
+
+        group = db.execute(select(Group).where(Group.id == group_id)).scalar_one_or_none()
+        if not group:
+            AppException.not_found("Group not found")
+
+        admin_count = db.execute(
+            select(func.count())
+            .select_from(GroupMember)
+            .where(
+                GroupMember.group_id == group_id,
+                GroupMember.role == MemberRole.admin,
+            )
+        ).scalar_one()
+        if member.role == MemberRole.admin and admin_count == 1:
+            AppException.bad_request("Assign another admin before leaving")
+
+        if group.group_type == "travel":
+            trip_ids = db.execute(
+                select(Trip.id).where(Trip.group_id == group_id)
+            ).scalars().all()
+            if trip_ids:
+                h1 = db.execute(
+                    select(ExpenseSplit.id)
+                    .join(Expense, ExpenseSplit.expense_id == Expense.id)
+                    .where(
+                        Expense.trip_id.in_(trip_ids),
+                        ExpenseSplit.user_id == current_user.id,
+                        ExpenseSplit.is_settled.is_(False),
+                    )
+                    .limit(1)
+                ).first()
+                h2 = db.execute(
+                    select(ExpenseSplit.id)
+                    .join(Expense, ExpenseSplit.expense_id == Expense.id)
+                    .where(
+                        Expense.trip_id.in_(trip_ids),
+                        Expense.paid_by == current_user.id,
+                        ExpenseSplit.is_settled.is_(False),
+                    )
+                    .limit(1)
+                ).first()
+                if h1 is not None or h2 is not None:
+                    AppException.bad_request(
+                        "Settle all balances before leaving this travel group"
+                    )
+
+        db.delete(member)
+        db.commit()
+        logger.info("User %s left group %s", current_user.id, group_id)
+
+    @staticmethod
+    def get_pending_balances_count(
+        db: Session,
+        group_id: uuid.UUID,
+        requesting_user_id: uuid.UUID,
+    ) -> dict:
+        GroupService.require_admin(db, group_id, requesting_user_id)
+
+        group = db.execute(select(Group).where(Group.id == group_id)).scalar_one_or_none()
+        if not group:
+            AppException.not_found("Group not found")
+
+        trip_ids = db.execute(
+            select(Trip.id).where(Trip.group_id == group_id)
+        ).scalars().all()
+        if not trip_ids:
+            return {"pending_member_count": 0, "can_close": True}
+
+        uids = db.execute(
+            select(ExpenseSplit.user_id)
+            .join(Expense, ExpenseSplit.expense_id == Expense.id)
+            .where(
+                Expense.trip_id.in_(trip_ids),
+                ExpenseSplit.is_settled.is_(False),
+            )
+            .distinct()
+        ).scalars().all()
+        n = len({u for u in uids})
+        return {"pending_member_count": n, "can_close": n == 0}
+
+    @staticmethod
+    def get_balance_with_user(
+        db: Session,
+        current_user_id: uuid.UUID,
+        other_user_id: uuid.UUID,
+    ) -> dict:
+        if other_user_id == current_user_id:
+            AppException.bad_request("Cannot check balance with yourself")
+
+        other = db.execute(select(User).where(User.id == other_user_id)).scalar_one_or_none()
+        if not other:
+            AppException.not_found("User not found")
+
+        shared = db.execute(
+            select(GroupMember.group_id)
+            .where(
+                GroupMember.user_id == other_user_id,
+                GroupMember.group_id.in_(
+                    select(GroupMember.group_id).where(
+                        GroupMember.user_id == current_user_id
+                    )
+                ),
+            )
+        ).scalars().all()
+        if not shared:
+            return {
+                "other_user_id": str(other_user_id),
+                "other_user_name": other.full_name,
+                "total_net": 0.0,
+                "by_group": [],
+            }
+
+        by_group: list[dict] = []
+        total_net = 0.0
+
+        for gid in shared:
+            g = db.execute(select(Group).where(Group.id == gid)).scalar_one_or_none()
+            if not g:
+                continue
+            trip_ids = db.execute(
+                select(Trip.id).where(Trip.group_id == gid)
+            ).scalars().all()
+            if not trip_ids:
+                by_group.append(
+                    {
+                        "group_id": str(g.id),
+                        "group_name": g.name,
+                        "group_type": g.group_type,
+                        "net_amount": 0.0,
+                        "is_settled": True,
+                    }
+                )
+                continue
+
+            they_owe = db.execute(
+                select(
+                    func.coalesce(func.sum(ExpenseSplit.amount), 0.0)
+                )
+                .select_from(ExpenseSplit)
+                .join(Expense, ExpenseSplit.expense_id == Expense.id)
+                .where(
+                    Expense.trip_id.in_(trip_ids),
+                    Expense.paid_by == current_user_id,
+                    ExpenseSplit.user_id == other_user_id,
+                    ExpenseSplit.is_settled.is_(False),
+                )
+            ).scalar_one()
+            you_owe = db.execute(
+                select(
+                    func.coalesce(func.sum(ExpenseSplit.amount), 0.0)
+                )
+                .select_from(ExpenseSplit)
+                .join(Expense, ExpenseSplit.expense_id == Expense.id)
+                .where(
+                    Expense.trip_id.in_(trip_ids),
+                    Expense.paid_by == other_user_id,
+                    ExpenseSplit.user_id == current_user_id,
+                    ExpenseSplit.is_settled.is_(False),
+                )
+            ).scalar_one()
+
+            net = float(they_owe) - float(you_owe)
+            total_net += net
+            by_group.append(
+                {
+                    "group_id": str(g.id),
+                    "group_name": g.name,
+                    "group_type": g.group_type,
+                    "net_amount": net,
+                    "is_settled": abs(net) < 1e-9,
+                }
+            )
+
+        return {
+            "other_user_id": str(other_user_id),
+            "other_user_name": other.full_name,
+            "total_net": total_net,
+            "by_group": by_group,
+        }

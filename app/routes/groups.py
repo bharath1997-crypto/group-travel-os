@@ -11,11 +11,13 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.group import (
     GroupCreate,
+    GroupDetail,
     GroupMemberOut,
     GroupOut,
     InviteCodeOut,
     JoinGroupRequest,
     group_member_to_out,
+    group_to_detail,
     group_to_out,
 )
 from app.services.group_service import GroupService
@@ -36,7 +38,9 @@ def create_group(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    group = GroupService.create_group(db, data.name, data.description, current_user)
+    group = GroupService.create_group(
+        db, data.name, data.description, current_user, data.group_type
+    )
     return group_to_out(group)
 
 
@@ -86,7 +90,7 @@ def list_group_members(
 
 @router.get(
     "/{group_id}",
-    response_model=GroupOut,
+    response_model=GroupDetail,
     status_code=status.HTTP_200_OK,
     summary="Get a group by id",
 )
@@ -96,7 +100,33 @@ def get_group(
     current_user: User = Depends(get_current_user),
 ):
     group = GroupService.get_group(db, group_id, current_user)
-    return group_to_out(group)
+    return group_to_detail(group)
+
+
+@router.delete(
+    "/{group_id}/leave",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Leave the group",
+)
+def leave_group(
+    group_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    GroupService.leave_group(db, group_id, current_user)
+
+
+@router.get(
+    "/{group_id}/close-check",
+    status_code=status.HTTP_200_OK,
+    summary="Unsettled-balance count before closing a group (admin only)",
+)
+def close_group_check(
+    group_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    return GroupService.get_pending_balances_count(db, group_id, current_user.id)
 
 
 @router.delete(

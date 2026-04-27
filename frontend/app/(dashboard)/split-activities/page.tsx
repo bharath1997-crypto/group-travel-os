@@ -7,10 +7,29 @@ import {
   useEffect,
   useMemo,
   useState,
+  useRef,
   type Dispatch,
   type ReactNode,
   type SetStateAction,
 } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Banknote,
+  BarChart2,
+  Calendar,
+  Car,
+  ClipboardList,
+  Drama,
+  Hotel,
+  List,
+  Menu,
+  Music,
+  Pill,
+  Plane,
+  ShoppingBag,
+  Sparkles,
+  Utensils,
+} from "lucide-react";
 
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
@@ -164,26 +183,26 @@ function groupExpensesByMonth(
   return map;
 }
 
-function getCategoryIcon(category: string): string {
+function categoryIconComponent(category: string): LucideIcon {
   const c = category.toLowerCase().trim();
-  const map: Record<string, string> = {
-    accommodation: "🏨",
-    hotel: "🏨",
-    transport: "🚗",
-    food: "🍽️",
-    activities: "🎭",
-    activity: "🎭",
-    shopping: "🛍️",
-    medical: "💊",
-    flight: "✈️",
-    entertainment: "🎵",
-    other: "📋",
+  const map: Record<string, LucideIcon> = {
+    accommodation: Hotel,
+    hotel: Hotel,
+    transport: Car,
+    food: Utensils,
+    activities: Drama,
+    activity: Drama,
+    shopping: ShoppingBag,
+    medical: Pill,
+    flight: Plane,
+    entertainment: Music,
+    other: ClipboardList,
   };
   if (map[c]) return map[c]!;
-  if (c.includes("food")) return "🍽️";
-  if (c.includes("hotel") || c.includes("accommodation")) return "🏨";
-  if (c.includes("transport")) return "🚗";
-  return "📋";
+  if (c.includes("food")) return Utensils;
+  if (c.includes("hotel") || c.includes("accommodation")) return Hotel;
+  if (c.includes("transport")) return Car;
+  return ClipboardList;
 }
 
 function parseCategoryFromDescription(desc: string): string {
@@ -217,8 +236,44 @@ function firstLetter(name: string): string {
   return t ? t[0]!.toUpperCase() : "?";
 }
 
+const shimmerBar = {
+  background:
+    "linear-gradient(90deg, #1e2538 25%, #2a3248 50%, #1e2538 75%)",
+  backgroundSize: "200% 100%" as const,
+  animation: "shimmer 1.5s infinite" as const,
+  borderRadius: 8,
+};
+
+const Skeleton = ({
+  width = "100%",
+  height = 16,
+}: {
+  width?: string | number;
+  height?: number;
+}) => <div style={{ width, height, ...shimmerBar }} />;
+
+const GROUP_BATCH = 5;
+
+async function withStatusDeadline<T>(
+  path: string,
+  pageSignal: AbortSignal,
+): Promise<{ data: T | null; status: number }> {
+  const t = new AbortController();
+  const timer = setTimeout(() => t.abort(), 8000);
+  const onPageAbort = () => t.abort();
+  pageSignal.addEventListener("abort", onPageAbort);
+  try {
+    if (pageSignal.aborted) return { data: null, status: 0 };
+    return await apiFetchWithStatus<T>(path, { signal: t.signal });
+  } finally {
+    clearTimeout(timer);
+    pageSignal.removeEventListener("abort", onPageAbort);
+  }
+}
+
 export default function SplitActivitiesPage() {
   const router = useRouter();
+  const loadAbortRef = useRef<AbortController | null>(null);
   const [user, setUser] = useState<UserOut | null>(null);
   const [groups, setGroups] = useState<GroupOut[]>([]);
   const [trips, setTrips] = useState<TripWithGroup[]>([]);
@@ -227,6 +282,7 @@ export default function SplitActivitiesPage() {
   const [allMembers, setAllMembers] = useState<MemberRow[]>([]);
   const [view, setView] = useState<ViewState>({ type: "overview" });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showSettleForm, setShowSettleForm] = useState(false);
   const [settleTarget, setSettleTarget] = useState<BalanceWithTrip | null>(
@@ -288,18 +344,24 @@ export default function SplitActivitiesPage() {
   }, [allMembers, user]);
 
   const loadData = useCallback(async () => {
+    loadAbortRef.current?.abort();
+    const ac = new AbortController();
+    loadAbortRef.current = ac;
+    const pageSignal = ac.signal;
     setLoading(true);
+    setLoadError(null);
     try {
       const [meRes, groupsRes] = await Promise.all([
-        apiFetchWithStatus<UserOut>("/auth/me"),
-        apiFetchWithStatus<GroupOut[]>("/groups"),
+        withStatusDeadline<UserOut>("/auth/me", pageSignal),
+        withStatusDeadline<GroupOut[]>("/groups", pageSignal),
       ]);
+      if (pageSignal.aborted) return;
       if (meRes.status === 401 || groupsRes.status === 401) {
         handleUnauthorized();
         return;
       }
       if (!meRes.data || !groupsRes.data) {
-        showToast("Could not load data", "error");
+        setLoadError("Could not load data. Tap to retry.");
         return;
       }
       setUser(meRes.data);
@@ -321,9 +383,10 @@ export default function SplitActivitiesPage() {
 
       const tripResults = await Promise.all(
         gList.map((g) =>
-          apiFetchWithStatus<TripOut[]>(`/groups/${g.id}/trips`),
+          withStatusDeadline<TripOut[]>(`/groups/${g.id}/trips`, pageSignal),
         ),
       );
+      if (pageSignal.aborted) return;
       if (tripResults.some((r) => r.status === 401)) {
         handleUnauthorized();
         return;
@@ -342,64 +405,69 @@ export default function SplitActivitiesPage() {
       if (flatTrips.length === 0) {
         setAllExpenses([]);
         setAllBalances([]);
-        setLoading(false);
-        return;
-      }
-
-      const perTrip = await Promise.all(
-        flatTrips.map((t) =>
-          Promise.all([
-            apiFetchWithStatus<ExpenseOut[]>(`/trips/${t.id}/expenses`),
-            apiFetchWithStatus<BalanceLine[]>(
-              `/trips/${t.id}/expenses/summary`,
-            ),
-          ]),
-        ),
-      );
-
-      if (perTrip.some(([e, s]) => e.status === 401 || s.status === 401)) {
-        handleUnauthorized();
         return;
       }
 
       const allExp: ExpenseWithTrip[] = [];
       const allBal: BalanceWithTrip[] = [];
-
-      for (let i = 0; i < flatTrips.length; i++) {
-        const t = flatTrips[i]!;
-        const [expRes, balRes] = perTrip[i]!;
-        for (const e of expRes.data ?? []) {
-          allExp.push({
-            ...e,
-            trip_title: t.title,
-            group_name: t.group_name,
-          });
+      for (let i = 0; i < flatTrips.length; i += GROUP_BATCH) {
+        if (pageSignal.aborted) return;
+        const chunk = flatTrips.slice(i, i + GROUP_BATCH);
+        const perChunk = await Promise.all(
+          chunk.map((t) =>
+            Promise.all([
+              withStatusDeadline<ExpenseOut[]>(
+                `/trips/${t.id}/expenses`,
+                pageSignal,
+              ),
+              withStatusDeadline<BalanceLine[]>(
+                `/trips/${t.id}/expenses/summary`,
+                pageSignal,
+              ),
+            ]),
+          ),
+        );
+        if (pageSignal.aborted) return;
+        if (perChunk.some(([e, s]) => e.status === 401 || s.status === 401)) {
+          handleUnauthorized();
+          return;
         }
-        for (const line of balRes.data ?? []) {
-          allBal.push({
-            ...line,
-            trip_id: t.id,
-            trip_title: t.title,
-            group_name: t.group_name,
-          });
+        for (let j = 0; j < chunk.length; j++) {
+          const t = chunk[j]!;
+          const [expRes, balRes] = perChunk[j]!;
+          for (const e of expRes.data ?? []) {
+            allExp.push({
+              ...e,
+              trip_title: t.title,
+              group_name: t.group_name,
+            });
+          }
+          for (const line of balRes.data ?? []) {
+            allBal.push({
+              ...line,
+              trip_id: t.id,
+              trip_title: t.title,
+              group_name: t.group_name,
+            });
+          }
         }
       }
 
-      setAllExpenses(allExp);
-      setAllBalances(allBal);
+      if (!pageSignal.aborted) {
+        setAllExpenses(allExp);
+        setAllBalances(allBal);
+      }
     } catch (e) {
-      console.error(e);
-      showToast(
-        e instanceof Error ? e.message : "Failed to load data",
-        "error",
-      );
+      if ((e as Error)?.name === "AbortError") return;
+      setLoadError("Could not load data. Tap to retry.");
     } finally {
-      setLoading(false);
+      if (!pageSignal.aborted) setLoading(false);
     }
-  }, [handleUnauthorized, showToast]);
+  }, [handleUnauthorized]);
 
   useEffect(() => {
     void loadData();
+    return () => loadAbortRef.current?.abort();
   }, [loadData]);
 
   useEffect(() => {
@@ -568,7 +636,7 @@ export default function SplitActivitiesPage() {
       setFormReceiptPreview(null);
       setShowNotesPanel(false);
       setFormCategory("Food");
-      showToast("Expense added! 💸", "success");
+      showToast("Expense added!", "success");
       await loadData();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Could not save";
@@ -609,7 +677,7 @@ export default function SplitActivitiesPage() {
       if (ids.length === 0) {
         showToast("No unsettled splits found", "info");
       } else {
-        showToast("Settled! 🎉", "success");
+        showToast("Settled!", "success");
       }
       setShowSettleForm(false);
       setSettleTarget(null);
@@ -635,7 +703,7 @@ export default function SplitActivitiesPage() {
     const payerName = nameByUserId.get(e.paid_by) || "Someone";
     const mine = uid ? e.splits.find((s) => s.user_id === uid) : undefined;
     const cat = parseCategoryFromDescription(e.description);
-    const icon = getCategoryIcon(cat);
+    const CatIcon = categoryIconComponent(cat);
     const desc = stripCategoryPrefix(e.description);
     const dayStr = new Date(e.created_at).toLocaleDateString("en-US", {
       month: "short",
@@ -677,7 +745,9 @@ export default function SplitActivitiesPage() {
         <div className="w-12 shrink-0 pt-0.5 text-[11px] font-medium text-[#6C757D]">
           {dayStr}
         </div>
-        <div className="text-lg leading-none">{icon}</div>
+        <div className="text-lg leading-none text-[#6C757D]">
+          <CatIcon className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+        </div>
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-bold text-[#2C3E50]">{desc}</p>
           <p className="text-[11px] text-[#6C757D]">{e.trip_title}</p>
@@ -764,7 +834,10 @@ export default function SplitActivitiesPage() {
               view.type === "overview" ? { borderLeftColor: CORAL } : undefined
             }
           >
-            📊 Dashboard
+            <span className="inline-flex items-center gap-2">
+              <BarChart2 className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+              Dashboard
+            </span>
           </button>
           <button
             type="button"
@@ -781,7 +854,10 @@ export default function SplitActivitiesPage() {
               view.type === "activity" ? { borderLeftColor: CORAL } : undefined
             }
           >
-            📋 Recent Activity
+            <span className="inline-flex items-center gap-2">
+              <List className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+              Recent Activity
+            </span>
           </button>
         </div>
 
@@ -960,29 +1036,57 @@ export default function SplitActivitiesPage() {
           style={{ borderColor: BORDER }}
         >
           <div className="space-y-2">
-            <div className="h-10 animate-pulse rounded-lg bg-gray-200" />
-            <div className="h-10 animate-pulse rounded-lg bg-gray-200" />
+            <Skeleton height={40} />
+            <Skeleton height={40} />
           </div>
           <div className="mt-6 space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-8 animate-pulse rounded-full bg-gray-200" />
+              <Skeleton key={i} height={32} width="100%" />
             ))}
           </div>
           <div className="mt-6 space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-12 animate-pulse rounded-lg bg-gray-200" />
+              <Skeleton key={i} height={48} />
             ))}
           </div>
         </aside>
-        <main className="flex-1 p-6">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <main className="flex-1 p-4 lg:p-6">
+          <div className="mb-4 flex border-b bg-white py-3 lg:hidden" style={{ borderColor: BORDER }}>
+            <span className="px-2 font-bold" style={{ color: NAVY }}>
+              Splitwise
+            </span>
+          </div>
+          <h1 className="text-[22px] font-bold" style={{ color: NAVY }}>
+            Dashboard
+          </h1>
+          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-24 animate-pulse rounded-xl bg-gray-200" />
+              <div key={i} className="rounded-xl border bg-white p-4" style={{ borderColor: BORDER }}>
+                <Skeleton height={20} width="40%" />
+                <div className="mt-2">
+                  <Skeleton height={28} width="3rem" />
+                </div>
+              </div>
             ))}
           </div>
-          <div className="mt-6 space-y-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-14 animate-pulse rounded-lg bg-gray-200" />
+          <h2 className="mb-3 mt-8 text-sm font-bold text-[#2C3E50]">Recent</h2>
+          <div
+            className="overflow-hidden rounded-xl border bg-white"
+            style={{ borderColor: BORDER }}
+          >
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex gap-3 border-b border-[#f0f0f0] px-4 py-3 last:border-b-0"
+              >
+                <Skeleton height={12} width={32} />
+                <Skeleton width={20} height={20} />
+                <div className="min-w-0 flex-1 space-y-1">
+                  <Skeleton height={16} width="60%" />
+                  <Skeleton height={12} width="40%" />
+                </div>
+                <Skeleton height={20} width={48} />
+              </div>
             ))}
           </div>
         </main>
@@ -990,10 +1094,31 @@ export default function SplitActivitiesPage() {
     );
   }
 
+  if (loadError && !loading) {
+    return (
+      <div
+        className="flex min-h-screen flex-col items-center justify-center px-6"
+        style={{ background: BG }}
+      >
+        <p className="text-center text-sm" style={{ color: NAVY }}>
+          Could not load data. Tap to retry.
+        </p>
+        <button
+          type="button"
+          onClick={() => void loadData()}
+          className="mt-4 rounded-lg px-6 py-2.5 text-sm font-bold text-white"
+          style={{ background: CORAL }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   if (groups.length === 0) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-6" style={{ background: BG }}>
-        <span className="text-6xl">✈️</span>
+        <Plane className="h-16 w-16 text-[#0F3460]" strokeWidth={1.5} aria-hidden />
         <p className="mt-4 text-lg font-bold" style={{ color: NAVY }}>
           No groups yet
         </p>
@@ -1034,7 +1159,7 @@ export default function SplitActivitiesPage() {
               style={{ borderColor: BORDER }}
               onClick={() => setShowMobileSidebar(true)}
             >
-              ☰
+              <Menu className="h-5 w-5" strokeWidth={1.5} />
             </button>
             <span className="font-bold" style={{ color: NAVY }}>
               Splitwise
@@ -1291,7 +1416,9 @@ function OverviewSection({
 
       {allSettledBanner ? (
         <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-4 text-center">
-          <p className="text-2xl">🎉</p>
+          <span className="inline-flex justify-center text-green-700">
+            <Sparkles className="h-8 w-8" strokeWidth={1.5} aria-hidden />
+          </span>
           <p className="mt-1 font-bold text-green-800">All settled up!</p>
           <p className="text-sm text-green-700">No pending balances</p>
         </div>
@@ -1407,7 +1534,9 @@ function OverviewSection({
       </h2>
       {noExpenses ? (
         <div className="flex flex-col items-center rounded-xl border bg-white py-12 text-center" style={{ borderColor: BORDER }}>
-          <span className="text-5xl">💸</span>
+          <span className="inline-flex justify-center text-[#0F3460]">
+            <Banknote className="h-12 w-12" strokeWidth={1.5} aria-hidden />
+          </span>
           <p className="mt-3 font-bold text-[#0F3460]">No expenses yet</p>
           <p className="mt-1 text-sm text-[#6C757D]">Add your first expense</p>
           <button
@@ -1710,8 +1839,9 @@ function FriendSection({
       <div className="mb-8 rounded-xl border bg-white p-6 text-center shadow-sm" style={{ borderColor: BORDER }}>
         {Math.abs(net) < 0.01 ? (
           <>
-            <p className="text-2xl font-extrabold text-[#6C757D]">
-              Settled up 🎉
+            <p className="flex items-center justify-center gap-2 text-2xl font-extrabold text-[#6C757D]">
+              <Sparkles className="h-7 w-7" strokeWidth={1.5} aria-hidden />
+              Settled up
             </p>
           </>
         ) : net > 0 ? (
@@ -1939,15 +2069,15 @@ function AddExpenseSheet(props: {
   } = props;
 
   const categories = [
-    { key: "Food", emoji: "🍽️" },
-    { key: "Hotel", emoji: "🏨" },
-    { key: "Transport", emoji: "🚗" },
-    { key: "Activity", emoji: "🎭" },
-    { key: "Shopping", emoji: "🛍️" },
-    { key: "Medical", emoji: "💊" },
-    { key: "Flight", emoji: "✈️" },
-    { key: "Other", emoji: "📦" },
-  ];
+    { key: "Food", Icon: Utensils },
+    { key: "Hotel", Icon: Hotel },
+    { key: "Transport", Icon: Car },
+    { key: "Activity", Icon: Drama },
+    { key: "Shopping", Icon: ShoppingBag },
+    { key: "Medical", Icon: Pill },
+    { key: "Flight", Icon: Plane },
+    { key: "Other", Icon: ClipboardList },
+  ] as const;
 
   return (
     <>
@@ -2067,7 +2197,11 @@ function AddExpenseSheet(props: {
             onClick={() => setShowCategoryPicker(!showCategoryPicker)}
             className="text-2xl"
           >
-            {categories.find((c) => c.key === formCategory)?.emoji ?? "🧾"}
+            {(() => {
+              const row = categories.find((c) => c.key === formCategory);
+              const Ico = row?.Icon ?? ClipboardList;
+              return <Ico className="h-7 w-7 text-[#6C757D]" strokeWidth={1.5} />;
+            })()}
           </button>
           <input
             value={formDesc}
@@ -2079,7 +2213,9 @@ function AddExpenseSheet(props: {
         </div>
         {showCategoryPicker ? (
           <div className="mt-2 flex flex-wrap gap-2 rounded-xl border p-2" style={{ borderColor: BORDER }}>
-            {categories.map((c) => (
+            {categories.map((c) => {
+              const Ico = c.Icon;
+              return (
               <button
                 key={c.key}
                 type="button"
@@ -2087,11 +2223,13 @@ function AddExpenseSheet(props: {
                   setFormCategory(c.key);
                   setShowCategoryPicker(false);
                 }}
-                className="rounded-lg px-2 py-1 text-xs font-bold"
+                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-bold"
               >
-                {c.emoji} {c.key}
+                <Ico className="h-4 w-4 text-[#6C757D]" strokeWidth={1.5} aria-hidden />
+                {c.key}
               </button>
-            ))}
+              );
+            })}
           </div>
         ) : null}
 
@@ -2166,7 +2304,7 @@ function AddExpenseSheet(props: {
         </div>
 
         <label className="mt-4 flex items-center gap-2 text-sm text-[#6C757D]">
-          📅
+          <Calendar className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
           <input
             type="date"
             value={formDate}
@@ -2199,7 +2337,7 @@ function AddExpenseSheet(props: {
           className="mt-4 w-full rounded-lg border py-2 text-sm font-semibold"
           style={{ borderColor: BORDER }}
         >
-          📎 Add notes or receipt
+          Add notes or receipt
         </button>
         {showNotesPanel ? (
           <div className="mt-2 rounded-xl border p-3" style={{ borderColor: BORDER }}>

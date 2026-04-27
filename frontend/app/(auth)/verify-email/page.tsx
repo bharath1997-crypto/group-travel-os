@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { Banknote, Plane, Users } from "lucide-react";
 
 import { AppLogo } from "@/components/AppLogo";
 import { apiFetch } from "@/lib/api";
@@ -174,8 +175,8 @@ function VerifyEmailInner() {
 
       <header className="flex w-full items-center justify-between border-b border-slate-100 px-4 py-4 sm:px-6">
         <AppLogo variant="onLight" className="h-8 w-auto max-w-[180px]" />
-        <span className="text-2xl" aria-hidden>
-          ✈️
+        <span className="inline-flex text-slate-800" aria-hidden>
+          <Plane className="h-7 w-7" strokeWidth={1.5} />
         </span>
       </header>
 
@@ -250,21 +251,26 @@ function VerifyEmailInner() {
               </p>
             </div>
             <div className="mt-8 flex gap-3">
-              {[
-                { icon: "✈️", label: "Plan trips" },
-                { icon: "👥", label: "Invite friends" },
-                { icon: "💰", label: "Split costs" },
-              ].map((c) => (
+              {(
+                [
+                  { Icon: Plane, label: "Plan trips" },
+                  { Icon: Users, label: "Invite friends" },
+                  { Icon: Banknote, label: "Split costs" },
+                ] as const
+              ).map((c) => {
+                const CIcon = c.Icon;
+                return (
                 <div
                   key={c.label}
                   className="flex flex-1 flex-col items-center rounded-xl border border-slate-200 bg-white py-4 text-center"
                 >
-                  <span className="text-xl" aria-hidden>
-                    {c.icon}
+                  <span className="inline-flex text-slate-700" aria-hidden>
+                    <CIcon className="h-5 w-5" strokeWidth={1.5} />
                   </span>
                   <span className="mt-1 text-xs text-slate-500">{c.label}</span>
                 </div>
-              ))}
+                );
+              })}
             </div>
             <div className="mt-6 flex flex-col gap-3">
               <Link

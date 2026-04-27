@@ -6,22 +6,25 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, Response, status
-from sqlalchemy import func, select, update
+from fastapi import APIRouter, Depends, Query, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.models.notification import Notification
 from app.models.user import User
 from app.schemas.notification import NotificationListOut, NotificationOut, UnreadCountOut
+from app.services.notification_service import NotificationService
 from app.utils.auth import get_current_user
 from app.utils.database import get_db
-from app.utils.exceptions import AppException
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 
-def _row_to_out(row: Notification) -> NotificationOut:
+def _row_to_out(row: Any) -> NotificationOut:
     return NotificationOut.model_validate(row)
+
+
+class MarkAllReadOut(BaseModel):
+    ok: bool = True
 
 
 @router.get(
@@ -35,32 +38,13 @@ def list_notifications(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Any:
-    unread = (
-        db.execute(
-            select(func.count())
-            .select_from(Notification)
-            .where(
-                Notification.user_id == current_user.id,
-                Notification.is_read.is_(False),
-            )
-        ).scalar()
-        or 0
-    )
-
-    rows = (
-        db.execute(
-            select(Notification)
-            .where(Notification.user_id == current_user.id)
-            .order_by(Notification.created_at.desc())
-            .offset(offset)
-            .limit(limit)
-        )
-        .scalars()
-        .all()
+    unread = NotificationService.get_unread_count(db, current_user)
+    rows = NotificationService.get_notifications(
+        db, current_user, limit=limit, offset=offset
     )
     return NotificationListOut(
         notifications=[_row_to_out(r) for r in rows],
-        unread_count=int(unread),
+        unread_count=unread,
     )
 
 
@@ -73,58 +57,34 @@ def unread_count(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> UnreadCountOut:
-    c = (
-        db.execute(
-            select(func.count())
-            .select_from(Notification)
-            .where(
-                Notification.user_id == current_user.id,
-                Notification.is_read.is_(False),
-            )
-        ).scalar()
-        or 0
-    )
-    return UnreadCountOut(count=int(c))
+    c = NotificationService.get_unread_count(db, current_user)
+    return UnreadCountOut(count=c)
 
 
 @router.post(
     "/read-all",
-    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=MarkAllReadOut,
+    status_code=status.HTTP_200_OK,
     summary="Mark all notifications as read",
 )
 def mark_all_read(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> Response:
-    db.execute(
-        update(Notification)
-        .where(
-            Notification.user_id == current_user.id,
-            Notification.is_read.is_(False),
-        )
-        .values(is_read=True),
-    )
-    db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+) -> MarkAllReadOut:
+    NotificationService.mark_all_read(db, current_user)
+    return MarkAllReadOut(ok=True)
 
 
-@router.patch(
+@router.api_route(
     "/{notification_id}/read",
+    methods=["POST", "PATCH"],
     response_model=NotificationOut,
-    summary="Mark one notification as read",
+    summary="Mark one notification as read (POST or PATCH)",
 )
 def mark_one_read(
     notification_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Any:
-    row = db.execute(
-        select(Notification).where(Notification.id == notification_id)
-    ).scalar_one_or_none()
-    if not row or row.user_id != current_user.id:
-        AppException.not_found("Notification not found")
-    if not row.is_read:
-        row.is_read = True
-        db.commit()
-        db.refresh(row)
+    row = NotificationService.mark_as_read(db, notification_id, current_user)
     return _row_to_out(row)

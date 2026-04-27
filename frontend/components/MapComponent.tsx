@@ -201,7 +201,7 @@ function UserLocationLayers({ lat, lng }: { lat: number; lng: number }) {
         style="border-radius:50%; border: 2px solid white; display:block; margin: 0 auto 8px; box-shadow: 0 1px 3px rgba(0,0,0,.2);"/>
       <strong>${safeName}</strong><br/>
       <span style="color:#6B7280; font-size:12px;">
-        📍 You are here
+        You are here
       </span><br/>
       <span style="color:#6B7280; font-size:11px;">
         ${lat.toFixed(4)}, ${lng.toFixed(4)}
@@ -672,7 +672,7 @@ export default function MapComponent() {
             <Popup>
               <div className="min-w-[12rem] max-w-[16rem] text-xs">
                 <p className="font-semibold text-gray-900">
-                  📍 {pin.name}
+                  {pin.name}
                 </p>
                 <p className="mt-1">
                   <span

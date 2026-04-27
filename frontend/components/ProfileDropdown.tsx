@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { Check } from "lucide-react";
 
 import { ProfileAvatarBadge } from "@/components/ProfileAvatarBadge";
 import type { DashboardUser } from "@/contexts/dashboard-user-context";
@@ -171,8 +172,8 @@ export function ProfileDropdown({ avatarSize, layout, onLogout }: Props) {
               aria-hidden
             >
               {profileComplete ? (
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-sm text-emerald-700">
-                  ✓
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                  <Check className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
                 </span>
               ) : (
                 <span className="inline-block h-3.5 w-3.5 rounded-full border-2 border-red-500 bg-white" />

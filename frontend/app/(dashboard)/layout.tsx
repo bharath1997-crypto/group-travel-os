@@ -6,6 +6,22 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Banknote,
+  BarChart2,
+  Bell,
+  CloudSun,
+  Compass,
+  LayoutDashboard,
+  Check,
+  Map,
+  MapPin,
+  Menu,
+  Plane,
+  User,
+  Users,
+} from "lucide-react";
 
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
@@ -98,54 +114,35 @@ function IconDoor() {
   );
 }
 
-function BellIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-    </svg>
-  );
-}
-
 const MAIN_NAV: {
   href: string;
   label: string;
-  emoji: string;
+  Icon: LucideIcon;
   kind?: "notifications";
 }[] = [
-  { href: "/dashboard", label: "Dashboard", emoji: "🏠" },
-  { href: "/trips", label: "Trips", emoji: "✈️" },
-  { href: "/travel-hub", label: "Connect", emoji: "👥" },
-  { href: "/split-activities", label: "Split Activities", emoji: "💸" },
-  { href: "/live", label: "Live", emoji: "📍" },
-  { href: "/feed", label: "Explore", emoji: "🧭" },
-  { href: "/map", label: "Map", emoji: "🗺️" },
-  { href: "/weather", label: "Weather", emoji: "🌤️" },
-  { href: "/stats", label: "Stats", emoji: "📊" },
+  { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
+  { href: "/trips", label: "Trips", Icon: Plane },
+  { href: "/travel-hub", label: "Connect", Icon: Users },
+  { href: "/split-activities", label: "Split Activities", Icon: Banknote },
+  { href: "/live", label: "Live", Icon: MapPin },
+  { href: "/feed", label: "Explore", Icon: Compass },
+  { href: "/map", label: "Map", Icon: Map },
+  { href: "/weather", label: "Weather", Icon: CloudSun },
+  { href: "/stats", label: "Stats", Icon: BarChart2 },
   {
     href: "/notifications",
     label: "Notifications",
-    emoji: "🔔",
+    Icon: Bell,
     kind: "notifications",
   },
 ];
 
-const MOBILE_NAV: { href: string; label: string; emoji: string }[] = [
-  { href: "/dashboard", label: "Home", emoji: "🏠" },
-  { href: "/trips", label: "Trips", emoji: "✈️" },
-  { href: "/travel-hub", label: "Travel Hub", emoji: "👥" },
-  { href: "/map", label: "Map", emoji: "🗺️" },
-  { href: "/profile", label: "Profile", emoji: "👤" },
+const MOBILE_NAV: { href: string; label: string; Icon: LucideIcon }[] = [
+  { href: "/dashboard", label: "Home", Icon: LayoutDashboard },
+  { href: "/trips", label: "Trips", Icon: Plane },
+  { href: "/travel-hub", label: "Travel Hub", Icon: Users },
+  { href: "/map", label: "Map", Icon: Map },
+  { href: "/profile", label: "Profile", Icon: User },
 ];
 
 const PRIMARY_NAV = MAIN_NAV.slice(0, -1);
@@ -154,7 +151,7 @@ const NOTIF_NAV = MAIN_NAV[MAIN_NAV.length - 1]!;
 function SidebarNavLink({
   href,
   label,
-  emoji,
+  Icon,
   active,
   notifCount,
   kind,
@@ -163,7 +160,7 @@ function SidebarNavLink({
 }: {
   href: string;
   label: string;
-  emoji: string;
+  Icon: LucideIcon;
   active: boolean;
   notifCount: number;
   kind?: "notifications";
@@ -185,12 +182,12 @@ function SidebarNavLink({
           : "border-transparent text-[rgba(255,255,255,0.65)] hover:bg-[rgba(255,255,255,0.1)] hover:text-white",
       ].join(" ")}
     >
-      <span className="inline-flex w-5 shrink-0 justify-center text-base leading-none">
-        {kind === "notifications" ? (
-          <BellIcon className="h-5 w-5 text-current" />
-        ) : (
-          emoji
-        )}
+      <span className="inline-flex w-5 shrink-0 justify-center leading-none">
+        <Icon
+          className="h-5 w-5 shrink-0 text-current"
+          strokeWidth={1.5}
+          aria-hidden
+        />
       </span>
       <span
         className={
@@ -380,7 +377,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               key={item.href}
               href={item.href}
               label={item.label}
-              emoji={item.emoji}
+              Icon={item.Icon}
               active={isActive(pathname, item.href)}
               notifCount={notifCount}
             />
@@ -392,7 +389,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           <SidebarNavLink
             href={NOTIF_NAV.href}
             label={NOTIF_NAV.label}
-            emoji={NOTIF_NAV.emoji}
+            Icon={NOTIF_NAV.Icon}
             active={isActive(pathname, NOTIF_NAV.href)}
             notifCount={notifCount}
             kind="notifications"
@@ -428,10 +425,10 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                 />
                 {profileComplete ? (
                   <span
-                    className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold leading-none text-white ring-2 ring-[#0F3460]"
+                    className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-[#0F3460]"
                     aria-hidden
                   >
-                    ✓
+                    <Check className="h-2.5 w-2.5" strokeWidth={2.5} />
                   </span>
                 ) : (
                   <span
@@ -475,7 +472,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-lg text-2xl text-[#E94560] transition-colors hover:bg-[rgba(255,255,255,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             onClick={() => setSidebarOpen(true)}
           >
-            ☰
+            <Menu className="h-6 w-6" strokeWidth={1.5} />
           </button>
           <Link
             href="/dashboard"
@@ -499,7 +496,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               key={item.href}
               href={item.href}
               label={item.label}
-              emoji={item.emoji}
+              Icon={item.Icon}
               active={isActive(pathname, item.href)}
               notifCount={notifCount}
               iconOnly
@@ -513,7 +510,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           <SidebarNavLink
             href={NOTIF_NAV.href}
             label={NOTIF_NAV.label}
-            emoji={NOTIF_NAV.emoji}
+            Icon={NOTIF_NAV.Icon}
             active={isActive(pathname, NOTIF_NAV.href)}
             notifCount={notifCount}
             kind="notifications"
@@ -550,10 +547,10 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               />
               {profileComplete ? (
                 <span
-                  className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-emerald-500 text-[8px] font-bold leading-none text-white ring-2 ring-[#0F3460]"
+                  className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-[#0F3460]"
                   aria-hidden
                 >
-                  ✓
+                  <Check className="h-2 w-2" strokeWidth={2.5} />
                 </span>
               ) : (
                 <span
@@ -611,7 +608,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   key={item.href}
                   href={item.href}
                   label={item.label}
-                  emoji={item.emoji}
+                  Icon={item.Icon}
                   active={isActive(pathname, item.href)}
                   notifCount={notifCount}
                   onNavigate={afterNav}
@@ -624,7 +621,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               <SidebarNavLink
                 href={NOTIF_NAV.href}
                 label={NOTIF_NAV.label}
-                emoji={NOTIF_NAV.emoji}
+                Icon={NOTIF_NAV.Icon}
                 active={isActive(pathname, NOTIF_NAV.href)}
                 notifCount={notifCount}
                 kind="notifications"
@@ -665,10 +662,10 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                     />
                     {profileComplete ? (
                       <span
-                        className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold leading-none text-white ring-2 ring-[#0F3460]"
+                        className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-[#0F3460]"
                         aria-hidden
                       >
-                        ✓
+                        <Check className="h-2.5 w-2.5" strokeWidth={2.5} />
                       </span>
                     ) : (
                       <span
@@ -720,7 +717,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-2xl text-[#E94560] transition-colors hover:bg-[#F8F9FA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
               onClick={() => setSidebarOpen(true)}
             >
-              ☰
+              <Menu className="h-6 w-6" strokeWidth={1.5} />
             </button>
             <div className="flex min-w-0 flex-1 justify-center px-2">
               {!isMapPage ? (
@@ -743,7 +740,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#6C757D] transition-colors hover:bg-[#F8F9FA] hover:text-[#0F3460] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
               aria-label="Notifications"
             >
-              <BellIcon className="h-6 w-6" />
+              <Bell className="h-6 w-6" strokeWidth={1.5} />
               {notifCount > 0 ? (
                 <span className="absolute -right-0.5 -top-0.5 flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white">
                   {notifCount > 99 ? "99+" : notifCount}
@@ -783,7 +780,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
         <nav className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-[#E9ECEF] bg-white px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden">
           <div className="mx-auto flex w-full max-w-lg justify-between">
-            {MOBILE_NAV.map(({ href, label, emoji }) => {
+            {MOBILE_NAV.map(({ href, label, Icon }) => {
               const active = isActive(pathname, href);
               return (
                 <Link
@@ -792,12 +789,15 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   className="flex min-w-0 flex-1 flex-col items-center gap-1 py-1"
                 >
                   <span
-                    className={`text-lg leading-none ${
+                    className={`inline-flex leading-none ${
                       active ? "text-[#E94560]" : "text-[#6C757D]"
                     }`}
                     aria-hidden
                   >
-                    {emoji}
+                    <Icon
+                      className="h-[18px] w-[18px]"
+                      strokeWidth={1.5}
+                    />
                   </span>
                   <span
                     className={`max-w-full truncate text-[10px] font-semibold ${

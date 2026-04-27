@@ -201,6 +201,14 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(notifications_router, prefix="/api/v1")
 
+    from app.routes.invitations import router as invitations_router
+
+    app.include_router(invitations_router, prefix="/api/v1")
+
+    from app.routes.users import router as users_router
+
+    app.include_router(users_router, prefix="/api/v1")
+
     from app.routes.social import router as social_router
 
     app.include_router(social_router, prefix="/api/v1")
