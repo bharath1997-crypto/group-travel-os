@@ -55,6 +55,7 @@ import {
   Music,
   Phone,
   Play,
+  UserPlus,
   Search,
   Star,
   Trash2,
@@ -100,15 +101,18 @@ function fetchWithTimeout(
   });
 }
 
-/** Travello dark navy + crimson (not indigo) */
-const BG = "#0F172A";
-const SURFACE = "#1E293B";
-const BORDER_SUB = "#1E293B";
-const TEXT = "#FFFFFF";
-const TEXT_MUTED = "#64748B";
-const TEXT_SECONDARY = "#94A3B8";
-const SECTION_LABEL = "#475569";
-const ACCENT = "#DC2626";
+/** Connect hub: dark list + warm chat (WhatsApp-inspired) */
+const BG = "#1e2a3a";
+const LIST_ROW_HOVER = "#263545";
+const LIST_ROW_SELECTED = "#2d4060";
+const SURFACE = "#2d4060";
+const BORDER_SUB = "rgba(255,255,255,0.08)";
+const TEXT = "#e8eaf0";
+const TEXT_MUTED = "#8892a4";
+const TEXT_SECONDARY = "#8892a4";
+const SECTION_LABEL = "#8892a4";
+const ACCENT = "#4a9eff";
+const HUB_GREEN = "#00a884";
 const ONLINE = "#22C55E";
 /** Expense lines (with white label text; amounts use these) */
 const MONEY_LINE_RED = "#F87171";
@@ -117,13 +121,14 @@ const MONEY_LINE_BLUE = "#60A5FA";
 const MONEY_TOTAL_POS = "#4ADE80";
 const MONEY_TOTAL_NEG = "#F87171";
 const MONEY_TOTAL_ZERO = "#94A3B8";
-const RIGHT_PANEL_BG = "#0A0F1E";
+const RIGHT_PANEL_BG = "#e8ddd0";
 
 const CHAT_PREFS_KEY = "travelhub_chat_prefs_v1";
 const DELETED_CHATS_KEY = "travelhub_deleted_chats_v1";
 const GT_BUDDY_FAVOURITES = "gt_buddy_favourites";
 const GT_TRAVELHUB_OPEN_PROFILE = "gt_travelhub_open_profile";
 const GT_OPEN_DM_USER_ID = "gt_open_dm_user_id";
+const GT_TRAVELHUB_ACTIVE_TAB = "gt_travelhub_active_tab";
 
 /** Initials-avatar background colors (name hash) */
 const INITIALS_AVATAR_COLORS = [
@@ -138,8 +143,8 @@ const DEMO_CHAT_TRAVELLO_HELP_ID = "__demo_travello_help__";
 const DEMO_CHAT_COMMUNITY_ID = "__demo_community_updates__";
 
 /** Legacy message thread colors */
-const MSG_BORDER = "#334155";
-const WA_BG = "#0F172A";
+const MSG_BORDER = "#e9edef";
+const WA_BG = "#e8ddd0";
 
 /** Quick text chips (no emoji) for optional compose shortcuts */
 const QUICK_REACTION_CHIPS = [
@@ -568,14 +573,20 @@ function InitialsAvatar({
   className = "",
 }: {
   name: string;
-  size: 32 | 40 | 80;
+  size: 32 | 40 | 46 | 80;
   className?: string;
 }) {
   const label = (name.trim() || "?").toUpperCase();
   const letter = label.charAt(0) || "?";
   const bg = listAvatarColor(name.trim() || "?");
   const textClass =
-    size === 32 ? "text-sm" : size === 40 ? "text-base" : "text-3xl";
+    size === 32
+      ? "text-sm"
+      : size === 40
+        ? "text-base"
+        : size === 46
+          ? "text-lg"
+          : "text-3xl";
   return (
     <span
       className={`inline-flex shrink-0 select-none items-center justify-center rounded-full font-bold text-white ${textClass} ${className}`.trim()}
@@ -658,6 +669,23 @@ function memberOnlineRecently(
     if (m.user_id === selfId) continue;
     const t = parseLastSeen(m.last_seen ?? null);
     if (t != null && t >= cutoff) return true;
+  }
+  return false;
+}
+
+function dmListPeerOnline(
+  u: UserMe | null,
+  c: ChatInfo,
+  glist: GroupOut[],
+): boolean {
+  if (!u || c.type !== "individual" || c.isAnnouncement) return false;
+  const peer = c.members.find((m) => m !== u.id);
+  if (!peer) return false;
+  for (const g of glist) {
+    const mems = g.members ?? [];
+    if (mems.some((m) => m.user_id === peer)) {
+      return memberOnlineRecently(mems, u.id);
+    }
   }
   return false;
 }
@@ -759,18 +787,20 @@ function getDateLabel(timestamp: number): string {
   });
 }
 
-const WA_MSG_BG = "#0f172a";
-const WA_INCOMING_BUBBLE = "#1e2538";
-const WA_OUTGOING_BUBBLE = "#7f1d1d";
-const WA_HEADER_GROUP = "#1a1f35";
-const WA_CORAL = "#ff6b6b";
-const WA_GREEN = "#1d9e75";
-const WA_MUTED = "#6b7280";
-const WA_TEXT = "#f9fafb";
-const WA_INPUT_ROW = "#1a1f35";
-const WA_INPUT_FIELD = "#0f172a";
+const WA_MSG_BG = "#f5ede4";
+const WA_INCOMING_BUBBLE = "#ffffff";
+const WA_OUTGOING_BUBBLE = "#fde8d8";
+const BUBBLE_TEXT = "#1a1a2e";
+const BUBBLE_TS = "#8896a0";
+const WA_HEADER_GROUP = "#f0f2f5";
+const WA_CORAL = "#4a9eff";
+const WA_GREEN = "#00a884";
+const WA_MUTED = "#667781";
+const WA_TEXT = "#111b21";
+const WA_INPUT_ROW = "#f0f2f5";
+const WA_INPUT_FIELD = "#ffffff";
 const WA_PATTERN =
-  "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)";
+  "radial-gradient(#b2a898 1px, transparent 1px)";
 
 const TH_MUTED = "#9ca3af";
 const TH_LABEL = "#6b7280";
@@ -1413,8 +1443,8 @@ function HubSearchField({
   return (
     <div className="shrink-0 px-4 py-2">
       <div
-        className="flex items-center gap-2 rounded-full px-3 py-2"
-        style={{ background: SURFACE }}
+        className="flex items-center gap-2 rounded-full border px-3 py-2"
+        style={{ background: "#152030", borderColor: "#2a3a50" }}
       >
         <span style={{ color: TEXT_MUTED }} aria-hidden>
           <Search className="h-5 w-5 opacity-80" strokeWidth={1.5} />
@@ -1423,7 +1453,8 @@ function HubSearchField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Search chats..."
-          className="min-w-0 flex-1 border-0 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+          className="min-w-0 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-[#8892a4]"
+          style={{ color: TEXT }}
         />
         {value ? (
           <button
@@ -1464,13 +1495,17 @@ function ChatListRow72({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full cursor-pointer items-center gap-3 border-b px-4 text-left transition-colors duration-150 hover:bg-[#1E293B]"
+      className="flex w-full cursor-pointer items-center gap-3 border-b px-4 text-left transition-colors duration-150"
       style={{
         height: 72,
-        borderColor: BORDER_SUB,
-        borderBottomWidth: 0.5,
-        background: active ? SURFACE : "transparent",
-        borderLeft: active ? `3px solid ${ACCENT}` : "3px solid transparent",
+        borderBottom: "1px solid rgba(255,255,255,0.04)",
+        background: active ? LIST_ROW_SELECTED : "transparent",
+      }}
+      onMouseEnter={(e) => {
+        if (!active) (e.currentTarget as HTMLButtonElement).style.background = LIST_ROW_HOVER;
+      }}
+      onMouseLeave={(e) => {
+        if (!active) (e.currentTarget as HTMLButtonElement).style.background = "transparent";
       }}
     >
       <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
@@ -1478,7 +1513,10 @@ function ChatListRow72({
       </div>
       <div className="flex min-w-0 flex-1 flex-col justify-center">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="min-w-0 truncate text-[14px] font-medium text-white">
+          <span
+            className="min-w-0 truncate text-[14px] font-medium"
+            style={{ color: TEXT }}
+          >
             {name}
             {muted ? (
               <span className="ml-1 inline-flex items-center text-slate-500" title="Muted">
@@ -1505,8 +1543,8 @@ function ChatListRow72({
           </p>
           {unread > 0 ? (
             <span
-              className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full px-1 text-[11px] font-bold text-white"
-              style={{ background: muted ? TEXT_MUTED : ACCENT }}
+              className="flex h-[18px] w-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+              style={{ background: muted ? TEXT_MUTED : "#4a9eff" }}
             >
               {unread > 99 ? "99+" : unread}
             </span>
@@ -1545,9 +1583,51 @@ function HubChatsTab({
   longPressTimerRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
 }) {
   const demosAlways = [DEMO_CHAT_TRAVELLO_HELP, DEMO_CHAT_COMMUNITY];
-  const filteredReal = mainChatList;
-  const dmSection = filteredReal.filter((c) => c.type !== "group");
-  const qGroups = groups;
+  const syntheticGroupChats: ChatInfo[] = useMemo(() => {
+    if (!user) return [];
+    return groups
+      .filter(
+        (g) =>
+          !mainChatList.some(
+            (c) =>
+              c.type === "group" &&
+              (c.group_id === g.id || c.id === `group_${g.id}`),
+          ),
+      )
+      .map((g) => {
+        const ids = (g.members ?? []).map((m) => m.user_id);
+        return {
+          id: `group_${g.id}`,
+          name: g.name,
+          type: "group" as const,
+          group_id: g.id,
+          members: ids.length > 0 ? ids : [user.id],
+          created_by: user.id,
+          created_at: Date.now(),
+          last_message_time: 0,
+          last_message: "",
+        } satisfies ChatInfo;
+      });
+  }, [groups, mainChatList, user]);
+
+  const mergedFlat = useMemo(() => {
+    const skipDemo = new Set<string>([
+      DEMO_CHAT_TRAVELLO_HELP.id,
+      DEMO_CHAT_COMMUNITY.id,
+    ]);
+    const list = mainChatList.filter((c) => !skipDemo.has(c.id));
+    const comb = [...list, ...syntheticGroupChats];
+    const sorted = [...comb].sort((a, b) => {
+      const pa = chatPrefs[a.id]?.pinned ? 1 : 0;
+      const pb = chatPrefs[b.id]?.pinned ? 1 : 0;
+      if (pb !== pa) return pb - pa;
+      return (
+        (b.last_message_time ?? b.created_at ?? 0) -
+        (a.last_message_time ?? a.created_at ?? 0)
+      );
+    });
+    return sorted;
+  }, [mainChatList, syntheticGroupChats, chatPrefs]);
 
   const openContext = (chat: ChatInfo, clientX: number, clientY: number) => {
     setContextMenu({ x: clientX, y: clientY, chat });
@@ -1585,10 +1665,9 @@ function HubChatsTab({
     const gMeta = c.group_id
       ? groups.find((g) => g.id === c.group_id)
       : undefined;
-    const online =
-      isGroup && user && !c.isAnnouncement
-        ? memberOnlineRecently(gMeta?.members ?? [], user.id)
-        : false;
+    const onlineDm = user
+      ? dmListPeerOnline(user, c, groups)
+      : false;
     const dmAv = !isGroup ? chatRowDmAvatarUrl(c) : null;
     if (dmAv) {
       return (
@@ -1600,9 +1679,9 @@ function HubChatsTab({
             width={40}
             height={40}
           />
-          {online ? (
+          {onlineDm ? (
             <span
-              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-[#0F172A]"
+              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-[#1e2a3a]"
               style={{ background: ONLINE }}
             />
           ) : null}
@@ -1613,9 +1692,9 @@ function HubChatsTab({
       return (
         <div className="relative">
           <InitialsAvatar name={rowLabel} size={40} />
-          {online ? (
+          {onlineDm ? (
             <span
-              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-[#0F172A]"
+              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-[#1e2a3a]"
               style={{ background: ONLINE }}
             />
           ) : null}
@@ -1625,12 +1704,13 @@ function HubChatsTab({
     return (
       <div className="relative">
         <InitialsAvatar name={rowLabel} size={40} />
-        {online ? (
-          <span
-            className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-[#0F172A]"
-            style={{ background: ONLINE }}
-          />
-        ) : null}
+        <span
+          className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-white/10"
+          style={{ background: BG, color: TEXT_MUTED }}
+          aria-hidden
+        >
+          <Users className="h-2 w-2" strokeWidth={2.5} />
+        </span>
       </div>
     );
   };
@@ -1651,10 +1731,22 @@ function HubChatsTab({
     const timeStr =
       c.displayTime ?? formatListTimestamp(t);
 
+    const isSyntheticGroupRow =
+      c.type === "group" &&
+      c.group_id &&
+      !mainChatList.some((m) => m.id === c.id);
+    const onRowActivate = () => {
+      if (isSyntheticGroupRow && c.group_id) {
+        onNavigateToGroup(c.group_id);
+        return;
+      }
+      onSelectChat(c);
+    };
+
     return (
       <ChatListRow72
         active={activeChatId === c.id}
-        onClick={() => onSelectChat(c)}
+        onClick={onRowActivate}
         avatar={renderAvatar(c)}
         name={chatRowDisplayName(c)}
         preview={preview}
@@ -1704,7 +1796,7 @@ function HubChatsTab({
             },
             {
               label: "Delete",
-              bg: ACCENT,
+              bg: "#DC2626",
               onClick: () => {
                 markChatDeleted(c.id);
                 showToast("Chat removed from this device", "success");
@@ -1733,7 +1825,7 @@ function HubChatsTab({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <ul className="m-0 min-h-0 flex-1 list-none overflow-y-auto p-0">
+      <ul className="m-0 min-h-0 flex-1 list-none custom-scrollbar overflow-y-auto pb-24 p-0">
         {demosAlways.map((c) =>
           wrapSwipe(
             c,
@@ -1742,61 +1834,15 @@ function HubChatsTab({
             </div>,
           ),
         )}
-        {qGroups.length > 0 ? (
-          <>
-            <li
-              className="sticky top-0 z-[1] list-none py-2 pl-4 pr-4 text-[11px] font-semibold uppercase tracking-wide"
-              style={{
-                color: SECTION_LABEL,
-                background: BG,
-              }}
-            >
-              Your groups
-            </li>
-            {qGroups.map((g) => (
-              <li key={g.id} className="list-none">
-                <ChatListRow72
-                  active={activeChatId === `group_${g.id}`}
-                  onClick={() => onNavigateToGroup(g.id)}
-                  avatar={
-                    <span
-                      className="flex h-12 w-12 items-center justify-center rounded-full text-[17px] font-bold text-white"
-                      style={{ background: listAvatarColor(g.name) }}
-                    >
-                      {(g.name.trim()[0] ?? "?").toUpperCase()}
-                    </span>
-                  }
-                  name={g.name}
-                  preview="No messages yet"
-                  time=""
-                  unread={0}
-                />
-              </li>
-            ))}
-          </>
-        ) : null}
-        {dmSection.length > 0 ? (
-          <>
-            <li
-              className="sticky top-0 z-[1] list-none py-2 pl-4 pr-4 text-[11px] font-semibold uppercase tracking-wide"
-              style={{
-                color: SECTION_LABEL,
-                background: BG,
-              }}
-            >
-              Direct messages
-            </li>
-            {dmSection.map((c) =>
-              wrapSwipe(
-                c,
-                <div key={c.id} className="block w-full">
-                  {rowInner(c)}
-                </div>,
-              ),
-            )}
-          </>
-        ) : null}
-        {qGroups.length === 0 && dmSection.length === 0 ? (
+        {mergedFlat.map((c) =>
+          wrapSwipe(
+            c,
+            <div key={c.id} className="block w-full">
+              {rowInner(c)}
+            </div>,
+          ),
+        )}
+        {mergedFlat.length === 0 ? (
           <li
             className="list-none px-4 py-8 text-center text-sm"
             style={{ color: TEXT_MUTED }}
@@ -1835,6 +1881,8 @@ function HubGroupsTab({
   setContextMenu,
   longPressTimerRef,
   masterAbortRef,
+  listHidden,
+  openCreateRequestId,
 }: {
   searchQuery: string;
   onSearchChange: (v: string) => void;
@@ -1853,6 +1901,8 @@ function HubGroupsTab({
   setContextMenu: (v: { x: number; y: number; chat: ChatInfo } | null) => void;
   longPressTimerRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
   masterAbortRef: MutableRefObject<AbortController | null>;
+  listHidden?: boolean;
+  openCreateRequestId?: number;
 }) {
   const MODAL_CREATE_BG = "#1a1f35";
   const [createOpen, setCreateOpen] = useState(false);
@@ -1887,6 +1937,12 @@ function HubGroupsTab({
       return null;
     });
   }, []);
+
+  useEffect(() => {
+    if (openCreateRequestId == null || openCreateRequestId < 1) return;
+    resetCreateGroupModal();
+    setCreateOpen(true);
+  }, [openCreateRequestId, resetCreateGroupModal]);
 
   useEffect(() => {
     if (!createOpen || createStep !== 1) return;
@@ -2127,9 +2183,11 @@ function HubGroupsTab({
   };
 
   return (
+    <>
+      {!listHidden ? (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <HubSearchField value={searchQuery} onChange={onSearchChange} />
-      <ul className="m-0 min-h-0 flex-1 list-none overflow-y-auto p-0 pb-14">
+      <ul className="m-0 min-h-0 flex-1 list-none custom-scrollbar overflow-y-auto p-0 pb-14">
         {filtered.map((c) => {
           const gMeta = c.group_id
             ? groups.find((g) => g.id === c.group_id)
@@ -2213,7 +2271,7 @@ function HubGroupsTab({
                   },
                   {
                     label: "Delete",
-                    bg: ACCENT,
+                    bg: "#DC2626",
                     onClick: () => {
                       markChatDeleted(c.id);
                       showToast("Chat removed from this device", "success");
@@ -2248,20 +2306,8 @@ function HubGroupsTab({
           No group chats yet
         </p>
       ) : null}
-      <button
-        type="button"
-        onClick={() => {
-          resetCreateGroupModal();
-          setCreateOpen(true);
-        }}
-        className="sticky bottom-0 z-10 h-12 w-full shrink-0 rounded-none text-sm font-semibold text-white"
-        style={{ background: ACCENT }}
-      >
-        <span className="inline-flex items-center justify-center gap-1.5">
-          <ThIconPlus size={14} className="text-white" />
-          Create Group
-        </span>
-      </button>
+    </div>
+      ) : null}
       {createOpen ? (
         <div
           className="fixed inset-0 z-[600] flex items-end justify-center sm:items-center sm:p-6"
@@ -2344,7 +2390,7 @@ function HubGroupsTab({
                 {createStep === 1 ? (
                   <div className="box-border w-full min-w-0 px-0.5 pr-2">
                     {selectedMembers.length > 0 ? (
-                      <div className="mb-3 max-h-24 flex-wrap gap-1.5 overflow-y-auto">
+                      <div className="mb-3 max-h-24 flex-wrap gap-1.5 custom-scrollbar overflow-y-auto">
                         <div className="flex flex-wrap gap-1.5">
                           {selectedMembers.map((m) => (
                             <div
@@ -2400,7 +2446,7 @@ function HubGroupsTab({
                       }}
                     />
                     <div
-                      className="mt-2 min-h-[180px] overflow-y-auto rounded-xl border p-0.5"
+                      className="mt-2 min-h-[180px] custom-scrollbar overflow-y-auto rounded-xl border p-0.5"
                       style={{
                         background: BG,
                         borderColor: MSG_BORDER,
@@ -2804,7 +2850,7 @@ function HubGroupsTab({
           </div>
         </div>
       ) : null}
-    </div>
+    </>
   );
 }
 
@@ -3097,235 +3143,515 @@ function HubContactsTab({
   );
 }
 
-const CALL_CAROUSEL_SLIDES: {
-  icon: "video" | "link" | "mic" | "pin" | "zap";
-  title: string;
-  body: string;
-  bg: string;
-}[] = [
-  {
-    icon: "video",
-    title: "Start a group call",
-    body: "Tap the video icon in any group chat to instantly start a Jitsi-powered group video call. No sign-up needed for participants.",
-    bg: "#0C1A2E",
-  },
-  {
-    icon: "link",
-    title: "Share the link",
-    body: "Every call generates a unique link. Share it in the group chat; members join from web or mobile with one tap.",
-    bg: "#0C2E1A",
-  },
-  {
-    icon: "mic",
-    title: "Audio controls",
-    body: "Mute yourself, toggle camera, raise your hand, or switch to audio-only mode to save data on the go.",
-    bg: "#1C0A1A",
-  },
-  {
-    icon: "pin",
-    title: "Pin to trip",
-    body: "Call recordings and notes are saved to your trip. All decisions made on the call sync to your trip's Travel Hub automatically.",
-    bg: "#0A0F2E",
-  },
-  {
-    icon: "zap",
-    title: "Try it now!",
-    body: "Open any group in Travel Hub and tap the video call button to start your first call.",
-    bg: "#1C0A00",
-  },
-];
+function HubCallsTab({
+  showToast: _showToast,
+}: {
+  showToast: (m: string) => void;
+}) {
+  return (
+    <div
+      className="flex min-h-0 flex-1 flex-col items-center justify-center px-6"
+      style={{ background: BG }}
+    >
+      <Phone
+        className="h-12 w-12 shrink-0"
+        style={{ color: "#8892a4" }}
+        strokeWidth={1.5}
+        aria-hidden
+      />
+      <p
+        className="mt-4 text-center text-base font-medium"
+        style={{ color: "#111b21" }}
+      >
+        No calls yet
+      </p>
+      <p
+        className="mt-1 text-center text-[13px] leading-snug"
+        style={{ color: "#8892a4" }}
+      >
+        Voice and video calls coming soon
+      </p>
+    </div>
+  );
+}
 
-function HubCallsTab({ showToast }: { showToast: (m: string) => void }) {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [slide, setSlide] = useState(0);
-  const touchStartX = useRef(0);
+function HubUpdatesTab({ currentUser }: { currentUser: UserMe | null }) {
+  return (
+    <div
+      className="flex min-h-0 flex-1 flex-col"
+      style={{ background: BG }}
+    >
+      <div
+        className="flex items-center gap-3 border-b px-4 py-3"
+        style={{ borderColor: BORDER_SUB }}
+      >
+        {currentUser ? (
+          <InitialsAvatar
+            name={currentUser.full_name?.trim() || "You"}
+            size={40}
+          />
+        ) : (
+          <div
+            className="h-10 w-10 shrink-0 rounded-full"
+            style={{ background: SURFACE }}
+          />
+        )}
+        <p
+          className="min-w-0 flex-1 text-left text-[15px] font-medium"
+          style={{ color: "#e8eaf0" }}
+        >
+          My Status
+        </p>
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6">
+        <p className="text-center text-sm" style={{ color: TEXT_MUTED }}>
+          No updates yet
+        </p>
+      </div>
+    </div>
+  );
+}
 
-  const callSlideIcon = (key: (typeof CALL_CAROUSEL_SLIDES)[number]["icon"]) => {
-    const cls = "text-[#9ca3af]";
-    if (key === "video")
-      return <ThIconVideoCam size={56} className={cls} aria-hidden />;
-    if (key === "link")
-      return <ThIconLink size={56} className={cls} aria-hidden />;
-    if (key === "mic")
-      return <ThIconMicLine size={56} className={cls} aria-hidden />;
-    if (key === "pin")
-      return <ThIconPin size={56} className={cls} aria-hidden />;
-    return <ThIconZap size={56} className={cls} aria-hidden />;
-  };
+function ConnectHeaderComposeIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
 
-  const go = (dir: -1 | 1) => {
-    setSlide((s) => {
-      const n = s + dir;
-      if (n < 0) return CALL_CAROUSEL_SLIDES.length - 1;
-      if (n >= CALL_CAROUSEL_SLIDES.length) return 0;
-      return n;
-    });
+type NewChatContactRow = {
+  id: string;
+  full_name: string;
+  sub: string;
+  avatar_url: string | null;
+};
+
+function NewChatSlidePanel({
+  onClose,
+  onNewGroup,
+  onPickContact,
+  user,
+  groups,
+  mainChatList,
+  handleUnauthorized,
+  masterAbortRef,
+}: {
+  onClose: () => void;
+  onNewGroup: () => void;
+  onPickContact: (p: ContactPerson) => void;
+  user: UserMe;
+  groups: GroupOut[];
+  mainChatList: ChatInfo[];
+  handleUnauthorized: () => void;
+  masterAbortRef: MutableRefObject<AbortController | null>;
+}) {
+  const newChatMuted = "#8896a0";
+  const newChatName = "#e9edef";
+  const newChatSearchBg = "#263545";
+  const newGroupAmber = "#f0a500";
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [baseRows, setBaseRows] = useState<NewChatContactRow[]>([]);
+  const [searchHits, setSearchHits] = useState<UserSearchResultRow[] | null>(
+    null,
+  );
+  const [loadingBase, setLoadingBase] = useState(false);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [exiting, setExiting] = useState(false);
+  const [entered, setEntered] = useState(false);
+  const searchSeq = useRef(0);
+  const baseLoadSeq = useRef(0);
+
+  useLayoutEffect(() => {
+    setEntered(false);
+    const id = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    const seq = ++baseLoadSeq.current;
+    setLoadingBase(true);
+    const ac = new AbortController();
+    void (async () => {
+      try {
+        const merged = new Map<string, NewChatContactRow>();
+        try {
+          const connR = await apiFetchWithStatus<UserSearchResultRow[]>(
+            "/social/connections",
+            { signal: ac.signal },
+          );
+          if (baseLoadSeq.current !== seq) return;
+          if (connR.status === 401) {
+            handleUnauthorized();
+            return;
+          }
+          if (connR.status === 200 && Array.isArray(connR.data)) {
+            for (const r of connR.data) {
+              if (r.id === user.id) continue;
+              merged.set(r.id, {
+                id: r.id,
+                full_name: r.full_name,
+                sub: userSearchResultSubline(r),
+                avatar_url: r.profile_picture ?? r.avatar_url,
+              });
+            }
+          }
+        } catch {
+          if (baseLoadSeq.current === seq) {
+            /* keep partial */
+          }
+        }
+        try {
+          const frR = await apiFetchWithStatus<UserSearchResultRow[]>(
+            "/social/friends",
+            { signal: ac.signal },
+          );
+          if (baseLoadSeq.current !== seq) return;
+          if (frR.status === 200 && Array.isArray(frR.data)) {
+            for (const r of frR.data) {
+              if (r.id === user.id) continue;
+              if (!merged.has(r.id)) {
+                merged.set(r.id, {
+                  id: r.id,
+                  full_name: r.full_name,
+                  sub: userSearchResultSubline(r),
+                  avatar_url: r.profile_picture ?? r.avatar_url,
+                });
+              }
+            }
+          }
+        } catch {
+          /* route may not exist */
+        }
+        for (const g of groups) {
+          for (const m of g.members ?? []) {
+            const uid = m.user_id ?? m.id;
+            if (!uid || uid === user.id) continue;
+            if (!merged.has(uid)) {
+              merged.set(uid, {
+                id: uid,
+                full_name: m.full_name?.trim() || "Member",
+                sub: "Group member",
+                avatar_url: m.avatar_url ?? null,
+              });
+            }
+          }
+        }
+        for (const ch of mainChatList) {
+          if (ch.type !== "individual" || ch.isBot || ch.isDemo) continue;
+          const peer = ch.members.find((x) => x !== user.id);
+          if (!peer || merged.has(peer)) continue;
+          const pRow = buildPeerSearchRowFromChat(ch, peer, []);
+          merged.set(peer, {
+            id: peer,
+            full_name: chatRowDisplayName(ch),
+            sub: userSearchResultSubline(pRow),
+            avatar_url:
+              ch.metadata?.profile_picture?.trim() ||
+              ch.metadata?.avatar_url?.trim() ||
+              null,
+          });
+        }
+        if (baseLoadSeq.current !== seq) return;
+        setBaseRows(
+          Array.from(merged.values()).sort((a, b) =>
+            a.full_name.localeCompare(b.full_name, undefined, {
+              sensitivity: "base",
+            }),
+          ),
+        );
+      } catch {
+        if (baseLoadSeq.current === seq) setBaseRows([]);
+      } finally {
+        if (baseLoadSeq.current === seq) setLoadingBase(false);
+      }
+    })();
+    return () => {
+      ac.abort();
+    };
+  }, [user, groups, mainChatList, handleUnauthorized]);
+
+  useEffect(() => {
+    if (searchQuery.trim().length < 1) {
+      setSearchHits(null);
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 1) {
+      return;
+    }
+    const seq = ++searchSeq.current;
+    const t = setTimeout(() => {
+      void (async () => {
+        setLoadingSearch(true);
+        try {
+          const r = await apiFetchWithStatus<UserSearchResultRow[]>(
+            `/users/search?q=${encodeURIComponent(q)}&limit=20`,
+            { signal: masterAbortRef.current?.signal },
+          );
+          if (searchSeq.current !== seq) return;
+          if (r.status === 401) {
+            handleUnauthorized();
+            return;
+          }
+          if (r.status === 200 && Array.isArray(r.data)) {
+            setSearchHits(r.data.filter((row) => row.id !== user.id));
+          } else {
+            setSearchHits([]);
+          }
+        } catch {
+          if (searchSeq.current === seq) setSearchHits([]);
+        } finally {
+          if (searchSeq.current === seq) setLoadingSearch(false);
+        }
+      })();
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchQuery, user, handleUnauthorized, masterAbortRef]);
+
+  const displayRows: NewChatContactRow[] = useMemo(() => {
+    const q = searchQuery.trim();
+    if (q.length >= 1) {
+      if (searchHits !== null) {
+        return searchHits.map((r) => ({
+          id: r.id,
+          full_name: r.full_name,
+          sub: userSearchResultSubline(r),
+          avatar_url: r.profile_picture ?? r.avatar_url,
+        }));
+      }
+      const ql = q.toLowerCase();
+      return baseRows.filter(
+        (r) =>
+          r.full_name.toLowerCase().includes(ql) ||
+          r.sub.toLowerCase().includes(ql),
+      );
+    }
+    return baseRows;
+  }, [searchQuery, searchHits, baseRows]);
+
+  const requestBack = useCallback(() => {
+    if (exiting) return;
+    setExiting(true);
+    setEntered(false);
+    setTimeout(() => {
+      setExiting(false);
+      setSearchQuery("");
+      setSearchHits(null);
+      onClose();
+    }, 200);
+  }, [exiting, onClose]);
+
+  const animStyle: CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    background: "#1e2a3a",
+    opacity: exiting ? 0 : entered ? 1 : 0,
+    transform: exiting
+      ? "translateX(-10px)"
+      : entered
+        ? "translateX(0)"
+        : "translateX(-10px)",
+    transition: "opacity 200ms ease, transform 200ms ease",
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <button
-        type="button"
-        onClick={() => setModalOpen(true)}
-        className="flex w-full cursor-pointer items-center gap-3 border-b px-4 text-left transition-colors hover:bg-[#1E293B]"
-        style={{
-          height: 72,
-          borderColor: BORDER_SUB,
-          borderBottomWidth: 0.5,
-          background: "transparent",
-        }}
+    <div
+      className="absolute inset-0 z-[30] min-h-0"
+      style={animStyle}
+    >
+      <div
+        className="flex shrink-0 items-center justify-between border-b px-3 py-3 pl-2"
+        style={{ borderColor: "rgba(255,255,255,0.05)" }}
       >
-        <InitialsAvatar
-          className="shrink-0"
-          name="Goa Gang"
-          size={40}
-        />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[14px] font-medium text-white">
-            Goa Gang · Group call
-          </p>
-          <p className="truncate text-[12px]" style={{ color: TEXT_MUTED }}>
-            Apr 20 · 3 participants · 12 min
-          </p>
+        <div className="flex min-w-0 flex-1 items-center gap-0.5">
+          <button
+            type="button"
+            onClick={requestBack}
+            className="flex h-9 w-9 shrink-0 items-center justify-center text-white/90"
+            aria-label="Back"
+          >
+            <ThIconChevronLeft size={22} className="text-white" />
+          </button>
+          <span
+            className="min-w-0 text-[16px] font-bold"
+            style={{ color: "#e8eaf0" }}
+          >
+            New chat
+          </span>
         </div>
-        <span
-          className="inline-flex shrink-0 items-center gap-1.5 text-[12px]"
-          style={{ color: ONLINE }}
-        >
-          <ThIconPhoneHandset size={16} className="text-current" />
-          Call back
-        </span>
-      </button>
-      <div className="p-4">
         <button
           type="button"
-          onClick={() => setModalOpen(true)}
-          className="w-full rounded-lg py-3 text-sm font-medium text-white"
-          style={{ background: SURFACE, border: `0.5px solid ${MSG_BORDER}` }}
+          className="flex h-9 w-9 shrink-0 items-center justify-center"
+          style={{ color: newChatMuted }}
+          aria-label="More"
         >
-          Watch Demo
+          <MoreVertical className="h-5 w-5" strokeWidth={1.5} />
         </button>
       </div>
 
-      {modalOpen ? (
+      <div className="shrink-0 px-3 pb-2 pt-1">
         <div
-          className="fixed inset-0 z-[500] flex items-center justify-center p-0 md:p-6"
-          style={{ background: "rgba(0,0,0,0.75)" }}
+          className="flex items-center gap-2 rounded-lg px-3 py-2.5"
+          style={{ background: newChatSearchBg }}
         >
-          <div
-            className="flex h-full w-full max-h-[90vh] max-w-lg flex-col overflow-hidden md:rounded-2xl"
-            style={{ background: "#000" }}
+          <Search className="h-4 w-4 shrink-0" style={{ color: newChatMuted }} />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search name or email..."
+            className="min-w-0 flex-1 border-0 bg-transparent text-sm outline-none"
+            style={{ color: newChatName }}
+            autoComplete="off"
+          />
+        </div>
+      </div>
+
+      <div className="shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <button
+          type="button"
+          onClick={() => {
+            if (exiting) return;
+            setExiting(true);
+            setEntered(false);
+            setTimeout(() => {
+              onNewGroup();
+              setExiting(false);
+              setSearchQuery("");
+              setSearchHits(null);
+              onClose();
+            }, 200);
+          }}
+          className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors"
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background =
+              LIST_ROW_HOVER;
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+          }}
+        >
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+            style={{ background: newGroupAmber }}
           >
-            <div className="relative shrink-0 px-4 pt-4">
-              <button
-                type="button"
-                aria-label="Close"
-                className="absolute right-3 top-3 text-2xl text-white"
-                onClick={() => setModalOpen(false)}
-              >
-                ×
-              </button>
-              <h2 className="flex items-center justify-center gap-2 pr-10 text-center text-lg font-semibold text-white">
-                <ThIconVideoCam size={22} className="text-[#9ca3af]" />
-                Jitsi Video Call Demo
-              </h2>
-              <p
-                className="mt-1 text-center text-[13px]"
-                style={{ color: TEXT_MUTED }}
-              >
-                Swipe to see how group calls work in Travello
-              </p>
-            </div>
-            <div
-              className="relative min-h-0 flex-1 touch-pan-y"
-              onTouchStart={(e) => {
-                touchStartX.current = e.touches[0]?.clientX ?? 0;
+            <UserPlus className="h-5 w-5 text-white" strokeWidth={2} />
+          </span>
+          <div className="min-w-0">
+            <p
+              className="text-[14px] font-bold"
+              style={{ color: newChatName }}
+            >
+              New group
+            </p>
+            <p className="text-[12px]" style={{ color: newChatMuted }}>
+              Create a group chat
+            </p>
+          </div>
+        </button>
+      </div>
+
+      <p
+        className="shrink-0 px-3 py-2 text-[11px] font-semibold uppercase"
+        style={{ color: newChatMuted }}
+      >
+        Contacts
+      </p>
+
+      <div
+        className="custom-scrollbar min-h-0 flex-1 overflow-y-auto"
+        style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+      >
+        {loadingBase && displayRows.length === 0 && searchQuery.trim().length < 1 ? (
+          <p className="px-3 py-4 text-sm" style={{ color: newChatMuted }}>
+            Loading…
+          </p>
+        ) : null}
+        {searchQuery.trim().length >= 1 && loadingSearch && searchHits === null ? (
+          <p className="px-3 py-2 text-sm" style={{ color: newChatMuted }}>
+            Searching…
+          </p>
+        ) : null}
+        {displayRows.length === 0 && !loadingBase && searchQuery.trim().length >= 1 && !loadingSearch ? (
+          <p className="px-3 py-4 text-sm" style={{ color: newChatMuted }}>
+            No results
+          </p>
+        ) : null}
+        {displayRows.map((row) => {
+          const photo = row.avatar_url?.trim() &&
+            !isInlineSvgDataUrlToSkipForPhoto(row.avatar_url) &&
+            !isLegacyDicebearUrl(row.avatar_url)
+            ? row.avatar_url
+            : null;
+          return (
+            <button
+              key={row.id}
+              type="button"
+              onClick={() => {
+                onPickContact({
+                  id: row.id,
+                  full_name: row.full_name,
+                  username: null,
+                  avatar_url: row.avatar_url,
+                });
+                onClose();
               }}
-              onTouchEnd={(e) => {
-                const x = e.changedTouches[0]?.clientX ?? 0;
-                const d = x - touchStartX.current;
-                if (d > 50) go(-1);
-                else if (d < -50) go(1);
+              className="flex w-full items-center gap-3 border-b px-3 text-left transition-colors"
+              style={{
+                minHeight: 64,
+                borderColor: "rgba(255,255,255,0.05)",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background =
+                  LIST_ROW_HOVER;
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = "transparent";
               }}
             >
-              <div
-                className="flex h-full flex-col items-center justify-center px-6 py-8"
-                style={{ background: CALL_CAROUSEL_SLIDES[slide]?.bg }}
-              >
-                <span className="flex justify-center">
-                  {CALL_CAROUSEL_SLIDES[slide]
-                    ? callSlideIcon(CALL_CAROUSEL_SLIDES[slide]!.icon)
-                    : null}
-                </span>
-                <h3 className="mt-4 text-center text-xl font-semibold text-white">
-                  {CALL_CAROUSEL_SLIDES[slide]?.title}
-                </h3>
+              {photo ? (
+                <img
+                  src={photo}
+                  alt=""
+                  className="h-[46px] w-[46px] shrink-0 rounded-full object-cover"
+                  width={46}
+                  height={46}
+                />
+              ) : (
+                <InitialsAvatar name={row.full_name} size={46} />
+              )}
+              <div className="min-w-0 flex-1 py-1">
                 <p
-                  className="mt-3 max-w-sm text-center text-[14px] leading-relaxed"
-                  style={{ color: TEXT_SECONDARY }}
+                  className="truncate text-[14px] font-bold"
+                  style={{ color: newChatName }}
                 >
-                  {CALL_CAROUSEL_SLIDES[slide]?.body}
+                  {row.full_name}
                 </p>
-                {slide === CALL_CAROUSEL_SLIDES.length - 1 ? (
-                  <div className="mt-8 w-full max-w-xs space-y-3">
-                    <button
-                      type="button"
-                      className="w-full rounded-lg py-3 text-sm font-semibold text-white"
-                      style={{ background: ACCENT }}
-                      onClick={() => {
-                        setModalOpen(false);
-                        showToast("Start a call from any group chat");
-                      }}
-                    >
-                      Start a call
-                    </button>
-                    <button
-                      type="button"
-                      className="w-full text-sm"
-                      style={{ color: TEXT_MUTED }}
-                      onClick={() => setModalOpen(false)}
-                    >
-                      Close
-                    </button>
-                  </div>
-                ) : null}
+                <p
+                  className="truncate text-[12px]"
+                  style={{ color: newChatMuted }}
+                >
+                  {row.sub}
+                </p>
               </div>
-            </div>
-            <div className="flex shrink-0 items-center justify-center gap-4 border-t border-white/10 py-3">
-              <button
-                type="button"
-                className="flex h-9 w-9 items-center justify-center text-white"
-                aria-label="Previous"
-                onClick={() => go(-1)}
-              >
-                <ThIconChevronLeft size={22} className="text-white" />
-              </button>
-              <div className="flex gap-2">
-                {CALL_CAROUSEL_SLIDES.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    aria-label={`Slide ${i + 1}`}
-                    className="h-2 w-2 rounded-full"
-                    style={{
-                      background: i === slide ? ACCENT : "#475569",
-                    }}
-                    onClick={() => setSlide(i)}
-                  />
-                ))}
-              </div>
-              <button
-                type="button"
-                className="flex h-9 w-9 rotate-180 items-center justify-center text-white"
-                aria-label="Next"
-                onClick={() => go(1)}
-              >
-                <ThIconChevronLeft size={22} className="text-white" />
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -3464,7 +3790,7 @@ function DemoDmChatPanel({
       </header>
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto px-4 py-3"
+        className="min-h-0 flex-1 custom-scrollbar overflow-y-auto px-4 py-3"
       >
         {kind === "self" ? (
           <div
@@ -3721,7 +4047,7 @@ function TravelloHelpChatPanel() {
       </header>
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto px-4 py-3"
+        className="min-h-0 flex-1 custom-scrollbar overflow-y-auto px-4 py-3"
       >
         {messages.map((m) => (
           <div
@@ -3830,7 +4156,7 @@ function CommunityAnnouncementPanel() {
         </div>
         <Megaphone className="h-5 w-5 shrink-0 text-[#9ca3af]" strokeWidth={1.5} aria-hidden />
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+      <div className="min-h-0 flex-1 custom-scrollbar overflow-y-auto px-4 py-3">
         <div className="my-3 flex justify-center">
           <span
             className="rounded-full px-3 py-1 text-[11px]"
@@ -3916,11 +4242,14 @@ function CommunityAnnouncementPanel() {
 }
 
 const API_V1_BASE = "http://localhost:8000/api/v1";
-const GI_BG = "#0f172a";
-const GI_CARD = "#1a1f35";
+const GI_BG = "#fdf6ed";
+const GI_CARD = "#ffffff";
 const GI_CORAL = "#ff6b6b";
 const GI_GREEN = "#1d9e75";
-const GI_MUTED = "#6b7280";
+const GI_MUTED = "#8896a0";
+const GI_TEXT = "#1e2a3a";
+const GI_ACTION_BG = "#f5ede0";
+const GI_SECTION_BORDER = "#e8d5b7";
 
 function groupInfoAuthHeaders(): HeadersInit {
   const token = localStorage.getItem("gt_token");
@@ -4605,8 +4934,8 @@ function GroupInfoPanel({
       <span
         className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold"
         style={{
-          background: isAdm ? "rgba(255,107,107,0.15)" : "rgba(255,255,255,0.06)",
-          color: isAdm ? GI_CORAL : "#9ca3af",
+          background: isAdm ? "#f0a500" : GI_ACTION_BG,
+          color: isAdm ? GI_TEXT : GI_MUTED,
         }}
       >
         {isAdm ? "Admin" : "Member"}
@@ -4618,7 +4947,7 @@ function GroupInfoPanel({
     "mb-3 rounded-[12px] p-4";
   const cardStyle: CSSProperties = {
     background: GI_CARD,
-    border: "0.5px solid rgba(255,255,255,0.08)",
+    border: `1px solid ${GI_SECTION_BORDER}`,
   };
 
   return (
@@ -4630,13 +4959,14 @@ function GroupInfoPanel({
       }}
     >
       <div
-        className="min-h-0 flex-1 overflow-y-auto"
+        className="min-h-0 flex-1 custom-scrollbar overflow-y-auto"
         style={{ background: GI_BG }}
       >
         <div className="relative">
           <button
             type="button"
-            className="absolute right-3 top-3 z-20 rounded p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
+            className="absolute right-3 top-3 z-20 rounded p-1.5 hover:bg-black/5"
+            style={{ color: GI_MUTED }}
             onClick={onClose}
             aria-label="Close group info"
           >
@@ -4647,10 +4977,10 @@ function GroupInfoPanel({
             style={
               isTravel
                 ? {
-                    background: "#1a1f35",
+                    background: GI_ACTION_BG,
                     borderBottom: `2px solid ${GI_CORAL}`,
                   }
-                : { background: "#1a1f35" }
+                : { background: GI_ACTION_BG, borderBottom: `1px solid ${GI_SECTION_BORDER}` }
             }
           />
           <div className="flex flex-col items-center px-4 pb-4 pt-0">
@@ -4660,7 +4990,7 @@ function GroupInfoPanel({
             >
               {init}
             </div>
-            <p className="mt-2 flex items-center justify-center gap-0.5 text-center text-base font-bold text-white">
+            <p className="mt-2 flex items-center justify-center gap-0.5 text-center text-base font-bold" style={{ color: GI_TEXT }}>
               <span>{displayName}</span>
               {isTravel ? (
                 <span
@@ -4686,20 +5016,20 @@ function GroupInfoPanel({
               ).map((row) => {
                 const iconNode =
                   row.key === "search" ? (
-                    <ThIconSearch size={18} className="text-[#9ca3af]" />
+                    <ThIconSearch size={18} className="text-[#1e2a3a]" />
                   ) : row.key === "voice" ? (
-                    <ThIconPhoneHandset size={18} className="text-[#9ca3af]" />
+                    <ThIconPhoneHandset size={18} className="text-[#1e2a3a]" />
                   ) : row.key === "video" ? (
-                    <ThIconVideoCam size={18} className="text-[#9ca3af]" />
+                    <ThIconVideoCam size={18} className="text-[#1e2a3a]" />
                   ) : (
-                    <ThIconMoreDots size={18} className="text-[#9ca3af]" />
+                    <ThIconMoreDots size={18} className="text-[#1e2a3a]" />
                   );
                 return (
                 <div key={row.key} className="relative flex-1" ref={row.key === "more" ? actionMoreRef : undefined}>
                   <button
                     type="button"
-                    className="flex h-11 w-full flex-col items-center justify-center gap-0.5 rounded-xl text-white"
-                    style={{ background: "#1e2538", minHeight: 44 }}
+                    className="flex h-11 w-full flex-col items-center justify-center gap-0.5 rounded-xl"
+                    style={{ background: GI_ACTION_BG, minHeight: 44, color: GI_TEXT }}
                     onClick={() => {
                       if (row.key === "search") {
                         onSearchInGroupChat();
@@ -4712,18 +5042,19 @@ function GroupInfoPanel({
                     }}
                   >
                     {iconNode}
-                    <span className="text-[10px]" style={{ color: TH_LABEL }}>
+                    <span className="text-[10px]" style={{ color: GI_MUTED }}>
                       {row.label}
                     </span>
                   </button>
                   {row.key === "more" && actionMoreOpen ? (
                     <div
                       className="absolute bottom-full left-0 right-0 z-30 mb-1 overflow-hidden rounded-lg border py-1 shadow-xl"
-                      style={{ background: "#1e2538", borderColor: "rgba(255,255,255,0.1)" }}
+                      style={{ background: GI_CARD, borderColor: GI_SECTION_BORDER }}
                     >
                       <button
                         type="button"
-                        className="w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10"
+                        className="w-full px-3 py-2 text-left text-xs hover:bg-black/5"
+                        style={{ color: GI_TEXT }}
                         onClick={() => {
                           setActionMoreOpen(false);
                           showToast("Notifications muted (local)", "success");
@@ -4733,7 +5064,8 @@ function GroupInfoPanel({
                       </button>
                       <button
                         type="button"
-                        className="w-full px-3 py-2 text-left text-xs text-rose-300 hover:bg-white/10"
+                        className="w-full px-3 py-2 text-left text-xs hover:bg-black/5"
+                        style={{ color: GI_CORAL }}
                         onClick={() => {
                           setActionMoreOpen(false);
                           globalThis.alert("Report submitted. We'll review this group.");
@@ -4756,8 +5088,8 @@ function GroupInfoPanel({
               className="mb-3 flex items-center justify-between gap-2 rounded-full border px-3 py-2"
               style={cardStyle}
             >
-              <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-white">
-                <ThIconPlane size={14} className="shrink-0 text-[#9ca3af]" />
+              <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium" style={{ color: GI_TEXT }}>
+                <ThIconPlane size={14} className="shrink-0 text-[#1e2a3a]" />
                 <span>
                   {formatTripBarDate(firstTrip.start_date)} &nbsp;&rarr;{" "}
                   {formatTripBarDate(firstTrip.end_date)}
@@ -4776,7 +5108,7 @@ function GroupInfoPanel({
                 Split Summary
               </p>
               {summaryLoading || tripsLoading ? (
-                <div className="h-4 w-40 animate-pulse rounded bg-slate-700/40" />
+                <div className="h-4 w-40 animate-pulse rounded bg-[#e8d5b7]/50" />
               ) : summaryError || !firstTrip ? (
                 <p className="text-sm" style={{ color: GI_MUTED }}>
                   {summaryError
@@ -4787,7 +5119,7 @@ function GroupInfoPanel({
                 <>
                   {Math.abs(myTripNet) < 0.01 ? (
                     <p className="flex items-center gap-1.5 text-sm" style={{ color: GI_MUTED }}>
-                      <ThIconCheckCircle size={14} className="text-[#9ca3af]" />
+                      <ThIconCheckCircle size={14} className="text-[#1e2a3a]" />
                       All settled
                     </p>
                   ) : myTripNet > 0 ? (
@@ -4803,7 +5135,7 @@ function GroupInfoPanel({
                     <button
                       type="button"
                       className="min-w-0 flex-1 rounded-xl py-2.5 text-sm font-semibold"
-                      style={{ background: "#1e2538", color: "white" }}
+                      style={{ background: GI_ACTION_BG, color: GI_TEXT }}
                       onClick={() => {
                         onClose();
                         onViewFullSplit();
@@ -4840,11 +5172,11 @@ function GroupInfoPanel({
               ) : firstTrip ? (
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <span style={{ color: GI_MUTED }}>Status</span>
-                  <span className="text-right font-medium text-white">
+                  <span className="text-right font-medium" style={{ color: GI_TEXT }}>
                     {String(firstTrip.status)}
                   </span>
                   <span style={{ color: GI_MUTED }}>Created</span>
-                  <span className="text-right text-white">
+                  <span className="text-right" style={{ color: GI_TEXT }}>
                     {formatTripBarDate(
                       firstTrip.created_at,
                       "—",
@@ -4852,7 +5184,7 @@ function GroupInfoPanel({
                   </span>
                 </div>
               ) : (
-                <div className="h-4 animate-pulse rounded bg-slate-700/30" />
+                <div className="h-4 animate-pulse rounded bg-[#e8d5b7]/50" />
               )}
             </div>
           ) : null}
@@ -4867,7 +5199,7 @@ function GroupInfoPanel({
               </p>
               <p
                 className="text-sm leading-relaxed"
-                style={{ color: desc ? "rgba(255,255,255,0.9)" : GI_MUTED }}
+                style={{ color: desc ? GI_TEXT : GI_MUTED }}
               >
                 {desc || "No description added"}
               </p>
@@ -4878,16 +5210,19 @@ function GroupInfoPanel({
             className="mb-3 mx-3 rounded-[12px] p-4"
             style={cardStyle}
           >
-            <div className="mb-2.5 flex gap-1 border-b border-white/10 pb-2">
+            <div
+              className="mb-2.5 flex gap-1 border-b pb-2"
+              style={{ borderColor: GI_SECTION_BORDER }}
+            >
               {(["media", "links", "docs"] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
                   className="flex-1 rounded-lg py-1.5 text-center text-[11px] font-bold uppercase"
                   style={{
-                    color: infoMediaTab === t ? WA_TEXT : GI_MUTED,
+                    color: infoMediaTab === t ? GI_TEXT : GI_MUTED,
                     background:
-                      infoMediaTab === t ? "rgba(255,255,255,0.06)" : "transparent",
+                      infoMediaTab === t ? GI_ACTION_BG : "transparent",
                     letterSpacing: "0.06em",
                   }}
                   onClick={() => setInfoMediaTab(t)}
@@ -4925,8 +5260,8 @@ function GroupInfoPanel({
                     type="button"
                     className="shrink-0 rounded border px-2 py-1 text-[11px] font-semibold"
                     style={{
-                      borderColor: GI_CORAL,
-                      color: GI_CORAL,
+                      borderColor: "#f0a500",
+                      color: "#f0a500",
                       background: "transparent",
                     }}
                     onClick={() => {
@@ -4950,17 +5285,18 @@ function GroupInfoPanel({
                 <div
                   className="mb-3 mt-3 rounded-[10px] border p-3"
                   style={{
-                    borderColor: "rgba(255,255,255,0.1)",
-                    background: "rgba(0,0,0,0.25)",
+                    borderColor: GI_SECTION_BORDER,
+                    background: GI_ACTION_BG,
                   }}
                 >
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-white">
+                    <span className="text-sm font-semibold" style={{ color: GI_TEXT }}>
                       Add Members
                     </span>
                     <button
                       type="button"
-                      className="text-lg leading-none text-slate-400 hover:text-white"
+                      className="text-lg leading-none"
+                      style={{ color: GI_MUTED }}
                       aria-label="Close add members"
                       onClick={() => {
                         setAddMemberOpen(false);
@@ -4971,8 +5307,11 @@ function GroupInfoPanel({
                       ×
                     </button>
                   </div>
-                  <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#0a0c14] px-2.5 py-1.5">
-                    <span className="inline-flex text-slate-400" aria-hidden>
+                  <div
+                    className="flex items-center gap-2 rounded-lg border px-2.5 py-1.5"
+                    style={{ borderColor: GI_SECTION_BORDER, background: GI_CARD }}
+                  >
+                    <span className="inline-flex" style={{ color: GI_MUTED }} aria-hidden>
                       <ThIconSearch size={18} className="text-current" />
                     </span>
                     <input
@@ -4980,7 +5319,8 @@ function GroupInfoPanel({
                       value={addMemberQuery}
                       onChange={(e) => setAddMemberQuery(e.target.value)}
                       placeholder="Search by name or email..."
-                      className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+                      className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#8896a0]"
+                      style={{ color: GI_TEXT }}
                       autoComplete="off"
                     />
                   </div>
@@ -5006,7 +5346,7 @@ function GroupInfoPanel({
                   {!addMemberSearching &&
                     addMemberQuery.trim().length > 0 &&
                     addMemberResults.length > 0 ? (
-                      <ul className="mt-2 max-h-48 list-none space-y-0 overflow-y-auto p-0">
+                      <ul className="mt-2 max-h-48 list-none space-y-0 custom-scrollbar overflow-y-auto p-0">
                         {addMemberResults.map((u) => {
                           const sub = userSearchResultSubline(u);
                           const inv = addMemberInvite[u.id];
@@ -5017,7 +5357,8 @@ function GroupInfoPanel({
                           return (
                             <li
                               key={u.id}
-                              className="flex items-center gap-2 border-b border-white/5 py-2 last:border-b-0"
+                              className="flex items-center gap-2 border-b py-2 last:border-b-0"
+                              style={{ borderColor: GI_SECTION_BORDER }}
                             >
                               {av &&
                               !isInlineSvgDataUrlToSkipForPhoto(av) &&
@@ -5032,11 +5373,11 @@ function GroupInfoPanel({
                               ) : (
                                 <InitialsAvatar
                                   name={u.full_name}
-                                  size={36}
+                                  size={40}
                                 />
                               )}
                               <div className="min-w-0 flex-1">
-                                <p className="truncate text-[13px] font-medium text-white">
+                                <p className="truncate text-[13px] font-medium" style={{ color: GI_TEXT }}>
                                   {u.full_name}
                                 </p>
                                 <p
@@ -5084,8 +5425,8 @@ function GroupInfoPanel({
             </div>
             {membersLoading && !memberList.length ? (
               <div className="space-y-2">
-                <div className="h-9 animate-pulse rounded bg-slate-700/30" />
-                <div className="h-9 animate-pulse rounded bg-slate-700/30" />
+                <div className="h-9 animate-pulse rounded bg-[#e8d5b7]/50" />
+                <div className="h-9 animate-pulse rounded bg-[#e8d5b7]/50" />
               </div>
             ) : null}
             {listSlice.map((m) => {
@@ -5095,7 +5436,7 @@ function GroupInfoPanel({
                 <button
                   key={m.id ?? m.user_id}
                   type="button"
-                  className="mb-2 flex w-full items-center gap-2 rounded-lg py-1 text-left last:mb-0 hover:bg-white/5"
+                  className="mb-2 flex w-full items-center gap-2 rounded-lg py-1 text-left last:mb-0 hover:bg-black/[0.04]"
                   onClick={() => {
                     if (m.user_id === selfId) return;
                     if (isTravel) openMemberSheet(m);
@@ -5123,7 +5464,7 @@ function GroupInfoPanel({
                       {initialsFromName(m.full_name)}
                     </span>
                   )}
-                  <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-white">
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-bold" style={{ color: GI_TEXT }}>
                     {m.full_name}
                   </span>
                   {rolePill(m)}
@@ -5153,7 +5494,7 @@ function GroupInfoPanel({
               <button
                 type="button"
                 className="mt-1 text-sm font-medium"
-                style={{ color: GI_CORAL }}
+                style={{ color: "#f0a500" }}
                 onClick={() => setShowAllMembers(true)}
               >
                 Show all {memberCount}
@@ -5180,7 +5521,7 @@ function GroupInfoPanel({
                 Group Validity
               </p>
               {firstTrip?.end_date ? (
-                <p className="text-sm text-white">
+                <p className="text-sm" style={{ color: GI_TEXT }}>
                   Expires: {formatTripBarDate(firstTrip.end_date)}
                 </p>
               ) : null}
@@ -5190,7 +5531,8 @@ function GroupInfoPanel({
               {isAdmin ? (
                 <button
                   type="button"
-                  className="mt-3 w-full rounded-lg border border-slate-500/40 py-2.5 text-sm text-white"
+                  className="mt-3 w-full rounded-lg border py-2.5 text-sm"
+                  style={{ borderColor: GI_SECTION_BORDER, color: GI_TEXT }}
                   onClick={() => void doCloseGroup()}
                 >
                   Close Group
@@ -5209,8 +5551,9 @@ function GroupInfoPanel({
             <div
               className="font-mono text-sm"
               style={{
-                background: "#0a0c14",
-                color: "rgba(255,255,255,0.9)",
+                background: GI_ACTION_BG,
+                color: GI_TEXT,
+                border: `1px solid ${GI_SECTION_BORDER}`,
                 borderRadius: 8,
                 padding: "8px 12px",
               }}
@@ -5221,7 +5564,7 @@ function GroupInfoPanel({
               <button
                 type="button"
                 className="rounded-lg px-3 py-2 text-sm font-semibold"
-                style={{ background: "#1e2538", color: "white" }}
+                style={{ background: GI_ACTION_BG, color: GI_TEXT }}
                 onClick={() => void copyCode()}
               >
                 {copiedCode ? "Copied!" : "Copy Code"}
@@ -5229,7 +5572,7 @@ function GroupInfoPanel({
               <button
                 type="button"
                 className="rounded-lg px-3 py-2 text-sm font-semibold"
-                style={{ background: "#1e2538", color: "white" }}
+                style={{ background: GI_ACTION_BG, color: GI_TEXT }}
                 onClick={() => void shareLink()}
               >
                 Share Link
@@ -5239,7 +5582,7 @@ function GroupInfoPanel({
               <button
                 type="button"
                 className="rounded-lg px-3 py-1.5 text-xs font-medium"
-                style={{ background: "#1e2538", color: "#25D366" }}
+                style={{ background: GI_ACTION_BG, color: "#25D366" }}
                 onClick={() => {
                   const code = group.invite_code ?? "";
                   const o =
@@ -5256,7 +5599,7 @@ function GroupInfoPanel({
               <button
                 type="button"
                 className="rounded-lg px-3 py-1.5 text-xs font-medium"
-                style={{ background: "#1e2538", color: "#2AABEE" }}
+                style={{ background: GI_ACTION_BG, color: "#2AABEE" }}
                 onClick={() => {
                   const code = group.invite_code ?? "";
                   const o =
@@ -5291,7 +5634,8 @@ function GroupInfoPanel({
             ) : null}
             <button
               type="button"
-              className="mb-2 w-full rounded-lg border border-red-500/60 py-2.5 text-sm font-semibold text-red-400"
+              className="mb-2 w-full rounded-lg border py-2.5 text-sm font-semibold"
+              style={{ borderColor: "#e17055", color: "#e17055" }}
               disabled={isTravel && travelLeaveDisabled}
               onClick={() => void doLeave()}
             >
@@ -5299,7 +5643,8 @@ function GroupInfoPanel({
             </button>
             <button
               type="button"
-              className="w-full rounded-lg border border-slate-500/50 py-2.5 text-sm text-slate-200"
+              className="w-full rounded-lg border py-2.5 text-sm"
+              style={{ borderColor: GI_SECTION_BORDER, color: GI_MUTED }}
               onClick={() => {
                 globalThis.alert("Report submitted. We'll review this group.");
               }}
@@ -5339,13 +5684,14 @@ function GroupInfoPanel({
                     {initialsFromName(memberSheet.full_name)}
                   </span>
                 )}
-                <p className="text-base font-bold text-white">
+                <p className="text-base font-bold" style={{ color: GI_TEXT }}>
                   {memberSheet.full_name}
                 </p>
               </div>
               <button
                 type="button"
-                className="p-1 text-slate-400"
+                className="p-1"
+                style={{ color: GI_MUTED }}
                 onClick={() => {
                   setMemberSheet(null);
                   setMemberSheetDetail(null);
@@ -5357,19 +5703,20 @@ function GroupInfoPanel({
             </div>
             <p className="text-sm" style={{ color: GI_MUTED }}>
               Net balance with you:{" "}
-              <span className="font-semibold text-white">
+              <span className="font-semibold" style={{ color: GI_TEXT }}>
                 {memberSheetDetail
                   ? `₹${Number(memberSheetDetail.total_net).toFixed(2)}`
                   : "…"}
               </span>
             </p>
-            <ul className="mt-2 max-h-32 overflow-y-auto text-sm">
+            <ul className="mt-2 max-h-32 custom-scrollbar overflow-y-auto text-sm">
               {(memberSheetDetail?.by_group ?? []).map((g) => (
                 <li
                   key={g.group_id}
-                  className="flex justify-between border-b border-white/5 py-1"
+                  className="flex justify-between border-b py-1"
+                  style={{ borderColor: GI_SECTION_BORDER }}
                 >
-                  <span className="text-slate-300">{g.group_name}</span>
+                  <span style={{ color: GI_TEXT }}>{g.group_name}</span>
                   <span
                     className="font-mono"
                     style={{
@@ -5420,8 +5767,10 @@ export default function TravelHubPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageText, setMessageText] = useState("");
   const [activeTab, setActiveTab] = useState<
-    "chats" | "groups" | "contacts" | "calls"
+    "chats" | "calls" | "updates"
   >("chats");
+  const [createGroupRequestId, setCreateGroupRequestId] = useState(0);
+  const [showNewChatPanel, setShowNewChatPanel] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
   const [showSplitPopup, setShowSplitPopup] = useState(false);
   const [splitAmount, setSplitAmount] = useState("");
@@ -5526,6 +5875,19 @@ export default function TravelHubPage() {
   const messagesScrollToEndTimeoutRef = useRef<ReturnType<
     typeof setTimeout
   > | null>(null);
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const v = localStorage.getItem(GT_TRAVELHUB_ACTIVE_TAB);
+      if (v === "groups" || v === "contacts") {
+        setActiveTab("chats");
+        localStorage.setItem(GT_TRAVELHUB_ACTIVE_TAB, "chats");
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useLayoutEffect(() => {
     masterAbortRef.current = new AbortController();
@@ -7159,24 +7521,23 @@ export default function TravelHubPage() {
       {(
         [
           ["chats", "Chats"],
-          ["groups", "Groups"],
-          ["contacts", "Contacts"],
           ["calls", "Calls"],
+          ["updates", "Updates"],
         ] as const
       ).map(([id, label]) => (
         <button
           key={id}
           type="button"
           onClick={() => setActiveTab(id)}
-          className="flex-1 border-0 text-center text-[13px] outline-none"
+          className="flex-1 border-0 text-center text-[14px] outline-none"
           style={{
             lineHeight: "44px",
             padding: 0,
-            color: activeTab === id ? TEXT : TEXT_MUTED,
-            fontWeight: activeTab === id ? 500 : 400,
+            color: activeTab === id ? "#f0a500" : "#8896a0",
+            fontWeight: 500,
             borderBottom:
               activeTab === id
-                ? `2px solid ${ACCENT}`
+                ? "2px solid #f0a500"
                 : "2px solid transparent",
             background: "transparent",
           }}
@@ -7285,14 +7646,18 @@ export default function TravelHubPage() {
               borderBottom: `0.5px solid ${BORDER_SUB}`,
             }}
           >
-            <span className="text-[17px] font-medium text-white">
+            <span
+              className="text-[17px] font-medium"
+              style={{ color: "#e8eaf0" }}
+            >
               Connect
             </span>
-            <div className="flex items-center gap-5 text-white">
+            <div className="flex items-center gap-4" style={{ color: "#8892a4" }}>
               <button
                 type="button"
                 aria-label="Search"
-                className="flex items-center justify-center text-white"
+                className="flex items-center justify-center"
+                style={{ color: "#8892a4" }}
                 onClick={() => setShowSearchOverlay(true)}
               >
                 <Search className="h-5 w-5" strokeWidth={2} />
@@ -7300,82 +7665,97 @@ export default function TravelHubPage() {
               <button
                 type="button"
                 aria-label="Menu"
-                className="flex items-center justify-center text-white"
+                className="flex items-center justify-center"
+                style={{ color: "#8892a4" }}
                 onClick={() => setShowMenuDrawer(true)}
               >
                 <MenuIcon />
+              </button>
+              <button
+                type="button"
+                aria-label="New chat"
+                className="flex items-center justify-center"
+                style={{ color: "#8892a4" }}
+                onClick={() => setShowNewChatPanel(true)}
+              >
+                <ConnectHeaderComposeIcon />
               </button>
             </div>
           </header>
 
           {tabBar}
 
-          <div
-            ref={listScrollRef}
-            className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
-            style={{
-              transform: pullDist ? `translateY(${pullDist * 0.35}px)` : undefined,
-              transition: pullDist ? "none" : "transform 0.2s ease-out",
-            }}
-            onTouchStart={(e) => {
-              if (activeTab === "chats" || activeTab === "groups")
-                onListTouchStart(e);
-            }}
-            onTouchMove={(e) => {
-              if (activeTab === "chats" || activeTab === "groups")
-                onListTouchMove(e);
-            }}
-            onTouchEnd={() => {
-              if (activeTab === "chats" || activeTab === "groups")
-                onListTouchEnd();
-            }}
-          >
-            {pullDist > 20 && (activeTab === "chats" || activeTab === "groups") ? (
-              <div
-                className="pointer-events-none py-1 text-center text-[11px]"
-                style={{ color: TEXT_MUTED }}
-              >
-                {pullDist >= 60 ? "Release to refresh" : "Pull to refresh"}
-              </div>
-            ) : null}
-            {activeTab === "chats" ? (
-              <HubChatsTab
-                groups={groups}
-                user={user}
-                mainChatList={mainChatList}
-                activeChatId={activeChat?.id}
-                chatPrefs={chatPrefs}
-                onSelectChat={selectChat}
-                onNavigateToGroup={(gid) => {
-                  const existing = mainChatList.find(
-                    (c) => c.type === "group" && c.group_id === gid,
-                  );
-                  if (existing) {
-                    selectChat(existing);
-                    return;
-                  }
-                  const g = groups.find((x) => x.id === gid);
-                  if (!g || !user) return;
-                  const ids = (g.members ?? []).map((m) => m.user_id);
-                  selectChat({
-                    id: `group_${g.id}`,
-                    name: g.name,
-                    type: "group",
-                    group_id: g.id,
-                    members: ids.length > 0 ? ids : [user.id],
-                    created_by: user.id,
-                    created_at: Date.now(),
-                  });
-                }}
-                updateChatPref={updateChatPref}
-                markChatDeleted={markChatDeleted}
-                showToast={showToast}
-                setContextMenu={setContextMenu}
-                longPressTimerRef={longPressTimer}
-              />
-            ) : null}
-            {activeTab === "groups" ? (
+          <div className="relative min-h-0 flex flex-1 flex-col">
+            <div
+              ref={listScrollRef}
+              className="min-h-0 flex-1 custom-scrollbar overflow-y-auto overscroll-contain"
+              style={{
+                transform: pullDist ? `translateY(${pullDist * 0.35}px)` : undefined,
+                transition: pullDist ? "none" : "transform 0.2s ease-out",
+              }}
+              onTouchStart={(e) => {
+                if (activeTab === "chats") onListTouchStart(e);
+              }}
+              onTouchMove={(e) => {
+                if (activeTab === "chats") onListTouchMove(e);
+              }}
+              onTouchEnd={() => {
+                if (activeTab === "chats") onListTouchEnd();
+              }}
+            >
+              {pullDist > 20 && activeTab === "chats" ? (
+                <div
+                  className="pointer-events-none py-1 text-center text-[11px]"
+                  style={{ color: TEXT_MUTED }}
+                >
+                  {pullDist >= 60 ? "Release to refresh" : "Pull to refresh"}
+                </div>
+              ) : null}
+              {activeTab === "chats" ? (
+                <HubChatsTab
+                  groups={groups}
+                  user={user}
+                  mainChatList={mainChatList}
+                  activeChatId={activeChat?.id}
+                  chatPrefs={chatPrefs}
+                  onSelectChat={selectChat}
+                  onNavigateToGroup={(gid) => {
+                    const existing = mainChatList.find(
+                      (c) => c.type === "group" && c.group_id === gid,
+                    );
+                    if (existing) {
+                      selectChat(existing);
+                      return;
+                    }
+                    const g = groups.find((x) => x.id === gid);
+                    if (!g || !user) return;
+                    const ids = (g.members ?? []).map((m) => m.user_id);
+                    selectChat({
+                      id: `group_${g.id}`,
+                      name: g.name,
+                      type: "group",
+                      group_id: g.id,
+                      members: ids.length > 0 ? ids : [user.id],
+                      created_by: user.id,
+                      created_at: Date.now(),
+                    });
+                  }}
+                  updateChatPref={updateChatPref}
+                  markChatDeleted={markChatDeleted}
+                  showToast={showToast}
+                  setContextMenu={setContextMenu}
+                  longPressTimerRef={longPressTimer}
+                />
+              ) : null}
+              {activeTab === "calls" ? (
+                <HubCallsTab showToast={(m) => showToast(m, "success")} />
+              ) : null}
+              {activeTab === "updates" ? (
+                <HubUpdatesTab currentUser={user} />
+              ) : null}
               <HubGroupsTab
+                listHidden
+                openCreateRequestId={createGroupRequestId}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 groups={groups}
@@ -7406,19 +7786,22 @@ export default function TravelHubPage() {
                 longPressTimerRef={longPressTimer}
                 masterAbortRef={masterAbortRef}
               />
-            ) : null}
-            {activeTab === "contacts" ? (
-              <HubContactsTab
-                contacts={contactsWithGroupCounts}
-                onMessage={() => {
-                  showToast("Chat coming soon", "success");
+            </div>
+            {showNewChatPanel && user ? (
+              <NewChatSlidePanel
+                onClose={() => setShowNewChatPanel(false)}
+                onNewGroup={() =>
+                  setCreateGroupRequestId((n) => n + 1)
+                }
+                onPickContact={(p) => {
+                  void openDirectChat(p);
                 }}
-                onOpenDemo={openDemoDm}
-                currentUser={user}
+                user={user}
+                groups={groups}
+                mainChatList={mainChatList}
+                handleUnauthorized={handleUnauthorized}
+                masterAbortRef={masterAbortRef}
               />
-            ) : null}
-            {activeTab === "calls" ? (
-              <HubCallsTab showToast={(m) => showToast(m, "success")} />
             ) : null}
           </div>
         </div>
@@ -7569,17 +7952,22 @@ export default function TravelHubPage() {
             ) : null}
 
             <div
-              className="min-h-0 flex-1 overflow-y-auto px-2 py-2 sm:px-3"
-              style={
-                activeChat.type === "group"
-                  ? {
-                      background: WA_MSG_BG,
-                      backgroundImage: WA_PATTERN,
-                      backgroundSize: "18px 18px",
-                    }
-                  : { background: RIGHT_PANEL_BG }
-              }
+              className="min-h-0 flex-1 custom-scrollbar overflow-y-auto px-2 py-2 sm:px-3"
+              style={{
+                background: WA_MSG_BG,
+                position: "relative",
+              }}
             >
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  backgroundImage: WA_PATTERN,
+                  backgroundSize: "20px 20px",
+                  opacity: 0.15,
+                }}
+                aria-hidden
+              />
+              <div className="relative z-[1]">
               {filteredChatMessages.map((m, i) => {
                 const showSep = shouldShowDateSeparator(
                   filteredChatMessages,
@@ -7604,10 +7992,10 @@ export default function TravelHubPage() {
                     {showSep ? (
                       <div className="my-3 flex justify-center">
                         <span
-                          className="rounded-full px-3 py-1 text-xs"
+                          className="rounded-[8px] px-3 py-1 text-[12px]"
                           style={{
-                            background: "rgba(255,255,255,0.08)",
-                            color: WA_MUTED,
+                            background: "rgba(225,221,214,0.92)",
+                            color: "#54656f",
                           }}
                         >
                           {isGroup
@@ -7665,6 +8053,7 @@ export default function TravelHubPage() {
                 </div>
               ) : null}
               <div ref={messagesEndRef} />
+              </div>
             </div>
 
             {isRecording ? (
@@ -7776,7 +8165,7 @@ export default function TravelHubPage() {
 
                 {showEmoji && !messageText.trim() ? (
                   <div
-                    className="mx-4 mb-2 grid max-h-36 grid-cols-6 gap-1 overflow-y-auto rounded-xl border p-3 shadow-md"
+                    className="mx-4 mb-2 grid max-h-36 grid-cols-6 gap-1 custom-scrollbar overflow-y-auto rounded-xl border p-3 shadow-md"
                     style={{
                       borderColor: MSG_BORDER,
                       background: SURFACE,
@@ -8131,7 +8520,7 @@ export default function TravelHubPage() {
               ) : null}
             </div>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-2">
+          <div className="min-h-0 flex-1 custom-scrollbar overflow-y-auto overscroll-contain px-2 py-2">
             {searchQuery.trim().length < 2 ? (
               <p
                 className="px-2 py-8 text-center text-sm"
@@ -8539,7 +8928,7 @@ export default function TravelHubPage() {
             onClick={() => setGroupMemberPanelGroupId(null)}
           />
           <div
-            className="flex h-full max-h-screen w-[min(100%,400px)] shrink-0 flex-col overflow-y-auto border-l shadow-2xl"
+            className="flex h-full max-h-screen w-[min(100%,400px)] shrink-0 flex-col custom-scrollbar overflow-y-auto border-l shadow-2xl"
             style={{ background: BG, borderColor: BORDER_SUB }}
           >
             {(() => {
@@ -8628,7 +9017,7 @@ export default function TravelHubPage() {
             }}
           />
           <div
-            className="flex h-full max-h-screen w-[min(100%,400px)] shrink-0 flex-col overflow-y-auto border-l shadow-2xl"
+            className="flex h-full max-h-screen w-[min(100%,400px)] shrink-0 flex-col custom-scrollbar overflow-y-auto border-l shadow-2xl"
             style={{ background: BG, borderColor: BORDER_SUB }}
           >
             {(() => {
@@ -9099,7 +9488,7 @@ export default function TravelHubPage() {
                 className="rounded-lg px-3 py-3 text-left hover:bg-white/5"
                 onClick={() => {
                   setShowMenuDrawer(false);
-                  setActiveTab("contacts");
+                  setShowSearchOverlay(true);
                 }}
               >
                 Contacts
@@ -9127,7 +9516,7 @@ export default function TravelHubPage() {
         >
           <div
             role="menu"
-            className="absolute max-h-[min(80vh,420px)] w-56 overflow-y-auto rounded-xl border py-2 shadow-2xl"
+            className="absolute max-h-[min(80vh,420px)] w-56 custom-scrollbar overflow-y-auto rounded-xl border py-2 shadow-2xl"
             style={{
               background: SURFACE,
               borderColor: BORDER_SUB,
@@ -9829,14 +10218,13 @@ function GroupMessageBubble({
 
   const bubble = (
     <div
-      className={`max-w-[min(100%,20rem)] px-3 py-1.5 ${
-        mine
-          ? "rounded-bl-[12px] rounded-tl-[12px] rounded-br-none rounded-tr-[12px]"
-          : "rounded-br-[12px] rounded-tl-none rounded-tr-[12px] rounded-bl-[12px]"
-      }`}
+      className="max-w-[min(100%,20rem)] px-3 py-1.5"
       style={{
         background: mine ? WA_OUTGOING_BUBBLE : WA_INCOMING_BUBBLE,
-        boxShadow: "0 1px 0.5px rgba(0,0,0,0.15)",
+        boxShadow: "0 1px 0.5px rgba(0,0,0,0.08)",
+        borderRadius: mine
+          ? "7.5px 0px 7.5px 7.5px"
+          : "0px 7.5px 7.5px 7.5px",
       }}
     >
       {showName && !mine ? (
@@ -9851,25 +10239,31 @@ function GroupMessageBubble({
           className="max-h-60 max-w-full rounded-lg"
         />
       ) : t === "audio" ? (
-        <div className="flex items-center gap-2 text-sm" style={{ color: WA_TEXT }}>
+        <div className="flex items-center gap-2 text-sm" style={{ color: BUBBLE_TEXT }}>
           <Play className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
-          <span className="h-2 flex-1 rounded" style={{ background: "rgba(255,255,255,0.2)" }} />
+          <span
+            className="h-2 flex-1 rounded"
+            style={{ background: "rgba(26,26,46,0.12)" }}
+          />
         </div>
       ) : (
-        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed" style={{ color: WA_TEXT }}>
+        <p
+          className="whitespace-pre-wrap break-words text-sm leading-relaxed"
+          style={{ color: BUBBLE_TEXT }}
+        >
           {msg.text}
         </p>
       )}
       <div
         className="mt-0.5 flex items-center justify-end gap-0.5 text-[10px]"
-        style={{ color: "rgba(156,163,175,0.95)" }}
+        style={{ color: BUBBLE_TS }}
       >
         <span className="tabular-nums">{timeStr}</span>
         {mine ? (
           <span
             className="inline-flex shrink-0 items-center"
             style={{
-              color: readState === "read" ? WA_CORAL : "rgba(156,163,175,0.9)",
+              color: readState === "read" ? WA_CORAL : BUBBLE_TS,
             }}
             aria-hidden
             title={readState === "read" ? "Read" : "Delivered"}
@@ -9973,15 +10367,14 @@ function MessageBubble({
           </p>
         ) : null}
         <div
-          className={`rounded-2xl px-3 py-2 ${
-            mine
-              ? "rounded-br-sm"
-              : "rounded-bl-sm"
-          }`}
+          className="px-3 py-2"
           style={{
-            background: mine ? "rgba(220,38,38,0.25)" : SURFACE,
-            boxShadow: "0 1px 0.5px rgba(0,0,0,0.2)",
-            border: mine ? "none" : `1px solid ${MSG_BORDER}`,
+            background: mine ? WA_OUTGOING_BUBBLE : WA_INCOMING_BUBBLE,
+            boxShadow: "0 1px 0.5px rgba(0,0,0,0.08)",
+            borderRadius: mine
+              ? "7.5px 0px 7.5px 7.5px"
+              : "0px 7.5px 7.5px 7.5px",
+            border: mine ? "none" : "1px solid rgba(0,0,0,0.06)",
           }}
         >
           {msg.type === "split" ? (
@@ -10027,7 +10420,10 @@ function MessageBubble({
                 </div>
               </div>
               {msg.text ? (
-                <p className="text-sm leading-snug text-slate-100">
+                <p
+                  className="text-sm leading-snug"
+                  style={{ color: BUBBLE_TEXT }}
+                >
                   {msg.text}
                 </p>
               ) : null}
@@ -10042,7 +10438,9 @@ function MessageBubble({
             </div>
           ) : null}
           {msg.type === "text" ? (
-            <p className="text-sm text-slate-100">{msg.text}</p>
+            <p className="text-sm" style={{ color: BUBBLE_TEXT }}>
+              {msg.text}
+            </p>
           ) : null}
           {msg.type === "image" && meta?.url ? (
             <img
@@ -10053,11 +10451,19 @@ function MessageBubble({
           ) : null}
           {msg.type === "location" ? (
             <div>
-              <p className="flex items-start gap-1.5 text-sm text-slate-100">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#9ca3af]" strokeWidth={1.5} aria-hidden />
+              <p
+                className="flex items-start gap-1.5 text-sm"
+                style={{ color: BUBBLE_TEXT }}
+              >
+                <MapPin
+                  className="mt-0.5 h-4 w-4 shrink-0"
+                  style={{ color: BUBBLE_TS }}
+                  strokeWidth={1.5}
+                  aria-hidden
+                />
                 <span>{msg.text}</span>
               </p>
-              <p className="text-[11px]" style={{ color: TEXT_MUTED }}>
+              <p className="text-[11px]" style={{ color: BUBBLE_TS }}>
                 {meta?.lat != null && meta?.lon != null
                   ? `${meta.lat}, ${meta.lon}`
                   : ""}
@@ -10073,7 +10479,7 @@ function MessageBubble({
           ) : null}
           {msg.type === "expense" ? (
             <div>
-              <p className="text-sm text-slate-100">
+              <p className="text-sm" style={{ color: BUBBLE_TEXT }}>
                 {String(meta?.description ?? msg.text)}
               </p>
               <p className="font-bold" style={{ color: ACCENT }}>
@@ -10089,14 +10495,20 @@ function MessageBubble({
           ) : null}
           {msg.type === "trip" ? (
             <div>
-              <p className="flex items-center gap-1.5 text-sm text-slate-100">
-                <ThIconPlane size={16} className="shrink-0 text-[#9ca3af]" />
+              <p
+                className="flex items-center gap-1.5 text-sm"
+                style={{ color: BUBBLE_TEXT }}
+              >
+                <ThIconPlane
+                  size={16}
+                  className="shrink-0 text-[#8896a0]"
+                />
                 <span>{String(meta?.trip_name ?? msg.text)}</span>
               </p>
-              <p className="text-[11px]" style={{ color: TEXT_MUTED }}>
+              <p className="text-[11px]" style={{ color: BUBBLE_TS }}>
                 {String(meta?.destination ?? "")}
               </p>
-              <p className="text-[11px] text-slate-300">
+              <p className="text-[11px]" style={{ color: BUBBLE_TS }}>
                 {String(meta?.dates ?? "")}
               </p>
               <Link
@@ -10109,18 +10521,28 @@ function MessageBubble({
             </div>
           ) : null}
           {msg.type === "audio" ? (
-            <div className="flex items-center gap-2 text-sm text-slate-200">
-              <Play className="h-4 w-4 shrink-0 text-[#9ca3af]" strokeWidth={1.5} aria-hidden />
+            <div
+              className="flex items-center gap-2 text-sm"
+              style={{ color: BUBBLE_TEXT }}
+            >
+              <Play
+                className="h-4 w-4 shrink-0"
+                style={{ color: BUBBLE_TS }}
+                strokeWidth={1.5}
+                aria-hidden
+              />
               <span
                 className="h-8 flex-1 rounded"
-                style={{ background: MSG_BORDER }}
+                style={{ background: "rgba(26,26,46,0.1)" }}
               />
-              <span className="text-[11px]">{String(meta?.duration ?? "")}</span>
+              <span className="text-[11px]" style={{ color: BUBBLE_TS }}>
+                {String(meta?.duration ?? "")}
+              </span>
             </div>
           ) : null}
           <div
             className={`mt-1 flex items-center gap-1 text-[10px] ${mine ? "justify-end" : "justify-start"}`}
-            style={{ color: TEXT_MUTED }}
+            style={{ color: BUBBLE_TS }}
           >
             <span>
               {new Date(msg.timestamp).toLocaleTimeString([], {
@@ -10137,12 +10559,13 @@ function MessageBubble({
                 {readReceipt === "read" ? (
                   <CheckCheck
                     className="h-3.5 w-3.5"
-                    style={{ color: "#9ca3af" }}
+                    style={{ color: BUBBLE_TS }}
                     strokeWidth={1.5}
                   />
                 ) : (
                   <Check
-                    className="h-3.5 w-3.5 text-slate-500"
+                    className="h-3.5 w-3.5"
+                    style={{ color: BUBBLE_TS }}
                     strokeWidth={1.5}
                   />
                 )}
@@ -10301,7 +10724,7 @@ function AttachMenu({
       </div>
       {showTrips ? (
         <ul
-          className="mt-3 max-h-32 overflow-y-auto rounded-lg border p-2 text-sm"
+          className="mt-3 max-h-32 custom-scrollbar overflow-y-auto rounded-lg border p-2 text-sm"
           style={{ borderColor: MSG_BORDER, background: BG }}
         >
           {trips.map((t) => (
@@ -10380,7 +10803,7 @@ function NewChatOverlay({
           New Group Chat
         </button>
       </div>
-      <ul className="flex-1 overflow-y-auto px-4">
+      <ul className="flex-1 custom-scrollbar overflow-y-auto px-4">
             {filtered.map((c) => {
           const cPhoto =
             c.avatar_url &&
