@@ -7542,7 +7542,10 @@ export default function TravelHubPage() {
             try {
               uAns();
               await pc.setRemoteDescription(
-                new RTCSessionDescription({ type: a.type!, sdp: a.sdp! }),
+                new RTCSessionDescription({
+                  type: a.type as RTCSdpType,
+                  sdp: a.sdp!,
+                }),
               );
               setCallState("active");
               setCurrentCall((prev) =>
@@ -7680,7 +7683,10 @@ export default function TravelHubPage() {
       const o = os.val() as { type?: string; sdp?: string } | null;
       if (!o?.sdp) throw new Error("no offer");
       await pc.setRemoteDescription(
-        new RTCSessionDescription({ type: o.type ?? "offer", sdp: o.sdp }),
+        new RTCSessionDescription({
+          type: (o.type ?? "offer") as RTCSdpType,
+          sdp: o.sdp,
+        }),
       );
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
