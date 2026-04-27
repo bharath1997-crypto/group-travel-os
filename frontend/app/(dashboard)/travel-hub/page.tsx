@@ -8,6 +8,7 @@ import {
   ref,
   push,
   onValue,
+  onChildAdded,
   onDisconnect,
   set,
   update,
@@ -41,6 +42,7 @@ import {
   Banknote,
   BarChart2,
   BellOff,
+  Bluetooth,
   Camera,
   Check,
   CheckCheck,
@@ -50,18 +52,24 @@ import {
   Megaphone,
   MessageCircle,
   Mic,
+  MicOff,
+  Monitor,
   MoreHorizontal,
   MoreVertical,
   Music,
   Phone,
+  PhoneOff,
   Play,
   UserPlus,
   Search,
+  Smartphone,
   Star,
   Trash2,
   User,
   Users,
   Video,
+  VideoOff,
+  Volume2,
   X,
 } from "lucide-react";
 
@@ -526,6 +534,72 @@ function formatListTimestamp(ts: number): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+/** Calls tab recent row: e.g. "Outgoing · Today 3:28 AM" or "Outgoing · Apr 25" */
+function formatCallsOutgoingLine(ts: number): string {
+  const d = new Date(ts);
+  const today = new Date();
+  const timeStr = d.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  if (d.toDateString() === today.toDateString()) {
+    return `Outgoing · Today ${timeStr}`;
+  }
+  const dayPart = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return `Outgoing · ${dayPart}`;
+}
+
+const ICE_SERVERS: RTCConfiguration = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: "stun:stun2.l.google.com:19302" },
+  ],
+};
+
+const GT_CALL_HISTORY = "gt_call_history";
+
+type GtCallHistoryEntry = {
+  user_id: string;
+  user_name: string;
+  call_type: "audio" | "video";
+  direction: "outgoing" | "incoming" | "missed";
+  duration: number;
+  timestamp: number;
+  status: string;
+};
+
+function readCallHistoryLs(): GtCallHistoryEntry[] {
+  return readJsonLs<GtCallHistoryEntry[]>(GT_CALL_HISTORY, []);
+}
+
+function formatCallDurationFmt(totalSec: number): string {
+  const s = Math.max(0, Math.floor(totalSec));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) {
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  }
+  return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+}
+
+function formatCallHistorySubline(e: GtCallHistoryEntry): string {
+  const d = new Date(e.timestamp);
+  const today = new Date();
+  const timeStr = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const dayPart = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const timePart =
+    d.toDateString() === today.toDateString() ? `Today ${timeStr}` : dayPart;
+  const dir =
+    e.direction === "outgoing"
+      ? "Outgoing"
+      : e.direction === "missed"
+        ? "Missed"
+        : "Incoming";
+  return `${dir} · ${timePart}`;
+}
+
 function readBuddyFavourites(): string[] {
   if (typeof window === "undefined") return [];
   try {
@@ -573,7 +647,7 @@ function InitialsAvatar({
   className = "",
 }: {
   name: string;
-  size: 32 | 40 | 46 | 80;
+  size: 32 | 40 | 46 | 80 | 120;
   className?: string;
 }) {
   const label = (name.trim() || "?").toUpperCase();
@@ -586,7 +660,11 @@ function InitialsAvatar({
         ? "text-base"
         : size === 46
           ? "text-lg"
-          : "text-3xl";
+          : size === 80
+            ? "text-2xl"
+            : size === 120
+              ? "text-3xl"
+              : "text-3xl";
   return (
     <span
       className={`inline-flex shrink-0 select-none items-center justify-center rounded-full font-bold text-white ${textClass} ${className}`.trim()}
@@ -1436,9 +1514,12 @@ function SwipeChatRow({
 function HubSearchField({
   value,
   onChange,
+  placeholder = "Search chats...",
 }: {
   value: string;
   onChange: (v: string) => void;
+  /** @default "Search chats..." */
+  placeholder?: string;
 }) {
   return (
     <div className="shrink-0 px-4 py-2">
@@ -1452,7 +1533,7 @@ function HubSearchField({
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Search chats..."
+          placeholder={placeholder}
           className="min-w-0 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-[#8892a4]"
           style={{ color: TEXT }}
         />
@@ -3143,34 +3224,612 @@ function HubContactsTab({
   );
 }
 
-function HubCallsTab({
-  showToast: _showToast,
+function CallsSvgPhone20({ className }: { className?: string }) {
+  return (
+    <svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5a2 2 0 0 1 1.99-2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+  );
+}
+
+function CallsSvgVideo20({ className }: { className?: string }) {
+  return (
+    <svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      className={className}
+      aria-hidden
+    >
+      <polygon points="23 7 16 12 23 17 23 7" />
+      <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+    </svg>
+  );
+}
+
+function CallsSvgVideo32() {
+  return (
+    <svg
+      width={32}
+      height={32}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <polygon points="23 7 16 12 23 17 23 7" />
+      <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+    </svg>
+  );
+}
+
+function CallsSvgLink32() {
+  return (
+    <svg
+      width={32}
+      height={32}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  );
+}
+
+function CallsSvgKeypad32() {
+  return (
+    <svg
+      width={32}
+      height={32}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <rect x="3" y="3" width="4" height="4" rx="1" />
+      <rect x="10" y="3" width="4" height="4" rx="1" />
+      <rect x="17" y="3" width="4" height="4" rx="1" />
+      <rect x="3" y="10" width="4" height="4" rx="1" />
+      <rect x="10" y="10" width="4" height="4" rx="1" />
+      <rect x="17" y="10" width="4" height="4" rx="1" />
+      <rect x="3" y="17" width="4" height="4" rx="1" />
+      <rect x="10" y="17" width="4" height="4" rx="1" />
+      <rect x="17" y="17" width="4" height="4" rx="1" />
+    </svg>
+  );
+}
+
+function CallsSvgCalendar32() {
+  return (
+    <svg
+      width={32}
+      height={32}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  );
+}
+
+function CallsSvgLock14() {
+  return (
+    <svg
+      width={14}
+      height={14}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      className="inline-block shrink-0 align-middle"
+      aria-hidden
+    >
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+function CallsConnectRightPanel({
+  showCallToast,
+  activeChat,
+  user,
+  onStartVideoCall,
 }: {
-  showToast: (m: string) => void;
+  showCallToast: (message: string) => void;
+  activeChat: ChatInfo | null;
+  user: UserMe | null;
+  onStartVideoCall: () => void;
 }) {
+  const cream = "#f5ede4";
+  const copyLink = "https://travello.app/call/join";
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col items-center justify-center px-6"
-      style={{ background: BG }}
+      className="flex min-h-0 min-w-0 flex-1 flex-col"
+      style={{ background: cream }}
     >
-      <Phone
-        className="h-12 w-12 shrink-0"
-        style={{ color: "#8892a4" }}
-        strokeWidth={1.5}
-        aria-hidden
+      <div
+        className="flex min-h-0 flex-1 flex-col items-center justify-center px-4"
+        style={{ background: cream }}
+      >
+        <div
+          className="grid w-full max-w-[360px] grid-cols-2 justify-items-center gap-4"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              if (
+                user &&
+                activeChat &&
+                activeChat.type === "individual" &&
+                !activeChat.isBot &&
+                !activeChat.isDemo
+              ) {
+                onStartVideoCall();
+              } else {
+                showCallToast("Select a chat first");
+              }
+            }}
+            className="flex w-[160px] flex-col items-center text-center"
+            style={{
+              background: "#ffffff",
+              border: "1px solid #e8d5b7",
+              borderRadius: 16,
+              padding: 24,
+            }}
+          >
+            <span className="mb-2 flex h-8 w-8 items-center justify-center" style={{ color: "#1e2a3a" }}>
+              <CallsSvgVideo32 />
+            </span>
+            <span
+              className="text-center text-sm font-bold"
+              style={{ color: "#1e2a3a" }}
+            >
+              Start call
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(copyLink);
+                showCallToast("Link copied!");
+              } catch {
+                showCallToast("Could not copy");
+              }
+            }}
+            className="flex w-[160px] flex-col items-center text-center"
+            style={{
+              background: "#ffffff",
+              border: "1px solid #e8d5b7",
+              borderRadius: 16,
+              padding: 24,
+            }}
+          >
+            <span className="mb-2 flex h-8 w-8 items-center justify-center" style={{ color: "#1e2a3a" }}>
+              <CallsSvgLink32 />
+            </span>
+            <span
+              className="text-center text-sm font-bold"
+              style={{ color: "#1e2a3a" }}
+            >
+              New call link
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => showCallToast("Coming soon")}
+            className="flex w-[160px] flex-col items-center text-center"
+            style={{
+              background: "#ffffff",
+              border: "1px solid #e8d5b7",
+              borderRadius: 16,
+              padding: 24,
+            }}
+          >
+            <span className="mb-2 flex h-8 w-8 items-center justify-center" style={{ color: "#1e2a3a" }}>
+              <CallsSvgKeypad32 />
+            </span>
+            <span
+              className="text-center text-sm font-bold"
+              style={{ color: "#1e2a3a" }}
+            >
+              Call a number
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => showCallToast("Coming soon")}
+            className="flex w-[160px] flex-col items-center text-center"
+            style={{
+              background: "#ffffff",
+              border: "1px solid #e8d5b7",
+              borderRadius: 16,
+              padding: 24,
+            }}
+          >
+            <span className="mb-2 flex h-8 w-8 items-center justify-center" style={{ color: "#1e2a3a" }}>
+              <CallsSvgCalendar32 />
+            </span>
+            <span
+              className="text-center text-sm font-bold"
+              style={{ color: "#1e2a3a" }}
+            >
+              Schedule call
+            </span>
+          </button>
+        </div>
+      </div>
+      <p
+        className="flex shrink-0 flex-wrap items-center justify-center gap-1.5 px-4 pb-6 text-center text-[12px] leading-snug"
+        style={{ color: "#8896a0" }}
+      >
+        <CallsSvgLock14 />
+        <span>Your calls are end-to-end encrypted</span>
+      </p>
+    </div>
+  );
+}
+
+function HubCallsTab({
+  showCallToast,
+  mainChatList,
+  callHistory,
+  onOpenHistoryRow,
+  onStartAudioCall,
+  onStartVideoCall,
+  handleUnauthorized,
+  masterAbortRef,
+}: {
+  showCallToast: (message: string) => void;
+  mainChatList: ChatInfo[];
+  callHistory: GtCallHistoryEntry[];
+  onOpenHistoryRow: (e: GtCallHistoryEntry) => void;
+  onStartAudioCall: (
+    userId: string,
+    name: string,
+    avatar: string | null,
+  ) => void;
+  onStartVideoCall: (
+    userId: string,
+    name: string,
+    avatar: string | null,
+  ) => void;
+  handleUnauthorized: () => void;
+  masterAbortRef: MutableRefObject<AbortController | null>;
+}) {
+  const [q, setQ] = useState("");
+  const [friends, setFriends] = useState<UserSearchResultRow[]>([]);
+  const [friendsLoadDone, setFriendsLoadDone] = useState(false);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    void (async () => {
+      try {
+        const r = await apiFetchWithStatus<UserSearchResultRow[]>(
+          "/social/friends",
+          { signal: ac.signal },
+        );
+        if (r.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+        if (r.status === 200 && Array.isArray(r.data)) {
+          setFriends(r.data);
+        } else {
+          setFriends([]);
+        }
+      } catch {
+        setFriends([]);
+      } finally {
+        setFriendsLoadDone(true);
+      }
+    })();
+    return () => ac.abort();
+  }, [handleUnauthorized]);
+
+  const historySorted = useMemo(
+    () => [...callHistory].sort((a, b) => b.timestamp - a.timestamp),
+    [callHistory],
+  );
+  const qLower = q.trim().toLowerCase();
+  const friendsTop3 = useMemo(() => friends.slice(0, 3), [friends]);
+  const favoriteRows = useMemo(() => {
+    if (!qLower) return friendsTop3;
+    return friendsTop3.filter((f) =>
+      (f.full_name || "").toLowerCase().includes(qLower),
+    );
+  }, [friendsTop3, qLower]);
+  const historyRows = useMemo(() => {
+    if (!qLower) return historySorted;
+    return historySorted.filter((h) =>
+      h.user_name.toLowerCase().includes(qLower),
+    );
+  }, [historySorted, qLower]);
+
+  const nameCol = "#e9edef";
+  const muted = "#8896a0";
+  const iconCol = "#8896a0";
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col" style={{ background: BG }}>
+      <div
+        className="flex shrink-0 items-center justify-between border-b border-white/[0.06] px-4 py-3"
+        style={{ background: "#1e2a3a" }}
+      >
+        <span
+          className="text-[16px] font-bold"
+          style={{ color: "#e8eaf0" }}
+        >
+          Calls
+        </span>
+        <button
+          type="button"
+          aria-label="New call"
+          className="flex h-9 w-9 items-center justify-center"
+          style={{ color: iconCol }}
+          onClick={() => showCallToast("Calls coming soon")}
+        >
+          <CallsSvgPhone20 />
+        </button>
+      </div>
+      <HubSearchField
+        value={q}
+        onChange={setQ}
+        placeholder="Search calls..."
       />
-      <p
-        className="mt-4 text-center text-base font-medium"
-        style={{ color: "#111b21" }}
-      >
-        No calls yet
-      </p>
-      <p
-        className="mt-1 text-center text-[13px] leading-snug"
-        style={{ color: "#8892a4" }}
-      >
-        Voice and video calls coming soon
-      </p>
+      <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
+        {friendsLoadDone && favoriteRows.length > 0 ? (
+          <div>
+            <p
+              className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase"
+              style={{ color: muted }}
+            >
+              Favorites
+            </p>
+            <ul className="m-0 list-none p-0">
+              {favoriteRows.map((f) => {
+                const url =
+                  f.profile_picture?.trim() && !isInlineSvgDataUrlToSkipForPhoto(f.profile_picture) && !isLegacyDicebearUrl(f.profile_picture)
+                    ? f.profile_picture
+                    : f.avatar_url?.trim() && !isInlineSvgDataUrlToSkipForPhoto(f.avatar_url) && !isLegacyDicebearUrl(f.avatar_url)
+                      ? f.avatar_url
+                      : null;
+                return (
+                  <li
+                    key={f.id}
+                    className="border-b"
+                    style={{ borderColor: "rgba(255,255,255,0.05)" }}
+                  >
+                    <div
+                      className="flex items-center gap-3 px-4"
+                      style={{ minHeight: 72 }}
+                    >
+                      {url ? (
+                        <img
+                          src={url}
+                          alt=""
+                          className="h-[46px] w-[46px] shrink-0 rounded-full object-cover"
+                          width={46}
+                          height={46}
+                        />
+                      ) : (
+                        <InitialsAvatar
+                          name={f.full_name || "?"}
+                          size={46}
+                        />
+                      )}
+                      <span
+                        className="min-w-0 flex-1 truncate text-sm font-bold"
+                        style={{ color: nameCol }}
+                      >
+                        {f.full_name}
+                      </span>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          aria-label="Video call"
+                          className="flex h-9 w-9 items-center justify-center"
+                          style={{ color: iconCol }}
+                          onClick={() => {
+                            const url =
+                              f.profile_picture?.trim() &&
+                              !isInlineSvgDataUrlToSkipForPhoto(f.profile_picture) &&
+                              !isLegacyDicebearUrl(f.profile_picture)
+                                ? f.profile_picture
+                                : f.avatar_url?.trim() &&
+                                    !isInlineSvgDataUrlToSkipForPhoto(f.avatar_url) &&
+                                    !isLegacyDicebearUrl(f.avatar_url)
+                                  ? f.avatar_url
+                                  : null;
+                            onStartVideoCall(f.id, f.full_name, url);
+                          }}
+                        >
+                          <CallsSvgVideo20 />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Voice call"
+                          className="flex h-9 w-9 items-center justify-center"
+                          style={{ color: iconCol }}
+                          onClick={() => {
+                            const url =
+                              f.profile_picture?.trim() &&
+                              !isInlineSvgDataUrlToSkipForPhoto(f.profile_picture) &&
+                              !isLegacyDicebearUrl(f.profile_picture)
+                                ? f.profile_picture
+                                : f.avatar_url?.trim() &&
+                                    !isInlineSvgDataUrlToSkipForPhoto(f.avatar_url) &&
+                                    !isLegacyDicebearUrl(f.avatar_url)
+                                  ? f.avatar_url
+                                  : null;
+                            onStartAudioCall(f.id, f.full_name, url);
+                          }}
+                        >
+                          <CallsSvgPhone20 />
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : null}
+
+        <p
+          className="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase"
+          style={{ color: muted }}
+        >
+          Recent
+        </p>
+        {historySorted.length > 0 && historyRows.length === 0 && qLower ? (
+          <p className="px-4 py-2 text-sm" style={{ color: muted }}>
+            No matching calls
+          </p>
+        ) : null}
+        {friendsLoadDone && historySorted.length === 0 && !qLower ? (
+          <div className="flex flex-col items-center justify-center px-6 pb-8 pt-4 text-center">
+            <span
+              className="flex h-12 w-12 items-center justify-center"
+              style={{ color: iconCol }}
+            >
+              <svg
+                width={48}
+                height={48}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+                aria-hidden
+              >
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5a2 2 0 0 1 1.99-2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+            </span>
+            <p className="mt-3 text-sm font-medium" style={{ color: nameCol }}>
+              No recent calls
+            </p>
+            <p className="mt-1 text-sm" style={{ color: muted }}>
+              Your call history will appear here
+            </p>
+          </div>
+        ) : null}
+        {historyRows.length > 0 ? (
+          <ul className="m-0 list-none p-0">
+            {historyRows.map((e) => {
+              const ch = mainChatList.find(
+                (c) =>
+                  c.type === "individual" &&
+                  c.members.includes(e.user_id),
+              );
+              const photo =
+                ch &&
+                chatRowDmAvatarUrl(ch) &&
+                !isInlineSvgDataUrlToSkipForPhoto(
+                  chatRowDmAvatarUrl(ch) ?? "",
+                ) &&
+                !isLegacyDicebearUrl(chatRowDmAvatarUrl(ch) ?? "")
+                  ? chatRowDmAvatarUrl(ch)
+                  : null;
+              return (
+                <li
+                  key={`${e.user_id}-${e.timestamp}`}
+                  className="border-b"
+                  style={{ borderColor: "rgba(255,255,255,0.05)" }}
+                >
+                  <div
+                    className="flex h-[72px] items-center gap-3 px-4"
+                    style={{ minHeight: 72 }}
+                  >
+                    <button
+                      type="button"
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                      onClick={() => onOpenHistoryRow(e)}
+                    >
+                      {photo ? (
+                        <img
+                          src={photo}
+                          alt=""
+                          className="h-[46px] w-[46px] shrink-0 rounded-full object-cover"
+                          width={46}
+                          height={46}
+                        />
+                      ) : (
+                        <InitialsAvatar name={e.user_name} size={46} />
+                      )}
+                      <div className="min-w-0 flex-1 text-left">
+                        <p
+                          className="truncate text-sm font-bold"
+                          style={{
+                            color:
+                              e.direction === "missed" ? "#e8956d" : nameCol,
+                          }}
+                        >
+                          {e.user_name}
+                        </p>
+                        <p
+                          className="truncate text-xs"
+                          style={{ color: muted }}
+                        >
+                          {formatCallHistorySubline(e)}
+                        </p>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Call"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center"
+                      style={{ color: iconCol }}
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        onStartAudioCall(
+                          e.user_id,
+                          e.user_name,
+                          photo,
+                        );
+                      }}
+                    >
+                      <CallsSvgPhone20 />
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -5752,6 +6411,603 @@ function GroupInfoPanel({
   );
 }
 
+type GtWebrtcCallState = "idle" | "outgoing" | "incoming" | "active" | "ended";
+
+type GtWebrtcCallCurrent = {
+  callId: string;
+  callType: "audio" | "video";
+  remoteUser: { id: string; name: string; avatar: string | null };
+  direction: "outgoing" | "incoming";
+  startTime: number | null;
+  duration: number;
+};
+
+/** Web Audio ringtone: softer/slower when callee likely offline ("Calling"), louder/faster when online ("Ringing"). */
+function startCallRingtoneLoop(
+  mode: "calling" | "ringing" | "incoming",
+): () => void {
+  if (typeof window === "undefined") return () => {};
+  const AC =
+    window.AudioContext ||
+    (
+      window as unknown as {
+        webkitAudioContext: typeof AudioContext;
+      }
+    ).webkitAudioContext;
+  if (!AC) return () => {};
+
+  const ctx = new AC();
+  let interval: ReturnType<typeof setInterval> | null = null;
+  let alive = true;
+
+  const params =
+    mode === "calling"
+      ? { gain: 0.055, periodMs: 3200 }
+      : mode === "ringing"
+        ? { gain: 0.14, periodMs: 1600 }
+        : { gain: 0.16, periodMs: 2000 };
+
+  const playBurst = () => {
+    if (!alive) return;
+    if (ctx.state === "suspended") void ctx.resume().catch(() => {});
+    const t = ctx.currentTime;
+    const peak = params.gain;
+    const beep = (offset: number, f1: number, f2: number) => {
+      const o1 = ctx.createOscillator();
+      const o2 = ctx.createOscillator();
+      const gn = ctx.createGain();
+      o1.type = "sine";
+      o2.type = "sine";
+      o1.frequency.value = f1;
+      o2.frequency.value = f2;
+      o1.connect(gn);
+      o2.connect(gn);
+      gn.connect(ctx.destination);
+      const st = t + offset;
+      const dur = 0.19;
+      gn.gain.setValueAtTime(0, st);
+      gn.gain.linearRampToValueAtTime(peak, st + 0.02);
+      gn.gain.linearRampToValueAtTime(0.0001, st + dur);
+      o1.start(st);
+      o1.stop(st + dur);
+      o2.start(st);
+      o2.stop(st + dur);
+    };
+    beep(0, 480, 440);
+    beep(0.3, 520, 470);
+  };
+
+  playBurst();
+  interval = globalThis.setInterval(playBurst, params.periodMs);
+
+  return () => {
+    alive = false;
+    if (interval) globalThis.clearInterval(interval);
+    void ctx.close();
+  };
+}
+
+type GtActiveCallMenuAction =
+  | "screen_share"
+  | "send_message"
+  | "toggle_video"
+  | "audio_output"
+  | "toggle_mute"
+  | "audio_mode"
+  | "end";
+
+function WebrtcCallOverlays({
+  callState,
+  callType,
+  currentCall,
+  isMuted,
+  isCameraOff,
+  isSpeaker,
+  callDurationSec,
+  endedDisplaySec,
+  localVideoRef,
+  remoteVideoRef,
+  onToggleMute,
+  onToggleCamera,
+  onToggleSpeaker,
+  onEnd,
+  onAccept,
+  onDecline,
+  outgoingPeerOnline,
+  onActiveCallMenuAction,
+}: {
+  callState: GtWebrtcCallState;
+  callType: "audio" | "video";
+  currentCall: GtWebrtcCallCurrent | null;
+  isMuted: boolean;
+  isCameraOff: boolean;
+  isSpeaker: boolean;
+  callDurationSec: number;
+  endedDisplaySec: number;
+  localVideoRef: React.RefObject<HTMLVideoElement | null>;
+  remoteVideoRef: React.RefObject<HTMLVideoElement | null>;
+  onToggleMute: () => void;
+  onToggleCamera: () => void;
+  onToggleSpeaker: () => void;
+  onEnd: () => void;
+  onAccept: () => void;
+  onDecline: () => void;
+  /** Firebase `presence/{peerId}/online`; true = "Ringing…", false/null = "Calling…" */
+  outgoingPeerOnline: boolean | null;
+  /** Active call overflow (three dots): screen share, message, devices, etc. */
+  onActiveCallMenuAction?: (action: GtActiveCallMenuAction) => void;
+}) {
+  const [activeCallMoreOpen, setActiveCallMoreOpen] = useState(false);
+  const activeCallMoreBtnRef = useRef<HTMLButtonElement | null>(null);
+  const activeCallMorePanelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!activeCallMoreOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      const n = e.target as Node;
+      if (activeCallMorePanelRef.current?.contains(n)) return;
+      if (activeCallMoreBtnRef.current?.contains(n)) return;
+      setActiveCallMoreOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [activeCallMoreOpen]);
+
+  useEffect(() => {
+    if (callState !== "active") setActiveCallMoreOpen(false);
+  }, [callState]);
+
+  if (callState === "idle") return null;
+  if (!currentCall && callState !== "ended") return null;
+  const name = currentCall?.remoteUser.name || "Contact";
+  const photo = currentCall?.remoteUser.avatar ?? null;
+  const gradBg =
+    "linear-gradient(135deg, #1e2a3a 0%, #0f1923 100%)";
+  const endBtn = (
+    <button
+      type="button"
+      onClick={onEnd}
+      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full"
+      style={{ background: "#e53e3e" }}
+      aria-label="End call"
+    >
+      <PhoneOff
+        className="h-7 w-7 text-white"
+        strokeWidth={1.5}
+        style={{ transform: "rotate(135deg)" }}
+        aria-hidden
+      />
+    </button>
+  );
+  const circBtn = (
+    on: boolean,
+    onCol: string,
+    offCol: string,
+    onClick: () => void,
+    label: string,
+    onIcon: ReactNode,
+    offIcon: ReactNode,
+  ) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full"
+      style={{ background: on ? onCol : offCol }}
+      aria-label={label}
+    >
+      {on ? onIcon : offIcon}
+    </button>
+  );
+
+  if (callState === "ended") {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6 animate-in fade-in"
+        style={{ background: "rgba(15, 25, 35, 0.95)" }}
+      >
+        <p className="text-center text-lg font-semibold text-white">Call ended</p>
+        <p className="mt-2 text-2xl font-mono text-white" style={{ color: "#e9edef" }}>
+          {formatCallDurationFmt(endedDisplaySec)}
+        </p>
+      </div>
+    );
+  }
+
+  if (callState === "outgoing") {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex flex-col items-stretch"
+        style={{ background: gradBg }}
+      >
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6">
+          {photo && !isInlineSvgDataUrlToSkipForPhoto(photo) && !isLegacyDicebearUrl(photo) ? (
+            <img
+              src={photo}
+              alt=""
+              className="h-20 w-20 rounded-full object-cover"
+              width={80}
+              height={80}
+            />
+          ) : (
+            <InitialsAvatar name={name} size={80} className="!text-2xl" />
+          )}
+          <p className="mt-4 text-center text-[20px] font-bold text-white">
+            {name}
+          </p>
+          <p
+            className="mt-1 text-center text-sm"
+            style={{ color: "#8896a0" }}
+            aria-live="polite"
+          >
+            <span>{outgoingPeerOnline ? "Ringing" : "Calling"}</span>
+            <span className="inline-block w-5 text-left">
+              <span className="inline animate-pulse">.</span>
+              <span className="inline animate-pulse" style={{ animationDelay: "0.2s" }}>
+                .
+              </span>
+              <span className="inline animate-pulse" style={{ animationDelay: "0.4s" }}>
+                .
+              </span>
+            </span>
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center justify-center gap-5 pb-10 pt-4">
+          {callType === "video"
+            ? circBtn(
+                !isCameraOff,
+                "#2d4060",
+                "#e8956d",
+                onToggleCamera,
+                "Camera",
+                <Video className="h-6 w-6 text-white" strokeWidth={1.5} />,
+                <VideoOff className="h-6 w-6 text-white" strokeWidth={1.5} />,
+              )
+            : null}
+          {circBtn(
+            !isMuted,
+            "#2d4060",
+            "#e8956d",
+            onToggleMute,
+            "Mute",
+            <Mic className="h-6 w-6 text-white" strokeWidth={1.5} />,
+            <MicOff className="h-6 w-6 text-white" strokeWidth={1.5} />,
+          )}
+          {endBtn}
+        </div>
+      </div>
+    );
+  }
+
+  if (callState === "incoming") {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex flex-col items-stretch"
+        style={{ background: gradBg }}
+      >
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6">
+          <div className="relative flex h-24 w-24 items-center justify-center">
+            <span
+              className="absolute h-24 w-24 animate-ping rounded-full bg-white/10"
+              aria-hidden
+            />
+            {photo && !isInlineSvgDataUrlToSkipForPhoto(photo) && !isLegacyDicebearUrl(photo) ? (
+              <img
+                src={photo}
+                alt=""
+                className="relative h-20 w-20 rounded-full object-cover"
+                width={80}
+                height={80}
+              />
+            ) : (
+              <div className="relative">
+                <InitialsAvatar name={name} size={80} className="!text-2xl" />
+              </div>
+            )}
+          </div>
+          <p className="mt-4 text-center text-[20px] font-bold text-white">
+            {name}
+          </p>
+          <p className="mt-1 text-center text-sm" style={{ color: "#8896a0" }}>
+            Incoming {callType} call…
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center justify-center gap-20 pb-12 pt-4">
+          <button
+            type="button"
+            onClick={onDecline}
+            className="flex h-16 w-16 items-center justify-center rounded-full"
+            style={{ background: "#e53e3e" }}
+            aria-label="Decline"
+          >
+            <PhoneOff className="h-7 w-7 text-white" strokeWidth={1.5} />
+          </button>
+          <button
+            type="button"
+            onClick={onAccept}
+            className="flex h-16 w-16 items-center justify-center rounded-full"
+            style={{ background: "#00a884" }}
+            aria-label="Accept"
+          >
+            <Phone className="h-7 w-7 text-white" strokeWidth={1.5} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (callState === "active") {
+    const showBigRemoteVideo = callType === "video" && !isCameraOff;
+    const runMenu = (a: GtActiveCallMenuAction) => {
+      onActiveCallMenuAction?.(a);
+      setActiveCallMoreOpen(false);
+    };
+    return (
+      <div
+        className="fixed inset-0 z-50 flex flex-col"
+        style={{ background: "#0f1923" }}
+      >
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          className={
+            showBigRemoteVideo
+              ? "absolute inset-0 z-0 h-full w-full min-h-0 min-w-0 object-cover"
+              : "pointer-events-none fixed left-0 top-0 z-0 h-px w-px overflow-hidden opacity-0"
+          }
+        />
+
+        {showBigRemoteVideo ? (
+          <div className="absolute right-3 top-3 z-10">
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="object-cover"
+              style={{
+                width: 120,
+                height: 180,
+                borderRadius: 12,
+              }}
+            />
+          </div>
+        ) : callType === "video" && isCameraOff ? (
+          <div
+            className="absolute inset-0 z-[1] flex min-h-0 min-w-0 flex-col items-center justify-center"
+            style={{ background: "#0f1923" }}
+          >
+            {photo && !isInlineSvgDataUrlToSkipForPhoto(photo) && !isLegacyDicebearUrl(photo) ? (
+              <img
+                src={photo}
+                alt=""
+                className="h-32 w-32 rounded-full object-cover"
+                width={128}
+                height={128}
+              />
+            ) : (
+              <InitialsAvatar name={name} size={120} className="!text-3xl" />
+            )}
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="absolute right-3 top-3 object-cover"
+              style={{ width: 120, height: 180, borderRadius: 12 }}
+            />
+          </div>
+        ) : (
+          <div className="absolute inset-0 z-[1] flex min-h-0 min-w-0 flex-col items-center justify-center">
+            {photo && !isInlineSvgDataUrlToSkipForPhoto(photo) && !isLegacyDicebearUrl(photo) ? (
+              <img
+                src={photo}
+                alt=""
+                className="h-32 w-32 rounded-full object-cover"
+                width={128}
+                height={128}
+              />
+            ) : (
+              <InitialsAvatar name={name} size={120} className="!text-3xl" />
+            )}
+            <div className="absolute right-3 top-3">
+              <div
+                className="flex h-[120px] w-[120px] items-center justify-center overflow-hidden rounded-xl"
+                style={{ background: "#1e2a3a" }}
+              >
+                <InitialsAvatar name="You" size={80} />
+              </div>
+            </div>
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="sr-only h-0 w-0 overflow-hidden"
+              aria-hidden
+            />
+          </div>
+        )}
+        <div
+          className="absolute left-0 right-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-[#0f1923] to-transparent px-4 py-3"
+        >
+          <p className="min-w-0 flex-1 truncate text-base font-medium text-white">
+            {name}
+          </p>
+          <p className="shrink-0 font-mono text-sm text-white">
+            {formatCallDurationFmt(callDurationSec)}
+          </p>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 z-30 flex flex-wrap items-center justify-center gap-3 pb-9 pt-4">
+          {callType === "video"
+            ? circBtn(
+                !isCameraOff,
+                "#2d4060",
+                "#e8956d",
+                onToggleCamera,
+                "Camera",
+                <Video className="h-6 w-6 text-white" strokeWidth={1.5} />,
+                <VideoOff className="h-6 w-6 text-white" strokeWidth={1.5} />,
+              )
+            : null}
+          {circBtn(
+            !isMuted,
+            "#2d4060",
+            "#e8956d",
+            onToggleMute,
+            "Mute",
+            <Mic className="h-6 w-6 text-white" strokeWidth={1.5} />,
+            <MicOff className="h-6 w-6 text-white" strokeWidth={1.5} />,
+          )}
+          {circBtn(
+            isSpeaker,
+            "#2d4060",
+            "#e8956d",
+            onToggleSpeaker,
+            "Speaker",
+            <Volume2 className="h-6 w-6 text-white" strokeWidth={1.5} />,
+            <Volume2 className="h-5 w-5 text-white/80" strokeWidth={1.5} />,
+          )}
+          {onActiveCallMenuAction ? (
+            <div className="relative">
+              <button
+                type="button"
+                ref={activeCallMoreBtnRef}
+                onClick={() => setActiveCallMoreOpen((o) => !o)}
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full"
+                style={{ background: "#2d4060" }}
+                aria-label="More options"
+                aria-expanded={activeCallMoreOpen}
+              >
+                <MoreVertical
+                  className="h-7 w-7 text-white"
+                  strokeWidth={1.5}
+                  aria-hidden
+                />
+              </button>
+              {activeCallMoreOpen ? (
+                <div
+                  ref={activeCallMorePanelRef}
+                  role="menu"
+                  className="absolute bottom-full left-1/2 z-[100] mb-2 w-64 -translate-x-1/2 rounded-2xl border border-white/10 py-1 shadow-2xl"
+                  style={{ background: "#1b2838" }}
+                >
+                  {(
+                    [
+                      {
+                        a: "screen_share" as const,
+                        label: "Screen share",
+                        icon: (
+                          <Monitor
+                            className="h-5 w-5 shrink-0 text-white"
+                            strokeWidth={1.5}
+                          />
+                        ),
+                      },
+                      {
+                        a: "send_message" as const,
+                        label: "Send message",
+                        icon: (
+                          <MessageCircle
+                            className="h-5 w-5 shrink-0 text-white"
+                            strokeWidth={1.5}
+                          />
+                        ),
+                      },
+                      {
+                        a: "toggle_video" as const,
+                        label: "Video",
+                        icon: (
+                          <Video
+                            className="h-5 w-5 shrink-0 text-white"
+                            strokeWidth={1.5}
+                          />
+                        ),
+                      },
+                      {
+                        a: "audio_output" as const,
+                        label: "Audio output",
+                        sub: "Speaker, phone, Bluetooth",
+                        icon: (
+                          <Bluetooth
+                            className="h-5 w-5 shrink-0 text-white"
+                            strokeWidth={1.5}
+                          />
+                        ),
+                      },
+                      {
+                        a: "toggle_mute" as const,
+                        label: "Mute",
+                        icon: (
+                          <Mic
+                            className="h-5 w-5 shrink-0 text-white"
+                            strokeWidth={1.5}
+                          />
+                        ),
+                      },
+                      {
+                        a: "audio_mode" as const,
+                        label: isSpeaker ? "Earpiece mode" : "Speaker mode",
+                        sub: "Where you hear the call",
+                        icon: (
+                          <Smartphone
+                            className="h-5 w-5 shrink-0 text-white"
+                            strokeWidth={1.5}
+                          />
+                        ),
+                      },
+                      {
+                        a: "end" as const,
+                        label: "End call",
+                        icon: (
+                          <PhoneOff
+                            className="h-5 w-5 shrink-0 text-white"
+                            strokeWidth={1.5}
+                          />
+                        ),
+                        danger: true,
+                      },
+                    ] as const
+                  ).map((row) => (
+                    <button
+                      key={row.a}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => runMenu(row.a)}
+                      className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm text-white hover:bg-white/10"
+                      style={
+                        "danger" in row && row.danger
+                          ? { color: "#feb4b4" }
+                          : undefined
+                      }
+                    >
+                      {row.icon}
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-medium">{row.label}</span>
+                        {"sub" in row && row.sub ? (
+                          <span
+                            className="mt-0.5 block text-xs font-normal"
+                            style={{ color: "#8896a0" }}
+                          >
+                            {row.sub}
+                          </span>
+                        ) : null}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          {endBtn}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export default function TravelHubPage() {
   const router = useRouter();
   const [firebaseReady, setFirebaseReady] = useState(false);
@@ -5795,11 +7051,43 @@ export default function TravelHubPage() {
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
+    callStyle?: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [profileBannerDismissed, setProfileBannerDismissed] = useState(false);
   const [firebaseBannerDismissed, setFirebaseBannerDismissed] = useState(false);
+
+  const [callState, setCallState] = useState<GtWebrtcCallState>("idle");
+  const [currentCall, setCurrentCall] = useState<GtWebrtcCallCurrent | null>(null);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isCameraOff, setIsCameraOff] = useState(false);
+  const [isSpeaker, setIsSpeaker] = useState(true);
+  const [callDurationSec, setCallDurationSec] = useState(0);
+  const [endedDisplaySec, setEndedDisplaySec] = useState(0);
+  const [callHistory, setCallHistory] = useState<GtCallHistoryEntry[]>([]);
+  const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const callListenersRef = useRef<(() => void)[]>([]);
+  const callStateRef = useRef<GtWebrtcCallState>("idle");
+  const callRoleRef = useRef<"caller" | "callee" | null>(null);
+  const processedIceRef = useRef<Set<string>>(new Set());
+  const callDeleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const durationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const endedScreenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const currentCallRef = useRef<GtWebrtcCallCurrent | null>(null);
+  const webrtcCleanupLockRef = useRef(false);
+  const pendingIncomingDataRef = useRef<{
+    callId: string;
+    callerId: string;
+    callerName: string;
+    callerAvatar: string;
+    callType: "audio" | "video";
+  } | null>(null);
 
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
@@ -5845,6 +7133,7 @@ export default function TravelHubPage() {
   const showSearchOverlayPrev = useRef(false);
   const dmHandoffFromBuddiesDone = useRef(false);
   const chatSearchInputRef = useRef<HTMLInputElement | null>(null);
+  const messageComposerInputRef = useRef<HTMLInputElement | null>(null);
   const [showInChatSearch, setShowInChatSearch] = useState(false);
   const [inChatSearchQuery, setInChatSearchQuery] = useState("");
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -5858,6 +7147,16 @@ export default function TravelHubPage() {
   const [dmHeaderPeerOnline, setDmHeaderPeerOnline] = useState<boolean | null>(
     null,
   );
+  /** Outgoing only: `true` when callee has `presence/…/online` — show "Ringing…" vs "Calling…" */
+  const [outgoingPeerOnline, setOutgoingPeerOnline] = useState<
+    boolean | null
+  >(null);
+  /**
+   * When non-null, show picker to set HTMLMediaElement.setSinkId (Chrome/Edge).
+   */
+  const [callAudioOutputDevices, setCallAudioOutputDevices] = useState<
+    MediaDeviceInfo[] | null
+  >(null);
   /** Firebase /presence/{id}/online for open profile panel */
   const [profilePanelPeerOnline, setProfilePanelPeerOnline] = useState<
     boolean | null
@@ -5950,11 +7249,818 @@ export default function TravelHubPage() {
     [],
   );
 
+  const showCallToast = useCallback((message: string) => {
+    if (toastHideTimeoutRef.current) {
+      clearTimeout(toastHideTimeoutRef.current);
+      toastHideTimeoutRef.current = null;
+    }
+    setToast({ message, type: "success", callStyle: true });
+    toastHideTimeoutRef.current = globalThis.setTimeout(() => {
+      setToast(null);
+      toastHideTimeoutRef.current = null;
+    }, 2000);
+  }, []);
+
+  useEffect(() => {
+    callStateRef.current = callState;
+  }, [callState]);
+
+  useEffect(() => {
+    currentCallRef.current = currentCall;
+  }, [currentCall]);
+
+  useEffect(() => {
+    localStreamRef.current = localStream;
+  }, [localStream]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setCallHistory(readCallHistoryLs());
+  }, []);
+
+  useLayoutEffect(() => {
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  useLayoutEffect(() => {
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
+
+  useLayoutEffect(() => {
+    const el = remoteVideoRef.current;
+    if (!el) return;
+    el.muted = false;
+    if (callState === "active") {
+      el.volume = isSpeaker ? 1 : 0.28;
+    } else {
+      el.volume = 1;
+    }
+  }, [isSpeaker, remoteStream, callState]);
+
+  const addCallListener = useCallback((unsub: () => void) => {
+    callListenersRef.current.push(unsub);
+  }, []);
+
+  const clearCallDurationTimer = useCallback(() => {
+    if (durationTimerRef.current) {
+      clearInterval(durationTimerRef.current);
+      durationTimerRef.current = null;
+    }
+  }, []);
+
+  const endCallAndCleanup = useCallback(
+    async (opts: {
+      history?: GtCallHistoryEntry;
+      setEnded?: boolean;
+    }) => {
+      if (webrtcCleanupLockRef.current) return;
+      webrtcCleanupLockRef.current = true;
+      const cc = currentCallRef.current;
+      const callId = cc?.callId;
+      const d = db;
+      if (d && callId) {
+        try {
+          await update(ref(d, `calls/${callId}`), { status: "ended" });
+        } catch {
+          /* ignore */
+        }
+        if (cc && user) {
+          const other =
+            cc.direction === "outgoing" ? cc.remoteUser.id : cc.remoteUser.id;
+          try {
+            await remove(ref(d, `users/${other}/incoming_call`));
+          } catch {
+            /* ignore */
+          }
+          try {
+            await remove(ref(d, `users/${user.id}/incoming_call`));
+          } catch {
+            /* ignore */
+          }
+        }
+        if (callDeleteTimerRef.current) {
+          clearTimeout(callDeleteTimerRef.current);
+        }
+        callDeleteTimerRef.current = globalThis.setTimeout(() => {
+          if (!d) return;
+          void remove(ref(d, `calls/${callId}`)).catch(() => {});
+          callDeleteTimerRef.current = null;
+        }, 30_000);
+      }
+      try {
+        localStreamRef.current?.getTracks().forEach((t) => t.stop());
+      } catch {
+        /* ignore */
+      }
+      setLocalStream(null);
+      setRemoteStream(null);
+      peerConnectionRef.current?.close();
+      peerConnectionRef.current = null;
+      callRoleRef.current = null;
+      processedIceRef.current = new Set();
+      callListenersRef.current.forEach((u) => {
+        try {
+          u();
+        } catch {
+          /* ignore */
+        }
+      });
+      callListenersRef.current = [];
+      clearCallDurationTimer();
+      setIsMuted(false);
+      setIsCameraOff(false);
+      if (endedScreenTimerRef.current) {
+        clearTimeout(endedScreenTimerRef.current);
+        endedScreenTimerRef.current = null;
+      }
+      if (opts.setEnded && cc) {
+        const dur =
+          opts.history?.duration ??
+          (cc.startTime != null
+            ? Math.max(0, Math.floor((Date.now() - cc.startTime) / 1000))
+            : 0);
+        setEndedDisplaySec(dur);
+        if (opts.history) {
+          setCallHistory((prev) => {
+            const n = [opts.history!, ...prev].slice(0, 200);
+            writeJsonLs(GT_CALL_HISTORY, n);
+            return n;
+          });
+        }
+        setCallState("ended");
+        endedScreenTimerRef.current = globalThis.setTimeout(() => {
+          setCallState("idle");
+          setCurrentCall(null);
+          setEndedDisplaySec(0);
+        }, 2000);
+      } else {
+        setCallState("idle");
+        setCurrentCall(null);
+        if (opts.history) {
+          setCallHistory((prev) => {
+            const n = [opts.history!, ...prev].slice(0, 200);
+            writeJsonLs(GT_CALL_HISTORY, n);
+            return n;
+          });
+        }
+      }
+      globalThis.setTimeout(() => {
+        webrtcCleanupLockRef.current = false;
+      }, 400);
+    },
+    [db, user, clearCallDurationTimer],
+  );
+
+  const startOutgoingCall = useCallback(
+    async (
+      callType: "audio" | "video",
+      remote: { id: string; name: string; avatar: string | null },
+    ) => {
+      if (typeof RTCPeerConnection === "undefined") {
+        showCallToast(
+          "Your browser doesn't support calls. Please use Chrome or Edge.",
+        );
+        return;
+      }
+      if (!db || !user) {
+        showCallToast("Cannot start call");
+        return;
+      }
+      if (callStateRef.current !== "idle") return;
+      const exist = await apiFetchWithStatus<UserProfileIdOut>(
+        `/users/${encodeURIComponent(remote.id)}`,
+      );
+      if (exist.status === 404) {
+        showCallToast("This user doesn't have an account.");
+        return;
+      }
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: callType === "video",
+        });
+      } catch (e) {
+        const n = (e as { name?: string })?.name;
+        if (n === "NotAllowedError") {
+          showCallToast("Please allow microphone/camera access");
+        } else {
+          showCallToast("Could not access camera/microphone");
+        }
+        return;
+      }
+      const callId = push(ref(db, "calls")).key;
+      if (!callId) {
+        stream.getTracks().forEach((t) => t.stop());
+        showCallToast("Could not start call");
+        return;
+      }
+      localStreamRef.current = stream;
+      setLocalStream(stream);
+      setIsMuted(false);
+      setIsCameraOff(false);
+      setCurrentCall({
+        callId,
+        callType,
+        remoteUser: {
+          id: remote.id,
+          name: remote.name,
+          avatar: remote.avatar,
+        },
+        direction: "outgoing",
+        startTime: null,
+        duration: 0,
+      });
+      callRoleRef.current = "caller";
+      setCallState("outgoing");
+      const pc = new RTCPeerConnection(ICE_SERVERS);
+      peerConnectionRef.current = pc;
+      processedIceRef.current = new Set();
+      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+      pc.ontrack = (ev) => {
+        if (ev.streams[0]) setRemoteStream(ev.streams[0]);
+      };
+      const icePath = `calls/${callId}/ice_candidates/caller`;
+      pc.onicecandidate = (ev) => {
+        if (!ev.candidate) return;
+        void push(
+          ref(db, icePath),
+          ev.candidate.toJSON
+            ? ev.candidate.toJSON()
+            : {
+                candidate: ev.candidate.candidate,
+                sdpMid: ev.candidate.sdpMid,
+                sdpMLineIndex: ev.candidate.sdpMLineIndex,
+              },
+        );
+      };
+      try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await set(ref(db, `calls/${callId}/offer`), {
+          type: offer.type,
+          sdp: offer.sdp,
+        });
+        await update(ref(db, `calls/${callId}`), {
+          caller_id: user.id,
+          callee_id: remote.id,
+          call_type: callType,
+          status: "ringing",
+          created_at: Date.now(),
+        });
+        try {
+          await set(ref(db, `users/${remote.id}/incoming_call`), {
+            call_id: callId,
+            caller_name: user.full_name ?? "Someone",
+            caller_avatar: "",
+            call_type: callType,
+          });
+        } catch {
+          void remove(ref(db, `calls/${callId}`)).catch(() => {});
+          showCallToast("This user doesn't have an account.");
+          stream.getTracks().forEach((t) => t.stop());
+          setLocalStream(null);
+          setCallState("idle");
+          setCurrentCall(null);
+          peerConnectionRef.current?.close();
+          peerConnectionRef.current = null;
+          return;
+        }
+        let answerApplied = false;
+        const uAns = onValue(
+          ref(db, `calls/${callId}/answer`),
+          async (snap) => {
+            const a = snap.val() as
+              | { type?: string; sdp?: string }
+              | null;
+            if (!a?.sdp || !pc || answerApplied) return;
+            answerApplied = true;
+            try {
+              uAns();
+              await pc.setRemoteDescription(
+                new RTCSessionDescription({ type: a.type!, sdp: a.sdp! }),
+              );
+              setCallState("active");
+              setCurrentCall((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      startTime: Date.now(),
+                    }
+                  : prev,
+              );
+              clearCallDurationTimer();
+              setCallDurationSec(0);
+              durationTimerRef.current = globalThis.setInterval(() => {
+                setCallDurationSec((s) => s + 1);
+              }, 1000);
+            } catch {
+              /* ignore */
+            }
+          },
+        );
+        addCallListener(uAns);
+        const uIce = onChildAdded(
+          ref(db, `calls/${callId}/ice_candidates/callee`),
+          async (c) => {
+            const v = c.val() as
+              | { candidate?: string; sdpMid?: string | null; sdpMLineIndex?: number | null }
+              | null;
+            if (!v?.candidate || !pc) return;
+            const k = c.key;
+            if (!k || processedIceRef.current.has(`c${k}`)) return;
+            processedIceRef.current.add(`c${k}`);
+            try {
+              await pc.addIceCandidate(
+                new RTCIceCandidate({
+                  candidate: v.candidate,
+                  sdpMid: v.sdpMid ?? null,
+                  sdpMLineIndex: v.sdpMLineIndex ?? 0,
+                }),
+              );
+            } catch {
+              /* ignore */
+            }
+          },
+        );
+        addCallListener(uIce);
+        const uEnd = onValue(
+          ref(db, `calls/${callId}/status`),
+          (s) => {
+            if (s.val() === "ended" && callStateRef.current !== "idle") {
+              void endCallAndCleanup({
+                history: {
+                  user_id: remote.id,
+                  user_name: remote.name,
+                  call_type: callType,
+                  direction: "outgoing",
+                  duration: 0,
+                  timestamp: Date.now(),
+                  status: "ended",
+                },
+                setEnded: true,
+              });
+            }
+          },
+        );
+        addCallListener(uEnd);
+      } catch {
+        showCallToast("Could not start call");
+        stream.getTracks().forEach((t) => t.stop());
+        setLocalStream(null);
+        setCallState("idle");
+        setCurrentCall(null);
+        peerConnectionRef.current?.close();
+        peerConnectionRef.current = null;
+      }
+    },
+    [
+      db,
+      user,
+      showCallToast,
+      addCallListener,
+      clearCallDurationTimer,
+      endCallAndCleanup,
+    ],
+  );
+
+  const acceptIncomingCall = useCallback(async () => {
+    const p = pendingIncomingDataRef.current;
+    if (typeof RTCPeerConnection === "undefined" || !p || !db || !user) {
+      showCallToast("Cannot accept call");
+      return;
+    }
+    if (callStateRef.current !== "incoming") return;
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: p.callType === "video",
+      });
+    } catch (e) {
+      const n = (e as { name?: string })?.name;
+      if (n === "NotAllowedError") {
+        showCallToast("Please allow microphone/camera access");
+      } else {
+        showCallToast("Could not access camera/microphone");
+      }
+      return;
+    }
+    const callId = p.callId;
+    const pc = new RTCPeerConnection(ICE_SERVERS);
+    peerConnectionRef.current = pc;
+    processedIceRef.current = new Set();
+    callRoleRef.current = "callee";
+    localStreamRef.current = stream;
+    setLocalStream(stream);
+    stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+    pc.ontrack = (ev) => {
+      if (ev.streams[0]) setRemoteStream(ev.streams[0]);
+    };
+    const icePathCallee = `calls/${callId}/ice_candidates/callee`;
+    pc.onicecandidate = (ev) => {
+      if (!ev.candidate) return;
+      void push(
+        ref(db, icePathCallee),
+        ev.candidate.toJSON
+          ? ev.candidate.toJSON()
+          : {
+              candidate: ev.candidate.candidate,
+              sdpMid: ev.candidate.sdpMid,
+              sdpMLineIndex: ev.candidate.sdpMLineIndex,
+            },
+      );
+    };
+    try {
+      const os = await get(ref(db, `calls/${callId}/offer`));
+      const o = os.val() as { type?: string; sdp?: string } | null;
+      if (!o?.sdp) throw new Error("no offer");
+      await pc.setRemoteDescription(
+        new RTCSessionDescription({ type: o.type ?? "offer", sdp: o.sdp }),
+      );
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await set(ref(db, `calls/${callId}/answer`), {
+        type: answer.type,
+        sdp: answer.sdp,
+      });
+      await update(ref(db, `calls/${callId}`), { status: "active" });
+      try {
+        await remove(ref(db, `users/${user.id}/incoming_call`));
+      } catch {
+        /* ignore */
+      }
+      setCurrentCall((prev) =>
+        prev
+          ? { ...prev, startTime: Date.now() }
+          : {
+              callId,
+              callType: p.callType,
+              remoteUser: {
+                id: p.callerId,
+                name: p.callerName,
+                avatar: p.callerAvatar || null,
+              },
+              direction: "incoming",
+              startTime: Date.now(),
+              duration: 0,
+            },
+      );
+      setCallState("active");
+      clearCallDurationTimer();
+      setCallDurationSec(0);
+      durationTimerRef.current = globalThis.setInterval(() => {
+        setCallDurationSec((s) => s + 1);
+      }, 1000);
+      const uIceC = onChildAdded(
+        ref(db, `calls/${callId}/ice_candidates/caller`),
+        async (c) => {
+          const v = c.val() as
+            | { candidate?: string; sdpMid?: string | null; sdpMLineIndex?: number | null }
+            | null;
+          if (!v?.candidate) return;
+          const k = c.key;
+          if (!k || processedIceRef.current.has(`b${k}`)) return;
+          processedIceRef.current.add(`b${k}`);
+          try {
+            await pc.addIceCandidate(
+              new RTCIceCandidate({
+                candidate: v.candidate,
+                sdpMid: v.sdpMid ?? null,
+                sdpMLineIndex: v.sdpMLineIndex ?? 0,
+              }),
+            );
+          } catch {
+            /* ignore */
+          }
+        },
+      );
+      addCallListener(uIceC);
+      const uEnd = onValue(
+        ref(db, `calls/${callId}/status`),
+        (s) => {
+          if (s.val() === "ended") {
+            void endCallAndCleanup({
+              history: {
+                user_id: p.callerId,
+                user_name: p.callerName,
+                call_type: p.callType,
+                direction: "incoming",
+                duration: 0,
+                timestamp: Date.now(),
+                status: "ended",
+              },
+              setEnded: true,
+            });
+          }
+        },
+      );
+      addCallListener(uEnd);
+    } catch {
+      showCallToast("Could not connect call");
+      stream.getTracks().forEach((t) => t.stop());
+      setLocalStream(null);
+      setCallState("idle");
+      setCurrentCall(null);
+      peerConnectionRef.current?.close();
+      peerConnectionRef.current = null;
+    }
+  }, [
+    db,
+    user,
+    showCallToast,
+    addCallListener,
+    clearCallDurationTimer,
+    endCallAndCleanup,
+  ]);
+
+  const declineIncomingCall = useCallback(async () => {
+    const p = pendingIncomingDataRef.current;
+    if (!p || !db) return;
+    try {
+      await update(ref(db, `calls/${p.callId}`), { status: "ended" });
+    } catch {
+      /* ignore */
+    }
+    if (user) {
+      try {
+        await remove(ref(db, `users/${user.id}/incoming_call`));
+      } catch {
+        /* ignore */
+      }
+    }
+    setCallState("idle");
+    setCurrentCall(null);
+    pendingIncomingDataRef.current = null;
+  }, [db, user]);
+
+  const hangupCall = useCallback(() => {
+    const cc = currentCall;
+    if (!cc) return;
+    const dur =
+      cc.startTime != null
+        ? Math.max(0, Math.floor((Date.now() - cc.startTime) / 1000))
+        : 0;
+    const hist: GtCallHistoryEntry = {
+      user_id: cc.remoteUser.id,
+      user_name: cc.remoteUser.name,
+      call_type: cc.callType,
+      direction: cc.direction,
+      duration: dur,
+      timestamp: Date.now(),
+      status: "ended",
+    };
+    void endCallAndCleanup({ history: hist, setEnded: true });
+  }, [currentCall, endCallAndCleanup]);
+
+  const onCallToggleMute = useCallback(() => {
+    setIsMuted((m) => {
+      const next = !m;
+      localStreamRef.current?.getAudioTracks().forEach((t) => {
+        t.enabled = !next;
+      });
+      return next;
+    });
+  }, []);
+
+  const onCallToggleCamera = useCallback(() => {
+    setIsCameraOff((c) => {
+      const next = !c;
+      localStreamRef.current?.getVideoTracks().forEach((t) => {
+        t.enabled = !next;
+      });
+      return next;
+    });
+  }, []);
+
+  const onCallToggleSpeaker = useCallback(() => {
+    setIsSpeaker((s) => !s);
+  }, []);
+
+  const handleActiveCallMenuAction = useCallback(
+    async (action: GtActiveCallMenuAction) => {
+      switch (action) {
+        case "screen_share": {
+          const pc = peerConnectionRef.current;
+          if (!pc) {
+            showCallToast("Call not ready");
+            return;
+          }
+          if (currentCallRef.current?.callType === "audio") {
+            showCallToast(
+              "For best results, start a video call, then share your screen.",
+            );
+          }
+          try {
+            const display = await navigator.mediaDevices.getDisplayMedia({
+              video: true,
+              audio: true,
+            });
+            const vTrack = display.getVideoTracks()[0];
+            if (!vTrack) {
+              showCallToast("No screen track");
+              return;
+            }
+            const videoSender = pc
+              .getSenders()
+              .find((s) => s.track?.kind === "video");
+            if (videoSender) {
+              await videoSender.replaceTrack(vTrack);
+              vTrack.addEventListener("ended", () => {
+                const loc = localStreamRef.current?.getVideoTracks()[0];
+                if (loc) void videoSender.replaceTrack(loc);
+              });
+              showCallToast("You’re sharing your screen");
+            } else {
+              try {
+                pc.addTrack(vTrack, display);
+                showCallToast(
+                  "Screen track added. If the other person doesn’t see it, try a video call next time.",
+                );
+              } catch {
+                showCallToast("Could not share screen in this call");
+              }
+            }
+          } catch {
+            showCallToast("Screen share cancelled or not allowed");
+          }
+          break;
+        }
+        case "send_message": {
+          messageComposerInputRef.current?.focus();
+          showCallToast("Type your message in the bar below");
+          break;
+        }
+        case "toggle_video": {
+          onCallToggleCamera();
+          break;
+        }
+        case "audio_output": {
+          try {
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+          } catch {
+            /* ignore */
+          }
+          try {
+            const list = (
+              await navigator.mediaDevices.enumerateDevices()
+            ).filter((d) => d.kind === "audiooutput");
+            const el = remoteVideoRef.current;
+            if (
+              !list.length ||
+              !el ||
+              typeof (el as HTMLVideoElement & { setSinkId?: (id: string) => Promise<void> })
+                .setSinkId !== "function"
+            ) {
+              showCallToast(
+                "Change speaker or Bluetooth in your system or the browser’s site settings",
+              );
+              return;
+            }
+            setCallAudioOutputDevices(list);
+          } catch {
+            showCallToast("Could not list audio outputs");
+          }
+          break;
+        }
+        case "toggle_mute": {
+          onCallToggleMute();
+          break;
+        }
+        case "audio_mode": {
+          onCallToggleSpeaker();
+          break;
+        }
+        case "end": {
+          hangupCall();
+          break;
+        }
+      }
+    },
+    [
+      showCallToast,
+      hangupCall,
+      onCallToggleCamera,
+      onCallToggleMute,
+      onCallToggleSpeaker,
+    ],
+  );
+
   useEffect(() => {
     return () => {
       if (toastHideTimeoutRef.current) {
         clearTimeout(toastHideTimeoutRef.current);
         toastHideTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !db || !user?.id) return;
+    const r = ref(db, `users/${user.id}/incoming_call`);
+    const unsub = onValue(r, (snap) => {
+      if (!snap.exists()) {
+        if (callStateRef.current === "incoming") {
+          setCallState("idle");
+          setCurrentCall(null);
+        }
+        pendingIncomingDataRef.current = null;
+        return;
+      }
+      const v = snap.val() as
+        | {
+            call_id?: string;
+            caller_name?: string;
+            caller_avatar?: string;
+            call_type?: string;
+          }
+        | null;
+      if (!v?.call_id) return;
+      if (callStateRef.current !== "idle") return;
+      const callType: "audio" | "video" =
+        v.call_type === "video" ? "video" : "audio";
+      pendingIncomingDataRef.current = {
+        callId: v.call_id,
+        callerId: "unknown",
+        callerName: v.caller_name ?? "Someone",
+        callerAvatar: v.caller_avatar ?? "",
+        callType,
+      };
+      get(ref(db, `calls/${v.call_id}`))
+        .then((s) => {
+          const data = s.val() as { caller_id?: string } | null;
+          const cid = data?.caller_id ?? "unknown";
+          if (pendingIncomingDataRef.current) {
+            pendingIncomingDataRef.current = {
+              ...pendingIncomingDataRef.current,
+              callerId: cid,
+            };
+          }
+          setCurrentCall({
+            callId: v.call_id!,
+            callType,
+            remoteUser: {
+              id: cid,
+              name: v.caller_name ?? "Someone",
+              avatar: v.caller_avatar || null,
+            },
+            direction: "incoming",
+            startTime: null,
+            duration: 0,
+          });
+          setCallState("incoming");
+        })
+        .catch(() => {
+          setCurrentCall({
+            callId: v.call_id!,
+            callType,
+            remoteUser: {
+              id: "unknown",
+              name: v.caller_name ?? "Someone",
+              avatar: v.caller_avatar || null,
+            },
+            direction: "incoming",
+            startTime: null,
+            duration: 0,
+          });
+          setCallState("incoming");
+        });
+    });
+    registerCleanup(() => {
+      try {
+        unsub();
+      } catch {
+        /* ignore */
+      }
+    });
+    return () => {
+      try {
+        unsub();
+      } catch {
+        /* ignore */
+      }
+    };
+  }, [db, user?.id, registerCleanup]);
+
+  useEffect(() => {
+    return () => {
+      try {
+        localStreamRef.current?.getTracks().forEach((t) => t.stop());
+        peerConnectionRef.current?.close();
+        callListenersRef.current.forEach((u) => {
+          try {
+            u();
+          } catch {
+            /* ignore */
+          }
+        });
+        callListenersRef.current = [];
+      } catch {
+        /* ignore */
       }
     };
   }, []);
@@ -6062,6 +8168,38 @@ export default function TravelHubPage() {
       unsub();
     };
   }, [db, user?.id, activeChat, registerCleanup]);
+
+  useEffect(() => {
+    if (!db || callState !== "outgoing" || !currentCall) {
+      setOutgoingPeerOnline(null);
+      return;
+    }
+    const peerId = currentCall.remoteUser.id;
+    const r = ref(db, `presence/${peerId}/online`);
+    const unsub = onValue(r, (snap) => {
+      setOutgoingPeerOnline(snap.val() === true);
+    });
+    return () => {
+      unsub();
+      setOutgoingPeerOnline(null);
+    };
+  }, [db, callState, currentCall?.callId, currentCall?.remoteUser.id]);
+
+  useEffect(() => {
+    if (callState !== "outgoing" && callState !== "incoming") {
+      return;
+    }
+    const mode =
+      callState === "incoming"
+        ? "incoming"
+        : outgoingPeerOnline
+          ? "ringing"
+          : "calling";
+    const stop = startCallRingtoneLoop(mode);
+    return () => {
+      stop();
+    };
+  }, [callState, outgoingPeerOnline]);
 
   useEffect(() => {
     if (!db || !searchProfileFor?.id) {
@@ -7629,7 +9767,7 @@ export default function TravelHubPage() {
       >
         <div
           className={`flex min-h-0 flex-col overflow-hidden ${
-            !isMd && activeChat ? "hidden" : "flex"
+            !isMd && activeChat && activeTab === "chats" ? "hidden" : "flex"
           }`}
           style={{
             width: isMd ? 360 : "100%",
@@ -7748,7 +9886,46 @@ export default function TravelHubPage() {
                 />
               ) : null}
               {activeTab === "calls" ? (
-                <HubCallsTab showToast={(m) => showToast(m, "success")} />
+                <HubCallsTab
+                  showCallToast={showCallToast}
+                  mainChatList={mainChatList}
+                  callHistory={callHistory}
+                  onOpenHistoryRow={(e) => {
+                    const c = mainChatList.find(
+                      (x) =>
+                        x.type === "individual" &&
+                        x.members.includes(e.user_id),
+                    );
+                    if (c) {
+                      setActiveTab("chats");
+                      selectChat(c);
+                    } else {
+                      void openDirectChat({
+                        id: e.user_id,
+                        full_name: e.user_name,
+                        username: null,
+                        avatar_url: null,
+                      });
+                      setActiveTab("chats");
+                    }
+                  }}
+                  onStartAudioCall={(userId, name, avatar) => {
+                    void startOutgoingCall("audio", {
+                      id: userId,
+                      name,
+                      avatar,
+                    });
+                  }}
+                  onStartVideoCall={(userId, name, avatar) => {
+                    void startOutgoingCall("video", {
+                      id: userId,
+                      name,
+                      avatar,
+                    });
+                  }}
+                  handleUnauthorized={handleUnauthorized}
+                  masterAbortRef={masterAbortRef}
+                />
               ) : null}
               {activeTab === "updates" ? (
                 <HubUpdatesTab currentUser={user} />
@@ -7808,16 +9985,39 @@ export default function TravelHubPage() {
 
         <div
           className={`flex min-h-0 min-w-0 flex-col ${
-            !isMd && !activeChat ? "hidden" : "flex"
+            !isMd && !activeChat && activeTab !== "calls" ? "hidden" : "flex"
           }`}
           style={{
             flex: 1,
             minWidth: 0,
-            background: RIGHT_PANEL_BG,
+            background:
+              activeTab === "calls" ? "#f5ede4" : RIGHT_PANEL_BG,
             height: "100%",
           }}
         >
-          {!activeChat ? (
+          {activeTab === "calls" ? (
+            <CallsConnectRightPanel
+              showCallToast={showCallToast}
+              activeChat={activeChat}
+              user={user}
+              onStartVideoCall={() => {
+                if (!user || !activeChat || activeChat.type !== "individual") {
+                  showCallToast("Select a chat first");
+                  return;
+                }
+                const peer = activeChat.members.find((m) => m !== user.id);
+                if (!peer) {
+                  showCallToast("Select a chat first");
+                  return;
+                }
+                void startOutgoingCall("video", {
+                  id: peer,
+                  name: chatRowDisplayName(activeChat),
+                  avatar: chatRowDmAvatarUrl(activeChat),
+                });
+              }}
+            />
+          ) : !activeChat ? (
             <div
               className="flex flex-1 flex-col px-6 text-center"
               style={{
@@ -7907,15 +10107,32 @@ export default function TravelHubPage() {
               onBlockPeer={() => void blockActiveChatPeer()}
               onLeaveGroup={() => void leaveActiveGroupChat()}
               onReport={() => showToast("Report submitted", "success")}
-              onDmVoiceCall={() =>
-                showToast("Voice call coming soon", "success")
-              }
-              onDmVideoCall={() =>
-                showToast("Video call coming soon", "success")
-              }
+              onDmVoiceCall={() => {
+                if (!user || !activeChat || activeChat.type !== "individual")
+                  return;
+                const peer = activeChat.members.find((m) => m !== user.id);
+                if (!peer) return;
+                void startOutgoingCall("audio", {
+                  id: peer,
+                  name: chatRowDisplayName(activeChat),
+                  avatar: chatRowDmAvatarUrl(activeChat),
+                });
+              }}
+              onDmVideoCall={() => {
+                if (!user || !activeChat || activeChat.type !== "individual")
+                  return;
+                const peer = activeChat.members.find((m) => m !== user.id);
+                if (!peer) return;
+                void startOutgoingCall("video", {
+                  id: peer,
+                  name: chatRowDisplayName(activeChat),
+                  avatar: chatRowDmAvatarUrl(activeChat),
+                });
+              }}
               groupTrip={headerGroupTrip}
               groupTripLoading={headerGroupTripLoading}
-              onGroupVoice={() => showToast("Coming soon", "success")}
+              onGroupVoice={() => showCallToast("Group calls coming soon")}
+              onGroupVideoCall={() => showCallToast("Group calls coming soon")}
             />
 
             {showInChatSearch ? (
@@ -8264,6 +10481,7 @@ export default function TravelHubPage() {
                     </>
                   )}
                   <input
+                    ref={messageComposerInputRef}
                     value={messageText}
                     onChange={(e) => {
                       setMessageText(e.target.value);
@@ -8368,6 +10586,7 @@ export default function TravelHubPage() {
                     </>
                   )}
                   <input
+                    ref={messageComposerInputRef}
                     value={messageText}
                     onChange={(e) => {
                       setMessageText(e.target.value);
@@ -9599,11 +11818,112 @@ export default function TravelHubPage() {
         </div>
       ) : null}
 
+      <WebrtcCallOverlays
+        callState={callState}
+        callType={currentCall?.callType ?? "audio"}
+        currentCall={currentCall}
+        isMuted={isMuted}
+        isCameraOff={isCameraOff}
+        isSpeaker={isSpeaker}
+        callDurationSec={callDurationSec}
+        endedDisplaySec={endedDisplaySec}
+        localVideoRef={localVideoRef}
+        remoteVideoRef={remoteVideoRef}
+        onToggleMute={onCallToggleMute}
+        onToggleCamera={onCallToggleCamera}
+        onToggleSpeaker={onCallToggleSpeaker}
+        onEnd={hangupCall}
+        onAccept={acceptIncomingCall}
+        onDecline={declineIncomingCall}
+        outgoingPeerOnline={outgoingPeerOnline}
+        onActiveCallMenuAction={handleActiveCallMenuAction}
+      />
+
+      {callAudioOutputDevices && callAudioOutputDevices.length > 0 ? (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center px-4"
+          style={{ background: "rgba(15, 25, 35, 0.75)" }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Audio output"
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-white/10 p-4 shadow-2xl"
+            style={{ background: "#1b2838" }}
+          >
+            <p className="text-center text-base font-semibold text-white">
+              Play call audio through
+            </p>
+            <p className="mt-1 text-center text-xs" style={{ color: "#8896a0" }}>
+              {typeof (HTMLVideoElement.prototype as { setSinkId?: unknown })
+                .setSinkId === "function"
+                ? "Choose a speaker, phone, or Bluetooth output"
+                : "Your browser may not support choosing the output device here"}
+            </p>
+            <ul className="mt-3 max-h-56 space-y-1 overflow-y-auto custom-scrollbar">
+              {callAudioOutputDevices.map((d) => (
+                <li key={d.deviceId}>
+                  <button
+                    type="button"
+                    className="w-full rounded-xl px-3 py-2.5 text-left text-sm text-white hover:bg-white/10"
+                    onClick={async () => {
+                      const el = remoteVideoRef.current;
+                      if (!el) return;
+                      try {
+                        await (
+                          el as HTMLVideoElement & {
+                            setSinkId: (id: string) => Promise<void>;
+                          }
+                        ).setSinkId(d.deviceId);
+                        showCallToast(
+                          d.label && d.label !== ""
+                            ? `Output: ${d.label}`
+                            : "Output device updated",
+                        );
+                      } catch {
+                        showCallToast("Could not set audio output on this device");
+                      }
+                      setCallAudioOutputDevices(null);
+                    }}
+                  >
+                    {d.label && d.label !== "" ? d.label : "Default speaker"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              className="mt-3 w-full rounded-xl py-2.5 text-sm font-medium text-white/90 hover:bg-white/10"
+              onClick={() => setCallAudioOutputDevices(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {toast ? (
         <div
-          className={`fixed right-4 top-20 z-[300] max-w-sm animate-in rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-lg ${
-            toast.type === "success" ? "bg-green-600" : "bg-red-600"
-          }`}
+          className={
+            toast.callStyle
+              ? "animate-in fade-in slide-in-from-bottom-4 fixed bottom-6 left-1/2 z-[300] max-w-sm -translate-x-1/2 duration-200"
+              : `fixed right-4 top-20 z-[300] max-w-sm animate-in rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-lg ${
+                  toast.type === "success" ? "bg-green-600" : "bg-red-600"
+                }`
+          }
+          style={
+            toast.callStyle
+              ? {
+                  background: "#1e2a3a",
+                  color: "#e9edef",
+                  border: "1px solid #f0a500",
+                  borderRadius: 8,
+                  padding: "10px 16px",
+                  fontSize: 14,
+                  fontWeight: 500,
+                }
+              : undefined
+          }
         >
           {toast.message}
         </div>
@@ -9630,6 +11950,7 @@ function ChatHeader({
   groupTrip,
   groupTripLoading,
   onGroupVoice,
+  onGroupVideoCall,
 }: {
   chat: ChatInfo;
   onBack: () => void;
@@ -9650,6 +11971,7 @@ function ChatHeader({
   groupTrip: TripOut | null;
   groupTripLoading: boolean;
   onGroupVoice: () => void;
+  onGroupVideoCall: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuWrapRef = useRef<HTMLDivElement | null>(null);
@@ -9775,6 +12097,15 @@ function ChatHeader({
               onClick={onGroupVoice}
             >
               <ThIconPhoneHandset size={20} className="text-current" />
+            </button>
+            <button
+              type="button"
+              className="flex h-9 w-9 items-center justify-center rounded hover:bg-white/10"
+              style={{ color: TH_MUTED }}
+              aria-label="Video"
+              onClick={onGroupVideoCall}
+            >
+              <Video className="h-5 w-5" strokeWidth={1.5} />
             </button>
             <div className="relative" ref={menuWrapRef}>
               <button
