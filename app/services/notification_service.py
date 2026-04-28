@@ -297,9 +297,14 @@ class NotificationService:
         from firebase_admin import messaging
 
         data_str = {k: str(v) for k, v in (data or {}).items()}
+        # Web clients: explicit WebpushConfig improves delivery when the app is backgrounded/closed.
+        webpush = messaging.WebpushConfig(
+            notification=messaging.WebpushNotification(title=title, body=body),
+        )
         message = messaging.Message(
             notification=messaging.Notification(title=title, body=body),
             data=data_str,
+            webpush=webpush,
             token=token.strip(),
         )
         try:

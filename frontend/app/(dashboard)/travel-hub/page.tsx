@@ -47,6 +47,7 @@ import {
   Headphones,
   Check,
   CheckCheck,
+  Loader2,
   LogOut,
   Map as MapIcon,
   MapPin,
@@ -74,7 +75,7 @@ import {
   X,
 } from "lucide-react";
 
-import { apiFetchWithStatus } from "@/lib/api";
+import { API_BASE, apiFetchWithStatus } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
 
 function isAbortError(e: unknown): boolean {
@@ -178,6 +179,406 @@ const QUICK_REACTION_CHIPS = [
   "Free",
   "Hello",
 ] as const;
+
+const GT_RECENT_EMOJIS = "gt_recent_emojis";
+const TENOR_API_KEY = "AIzaSyAyimkuYQYF_FXVALexPzkcsvZpe6MePdw";
+
+/** WhatsApp-style picker grids (Unicode); flags list matches product spec. */
+const EMOJI_CATEGORIES: Record<string, string[]> = {
+  recent: [],
+  smileys: [
+    "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃", "😉", "😊", "😇", "🥰", "😍", "🤩", "😘", "😗", "😚", "😙", "😋", "😛", "😜", "🤪", "😝", "🤑", "🤗", "🤭", "🤫", "🤔", "🤐", "🤨", "😐", "😑", "😶", "😏", "😒", "🙄", "😬", "🤥", "😌", "😔", "😪", "🤤", "😴", "😷", "🤒", "🤕", "🤢", "🤮", "🤧", "🥵", "🥶", "🥴", "😵", "🤯", "🤠", "🥳", "😎", "🤓", "🧐", "😕", "😟", "🙁", "☹️", "😮", "😯", "😲", "😳", "🥺", "😦", "😧", "😨", "😰", "😥", "😢", "😭", "😱", "😖", "😣", "😞", "😓", "😩", "😫", "🥱", "😤", "😡", "😠", "🤬", "😈", "👿", "💀", "☠️", "💩", "🤡", "👹", "👺", "👻", "👽", "👾", "🤖",
+  ],
+  people: [
+    "👋", "🤚", "🖐", "✋", "🖖", "👌", "🤌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆", "🖕", "👇", "☝️", "👍", "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "✍️", "💅", "🤳", "💪", "🦾", "🦿", "🦵", "🦶", "👂", "🦻", "👃", "🫀", "🫁", "🧠", "🦷", "🦴", "👀", "👁", "👅", "👄", "👶", "🧒", "👦", "👧", "🧑", "👱", "👨", "🧔", "👩", "🧓", "👴", "👵", "🙍", "🙎", "🙅", "🙆", "💁", "🙋", "🧏", "🙇", "🤦", "🤷",
+  ],
+  nature: [
+    "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🙈", "🙉", "🙊", "🐒", "🐔", "🐧", "🐦", "🐤", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴", "🦄", "🐝", "🐛", "🦋", "🐌", "🐞", "🐜", "🦟", "🦗", "🕷", "🦂", "🐢", "🐍", "🦎", "🦖", "🦕", "🐙", "🦑", "🦐", "🦞", "🦀", "🐡", "🐠", "🐟", "🐬", "🐳", "🐋", "🦈", "🌸", "🌺", "🌻", "🌹", "🌷", "🌱", "🌿", "🍀", "🌾", "🍁", "🍂", "🍃",
+  ],
+  food: [
+    "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍈", "🍒", "🍑", "🥭", "🍍", "🥥", "🥝", "🍅", "🍆", "🥑", "🥦", "🥬", "🥒", "🌶", "🫑", "🧄", "🧅", "🥔", "🌽", "🥕", "🫛", "🧆", "🥚", "🍳", "🥘", "🍲", "🫕", "🥣", "🥗", "🍿", "🧂", "🥫", "🍱", "🍘", "🍙", "🍚", "🍛", "🍜", "🍝", "🍠", "🍢", "🍣", "🍤", "🍥", "🥮", "🍡", "🥟", "🥠", "🥡", "🍦", "🍧", "🍨", "🍩", "🍪", "🎂", "🍰", "🧁", "🥧", "🍫", "🍬", "🍭", "🍮", "🍯",
+  ],
+  travel: [
+    "🚗", "🚕", "🚙", "🚌", "🚎", "🏎", "🚓", "🚑", "🚒", "🚐", "🛻", "🚚", "🚛", "🚜", "🏍", "🛵", "🚲", "🛴", "🛹", "🛼", "🚏", "🛣", "🛤", "⛽", "🚨", "🚥", "🚦", "🛑", "🚧", "⚓", "🛟", "⛵", "🚤", "🛥", "🛳", "⛴", "🚢", "✈️", "🛩", "🛫", "🛬", "💺", "🚁", "🚟", "🚠", "🚡", "🛰", "🚀", "🛸", "🏖", "🏝", "🏕", "⛺", "🌍", "🌎", "🌏", "🗺", "🧭", "🏔", "⛰", "🌋", "🗻", "🏠", "🏡", "🏢", "🏣", "🏤", "🏥", "🏦", "🏨", "🏩", "🏪", "🏫", "🏬", "🏭", "🗼", "🗽",
+  ],
+  objects: [
+    "⌚", "📱", "📲", "💻", "⌨️", "🖥", "🖨", "🖱", "🖲", "💽", "💾", "💿", "📀", "🧮", "📷", "📸", "📹", "🎥", "📽", "🎞", "📞", "☎️", "📟", "📠", "📺", "📻", "🧭", "⏱", "⏲", "⏰", "🕰", "⌛", "⏳", "📡", "🔋", "🔌", "💡", "🔦", "🕯", "🪔", "🧯", "🛢", "💰", "💴", "💵", "💶", "💷", "💸", "💳", "🪙", "💹", "📈", "📉", "📊", "📋", "🗒", "🗓", "📆", "📅", "📇", "📁", "📂", "🗂", "🗃", "🗄", "🗑", "🔒", "🔓", "🔏", "🔐", "🔑", "🗝", "🔨", "🪓", "⛏", "⚒", "🛠", "🗡", "⚔️", "🔫", "🪃", "🏹", "🛡", "🪚", "🔧", "🪛", "🔩", "⚙️",
+  ],
+  symbols: [
+    "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❤️‍🔥", "❤️‍🩹", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "☮️", "✝️", "☪️", "🕉", "✡️", "🔯", "🕎", "☯️", "☦️", "🛐", "⛎", "♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓", "🆔", "⚛️", "🉑", "☢️", "☣️", "📴", "📳", "🈶", "🈚", "🈸", "🈺", "🈷️", "✴️", "🆚", "💮", "🉐", "㊙️", "㊗️", "🈴", "🈵", "🈹", "🈲", "🅰️", "🅱️", "🆎", "🆑", "🅾️", "🆘", "❌", "⭕", "🛑", "⛔", "📛", "🚫", "✅", "☑️", "✔️", "❎", "➰", "➿",
+  ],
+  flags: [
+    "🏳️", "🏴", "🚩", "🏁", "🏳️‍🌈", "🏳️‍⚧️", "🏴‍☠️", "🇦🇫", "🇦🇱", "🇩🇿", "🇦🇩", "🇦🇴", "🇦🇬", "🇦🇷", "🇦🇲", "🇦🇺", "🇦🇹", "🇦🇿", "🇧🇸", "🇧🇭", "🇧🇩", "🇧🇧", "🇧🇾", "🇧🇪", "🇧🇿", "🇧🇯", "🇧🇹", "🇧🇴", "🇧🇦", "🇧🇼", "🇧🇷", "🇧🇳", "🇧🇬", "🇧🇫", "🇧🇮", "🇨🇻", "🇨🇰", "🇨🇦", "🇨🇫", "🇹🇩", "🇨🇱", "🇨🇳", "🇨🇴", "🇰🇲", "🇨🇩", "🇨🇬", "🇨🇷", "🇭🇷", "🇨🇺", "🇨🇾", "🇨🇿", "🇩🇰", "🇩🇯", "🇩🇲", "🇩🇴", "🇪🇨", "🇪🇬", "🇸🇻", "🇬🇶", "🇪🇷", "🇪🇪", "🇸🇿", "🇪🇹", "🇫🇯", "🇫🇮", "🇫🇷", "🇬🇦", "🇬🇲", "🇬🇪", "🇩🇪", "🇬🇭", "🇬🇷", "🇬🇩", "🇬🇹", "🇬🇳", "🇬🇼", "🇬🇾", "🇭🇹", "🇭🇳", "🇭🇺", "🇮🇸", "🇮🇳", "🇮🇩", "🇮🇷", "🇮🇶", "🇮🇪", "🇮🇱", "🇮🇹", "🇯🇲", "🇯🇵", "🇯🇴", "🇰🇿", "🇰🇪", "🇰🇮", "🇰🇵", "🇰🇷", "🇰🇼", "🇰🇬", "🇱🇦", "🇱🇻", "🇱🇧", "🇱🇸", "🇱🇷", "🇱🇾", "🇱🇮", "🇱🇹", "🇱🇺", "🇲🇬", "🇲🇼", "🇲🇾", "🇲🇻", "🇲🇱", "🇲🇹", "🇲🇭", "🇲🇷", "🇲🇺", "🇲🇽", "🇫🇲", "🇲🇩", "🇲🇨", "🇲🇳", "🇲🇪", "🇲🇦", "🇲🇿", "🇲🇲", "🇳🇦", "🇳🇷", "🇳🇵", "🇳🇱", "🇳🇿", "🇳🇮", "🇳🇪", "🇳🇬", "🇳🇴", "🇴🇲", "🇵🇰", "🇵🇼", "🇵🇸", "🇵🇦", "🇵🇬", "🇵🇾", "🇵🇪", "🇵🇭", "🇵🇱", "🇵🇹", "🇶🇦", "🇷🇴", "🇷🇺", "🇷🇼", "🇰🇳", "🇱🇨", "🇻🇨", "🇼🇸", "🇸🇲", "🇸🇹", "🇸🇦", "🇸🇳", "🇷🇸", "🇸🇨", "🇸🇱", "🇸🇬", "🇸🇰", "🇸🇮", "🇸🇧", "🇸🇴", "🇿🇦", "🇸🇸", "🇪🇸", "🇱🇰", "🇸🇩", "🇸🇷", "🇸🇪", "🇨🇭", "🇸🇾", "🇹🇼", "🇹🇯", "🇹🇿", "🇹🇭", "🇹🇱", "🇹🇬", "🇹🇴", "🇹🇹", "🇹🇳", "🇹🇷", "🇹🇲", "🇹🇻", "🇺🇬", "🇺🇦", "🇦🇪", "🇬🇧", "🇺🇸", "🇺🇾", "🇺🇿", "🇻🇺", "🇻🇪", "🇻🇳", "🇾🇪", "🇿🇲", "🇿🇼",
+  ],
+};
+
+const EMOJI_CAT_KEYS = [
+  "recent",
+  "smileys",
+  "people",
+  "nature",
+  "food",
+  "travel",
+  "objects",
+  "symbols",
+  "flags",
+] as const;
+type EmojiCatKey = (typeof EMOJI_CAT_KEYS)[number];
+
+const EMOJI_CAT_LABELS: Record<EmojiCatKey, string> = {
+  recent: "Recent",
+  smileys: "Smileys",
+  people: "People",
+  nature: "Nature",
+  food: "Food",
+  travel: "Travel",
+  objects: "Objects",
+  symbols: "Symbols",
+  flags: "Flags",
+};
+
+/** Category keywords for emoji search (no emoji in strings). */
+const EMOJI_CAT_TAGS: Record<Exclude<EmojiCatKey, "recent">, string> = {
+  smileys:
+    "smile happy laugh emotion face grin sad angry cry tear funny love cool",
+  people: "people hand wave body finger thumb clap family baby",
+  nature: "nature animal plant dog cat tree flower bug bird fish",
+  food: "food fruit drink eat meal pizza burger sushi rice",
+  travel: "travel car plane transport city road trip map beach",
+  objects: "object phone computer tool money clock photo video",
+  symbols: "symbol heart star sign zodiac religion love peace",
+  flags: "flag country nation",
+};
+
+type ChatEmojiGifPickerTab = "emoji" | "gif" | "stickers";
+
+function readRecentEmojisLs(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(GT_RECENT_EMOJIS);
+    if (!raw) return [];
+    const p = JSON.parse(raw) as unknown;
+    if (!Array.isArray(p)) return [];
+    return p.filter((x): x is string => typeof x === "string").slice(0, 24);
+  } catch {
+    return [];
+  }
+}
+
+function writeRecentEmojisLs(emojis: string[]) {
+  if (typeof window === "undefined") return;
+  const next = emojis.slice(0, 24);
+  try {
+    localStorage.setItem(GT_RECENT_EMOJIS, JSON.stringify(next));
+  } catch {
+    /* ignore */
+  }
+}
+
+function pushRecentEmoji(emoji: string) {
+  const cur = readRecentEmojisLs().filter((e) => e !== emoji);
+  writeRecentEmojisLs([emoji, ...cur]);
+}
+
+function insertTextInComposerInput(
+  input: HTMLInputElement | null,
+  current: string,
+  insert: string,
+  setValue: (s: string) => void,
+) {
+  if (!input) {
+    setValue(current + insert);
+    return;
+  }
+  const start = input.selectionStart ?? current.length;
+  const end = input.selectionEnd ?? current.length;
+  const before = current.slice(0, start);
+  const after = current.slice(end);
+  const next = before + insert + after;
+  setValue(next);
+  const pos = start + insert.length;
+  requestAnimationFrame(() => {
+    input.focus();
+    try {
+      input.setSelectionRange(pos, pos);
+    } catch {
+      /* ignore */
+    }
+  });
+}
+
+function parseTenorResultUrls(body: unknown): string[] {
+  const o = body as { results?: unknown[] } | null;
+  const results = Array.isArray(o?.results) ? o.results : [];
+  const urls: string[] = [];
+  for (const it of results) {
+    if (!it || typeof it !== "object") continue;
+    const mf = (it as { media_formats?: Record<string, { url?: string }> })
+      .media_formats;
+    if (!mf || typeof mf !== "object") continue;
+    const u =
+      mf.tinygif?.url || mf.nanogif?.url || mf.gif?.url || mf.mediumgif?.url;
+    if (u && typeof u === "string") urls.push(u);
+  }
+  return urls;
+}
+
+function ChatEmojiGifPicker({
+  open,
+  tab,
+  onTabChange,
+  panelHeightPx,
+  onClose,
+  onInsertEmoji,
+  onPickGifUrl,
+}: {
+  open: boolean;
+  tab: ChatEmojiGifPickerTab;
+  onTabChange: (t: ChatEmojiGifPickerTab) => void;
+  panelHeightPx: number;
+  onClose: () => void;
+  onInsertEmoji: (emoji: string) => void;
+  onPickGifUrl: (url: string) => void;
+}) {
+  const [recentEmojis, setRecentEmojis] = useState<string[]>([]);
+  const [emojiSearch, setEmojiSearch] = useState("");
+  const [emojiCat, setEmojiCat] = useState<EmojiCatKey>("smileys");
+  const [gifInput, setGifInput] = useState("");
+  const [gifDebounced, setGifDebounced] = useState("");
+  const [gifUrls, setGifUrls] = useState<string[]>([]);
+  const [gifLoading, setGifLoading] = useState(false);
+  const gifAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setRecentEmojis(readRecentEmojisLs());
+  }, [open]);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setGifDebounced(gifInput), 500);
+    return () => window.clearTimeout(t);
+  }, [gifInput]);
+
+  useEffect(() => {
+    if (!open || tab !== "gif") return;
+    gifAbortRef.current?.abort();
+    const ac = new AbortController();
+    gifAbortRef.current = ac;
+    setGifLoading(true);
+    const q = gifDebounced.trim();
+    const url = q
+      ? `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(q)}&key=${encodeURIComponent(TENOR_API_KEY)}&limit=20&media_filter=gif`
+      : `https://tenor.googleapis.com/v2/featured?key=${encodeURIComponent(TENOR_API_KEY)}&limit=20&media_filter=gif`;
+    void fetch(url, { signal: ac.signal })
+      .then((r) => r.json())
+      .then((j) => {
+        if (ac.signal.aborted) return;
+        setGifUrls(parseTenorResultUrls(j));
+      })
+      .catch(() => {
+        if (!ac.signal.aborted) setGifUrls([]);
+      })
+      .finally(() => {
+        if (!ac.signal.aborted) setGifLoading(false);
+      });
+    return () => ac.abort();
+  }, [open, tab, gifDebounced]);
+
+  const emojiGrid = useMemo(() => {
+    const q = emojiSearch.trim().toLowerCase();
+    if (emojiCat === "recent") {
+      const r = recentEmojis.length ? recentEmojis : readRecentEmojisLs();
+      if (!q) return r;
+      const hitCats = (
+        Object.keys(EMOJI_CAT_TAGS) as (keyof typeof EMOJI_CAT_TAGS)[]
+      ).filter((k) => EMOJI_CAT_TAGS[k].toLowerCase().includes(q));
+      if (hitCats.length) {
+        const set = new Set<string>();
+        for (const k of hitCats) {
+          for (const e of EMOJI_CATEGORIES[k] ?? []) set.add(e);
+        }
+        return [...set];
+      }
+      return r.filter((e) => e === q);
+    }
+    const base = EMOJI_CATEGORIES[emojiCat] ?? [];
+    if (!q) return base;
+    if (EMOJI_CAT_TAGS[emojiCat as Exclude<EmojiCatKey, "recent">]?.toLowerCase().includes(q))
+      return base;
+    const hitCats = (
+      Object.keys(EMOJI_CAT_TAGS) as (keyof typeof EMOJI_CAT_TAGS)[]
+    ).filter((k) => EMOJI_CAT_TAGS[k].toLowerCase().includes(q));
+    if (hitCats.length) {
+      const set = new Set<string>();
+      for (const k of hitCats) {
+        for (const e of EMOJI_CATEGORIES[k] ?? []) set.add(e);
+      }
+      return [...set];
+    }
+    return base.filter((e) => e === q);
+  }, [emojiCat, emojiSearch, recentEmojis]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="absolute bottom-full left-0 right-0 z-[210] flex flex-col border-t shadow-[0_-4px_24px_rgba(0,0,0,0.35)] animate-in slide-in-from-bottom-2 duration-200"
+      style={{
+        height: panelHeightPx,
+        background: "#1e2a3a",
+        borderColor: "rgba(255,255,255,0.1)",
+      }}
+      role="dialog"
+      aria-label="Emoji and GIF"
+    >
+      <div
+        className="flex shrink-0 items-center gap-1 border-b px-2 pt-1"
+        style={{ borderColor: "rgba(255,255,255,0.1)" }}
+      >
+        {(["emoji", "gif", "stickers"] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => onTabChange(k)}
+            className="shrink-0 rounded-t-lg px-3 py-2 text-[13px] font-semibold"
+            style={{
+              background: tab === k ? "rgba(255,255,255,0.08)" : "transparent",
+              color: tab === k ? "#fff" : "#8896a0",
+            }}
+          >
+            {k === "emoji"
+              ? "Emoji"
+              : k === "gif"
+                ? "GIF"
+                : "Stickers"}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={onClose}
+          className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white"
+          aria-label="Close"
+        >
+          <X className="h-5 w-5" strokeWidth={1.5} />
+        </button>
+      </div>
+
+      {tab === "stickers" ? (
+        <div
+          className="flex flex-1 flex-col items-center justify-center px-4 text-center"
+          style={{ color: "#8896a0" }}
+        >
+          <p className="text-sm font-medium text-white">Coming soon</p>
+          <p className="mt-1 text-xs">Sticker packs will appear here.</p>
+        </div>
+      ) : null}
+
+      {tab === "emoji" ? (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="shrink-0 px-2 pt-2">
+            <input
+              value={emojiSearch}
+              onChange={(e) => setEmojiSearch(e.target.value)}
+              placeholder="Search emoji..."
+              className="w-full rounded-lg border-0 px-3 py-2 text-sm text-white outline-none placeholder:text-[#5c6a7d]"
+              style={{ background: "rgba(0,0,0,0.25)" }}
+            />
+          </div>
+          <div
+            className="flex shrink-0 gap-1 overflow-x-auto px-2 py-2"
+            style={{ maxHeight: 44 }}
+          >
+            {EMOJI_CAT_KEYS.map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setEmojiCat(k)}
+                className="h-9 shrink-0 rounded-lg px-2.5 text-[11px] font-semibold whitespace-nowrap"
+                style={{
+                  minWidth: 40,
+                  background:
+                    emojiCat === k ? "rgba(255,255,255,0.12)" : "transparent",
+                  color: emojiCat === k ? "#fff" : "#8896a0",
+                }}
+              >
+                {EMOJI_CAT_LABELS[k]}
+              </button>
+            ))}
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-2 custom-scrollbar">
+            <div
+              className="grid gap-0.5"
+              style={{
+                gridTemplateColumns: "repeat(8, 36px)",
+                justifyContent: "center",
+              }}
+            >
+              {emojiGrid.map((em) => (
+                <button
+                  key={`${emojiCat}-${em}`}
+                  type="button"
+                  title={em}
+                  onClick={() => {
+                    pushRecentEmoji(em);
+                    setRecentEmojis(readRecentEmojisLs());
+                    onInsertEmoji(em);
+                  }}
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-[22px] leading-none hover:bg-white/10"
+                >
+                  {em}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {tab === "gif" ? (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="shrink-0 px-2 pt-2">
+            <input
+              value={gifInput}
+              onChange={(e) => setGifInput(e.target.value)}
+              placeholder="Search GIFs..."
+              className="w-full rounded-lg border-0 px-3 py-2 text-sm text-white outline-none placeholder:text-[#5c6a7d]"
+              style={{ background: "rgba(0,0,0,0.25)" }}
+            />
+          </div>
+          <div className="relative min-h-0 flex-1 overflow-y-auto px-2 pb-2 custom-scrollbar">
+            {gifLoading ? (
+              <div className="flex flex-1 items-center justify-center py-12">
+                <Loader2
+                  className="h-8 w-8 animate-spin text-slate-400"
+                  strokeWidth={1.5}
+                  aria-hidden
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-1.5 pt-2">
+                {gifUrls.map((u) => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => onPickGifUrl(u)}
+                    className="relative overflow-hidden rounded-lg bg-black/20"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={u}
+                      alt=""
+                      className="h-auto w-full object-cover"
+                      loading="lazy"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 type UserMe = {
   id: string;
@@ -289,7 +690,7 @@ type ChatMessage = {
   sender_name?: string;
   sender_avatar?: string;
   text?: string;
-  type: string;
+  type?: string;
   timestamp: number;
   read_by?: Record<string, boolean>;
   metadata?: Record<string, unknown>;
@@ -556,28 +957,6 @@ function looksLikeBluetoothAudioDeviceLabel(label: string): boolean {
   return /bluetooth|bt\s|airpods|airpod|buds|galaxy\s|hands[- ]free|headset\s*\(|wireless|bone\s*conduction/i.test(
     label,
   );
-}
-
-/** Merge all inbound (peer) tracks into one stream so audio+video `ontrack` events both render reliably. */
-function appendInboundRemoteTrack(
-  remoteMS: MutableRefObject<MediaStream | null>,
-  event: RTCTrackEvent,
-  setRemoteStream: Dispatch<SetStateAction<MediaStream | null>>,
-  remoteVideoRef: React.RefObject<HTMLVideoElement | null>,
-) {
-  const t = event.track;
-  let rs = remoteMS.current;
-  if (!rs) {
-    rs = new MediaStream();
-    remoteMS.current = rs;
-  }
-  if (!rs.getTracks().some((x) => x.id === t.id)) {
-    rs.addTrack(t);
-  }
-  setRemoteStream(rs);
-  if (remoteVideoRef.current) {
-    remoteVideoRef.current.srcObject = rs;
-  }
 }
 
 const ICE_SERVERS: RTCConfiguration = {
@@ -6556,6 +6935,7 @@ function WebrtcCallOverlays({
   endedDisplaySec,
   localVideoRef,
   remoteVideoRef,
+  remoteStream,
   onToggleMute,
   onToggleCamera,
   onToggleSpeaker,
@@ -6575,6 +6955,7 @@ function WebrtcCallOverlays({
   endedDisplaySec: number;
   localVideoRef: React.RefObject<HTMLVideoElement | null>;
   remoteVideoRef: React.RefObject<HTMLVideoElement | null>;
+  remoteStream: MediaStream | null;
   onToggleMute: () => void;
   onToggleCamera: () => void;
   onToggleSpeaker: () => void;
@@ -6596,6 +6977,14 @@ function WebrtcCallOverlays({
   });
   const activeCallMoreBtnRef = useRef<HTMLButtonElement | null>(null);
   const activeCallMorePanelRef = useRef<HTMLDivElement | null>(null);
+  const [callLayoutMobile, setCallLayoutMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => setCallLayoutMobile(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   useEffect(() => {
     if (!activeCallMoreOpen || callState !== "active") return;
@@ -6825,110 +7214,154 @@ function WebrtcCallOverlays({
   }
 
   if (callState === "active") {
-    const showBigRemoteVideo = callType === "video" && !isCameraOff;
     const runMenu = (a: GtActiveCallMenuAction) => {
       onActiveCallMenuAction?.(a);
       setActiveCallMoreOpen(false);
     };
+    const pipW = callLayoutMobile ? 80 : 120;
+    const pipH = callLayoutMobile ? 110 : 160;
+    const hasRemoteVideoTrack =
+      remoteStream?.getVideoTracks().some((t) => t.readyState === "live") ?? false;
+    const remoteUserInitials = initialsFromName(name).trim() || "?";
+    const placeholderSub = !remoteStream
+      ? "Connecting…"
+      : !hasRemoteVideoTrack && callType === "video"
+        ? "Waiting for video…"
+        : callType === "audio"
+          ? "Voice call"
+          : "";
+
     return (
       <div
-        className="fixed inset-0 z-50 flex flex-col"
-        style={{ background: "#0f1923" }}
+        className="fixed inset-0 z-50 overflow-hidden"
+        style={{
+          background: "#0f1923",
+        }}
       >
         <video
           ref={remoteVideoRef}
           autoPlay
           playsInline
           muted={false}
-          className={
-            showBigRemoteVideo
-              ? "absolute inset-0 z-0 h-full w-full min-h-0 min-w-0 object-cover"
-              : "pointer-events-none fixed left-0 top-0 z-0 h-px w-px overflow-hidden opacity-0"
-          }
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            zIndex: 1,
+          }}
         />
 
-        {showBigRemoteVideo ? (
-          <div className="absolute right-3 top-3 z-10">
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted={true}
-              className="object-cover"
-              style={{
-                width: 120,
-                height: 180,
-                borderRadius: 12,
-              }}
-            />
-          </div>
-        ) : callType === "video" && isCameraOff ? (
+        {!hasRemoteVideoTrack ? (
           <div
-            className="absolute inset-0 z-[1] flex min-h-0 min-w-0 flex-col items-center justify-center"
-            style={{ background: "#0f1923" }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 2,
+              background: "#0f1923",
+            }}
           >
             {photo && !isInlineSvgDataUrlToSkipForPhoto(photo) && !isLegacyDicebearUrl(photo) ? (
               <img
                 src={photo}
                 alt=""
-                className="h-32 w-32 rounded-full object-cover"
-                width={128}
-                height={128}
+                width={80}
+                height={80}
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                }}
               />
             ) : (
-              <InitialsAvatar name={name} size={120} className="!text-3xl" />
-            )}
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted={true}
-              className="absolute right-3 top-3 object-cover"
-              style={{ width: 120, height: 180, borderRadius: 12 }}
-            />
-          </div>
-        ) : (
-          <div className="absolute inset-0 z-[1] flex min-h-0 min-w-0 flex-col items-center justify-center">
-            {photo && !isInlineSvgDataUrlToSkipForPhoto(photo) && !isLegacyDicebearUrl(photo) ? (
-              <img
-                src={photo}
-                alt=""
-                className="h-32 w-32 rounded-full object-cover"
-                width={128}
-                height={128}
-              />
-            ) : (
-              <InitialsAvatar name={name} size={120} className="!text-3xl" />
-            )}
-            <div className="absolute right-3 top-3">
               <div
-                className="flex h-[120px] w-[120px] items-center justify-center overflow-hidden rounded-xl"
-                style={{ background: "#1e2a3a" }}
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: "50%",
+                  background: "#1d9e75",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 28,
+                  color: "#fff",
+                  fontWeight: 500,
+                }}
               >
-                <InitialsAvatar name="You" size={80} />
+                {remoteUserInitials}
               </div>
-            </div>
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted={true}
-              className="sr-only h-0 w-0 overflow-hidden"
-              aria-hidden
-            />
+            )}
+            <div style={{ color: "#fff", marginTop: 12, fontSize: 16 }}>{name}</div>
+            {placeholderSub ? (
+              <div style={{ color: "#8896a0", marginTop: 4, fontSize: 13 }}>
+                {placeholderSub}
+              </div>
+            ) : null}
           </div>
-        )}
+        ) : null}
+
+        <video
+          ref={localVideoRef}
+          autoPlay
+          playsInline
+          muted={true}
+          style={{
+            position: "absolute",
+            top: 16,
+            right: 16,
+            width: pipW,
+            height: pipH,
+            objectFit: "cover",
+            borderRadius: 12,
+            border: "2px solid rgba(255,255,255,0.3)",
+            zIndex: 10,
+            background: "#1e2538",
+          }}
+        />
+
         <div
-          className="absolute left-0 right-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-[#0f1923] to-transparent px-4 py-3"
+          style={{
+            position: "absolute",
+            top: 16,
+            left: 16,
+            zIndex: 20,
+            color: "#fff",
+          }}
         >
-          <p className="min-w-0 flex-1 truncate text-base font-medium text-white">
-            {name}
-          </p>
-          <p className="shrink-0 font-mono text-sm text-white">
+          <div style={{ fontSize: 16, fontWeight: 500 }}>{name}</div>
+          <div
+            style={{
+              fontSize: 13,
+              color: "rgba(255,255,255,0.7)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
             {formatCallDurationFmt(callDurationSec)}
-          </p>
+          </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 z-30 flex flex-wrap items-center justify-center gap-3 pb-9 pt-4">
+
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 20,
+            background: "linear-gradient(transparent, rgba(0,0,0,0.6))",
+            padding: "40px 24px 24px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
           {callType === "video"
             ? circBtn(
                 !isCameraOff,
@@ -7103,6 +7536,93 @@ function WebrtcCallOverlays({
   return null;
 }
 
+const NOTIF_ICON = "/icon-192x192.png";
+
+/** Mutable context for browser notifications (avoids stale closures in Firebase callbacks). */
+const hubNotifCtx = {
+  activeChatId: null as string | null,
+  userId: null as string | null,
+};
+
+function chatMessagePreviewForNotification(m: ChatMessage): string {
+  if (m.type === "gif") return "GIF";
+  if (m.type === "text" || m.type === undefined || m.type === "")
+    return (m.text ?? "").slice(0, 240);
+  if (m.type === "split") return (m.text ?? "").trim() || "Split request";
+  return `Attachment (${m.type ?? "file"})`;
+}
+
+function showMessageNotification(
+  senderName: string,
+  message: string,
+  chatId: string,
+) {
+  if (typeof window === "undefined") return;
+  if (Notification.permission !== "granted") return;
+  if (
+    document.visibilityState === "visible" &&
+    hubNotifCtx.activeChatId === chatId
+  ) {
+    return;
+  }
+  const notification = new Notification(senderName, {
+    body: message,
+    icon: NOTIF_ICON,
+    tag: `message-${chatId}`,
+    renotify: true,
+  });
+  notification.onclick = () => {
+    window.focus();
+    notification.close();
+  };
+}
+
+function showCallNotification(callerName: string, callType: string) {
+  if (typeof window === "undefined") return;
+  if (Notification.permission !== "granted") return;
+  const notification = new Notification(`Incoming ${callType} call`, {
+    body: `${callerName} is calling you`,
+    icon: NOTIF_ICON,
+    tag: "incoming-call",
+    renotify: true,
+    requireInteraction: true,
+  });
+  notification.onclick = () => {
+    window.focus();
+    notification.close();
+  };
+}
+
+function showGroupInviteNotification(inviterName: string, groupName: string) {
+  if (typeof window === "undefined") return;
+  if (Notification.permission !== "granted") return;
+  if (document.visibilityState === "visible") return;
+  const notification = new Notification("Group Invitation", {
+    body: `${inviterName} invited you to ${groupName}`,
+    icon: NOTIF_ICON,
+    tag: "group-invite",
+    renotify: true,
+  });
+  notification.onclick = () => {
+    window.focus();
+    window.location.href = "/notifications";
+    notification.close();
+  };
+}
+
+type HubNotificationRow = {
+  id: string;
+  type: string;
+  title?: string;
+  body?: string;
+  data: Record<string, unknown> | null;
+};
+
+type HubNotificationListOut = {
+  notifications: HubNotificationRow[];
+  unread_count?: number;
+};
+
 export default function TravelHubPage() {
   const router = useRouter();
   const [firebaseReady, setFirebaseReady] = useState(false);
@@ -7142,7 +7662,10 @@ export default function TravelHubPage() {
   } | null>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [contacts, setContacts] = useState<ContactPerson[]>([]);
-  const [showEmoji, setShowEmoji] = useState(false);
+  const [emojiGifPickerOpen, setEmojiGifPickerOpen] = useState(false);
+  const [emojiGifPickerTab, setEmojiGifPickerTab] =
+    useState<ChatEmojiGifPickerTab>("emoji");
+  const composerMediaPickerRef = useRef<HTMLDivElement | null>(null);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -7185,6 +7708,16 @@ export default function TravelHubPage() {
     callerAvatar: string;
     callType: "audio" | "video";
   } | null>(null);
+
+  const notifPermissionAskedThisSessionRef = useRef(false);
+  const messageNotifStateRef = useRef<{
+    chatId: string;
+    primed: boolean;
+    seen: Set<string>;
+  } | null>(null);
+  const lastIncomingCallNotifCallIdRef = useRef<string | null>(null);
+  const groupInviteNotifPrimedRef = useRef(false);
+  const knownGroupInviteNotifIdsRef = useRef<Set<string>>(new Set());
 
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
@@ -7360,6 +7893,82 @@ export default function TravelHubPage() {
     }, 2000);
   }, []);
 
+  const requestNotificationPermission = useCallback(async () => {
+    if (typeof window === "undefined") return;
+    if (!("Notification" in window)) return;
+    if (Notification.permission === "granted") return;
+    if (Notification.permission === "denied") return;
+    if (notifPermissionAskedThisSessionRef.current) return;
+    notifPermissionAskedThisSessionRef.current = true;
+    const permission = await Notification.requestPermission();
+    console.log("Notification permission:", permission);
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const t = globalThis.setTimeout(() => {
+      void requestNotificationPermission();
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [user?.id, requestNotificationPermission]);
+
+  useEffect(() => {
+    hubNotifCtx.activeChatId = activeChat?.id ?? null;
+  }, [activeChat?.id]);
+
+  useEffect(() => {
+    hubNotifCtx.userId = user?.id ?? null;
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      groupInviteNotifPrimedRef.current = false;
+      knownGroupInviteNotifIdsRef.current.clear();
+      return;
+    }
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await apiFetchWithStatus<HubNotificationListOut>(
+          "/notifications?limit=25",
+        );
+        if (cancelled || res.status !== 200 || !Array.isArray(res.data?.notifications))
+          return;
+        const list = res.data.notifications;
+        if (!groupInviteNotifPrimedRef.current) {
+          for (const n of list) {
+            if (n.type === "group_invite") knownGroupInviteNotifIdsRef.current.add(n.id);
+          }
+          groupInviteNotifPrimedRef.current = true;
+          return;
+        }
+        for (const n of list) {
+          if (n.type !== "group_invite") continue;
+          if (knownGroupInviteNotifIdsRef.current.has(n.id)) continue;
+          knownGroupInviteNotifIdsRef.current.add(n.id);
+          const data = n.data;
+          const inviter =
+            typeof data?.invited_by_name === "string"
+              ? data.invited_by_name
+              : "Someone";
+          const gname =
+            typeof data?.group_name === "string"
+              ? data.group_name
+              : "a group";
+          showGroupInviteNotification(inviter, gname);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    void poll();
+    const iv = globalThis.setInterval(() => void poll(), 90_000);
+    return () => {
+      cancelled = true;
+      clearInterval(iv);
+    };
+  }, [user?.id]);
+
   useEffect(() => {
     callStateRef.current = callState;
   }, [callState]);
@@ -7386,6 +7995,7 @@ export default function TravelHubPage() {
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
+      void remoteVideoRef.current.play().catch(console.log);
     }
   }, [remoteStream]);
 
@@ -7682,12 +8292,20 @@ export default function TravelHubPage() {
       };
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
       pc.ontrack = (event) => {
-        appendInboundRemoteTrack(
-          remoteMediaStreamRef,
-          event,
-          setRemoteStream,
-          remoteVideoRef,
-        );
+        console.log("ontrack:", event.track.kind);
+        setRemoteStream((prev) => {
+          const stream = prev ?? new MediaStream();
+          const exists = stream.getTracks().some((t) => t.id === event.track.id);
+          if (!exists) {
+            stream.addTrack(event.track);
+          }
+          remoteMediaStreamRef.current = stream;
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = stream;
+            void remoteVideoRef.current.play().catch(console.log);
+          }
+          return stream;
+        });
       };
       const icePath = `calls/${callId}/ice_candidates/caller`;
       pc.onicecandidate = (ev) => {
@@ -7849,12 +8467,20 @@ export default function TravelHubPage() {
     };
     stream.getTracks().forEach((t) => pc.addTrack(t, stream));
     pc.ontrack = (event) => {
-      appendInboundRemoteTrack(
-        remoteMediaStreamRef,
-        event,
-        setRemoteStream,
-        remoteVideoRef,
-      );
+      console.log("ontrack:", event.track.kind);
+      setRemoteStream((prev) => {
+        const stream = prev ?? new MediaStream();
+        const exists = stream.getTracks().some((t) => t.id === event.track.id);
+        if (!exists) {
+          stream.addTrack(event.track);
+        }
+        remoteMediaStreamRef.current = stream;
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = stream;
+          void remoteVideoRef.current.play().catch(console.log);
+        }
+        return stream;
+      });
     };
     const icePathCallee = `calls/${callId}/ice_candidates/callee`;
     pc.onicecandidate = (ev) => {
@@ -8212,6 +8838,7 @@ export default function TravelHubPage() {
           setCurrentCall(null);
         }
         pendingIncomingDataRef.current = null;
+        lastIncomingCallNotifCallIdRef.current = null;
         return;
       }
       const v = snap.val() as
@@ -8226,6 +8853,10 @@ export default function TravelHubPage() {
       if (callStateRef.current !== "idle") return;
       const callType: "audio" | "video" =
         v.call_type === "video" ? "video" : "audio";
+      if (lastIncomingCallNotifCallIdRef.current !== v.call_id) {
+        lastIncomingCallNotifCallIdRef.current = v.call_id;
+        showCallNotification(v.caller_name ?? "Someone", callType);
+      }
       pendingIncomingDataRef.current = {
         callId: v.call_id,
         callerId: "unknown",
@@ -8376,6 +9007,50 @@ export default function TravelHubPage() {
       set(r, false).catch(() => {});
     };
   }, [db, user?.id]);
+
+  /** HTTP presence: slow, silent, tab-visible only — must never set React state or surface errors. */
+  useEffect(() => {
+    if (typeof window === "undefined" || !user?.id) return;
+
+    const pingPresence = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const token = localStorage.getItem("gt_token");
+        if (!token) return;
+        await fetch(`${API_BASE}/auth/presence`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          signal: AbortSignal.timeout(5000),
+        });
+      } catch {
+        /* silent */
+      }
+    };
+
+    void pingPresence();
+    const intervalId = window.setInterval(pingPresence, 120_000);
+
+    let visibilityPingTimer: ReturnType<typeof setTimeout> | null = null;
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        if (visibilityPingTimer) {
+          clearTimeout(visibilityPingTimer);
+          visibilityPingTimer = null;
+        }
+        visibilityPingTimer = window.setTimeout(() => {
+          visibilityPingTimer = null;
+          void pingPresence();
+        }, 2000);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      window.clearInterval(intervalId);
+      if (visibilityPingTimer) clearTimeout(visibilityPingTimer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (!db || !user?.id) {
@@ -9069,6 +9744,34 @@ export default function TravelHubPage() {
           });
         });
         msgs.sort((a, b) => a.timestamp - b.timestamp);
+
+        let st = messageNotifStateRef.current;
+        if (!st || st.chatId !== chatId) {
+          messageNotifStateRef.current = {
+            chatId,
+            primed: false,
+            seen: new Set(),
+          };
+          st = messageNotifStateRef.current;
+        }
+        const state = st;
+        const wasPrimed = state.primed;
+        const newMsgs = msgs.filter((m) => !state.seen.has(m.id));
+        for (const m of msgs) state.seen.add(m.id);
+        if (!wasPrimed) {
+          state.primed = true;
+        } else {
+          const uid = hubNotifCtx.userId;
+          for (const m of newMsgs) {
+            if (uid && m.sender_id === uid) continue;
+            showMessageNotification(
+              m.sender_name || "Someone",
+              chatMessagePreviewForNotification(m),
+              chatId,
+            );
+          }
+        }
+
         setMessages(msgs);
         if (messagesScrollToEndTimeoutRef.current) {
           clearTimeout(messagesScrollToEndTimeoutRef.current);
@@ -9105,6 +9808,7 @@ export default function TravelHubPage() {
     ) => {
       if (!db || !user || !activeChat || activeChat.isDemo) return;
       if (type === "text" && !content.trim()) return;
+      if (type === "gif" && !content.trim()) return;
       if (type === "split") {
         const raw = metadata?.amount;
         const n =
@@ -9136,7 +9840,9 @@ export default function TravelHubPage() {
             ? content
             : type === "split"
               ? content
-              : `Attachment (${type})`;
+              : type === "gif"
+                ? "GIF"
+                : `Attachment (${type})`;
         await update(ref(db, `chats/${chatId}/info`), {
           last_message: preview,
           last_message_time: Date.now(),
@@ -9144,6 +9850,7 @@ export default function TravelHubPage() {
         });
         setMessageText("");
         setShowAttach(false);
+        setEmojiGifPickerOpen(false);
         if (type === "split") {
           setShowSplitPopup(false);
           setSplitAmount("");
@@ -9156,6 +9863,31 @@ export default function TravelHubPage() {
     },
     [db, user, activeChat, showToast],
   );
+
+  useEffect(() => {
+    if (isRecording) setEmojiGifPickerOpen(false);
+  }, [isRecording]);
+
+  useEffect(() => {
+    if (!emojiGifPickerOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setEmojiGifPickerOpen(false);
+    };
+    globalThis.addEventListener("keydown", onKey);
+    return () => globalThis.removeEventListener("keydown", onKey);
+  }, [emojiGifPickerOpen]);
+
+  useEffect(() => {
+    if (!emojiGifPickerOpen) return;
+    const onDown = (e: MouseEvent) => {
+      const el = composerMediaPickerRef.current;
+      const t = e.target;
+      if (!el || !(t instanceof Node)) return;
+      if (!el.contains(t)) setEmojiGifPickerOpen(false);
+    };
+    globalThis.document.addEventListener("mousedown", onDown);
+    return () => globalThis.document.removeEventListener("mousedown", onDown);
+  }, [emojiGifPickerOpen]);
 
   const handleTyping = useCallback(() => {
     if (!db || !user || !activeChat) return;
@@ -10691,31 +11423,26 @@ export default function TravelHubPage() {
                   </div>
                 ) : null}
 
-                {showEmoji && !messageText.trim() ? (
-                  <div
-                    className="mx-4 mb-2 grid max-h-36 grid-cols-6 gap-1 custom-scrollbar overflow-y-auto rounded-xl border p-3 shadow-md"
-                    style={{
-                      borderColor: MSG_BORDER,
-                      background: SURFACE,
-                    }}
-                  >
-                    {QUICK_REACTION_CHIPS.map((em) => (
-                      <button
-                        key={em}
-                        type="button"
-                        className="rounded px-1.5 py-1 text-[11px] text-white/90 hover:bg-white/10"
-                        onClick={() => {
-                          setMessageText((p) =>
-                            p + (p && !p.endsWith(" ") ? " " : "") + em + " ",
-                          );
-                        }}
-                      >
-                        {em}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-
+                <div
+                  ref={composerMediaPickerRef}
+                  className="relative w-full shrink-0"
+                >
+                  <ChatEmojiGifPicker
+                    open={emojiGifPickerOpen}
+                    tab={emojiGifPickerTab}
+                    onTabChange={setEmojiGifPickerTab}
+                    panelHeightPx={isMd ? 320 : 280}
+                    onClose={() => setEmojiGifPickerOpen(false)}
+                    onInsertEmoji={(em) =>
+                      insertTextInComposerInput(
+                        messageComposerInputRef.current,
+                        messageText,
+                        em,
+                        setMessageText,
+                      )
+                    }
+                    onPickGifUrl={(url) => void sendMessage("gif", url)}
+                  />
                 {activeChat.type === "group" ? (
                 user ? (
                 <div
@@ -10779,7 +11506,7 @@ export default function TravelHubPage() {
                           aria-label="Split"
                           onClick={() => {
                             setShowSplitPopup(true);
-                            setShowEmoji(false);
+                            setEmojiGifPickerOpen(false);
                           }}
                         >
                           <span className="text-sm" aria-hidden>
@@ -10796,7 +11523,6 @@ export default function TravelHubPage() {
                     onChange={(e) => {
                       setMessageText(e.target.value);
                       if (e.target.value.trim()) {
-                        setShowEmoji(false);
                         setShowSplitPopup(false);
                       }
                       handleTyping();
@@ -10811,20 +11537,26 @@ export default function TravelHubPage() {
                     className="min-w-0 flex-1 rounded-full border-0 px-3 py-2.5 text-[14px] outline-none placeholder:text-slate-500"
                     style={{ background: WA_INPUT_FIELD, color: WA_TEXT }}
                   />
-                  {messageText.trim() ? null : (
-                    <button
-                      type="button"
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-                      style={{ color: TH_MUTED }}
-                      aria-label="Emoji"
-                      onClick={() => {
-                        setShowEmoji((e) => !e);
-                        setShowSplitPopup(false);
-                      }}
-                    >
+                  <button
+                    type="button"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                    style={{ color: TH_MUTED }}
+                    aria-label={
+                      emojiGifPickerOpen
+                        ? "Close emoji and GIF"
+                        : "Emoji and GIF"
+                    }
+                    onClick={() => {
+                      setEmojiGifPickerOpen((o) => !o);
+                      setShowSplitPopup(false);
+                    }}
+                  >
+                    {emojiGifPickerOpen ? (
+                      <X className="h-5 w-5" strokeWidth={1.5} />
+                    ) : (
                       <ThIconSmile size={18} className="text-current" />
-                    </button>
-                  )}
+                    )}
+                  </button>
                   {messageText.trim() ? null : !isActiveGroupTravel ? (
                     <button
                       type="button"
@@ -10875,25 +11607,13 @@ export default function TravelHubPage() {
                         aria-label="Split"
                         onClick={() => {
                           setShowSplitPopup(true);
-                          setShowEmoji(false);
+                          setEmojiGifPickerOpen(false);
                         }}
                       >
                         <span className="text-sm tabular-nums" aria-hidden>
                           {getCurrencySymbolFromUser(user)}
                         </span>
                         <span>Split</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-                        style={{ color: TH_MUTED }}
-                        aria-label="Emoji"
-                        onClick={() => {
-                          setShowEmoji((e) => !e);
-                          setShowSplitPopup(false);
-                        }}
-                      >
-                        <ThIconSmile size={18} className="text-current" />
                       </button>
                     </>
                   )}
@@ -10903,7 +11623,6 @@ export default function TravelHubPage() {
                     onChange={(e) => {
                       setMessageText(e.target.value);
                       if (e.target.value.trim()) {
-                        setShowEmoji(false);
                         setShowSplitPopup(false);
                       }
                       handleTyping();
@@ -10918,6 +11637,26 @@ export default function TravelHubPage() {
                     className="min-w-0 flex-1 rounded-full border-0 px-3 py-2.5 text-sm text-white outline-none placeholder:text-slate-500"
                     style={{ background: SURFACE }}
                   />
+                  <button
+                    type="button"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                    style={{ color: TH_MUTED }}
+                    aria-label={
+                      emojiGifPickerOpen
+                        ? "Close emoji and GIF"
+                        : "Emoji and GIF"
+                    }
+                    onClick={() => {
+                      setEmojiGifPickerOpen((o) => !o);
+                      setShowSplitPopup(false);
+                    }}
+                  >
+                    {emojiGifPickerOpen ? (
+                      <X className="h-5 w-5" strokeWidth={1.5} />
+                    ) : (
+                      <ThIconSmile size={18} className="text-current" />
+                    )}
+                  </button>
                   {messageText.trim() ? null : (
                     <>
                       <button
@@ -10987,6 +11726,7 @@ export default function TravelHubPage() {
                   ) : null}
                 </div>
                 )}
+                </div>
               </>
             )}
           </>
@@ -12141,6 +12881,7 @@ export default function TravelHubPage() {
         endedDisplaySec={endedDisplaySec}
         localVideoRef={localVideoRef}
         remoteVideoRef={remoteVideoRef}
+        remoteStream={remoteStream}
         onToggleMute={onCallToggleMute}
         onToggleCamera={onCallToggleCamera}
         onToggleSpeaker={onCallToggleSpeaker}
@@ -12879,7 +13620,13 @@ function GroupMessageBubble({
           {name}
         </p>
       ) : null}
-      {t === "image" && meta?.url ? (
+      {t === "gif" && msg.text ? (
+        <img
+          src={String(msg.text)}
+          alt=""
+          className="max-w-[240px] rounded-[8px]"
+        />
+      ) : t === "image" && meta?.url ? (
         <img
           src={String(meta.url)}
           alt=""
@@ -13084,7 +13831,14 @@ function MessageBubble({
               ) : null}
             </div>
           ) : null}
-          {msg.type === "text" ? (
+          {msg.type === "gif" && msg.text ? (
+            <img
+              src={String(msg.text)}
+              alt=""
+              className="max-w-[240px] rounded-[8px]"
+            />
+          ) : null}
+          {!msg.type || msg.type === "text" ? (
             <p className="text-sm" style={{ color: BUBBLE_TEXT }}>
               {msg.text}
             </p>
