@@ -4,8 +4,8 @@ import { AIAssistantSidecar } from "@/components/ai/AIAssistantSidecar";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Banknote,
@@ -32,7 +32,7 @@ import {
   DashboardUserProvider,
   useDashboardUser,
 } from "@/contexts/dashboard-user-context";
-import { apiFetch } from "@/lib/api";
+import { API_BASE, apiFetch } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
 
 const CORAL = "#E94560";
@@ -45,10 +45,49 @@ type PlanOut = {
 
 const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
 
-function dicebearLoreleiAvatarSrc(userId: string | null | undefined): string {
-  const seed =
-    userId && userId.length > 0 ? userId : "travello-user";
-  return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;
+/** GET /auth/me fields used for sidebar photo + name row (fetch uses gt_token in layout only). */
+type SidebarAuthMe = {
+  full_name?: string | null;
+  username?: string | null;
+  avatar_url?: string | null;
+  google_picture?: string | null;
+  facebook_picture?: string | null;
+};
+
+function pickProfilePicUrl(me: SidebarAuthMe | null): string | null {
+  if (!me) return null;
+  const a = me.avatar_url?.trim();
+  if (a) return a;
+  const g = me.google_picture?.trim();
+  if (g) return g;
+  const f = me.facebook_picture?.trim();
+  if (f) return f;
+  return null;
+}
+
+function initialsFromFullName(name: string | null | undefined): string {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) {
+    const w = parts[0]!;
+    return w.length >= 2
+      ? (w[0]! + w[1]!).toUpperCase()
+      : w[0]!.toUpperCase();
+  }
+  const first = parts[0]!;
+  const last = parts[parts.length - 1]!;
+  return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase() || "?";
+}
+
+function deterministicAvatarBg(name: string): string {
+  const s = name.trim() || "?";
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    hash = s.charCodeAt(i) + ((hash << 5) - hash);
+    hash |= 0;
+  }
+  const h = Math.abs(hash) % 360;
+  return `hsl(${h} 48% 42%)`;
 }
 
 function formatDisplayName(full: string | null | undefined): string {
@@ -261,6 +300,101 @@ function PlanBadgeFooter({ plan }: { plan: string | null }) {
   );
 }
 
+const SIDEBAR_AVATAR_IMG_STYLE: CSSProperties = {
+  width: 40,
+  height: 40,
+  borderRadius: "50%",
+  objectFit: "cover",
+  border: "2px solid rgba(255,255,255,0.2)",
+};
+
+function SidebarProfileAvatar({
+  profilePicUrl,
+  displayName,
+  profileComplete,
+}: {
+  profilePicUrl: string | null;
+  displayName: string;
+  profileComplete: boolean;
+}) {
+  const [useInitials, setUseInitials] = useState(() => !profilePicUrl);
+  const initials = initialsFromFullName(displayName);
+  const bg = deterministicAvatarBg(displayName);
+
+  useEffect(() => {
+    setUseInitials(!profilePicUrl);
+  }, [profilePicUrl]);
+
+  const ringClass = profileComplete
+    ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0F3460]"
+    : "ring-2 ring-red-500 ring-offset-2 ring-offset-[#0F3460]";
+
+  return (
+    <span className="relative inline-flex shrink-0">
+      {useInitials ? (
+        <span
+          className={`flex h-10 w-10 items-center justify-center rounded-full border-2 border-[rgba(255,255,255,0.2)] text-xs font-bold text-white ${ringClass}`}
+          style={{ background: bg }}
+          aria-hidden
+        >
+          {initials}
+        </span>
+      ) : (
+        <span className={`relative inline-flex rounded-full ${ringClass}`}>
+          <img
+            src={profilePicUrl!}
+            alt={displayName}
+            style={SIDEBAR_AVATAR_IMG_STYLE}
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+              setUseInitials(true);
+            }}
+          />
+        </span>
+      )}
+      {profileComplete ? (
+        <span
+          className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-[#0F3460]"
+          aria-hidden
+        >
+          <Check className="h-2.5 w-2.5" strokeWidth={2.5} />
+        </span>
+      ) : (
+        <span
+          className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-red-500 bg-[#0F3460] ring-2 ring-[#0F3460]"
+          aria-hidden
+        />
+      )}
+    </span>
+  );
+}
+
+function SidebarSubline({
+  username,
+  planLoading,
+  plan,
+}: {
+  username: string | null;
+  planLoading: boolean;
+  plan: string | null;
+}) {
+  const u = username?.trim();
+  if (u)
+    return (
+      <span
+        className="inline-block max-w-full truncate text-[10px] font-medium text-[rgba(255,255,255,0.75)]"
+        title={u}
+      >
+        @{u}
+      </span>
+    );
+  if (planLoading)
+    return (
+      <span className="inline-block h-4 w-14 animate-pulse rounded-full bg-[rgba(255,255,255,0.15)]" />
+    );
+  return <PlanBadgeFooter plan={plan} />;
+}
+
 function DashboardChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -273,6 +407,31 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [isMdUp, setIsMdUp] = useState(false);
   const [isLgUp, setIsLgUp] = useState(false);
+  const [sidebarMe, setSidebarMe] = useState<SidebarAuthMe | null>(null);
+
+  useEffect(() => {
+    let c = false;
+    (async () => {
+      try {
+        const token =
+          typeof window !== "undefined"
+            ? window.localStorage.getItem("gt_token")
+            : null;
+        if (!token?.trim()) return;
+        const res = await fetch(`${API_BASE}/auth/me`, {
+          headers: { Authorization: `Bearer ${token.trim()}` },
+        });
+        if (!res.ok) throw new Error("auth/me failed");
+        const data = (await res.json()) as SidebarAuthMe;
+        if (!c) setSidebarMe(data);
+      } catch {
+        if (!c) setSidebarMe(null);
+      }
+    })();
+    return () => {
+      c = true;
+    };
+  }, []);
 
   useEffect(() => {
     const mqMd = window.matchMedia("(min-width: 768px)");
@@ -300,6 +459,17 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
   const profileComplete = isProfileFullyComplete(user);
   const profileTarget = "/profile";
+
+  const sidebarDisplayName = formatDisplayName(
+    sidebarMe?.full_name ?? user?.full_name,
+  );
+  const sidebarPicUrl = useMemo(
+    () => pickProfilePicUrl(sidebarMe),
+    [sidebarMe],
+  );
+  const sidebarUsername = sidebarMe?.username?.trim()
+    ? sidebarMe.username
+    : null;
 
   const isMapPage = pathname === "/map";
 
@@ -435,42 +605,21 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                 }
               }}
             >
-              <span className="relative inline-flex shrink-0">
-                <img
-                  src={dicebearLoreleiAvatarSrc(user?.id)}
-                  alt=""
-                  width={34}
-                  height={34}
-                  className={`h-[34px] w-[34px] rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover ${
-                    profileComplete
-                      ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0F3460]"
-                      : "ring-2 ring-red-500 ring-offset-2 ring-offset-[#0F3460]"
-                  }`}
-                />
-                {profileComplete ? (
-                  <span
-                    className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-[#0F3460]"
-                    aria-hidden
-                  >
-                    <Check className="h-2.5 w-2.5" strokeWidth={2.5} />
-                  </span>
-                ) : (
-                  <span
-                    className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-red-500 bg-[#0F3460] ring-2 ring-[#0F3460]"
-                    aria-hidden
-                  />
-                )}
-              </span>
+              <SidebarProfileAvatar
+                profilePicUrl={sidebarPicUrl}
+                displayName={sidebarDisplayName}
+                profileComplete={profileComplete}
+              />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-bold text-white">
-                  {formatDisplayName(user?.full_name)}
+                  {sidebarDisplayName}
                 </p>
                 <div className="mt-0.5">
-                  {planLoading ? (
-                    <span className="inline-block h-4 w-14 animate-pulse rounded-full bg-[rgba(255,255,255,0.15)]" />
-                  ) : (
-                    <PlanBadgeFooter plan={plan?.plan ?? null} />
-                  )}
+                  <SidebarSubline
+                    username={sidebarUsername}
+                    planLoading={planLoading}
+                    plan={plan?.plan ?? null}
+                  />
                 </div>
               </div>
             </div>
@@ -549,7 +698,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             title={
               !profileComplete
                 ? "Complete profile"
-                : formatDisplayName(user?.full_name)
+                : sidebarDisplayName
             }
             className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             onClick={() => {
@@ -557,32 +706,11 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               afterNav();
             }}
           >
-            <span className="relative inline-flex">
-              <img
-                src={dicebearLoreleiAvatarSrc(user?.id)}
-                alt=""
-                width={32}
-                height={32}
-                className={`h-8 w-8 rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover ${
-                  profileComplete
-                    ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0F3460]"
-                    : "ring-2 ring-red-500 ring-offset-2 ring-offset-[#0F3460]"
-                }`}
-              />
-              {profileComplete ? (
-                <span
-                  className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-[#0F3460]"
-                  aria-hidden
-                >
-                  <Check className="h-2 w-2" strokeWidth={2.5} />
-                </span>
-              ) : (
-                <span
-                  className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border-2 border-red-500 bg-[#0F3460] ring-2 ring-[#0F3460]"
-                  aria-hidden
-                />
-              )}
-            </span>
+            <SidebarProfileAvatar
+              profilePicUrl={sidebarPicUrl}
+              displayName={sidebarDisplayName}
+              profileComplete={profileComplete}
+            />
           </button>
           <button
             type="button"
@@ -672,42 +800,21 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                     }
                   }}
                 >
-                  <span className="relative inline-flex shrink-0">
-                    <img
-                      src={dicebearLoreleiAvatarSrc(user?.id)}
-                      alt=""
-                      width={34}
-                      height={34}
-                      className={`h-[34px] w-[34px] rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover ${
-                        profileComplete
-                          ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0F3460]"
-                          : "ring-2 ring-red-500 ring-offset-2 ring-offset-[#0F3460]"
-                      }`}
-                    />
-                    {profileComplete ? (
-                      <span
-                        className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-[#0F3460]"
-                        aria-hidden
-                      >
-                        <Check className="h-2.5 w-2.5" strokeWidth={2.5} />
-                      </span>
-                    ) : (
-                      <span
-                        className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-red-500 bg-[#0F3460] ring-2 ring-[#0F3460]"
-                        aria-hidden
-                      />
-                    )}
-                  </span>
+                  <SidebarProfileAvatar
+                    profilePicUrl={sidebarPicUrl}
+                    displayName={sidebarDisplayName}
+                    profileComplete={profileComplete}
+                  />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-bold text-white">
-                      {formatDisplayName(user?.full_name)}
+                      {sidebarDisplayName}
                     </p>
                     <div className="mt-0.5">
-                      {planLoading ? (
-                        <span className="inline-block h-4 w-14 animate-pulse rounded-full bg-[rgba(255,255,255,0.15)]" />
-                      ) : (
-                        <PlanBadgeFooter plan={plan?.plan ?? null} />
-                      )}
+                      <SidebarSubline
+                        username={sidebarUsername}
+                        planLoading={planLoading}
+                        plan={plan?.plan ?? null}
+                      />
                     </div>
                   </div>
                 </div>
