@@ -44,6 +44,7 @@ import {
   BellOff,
   Bluetooth,
   Camera,
+  Headphones,
   Check,
   CheckCheck,
   LogOut,
@@ -547,6 +548,36 @@ function formatCallsOutgoingLine(ts: number): string {
   }
   const dayPart = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   return `Outgoing · ${dayPart}`;
+}
+
+/** Heuristic: only then show Bluetooth-oriented copy/icons in call menu (no OS-level BT pairing API in browsers). */
+function looksLikeBluetoothAudioDeviceLabel(label: string): boolean {
+  if (!label.trim()) return false;
+  return /bluetooth|bt\s|airpods|airpod|buds|galaxy\s|hands[- ]free|headset\s*\(|wireless|bone\s*conduction/i.test(
+    label,
+  );
+}
+
+/** Merge all inbound (peer) tracks into one stream so audio+video `ontrack` events both render reliably. */
+function appendInboundRemoteTrack(
+  remoteMS: MutableRefObject<MediaStream | null>,
+  event: RTCTrackEvent,
+  setRemoteStream: Dispatch<SetStateAction<MediaStream | null>>,
+  remoteVideoRef: React.RefObject<HTMLVideoElement | null>,
+) {
+  const t = event.track;
+  let rs = remoteMS.current;
+  if (!rs) {
+    rs = new MediaStream();
+    remoteMS.current = rs;
+  }
+  if (!rs.getTracks().some((x) => x.id === t.id)) {
+    rs.addTrack(t);
+  }
+  setRemoteStream(rs);
+  if (remoteVideoRef.current) {
+    remoteVideoRef.current.srcObject = rs;
+  }
 }
 
 const ICE_SERVERS: RTCConfiguration = {
@@ -6556,8 +6587,48 @@ function WebrtcCallOverlays({
   onActiveCallMenuAction?: (action: GtActiveCallMenuAction) => void;
 }) {
   const [activeCallMoreOpen, setActiveCallMoreOpen] = useState(false);
+  const [audioOutMenuMeta, setAudioOutMenuMeta] = useState<{
+    sub: string;
+    useBtIcon: boolean;
+  }>({
+    sub: "Built-in speaker & wired output",
+    useBtIcon: false,
+  });
   const activeCallMoreBtnRef = useRef<HTMLButtonElement | null>(null);
   const activeCallMorePanelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!activeCallMoreOpen || callState !== "active") return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const list = (
+          await navigator.mediaDevices.enumerateDevices()
+        ).filter((d) => d.kind === "audiooutput");
+        const bt = list.some((d) =>
+          looksLikeBluetoothAudioDeviceLabel(d.label),
+        );
+        if (!cancelled) {
+          setAudioOutMenuMeta({
+            sub: bt
+              ? "Speaker, phone, or Bluetooth"
+              : "Built-in speaker & wired output",
+            useBtIcon: bt,
+          });
+        }
+      } catch {
+        if (!cancelled) {
+          setAudioOutMenuMeta({
+            sub: "Built-in speaker & wired output",
+            useBtIcon: false,
+          });
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCallMoreOpen, callState]);
 
   useEffect(() => {
     if (!activeCallMoreOpen) return;
@@ -6946,9 +7017,14 @@ function WebrtcCallOverlays({
                       {
                         a: "audio_output" as const,
                         label: "Audio output",
-                        sub: "Speaker, phone, Bluetooth",
-                        icon: (
+                        sub: audioOutMenuMeta.sub,
+                        icon: audioOutMenuMeta.useBtIcon ? (
                           <Bluetooth
+                            className="h-5 w-5 shrink-0 text-white"
+                            strokeWidth={1.5}
+                          />
+                        ) : (
+                          <Headphones
                             className="h-5 w-5 shrink-0 text-white"
                             strokeWidth={1.5}
                           />
@@ -7089,6 +7165,7 @@ export default function TravelHubPage() {
   const [callHistory, setCallHistory] = useState<GtCallHistoryEntry[]>([]);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteMediaStreamRef = useRef<MediaStream | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const callListenersRef = useRef<(() => void)[]>([]);
   const callStateRef = useRef<GtWebrtcCallState>("idle");
@@ -7324,6 +7401,89 @@ export default function TravelHubPage() {
     callListenersRef.current.push(unsub);
   }, []);
 
+  const attachSymmetricRenegotiationListeners = useCallback(
+    (pc: RTCPeerConnection, callId: string) => {
+      if (!db) return;
+
+      const uAnswer = onValue(ref(db, `calls/${callId}/answer`), async (snap) => {
+        const a = snap.val() as { type?: string; sdp?: string } | null;
+        if (!a?.sdp || peerConnectionRef.current !== pc) return;
+        if (pc.signalingState !== "have-local-offer") return;
+        if (pc.remoteDescription?.sdp === a.sdp) return;
+        try {
+          await pc.setRemoteDescription(
+            new RTCSessionDescription({
+              type: (a.type ?? "answer") as RTCSdpType,
+              sdp: a.sdp,
+            }),
+          );
+          if (callStateRef.current === "outgoing") {
+            setCallState("active");
+            setCurrentCall((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    startTime: Date.now(),
+                  }
+                : prev,
+            );
+            clearCallDurationTimer();
+            setCallDurationSec(0);
+            durationTimerRef.current = globalThis.setInterval(() => {
+              setCallDurationSec((s) => s + 1);
+            }, 1000);
+          }
+        } catch {
+          /* ignore */
+        }
+      });
+      addCallListener(uAnswer);
+
+      const uOffer = onValue(ref(db, `calls/${callId}/offer`), async (snap) => {
+        const o = snap.val() as { type?: string; sdp?: string } | null;
+        if (!o?.sdp || peerConnectionRef.current !== pc) return;
+        if (pc.signalingState !== "stable") return;
+        if (pc.localDescription?.sdp === o.sdp) return;
+        if (pc.remoteDescription?.sdp === o.sdp) return;
+        try {
+          await pc.setRemoteDescription(
+            new RTCSessionDescription({
+              type: (o.type ?? "offer") as RTCSdpType,
+              sdp: o.sdp,
+            }),
+          );
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          await set(ref(db, `calls/${callId}/answer`), {
+            type: answer.type,
+            sdp: answer.sdp,
+          });
+        } catch {
+          /* ignore */
+        }
+      });
+      addCallListener(uOffer);
+    },
+    [db, addCallListener, clearCallDurationTimer],
+  );
+
+  const triggerRenegotiationOffer = useCallback(
+    async (pc: RTCPeerConnection, callId: string) => {
+      if (!db || peerConnectionRef.current !== pc) return;
+      try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await set(ref(db, `calls/${callId}/offer`), {
+          type: offer.type,
+          sdp: offer.sdp,
+        });
+      } catch {
+        showCallToast("Could not update call connection");
+      }
+    },
+    [db, showCallToast],
+  );
+
   const clearCallDurationTimer = useCallback(() => {
     if (durationTimerRef.current) {
       clearInterval(durationTimerRef.current);
@@ -7377,6 +7537,7 @@ export default function TravelHubPage() {
       }
       setLocalStream(null);
       setRemoteStream(null);
+      remoteMediaStreamRef.current = null;
       peerConnectionRef.current?.close();
       peerConnectionRef.current = null;
       callRoleRef.current = null;
@@ -7499,6 +7660,7 @@ export default function TravelHubPage() {
       });
       callRoleRef.current = "caller";
       setCallState("outgoing");
+      remoteMediaStreamRef.current = null;
       const pc = new RTCPeerConnection(ICE_SERVERS);
       peerConnectionRef.current = pc;
       processedIceRef.current = new Set();
@@ -7517,12 +7679,12 @@ export default function TravelHubPage() {
       };
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
       pc.ontrack = (event) => {
-        if (event.streams && event.streams[0]) {
-          setRemoteStream(event.streams[0]);
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = event.streams[0];
-          }
-        }
+        appendInboundRemoteTrack(
+          remoteMediaStreamRef,
+          event,
+          setRemoteStream,
+          remoteVideoRef,
+        );
       };
       const icePath = `calls/${callId}/ice_candidates/caller`;
       pc.onicecandidate = (ev) => {
@@ -7570,43 +7732,7 @@ export default function TravelHubPage() {
           peerConnectionRef.current = null;
           return;
         }
-        let answerApplied = false;
-        const uAns = onValue(
-          ref(db, `calls/${callId}/answer`),
-          async (snap) => {
-            const a = snap.val() as
-              | { type?: string; sdp?: string }
-              | null;
-            if (!a?.sdp || !pc || answerApplied) return;
-            answerApplied = true;
-            try {
-              uAns();
-              await pc.setRemoteDescription(
-                new RTCSessionDescription({
-                  type: a.type as RTCSdpType,
-                  sdp: a.sdp!,
-                }),
-              );
-              setCallState("active");
-              setCurrentCall((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      startTime: Date.now(),
-                    }
-                  : prev,
-              );
-              clearCallDurationTimer();
-              setCallDurationSec(0);
-              durationTimerRef.current = globalThis.setInterval(() => {
-                setCallDurationSec((s) => s + 1);
-              }, 1000);
-            } catch {
-              /* ignore */
-            }
-          },
-        );
-        addCallListener(uAns);
+        attachSymmetricRenegotiationListeners(pc, callId);
         const uIce = onChildAdded(
           ref(db, `calls/${callId}/ice_candidates/callee`),
           async (c) => {
@@ -7668,6 +7794,7 @@ export default function TravelHubPage() {
       addCallListener,
       clearCallDurationTimer,
       endCallAndCleanup,
+      attachSymmetricRenegotiationListeners,
     ],
   );
 
@@ -7694,6 +7821,7 @@ export default function TravelHubPage() {
       return;
     }
     const callId = p.callId;
+    remoteMediaStreamRef.current = null;
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peerConnectionRef.current = pc;
     processedIceRef.current = new Set();
@@ -7718,12 +7846,12 @@ export default function TravelHubPage() {
     };
     stream.getTracks().forEach((t) => pc.addTrack(t, stream));
     pc.ontrack = (event) => {
-      if (event.streams && event.streams[0]) {
-        setRemoteStream(event.streams[0]);
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = event.streams[0];
-        }
-      }
+      appendInboundRemoteTrack(
+        remoteMediaStreamRef,
+        event,
+        setRemoteStream,
+        remoteVideoRef,
+      );
     };
     const icePathCallee = `calls/${callId}/ice_candidates/callee`;
     pc.onicecandidate = (ev) => {
@@ -7827,6 +7955,7 @@ export default function TravelHubPage() {
         },
       );
       addCallListener(uEnd);
+      attachSymmetricRenegotiationListeners(pc, callId);
     } catch {
       showCallToast("Could not connect call");
       stream.getTracks().forEach((t) => t.stop());
@@ -7843,6 +7972,7 @@ export default function TravelHubPage() {
     addCallListener,
     clearCallDurationTimer,
     endCallAndCleanup,
+    attachSymmetricRenegotiationListeners,
   ]);
 
   const declineIncomingCall = useCallback(async () => {
@@ -7913,14 +8043,10 @@ export default function TravelHubPage() {
       switch (action) {
         case "screen_share": {
           const pc = peerConnectionRef.current;
-          if (!pc) {
+          const cc = currentCallRef.current;
+          if (!pc || !cc) {
             showCallToast("Call not ready");
-            return;
-          }
-          if (currentCallRef.current?.callType === "audio") {
-            showCallToast(
-              "For best results, start a video call, then share your screen.",
-            );
+            break;
           }
           try {
             const display = await navigator.mediaDevices.getDisplayMedia({
@@ -7930,7 +8056,7 @@ export default function TravelHubPage() {
             const vTrack = display.getVideoTracks()[0];
             if (!vTrack) {
               showCallToast("No screen track");
-              return;
+              break;
             }
             const videoSender = pc
               .getSenders()
@@ -7945,9 +8071,8 @@ export default function TravelHubPage() {
             } else {
               try {
                 pc.addTrack(vTrack, display);
-                showCallToast(
-                  "Screen track added. If the other person doesn’t see it, try a video call next time.",
-                );
+                await triggerRenegotiationOffer(pc, cc.callId);
+                showCallToast("You’re sharing your screen");
               } catch {
                 showCallToast("Could not share screen in this call");
               }
@@ -7963,20 +8088,62 @@ export default function TravelHubPage() {
           break;
         }
         case "toggle_video": {
+          const pc = peerConnectionRef.current;
+          const cc = currentCallRef.current;
+          if (!pc || !cc || callStateRef.current !== "active") {
+            onCallToggleCamera();
+            break;
+          }
+          const streamNow = localStreamRef.current;
+          const hasVideoTrack = !!streamNow?.getVideoTracks().length;
+          if (cc.callType === "audio" && !hasVideoTrack) {
+            try {
+              const cam = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false,
+              });
+              const vt = cam.getVideoTracks()[0];
+              if (!vt || !streamNow) {
+                showCallToast("Could not start camera");
+                cam.getTracks().forEach((t) => t.stop());
+                break;
+              }
+              const aud = streamNow.getAudioTracks()[0];
+              if (!aud) {
+                showCallToast("Could not start camera");
+                cam.getTracks().forEach((t) => t.stop());
+                break;
+              }
+              const merged = new MediaStream([aud, vt]);
+              localStreamRef.current = merged;
+              setLocalStream(merged);
+              if (localVideoRef.current) {
+                localVideoRef.current.srcObject = merged;
+              }
+              pc.addTrack(vt, merged);
+              setCurrentCall((prev) =>
+                prev ? { ...prev, callType: "video" } : prev,
+              );
+              setIsCameraOff(false);
+              await triggerRenegotiationOffer(pc, cc.callId);
+              showCallToast("Video is on");
+            } catch {
+              showCallToast("Could not start camera");
+            }
+            break;
+          }
           onCallToggleCamera();
           break;
         }
         case "audio_output": {
           try {
-            await navigator.mediaDevices.getUserMedia({ audio: true });
-          } catch {
-            /* ignore */
-          }
-          try {
             const list = (
               await navigator.mediaDevices.enumerateDevices()
             ).filter((d) => d.kind === "audiooutput");
             const el = remoteVideoRef.current;
+            const suggestBt = list.some((d) =>
+              looksLikeBluetoothAudioDeviceLabel(d.label),
+            );
             if (
               !list.length ||
               !el ||
@@ -7984,9 +8151,11 @@ export default function TravelHubPage() {
                 .setSinkId !== "function"
             ) {
               showCallToast(
-                "Change speaker or Bluetooth in your system or the browser’s site settings",
+                suggestBt
+                  ? "Change speaker or Bluetooth in your system or the browser’s site settings"
+                  : "Change speaker in your system or the browser’s site settings",
               );
-              return;
+              break;
             }
             setCallAudioOutputDevices(list);
           } catch {
@@ -8014,6 +8183,10 @@ export default function TravelHubPage() {
       onCallToggleCamera,
       onCallToggleMute,
       onCallToggleSpeaker,
+      triggerRenegotiationOffer,
+      setCurrentCall,
+      setIsCameraOff,
+      setLocalStream,
     ],
   );
 
@@ -11924,7 +12097,11 @@ export default function TravelHubPage() {
             <p className="mt-1 text-center text-xs" style={{ color: "#8896a0" }}>
               {typeof (HTMLVideoElement.prototype as { setSinkId?: unknown })
                 .setSinkId === "function"
-                ? "Choose a speaker, phone, or Bluetooth output"
+                ? callAudioOutputDevices.some((d) =>
+                      looksLikeBluetoothAudioDeviceLabel(d.label),
+                    )
+                  ? "Choose a speaker, phone, or Bluetooth output"
+                  : "Choose a speaker or wired output"
                 : "Your browser may not support choosing the output device here"}
             </p>
             <ul className="mt-3 max-h-56 space-y-1 overflow-y-auto custom-scrollbar">
