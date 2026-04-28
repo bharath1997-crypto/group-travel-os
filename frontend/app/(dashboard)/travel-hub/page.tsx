@@ -7149,7 +7149,8 @@ export default function TravelHubPage() {
     callStyle?: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  /** Mobile visual viewport inset for keeping composer above keyboard */
+  const [keyboardBottomOffset, setKeyboardBottomOffset] = useState(0);
   const [profileBannerDismissed, setProfileBannerDismissed] = useState(false);
   const [firebaseBannerDismissed, setFirebaseBannerDismissed] = useState(false);
 
@@ -7223,6 +7224,8 @@ export default function TravelHubPage() {
   const [searchProfileSubTab, setSearchProfileSubTab] = useState<
     "media" | "links" | "docs" | "trips" | "activities"
   >("media");
+  /** When true on viewports under 768px, show full-screen chat (list hidden). */
+  const [mobileShowChat, setMobileShowChat] = useState(false);
   const [buddiesMenuOpenId, setBuddiesMenuOpenId] = useState<string | null>(
     null,
   );
@@ -7401,6 +7404,13 @@ export default function TravelHubPage() {
     callListenersRef.current.push(unsub);
   }, []);
 
+  const clearCallDurationTimer = useCallback(() => {
+    if (durationTimerRef.current) {
+      clearInterval(durationTimerRef.current);
+      durationTimerRef.current = null;
+    }
+  }, []);
+
   const attachSymmetricRenegotiationListeners = useCallback(
     (pc: RTCPeerConnection, callId: string) => {
       if (!db) return;
@@ -7483,13 +7493,6 @@ export default function TravelHubPage() {
     },
     [db, showCallToast],
   );
-
-  const clearCallDurationTimer = useCallback(() => {
-    if (durationTimerRef.current) {
-      clearInterval(durationTimerRef.current);
-      durationTimerRef.current = null;
-    }
-  }, []);
 
   const endCallAndCleanup = useCallback(
     async (opts: {
@@ -8507,6 +8510,22 @@ export default function TravelHubPage() {
     return () => mq.removeEventListener("change", apply);
   }, []);
 
+  useEffect(() => {
+    if (isMd) setMobileShowChat(false);
+  }, [isMd]);
+
+  const bumpMobileChatOpen = useCallback(() => {
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia("(min-width: 768px)").matches) {
+      setMobileShowChat(true);
+    }
+  }, []);
+
+  const closeMobileChat = useCallback(() => {
+    setMobileShowChat(false);
+    setActiveChat(null);
+  }, []);
+
   const updateChatPref = useCallback(
     (chatId: string, patch: Partial<ChatPrefs>) => {
       setChatPrefs((prev) => {
@@ -8531,15 +8550,25 @@ export default function TravelHubPage() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined" || isMd) {
+      setKeyboardBottomOffset(0);
+      return;
+    }
     const vv = window.visualViewport;
     if (!vv) return;
-    const onResize = () => {
-      const h = window.innerHeight;
-      setKeyboardOpen(h - vv.height > 120);
+    const sync = () => {
+      const visibleBottom = vv.height + vv.offsetTop;
+      const inset = Math.max(0, window.innerHeight - visibleBottom);
+      setKeyboardBottomOffset(inset);
     };
-    vv.addEventListener("resize", onResize);
-    return () => vv.removeEventListener("resize", onResize);
-  }, []);
+    sync();
+    vv.addEventListener("resize", sync);
+    vv.addEventListener("scroll", sync);
+    return () => {
+      vv.removeEventListener("resize", sync);
+      vv.removeEventListener("scroll", sync);
+    };
+  }, [isMd]);
 
   const initGroupChat = useCallback(
     async (
@@ -9392,12 +9421,21 @@ export default function TravelHubPage() {
         setActiveTab("chats");
         updateChatPref(chatId, { lastReadAt: Date.now() });
         loadMessages(chatId);
+        bumpMobileChatOpen();
       } catch (e) {
         console.error(e);
         showToast("Could not open chat", "error");
       }
     },
-    [db, user, loadMessages, showToast, updateChatPref, connectionsList],
+    [
+      db,
+      user,
+      loadMessages,
+      showToast,
+      updateChatPref,
+      connectionsList,
+      bumpMobileChatOpen,
+    ],
   );
 
   useEffect(() => {
@@ -9568,50 +9606,52 @@ export default function TravelHubPage() {
       messagesUnsubRef.current = null;
       setMessages([]);
       updateChatPref(c.id, { lastReadAt: Date.now() });
-      if (c.isBot || c.isAnnouncement || c.isDemo) return;
-      loadMessages(c.id);
-      if (
-        db &&
-        user?.id &&
-        c.type === "individual" &&
-        c.id.startsWith("dm_")
-      ) {
-        const peerId = c.members.find((m) => m !== user.id);
+      if (!(c.isBot || c.isAnnouncement || c.isDemo)) {
+        loadMessages(c.id);
         if (
-          peerId != null &&
-          dmStoredNameNeedsApiRepair(c.name, c.metadata?.name)
+          db &&
+          user?.id &&
+          c.type === "individual" &&
+          c.id.startsWith("dm_")
         ) {
-          void (async () => {
-            const r = await apiFetchWithStatus<UserProfileIdOut>(
-              `/users/${peerId}`,
-            );
-            if (r.status !== 200 || !r.data) return;
-            const fn = r.data.full_name?.trim();
-            if (!fn) return;
-            const nextMeta = {
-              name: fn,
-              profile_picture: r.data.profile_picture ?? null,
-              avatar_url: r.data.avatar_url ?? null,
-            };
-            try {
-              await update(ref(db, `chats/${c.id}/info`), { name: fn });
-              await update(ref(db, `chats/${c.id}/metadata`), nextMeta);
-            } catch (e) {
-              console.warn("dm name repair", e);
-            }
-            setActiveChat((prev) => {
-              if (!prev || prev.id !== c.id) return prev;
-              return {
-                ...prev,
+          const peerId = c.members.find((m) => m !== user.id);
+          if (
+            peerId != null &&
+            dmStoredNameNeedsApiRepair(c.name, c.metadata?.name)
+          ) {
+            void (async () => {
+              const r = await apiFetchWithStatus<UserProfileIdOut>(
+                `/users/${peerId}`,
+              );
+              if (r.status !== 200 || !r.data) return;
+              const fn = r.data.full_name?.trim();
+              if (!fn) return;
+              const nextMeta = {
                 name: fn,
-                metadata: { ...prev.metadata, ...nextMeta },
+                profile_picture: r.data.profile_picture ?? null,
+                avatar_url: r.data.avatar_url ?? null,
               };
-            });
-          })();
+              try {
+                await update(ref(db, `chats/${c.id}/info`), { name: fn });
+                await update(ref(db, `chats/${c.id}/metadata`), nextMeta);
+              } catch (e) {
+                console.warn("dm name repair", e);
+              }
+              setActiveChat((prev) => {
+                if (!prev || prev.id !== c.id) return prev;
+                return {
+                  ...prev,
+                  name: fn,
+                  metadata: { ...prev.metadata, ...nextMeta },
+                };
+              });
+            })();
+          }
         }
       }
+      bumpMobileChatOpen();
     },
-    [loadMessages, updateChatPref, db, user?.id],
+    [loadMessages, updateChatPref, db, user?.id, bumpMobileChatOpen],
   );
 
   const openGroupChatFromSearch = useCallback(
@@ -9677,8 +9717,9 @@ export default function TravelHubPage() {
       };
       setActiveChat(chat);
       setActiveTab("chats");
+      bumpMobileChatOpen();
     },
-    [],
+    [bumpMobileChatOpen],
   );
 
   const filteredChats = useMemo(() => chats, [chats]);
@@ -9926,11 +9967,37 @@ export default function TravelHubPage() {
     </div>
   );
 
+  const travelHubShellStyle = useMemo((): CSSProperties => {
+    const base: CSSProperties = {
+      background: BG,
+      color: TEXT,
+    };
+    if (isMd) {
+      return { ...base, height: "calc(100vh - 64px)" };
+    }
+    return {
+      ...base,
+      position: "fixed",
+      left: 0,
+      right: 0,
+      top: "52px",
+      bottom: "calc(56px + env(safe-area-inset-bottom, 0px))",
+      zIndex: 20,
+    };
+  }, [isMd]);
+
+  const mobileComposerBottomStyle = useMemo((): CSSProperties => {
+    if (isMd) return {};
+    return {
+      paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardBottomOffset}px)`,
+    };
+  }, [isMd, keyboardBottomOffset]);
+
   if (loading && !user) {
     return (
       <div
-        className="flex animate-pulse gap-4 p-4"
-        style={{ height: "calc(100vh - 64px)", background: BG }}
+        className="flex animate-pulse gap-4 p-4 md:relative"
+        style={travelHubShellStyle}
       >
         <div className="h-full w-80 rounded-xl" style={{ background: SURFACE }} />
         <div className="flex-1 rounded-xl" style={{ background: SURFACE }} />
@@ -9940,12 +10007,8 @@ export default function TravelHubPage() {
 
   return (
     <div
-      className="relative flex w-full flex-col overflow-hidden"
-      style={{
-        height: "calc(100vh - 64px)",
-        background: BG,
-        color: TEXT,
-      }}
+      className="chat-container relative flex w-full flex-col overflow-hidden md:static md:max-h-none"
+      style={travelHubShellStyle}
     >
       {user && !profileBannerDismissed ? (
         <div
@@ -10007,7 +10070,9 @@ export default function TravelHubPage() {
       >
         <div
           className={`flex min-h-0 flex-col overflow-hidden ${
-            !isMd && activeChat && activeTab === "chats" ? "hidden" : "flex"
+            !isMd && mobileShowChat && activeTab === "chats"
+              ? "hidden"
+              : "flex"
           }`}
           style={{
             width: isMd ? 360 : "100%",
@@ -10225,7 +10290,13 @@ export default function TravelHubPage() {
 
         <div
           className={`flex min-h-0 min-w-0 flex-col ${
-            !isMd && !activeChat && activeTab !== "calls" ? "hidden" : "flex"
+            !isMd &&
+            !(
+              activeTab === "calls" ||
+              (activeTab === "chats" && mobileShowChat)
+            )
+              ? "hidden"
+              : "flex"
           }`}
           style={{
             flex: 1,
@@ -10281,7 +10352,7 @@ export default function TravelHubPage() {
           ) : activeChat.isDemo ? (
             <DemoDmChatPanel
               chat={activeChat}
-              onBack={() => setActiveChat(null)}
+              onBack={closeMobileChat}
               showToast={(m, t) => showToast(m, t ?? "success")}
             />
           ) : activeChat.isBot ? (
@@ -10325,7 +10396,7 @@ export default function TravelHubPage() {
             <>
             <ChatHeader
               chat={activeChat}
-              onBack={() => setActiveChat(null)}
+              onBack={closeMobileChat}
               groups={groups}
               dmPeerIsOnline={
                 activeChat.type === "individual"
@@ -10409,7 +10480,7 @@ export default function TravelHubPage() {
             ) : null}
 
             <div
-              className="min-h-0 flex-1 custom-scrollbar overflow-y-auto px-2 py-2 sm:px-3"
+              className="messages-area min-h-0 flex-1 custom-scrollbar overflow-y-auto px-2 py-2 sm:px-3"
               style={{
                 background: WA_MSG_BG,
                 position: "relative",
@@ -10648,12 +10719,11 @@ export default function TravelHubPage() {
                 {activeChat.type === "group" ? (
                 user ? (
                 <div
-                  className={`flex shrink-0 items-center gap-1.5 border-t px-2 py-2.5 ${
-                    keyboardOpen ? "hidden md:flex" : "flex"
-                  }`}
+                  className="input-bar flex shrink-0 items-center gap-1.5 border-t px-2 py-2.5"
                   style={{
                     borderColor: "rgba(255,255,255,0.08)",
                     background: WA_INPUT_ROW,
+                    ...mobileComposerBottomStyle,
                   }}
                 >
                   {messageText.trim() ? null : (
@@ -10789,10 +10859,12 @@ export default function TravelHubPage() {
                 )
                 ) : (
                 <div
-                  className={`flex shrink-0 items-center gap-1.5 border-t px-2 py-2 ${
-                    keyboardOpen ? "hidden md:flex" : "flex"
-                  }`}
-                  style={{ borderColor: BORDER_SUB, background: BG }}
+                  className="input-bar flex shrink-0 items-center gap-1.5 border-t px-2 py-2"
+                  style={{
+                    borderColor: BORDER_SUB,
+                    background: BG,
+                    ...mobileComposerBottomStyle,
+                  }}
                 >
                   {messageText.trim() ? null : (
                     <>

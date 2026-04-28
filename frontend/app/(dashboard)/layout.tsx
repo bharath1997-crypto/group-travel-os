@@ -18,7 +18,9 @@ import {
   Map,
   MapPin,
   Menu,
+  MoreHorizontal,
   Plane,
+  Settings,
   User,
   Users,
 } from "lucide-react";
@@ -70,6 +72,31 @@ function isActive(pathname: string, href: string): boolean {
     return pathname === "/split-activities";
   }
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/** Bottom nav "Explore" and More sheet targets */
+function isExploreNavActive(pathname: string): boolean {
+  return pathname === "/explore" || pathname.startsWith("/explore/");
+}
+
+const MOBILE_MORE_LINKS: {
+  href: string;
+  label: string;
+  Icon: LucideIcon;
+}[] = [
+  { href: "/split-activities", label: "Split Activities", Icon: Banknote },
+  { href: "/map", label: "Map", Icon: Map },
+  { href: "/stats", label: "Stats", Icon: BarChart2 },
+  { href: "/notifications", label: "Notifications", Icon: Bell },
+  { href: "/weather", label: "Weather", Icon: CloudSun },
+  { href: "/settings", label: "Settings", Icon: Settings },
+  { href: "/profile", label: "Profile", Icon: User },
+];
+
+function isMoreNavActive(pathname: string): boolean {
+  return MOBILE_MORE_LINKS.some(
+    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
+  );
 }
 
 /** All six verifications from GET /auth/me — not profile_completion_filled. */
@@ -135,14 +162,6 @@ const MAIN_NAV: {
     Icon: Bell,
     kind: "notifications",
   },
-];
-
-const MOBILE_NAV: { href: string; label: string; Icon: LucideIcon }[] = [
-  { href: "/dashboard", label: "Home", Icon: LayoutDashboard },
-  { href: "/trips", label: "Trips", Icon: Plane },
-  { href: "/travel-hub", label: "Travel Hub", Icon: Users },
-  { href: "/map", label: "Map", Icon: Map },
-  { href: "/profile", label: "Profile", Icon: User },
 ];
 
 const PRIMARY_NAV = MAIN_NAV.slice(0, -1);
@@ -251,6 +270,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const [planLoading, setPlanLoading] = useState(true);
   const [notifCount, setNotifCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [isMdUp, setIsMdUp] = useState(false);
   const [isLgUp, setIsLgUp] = useState(false);
 
@@ -282,6 +302,10 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const profileTarget = "/profile";
 
   const isMapPage = pathname === "/map";
+
+  useEffect(() => {
+    setMoreSheetOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (loading || !user) return;
@@ -706,20 +730,13 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         className={
           isMapPage
             ? "flex min-h-screen min-h-[100dvh] flex-col transition-all duration-300 ease-in-out max-md:ml-0 md:ml-[64px] lg:ml-[220px]"
-            : "flex min-h-screen min-h-[100dvh] flex-col pb-[72px] transition-all duration-300 ease-in-out max-md:ml-0 md:ml-[64px] lg:ml-[220px] md:pb-0"
+            : "flex min-h-screen min-h-[100dvh] flex-col pb-[calc(56px+env(safe-area-inset-bottom,0px))] transition-all duration-300 ease-in-out max-md:ml-0 md:ml-[64px] lg:ml-[220px] md:pb-0"
         }
       >
         {!isMdUp ? (
-          <header className="relative sticky top-0 z-30 flex h-[52px] shrink-0 items-center border-b border-[#E9ECEF] bg-white px-3">
-            <button
-              type="button"
-              aria-label="Open menu"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-2xl text-[#E94560] transition-colors hover:bg-[#F8F9FA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-6 w-6" strokeWidth={1.5} />
-            </button>
-            <div className="flex min-w-0 flex-1 justify-center px-2">
+          <header className="relative sticky top-0 z-30 grid h-[52px] shrink-0 grid-cols-[40px_1fr_40px] items-center border-b border-[#E9ECEF] bg-white px-3">
+            <span className="w-10 shrink-0" aria-hidden />
+            <div className="flex min-w-0 justify-center justify-self-center px-2">
               {!isMapPage ? (
                 <Image
                   src="/logo-light.svg"
@@ -737,7 +754,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             </div>
             <Link
               href="/notifications"
-              className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#6C757D] transition-colors hover:bg-[#F8F9FA] hover:text-[#0F3460] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
+              className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center justify-self-end rounded-xl text-[#6C757D] transition-colors hover:bg-[#F8F9FA] hover:text-[#0F3460] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
               aria-label="Notifications"
             >
               <Bell className="h-6 w-6" strokeWidth={1.5} />
@@ -778,15 +795,29 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           )}
         </main>
 
-        <nav className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-[#E9ECEF] bg-white px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden">
-          <div className="mx-auto flex w-full max-w-lg justify-between">
-            {MOBILE_NAV.map(({ href, label, Icon }) => {
-              const active = isActive(pathname, href);
+        <nav
+          className="fixed bottom-0 left-0 right-0 z-30 flex h-14 min-h-14 border-t border-[#E9ECEF] bg-white px-1 pb-[env(safe-area-inset-bottom,0px)] pt-0 md:hidden"
+          aria-label="Primary"
+        >
+          <div className="mx-auto flex h-full w-full max-w-lg items-stretch justify-between">
+            {(
+              [
+                { href: "/dashboard", label: "Home", Icon: LayoutDashboard },
+                { href: "/trips", label: "Trips", Icon: Plane },
+                { href: "/travel-hub", label: "Connect", Icon: Users },
+                { href: "/explore", label: "Explore", Icon: Compass },
+              ] as const
+            ).map(({ href, label, Icon }) => {
+              const active =
+                href === "/explore"
+                  ? isExploreNavActive(pathname)
+                  : isActive(pathname, href);
               return (
                 <Link
                   key={href}
                   href={href}
-                  className="flex min-w-0 flex-1 flex-col items-center gap-1 py-1"
+                  className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1"
+                  onClick={() => setMoreSheetOpen(false)}
                 >
                   <span
                     className={`inline-flex leading-none ${
@@ -794,10 +825,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                     }`}
                     aria-hidden
                   >
-                    <Icon
-                      className="h-[18px] w-[18px]"
-                      strokeWidth={1.5}
-                    />
+                    <Icon className="h-[18px] w-[18px]" strokeWidth={1.5} />
                   </span>
                   <span
                     className={`max-w-full truncate text-[10px] font-semibold ${
@@ -809,8 +837,82 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                 </Link>
               );
             })}
+            <button
+              type="button"
+              className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1 text-[#6C757D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/30"
+              aria-expanded={moreSheetOpen}
+              aria-label="More navigation"
+              onClick={() => setMoreSheetOpen(true)}
+            >
+              <span
+                className={`inline-flex leading-none ${
+                  isMoreNavActive(pathname) ? "text-[#E94560]" : "text-[#6C757D]"
+                }`}
+                aria-hidden
+              >
+                <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.5} />
+              </span>
+              <span
+                className={`max-w-full truncate text-[10px] font-semibold ${
+                  isMoreNavActive(pathname)
+                    ? "text-[#E94560]"
+                    : "text-[#6C757D]"
+                }`}
+              >
+                More
+              </span>
+            </button>
           </div>
         </nav>
+
+        {moreSheetOpen ? (
+          <div className="fixed inset-0 z-[3020] md:hidden">
+            <button
+              type="button"
+              aria-label="Close menu"
+              className="absolute inset-0 bg-black/45"
+              onClick={() => setMoreSheetOpen(false)}
+            />
+            <div
+              className="absolute bottom-0 left-0 right-0 max-h-[min(85dvh,520px)] overflow-hidden rounded-t-2xl border-t border-[#E9ECEF] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)]"
+              role="dialog"
+              aria-modal="true"
+              aria-label="More"
+            >
+              <div className="mx-auto w-full max-w-lg px-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))] pt-2">
+                <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#DEE2E6]" />
+                <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-[#6C757D]">
+                  More
+                </p>
+                <ul className="flex flex-col gap-0.5">
+                  {MOBILE_MORE_LINKS.map(({ href, label, Icon }) => {
+                    const active =
+                      pathname === href || pathname.startsWith(`${href}/`);
+                    return (
+                      <li key={href}>
+                        <Link
+                          href={href}
+                          className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium transition-colors hover:bg-[#F8F9FA]"
+                          style={{
+                            color: active ? "#E94560" : "#495057",
+                          }}
+                          onClick={() => setMoreSheetOpen(false)}
+                        >
+                          <Icon
+                            className="h-5 w-5 shrink-0"
+                            strokeWidth={1.5}
+                            aria-hidden
+                          />
+                          {label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {user ? (
@@ -832,7 +934,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             return undefined;
           })()}
           context={{ pathname }}
-          className="!z-[100] max-md:bottom-20"
+          className="!z-[100] max-md:!bottom-[80px] max-md:!right-0 max-md:!p-0 [&>div]:max-md:!pb-0 [&>div]:max-md:!pr-4"
         />
       ) : null}
     </div>
