@@ -6,7 +6,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -34,7 +34,23 @@ class Expense(Base):
     )
     description: Mapped[str] = mapped_column(String(300), nullable=False)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
-    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
+    currency: Mapped[str] = mapped_column(
+        String(10),
+        nullable=False,
+        default="INR",
+        server_default=text("'INR'"),
+    )
+    category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    receipt_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    split_type: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="equal",
+        server_default=text("'equal'"),
+    )
+    exchange_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    original_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -74,6 +90,10 @@ class ExpenseSplit(Base):
         index=True,
     )
     amount: Mapped[float] = mapped_column(Float, nullable=False)
+    share_units: Mapped[float | None] = mapped_column(Float, nullable=True)
+    percentage: Mapped[float | None] = mapped_column(Float, nullable=True)
+    exact_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(200), nullable=True)
     is_settled: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,

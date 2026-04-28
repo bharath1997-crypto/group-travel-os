@@ -39,7 +39,7 @@ def create_group(
     current_user: User = Depends(get_current_user),
 ):
     group = GroupService.create_group(
-        db, data.name, data.description, current_user, data.group_type
+        db, data.name, data.description, current_user, data.group_type, data.default_currency
     )
     return group_to_out(group)
 

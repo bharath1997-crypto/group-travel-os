@@ -48,14 +48,17 @@ class GroupService:
         description: str | None,
         current_user: User,
         group_type: str = "regular",
+        default_currency: str = "INR",
     ) -> Group:
         invite_code = _generate_unique_invite_code(db)
+        dc = (default_currency or "INR").strip().upper()[:10]
         group = Group(
             name=name,
             description=description,
             group_type=group_type,
             created_by=current_user.id,
             invite_code=invite_code,
+            default_currency=dc,
         )
         db.add(group)
         db.flush()
