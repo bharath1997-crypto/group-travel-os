@@ -7544,6 +7544,9 @@ const hubNotifCtx = {
   userId: null as string | null,
 };
 
+/** `renotify` is valid in browsers but not in default `NotificationOptions` DOM typings. */
+type HubNotificationOptions = NotificationOptions & { renotify?: boolean };
+
 function chatMessagePreviewForNotification(m: ChatMessage): string {
   if (m.type === "gif") return "GIF";
   if (m.type === "text" || m.type === undefined || m.type === "")
@@ -7570,7 +7573,7 @@ function showMessageNotification(
     icon: NOTIF_ICON,
     tag: `message-${chatId}`,
     renotify: true,
-  });
+  } as HubNotificationOptions);
   notification.onclick = () => {
     window.focus();
     notification.close();
@@ -7586,7 +7589,7 @@ function showCallNotification(callerName: string, callType: string) {
     tag: "incoming-call",
     renotify: true,
     requireInteraction: true,
-  });
+  } as HubNotificationOptions);
   notification.onclick = () => {
     window.focus();
     notification.close();
@@ -7602,7 +7605,7 @@ function showGroupInviteNotification(inviterName: string, groupName: string) {
     icon: NOTIF_ICON,
     tag: "group-invite",
     renotify: true,
-  });
+  } as HubNotificationOptions);
   notification.onclick = () => {
     window.focus();
     window.location.href = "/notifications";
@@ -9030,7 +9033,7 @@ export default function TravelHubPage() {
     void pingPresence();
     const intervalId = window.setInterval(pingPresence, 120_000);
 
-    let visibilityPingTimer: ReturnType<typeof setTimeout> | null = null;
+    let visibilityPingTimer: number | null = null;
     const onVisibility = () => {
       if (document.visibilityState === "visible") {
         if (visibilityPingTimer) {
