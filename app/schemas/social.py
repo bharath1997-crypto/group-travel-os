@@ -36,6 +36,7 @@ class UserSearchOut(BaseModel):
     id: UUID
     full_name: str
     username: str | None
+    email: str | None = None
     avatar_url: str | None
     profile_picture: str | None
     is_verified: bool

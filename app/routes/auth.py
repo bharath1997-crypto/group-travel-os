@@ -23,6 +23,7 @@ from config import settings
 from app.models.user import User
 from app.schemas.auth import (
     ChangePasswordRequest,
+    DeleteAccountRequest,
     ForgotPasswordRequest,
     PhoneSendRequest,
     PhoneVerifyRequest,
@@ -343,6 +344,20 @@ def change_password(
 ):
     AuthService.change_password(db, current_user, data)
     return {"message": "Password changed successfully"}
+
+
+@router.post(
+    "/account/deactivate",
+    status_code=status.HTTP_200_OK,
+    summary="Soft-deactivate account (confirmation DELETE; password if not OAuth)",
+)
+def deactivate_account(
+    data: DeleteAccountRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    AuthService.deactivate_account(db, current_user, data)
+    return {"message": "Account deactivated"}
 
 
 @router.post(

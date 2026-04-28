@@ -162,6 +162,22 @@ function FlyToView({
   return null;
 }
 
+/** Profile embed: Leaflet often loads at wrong size until invalidateSize runs */
+function EmbeddedResizeFix() {
+  const map = useMap();
+  useEffect(() => {
+    const fix = () => map.invalidateSize();
+    fix();
+    const id = requestAnimationFrame(fix);
+    const t = window.setTimeout(fix, 260);
+    return () => {
+      cancelAnimationFrame(id);
+      window.clearTimeout(t);
+    };
+  }, [map]);
+  return null;
+}
+
 function MapClickHandler({
   onClick,
 }: {
@@ -245,8 +261,15 @@ function UserLocationLayers({ lat, lng }: { lat: number; lng: number }) {
   return null;
 }
 
-export default function MapComponent() {
-  const [tileMode, setTileMode] = useState<TileMode>("street");
+export default function MapComponent({
+  embedded = false,
+}: {
+  /** Compact read-mostly map for profile / embeds — hides chrome, fixed height */
+  embedded?: boolean;
+}) {
+  const [tileMode, setTileMode] = useState<TileMode>(
+    embedded ? "dark" : "street",
+  );
   const [pins, setPins] = useState<PinOut[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [centerLat, setCenterLat] = useState(20);
@@ -280,6 +303,7 @@ export default function MapComponent() {
   const rightControlsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (embedded) return;
     const left = leftControlsRef.current;
     const right = rightControlsRef.current;
     const nodes = [left, right].filter(Boolean) as HTMLElement[];
@@ -298,7 +322,7 @@ export default function MapComponent() {
         L.DomEvent.off(el, "dblclick", stop);
       }
     };
-  }, []);
+  }, [embedded]);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -442,7 +466,11 @@ export default function MapComponent() {
   );
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+    <div
+      className={`relative w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-100 ${
+        embedded ? "h-[280px] min-h-[220px] shrink-0" : "h-full"
+      }`}
+    >
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -459,7 +487,9 @@ export default function MapComponent() {
 
       <div
         ref={leftControlsRef}
-        className="pointer-events-auto absolute left-3 top-3 z-[1100] flex max-w-[min(100%-6rem,22rem)] flex-col gap-2"
+        className={`pointer-events-auto absolute left-3 top-3 z-[1100] flex max-w-[min(100%-6rem,22rem)] flex-col gap-2 ${
+          embedded ? "hidden" : ""
+        }`}
       >
         <form
           onSubmit={(e) => void handleSearch(e)}
@@ -496,7 +526,9 @@ export default function MapComponent() {
 
       <div
         ref={rightControlsRef}
-        className="pointer-events-auto absolute right-3 top-3 z-[1100] flex flex-col items-end gap-2"
+        className={`pointer-events-auto absolute right-3 top-3 z-[1100] flex flex-col items-end gap-2 ${
+          embedded ? "hidden" : ""
+        }`}
       >
         <div className="flex flex-wrap justify-end gap-1 rounded-lg bg-white/95 p-1.5 shadow-lg ring-1 ring-gray-200 backdrop-blur-sm">
           {TILE_MODE_ORDER.map(([key, label]) => (
@@ -541,7 +573,7 @@ export default function MapComponent() {
         zoom={zoom}
         className="z-0 h-full w-full"
         style={{ height: "100%", width: "100%", minHeight: "240px" }}
-        scrollWheelZoom
+        scrollWheelZoom={!embedded}
         closePopupOnClick={false}
         doubleClickZoom={false}
       >
@@ -570,7 +602,8 @@ export default function MapComponent() {
           />
         )}
         <FlyToView lat={centerLat} lng={centerLng} zoom={zoom} />
-        <MapClickHandler onClick={onMapClick} />
+        {embedded ? <EmbeddedResizeFix /> : null}
+        {!embedded ? <MapClickHandler onClick={onMapClick} /> : null}
 
         {userLoc ? (
           <UserLocationLayers lat={userLoc.lat} lng={userLoc.lng} />

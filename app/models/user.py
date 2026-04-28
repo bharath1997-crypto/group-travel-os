@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from app.models.poll import Vote
     from app.models.trip import Trip
     from app.models.trip_roster import TripRoster
+    from app.models.user_app_settings import UserAppSettings
 
 
 class User(Base):
@@ -210,6 +211,12 @@ class User(Base):
     notifications: Mapped[list["Notification"]] = relationship(
         "Notification",
         back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    app_settings: Mapped["UserAppSettings | None"] = relationship(
+        "UserAppSettings",
+        back_populates="user",
+        uselist=False,
         cascade="all, delete-orphan",
     )
 

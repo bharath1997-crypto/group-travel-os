@@ -74,6 +74,13 @@ class ChangePasswordRequest(BaseModel):
     new_password: str = Field(..., min_length=8, max_length=100)
 
 
+class DeleteAccountRequest(BaseModel):
+    """Body for POST /auth/account/deactivate — irreversible soft-deactivate."""
+
+    confirmation: str = Field(..., min_length=1, max_length=32)
+    password: str | None = Field(None, max_length=100)
+
+
 # ── Response schemas (output) ─────────────────────────────────────────────────
 
 class UserOut(BaseModel):

@@ -16,6 +16,7 @@ from app.models.group_invitation import GroupInvitation
 from app.models.notification import Notification
 from app.models.friend_request import FriendRequest
 from app.models.blocked_user import BlockedUser
+from app.models.user_app_settings import UserAppSettings
 
 __all__: list[str] = [
     "User",
@@ -47,4 +48,5 @@ __all__: list[str] = [
     "Notification",
     "FriendRequest",
     "BlockedUser",
+    "UserAppSettings",
 ]
