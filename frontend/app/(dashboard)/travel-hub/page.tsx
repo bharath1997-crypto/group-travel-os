@@ -554,6 +554,24 @@ const ICE_SERVERS: RTCConfiguration = {
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun2.l.google.com:19302" },
+    { urls: "stun:stun3.l.google.com:19302" },
+    { urls: "stun:stun4.l.google.com:19302" },
+    { urls: "stun:stun.relay.metered.ca:80" },
+    {
+      urls: "turn:standard.relay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:standard.relay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turns:standard.relay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
   ],
 };
 
@@ -6750,6 +6768,7 @@ function WebrtcCallOverlays({
           ref={remoteVideoRef}
           autoPlay
           playsInline
+          muted={false}
           className={
             showBigRemoteVideo
               ? "absolute inset-0 z-0 h-full w-full min-h-0 min-w-0 object-cover"
@@ -6763,7 +6782,7 @@ function WebrtcCallOverlays({
               ref={localVideoRef}
               autoPlay
               playsInline
-              muted
+              muted={true}
               className="object-cover"
               style={{
                 width: 120,
@@ -6792,7 +6811,7 @@ function WebrtcCallOverlays({
               ref={localVideoRef}
               autoPlay
               playsInline
-              muted
+              muted={true}
               className="absolute right-3 top-3 object-cover"
               style={{ width: 120, height: 180, borderRadius: 12 }}
             />
@@ -6822,7 +6841,7 @@ function WebrtcCallOverlays({
               ref={localVideoRef}
               autoPlay
               playsInline
-              muted
+              muted={true}
               className="sr-only h-0 w-0 overflow-hidden"
               aria-hidden
             />
@@ -7278,14 +7297,14 @@ export default function TravelHubPage() {
     setCallHistory(readCallHistoryLs());
   }, []);
 
-  useLayoutEffect(() => {
-    if (localVideoRef.current) {
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
     }
   }, [localStream]);
 
-  useLayoutEffect(() => {
-    if (remoteVideoRef.current) {
+  useEffect(() => {
+    if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
@@ -7461,6 +7480,9 @@ export default function TravelHubPage() {
       }
       localStreamRef.current = stream;
       setLocalStream(stream);
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
       setIsMuted(false);
       setIsCameraOff(false);
       setCurrentCall({
@@ -7480,9 +7502,27 @@ export default function TravelHubPage() {
       const pc = new RTCPeerConnection(ICE_SERVERS);
       peerConnectionRef.current = pc;
       processedIceRef.current = new Set();
+      pc.oniceconnectionstatechange = () => {
+        console.log("ICE state:", pc.iceConnectionState);
+      };
+      pc.onconnectionstatechange = () => {
+        console.log("Connection state:", pc.connectionState);
+        if (pc.connectionState === "connected") {
+          console.log("WebRTC connected successfully!");
+        }
+        if (pc.connectionState === "failed") {
+          console.log("WebRTC connection failed - trying to restart ICE");
+          pc.restartIce();
+        }
+      };
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-      pc.ontrack = (ev) => {
-        if (ev.streams[0]) setRemoteStream(ev.streams[0]);
+      pc.ontrack = (event) => {
+        if (event.streams && event.streams[0]) {
+          setRemoteStream(event.streams[0]);
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = event.streams[0];
+          }
+        }
       };
       const icePath = `calls/${callId}/ice_candidates/caller`;
       pc.onicecandidate = (ev) => {
@@ -7660,9 +7700,30 @@ export default function TravelHubPage() {
     callRoleRef.current = "callee";
     localStreamRef.current = stream;
     setLocalStream(stream);
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
+    }
+    pc.oniceconnectionstatechange = () => {
+      console.log("ICE state:", pc.iceConnectionState);
+    };
+    pc.onconnectionstatechange = () => {
+      console.log("Connection state:", pc.connectionState);
+      if (pc.connectionState === "connected") {
+        console.log("WebRTC connected successfully!");
+      }
+      if (pc.connectionState === "failed") {
+        console.log("WebRTC connection failed - trying to restart ICE");
+        pc.restartIce();
+      }
+    };
     stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-    pc.ontrack = (ev) => {
-      if (ev.streams[0]) setRemoteStream(ev.streams[0]);
+    pc.ontrack = (event) => {
+      if (event.streams && event.streams[0]) {
+        setRemoteStream(event.streams[0]);
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = event.streams[0];
+        }
+      }
     };
     const icePathCallee = `calls/${callId}/ice_candidates/callee`;
     pc.onicecandidate = (ev) => {
