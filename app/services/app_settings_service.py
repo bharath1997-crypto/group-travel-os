@@ -102,6 +102,10 @@ DEFAULT_PREFERENCES: dict[str, Any] = {
         "connected_apps_enabled": True,
         "connected_calendar": False,
     },
+    "locale": {
+        "preferred_currency": "INR",
+        "timezone": "UTC",
+    },
     "support": {
         "travel_streak_help_viewed": False,
         "bugs_contact_email": "",

@@ -33,6 +33,7 @@ import {
 
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
+import { getPreferredCurrency } from "@/lib/user-locale";
 
 const NAVY = "#0F3460";
 const CORAL = "#E94560";
@@ -117,6 +118,12 @@ type MemberRow = {
   user_id: string;
   full_name: string;
   username?: string | null;
+};
+
+type CurrencyRow = {
+  code: string;
+  name: string;
+  symbol: string;
 };
 
 type ToastState = {
@@ -315,6 +322,8 @@ export default function SplitActivitiesPage() {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showNotesPanel, setShowNotesPanel] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [currencies, setCurrencies] = useState<CurrencyRow[]>([]);
+  const [formCurrency, setFormCurrency] = useState("INR");
   const [inviteEmail, setInviteEmail] = useState("");
 
   const [settlePaidBy, setSettlePaidBy] = useState<"you" | "them">("you");
@@ -367,6 +376,14 @@ export default function SplitActivitiesPage() {
       setUser(meRes.data);
       const gList = groupsRes.data;
       setGroups(gList);
+
+      const curRes = await withStatusDeadline<CurrencyRow[]>(
+        "/currencies",
+        pageSignal,
+      );
+      if (!pageSignal.aborted && curRes.data?.length) {
+        setCurrencies(curRes.data);
+      }
 
       const memberMap = new Map<string, MemberRow>();
       for (const g of gList) {
@@ -473,6 +490,10 @@ export default function SplitActivitiesPage() {
   useEffect(() => {
     if (user?.id) setFormPaidBy(user.id);
   }, [user?.id]);
+
+  useEffect(() => {
+    if (showAddForm) setFormCurrency(getPreferredCurrency());
+  }, [showAddForm]);
 
   const summary = useMemo(() => {
     const uid = user?.id;
@@ -625,7 +646,8 @@ export default function SplitActivitiesPage() {
         body: JSON.stringify({
           description,
           amount: amt,
-          currency: "USD",
+          currency:
+            formCurrency.trim().toUpperCase().slice(0, 10) || "INR",
           split_with: formSplitUserIds,
         }),
       });
@@ -1305,6 +1327,9 @@ export default function SplitActivitiesPage() {
           nameByUserId={nameByUserId}
           splitPreviewEqual={splitPreviewEqual}
           saving={saving}
+          formCurrency={formCurrency}
+          setFormCurrency={setFormCurrency}
+          currencies={currencies}
           onClose={() => setShowAddForm(false)}
           onSave={() => void submitExpense()}
         />
@@ -2024,6 +2049,9 @@ function AddExpenseSheet(props: {
   nameByUserId: Map<string, string>;
   splitPreviewEqual: { id: string; share: number }[];
   saving: boolean;
+  formCurrency: string;
+  setFormCurrency: (s: string) => void;
+  currencies: CurrencyRow[];
   onClose: () => void;
   onSave: () => void;
 }) {
@@ -2064,9 +2092,15 @@ function AddExpenseSheet(props: {
     nameByUserId,
     splitPreviewEqual,
     saving,
+    formCurrency,
+    setFormCurrency,
+    currencies,
     onClose,
     onSave,
   } = props;
+
+  const amountSymbol =
+    currencies.find((c) => c.code === formCurrency)?.symbol ?? formCurrency;
 
   const categories = [
     { key: "Food", Icon: Utensils },
@@ -2233,21 +2267,40 @@ function AddExpenseSheet(props: {
           </div>
         ) : null}
 
-        <div className="mt-6 flex items-center justify-center gap-1">
-          <span className="text-[28px] font-bold" style={{ color: CORAL }}>
-            $
-          </span>
-          <input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="0.01"
-            value={formAmount}
-            onChange={(e) => setFormAmount(e.target.value)}
-            className="max-w-[220px] border-0 bg-transparent text-center text-[32px] font-extrabold outline-none"
-            style={{ color: NAVY }}
-            placeholder="0.00"
-          />
+        <div className="mt-6 flex flex-col items-center gap-2">
+          {currencies.length > 0 ? (
+            <label className="flex w-full max-w-[280px] flex-col gap-1 text-[10px] font-bold uppercase text-[#6C757D]">
+              Currency
+              <select
+                value={formCurrency}
+                onChange={(e) => setFormCurrency(e.target.value)}
+                className="w-full rounded-lg border px-2 py-2 text-sm font-semibold text-[#2C3E50]"
+                style={{ borderColor: BORDER }}
+              >
+                {currencies.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.code} — {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <div className="flex items-center justify-center gap-1">
+            <span className="text-[28px] font-bold" style={{ color: CORAL }}>
+              {amountSymbol}
+            </span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="0.01"
+              value={formAmount}
+              onChange={(e) => setFormAmount(e.target.value)}
+              className="max-w-[220px] border-0 bg-transparent text-center text-[32px] font-extrabold outline-none"
+              style={{ color: NAVY }}
+              placeholder="0.00"
+            />
+          </div>
         </div>
 
         <p className="mt-4 text-center text-sm text-[#6C757D]">
