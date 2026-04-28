@@ -20,6 +20,7 @@ class GroupCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=120)
     description: str | None = Field(None, max_length=500)
     group_type: Literal["travel", "regular"] = "regular"
+    default_currency: str = Field(default="INR", min_length=3, max_length=10)
 
 
 class GroupUpdate(BaseModel):
@@ -52,6 +53,7 @@ class GroupOut(BaseModel):
     is_accepting_members: bool = True
     created_by: UUID
     created_at: datetime
+    default_currency: str = "INR"
     members: list[GroupMemberOut] = Field(default_factory=list)
 
 
@@ -96,6 +98,7 @@ def group_to_out(group: Group) -> GroupOut:
         is_accepting_members=group.is_accepting_members,
         created_by=group.created_by,
         created_at=group.created_at,
+        default_currency=group.default_currency,
         members=[group_member_to_out(m) for m in group.members],
     )
 

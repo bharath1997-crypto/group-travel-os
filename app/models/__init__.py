@@ -9,8 +9,8 @@ from app.models.location_share import LocationShare
 from app.models.meet_point import MeetPoint, MeetPointAttendance
 from app.models.destination import Destination
 from app.models.poll import Poll, PollOption, Vote, PollType, PollStatus
+from app.models.currency_rate import CurrencyRate
 from app.models.expense import Expense, ExpenseSplit
-from app.models.saved_pin import SavedPin
 from app.models.subscription import Subscription
 from app.models.group_invitation import GroupInvitation
 from app.models.notification import Notification
@@ -38,6 +38,7 @@ __all__: list[str] = [
     "Vote",
     "PollType",
     "PollStatus",
+    "CurrencyRate",
     "Expense",
     "ExpenseSplit",
     "SavedPin",

@@ -7,7 +7,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -42,6 +42,12 @@ class Group(Base):
         unique=True,
         nullable=False,
         index=True,
+    )
+    default_currency: Mapped[str] = mapped_column(
+        String(10),
+        nullable=False,
+        default="INR",
+        server_default=text("'INR'"),
     )
     is_accepting_members: Mapped[bool] = mapped_column(
         Boolean,
