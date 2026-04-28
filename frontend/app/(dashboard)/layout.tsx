@@ -37,12 +37,6 @@ import { clearToken } from "@/lib/auth";
 
 const CORAL = "#E94560";
 
-type PlanOut = {
-  plan: string;
-  status: string;
-  current_period_end: string | null;
-};
-
 const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
 
 /** GET /auth/me fields used for sidebar photo + name row (fetch uses gt_token in layout only). */
@@ -52,6 +46,7 @@ type SidebarAuthMe = {
   avatar_url?: string | null;
   google_picture?: string | null;
   facebook_picture?: string | null;
+  subscription_tier?: string | null;
 };
 
 function pickProfilePicUrl(me: SidebarAuthMe | null): string | null {
@@ -369,30 +364,20 @@ function SidebarProfileAvatar({
   );
 }
 
-function SidebarSubline({
-  username,
-  planLoading,
-  plan,
+function SidebarTierLine({
+  loading,
+  subscriptionTier,
 }: {
-  username: string | null;
-  planLoading: boolean;
-  plan: string | null;
+  loading: boolean;
+  subscriptionTier: string | null | undefined;
 }) {
-  const u = username?.trim();
-  if (u)
-    return (
-      <span
-        className="inline-block max-w-full truncate text-[10px] font-medium text-[rgba(255,255,255,0.75)]"
-        title={u}
-      >
-        @{u}
-      </span>
-    );
-  if (planLoading)
+  if (loading) {
     return (
       <span className="inline-block h-4 w-14 animate-pulse rounded-full bg-[rgba(255,255,255,0.15)]" />
     );
-  return <PlanBadgeFooter plan={plan} />;
+  }
+  const tier = subscriptionTier?.trim().toLowerCase() || "free";
+  return <PlanBadgeFooter plan={tier} />;
 }
 
 function DashboardChrome({ children }: { children: ReactNode }) {
@@ -400,24 +385,30 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, loading } = useDashboardUser();
 
-  const [plan, setPlan] = useState<PlanOut | null>(null);
-  const [planLoading, setPlanLoading] = useState(true);
-  const [notifCount, setNotifCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [isMdUp, setIsMdUp] = useState(false);
   const [isLgUp, setIsLgUp] = useState(false);
   const [sidebarMe, setSidebarMe] = useState<SidebarAuthMe | null>(null);
+  const [sidebarProfileLoading, setSidebarProfileLoading] = useState(true);
+  const [notifCount, setNotifCount] = useState(0);
 
   useEffect(() => {
     let c = false;
     (async () => {
+      setSidebarProfileLoading(true);
       try {
         const token =
           typeof window !== "undefined"
             ? window.localStorage.getItem("gt_token")
             : null;
-        if (!token?.trim()) return;
+        if (!token?.trim()) {
+          if (!c) {
+            setSidebarMe(null);
+            setSidebarProfileLoading(false);
+          }
+          return;
+        }
         const res = await fetch(`${API_BASE}/auth/me`, {
           headers: { Authorization: `Bearer ${token.trim()}` },
         });
@@ -426,6 +417,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         if (!c) setSidebarMe(data);
       } catch {
         if (!c) setSidebarMe(null);
+      } finally {
+        if (!c) setSidebarProfileLoading(false);
       }
     })();
     return () => {
@@ -467,34 +460,15 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     () => pickProfilePicUrl(sidebarMe),
     [sidebarMe],
   );
-  const sidebarUsername = sidebarMe?.username?.trim()
-    ? sidebarMe.username
-    : null;
+  const uname = sidebarMe?.username?.trim();
+  const sidebarPrimaryLabel =
+    uname && uname.length > 0 ? `@${uname}` : sidebarDisplayName;
 
   const isMapPage = pathname === "/map";
 
   useEffect(() => {
     setMoreSheetOpen(false);
   }, [pathname]);
-
-  useEffect(() => {
-    if (loading || !user) return;
-    let c = false;
-    setPlanLoading(true);
-    (async () => {
-      try {
-        const p = await apiFetch<PlanOut>("/subscriptions/me");
-        if (!c) setPlan(p);
-      } catch {
-        if (!c) setPlan(null);
-      } finally {
-        if (!c) setPlanLoading(false);
-      }
-    })();
-    return () => {
-      c = true;
-    };
-  }, [loading, user]);
 
   useEffect(() => {
     if (loading || !user) return;
@@ -612,13 +586,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-bold text-white">
-                  {sidebarDisplayName}
+                  {sidebarPrimaryLabel}
                 </p>
                 <div className="mt-0.5">
-                  <SidebarSubline
-                    username={sidebarUsername}
-                    planLoading={planLoading}
-                    plan={plan?.plan ?? null}
+                  <SidebarTierLine
+                    loading={sidebarProfileLoading}
+                    subscriptionTier={sidebarMe?.subscription_tier}
                   />
                 </div>
               </div>
@@ -807,13 +780,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-bold text-white">
-                      {sidebarDisplayName}
+                      {sidebarPrimaryLabel}
                     </p>
                     <div className="mt-0.5">
-                      <SidebarSubline
-                        username={sidebarUsername}
-                        planLoading={planLoading}
-                        plan={plan?.plan ?? null}
+                      <SidebarTierLine
+                        loading={sidebarProfileLoading}
+                        subscriptionTier={sidebarMe?.subscription_tier}
                       />
                     </div>
                   </div>

@@ -17,7 +17,7 @@ def _parse_origins_string(s: str) -> list[str]:
     """ALLOWED_ORIGINS env: JSON array, comma-separated URLs, or one URL (Cloud Run / gcloud-safe)."""
     s = s.strip()
     if not s:
-        return ["http://localhost:3000"]
+        return ["http://localhost:3000", "http://127.0.0.1:3000"]
     if s.startswith("["):
         try:
             parsed = json.loads(s)
@@ -93,7 +93,7 @@ class Settings(BaseSettings):
     # ── CORS ──────────────────────────────────────────────────────────────────
     # Stored as str so pydantic-settings does not json.loads before validation (breaks plain URLs).
     allowed_origins_raw: str = Field(
-        default="http://localhost:3000",
+        default="http://localhost:3000,http://127.0.0.1:3000",
         validation_alias="ALLOWED_ORIGINS",
     )
 

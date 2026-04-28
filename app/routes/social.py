@@ -25,6 +25,7 @@ from app.services.social_service import (
     block_user as svc_block_user,
     decline_friend_request as svc_decline_friend_request,
     get_user_public_profile as svc_get_user_public_profile,
+    list_blocked_users as svc_list_blocked_users,
     list_connections as svc_list_connections,
     list_received_friend_requests as svc_list_received_friend_requests,
     search_users as svc_search_users,
@@ -243,6 +244,18 @@ def unblock_user(
 ) -> Response:
     svc_unblock_user(db, current_user, user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get(
+    "/social/blocked",
+    response_model=list[UserSearchOut],
+    summary="Users you have blocked",
+)
+def list_blocked(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    return svc_list_blocked_users(db, current_user)
 
 
 @router.get(

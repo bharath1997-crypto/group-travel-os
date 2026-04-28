@@ -714,6 +714,7 @@ type UserSearchResultRow = {
   id: string;
   full_name: string;
   username: string | null;
+  email?: string | null;
   profile_picture: string | null;
   avatar_url: string | null;
   friend_status: UserSearchFriendStatus;
@@ -2364,12 +2365,21 @@ function HubChatsTab({
   );
 }
 
-function userSearchResultSubline(u: UserSearchResultRow) {
-  const e = (u as { email?: string | null }).email?.trim();
-  if (e) return e;
+/** Trim; if the query starts with `@`, strip it so the API searches username without the prefix. */
+function normalizeConnectUserSearchQuery(raw: string): string {
+  const t = raw.trim();
+  return t.startsWith("@") ? t.slice(1) : t;
+}
+
+/** Secondary line: `@username · email` (omit missing pieces). */
+function formatUserSearchMeta(u: UserSearchResultRow): string {
   const un = u.username?.trim();
-  if (un) return un.includes("@") ? un : `@${un}`;
-  return " ";
+  const at = un ? (un.startsWith("@") ? un : `@${un}`) : null;
+  const e = u.email?.trim();
+  const parts: string[] = [];
+  if (at) parts.push(at);
+  if (e) parts.push(e);
+  return parts.length ? parts.join(" · ") : " ";
 }
 
 function HubGroupsTab({
@@ -2467,7 +2477,7 @@ function HubGroupsTab({
         setSearchLoading(true);
         try {
           const res = await apiFetchWithStatus<UserSearchResultRow[]>(
-            `/users/search?q=${encodeURIComponent(q)}&limit=20`,
+            `/users/search?q=${encodeURIComponent(normalizeConnectUserSearchQuery(q))}&limit=20`,
             { signal: masterAbortRef.current?.signal },
           );
           if (createSearchSeq.current !== seq) return;
@@ -3012,7 +3022,7 @@ function HubGroupsTab({
                                       className="truncate text-xs"
                                       style={{ color: TEXT_MUTED }}
                                     >
-                                      {userSearchResultSubline(row)}
+                                      {formatUserSearchMeta(row)}
                                     </div>
                                   </div>
                                   {selected ? (
@@ -4390,7 +4400,7 @@ function NewChatSlidePanel({
               merged.set(r.id, {
                 id: r.id,
                 full_name: r.full_name,
-                sub: userSearchResultSubline(r),
+                sub: formatUserSearchMeta(r),
                 avatar_url: r.profile_picture ?? r.avatar_url,
               });
             }
@@ -4413,7 +4423,7 @@ function NewChatSlidePanel({
                 merged.set(r.id, {
                   id: r.id,
                   full_name: r.full_name,
-                  sub: userSearchResultSubline(r),
+                  sub: formatUserSearchMeta(r),
                   avatar_url: r.profile_picture ?? r.avatar_url,
                 });
               }
@@ -4444,7 +4454,7 @@ function NewChatSlidePanel({
           merged.set(peer, {
             id: peer,
             full_name: chatRowDisplayName(ch),
-            sub: userSearchResultSubline(pRow),
+            sub: formatUserSearchMeta(pRow),
             avatar_url:
               ch.metadata?.profile_picture?.trim() ||
               ch.metadata?.avatar_url?.trim() ||
@@ -4487,7 +4497,7 @@ function NewChatSlidePanel({
         setLoadingSearch(true);
         try {
           const r = await apiFetchWithStatus<UserSearchResultRow[]>(
-            `/users/search?q=${encodeURIComponent(q)}&limit=20`,
+            `/users/search?q=${encodeURIComponent(normalizeConnectUserSearchQuery(q))}&limit=20`,
             { signal: masterAbortRef.current?.signal },
           );
           if (searchSeq.current !== seq) return;
@@ -4517,7 +4527,7 @@ function NewChatSlidePanel({
         return searchHits.map((r) => ({
           id: r.id,
           full_name: r.full_name,
-          sub: userSearchResultSubline(r),
+          sub: formatUserSearchMeta(r),
           avatar_url: r.profile_picture ?? r.avatar_url,
         }));
       }
@@ -5697,7 +5707,7 @@ function GroupInfoPanel({
       void (async () => {
         try {
           const r = await fetchWithTimeout(
-            `${API_V1_BASE}/users/search?q=${encodeURIComponent(q)}&limit=20`,
+            `${API_V1_BASE}/users/search?q=${encodeURIComponent(normalizeConnectUserSearchQuery(q))}&limit=20`,
             { headers: groupInfoAuthHeaders(), signal: runSignal },
           );
           if (r.status === 401) {
@@ -6435,7 +6445,7 @@ function GroupInfoPanel({
                     addMemberResults.length > 0 ? (
                       <ul className="mt-2 max-h-48 list-none space-y-0 custom-scrollbar overflow-y-auto p-0">
                         {addMemberResults.map((u) => {
-                          const sub = userSearchResultSubline(u);
+                          const sub = formatUserSearchMeta(u);
                           const inv = addMemberInvite[u.id];
                           const av =
                             u.avatar_url?.trim() ||
@@ -8955,7 +8965,7 @@ export default function TravelHubPage() {
     if (first.length < 2) return;
     try {
       const res = await fetchWithTimeout(
-        `http://localhost:8000/api/v1/users/search?q=${encodeURIComponent(first)}&limit=20`,
+        `http://localhost:8000/api/v1/users/search?q=${encodeURIComponent(normalizeConnectUserSearchQuery(first))}&limit=20`,
         {
           headers: { Authorization: `Bearer ${token}` },
           signal: masterAbortRef.current?.signal,
@@ -9652,7 +9662,7 @@ export default function TravelHubPage() {
               signal: reqSignal,
             }),
             apiFetchWithStatus<UserSearchResultRow[]>(
-              `/users/search?q=${encodeURIComponent(q)}&limit=20`,
+              `/users/search?q=${encodeURIComponent(normalizeConnectUserSearchQuery(q))}&limit=20`,
               { signal: reqSignal },
             ),
             apiFetchWithStatus<GroupOut[]>(

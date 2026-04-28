@@ -58,6 +58,13 @@ def search_users(
 
     phone_term = q_norm
 
+    match_clause = or_(
+        User.full_name.ilike(f"%{q_norm}%"),
+        User.username.ilike(f"%{q_norm}%"),
+        User.email.ilike(f"%{q_norm}%"),
+        User.phone.ilike(f"%{phone_term}%"),
+    )
+
     stmt = (
         select(User)
         .where(
@@ -65,12 +72,7 @@ def search_users(
             User.is_active.is_(True),
             User.id.not_in(blocked_me),
             User.id.not_in(i_blocked),
-            or_(
-                User.full_name.ilike(f"%{q_norm}%"),
-                User.username.ilike(f"%{q_norm}%"),
-                User.email.ilike(f"%{q_norm}%"),
-                User.phone == phone_term,
-            ),
+            match_clause,
         )
         .order_by(User.full_name.asc())
         .limit(lim)
@@ -132,6 +134,7 @@ def search_users(
                 id=u.id,
                 full_name=u.full_name,
                 username=u.username,
+                email=u.email,
                 avatar_url=u.avatar_url,
                 profile_picture=u.profile_picture,
                 is_verified=u.is_verified,
@@ -377,6 +380,51 @@ def unblock_user(db: Session, current_user: User, blocked_id: uuid.UUID) -> None
         AppException.not_found("Block not found")
 
 
+def list_blocked_users(db: Session, current_user: User) -> list[UserSearchOut]:
+    rows = (
+        db.execute(
+            select(BlockedUser).where(BlockedUser.blocker_id == current_user.id),
+        )
+        .scalars()
+        .all()
+    )
+    if not rows:
+        return []
+    blocked_ids = [r.blocked_id for r in rows]
+    users = (
+        db.execute(
+            select(User).where(
+                User.id.in_(blocked_ids),
+                User.is_active.is_(True),
+            ),
+        )
+        .scalars()
+        .all()
+    )
+    by_id = {u.id: u for u in users}
+    plans = _plan_for_users(db, blocked_ids)
+    out: list[UserSearchOut] = []
+    for bid in blocked_ids:
+        u = by_id.get(bid)
+        if not u:
+            continue
+        out.append(
+            UserSearchOut(
+                id=u.id,
+                full_name=u.full_name,
+                username=u.username,
+                email=None,
+                avatar_url=u.avatar_url,
+                profile_picture=u.profile_picture,
+                is_verified=u.is_verified,
+                whatsapp_verified=bool(u.whatsapp_verified),
+                plan=plans.get(u.id, "free"),
+                friend_status="blocked",
+            ),
+        )
+    return out
+
+
 def list_connections(db: Session, current_user: User) -> list[UserSearchOut]:
     fr_rows = (
         db.execute(
@@ -429,6 +477,7 @@ def list_connections(db: Session, current_user: User) -> list[UserSearchOut]:
                 id=u.id,
                 full_name=u.full_name,
                 username=u.username,
+                email=u.email,
                 avatar_url=u.avatar_url,
                 profile_picture=u.profile_picture,
                 is_verified=u.is_verified,
