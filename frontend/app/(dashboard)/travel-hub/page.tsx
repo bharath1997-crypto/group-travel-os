@@ -30,6 +30,34 @@ import {
 
 import { apiFetchWithStatus } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
+import {
+  ArrowLeft,
+  Banknote,
+  BellOff,
+  Camera,
+  Check,
+  CheckCheck,
+  Flag,
+  Map as MapIcon,
+  MapPin,
+  MessageCircle,
+  Mic,
+  MoreVertical,
+  Paperclip,
+  PenSquare,
+  Phone,
+  PhoneCall,
+  Plane,
+  Search,
+  Send,
+  Settings,
+  Shield,
+  Star,
+  UserPlus,
+  Users,
+  Video,
+  X,
+} from "lucide-react";
 
 /** Travello dark navy + crimson (not indigo) */
 const BG = "#0F172A";
@@ -60,40 +88,13 @@ const DEMO_CHAT_COMMUNITY_ID = "__demo_community_updates__";
 
 /** Legacy message thread colors */
 const MSG_BORDER = "#334155";
-const WA_BG = "#0F172A";
+/** WhatsApp-style bubbles (spec) */
+const WA_MINE = "#E8385A";
+const WA_OTHER = "#1E2A3A";
 
-const EMOJIS = [
-  "😀",
-  "😂",
-  "😍",
-  "🥰",
-  "😭",
-  "😎",
-  "🤔",
-  "👍",
-  "❤️",
-  "🔥",
-  "🎉",
-  "✈️",
-  "🏖️",
-  "🗺️",
-  "📍",
-  "💸",
-  "🍽️",
-  "🎵",
-  "🏨",
-  "🚗",
-  "🌴",
-  "❄️",
-  "🏔️",
-  "🌊",
-  "🎭",
-  "🙏",
-  "💪",
-  "✅",
-  "⭐",
-  "🎯",
-];
+const CONTACTS_AUTOSYNC_KEY = "travelhub_contacts_autosync_v1";
+const CALL_TOAST = "Calling coming soon";
+const SOON_TOAST = "Coming soon";
 
 type UserMe = {
   id: string;
@@ -169,6 +170,23 @@ type ContactPerson = {
   id: string;
   full_name: string;
   username?: string | null;
+  phone?: string | null;
+};
+
+type UserSearchFriendStatus =
+  | "none"
+  | "pending_sent"
+  | "pending_received"
+  | "accepted"
+  | "blocked";
+
+type UserSearchResultRow = {
+  id: string;
+  full_name: string;
+  username: string | null;
+  profile_picture: string | null;
+  avatar_url: string | null;
+  friend_status: UserSearchFriendStatus;
 };
 
 type ChatPrefs = {
@@ -183,9 +201,13 @@ const firebaseConfig = {
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  ...(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    ? { storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }
+    : {}),
+  ...(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    ? { messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }
+    : {}),
 };
 
 function initFirebase(): {
@@ -267,7 +289,7 @@ const DEMO_CHAT_TRAVELLO_HELP: ChatInfo = {
   created_at: Date.now(),
   isBot: true,
   displayTime: "now",
-  displayPreview: "Hi! Ask me anything about planning your trip ✈",
+  displayPreview: "Hi! Ask me anything about planning your trip.",
   demoUnread: 1,
 };
 
@@ -280,7 +302,7 @@ const DEMO_CHAT_COMMUNITY: ChatInfo = {
   created_at: Date.now(),
   isAnnouncement: true,
   displayTime: "Apr 22",
-  displayPreview: "🚀 New feature: AI trip planner is now live!",
+  displayPreview: "New feature: AI trip planner is now live!",
   demoUnread: 3,
   listAvatarBg: "#2563EB",
   listInitials: "CU",
@@ -304,6 +326,57 @@ function writeJsonLs(key: string, val: unknown): void {
   } catch {
     /* ignore */
   }
+}
+
+/** DM chatId: dm_{uid1}_{uid2} with uid1 < uid2 (alphabetical) */
+function sortedPairForDm(a: string, b: string): [string, string] {
+  return a.localeCompare(b) <= 0 ? [a, b] : [b, a];
+}
+
+function parseSocialConnectionsPayload(data: unknown): ContactPerson[] {
+  const out: ContactPerson[] = [];
+  let raw: unknown[] = [];
+  if (Array.isArray(data)) raw = data;
+  else if (data && typeof data === "object") {
+    const o = data as Record<string, unknown>;
+    const nested = o.connections ?? o.items ?? o.results ?? o.data;
+    if (Array.isArray(nested)) raw = nested;
+  }
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const inner = (o.user ?? o.other_user ?? o.connection ?? o) as Record<
+      string,
+      unknown
+    >;
+    const id =
+      typeof inner.id === "string"
+        ? inner.id
+        : typeof o.user_id === "string"
+          ? o.user_id
+          : null;
+    const full_name =
+      typeof inner.full_name === "string"
+        ? inner.full_name
+        : typeof o.full_name === "string"
+          ? o.full_name
+          : null;
+    if (!id || !full_name) continue;
+    const un =
+      typeof inner.username === "string" || inner.username === null
+        ? (inner.username as string | null)
+        : typeof o.username === "string" || o.username === null
+          ? (o.username as string | null)
+          : null;
+    const phone =
+      typeof inner.phone === "string" || inner.phone === null
+        ? (inner.phone as string | null)
+        : typeof o.phone === "string"
+          ? o.phone
+          : null;
+    out.push({ id, full_name, username: un, phone });
+  }
+  return out;
 }
 
 function parseLastSeen(v: string | number | null | undefined): number | null {
@@ -338,80 +411,6 @@ function getUnreadCount(chat: ChatInfo, pref: ChatPrefs | undefined): number {
   const msg = (chat.last_message ?? "").trim();
   if (!msg) return 0;
   return 1;
-}
-
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width={20}
-      height={20}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      aria-hidden
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="M20 20l-3.5-3.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function MenuIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width={20}
-      height={20}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      aria-hidden
-    >
-      <path d="M4 7h16M4 12h16M4 17h16" />
-    </svg>
-  );
-}
-
-function BotFaceIcon({ className, size = 24 }: { className?: string; size?: number }) {
-  return (
-    <svg
-      className={className}
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-    >
-      <rect
-        x="5"
-        y="7"
-        width="14"
-        height="12"
-        rx="2.5"
-        fill="white"
-        fillOpacity={0.95}
-      />
-      <circle cx="9.5" cy="12.5" r="1.2" fill="#DC2626" />
-      <circle cx="14.5" cy="12.5" r="1.2" fill="#DC2626" />
-      <path
-        d="M10 16.5h4"
-        stroke="#DC2626"
-        strokeWidth={1.4}
-        strokeLinecap="round"
-      />
-      <path
-        d="M12 4.5v2M10 5.5h4"
-        stroke="white"
-        strokeOpacity={0.95}
-        strokeWidth={1.2}
-        strokeLinecap="round"
-      />
-    </svg>
-  );
 }
 
 function shouldShowDateSeparator(
@@ -557,9 +556,7 @@ function HubSearchField({
         className="flex items-center gap-2 rounded-full px-3 py-2"
         style={{ background: SURFACE }}
       >
-        <span style={{ color: TEXT_MUTED }} aria-hidden>
-          <SearchIcon className="opacity-80" />
-        </span>
+        <Search className="h-5 w-5 shrink-0 opacity-80" aria-hidden />
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -570,11 +567,10 @@ function HubSearchField({
           <button
             type="button"
             aria-label="Clear search"
-            className="text-lg leading-none"
-            style={{ color: TEXT_MUTED }}
+            className="inline-flex text-slate-400 transition hover:text-white"
             onClick={() => onChange("")}
           >
-            ×
+            <X className="h-5 w-5" />
           </button>
         ) : null}
       </div>
@@ -620,7 +616,7 @@ function ChatListRow72({
           <span className="min-w-0 truncate text-[14px] font-medium text-white">
             {name}
             {muted ? (
-              <span className="ml-1 text-[12px] text-slate-500">🔕</span>
+              <BellOff className="ml-1 h-3.5 w-3.5 text-slate-500" aria-hidden />
             ) : null}
           </span>
           <span
@@ -722,7 +718,7 @@ function HubChatsTab({
           className="flex h-12 w-12 items-center justify-center rounded-full"
           style={{ background: ACCENT }}
         >
-          <BotFaceIcon size={26} />
+          <MessageCircle className="h-6 w-6 text-white" aria-hidden />
         </span>
       );
     }
@@ -1120,10 +1116,12 @@ function HubGroupsTab({
       <button
         type="button"
         onClick={onCreateGroup}
-        className="sticky bottom-0 z-10 h-12 w-full shrink-0 rounded-none text-sm font-semibold text-white"
+        className="sticky bottom-0 z-10 flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-none text-sm font-semibold text-white"
         style={{ background: ACCENT }}
+        title="Create group"
       >
-        + Create Group
+        <UserPlus className="h-5 w-5" />
+        Create Group
       </button>
     </div>
   );
@@ -1174,31 +1172,31 @@ const DEMO_DM_SCRIPTS: Record<
   DemoScriptLine[]
 > = {
   arjun: [
-    { dir: "in", text: "Hey! Are we still going to Goa next month? 🏖", time: "Apr 20, 10:30 AM" },
+    { dir: "in", text: "Hey! Are we still going to Goa next month?", time: "Apr 20, 10:30 AM" },
     { dir: "out", text: "Yes! Booking flights this week. Check the poll I created.", time: "Apr 20, 10:32 AM" },
     { dir: "in", text: "Perfect. Should I book the hotel or will the group decide?", time: "Apr 20, 10:33 AM" },
-    { dir: "out", text: "Let's do a poll for that too 😄", time: "Apr 20, 10:35 AM" },
+    { dir: "out", text: "Let's do a poll for that too.", time: "Apr 20, 10:35 AM" },
     { dir: "in", text: "Good idea. Also Suresh is asking about the budget split.", time: "Apr 20, 11:00 AM" },
     { dir: "out", text: "Tell him to check the Split Activities section — it's all tracked there!", time: "Apr 20, 11:02 AM" },
-    { dir: "in", text: "This app is actually really useful 🔥", time: "Apr 20, 11:05 AM" },
+    { dir: "in", text: "This app is actually really useful.", time: "Apr 20, 11:05 AM" },
   ],
   priya: [
     { dir: "in", text: "Did you add me to the Manali trip?", time: "Apr 21, 9:00 AM" },
     { dir: "out", text: "Yes! Check your groups — you should see Manali Winter there.", time: "Apr 21, 9:02 AM" },
-    { dir: "in", text: "Got it! The live location feature is so cool btw 📍", time: "Apr 21, 9:10 AM" },
+    { dir: "in", text: "The live location feature is so cool.", time: "Apr 21, 9:10 AM" },
     { dir: "out", text: "Right? It works best when everyone enables it at the same time.", time: "Apr 21, 9:11 AM" },
     { dir: "in", text: "How do I check who owes me money?", time: "Apr 21, 9:15 AM" },
-    { dir: "out", text: "Go to the trip → Expenses tab → Balance Summary. It shows everything.", time: "Apr 21, 9:16 AM" },
-    { dir: "in", text: "Found it! Arjun owes me ₹800 😅", time: "Apr 21, 9:18 AM" },
+    { dir: "out", text: "Go to the trip, Expenses tab, Balance Summary. It shows everything.", time: "Apr 21, 9:16 AM" },
+    { dir: "in", text: "Found it! Arjun owes me 800.", time: "Apr 21, 9:18 AM" },
   ],
   suresh: [
-    { dir: "in", text: "Bhai when is the Kashmir trip confirmed? 🏔", time: "Apr 19, 6:00 PM" },
+    { dir: "in", text: "When is the Kashmir trip confirmed?", time: "Apr 19, 6:00 PM" },
     { dir: "out", text: "Still planning. Join the group and vote on the poll!", time: "Apr 19, 6:05 PM" },
     { dir: "in", text: "Done! I voted for June dates. Budget looks a bit high though.", time: "Apr 19, 6:10 PM" },
     { dir: "out", text: "We can split differently — I'll adjust the expense split.", time: "Apr 19, 6:12 PM" },
-    { dir: "in", text: "The map with all our saved pins is 🔥", time: "Apr 19, 6:20 PM" },
+    { dir: "in", text: "The map with all our saved pins is great.", time: "Apr 19, 6:20 PM" },
     { dir: "out", text: "Haha yes! I saved like 15 spots already from Instagram reels.", time: "Apr 19, 6:21 PM" },
-    { dir: "in", text: "See you in Kashmir then! 🎿", time: "Apr 19, 6:25 PM" },
+    { dir: "in", text: "See you in Kashmir then!", time: "Apr 19, 6:25 PM" },
   ],
   self: [
     {
@@ -1209,147 +1207,225 @@ const DEMO_DM_SCRIPTS: Record<
   ],
 };
 
-const DEMO_DM_EMOJIS = [
-  "😄",
-  "😂",
-  "🔥",
-  "❤️",
-  "👍",
-  "🙏",
-  "😍",
-  "🤔",
-  "😅",
-  "🎉",
-  "✈️",
-  "🏖",
-  "🏔",
-  "🗺",
-  "💰",
-  "📍",
-  "🎿",
-  "🍕",
-  "🥂",
-  "👋",
-] as const;
-
 const DEMO_AUTO_REPLIES = [
-  "Got it! 👍",
+  "Got it.",
   "Sounds good!",
   "Let me check and get back to you.",
-  "Ha! True 😄",
+  "Ha! True.",
   "Yes, definitely!",
   "I'll ask the group.",
 ] as const;
 
 function HubContactsTab({
-  contacts,
+  socialRows,
+  groupRows,
   onMessage,
+  onCall,
   onOpenDemo,
   currentUser,
+  settingsOpen,
+  onSettingsOpen,
+  autoSync,
+  onAutoSync,
+  onSyncContacts,
 }: {
-  contacts: ContactRow[];
+  socialRows: ContactRow[];
+  groupRows: ContactRow[];
   onMessage: (p: ContactPerson) => void;
-  onOpenDemo: (row: DemoContactRow | { kind: "self"; id: string; name: string; initials: string; bg: string; sub: string }) => void;
+  onCall: () => void;
+  onOpenDemo: (
+    row:
+      | DemoContactRow
+      | {
+          kind: "self";
+          id: string;
+          name: string;
+          initials: string;
+          bg: string;
+          sub: string;
+        },
+  ) => void;
   currentUser: UserMe | null;
+  settingsOpen: boolean;
+  onSettingsOpen: (v: boolean) => void;
+  autoSync: boolean;
+  onAutoSync: (v: boolean) => void;
+  onSyncContacts: () => void;
 }) {
-  return (
-    <ul className="m-0 list-none p-0">
-      <li
-        className="list-none py-2 pl-4 pr-4 text-[11px] font-semibold uppercase tracking-wide"
-        style={{ color: SECTION_LABEL, background: RIGHT_PANEL_BG }}
+  const rowActions = (c: ContactRow) => (
+    <div className="flex shrink-0 items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => onMessage(c)}
+        className="inline-flex h-8 items-center gap-1 rounded-full border px-2.5 text-[11px] font-medium text-white transition hover:bg-white/10"
+        style={{ borderColor: MSG_BORDER }}
+        title="Message"
       >
-        Demo contacts
-      </li>
-      {DEMO_CONTACTS.map((d) => (
-        <li
-          key={d.id}
-          className="list-none border-b"
-          style={{ borderColor: BORDER_SUB, borderBottomWidth: 0.5 }}
+        <MessageCircle className="h-4 w-4" />
+        Message
+      </button>
+      <button
+        type="button"
+        onClick={onCall}
+        className="inline-flex h-8 items-center gap-1 rounded-full border px-2.5 text-[11px] font-medium text-white transition hover:bg-white/10"
+        style={{ borderColor: MSG_BORDER }}
+        title="Call"
+      >
+        <Phone className="h-4 w-4" />
+        Call
+      </button>
+    </div>
+  );
+  const demoMsgCall = (onDemoMessage: () => void) => (
+    <div className="flex shrink-0 flex-col gap-1 sm:flex-row sm:items-center">
+      <button
+        type="button"
+        onClick={onDemoMessage}
+        className="inline-flex h-8 items-center justify-center gap-1 rounded-full border px-2.5 text-[11px] font-medium text-white"
+        style={{ borderColor: MSG_BORDER }}
+        title="Message"
+      >
+        <MessageCircle className="h-4 w-4" />
+        Message
+      </button>
+      <button
+        type="button"
+        onClick={onCall}
+        className="inline-flex h-8 items-center justify-center gap-1 rounded-full border px-2.5 text-[11px] font-medium text-white"
+        style={{ borderColor: MSG_BORDER }}
+        title="Call"
+      >
+        <Phone className="h-4 w-4" />
+        Call
+      </button>
+    </div>
+  );
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div
+        className="flex shrink-0 items-center justify-between border-b px-3 py-2.5"
+        style={{ borderColor: BORDER_SUB, background: BG }}
+      >
+        <span className="text-[15px] font-medium text-white">Contacts</span>
+        <button
+          type="button"
+          className="rounded p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
+          onClick={() => onSettingsOpen(!settingsOpen)}
+          title="Contact settings"
+          aria-label="Contact settings"
         >
-          <div
-            className="flex h-[72px] cursor-default items-center gap-3 px-4"
+          <Settings className="h-5 w-5" />
+        </button>
+      </div>
+      {settingsOpen ? (
+        <div
+          className="shrink-0 space-y-3 border-b px-4 py-3"
+          style={{ borderColor: BORDER_SUB, background: SURFACE }}
+        >
+          <button
+            type="button"
+            className="w-full rounded-lg py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+            style={{ background: ACCENT }}
+            onClick={() => onSyncContacts()}
           >
-            <span
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
-              style={{ background: d.bg }}
-            >
-              {d.initials}
+            Sync contacts
+          </button>
+          <label className="flex cursor-pointer items-center justify-between text-sm text-white">
+            <span style={{ color: TEXT_SECONDARY }}>Auto-sync</span>
+            <span className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-red-600"
+                checked={autoSync}
+                onChange={(e) => onAutoSync(e.target.checked)}
+              />
+              {autoSync ? "On" : "Off"}
             </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="truncate text-[14px] font-bold text-white">
-                  {d.name}
-                </span>
-                <span
-                  className="shrink-0 rounded px-1.5 py-0.5 text-[10px] uppercase"
-                  style={{
-                    background: SURFACE,
-                    color: TEXT_MUTED,
-                  }}
-                >
-                  Demo
-                </span>
-              </div>
-              <p
-                className="truncate text-[12px]"
-                style={{ color: TEXT_MUTED }}
-              >
-                {d.sub}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => onOpenDemo(d)}
-              className="h-7 shrink-0 rounded-full px-3 text-[11px]"
-              style={{
-                border: `0.5px solid ${MSG_BORDER}`,
-                color: TEXT_MUTED,
-                background: "transparent",
-              }}
-            >
-              Message
-            </button>
-          </div>
-        </li>
-      ))}
-      {currentUser ? (
+          </label>
+        </div>
+      ) : null}
+      <ul className="m-0 min-h-0 flex-1 list-none overflow-y-auto p-0">
         <li
-          className="list-none border-b"
-          style={{ borderColor: BORDER_SUB, borderBottomWidth: 0.5 }}
+          className="list-none py-2 pl-4 pr-4 text-[11px] font-semibold uppercase tracking-wide"
+          style={{ color: SECTION_LABEL, background: RIGHT_PANEL_BG }}
         >
-          <div className="flex h-[72px] cursor-default items-center gap-3 px-4">
-            <span
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
-              style={{
-                background: listAvatarColor(
-                  currentUser.full_name || currentUser.id || "me",
-                ),
-              }}
-            >
-              {initialsFromName(currentUser.full_name || "You")}
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="truncate text-[14px] font-bold text-white">
-                  {formatDisplayNameHub(currentUser.full_name)}
-                </span>
-                <span
-                  className="shrink-0 rounded px-1.5 py-0.5 text-[10px] uppercase"
-                  style={{
-                    background: SURFACE,
-                    color: TEXT_MUTED,
-                  }}
+          Demo contacts
+        </li>
+        {DEMO_CONTACTS.map((d) => (
+          <li
+            key={d.id}
+            className="list-none border-b"
+            style={{ borderColor: BORDER_SUB, borderBottomWidth: 0.5 }}
+          >
+            <div className="flex min-h-[72px] items-center gap-2 px-3">
+              <span
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
+                style={{ background: d.bg }}
+              >
+                {d.initials}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-[14px] font-bold text-white">
+                    {d.name}
+                  </span>
+                  <span
+                    className="shrink-0 rounded px-1.5 py-0.5 text-[10px] uppercase"
+                    style={{
+                      background: SURFACE,
+                      color: TEXT_MUTED,
+                    }}
+                  >
+                    Demo
+                  </span>
+                </div>
+                <p
+                  className="truncate text-[12px]"
+                  style={{ color: TEXT_MUTED }}
                 >
-                  Demo
-                </span>
+                  {d.sub}
+                </p>
               </div>
-              <p className="truncate text-[12px]" style={{ color: TEXT_MUTED }}>
-                Your account · demo self-chat
-              </p>
+              {demoMsgCall(() => onOpenDemo(d))}
             </div>
-            <button
-              type="button"
-              onClick={() =>
+          </li>
+        ))}
+        {currentUser ? (
+          <li
+            className="list-none border-b"
+            style={{ borderColor: BORDER_SUB, borderBottomWidth: 0.5 }}
+          >
+            <div className="flex min-h-[72px] items-center gap-2 px-3">
+              <span
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
+                style={{
+                  background: listAvatarColor(
+                    currentUser.full_name || currentUser.id || "me",
+                  ),
+                }}
+              >
+                {initialsFromName(currentUser.full_name || "You")}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-[14px] font-bold text-white">
+                    {formatDisplayNameHub(currentUser.full_name)}
+                  </span>
+                  <span
+                    className="shrink-0 rounded px-1.5 py-0.5 text-[10px] uppercase"
+                    style={{
+                      background: SURFACE,
+                      color: TEXT_MUTED,
+                    }}
+                  >
+                    Demo
+                  </span>
+                </div>
+                <p className="truncate text-[12px]" style={{ color: TEXT_MUTED }}>
+                  Your account · demo self-chat
+                </p>
+              </div>
+              {demoMsgCall(() =>
                 onOpenDemo({
                   kind: "self",
                   id: "__demo_contact_self__",
@@ -1359,294 +1435,215 @@ function HubContactsTab({
                     currentUser.full_name || currentUser.id || "me",
                   ),
                   sub: "Your account · demo self-chat",
-                })
-              }
-              className="h-7 shrink-0 rounded-full px-3 text-[11px]"
-              style={{
-                border: `0.5px solid ${MSG_BORDER}`,
-                color: TEXT_MUTED,
-                background: "transparent",
-              }}
-            >
-              Message
-            </button>
-          </div>
-        </li>
-      ) : null}
-      {contacts.length > 0 ? (
-        <li
-          className="list-none py-2 pl-4 pr-4 text-[11px] font-semibold uppercase tracking-wide"
-          style={{ color: SECTION_LABEL, background: BG }}
-        >
-          From your groups
-        </li>
-      ) : null}
-      {contacts.map((c) => (
-        <li
-          key={c.id}
-          className="list-none border-b"
-          style={{ borderColor: BORDER_SUB, borderBottomWidth: 0.5 }}
-        >
-          <div className="flex h-[72px] items-center gap-3 px-4">
-            <img
-              src={getDiceBearUrl(c.full_name)}
-              alt=""
-              className="h-12 w-12 shrink-0 rounded-full"
-              width={48}
-              height={48}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-bold text-white">
-                {c.full_name}
-              </p>
-              <p
-                className="truncate text-[12px]"
-                style={{ color: TEXT_MUTED }}
-              >
-                in {c.groupsTogether} group
-                {c.groupsTogether === 1 ? "" : "s"} together
-              </p>
+                }),
+              )}
             </div>
-            <button
-              type="button"
-              onClick={() => onMessage(c)}
-              className="h-7 shrink-0 rounded-full px-3 text-[11px]"
-              style={{
-                border: `0.5px solid ${MSG_BORDER}`,
-                color: TEXT_MUTED,
-                background: "transparent",
-              }}
-            >
-              Message
-            </button>
-          </div>
-        </li>
-      ))}
-      {contacts.length === 0 ? (
-        <li
-          className="list-none px-4 py-8 text-center text-sm"
-          style={{ color: TEXT_MUTED }}
-        >
-          No contacts from your groups yet.
-        </li>
-      ) : null}
-    </ul>
+          </li>
+        ) : null}
+        {socialRows.length > 0 ? (
+          <li
+            className="list-none py-2 pl-4 pr-4 text-[11px] font-semibold uppercase tracking-wide"
+            style={{ color: SECTION_LABEL, background: BG }}
+          >
+            Connections
+          </li>
+        ) : null}
+        {socialRows.map((c) => (
+          <li
+            key={`soc-${c.id}`}
+            className="list-none border-b"
+            style={{ borderColor: BORDER_SUB, borderBottomWidth: 0.5 }}
+          >
+            <div className="flex min-h-[72px] items-center gap-2 px-3">
+              <img
+                src={getDiceBearUrl(c.full_name)}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-full"
+                width={48}
+                height={48}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[14px] font-bold text-white">
+                  {c.full_name}
+                </p>
+                <p
+                  className="truncate text-[12px]"
+                  style={{ color: TEXT_MUTED }}
+                >
+                  {c.groupsTogether > 0
+                    ? `${c.groupsTogether} group${
+                        c.groupsTogether === 1 ? "" : "s"
+                      } in common`
+                    : "Connection"}
+                </p>
+              </div>
+              {rowActions(c)}
+            </div>
+          </li>
+        ))}
+        {groupRows.length > 0 ? (
+          <li
+            className="list-none py-2 pl-4 pr-4 text-[11px] font-semibold uppercase tracking-wide"
+            style={{ color: SECTION_LABEL, background: BG }}
+          >
+            From your groups
+          </li>
+        ) : null}
+        {groupRows.map((c) => (
+          <li
+            key={`grp-${c.id}`}
+            className="list-none border-b"
+            style={{ borderColor: BORDER_SUB, borderBottomWidth: 0.5 }}
+          >
+            <div className="flex min-h-[72px] items-center gap-2 px-3">
+              <img
+                src={getDiceBearUrl(c.full_name)}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-full"
+                width={48}
+                height={48}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[14px] font-bold text-white">
+                  {c.full_name}
+                </p>
+                <p
+                  className="truncate text-[12px]"
+                  style={{ color: TEXT_MUTED }}
+                >
+                  in {c.groupsTogether} group
+                  {c.groupsTogether === 1 ? "" : "s"} together
+                </p>
+              </div>
+              {rowActions(c)}
+            </div>
+          </li>
+        ))}
+        {socialRows.length === 0 && groupRows.length === 0 ? (
+          <li
+            className="list-none px-4 py-8 text-center text-sm"
+            style={{ color: TEXT_MUTED }}
+          >
+            No contacts yet. Sync or join a group to add people.
+          </li>
+        ) : null}
+      </ul>
+    </div>
   );
 }
 
-const CALL_CAROUSEL_SLIDES: {
-  icon: string;
-  title: string;
-  body: string;
-  bg: string;
-}[] = [
-  {
-    icon: "📹",
-    title: "Start a group call",
-    body: "Tap the video icon in any group chat to instantly start a Jitsi-powered group video call. No sign-up needed for participants.",
-    bg: "#0C1A2E",
-  },
-  {
-    icon: "🔗",
-    title: "Share the link",
-    body: "Every call generates a unique link. Share it in the group chat — members join from web or mobile with one tap.",
-    bg: "#0C2E1A",
-  },
-  {
-    icon: "🎤",
-    title: "Audio controls",
-    body: "Mute yourself, toggle camera, raise your hand, or switch to audio-only mode to save data on the go.",
-    bg: "#1C0A1A",
-  },
-  {
-    icon: "📌",
-    title: "Pin to trip",
-    body: "Call recordings and notes are saved to your trip. All decisions made on the call sync to your trip's Travel Hub automatically.",
-    bg: "#0A0F2E",
-  },
-  {
-    icon: "🚀",
-    title: "Try it now!",
-    body: "Open any group in Travel Hub and tap the video call button to start your first call.",
-    bg: "#1C0A00",
-  },
-];
+type ContactWithGroupCount = ContactPerson & { groupsTogether: number };
 
-function HubCallsTab({ showToast }: { showToast: (m: string) => void }) {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [slide, setSlide] = useState(0);
-  const touchStartX = useRef(0);
-
-  const go = (dir: -1 | 1) => {
-    setSlide((s) => {
-      const n = s + dir;
-      if (n < 0) return CALL_CAROUSEL_SLIDES.length - 1;
-      if (n >= CALL_CAROUSEL_SLIDES.length) return 0;
-      return n;
-    });
+function HubCallsTab({
+  showToast,
+  contacts,
+}: {
+  showToast: (m: string) => void;
+  contacts: ContactWithGroupCount[];
+}) {
+  const onCall = () => {
+    showToast(SOON_TOAST);
   };
-
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <button
-        type="button"
-        onClick={() => setModalOpen(true)}
-        className="flex w-full cursor-pointer items-center gap-3 border-b px-4 text-left transition-colors hover:bg-[#1E293B]"
-        style={{
-          height: 72,
-          borderColor: BORDER_SUB,
-          borderBottomWidth: 0.5,
-          background: "transparent",
-        }}
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+      <div
+        className="mx-3 mt-3 shrink-0 rounded-2xl border p-5"
+        style={{ borderColor: MSG_BORDER, background: "linear-gradient(145deg, #0A1628 0%, #1E293B 100%)" }}
       >
-        <span
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
-          style={{ background: listAvatarColor("Goa Gang") }}
-        >
-          GG
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[14px] font-medium text-white">
-            Goa Gang · Group call
-          </p>
-          <p className="truncate text-[12px]" style={{ color: TEXT_MUTED }}>
-            Apr 20 · 3 participants · 12 min
-          </p>
-        </div>
-        <span
-          className="flex shrink-0 items-center gap-1 text-[12px]"
-          style={{ color: ONLINE }}
-        >
-          📞 Call back
-        </span>
-      </button>
-      <div className="p-4">
-        <button
-          type="button"
-          onClick={() => setModalOpen(true)}
-          className="w-full rounded-lg py-3 text-sm font-medium text-white"
-          style={{ background: SURFACE, border: `0.5px solid ${MSG_BORDER}` }}
-        >
-          Watch Demo
-        </button>
-      </div>
-
-      {modalOpen ? (
-        <div
-          className="fixed inset-0 z-[500] flex items-center justify-center p-0 md:p-6"
-          style={{ background: "rgba(0,0,0,0.75)" }}
-        >
+        <div className="flex items-start gap-4">
           <div
-            className="flex h-full w-full max-h-[90vh] max-w-lg flex-col overflow-hidden md:rounded-2xl"
-            style={{ background: "#000" }}
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
+            style={{
+              background: "rgba(220, 38, 38, 0.2)",
+              border: `1px solid ${MSG_BORDER}`,
+            }}
+            aria-hidden
           >
-            <div className="relative shrink-0 px-4 pt-4">
-              <button
-                type="button"
-                aria-label="Close"
-                className="absolute right-3 top-3 text-2xl text-white"
-                onClick={() => setModalOpen(false)}
-              >
-                ×
-              </button>
-              <h2 className="pr-10 text-center text-lg font-semibold text-white">
-                📹 Jitsi Video Call Demo
-              </h2>
-              <p
-                className="mt-1 text-center text-[13px]"
-                style={{ color: TEXT_MUTED }}
-              >
-                Swipe to see how group calls work in Travello
-              </p>
+            <Phone className="h-8 w-8 animate-bounce text-red-400" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <PhoneCall className="h-5 w-5 text-slate-500" aria-hidden />
+              <p className="text-base font-bold text-white">Coming soon</p>
             </div>
-            <div
-              className="relative min-h-0 flex-1 touch-pan-y"
-              onTouchStart={(e) => {
-                touchStartX.current = e.touches[0]?.clientX ?? 0;
-              }}
-              onTouchEnd={(e) => {
-                const x = e.changedTouches[0]?.clientX ?? 0;
-                const d = x - touchStartX.current;
-                if (d > 50) go(-1);
-                else if (d < -50) go(1);
-              }}
-            >
-              <div
-                className="flex h-full flex-col items-center justify-center px-6 py-8"
-                style={{ background: CALL_CAROUSEL_SLIDES[slide]?.bg }}
-              >
-                <span className="text-6xl">
-                  {CALL_CAROUSEL_SLIDES[slide]?.icon}
-                </span>
-                <h3 className="mt-4 text-center text-xl font-semibold text-white">
-                  {CALL_CAROUSEL_SLIDES[slide]?.title}
-                </h3>
-                <p
-                  className="mt-3 max-w-sm text-center text-[14px] leading-relaxed"
-                  style={{ color: TEXT_SECONDARY }}
-                >
-                  {CALL_CAROUSEL_SLIDES[slide]?.body}
-                </p>
-                {slide === CALL_CAROUSEL_SLIDES.length - 1 ? (
-                  <div className="mt-8 w-full max-w-xs space-y-3">
-                    <button
-                      type="button"
-                      className="w-full rounded-lg py-3 text-sm font-semibold text-white"
-                      style={{ background: ACCENT }}
-                      onClick={() => {
-                        setModalOpen(false);
-                        showToast("Start a call from any group chat");
-                      }}
-                    >
-                      Start a call →
-                    </button>
-                    <button
-                      type="button"
-                      className="w-full text-sm"
-                      style={{ color: TEXT_MUTED }}
-                      onClick={() => setModalOpen(false)}
-                    >
-                      Close
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center justify-center gap-4 border-t border-white/10 py-3">
-              <button
-                type="button"
-                className="text-xl text-white"
-                aria-label="Previous"
-                onClick={() => go(-1)}
-              >
-                ←
-              </button>
-              <div className="flex gap-2">
-                {CALL_CAROUSEL_SLIDES.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    aria-label={`Slide ${i + 1}`}
-                    className="h-2 w-2 rounded-full"
-                    style={{
-                      background: i === slide ? ACCENT : "#475569",
-                    }}
-                    onClick={() => setSlide(i)}
-                  />
-                ))}
-              </div>
-              <button
-                type="button"
-                className="text-xl text-white"
-                aria-label="Next"
-                onClick={() => go(1)}
-              >
-                →
-              </button>
-            </div>
+            <p className="mt-1 text-[13px] leading-relaxed" style={{ color: TEXT_SECONDARY }}>
+              We&apos;re building voice &amp; video calls for your travel groups — stay tuned.
+            </p>
+          </div>
+          <div
+            className="hidden h-12 w-12 shrink-0 sm:flex sm:items-center sm:justify-center text-sky-400"
+            aria-hidden
+          >
+            <Video className="h-8 w-8" />
           </div>
         </div>
-      ) : null}
+        <p className="mt-4 text-center text-[12px] font-medium" style={{ color: TEXT_MUTED }}>
+          Try call buttons below — you&apos;ll see a quick heads-up
+        </p>
+      </div>
+      <p
+        className="px-4 pt-4 text-[11px] font-bold uppercase tracking-wide"
+        style={{ color: SECTION_LABEL }}
+      >
+        Recent contacts from your groups
+      </p>
+      <ul className="px-0 pb-6 pt-1">
+        {contacts.length === 0 ? (
+          <li
+            className="px-4 py-6 text-center text-sm"
+            style={{ color: TEXT_MUTED }}
+          >
+            Join a group to see people you travel with here.
+          </li>
+        ) : (
+          contacts.map((c) => (
+            <li
+              key={c.id}
+              className="mx-2 mb-1 flex min-h-[72px] items-center gap-2 rounded-xl px-2 py-2"
+              style={{ borderBottom: `0.5px solid ${BORDER_SUB}` }}
+            >
+              <img
+                src={getDiceBearUrl(c.full_name)}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-full"
+                width={48}
+                height={48}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[15px] font-medium text-white">
+                  {c.full_name}
+                </p>
+                <p className="truncate text-[12px]" style={{ color: TEXT_MUTED }}>
+                  {c.groupsTogether} group
+                  {c.groupsTogether === 1 ? "" : "s"} together
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold text-white transition hover:opacity-90"
+                  style={{ borderColor: MSG_BORDER, background: WA_OTHER }}
+                  onClick={onCall}
+                  title="Voice call"
+                >
+                  <Phone className="h-4 w-4" />
+                  Voice
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold text-white transition hover:opacity-90"
+                  style={{ borderColor: MSG_BORDER, background: "#1E3A5F" }}
+                  onClick={onCall}
+                  title="Video call"
+                >
+                  <Video className="h-4 w-4" />
+                  Video
+                </button>
+              </div>
+            </li>
+          ))
+        )}
+      </ul>
     </div>
   );
 }
@@ -1667,13 +1664,11 @@ function DemoDmChatPanel({
     { id: string; dir: "in" | "out"; text: string; time: string }[]
   >([]);
   const [input, setInput] = useState("");
-  const [emojiOpen, setEmojiOpen] = useState(false);
   const replyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setExtra([]);
     setInput("");
-    setEmojiOpen(false);
     return () => {
       if (replyTimerRef.current) clearTimeout(replyTimerRef.current);
     };
@@ -1703,7 +1698,6 @@ function DemoDmChatPanel({
     });
     setExtra((e) => [...e, { id, dir: "out", text: t, time: timeStr }]);
     setInput("");
-    setEmojiOpen(false);
     if (replyTimerRef.current) clearTimeout(replyTimerRef.current);
     replyTimerRef.current = setTimeout(() => {
       const rid = `${Date.now()}-${Math.random()}`;
@@ -1739,11 +1733,11 @@ function DemoDmChatPanel({
       >
         <button
           type="button"
-          className="text-xl text-white/90 md:hidden"
+          className="p-1 text-slate-300 hover:text-white md:hidden"
           aria-label="Back"
           onClick={onBack}
         >
-          ←
+          <ArrowLeft className="h-6 w-6" />
         </button>
         <span
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
@@ -1764,20 +1758,24 @@ function DemoDmChatPanel({
             Demo account · for testing
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-4 text-lg text-[#94A3B8]">
+        <div className="flex shrink-0 items-center gap-1 text-slate-400">
           <button
             type="button"
+            className="rounded p-2 hover:bg-white/10 hover:text-white"
             aria-label="Video call"
-            onClick={() => showToast("Calls coming soon", "success")}
+            title="Video call"
+            onClick={() => showToast(SOON_TOAST, "success")}
           >
-            📹
+            <Video className="h-5 w-5" />
           </button>
           <button
             type="button"
+            className="rounded p-2 hover:bg-white/10 hover:text-white"
             aria-label="Voice call"
-            onClick={() => showToast("Calls coming soon", "success")}
+            title="Voice call"
+            onClick={() => showToast(SOON_TOAST, "success")}
           >
-            📞
+            <Phone className="h-5 w-5" />
           </button>
         </div>
       </header>
@@ -1844,35 +1842,10 @@ function DemoDmChatPanel({
           </div>
         ))}
       </div>
-      {emojiOpen ? (
-        <div
-          className="mx-3 mb-1 grid grid-cols-10 gap-1 rounded-xl border p-2"
-          style={{ borderColor: MSG_BORDER, background: SURFACE }}
-        >
-          {DEMO_DM_EMOJIS.map((em) => (
-            <button
-              key={em}
-              type="button"
-              className="rounded p-1 text-xl hover:bg-white/10"
-              onClick={() => setInput((p) => p + em)}
-            >
-              {em}
-            </button>
-          ))}
-        </div>
-      ) : null}
       <div
         className="flex shrink-0 items-center gap-2 border-t px-3 py-2"
         style={{ borderColor: BORDER_SUB, background: BG }}
       >
-        <button
-          type="button"
-          className="shrink-0 text-xl"
-          aria-label="Emoji"
-          onClick={() => setEmojiOpen((o) => !o)}
-        >
-          😊
-        </button>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -1886,10 +1859,12 @@ function DemoDmChatPanel({
         <button
           type="button"
           onClick={sendDemo}
-          className="shrink-0 rounded-full px-5 py-2 text-sm font-semibold text-white"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
           style={{ background: ACCENT }}
+          title="Send"
+          aria-label="Send"
         >
-          Send
+          <Send className="h-5 w-5" />
         </button>
       </div>
     </div>
@@ -1906,19 +1881,19 @@ const BOT_CHIP_QUESTIONS = [
 
 const BOT_ANSWERS: Record<(typeof BOT_CHIP_QUESTIONS)[number], string> = {
   "How do I create a trip?":
-    "Go to Trips → click + Plan New Trip → choose Social or Business → fill in details or upload a document and our AI will fill it for you! 🗺",
+    "Go to Trips, click Plan New Trip, choose Social or Business, then fill in details or upload a document and our AI will fill it for you.",
   "How does expense split work?":
-    "Tap the ₹ split button in any group chat → enter amount → choose who paid → select who to split with. Everyone sees their share instantly! 💰",
+    "Tap the split button in any group chat, enter amount, choose who paid, and select who to split with. Everyone sees their share instantly.",
   "What is live coordination?":
-    "When your trip starts, activate Live mode. Everyone's location appears on a shared map. Drop meetup pins, set countdown timers, and see who has arrived. Needs a 3-Day Pass or Pro. 📍",
+    "When your trip starts, activate Live mode. Everyone's location appears on a shared map. Drop meetup pins, set countdown timers, and see who has arrived. Needs a 3-Day Pass or Pro.",
   "How to invite friends?":
-    "Open your group → share the invite code or copy the invite link. Friends join instantly by entering the code. No app download needed on web! 👥",
+    "Open your group, share the invite code or copy the invite link. Friends join instantly by entering the code. No app download needed on web.",
   "What's included in Pro plan?":
-    "Pro (₹849/month) includes: unlimited trips, live coordination, receipt scanner, expense export PDF, AI trip planner, and everything in Free. Upgrade in your Profile. ⭐",
+    "Pro (849/month) includes: unlimited trips, live coordination, receipt scanner, expense export PDF, AI trip planner, and everything in Free. Upgrade in your Profile.",
 };
 
 const BOT_FALLBACK =
-  "I don't have an answer for that yet, but our team is working on it! Try one of the suggested questions above. 🙏";
+  "I don't have an answer for that yet, but our team is working on it! Try one of the suggested questions above.";
 
 function normalizeBotMatch(s: string): string {
   return s
@@ -1961,7 +1936,7 @@ function TravelloHelpChatPanel() {
     {
       id: `welcome-${Date.now()}-${Math.random()}`,
       role: "bot",
-      text: "👋 Hi! I'm your Travello assistant. I can help you plan trips, split expenses, find destinations, and more. Try asking me something!",
+      text: "Hi! I'm your Travello assistant. I can help you plan trips, split expenses, find destinations, and more. Try asking me something!",
       timestamp: Date.now(),
     },
   ]);
@@ -2022,7 +1997,7 @@ function TravelloHelpChatPanel() {
           className="flex h-9 w-9 items-center justify-center rounded-full"
           style={{ background: ACCENT }}
         >
-          <BotFaceIcon size={22} />
+          <MessageCircle className="h-5 w-5 text-white" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-medium text-white">
@@ -2079,7 +2054,7 @@ function TravelloHelpChatPanel() {
                   {
                     id: `${Date.now()}-${Math.random()}`,
                     role: "bot",
-                    text: "👋 Hi! I'm your Travello assistant. I can help you plan trips, split expenses, find destinations, and more. Try asking me something!",
+                    text: "Hi! I'm your Travello assistant. I can help you plan trips, split expenses, find destinations, and more. Try asking me something!",
                     timestamp: Date.now(),
                   },
                 ]);
@@ -2112,10 +2087,12 @@ function TravelloHelpChatPanel() {
           type="button"
           disabled={botBusy}
           onClick={() => sendFlow(input)}
-          className="shrink-0 rounded-full px-5 py-2 text-sm font-semibold text-white disabled:opacity-45"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white disabled:opacity-45"
           style={{ background: ACCENT }}
+          title="Send"
+          aria-label="Send"
         >
-          Send
+          <Send className="h-5 w-5" />
         </button>
       </div>
     </div>
@@ -2146,9 +2123,7 @@ function CommunityAnnouncementPanel() {
             Official channel · read only
           </p>
         </div>
-        <span className="text-xl" aria-hidden>
-          📢
-        </span>
+        <MessageCircle className="h-6 w-6 text-slate-500" aria-hidden />
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
         <div className="my-3 flex justify-center">
@@ -2164,9 +2139,9 @@ function CommunityAnnouncementPanel() {
             Travello Team
           </p>
           <p className="mt-1 text-[14px] leading-relaxed text-white">
-            🚀 New feature alert! AI Trip Planner is now live. Upload any
-            document — screenshot, PDF, Word or Excel — and our AI fills your
-            entire trip plan automatically. Try it in Trips → Plan New Trip!
+            New feature alert: AI Trip Planner is now live. Upload any
+            document (screenshot, PDF, Word or Excel) and our AI fills your
+            entire trip plan automatically. Try it in Trips, Plan New Trip.
           </p>
           <p className="mt-1 text-[10px]" style={{ color: TEXT_MUTED }}>
             2:10 AM
@@ -2177,9 +2152,9 @@ function CommunityAnnouncementPanel() {
             Travello Team
           </p>
           <p className="mt-1 text-[14px] leading-relaxed text-white">
-            📍 Live Coordination upgrade Meetup pins now show distance in real
+            Live Coordination upgrade: Meetup pins now show distance in real
             time. When you&apos;re within 100m of the meetup point, you&apos;ll
-            see a &apos;You&apos;ve arrived!&apos; celebration. 🎉
+            see a &apos;You&apos;ve arrived!&apos; celebration.
           </p>
           <p className="mt-1 text-[10px]" style={{ color: TEXT_MUTED }}>
             Apr 21
@@ -2198,7 +2173,7 @@ function CommunityAnnouncementPanel() {
             Travello Team
           </p>
           <p className="mt-1 text-[14px] leading-relaxed text-white">
-            👥 Buddy Trips launching soon! Solo traveler? Post a trip listing
+            Buddy Trips launching soon. Solo traveler? Post a trip listing
             and find companions who match your vibe, budget, and destination.
             Coming in our next update.
           </p>
@@ -2211,8 +2186,8 @@ function CommunityAnnouncementPanel() {
             Travello Team
           </p>
           <p className="mt-1 text-[14px] leading-relaxed text-white">
-            💰 Split money in chat You can now split expenses directly from the
-            chat box. Tap the ₹ icon in any group chat to split a bill and post
+            Split money in chat: you can now split expenses directly from the
+            chat box. Tap the split control in any group chat to split a bill and post
             it as a message. All members see their share instantly.
           </p>
           <p className="mt-1 text-[10px]" style={{ color: TEXT_MUTED }}>
@@ -2228,7 +2203,7 @@ function CommunityAnnouncementPanel() {
           color: TEXT_MUTED,
         }}
       >
-        📢 This is an official announcement channel. Only the Travello team can
+        This is an official announcement channel. Only the Travello team can
         post here.
       </div>
     </div>
@@ -2252,9 +2227,25 @@ export default function TravelHubPage() {
   >("chats");
   const [showAttach, setShowAttach] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
+  const [showDmUserSearch, setShowDmUserSearch] = useState(false);
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
   const [showMenuDrawer, setShowMenuDrawer] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [overlaySearchText, setOverlaySearchText] = useState("");
+  const [overlaySearchResults, setOverlaySearchResults] = useState<
+    UserSearchResultRow[]
+  >([]);
+  const [overlaySearchLoading, setOverlaySearchLoading] = useState(false);
+  const [incomingFrIdBySender, setIncomingFrIdBySender] = useState<
+    Record<string, string>
+  >({});
+  const [overlayActionUserId, setOverlayActionUserId] = useState<string | null>(
+    null,
+  );
+  const overlaySearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const overlaySearchSeq = useRef(0);
   const [isMd, setIsMd] = useState(false);
   const [chatPrefs, setChatPrefs] = useState<Record<string, ChatPrefs>>({});
   const [deletedChatIds, setDeletedChatIds] = useState<string[]>([]);
@@ -2265,7 +2256,12 @@ export default function TravelHubPage() {
   } | null>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [contacts, setContacts] = useState<ContactPerson[]>([]);
-  const [showEmoji, setShowEmoji] = useState(false);
+  const [socialConnections, setSocialConnections] = useState<ContactPerson[]>(
+    [],
+  );
+  const [contactsSettingsOpen, setContactsSettingsOpen] = useState(false);
+  const [chatProfileOpen, setChatProfileOpen] = useState(false);
+  const [contactsAutoSync, setContactsAutoSync] = useState(true);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -2318,6 +2314,9 @@ export default function TravelHubPage() {
       );
       setFirebaseBannerDismissed(
         localStorage.getItem("firebase_banner_dismissed") === "true",
+      );
+      setContactsAutoSync(
+        localStorage.getItem(CONTACTS_AUTOSYNC_KEY) !== "0",
       );
     }
   }, []);
@@ -2373,7 +2372,7 @@ export default function TravelHubPage() {
       current: UserMe,
     ) => {
       const chatId = `group_${group.id}`;
-      const chatRef = ref(database, `chats/${chatId}/info`);
+      const chatRef = ref(database, `chats/${chatId}/metadata`);
       try {
         const snapshot = await get(chatRef);
         const memberIds = members.map((m) => m.user_id);
@@ -2436,6 +2435,17 @@ export default function TravelHubPage() {
       }
       setContacts([...memberSet.values()]);
 
+      const connRes = await apiFetchWithStatus<unknown>("/social/connections");
+      if (connRes.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      if (connRes.status < 400 && connRes.data != null) {
+        setSocialConnections(parseSocialConnectionsPayload(connRes.data));
+      } else {
+        setSocialConnections([]);
+      }
+
       const tripLists = await Promise.all(
         gList.map((g) =>
           apiFetchWithStatus<TripOut[]>(`/groups/${g.id}/trips`),
@@ -2487,8 +2497,8 @@ export default function TravelHubPage() {
       const merged: Record<string, ChatInfo> = {};
 
       chatIds.forEach((chatId) => {
-        const infoRef = ref(db, `chats/${chatId}/info`);
-        const u = onValue(infoRef, (snapInfo) => {
+        const metadataRef = ref(db, `chats/${chatId}/metadata`);
+        const u = onValue(metadataRef, (snapInfo) => {
           if (!snapInfo.exists()) return;
           const data = snapInfo.val() as ChatInfo;
           merged[chatId] = { ...data, id: chatId };
@@ -2510,6 +2520,75 @@ export default function TravelHubPage() {
       chatInfoUnsubsRef.current = [];
     };
   }, [db, user?.id]);
+
+  useEffect(() => {
+    if (!showSearchOverlay || !user) return;
+    void (async () => {
+      const r = await apiFetchWithStatus<
+        { id: string; sender_id: string; status: string }[]
+      >("/social/friend-requests");
+      if (r.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      if (r.status === 200 && Array.isArray(r.data)) {
+        const m: Record<string, string> = {};
+        for (const fr of r.data) {
+          if (fr.status === "pending") m[fr.sender_id] = fr.id;
+        }
+        setIncomingFrIdBySender(m);
+      }
+    })();
+  }, [showSearchOverlay, user, handleUnauthorized]);
+
+  const showSearchOverlayWasOpen = useRef(false);
+  useEffect(() => {
+    if (showSearchOverlayWasOpen.current && !showSearchOverlay) {
+      overlaySearchSeq.current += 1;
+    }
+    showSearchOverlayWasOpen.current = showSearchOverlay;
+  }, [showSearchOverlay]);
+
+  useEffect(() => {
+    if (overlaySearchDebounceRef.current) {
+      clearTimeout(overlaySearchDebounceRef.current);
+      overlaySearchDebounceRef.current = null;
+    }
+    if (!showSearchOverlay) {
+      return;
+    }
+    const q = overlaySearchText.trim();
+    if (q.length < 2) {
+      overlaySearchSeq.current += 1;
+      setOverlaySearchResults([]);
+      setOverlaySearchLoading(false);
+      return;
+    }
+    const seq = ++overlaySearchSeq.current;
+    setOverlaySearchLoading(true);
+    overlaySearchDebounceRef.current = setTimeout(() => {
+      void (async () => {
+        const enc = encodeURIComponent(overlaySearchText.trim());
+        const r = await apiFetchWithStatus<UserSearchResultRow[]>(
+          `/users/search?q=${enc}&limit=20`,
+        );
+        if (seq !== overlaySearchSeq.current) return;
+        if (r.status === 401) {
+          handleUnauthorized();
+          setOverlaySearchLoading(false);
+          return;
+        }
+        setOverlaySearchResults(Array.isArray(r.data) ? r.data : []);
+        setOverlaySearchLoading(false);
+      })();
+    }, 300);
+    return () => {
+      if (overlaySearchDebounceRef.current) {
+        clearTimeout(overlaySearchDebounceRef.current);
+        overlaySearchDebounceRef.current = null;
+      }
+    };
+  }, [overlaySearchText, showSearchOverlay, handleUnauthorized]);
 
   const loadMessages = useCallback(
     (chatId: string) => {
@@ -2550,6 +2629,45 @@ export default function TravelHubPage() {
   );
 
   useEffect(() => {
+    if (!db || !activeChat) {
+      messagesUnsubRef.current?.();
+      messagesUnsubRef.current = null;
+      return;
+    }
+    if (activeChat.isBot || activeChat.isAnnouncement || activeChat.isDemo) {
+      messagesUnsubRef.current?.();
+      messagesUnsubRef.current = null;
+      return;
+    }
+    loadMessages(activeChat.id);
+    return () => {
+      messagesUnsubRef.current?.();
+      messagesUnsubRef.current = null;
+    };
+  }, [
+    db,
+    activeChat?.id,
+    activeChat?.isBot,
+    activeChat?.isAnnouncement,
+    activeChat?.isDemo,
+    loadMessages,
+  ]);
+
+  const refreshSocialConnections = useCallback(async () => {
+    const r = await apiFetchWithStatus<unknown>("/social/connections");
+    if (r.status === 401) {
+      handleUnauthorized();
+      return;
+    }
+    if (r.status < 400 && r.data != null) {
+      setSocialConnections(parseSocialConnectionsPayload(r.data));
+      showToast("Contacts updated", "success");
+    } else {
+      showToast("Could not sync contacts", "error");
+    }
+  }, [handleUnauthorized, showToast]);
+
+  useEffect(() => {
     return () => {
       messagesUnsubRef.current?.();
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -2572,27 +2690,45 @@ export default function TravelHubPage() {
       const messagesRef = ref(db, `chats/${chatId}/messages`);
       const seed = user.username || user.full_name || user.id;
       const avatarUrl = getDiceBearUrl(seed);
+      const preview =
+        type === "text" ? content : `Attachment (${type})`;
+      const now = Date.now();
+      const usePlainTextShape =
+        type === "text" &&
+        (metadata == null || Object.keys(metadata).length === 0);
 
-      const message: Record<string, unknown> = {
-        sender_id: user.id,
-        sender_name: user.full_name || "You",
-        sender_avatar: avatarUrl,
-        text: content,
-        type,
-        timestamp: Date.now(),
-        read_by: { [user.id]: true },
-      };
+      const message: Record<string, unknown> = usePlainTextShape
+        ? {
+            sender_id: user.id,
+            sender_name: user.full_name || "You",
+            sender_avatar: avatarUrl,
+            text: content,
+            timestamp: now,
+            type: "text",
+          }
+        : {
+            sender_id: user.id,
+            sender_name: user.full_name || "You",
+            sender_avatar: avatarUrl,
+            text: content,
+            type,
+            timestamp: now,
+            read_by: { [user.id]: true },
+          };
       if (metadata && Object.keys(metadata).length)
         message.metadata = metadata;
 
       try {
         await push(messagesRef, message);
-        await update(ref(db, `chats/${chatId}/info`), {
-          last_message:
-            type === "text" ? content : `📎 ${type}`,
-          last_message_time: Date.now(),
+        await update(ref(db, `chats/${chatId}/metadata`), {
+          last_message: preview,
+          last_message_time: now,
           last_message_sender: user.full_name || "You",
         });
+        const mem = activeChat.members?.filter(Boolean) ?? [];
+        for (const uid of mem) {
+          await set(ref(db, `user_chats/${uid}/${chatId}`), true);
+        }
         setMessageText("");
         setShowAttach(false);
       } catch (e) {
@@ -2641,9 +2777,9 @@ export default function TravelHubPage() {
   const openDirectChat = useCallback(
     async (other: ContactPerson) => {
       if (!db || !user) return;
-      const ids = [user.id, other.id].sort();
-      const chatId = `dm_${ids[0]}_${ids[1]}`;
-      const chatRef = ref(db, `chats/${chatId}/info`);
+      const [uid1, uid2] = sortedPairForDm(user.id, other.id);
+      const chatId = `dm_${uid1}_${uid2}`;
+      const chatRef = ref(db, `chats/${chatId}/metadata`);
       try {
         const snapshot = await get(chatRef);
         if (!snapshot.exists()) {
@@ -2673,27 +2809,105 @@ export default function TravelHubPage() {
             };
         setActiveChat({ ...info, id: chatId });
         setActiveTab("chats");
+        setChatProfileOpen(false);
         updateChatPref(chatId, { lastReadAt: Date.now() });
-        loadMessages(chatId);
       } catch (e) {
         console.error(e);
         showToast("Could not open chat", "error");
       }
     },
-    [db, user, loadMessages, showToast, updateChatPref],
+    [db, user, showToast, updateChatPref],
+  );
+
+  const connectOverlayUser = useCallback(
+    async (row: UserSearchResultRow) => {
+      setOverlayActionUserId(row.id);
+      const r = await apiFetchWithStatus<{ id: string }>("/social/friend-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ receiver_id: row.id }),
+      });
+      setOverlayActionUserId(null);
+      if (r.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      if (r.status >= 400 || !r.data) {
+        showToast("Could not send request", "error");
+        return;
+      }
+      setOverlaySearchResults((prev) =>
+        prev.map((u) =>
+          u.id === row.id
+            ? { ...u, friend_status: "pending_sent" as const }
+            : u,
+        ),
+      );
+      showToast("Request sent", "success");
+    },
+    [handleUnauthorized, showToast],
+  );
+
+  const acceptOverlayUser = useCallback(
+    async (row: UserSearchResultRow) => {
+      const frId = incomingFrIdBySender[row.id];
+      if (!frId) {
+        showToast("Request not found. Try closing and opening search again.", "error");
+        return;
+      }
+      setOverlayActionUserId(row.id);
+      const r = await apiFetchWithStatus<unknown>(
+        `/social/friend-requests/${frId}/accept`,
+        { method: "PATCH" },
+      );
+      setOverlayActionUserId(null);
+      if (r.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      if (r.status >= 400) {
+        showToast("Could not accept request", "error");
+        return;
+      }
+      setIncomingFrIdBySender((prev) => {
+        const n = { ...prev };
+        delete n[row.id];
+        return n;
+      });
+      setOverlaySearchResults((prev) =>
+        prev.map((u) =>
+          u.id === row.id
+            ? { ...u, friend_status: "accepted" as const }
+            : u,
+        ),
+      );
+      showToast("You are now connected", "success");
+    },
+    [incomingFrIdBySender, handleUnauthorized, showToast],
+  );
+
+  const messageOverlayUser = useCallback(
+    (row: UserSearchResultRow) => {
+      setShowSearchOverlay(false);
+      setOverlaySearchText("");
+      setOverlaySearchResults([]);
+      void openDirectChat({
+        id: row.id,
+        full_name: row.full_name,
+        username: row.username,
+      });
+    },
+    [openDirectChat],
   );
 
   const selectChat = useCallback(
     (c: ChatInfo) => {
       setActiveChat(c);
-      messagesUnsubRef.current?.();
-      messagesUnsubRef.current = null;
+      setChatProfileOpen(false);
       setMessages([]);
       updateChatPref(c.id, { lastReadAt: Date.now() });
-      if (c.isBot || c.isAnnouncement || c.isDemo) return;
-      loadMessages(c.id);
     },
-    [loadMessages, updateChatPref],
+    [updateChatPref],
   );
 
   const openDemoDm = useCallback(
@@ -2763,7 +2977,7 @@ export default function TravelHubPage() {
     [mainChatList],
   );
 
-  const contactsWithGroupCounts = useMemo(() => {
+  const groupTogetherCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const g of groups) {
       for (const m of g.members) {
@@ -2771,17 +2985,85 @@ export default function TravelHubPage() {
         counts.set(m.user_id, (counts.get(m.user_id) ?? 0) + 1);
       }
     }
-    return contacts
+    return counts;
+  }, [groups, user?.id]);
+
+  const contactIdsFromSocial = useMemo(
+    () => new Set(socialConnections.map((c) => c.id)),
+    [socialConnections],
+  );
+
+  const socialConnectionRows = useMemo((): ContactRow[] => {
+    return socialConnections
       .map((c) => ({
         ...c,
-        groupsTogether: counts.get(c.id) ?? 0,
+        groupsTogether: groupTogetherCounts.get(c.id) ?? 0,
       }))
       .sort((a, b) =>
         a.full_name.localeCompare(b.full_name, undefined, {
           sensitivity: "base",
         }),
       );
-  }, [contacts, groups, user?.id]);
+  }, [socialConnections, groupTogetherCounts]);
+
+  const groupMemberRowsOnly = useMemo((): ContactRow[] => {
+    return contacts
+      .filter((c) => !contactIdsFromSocial.has(c.id))
+      .map((c) => ({
+        ...c,
+        groupsTogether: groupTogetherCounts.get(c.id) ?? 0,
+      }))
+      .sort((a, b) =>
+        a.full_name.localeCompare(b.full_name, undefined, {
+          sensitivity: "base",
+        }),
+      );
+  }, [contacts, contactIdsFromSocial, groupTogetherCounts]);
+
+  const contactsWithGroupCounts = useMemo(() => {
+    const byId = new Map<string, ContactRow>();
+    for (const c of socialConnectionRows) byId.set(c.id, c);
+    for (const c of groupMemberRowsOnly) {
+      if (!byId.has(c.id)) byId.set(c.id, c);
+    }
+    return [...byId.values()].sort((a, b) =>
+      a.full_name.localeCompare(b.full_name, undefined, {
+        sensitivity: "base",
+      }),
+    );
+  }, [socialConnectionRows, groupMemberRowsOnly]);
+
+  const profilePeer = useMemo((): ContactPerson | null => {
+    if (!activeChat || !user || activeChat.type !== "individual") return null;
+    const oid = activeChat.members.find((id) => id !== user.id);
+    if (!oid) return null;
+    const all = [...socialConnectionRows, ...groupMemberRowsOnly, ...contacts];
+    const found = all.find((c) => c.id === oid);
+    if (found) return found;
+    return { id: oid, full_name: activeChat.name, username: null };
+  }, [activeChat, user, socialConnectionRows, groupMemberRowsOnly, contacts]);
+
+  const blockUserById = useCallback(
+    async (userId: string) => {
+      const r = await apiFetchWithStatus<unknown>("/social/block", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      if (r.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      if (r.status < 400) {
+        showToast("User blocked", "success");
+        setChatProfileOpen(false);
+        setSocialConnections((p) => p.filter((x) => x.id !== userId));
+      } else {
+        showToast("Could not block user", "error");
+      }
+    },
+    [handleUnauthorized, showToast],
+  );
 
   const startRecording = useCallback(() => {
     navigator.mediaDevices
@@ -2803,7 +3085,7 @@ export default function TravelHubPage() {
           const blob = new Blob(chunks, { type: "audio/webm" });
           const reader = new FileReader();
           reader.onloadend = () => {
-            void sendMessage("audio", "🎵 Voice message", {
+            void sendMessage("audio", "Voice message", {
               url: reader.result,
               duration: `${Math.floor(recordSeconds / 60)}:${String(recordSeconds % 60).padStart(2, "0")}`,
             });
@@ -2945,7 +3227,7 @@ export default function TravelHubPage() {
               setProfileBannerDismissed(true);
             }}
           >
-            ×
+            <X className="h-5 w-5" />
           </button>
         </div>
       ) : null}
@@ -2972,7 +3254,7 @@ export default function TravelHubPage() {
               setFirebaseBannerDismissed(true);
             }}
           >
-            ×
+            <X className="h-5 w-5" />
           </button>
         </div>
       ) : null}
@@ -2985,7 +3267,7 @@ export default function TravelHubPage() {
             !isMd && activeChat ? "hidden" : "flex"
           }`}
           style={{
-            width: isMd ? 360 : "100%",
+            width: isMd ? 380 : "100%",
             flexShrink: 0,
             background: BG,
             borderRight: isMd ? `0.5px solid ${BORDER_SUB}` : undefined,
@@ -3007,9 +3289,13 @@ export default function TravelHubPage() {
                 type="button"
                 aria-label="Search"
                 className="flex items-center justify-center text-white"
-                onClick={() => setShowSearchOverlay(true)}
+                onClick={() => {
+                  setShowSearchOverlay(true);
+                  setOverlaySearchText("");
+                  setOverlaySearchResults([]);
+                }}
               >
-                <SearchIcon />
+                <Search className="h-5 w-5" />
               </button>
               <button
                 type="button"
@@ -3017,7 +3303,7 @@ export default function TravelHubPage() {
                 className="flex items-center justify-center text-white"
                 onClick={() => setShowMenuDrawer(true)}
               >
-                <MenuIcon />
+                <MoreVertical className="h-5 w-5" />
               </button>
             </div>
           </header>
@@ -3091,14 +3377,29 @@ export default function TravelHubPage() {
             ) : null}
             {activeTab === "contacts" ? (
               <HubContactsTab
-                contacts={contactsWithGroupCounts}
+                socialRows={socialConnectionRows}
+                groupRows={groupMemberRowsOnly}
                 onMessage={(p) => void openDirectChat(p)}
+                onCall={() => showToast(CALL_TOAST, "success")}
                 onOpenDemo={openDemoDm}
                 currentUser={user}
+                settingsOpen={contactsSettingsOpen}
+                onSettingsOpen={setContactsSettingsOpen}
+                autoSync={contactsAutoSync}
+                onAutoSync={(v) => {
+                  setContactsAutoSync(v);
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem(CONTACTS_AUTOSYNC_KEY, v ? "1" : "0");
+                  }
+                }}
+                onSyncContacts={() => void refreshSocialConnections()}
               />
             ) : null}
             {activeTab === "calls" ? (
-              <HubCallsTab showToast={(m) => showToast(m, "success")} />
+              <HubCallsTab
+                showToast={(m) => showToast(m, "success")}
+                contacts={contactsWithGroupCounts}
+              />
             ) : null}
           </div>
         </div>
@@ -3127,7 +3428,7 @@ export default function TravelHubPage() {
                 gap: 12,
               }}
             >
-              <span className="text-6xl leading-none">✈️</span>
+              <Plane className="mx-auto h-16 w-16 text-slate-500" aria-hidden />
               <p className="text-lg font-semibold text-white">
                 Select a conversation to start
               </p>
@@ -3146,11 +3447,23 @@ export default function TravelHubPage() {
           ) : activeChat.isAnnouncement ? (
             <CommunityAnnouncementPanel />
           ) : (
-            <>
+            <div
+              className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden"
+              style={{ background: RIGHT_PANEL_BG }}
+            >
             <ChatHeader
               chat={activeChat}
-              userId={user?.id}
-              onBack={() => setActiveChat(null)}
+              onBack={() => {
+                setActiveChat(null);
+                setChatProfileOpen(false);
+              }}
+              onOpenProfile={() => setChatProfileOpen(true)}
+              onOpenSearch={() => {
+                setShowSearchOverlay(true);
+                setOverlaySearchText("");
+                setOverlaySearchResults([]);
+              }}
+              onVoip={() => showToast(SOON_TOAST)}
               groups={groups}
             />
 
@@ -3195,10 +3508,11 @@ export default function TravelHubPage() {
                       color: TEXT_MUTED,
                     }}
                   >
-                    <span className="typing-dot inline-block animate-pulse">
-                      ●
-                    </span>{" "}
-                    {typingUsers[0]} is typing…
+                    <span
+                      className="inline-block h-2 w-2 animate-pulse rounded-full"
+                      style={{ background: TEXT_MUTED }}
+                    />{" "}
+                    {typingUsers[0]} is typing
                   </div>
                 </div>
               ) : null}
@@ -3218,46 +3532,24 @@ export default function TravelHubPage() {
                   <button
                     type="button"
                     onClick={cancelRecording}
-                    className="rounded-lg border px-3 py-1 text-sm text-white"
+                    className="inline-flex items-center gap-1 rounded-lg border px-3 py-1 text-sm text-white"
                     style={{ borderColor: MSG_BORDER }}
                   >
-                    ✕ Cancel
+                    <X className="h-4 w-4" />
+                    Cancel
                   </button>
                   <button
                     type="button"
                     onClick={stopRecordingSend}
-                    className="rounded-lg bg-green-600 px-3 py-1 text-sm font-bold text-white"
+                    className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-3 py-1 text-sm font-bold text-white"
                   >
-                    ✓ Send
+                    <Check className="h-4 w-4" />
+                    Send
                   </button>
                 </div>
               </div>
             ) : (
               <>
-                {showEmoji ? (
-                  <div
-                    className="mx-4 mb-2 grid max-h-36 grid-cols-6 gap-1 overflow-y-auto rounded-xl border p-3 shadow-md"
-                    style={{
-                      borderColor: MSG_BORDER,
-                      background: SURFACE,
-                    }}
-                  >
-                    {EMOJIS.map((em) => (
-                      <button
-                        key={em}
-                        type="button"
-                        className="rounded p-1 text-2xl hover:bg-white/10"
-                        onClick={() => {
-                          setMessageText((p) => p + em);
-                          setShowEmoji(false);
-                        }}
-                      >
-                        {em}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-
                 {showAttach ? (
                   <AttachMenu
                     trips={trips}
@@ -3299,13 +3591,6 @@ export default function TravelHubPage() {
                   }`}
                   style={{ borderColor: BORDER_SUB, background: BG }}
                 >
-                  <button
-                    type="button"
-                    className="text-xl"
-                    onClick={() => setShowEmoji((e) => !e)}
-                  >
-                    😊
-                  </button>
                   <input
                     value={messageText}
                     onChange={(e) => {
@@ -3326,37 +3611,58 @@ export default function TravelHubPage() {
                     <button
                       type="button"
                       onClick={() => void sendMessage("text", messageText)}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white transition hover:opacity-90"
                       style={{ background: ACCENT }}
                       aria-label="Send"
+                      title="Send"
                     >
-                      ➤
+                      <Send className="h-5 w-5" />
                     </button>
                   ) : (
                     <>
                       <button
                         type="button"
-                        className="text-xl"
+                        className="rounded p-1.5 text-slate-300 transition hover:bg-white/10 hover:text-white"
                         onClick={() => setShowAttach(true)}
+                        title="Attach"
+                        aria-label="Attach"
                       >
-                        📎
+                        <Paperclip className="h-5 w-5" />
                       </button>
                       <button
                         type="button"
-                        className="text-xl"
+                        className="rounded p-1.5 text-slate-300 transition hover:bg-white/10 hover:text-white"
                         onClick={startRecording}
+                        title="Record voice"
+                        aria-label="Record voice"
                       >
-                        🎤
+                        <Mic className="h-5 w-5" />
                       </button>
                     </>
                   )}
                 </div>
               </>
             )}
-          </>
+            </div>
         )}
       </div>
       </div>
+
+      {activeTab === "chats" && !showDmUserSearch && !showNewChat ? (
+        <button
+          type="button"
+          aria-label="Start a direct message"
+          className="fixed bottom-5 right-5 z-[120] flex h-14 w-14 items-center justify-center rounded-full text-2xl shadow-lg transition-transform active:scale-95"
+          style={{
+            background: ACCENT,
+            color: "#fff",
+            boxShadow: "0 6px 24px rgba(220, 38, 38, 0.4)",
+          }}
+          onClick={() => setShowDmUserSearch(true)}
+        >
+          <PenSquare className="h-6 w-6" />
+        </button>
+      ) : null}
 
       {showNewChat ? (
         <NewChatOverlay
@@ -3369,9 +3675,20 @@ export default function TravelHubPage() {
         />
       ) : null}
 
+      {showDmUserSearch && user ? (
+        <DmUserSearchOverlay
+          onClose={() => setShowDmUserSearch(false)}
+          onPick={(p) => {
+            setShowDmUserSearch(false);
+            void openDirectChat(p);
+          }}
+          showToast={showToast}
+        />
+      ) : null}
+
       {showSearchOverlay ? (
         <div
-          className="fixed inset-0 z-[360] flex flex-col"
+          className="fixed inset-0 z-[360] flex min-h-0 flex-col"
           style={{ background: BG }}
         >
           <div
@@ -3381,38 +3698,150 @@ export default function TravelHubPage() {
             <button
               type="button"
               aria-label="Close search"
-              className="px-2 py-1 text-lg text-white"
-              onClick={() => setShowSearchOverlay(false)}
+              className="p-1 text-slate-300 hover:text-white"
+              onClick={() => {
+                setShowSearchOverlay(false);
+                setOverlaySearchText("");
+                setOverlaySearchResults([]);
+              }}
             >
-              ←
+              <ArrowLeft className="h-6 w-6" />
             </button>
             <div
               className="flex min-w-0 flex-1 items-center gap-2 rounded-full px-3 py-2"
               style={{ background: SURFACE }}
             >
-              <SearchIcon className="shrink-0 text-slate-400" />
+              <Search className="h-5 w-5 shrink-0 text-slate-400" />
               <input
                 autoFocus
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search chats..."
+                value={overlaySearchText}
+                onChange={(e) => setOverlaySearchText(e.target.value)}
+                placeholder="Name, @username, or phone…"
                 className="min-w-0 flex-1 border-0 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
               />
-              {searchQuery ? (
+              {overlaySearchText ? (
                 <button
                   type="button"
-                  className="text-slate-400"
-                  onClick={() => setSearchQuery("")}
+                  className="text-slate-400 hover:text-white"
+                  onClick={() => {
+                    setOverlaySearchText("");
+                    setOverlaySearchResults([]);
+                  }}
                   aria-label="Clear"
                 >
-                  ×
+                  <X className="h-5 w-5" />
                 </button>
               ) : null}
             </div>
           </div>
-          <p className="px-4 py-6 text-center text-sm" style={{ color: TEXT_MUTED }}>
-            Results update in the Chats / Groups tabs. Tap back to continue.
-          </p>
+          <div
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-2"
+            role="list"
+          >
+            {overlaySearchLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div
+                  className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-white"
+                  aria-hidden
+                />
+              </div>
+            ) : null}
+            {!overlaySearchLoading &&
+            overlaySearchText.trim().length >= 2 &&
+            overlaySearchResults.length === 0 ? (
+              <p
+                className="py-8 text-center text-sm"
+                style={{ color: TEXT_MUTED }}
+              >
+                No users found
+              </p>
+            ) : null}
+            {!overlaySearchLoading
+              ? overlaySearchResults.map((u) => {
+                  const thumb =
+                    u.profile_picture || u.avatar_url || getDiceBearUrl(u.full_name);
+                  const st = u.friend_status;
+                  return (
+                    <div
+                      key={u.id}
+                      role="listitem"
+                      className="mb-1 flex min-h-[56px] items-center gap-3 rounded-lg px-2 py-2"
+                      style={{ background: SURFACE }}
+                    >
+                      <img
+                        src={thumb}
+                        alt=""
+                        className="h-11 w-11 shrink-0 rounded-full object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-white">
+                          {u.full_name}
+                        </p>
+                        {u.username ? (
+                          <p
+                            className="truncate text-xs"
+                            style={{ color: TEXT_MUTED }}
+                          >
+                            @{u.username}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="shrink-0">
+                        {st === "none" ? (
+                          <button
+                            type="button"
+                            className="rounded-lg px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                            style={{ background: "#2563EB" }}
+                            disabled={overlayActionUserId === u.id}
+                            onClick={() => void connectOverlayUser(u)}
+                          >
+                            Connect
+                          </button>
+                        ) : null}
+                        {st === "pending_sent" ? (
+                          <button
+                            type="button"
+                            className="cursor-not-allowed rounded-lg bg-slate-600/50 px-3 py-1.5 text-xs font-medium text-slate-400"
+                            disabled
+                          >
+                            Requested
+                          </button>
+                        ) : null}
+                        {st === "pending_received" ? (
+                          <button
+                            type="button"
+                            className="rounded-lg px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                            style={{ background: "#16A34A" }}
+                            disabled={overlayActionUserId === u.id}
+                            onClick={() => void acceptOverlayUser(u)}
+                          >
+                            Accept
+                          </button>
+                        ) : null}
+                        {st === "accepted" ? (
+                          <button
+                            type="button"
+                            className="rounded-lg px-3 py-1.5 text-xs font-medium text-white"
+                            style={{ background: "#0D9488" }}
+                            onClick={() => messageOverlayUser(u)}
+                          >
+                            Message
+                          </button>
+                        ) : null}
+                        {st === "blocked" ? (
+                          <span
+                            className="px-2 text-xs"
+                            style={{ color: TEXT_MUTED }}
+                          >
+                            Blocked
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })
+              : null}
+          </div>
         </div>
       ) : null}
 
@@ -3567,6 +3996,23 @@ export default function TravelHubPage() {
         </div>
       ) : null}
 
+      {activeChat &&
+      user &&
+      !activeChat.isDemo &&
+      !activeChat.isBot &&
+      !activeChat.isAnnouncement ? (
+        <ChatProfileSheet
+          open={chatProfileOpen}
+          onClose={() => setChatProfileOpen(false)}
+          chat={activeChat}
+          user={user}
+          groups={groups}
+          peer={profilePeer}
+          onBlock={blockUserById}
+          showToast={showToast}
+        />
+      ) : null}
+
       {toast ? (
         <div
           className={`fixed right-4 top-20 z-[300] max-w-sm animate-in rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-lg ${
@@ -3580,20 +4026,241 @@ export default function TravelHubPage() {
   );
 }
 
+function ChatProfileSheet({
+  open,
+  onClose,
+  chat,
+  user,
+  groups,
+  peer,
+  onBlock,
+  showToast,
+}: {
+  open: boolean;
+  onClose: () => void;
+  chat: ChatInfo;
+  user: UserMe;
+  groups: GroupOut[];
+  peer: ContactPerson | null;
+  onBlock: (userId: string) => void;
+  showToast: (m: string, t?: "success" | "error") => void;
+}) {
+  if (!open) return null;
+  const g = chat.group_id
+    ? groups.find((x) => x.id === chat.group_id)
+    : undefined;
+  const memberCount = g?.members?.length ?? chat.members?.length ?? 0;
+  const mutual =
+    user && peer
+      ? groups.filter(
+          (gr) =>
+            gr.members.some((m) => m.user_id === user.id) &&
+            gr.members.some((m) => m.user_id === peer.id),
+        )
+      : [];
+
+  return (
+    <div className="fixed inset-0 z-[400] flex">
+      <button
+        type="button"
+        className="h-full min-w-0 flex-1 bg-black/60"
+        aria-label="Close profile"
+        onClick={onClose}
+      />
+      <div
+        className="flex h-full w-full max-w-md flex-col overflow-y-auto border-l shadow-2xl"
+        style={{ background: BG, borderColor: BORDER_SUB }}
+      >
+        <div
+          className="flex items-center justify-between border-b px-3 py-3"
+          style={{ borderColor: BORDER_SUB }}
+        >
+          <span className="text-sm font-semibold text-white">Profile</span>
+          <button
+            type="button"
+            className="rounded p-1 text-slate-300 hover:bg-white/10 hover:text-white"
+            onClick={onClose}
+            aria-label="Close"
+            title="Close"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+        {chat.type === "group" ? (
+          <div className="flex flex-1 flex-col items-center px-4 pb-8 pt-6 text-center">
+            <span
+              className="flex h-28 w-28 items-center justify-center rounded-full text-3xl font-bold text-white"
+              style={{
+                background: g
+                  ? listAvatarColor(g.name)
+                  : listAvatarColor(chat.name),
+              }}
+            >
+              {initialsFromName(chat.name)}
+            </span>
+            <Users className="mt-4 h-8 w-8 text-slate-400" aria-hidden />
+            <h2 className="mt-2 text-xl font-bold text-white">{chat.name}</h2>
+            <p className="text-sm" style={{ color: TEXT_MUTED }}>
+              {memberCount} members
+            </p>
+            <div className="mt-6 flex w-full max-w-xs flex-col gap-2">
+              <button
+                type="button"
+                className="inline-flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white"
+                style={{ background: WA_MINE }}
+                onClick={() => showToast(SOON_TOAST)}
+                title="Voice call"
+              >
+                <Phone className="h-5 w-5" />
+                Voice Call
+              </button>
+              <button
+                type="button"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold text-white"
+                style={{ borderColor: MSG_BORDER }}
+                onClick={() => showToast(SOON_TOAST)}
+                title="Video call"
+              >
+                <Video className="h-5 w-5" />
+                Video Call
+              </button>
+            </div>
+          </div>
+        ) : peer ? (
+          <div className="flex flex-1 flex-col items-center px-4 pb-8 pt-6">
+            <img
+              src={getDiceBearUrl(peer.full_name)}
+              alt=""
+              className="h-28 w-28 rounded-full"
+              width={112}
+              height={112}
+            />
+            <h2 className="mt-4 text-center text-xl font-bold text-white">
+              {peer.full_name}
+            </h2>
+            {peer.username ? (
+              <p className="text-sm" style={{ color: TEXT_MUTED }}>
+                @{peer.username}
+              </p>
+            ) : null}
+            {peer.phone ? (
+              <p className="mt-1 text-sm text-slate-300">{peer.phone}</p>
+            ) : (
+              <p className="mt-1 text-sm" style={{ color: TEXT_MUTED }}>
+                Phone not shared
+              </p>
+            )}
+            <p className="mt-1 flex items-center gap-1.5 text-xs" style={{ color: ONLINE }}>
+              <span className="h-2 w-2 rounded-full" style={{ background: ONLINE }} />
+              Online
+            </p>
+            <div className="mt-6 flex w-full max-w-xs flex-col gap-2">
+              <button
+                type="button"
+                className="inline-flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white"
+                style={{ background: WA_MINE }}
+                onClick={() => showToast(SOON_TOAST)}
+              >
+                <Phone className="h-5 w-5" />
+                Voice Call
+              </button>
+              <button
+                type="button"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold text-white"
+                style={{ borderColor: MSG_BORDER }}
+                onClick={() => showToast(SOON_TOAST)}
+              >
+                <Video className="h-5 w-5" />
+                Video Call
+              </button>
+            </div>
+            <p
+              className="mt-8 w-full text-left text-[11px] font-bold uppercase tracking-wide"
+              style={{ color: SECTION_LABEL }}
+            >
+              Mutual groups
+            </p>
+            <ul className="mt-2 w-full space-y-2">
+              {mutual.length === 0 ? (
+                <li className="text-sm" style={{ color: TEXT_MUTED }}>
+                  No shared groups
+                </li>
+              ) : (
+                mutual.map((gr) => (
+                  <li
+                    key={gr.id}
+                    className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-white"
+                    style={{ borderColor: MSG_BORDER, background: SURFACE }}
+                  >
+                    <Users className="h-4 w-4 shrink-0 text-slate-400" />
+                    {gr.name}
+                  </li>
+                ))
+              )}
+            </ul>
+            <div className="mt-6 grid w-full max-w-xs grid-cols-3 gap-2">
+              <button
+                type="button"
+                className="flex flex-col items-center gap-1 rounded-lg border py-2 text-[11px] text-white"
+                style={{ borderColor: MSG_BORDER }}
+                onClick={() => showToast("Favorite — coming soon")}
+                title="Favorite"
+              >
+                <Star className="h-5 w-5 text-amber-400" />
+                Favorite
+              </button>
+              <button
+                type="button"
+                className="flex flex-col items-center gap-1 rounded-lg border py-2 text-[11px] text-white"
+                style={{ borderColor: MSG_BORDER }}
+                onClick={() => onBlock(peer.id)}
+                title="Block"
+              >
+                <Shield className="h-5 w-5 text-slate-300" />
+                Block
+              </button>
+              <button
+                type="button"
+                className="flex flex-col items-center gap-1 rounded-lg border py-2 text-[11px] text-white"
+                style={{ borderColor: MSG_BORDER }}
+                onClick={() => showToast("Report — coming soon")}
+                title="Report"
+              >
+                <Flag className="h-5 w-5 text-slate-300" />
+                Report
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="p-4 text-sm" style={{ color: TEXT_MUTED }}>
+            Profile unavailable
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ChatHeader({
   chat,
   onBack,
+  onOpenProfile,
+  onOpenSearch,
+  onVoip,
   groups,
 }: {
   chat: ChatInfo;
-  userId?: string;
   onBack: () => void;
+  onOpenProfile: () => void;
+  onOpenSearch: () => void;
+  onVoip: () => void;
   groups: GroupOut[];
 }) {
   const g = chat.group_id
     ? groups.find((x) => x.id === chat.group_id)
     : undefined;
   const memberCount = g?.members?.length ?? chat.members?.length ?? 0;
+  const showOnline = chat.type === "individual";
   return (
     <header
       className="flex shrink-0 items-center gap-3 border-b px-3 py-3 md:px-4"
@@ -3601,51 +4268,88 @@ function ChatHeader({
     >
       <button
         type="button"
-        className="text-xl text-white md:hidden"
+        className="inline-flex p-1 text-slate-300 hover:text-white md:hidden"
         onClick={onBack}
-        aria-label="Back"
+        aria-label="Back to chat list"
+        title="Back"
       >
-        ←
+        <ArrowLeft className="h-6 w-6" />
       </button>
-      {chat.type === "group" ? (
-        <span
-          className="flex h-12 w-12 items-center justify-center rounded-full text-[15px] font-bold text-white"
-          style={{
-            background: g
-              ? listAvatarColor(g.name)
-              : listAvatarColor(chat.name),
-          }}
+      <button
+        type="button"
+        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+        onClick={onOpenProfile}
+        title="View profile"
+      >
+        {chat.type === "group" ? (
+          <span
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
+            style={{
+              background: g
+                ? listAvatarColor(g.name)
+                : listAvatarColor(chat.name),
+            }}
+          >
+            {initialsFromName(chat.name)}
+          </span>
+        ) : (
+          <img
+            src={getDiceBearUrl(chat.name)}
+            alt=""
+            className="h-12 w-12 shrink-0 rounded-full"
+            width={48}
+            height={48}
+          />
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[15px] font-medium text-white">
+            {chat.name}
+          </p>
+          <p className="text-[12px]" style={{ color: TEXT_MUTED }}>
+            {chat.type === "group"
+              ? `${memberCount} members`
+              : showOnline
+                ? "Active now"
+                : ""}
+          </p>
+        </div>
+      </button>
+      <div className="flex shrink-0 items-center gap-1.5" style={{ color: TEXT_MUTED }}>
+        <button
+          type="button"
+          className="rounded p-2 text-slate-300 hover:bg-white/10 hover:text-white"
+          onClick={onOpenSearch}
+          title="Search"
+          aria-label="Search"
         >
-          {initialsFromName(chat.name)}
-        </span>
-      ) : (
-        <img
-          src={getDiceBearUrl(chat.name)}
-          alt=""
-          className="h-12 w-12 rounded-full"
-          width={48}
-          height={48}
-        />
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-medium text-white">
-          {chat.name}
-        </p>
-        <p className="text-[12px]" style={{ color: TEXT_MUTED }}>
-          {chat.type === "group"
-            ? `${memberCount} members`
-            : "Active now"}
-        </p>
-      </div>
-      <div className="flex gap-2 text-lg" style={{ color: TEXT_MUTED }}>
-        <span className="opacity-50">🔍</span>
-        <span className="opacity-50" title="Coming soon">
-          📞
-        </span>
-        <span className="opacity-50" title="Coming soon">
-          📹
-        </span>
-        <span>⋮</span>
+          <Search className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          className="rounded p-2 text-slate-300 hover:bg-white/10 hover:text-white"
+          onClick={onVoip}
+          title="Voice call"
+          aria-label="Voice call"
+        >
+          <Phone className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          className="rounded p-2 text-slate-300 hover:bg-white/10 hover:text-white"
+          onClick={onVoip}
+          title="Video call"
+          aria-label="Video call"
+        >
+          <Video className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          className="rounded p-2 text-slate-300 hover:bg-white/10 hover:text-white"
+          title="More"
+          aria-label="More options"
+        >
+          <MoreVertical className="h-5 w-5" />
+        </button>
       </div>
     </header>
   );
@@ -3661,9 +4365,18 @@ function MessageBubble({
   isGroup: boolean;
 }) {
   const meta = msg.metadata as Record<string, unknown> | undefined;
+  const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const bg = mine ? WA_MINE : WA_OTHER;
+  const cornerMine =
+    "rounded-tl-2xl rounded-bl-2xl rounded-tr-sm rounded-br-2xl";
+  const cornerOther =
+    "rounded-tr-2xl rounded-br-2xl rounded-tl-sm rounded-bl-2xl";
   return (
     <div
-      className={`mb-2 flex w-full gap-2 ${mine ? "justify-end" : "justify-start"}`}
+      className={`mb-3 flex w-full gap-2 ${mine ? "justify-end" : "justify-start"}`}
     >
       {!mine ? (
         <img
@@ -3674,31 +4387,28 @@ function MessageBubble({
           height={28}
         />
       ) : (
-        <span className="w-7 shrink-0" />
+        <span className="w-7 shrink-0" aria-hidden />
       )}
-      <div className="max-w-[70%]">
-        {isGroup && !mine ? (
+      <div
+        className={`flex max-w-[70%] flex-col ${mine ? "items-end" : "items-start"}`}
+      >
+        {isGroup && !mine && msg.sender_name ? (
           <p
-            className="mb-0.5 text-[11px] font-semibold"
-            style={{ color: TEXT_MUTED }}
+            className="mb-0.5 max-w-full truncate px-0.5 text-[11px] font-semibold"
+            style={{ color: WA_MINE }}
           >
             {msg.sender_name}
           </p>
         ) : null}
         <div
-          className={`rounded-2xl px-3 py-2 ${
-            mine
-              ? "rounded-br-sm"
-              : "rounded-bl-sm"
-          }`}
+          className={`px-3 py-2 text-white ${mine ? cornerMine : cornerOther}`}
           style={{
-            background: mine ? "rgba(220,38,38,0.25)" : SURFACE,
-            boxShadow: "0 1px 0.5px rgba(0,0,0,0.2)",
-            border: mine ? "none" : `1px solid ${MSG_BORDER}`,
+            background: bg,
+            boxShadow: "0 1px 0.5px rgba(0,0,0,0.25)",
           }}
         >
           {msg.type === "text" ? (
-            <p className="text-sm text-slate-100">{msg.text}</p>
+            <p className="text-sm text-white">{msg.text}</p>
           ) : null}
           {msg.type === "image" && meta?.url ? (
             <img
@@ -3709,8 +4419,11 @@ function MessageBubble({
           ) : null}
           {msg.type === "location" ? (
             <div>
-              <p className="text-sm text-slate-100">📍 {msg.text}</p>
-              <p className="text-[11px]" style={{ color: TEXT_MUTED }}>
+              <p className="flex items-center gap-1.5 text-sm text-white">
+                <MapPin className="h-4 w-4 shrink-0" />
+                {msg.text}
+              </p>
+              <p className="text-[11px] text-white/80">
                 {meta?.lat != null && meta?.lon != null
                   ? `${meta.lat}, ${meta.lon}`
                   : ""}
@@ -3718,7 +4431,7 @@ function MessageBubble({
               <Link
                 href={`/map?lat=${String(meta?.lat ?? "")}&lon=${String(meta?.lon ?? "")}`}
                 className="mt-1 inline-block text-xs font-bold"
-                style={{ color: ACCENT }}
+                style={{ color: "#FCA5A5" }}
               >
                 Open in Map
               </Link>
@@ -3726,15 +4439,15 @@ function MessageBubble({
           ) : null}
           {msg.type === "expense" ? (
             <div>
-              <p className="text-sm text-slate-100">
-                💸 {String(meta?.description ?? msg.text)}
+              <p className="text-sm text-white">
+                {String(meta?.description ?? msg.text)}
               </p>
-              <p className="font-bold" style={{ color: ACCENT }}>
+              <p className="font-bold" style={{ color: "#FEE2E2" }}>
                 {meta?.amount != null ? String(meta.amount) : ""}
               </p>
               <Link
                 href="/split-activities"
-                className="text-xs font-bold text-sky-400"
+                className="text-xs font-bold text-sky-200"
               >
                 View Details
               </Link>
@@ -3742,44 +4455,46 @@ function MessageBubble({
           ) : null}
           {msg.type === "trip" ? (
             <div>
-              <p className="text-sm text-slate-100">
-                ✈️ {String(meta?.trip_name ?? msg.text)}
+              <p className="flex items-center gap-1.5 text-sm text-white">
+                <Plane className="h-4 w-4 shrink-0" />
+                {String(meta?.trip_name ?? msg.text)}
               </p>
-              <p className="text-[11px]" style={{ color: TEXT_MUTED }}>
+              <p className="text-[11px] text-white/80">
                 {String(meta?.destination ?? "")}
               </p>
-              <p className="text-[11px] text-slate-300">
+              <p className="text-[11px] text-white/80">
                 {String(meta?.dates ?? "")}
               </p>
               <Link
                 href={`/trips/${String(meta?.trip_id ?? "")}`}
                 className="text-xs font-bold"
-                style={{ color: ACCENT }}
+                style={{ color: "#FCA5A5" }}
               >
                 View Trip
               </Link>
             </div>
           ) : null}
           {msg.type === "audio" ? (
-            <div className="flex items-center gap-2 text-sm text-slate-200">
-              <span>▶️</span>
+            <div className="flex items-center gap-2 text-sm text-white">
+              <MessageCircle className="h-4 w-4 shrink-0" />
               <span
                 className="h-8 flex-1 rounded"
-                style={{ background: MSG_BORDER }}
+                style={{ background: "rgba(255,255,255,0.2)" }}
               />
               <span className="text-[11px]">{String(meta?.duration ?? "")}</span>
             </div>
           ) : null}
-          <div
-            className="mt-1 flex justify-end gap-1 text-[10px]"
-            style={{ color: TEXT_MUTED }}
-          >
-            {new Date(msg.timestamp).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-            {mine ? <span>✓✓</span> : null}
-          </div>
+        </div>
+        <div
+          className={`mt-0.5 flex items-center gap-1 px-0.5 text-[10px] ${
+            mine ? "justify-end" : "justify-start"
+          }`}
+          style={{ color: TEXT_MUTED }}
+        >
+          <span>{timeStr}</span>
+          {mine ? (
+            <CheckCheck className="h-3.5 w-3.5 text-sky-300" aria-hidden />
+          ) : null}
         </div>
       </div>
     </div>
@@ -3821,8 +4536,8 @@ function AttachMenu({
       </p>
       <div className="grid grid-cols-3 gap-3">
         <label className="flex cursor-pointer flex-col items-center gap-1">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-purple-500 text-2xl text-white">
-            📷
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-purple-500 text-white">
+            <Camera className="h-7 w-7" />
           </span>
           <span className="text-[11px] text-slate-200">Photo</span>
           <input
@@ -3848,8 +4563,8 @@ function AttachMenu({
             onClose();
           }}
         >
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-orange-500 text-2xl text-white">
-            🎵
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-orange-500 text-white">
+            <Mic className="h-7 w-7" />
           </span>
           <span className="text-[11px] text-slate-200">Audio</span>
         </button>
@@ -3870,8 +4585,8 @@ function AttachMenu({
             );
           }}
         >
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-2xl text-white">
-            📍
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-white">
+            <MapPin className="h-7 w-7" />
           </span>
           <span className="text-[11px] text-slate-200">Location</span>
         </button>
@@ -3884,10 +4599,10 @@ function AttachMenu({
           }}
         >
           <span
-            className="flex h-14 w-14 items-center justify-center rounded-full text-2xl text-white"
+            className="flex h-14 w-14 items-center justify-center rounded-full text-white"
             style={{ background: ACCENT }}
           >
-            💸
+            <Banknote className="h-7 w-7" />
           </span>
           <span className="text-[11px] text-slate-200">Split Expense</span>
         </button>
@@ -3897,10 +4612,10 @@ function AttachMenu({
           onClick={() => setShowTrips((s) => !s)}
         >
           <span
-            className="flex h-14 w-14 items-center justify-center rounded-full text-2xl text-white"
+            className="flex h-14 w-14 items-center justify-center rounded-full text-white"
             style={{ background: "#1E3A5F" }}
           >
-            ✈️
+            <Plane className="h-7 w-7" />
           </span>
           <span className="text-[11px] text-slate-200">Trip</span>
         </button>
@@ -3912,8 +4627,8 @@ function AttachMenu({
             onClose();
           }}
         >
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-600 text-2xl text-white">
-            🗺️
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-600 text-white">
+            <MapIcon className="h-7 w-7" />
           </span>
           <span className="text-[11px] text-slate-200">Live Location</span>
         </button>
@@ -3951,6 +4666,165 @@ function AttachMenu({
   );
 }
 
+function parseUsersFromSearchResponse(data: unknown): ContactPerson[] {
+  if (!data) return [];
+  if (Array.isArray(data)) {
+    const out: ContactPerson[] = [];
+    for (const u of data) {
+      if (typeof u !== "object" || u === null) continue;
+      const o = u as Record<string, unknown>;
+      const id = typeof o.id === "string" ? o.id : null;
+      const full_name =
+        typeof o.full_name === "string"
+          ? o.full_name
+          : typeof o.name === "string"
+            ? o.name
+            : null;
+      if (!id || !full_name) continue;
+      out.push({
+        id,
+        full_name,
+        username:
+          typeof o.username === "string" || o.username === null
+            ? (o.username as string | null)
+            : null,
+      });
+    }
+    return out;
+  }
+  if (typeof data === "object") {
+    const o = data as Record<string, unknown>;
+    const arr = o.users ?? o.items ?? o.results ?? o.data;
+    if (Array.isArray(arr)) return parseUsersFromSearchResponse(arr);
+  }
+  return [];
+}
+
+function DmUserSearchOverlay({
+  onClose,
+  onPick,
+  showToast,
+}: {
+  onClose: () => void;
+  onPick: (p: ContactPerson) => void;
+  showToast: (message: string, type?: "success" | "error") => void;
+}) {
+  const [q, setQ] = useState("");
+  const [rows, setRows] = useState<ContactPerson[]>([]);
+  const [loading, setLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const query = q.trim();
+    if (query.length < 1) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    debounceRef.current = setTimeout(() => {
+      void (async () => {
+        const path = `/users/search?q=${encodeURIComponent(query)}`;
+        const res = await apiFetchWithStatus<unknown>(path);
+        if (res.status === 401) {
+          setRows([]);
+          setLoading(false);
+          return;
+        }
+        if (res.status >= 400) {
+          setRows([]);
+          setLoading(false);
+          if (res.status !== 404) {
+            showToast("Could not search users", "error");
+          }
+          return;
+        }
+        setRows(parseUsersFromSearchResponse(res.data));
+        setLoading(false);
+      })();
+    }, 300);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [q, showToast]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[210] flex flex-col"
+      style={{ background: BG }}
+    >
+      <div
+        className="flex items-center gap-3 border-b px-3 py-3"
+        style={{ borderColor: BORDER_SUB }}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1 text-slate-300 hover:text-white"
+          aria-label="Back"
+        >
+          <ArrowLeft className="h-6 w-6" />
+        </button>
+        <span className="font-bold text-white">Message someone</span>
+      </div>
+      <p className="px-4 pt-2 text-[12px]" style={{ color: TEXT_MUTED }}>
+        Search by name — we&apos;ll open a 1:1 chat when you pick someone
+      </p>
+      <input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        autoFocus
+        placeholder="Search users…"
+        className="mx-4 mt-3 rounded-full border px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500"
+        style={{ borderColor: MSG_BORDER, background: SURFACE }}
+      />
+      {loading ? (
+        <p className="px-4 py-4 text-sm" style={{ color: TEXT_MUTED }}>
+          Searching…
+        </p>
+      ) : null}
+      <ul className="flex-1 overflow-y-auto px-4 pb-6 pt-2">
+        {!loading && q.trim().length > 0 && rows.length === 0 ? (
+          <li
+            className="py-6 text-center text-sm"
+            style={{ color: TEXT_MUTED }}
+          >
+            No users found. Try another name.
+          </li>
+        ) : null}
+        {rows.map((c) => (
+          <li key={c.id}>
+            <button
+              type="button"
+              onClick={() => onPick(c)}
+              className="flex w-full items-center gap-3 rounded-xl py-3 text-left hover:bg-white/5"
+            >
+              <img
+                src={getDiceBearUrl(c.full_name)}
+                alt=""
+                className="h-10 w-10 rounded-full"
+                width={40}
+                height={40}
+              />
+              <div className="min-w-0">
+                <span className="block font-semibold text-white">
+                  {c.full_name}
+                </span>
+                {c.username ? (
+                  <span className="text-[12px]" style={{ color: TEXT_MUTED }}>
+                    @{c.username}
+                  </span>
+                ) : null}
+              </div>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function NewChatOverlay({
   contacts,
   onClose,
@@ -3976,9 +4850,10 @@ function NewChatOverlay({
         <button
           type="button"
           onClick={onClose}
-          className="text-xl text-white"
+          className="p-1 text-slate-300 hover:text-white"
+          aria-label="Back"
         >
-          ←
+          <ArrowLeft className="h-6 w-6" />
         </button>
         <span className="font-bold text-white">New Chat</span>
       </div>
@@ -3992,10 +4867,11 @@ function NewChatOverlay({
       <div className="mt-4 px-4">
         <button
           type="button"
-          className="mb-4 w-full rounded-xl py-3 text-sm font-bold text-white"
+          className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white"
           style={{ background: ACCENT }}
         >
-          👥 New Group Chat
+          <Users className="h-5 w-5" />
+          New Group Chat
         </button>
       </div>
       <ul className="flex-1 overflow-y-auto px-4">
