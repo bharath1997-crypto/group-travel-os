@@ -218,7 +218,8 @@ class GroupService:
         db: Session,
         group_id: uuid.UUID,
         current_user: User,
-    ) -> None:
+    ) -> bool:
+        """Leave the group. Returns True if the group was deleted (sole admin left)."""
         member = db.execute(
             select(GroupMember).where(
                 GroupMember.group_id == group_id,
@@ -240,7 +241,13 @@ class GroupService:
                 GroupMember.role == MemberRole.admin,
             )
         ).scalar_one()
-        if member.role == MemberRole.admin and admin_count == 1:
+        member_count = db.execute(
+            select(func.count())
+            .select_from(GroupMember)
+            .where(GroupMember.group_id == group_id)
+        ).scalar_one()
+
+        if member.role == MemberRole.admin and admin_count == 1 and member_count > 1:
             AppException.bad_request("Assign another admin before leaving")
 
         if group.group_type == "travel":
@@ -273,9 +280,89 @@ class GroupService:
                         "Settle all balances before leaving this travel group"
                     )
 
+        if member_count == 1:
+            db.delete(group)
+            db.commit()
+            logger.info(
+                "Sole member %s left group %s; group deleted",
+                current_user.id,
+                group_id,
+            )
+            return True
+
         db.delete(member)
         db.commit()
         logger.info("User %s left group %s", current_user.id, group_id)
+        return False
+
+    @staticmethod
+    def delete_group(
+        db: Session,
+        group_id: uuid.UUID,
+        current_user: User,
+    ) -> None:
+        """Admin-only hard delete: dissolves the group, members, trips, and expenses."""
+        GroupService.require_admin(db, group_id, current_user.id)
+        group = db.execute(
+            select(Group).where(Group.id == group_id)
+        ).scalar_one_or_none()
+        if not group:
+            AppException.not_found("Group not found")
+        db.delete(group)
+        db.commit()
+        logger.info("Group %s deleted by admin %s", group_id, current_user.id)
+
+    @staticmethod
+    def change_member_role(
+        db: Session,
+        group_id: uuid.UUID,
+        target_user_id: uuid.UUID,
+        new_role: MemberRole,
+        current_user: User,
+    ) -> GroupMember:
+        """Promote/demote a member. Admin-only; cannot demote the sole admin."""
+        GroupService.require_admin(db, group_id, current_user.id)
+
+        target = db.execute(
+            select(GroupMember).where(
+                GroupMember.group_id == group_id,
+                GroupMember.user_id == target_user_id,
+            )
+        ).scalar_one_or_none()
+        if not target:
+            AppException.not_found("Member not found in this group")
+
+        if target.role == new_role:
+            return target
+
+        if (
+            target.role == MemberRole.admin
+            and new_role == MemberRole.member
+        ):
+            admin_count = db.execute(
+                select(func.count())
+                .select_from(GroupMember)
+                .where(
+                    GroupMember.group_id == group_id,
+                    GroupMember.role == MemberRole.admin,
+                )
+            ).scalar_one()
+            if admin_count <= 1:
+                AppException.bad_request(
+                    "Cannot demote the sole admin; promote another member first"
+                )
+
+        target.role = new_role
+        db.commit()
+        db.refresh(target)
+        logger.info(
+            "Group %s: user %s role -> %s (by %s)",
+            group_id,
+            target_user_id,
+            new_role.value,
+            current_user.id,
+        )
+        return target
 
     @staticmethod
     def get_pending_balances_count(

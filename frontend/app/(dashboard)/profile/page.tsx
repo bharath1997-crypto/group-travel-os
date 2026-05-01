@@ -11,22 +11,22 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import {
-  ArrowLeft,
-  Bookmark,
-  CalendarPlus,
-  ChevronRight,
-  Clapperboard,
-  Grid3X3,
-  Map as MapIcon,
-  MapPin,
-  Menu,
-  MessageCircle,
-  Plane,
-  Play,
-  Settings,
-  Share2,
-  UserSquare2,
-} from "lucide-react";
+  IconArrowLeft,
+  IconBookmark,
+  IconCalendarPlus,
+  IconChevronRight,
+  IconClapperboard,
+  IconGrid,
+  IconMap,
+  IconMapPin,
+  IconMenu,
+  IconMessageCircle,
+  IconPlane,
+  IconPlay,
+  IconSettings,
+  IconShare,
+  IconUserSquare,
+} from "@/components/icons";
 
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
@@ -1388,7 +1388,7 @@ export default function ProfilePage() {
           aria-label="Back"
           onClick={() => router.back()}
         >
-          <ArrowLeft className="h-5 w-5" strokeWidth={2} />
+          <IconArrowLeft size={20} />
         </button>
         <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
           <PlaceholderAppLogo className="h-8 w-8 shrink-0 rounded-lg" />
@@ -1406,7 +1406,7 @@ export default function ProfilePage() {
             aria-label="Share"
             onClick={() => void shareProfile()}
           >
-            <Share2 className="h-5 w-5" strokeWidth={2} />
+            <IconShare size={20} />
           </button>
           <button
             type="button"
@@ -1416,7 +1416,7 @@ export default function ProfilePage() {
             aria-haspopup="true"
             onClick={() => setProfileNavOpen((o) => !o)}
           >
-            <Menu className="h-5 w-5" strokeWidth={2} />
+            <IconMenu size={20} />
           </button>
           {profileNavOpen ? (
             <div
@@ -1429,7 +1429,7 @@ export default function ProfilePage() {
                 className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#1e2a3a] hover:bg-stone-50"
                 onClick={() => setProfileNavOpen(false)}
               >
-                <Settings className="h-4 w-4 shrink-0 text-stone-500" />
+                <IconSettings size={16} className="shrink-0" />
                 Account settings
               </Link>
               <Link
@@ -1438,7 +1438,7 @@ export default function ProfilePage() {
                 className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#1e2a3a] hover:bg-stone-50"
                 onClick={() => setProfileNavOpen(false)}
               >
-                <MapIcon className="h-4 w-4 shrink-0 text-stone-500" />
+                <IconMap size={16} className="shrink-0" />
                 Open map
               </Link>
             </div>
@@ -1766,7 +1766,7 @@ export default function ProfilePage() {
             >
               NEW
             </span>
-            <ChevronRight className="h-5 w-5 shrink-0 text-stone-400" />
+            <IconChevronRight size={20} className="shrink-0" />
           </Link>
         </section>
 
@@ -1783,7 +1783,7 @@ export default function ProfilePage() {
                 ?.scrollIntoView({ behavior: "smooth", block: "start" });
             }}
           >
-            <CalendarPlus className="h-8 w-8 shrink-0 text-stone-400" strokeWidth={1.5} />
+            <IconCalendarPlus size={32} className="shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="font-semibold text-[#1e2a3a]">
                 Create a new countdown!
@@ -1792,7 +1792,7 @@ export default function ProfilePage() {
                 Invite friends or keep it private until takeoff.
               </p>
             </div>
-            <ChevronRight className="h-5 w-5 shrink-0 text-stone-400" />
+            <IconChevronRight size={20} className="shrink-0" />
           </button>
         </section>
 
@@ -1836,13 +1836,12 @@ export default function ProfilePage() {
                       background: `linear-gradient(165deg, hsl(${hue} 42% 38%) 0%, hsl(${(hue + 50) % 360} 30% 18%) 100%)`,
                     }}
                   >
-                    <MapPin
-                      className="absolute right-1.5 top-1.5 h-4 w-4 text-white/90 drop-shadow"
-                      strokeWidth={2}
-                    />
+                    <div className="absolute right-1.5 top-1.5">
+                      <IconMapPin size={16} className="text-white/90 drop-shadow" active />
+                    </div>
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-2 pt-8">
                       <div className="flex items-center gap-1 text-[10px] font-medium text-white">
-                        <Play className="h-3.5 w-3.5 fill-current" strokeWidth={0} />
+                        <IconPlay size={14} active />
                         {fauxViewsFromId(trip.id).toLocaleString()}
                       </div>
                     </div>
@@ -1880,10 +1879,9 @@ export default function ProfilePage() {
                     background: `linear-gradient(165deg, hsl(${hue} 35% 45%) 0%, hsl(${(hue + 40) % 360} 28% 25%) 100%)`,
                   }}
                 >
-                  <Bookmark
-                    className="absolute right-1.5 top-1.5 h-4 w-4 text-white/90"
-                    strokeWidth={2}
-                  />
+                  <div className="absolute right-1.5 top-1.5">
+                    <IconBookmark size={16} className="text-white/90" />
+                  </div>
                   <p className="absolute inset-x-0 bottom-0 line-clamp-2 bg-black/50 p-2 text-[10px] font-medium text-white">
                     {t.title}
                   </p>
@@ -1927,7 +1925,7 @@ export default function ProfilePage() {
                 Customize skin, hair, and outfits — saved on this device.
               </p>
             </div>
-            <ChevronRight className="ml-auto h-5 w-5 text-stone-400" />
+                      <IconChevronRight size={20} className="ml-auto" />
           </button>
         </section>
 
@@ -2074,11 +2072,11 @@ export default function ProfilePage() {
           <div className="flex justify-around border-b border-stone-100 px-1">
             {(
               [
-                { id: "posts" as const, Icon: Grid3X3 },
-                { id: "reels" as const, Icon: Clapperboard },
-                { id: "trips" as const, Icon: Plane },
-                { id: "saved" as const, Icon: Bookmark },
-                { id: "tagged" as const, Icon: UserSquare2 },
+                { id: "posts" as const, Icon: IconGrid },
+                { id: "reels" as const, Icon: IconClapperboard },
+                { id: "trips" as const, Icon: IconPlane },
+                { id: "saved" as const, Icon: IconBookmark },
+                { id: "tagged" as const, Icon: IconUserSquare },
               ] as const
             ).map(({ id: t, Icon }) => (
               <button
@@ -2091,8 +2089,8 @@ export default function ProfilePage() {
                 title={t}
               >
                 <Icon
-                  className="h-6 w-6"
-                  strokeWidth={contentTab === t ? 2.5 : 1.8}
+                  size={24}
+                  active={contentTab === t}
                 />
                 {contentTab === t && (
                   <span
@@ -2138,7 +2136,7 @@ export default function ProfilePage() {
                             ♥ {p.likes}
                           </span>
                           <span className="flex items-center gap-1">
-                            <MessageCircle className="h-4 w-4" strokeWidth={2} />
+                            <IconMessageCircle size={16} />
                             0
                           </span>
                         </div>

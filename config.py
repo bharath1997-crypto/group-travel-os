@@ -63,11 +63,17 @@ class Settings(BaseSettings):
         validation_alias="FIREBASE_DATABASE_URL",
     )
 
-    # ── OpenAI (Travello sidecar assistant) ───────────────────────────────────
-    # https://platform.openai.com/api-keys — same key as OPENAI_API_KEY in .env
+    # ── OpenAI (Travello sidecar assistant — fallback) ────────────────────────
     openai_api_key: str | None = Field(
         default=None,
         validation_alias="OPENAI_API_KEY",
+    )
+
+    # ── Gemini (primary Travello AI engine) ───────────────────────────────────
+    # https://aistudio.google.com/app/apikey — set GEMINI_API_KEY in .env
+    gemini_api_key: str | None = Field(
+        default=None,
+        validation_alias="GEMINI_API_KEY",
     )
 
     # ── OpenWeatherMap (Phase 3) ────────────────────────────────────────────────

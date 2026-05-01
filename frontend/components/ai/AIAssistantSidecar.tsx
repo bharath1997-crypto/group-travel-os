@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
+import { IconRobot } from "@/components/icons";
 import { apiFetchWithStatus } from "@/lib/api";
 
 type ChatMessage = {
@@ -239,8 +240,11 @@ export function AIAssistantSidecar({
 
             <div className="flex items-start justify-between gap-2 border-b border-[#E9ECEF] bg-white px-4 py-3">
               <div className="flex min-w-0 items-start gap-2">
-                <span className="text-2xl" aria-hidden>
-                  🤖
+                <span
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0F3460]"
+                  aria-hidden
+                >
+                  <IconRobot size={20} darkBg />
                 </span>
                 <div className="min-w-0">
                   <h2
@@ -386,7 +390,7 @@ export function AIAssistantSidecar({
           aria-expanded={isOpen}
           aria-controls={isOpen ? panelId : undefined}
         >
-          <span aria-hidden>🤖</span>
+          <IconRobot size={28} darkBg aria-hidden />
           <span
             className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-[#0F3460] bg-[#E94560]"
             aria-hidden

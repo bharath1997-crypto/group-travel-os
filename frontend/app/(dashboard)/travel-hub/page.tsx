@@ -35,36 +35,66 @@ import {
 } from "react";
 
 import {
+  Accessibility,
+  Activity,
+  AlertOctagon,
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
+  Asterisk,
   Ban,
   Banknote,
   BarChart2,
+  Bell,
   BellOff,
   Bluetooth,
+  Bug,
+  Calendar,
   Camera,
+  Cloud,
+  Database as DatabaseIcon,
+  FileText,
+  Folder,
+  Globe2,
   Headphones,
+  Heart,
+  HelpCircle,
   Check,
   CheckCheck,
+  Info,
+  KeyRound,
+  LifeBuoy,
   Loader2,
+  Lock,
   LogOut,
+  Mail,
   Map as MapIcon,
   MapPin,
   Megaphone,
   MessageCircle,
+  MessageSquareText,
   Mic,
   MicOff,
   Monitor,
+  Moon as MoonIcon,
   MoreHorizontal,
   MoreVertical,
   Music,
+  Palette,
   Phone,
+  PhoneCall,
   PhoneOff,
   Play,
+  Plus,
+  QrCode,
+  UserCircle2,
   UserPlus,
+  UsersRound,
   Search,
+  Share2,
+  Shield,
   Smartphone,
+  SmilePlus,
   Star,
   Trash2,
   User,
@@ -75,8 +105,10 @@ import {
   X,
 } from "lucide-react";
 
-import { API_BASE, apiFetchWithStatus } from "@/lib/api";
+import { API_BASE, apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
+import { CallParticipantSelector, type SelectableContact } from "@/components/CallParticipantSelector";
+import { AdvancedScheduledCallModal, type ScheduledCallData, type Attachment } from "@/components/AdvancedScheduledCallModal";
 
 function isAbortError(e: unknown): boolean {
   if (e instanceof Error && e.name === "AbortError") return true;
@@ -111,10 +143,10 @@ function fetchWithTimeout(
   });
 }
 
-/** Connect hub: dark list + warm chat (WhatsApp-inspired) */
-const BG = "#1e2a3a";
-const LIST_ROW_HOVER = "#263545";
-const LIST_ROW_SELECTED = "#2d4060";
+/** Connect hub: Travelo Connect shell + warm chat (WhatsApp-inspired) */
+const BG = "#0f3460";
+const LIST_ROW_HOVER = "#fff0f3";
+const LIST_ROW_SELECTED = "#E94560";
 const SURFACE = "#2d4060";
 const BORDER_SUB = "rgba(255,255,255,0.08)";
 const TEXT = "#e8eaf0";
@@ -122,6 +154,10 @@ const TEXT_MUTED = "#8892a4";
 const TEXT_SECONDARY = "#8892a4";
 const SECTION_LABEL = "#8892a4";
 const ACCENT = "#4a9eff";
+const BRAND_ACCENT = "#E94560";
+const LIST_TEXT = "#1f2937";
+const LIST_TEXT_MUTED = "#6b7280";
+const LIST_BORDER = "#eef2f7";
 const HUB_GREEN = "#00a884";
 const ONLINE = "#22C55E";
 /** Expense lines (with white label text; amounts use these) */
@@ -505,7 +541,7 @@ function ChatEmojiGifPicker({
               </button>
             ))}
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-2 custom-scrollbar">
+          <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-2 emoji-scrollbar">
             <div
               className="grid gap-0.5"
               style={{
@@ -544,7 +580,7 @@ function ChatEmojiGifPicker({
               style={{ background: "rgba(0,0,0,0.25)" }}
             />
           </div>
-          <div className="relative min-h-0 flex-1 overflow-y-auto px-2 pb-2 custom-scrollbar">
+          <div className="relative min-h-0 flex-1 overflow-y-auto px-2 pb-2 emoji-scrollbar">
             {gifLoading ? (
               <div className="flex flex-1 items-center justify-center py-12">
                 <Loader2
@@ -741,6 +777,7 @@ type ChatPrefs = {
   muted?: boolean;
   pinned?: boolean;
   archived?: boolean;
+  favorite?: boolean;
   lastReadAt?: number;
 };
 
@@ -1868,7 +1905,7 @@ function SwipeChatRow({
   return (
     <div
       className="relative overflow-hidden"
-      style={{ background: BG }}
+      style={{ background: "#ffffff" }}
     >
       <div
         className="absolute inset-y-0 left-0 z-0 flex"
@@ -1913,7 +1950,7 @@ function SwipeChatRow({
         style={{
           transform: `translateX(${dx}px)`,
           transition: touching ? "none" : "transform 0.2s ease-out",
-          background: BG,
+          background: "#ffffff",
         }}
         onTouchStart={(e) => {
           setTouching(true);
@@ -1944,34 +1981,42 @@ function HubSearchField({
   value,
   onChange,
   placeholder = "Search chats...",
+  tone = "dark",
 }: {
   value: string;
   onChange: (v: string) => void;
   /** @default "Search chats..." */
   placeholder?: string;
+  tone?: "dark" | "light";
 }) {
+  const isLight = tone === "light";
   return (
     <div className="shrink-0 px-4 py-2">
       <div
         className="flex items-center gap-2 rounded-full border px-3 py-2"
-        style={{ background: "#152030", borderColor: "#2a3a50" }}
+        style={{
+          background: isLight ? "#f3f4f6" : "#152030",
+          borderColor: isLight ? "#e5e7eb" : "#2a3a50",
+        }}
       >
-        <span style={{ color: TEXT_MUTED }} aria-hidden>
+        <span style={{ color: isLight ? LIST_TEXT_MUTED : TEXT_MUTED }} aria-hidden>
           <Search className="h-5 w-5 opacity-80" strokeWidth={1.5} />
         </span>
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="min-w-0 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-[#8892a4]"
-          style={{ color: TEXT }}
+          className="min-w-0 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-gray-400"
+          style={{
+            color: isLight ? LIST_TEXT : TEXT,
+          }}
         />
         {value ? (
           <button
             type="button"
             aria-label="Clear search"
             className="text-lg leading-none"
-            style={{ color: TEXT_MUTED }}
+            style={{ color: isLight ? LIST_TEXT_MUTED : TEXT_MUTED }}
             onClick={() => onChange("")}
           >
             ×
@@ -2008,7 +2053,7 @@ function ChatListRow72({
       className="flex w-full cursor-pointer items-center gap-3 border-b px-4 text-left transition-colors duration-150"
       style={{
         height: 72,
-        borderBottom: "1px solid rgba(255,255,255,0.04)",
+        borderBottom: `1px solid ${LIST_BORDER}`,
         background: active ? LIST_ROW_SELECTED : "transparent",
       }}
       onMouseEnter={(e) => {
@@ -2025,18 +2070,22 @@ function ChatListRow72({
         <div className="flex min-w-0 items-center gap-2">
           <span
             className="min-w-0 truncate text-[14px] font-medium"
-            style={{ color: TEXT }}
+            style={{ color: active ? "#ffffff" : LIST_TEXT }}
           >
             {name}
             {muted ? (
-              <span className="ml-1 inline-flex items-center text-slate-500" title="Muted">
+              <span
+                className="ml-1 inline-flex items-center"
+                style={{ color: active ? "rgba(255,255,255,0.72)" : "#64748b" }}
+                title="Muted"
+              >
                 <BellOff className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
               </span>
             ) : null}
           </span>
           <span
             className="ml-auto shrink-0 text-[11px]"
-            style={{ color: TEXT_MUTED }}
+            style={{ color: active ? "rgba(255,255,255,0.72)" : LIST_TEXT_MUTED }}
           >
             {time}
           </span>
@@ -2045,7 +2094,7 @@ function ChatListRow72({
           <p
             className="min-w-0 flex-1 truncate text-[13px]"
             style={{
-              color: TEXT_SECONDARY,
+              color: active ? "rgba(255,255,255,0.82)" : LIST_TEXT_MUTED,
               maxWidth: "calc(100% - 32px)",
             }}
           >
@@ -2054,7 +2103,7 @@ function ChatListRow72({
           {unread > 0 ? (
             <span
               className="flex h-[18px] w-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
-              style={{ background: muted ? TEXT_MUTED : "#4a9eff" }}
+              style={{ background: muted ? TEXT_MUTED : BRAND_ACCENT }}
             >
               {unread > 99 ? "99+" : unread}
             </span>
@@ -2191,7 +2240,7 @@ function HubChatsTab({
           />
           {onlineDm ? (
             <span
-              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-[#1e2a3a]"
+              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-white"
               style={{ background: ONLINE }}
             />
           ) : null}
@@ -2204,7 +2253,7 @@ function HubChatsTab({
           <InitialsAvatar name={rowLabel} size={40} />
           {onlineDm ? (
             <span
-              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-[#1e2a3a]"
+              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-white"
               style={{ background: ONLINE }}
             />
           ) : null}
@@ -2334,7 +2383,7 @@ function HubChatsTab({
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col bg-white">
       <ul className="m-0 min-h-0 flex-1 list-none custom-scrollbar overflow-y-auto pb-24 p-0">
         {demosAlways.map((c) =>
           wrapSwipe(
@@ -2355,7 +2404,7 @@ function HubChatsTab({
         {mergedFlat.length === 0 ? (
           <li
             className="list-none px-4 py-8 text-center text-sm"
-            style={{ color: TEXT_MUTED }}
+            style={{ color: LIST_TEXT_MUTED }}
           >
             No other conversations yet — use search to find people and groups
           </li>
@@ -3804,139 +3853,304 @@ function CallsConnectRightPanel({
   activeChat,
   user,
   onStartVideoCall,
+  mainChatList,
+  groups,
+  startOutgoingCall,
 }: {
   showCallToast: (message: string) => void;
   activeChat: ChatInfo | null;
   user: UserMe | null;
   onStartVideoCall: () => void;
+  mainChatList: ChatInfo[];
+  groups: GroupOut[];
+  startOutgoingCall: (type: "audio" | "video", peer: { id: string; name: string; avatar: string | null }) => void;
 }) {
   const cream = "#f5ede4";
   const copyLink = "https://travello.app/call/join";
+  
+  // Modal states
+  const [participantModalOpen, setParticipantModalOpen] = useState(false);
+  const [participantModalMode, setParticipantModalMode] = useState<"start" | "link" | "schedule">("start");
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [scheduledCalls, setScheduledCalls] = useState<ScheduledCallData[]>([]);
+  const [preCallMessage, setPreCallMessage] = useState("");
+  const [selectedCallParticipants, setSelectedCallParticipants] = useState<string[]>([]);
+
+  // Load scheduled calls from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("gt_scheduled_calls_v1");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // Filter out past calls
+        const now = Date.now();
+        const filtered = parsed.filter((s: ScheduledCallData) => new Date(s.scheduledAt).getTime() > now - 3600000);
+        setScheduledCalls(filtered);
+      }
+    } catch {
+      setScheduledCalls([]);
+    }
+  }, []);
+
+  // Build selectable contacts list
+  const selectableContacts = useMemo(() => {
+    const contacts: SelectableContact[] = [];
+    
+    // Add individual chats (DMs)
+    mainChatList
+      .filter((c) => c.type === "individual" && !c.isBot && !c.isDemo && !c.isAnnouncement)
+      .forEach((c) => {
+        const peerId = c.members.find((m) => m !== user?.id);
+        if (peerId) {
+          contacts.push({
+            id: peerId,
+            name: chatRowDisplayName(c),
+            avatar: chatRowDmAvatarUrl(c),
+            type: "individual",
+            subtitle: "Direct message",
+            isOnline: false, // Will be populated from presence data if available
+          });
+        }
+      });
+    
+    // Add groups
+    groups.forEach((g) => {
+      contacts.push({
+        id: `group_${g.id}`,
+        name: g.name,
+        type: "group",
+        subtitle: `${g.members?.length || 0} members`,
+        members: g.members?.map((m: GroupMemberOut) => m.user_id),
+      });
+    });
+    
+    return contacts;
+  }, [mainChatList, groups, user?.id]);
+
+  const handleStartCallClick = () => {
+    setParticipantModalMode("start");
+    setParticipantModalOpen(true);
+  };
+
+  const handleNewLinkClick = () => {
+    setParticipantModalMode("link");
+    setParticipantModalOpen(true);
+  };
+
+  const handleScheduleClick = () => {
+    setScheduleModalOpen(true);
+  };
+
+  const handleParticipantConfirm = (selectedIds: string[], message?: string) => {
+    setSelectedCallParticipants(selectedIds);
+    setPreCallMessage(message || "");
+    setParticipantModalOpen(false);
+
+    if (participantModalMode === "start") {
+      // For video call, start with first selected participant
+      const firstId = selectedIds[0];
+      if (firstId) {
+        const contact = selectableContacts.find((c) => c.id === firstId);
+        if (contact) {
+          startOutgoingCall("video", {
+            id: contact.id,
+            name: contact.name,
+            avatar: contact.avatar || null,
+          });
+          
+          // If there's a pre-call message, show a toast about it
+          if (message) {
+            showCallToast("Call started with message preview");
+          }
+        }
+      }
+    } else if (participantModalMode === "link") {
+      // Copy link and notify about sending to selected participants
+      navigator.clipboard.writeText(copyLink).then(() => {
+        showCallToast(`Link copied! Will notify ${selectedIds.length} participant(s)`);
+        
+        // Here you would typically send the link + message via chat API
+        if (message) {
+          console.log("Sending call link with message to:", selectedIds, "Message:", message);
+        }
+      });
+    }
+  };
+
+  const handleScheduleCall = (data: Omit<ScheduledCallData, "id" | "createdAt">) => {
+    const newCall: ScheduledCallData = {
+      ...data,
+      id: `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date().toISOString(),
+    };
+    
+    const updated = [...scheduledCalls, newCall];
+    setScheduledCalls(updated);
+    localStorage.setItem("gt_scheduled_calls_v1", JSON.stringify(updated));
+    
+    showCallToast(`Call scheduled for ${new Date(data.scheduledAt).toLocaleString()}`);
+    
+    // Here you would:
+    // 1. Send notifications to all participants
+    // 2. Pin the scheduled call in chat histories
+    // 3. Set up reminder notifications
+    console.log("Scheduled call:", newCall);
+  };
+
+  // Check for upcoming calls and show reminders
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      scheduledCalls.forEach((call) => {
+        const callTime = new Date(call.scheduledAt).getTime();
+        
+        // Check if any reminder should trigger
+        call.reminders.forEach((reminderMinutes) => {
+          const reminderTime = callTime - reminderMinutes * 60000;
+          const windowStart = reminderTime - 30000; // 30 sec window
+          const windowEnd = reminderTime + 30000;
+          
+          if (now >= windowStart && now <= windowEnd) {
+            showCallToast(`📞 "${call.title}" starts ${reminderMinutes === 0 ? "now" : `in ${reminderMinutes} min`}!`);
+          }
+        });
+      });
+    }, 60000); // Check every minute
+    
+    return () => clearInterval(interval);
+  }, [scheduledCalls, showCallToast]);
+
   return (
-    <div
-      className="flex min-h-0 min-w-0 flex-1 flex-col"
-      style={{ background: cream }}
-    >
+    <>
       <div
-        className="flex min-h-0 flex-1 flex-col items-center justify-center px-4"
+        className="flex min-h-0 min-w-0 flex-1 flex-col"
         style={{ background: cream }}
       >
         <div
-          className="grid w-full max-w-[360px] grid-cols-2 justify-items-center gap-4"
+          className="flex min-h-0 flex-1 flex-col items-center justify-center px-4"
+          style={{ background: cream }}
         >
-          <button
-            type="button"
-            onClick={() => {
-              if (
-                user &&
-                activeChat &&
-                activeChat.type === "individual" &&
-                !activeChat.isBot &&
-                !activeChat.isDemo
-              ) {
-                onStartVideoCall();
-              } else {
-                showCallToast("Select a chat first");
-              }
-            }}
-            className="flex w-[160px] flex-col items-center text-center"
-            style={{
-              background: "#ffffff",
-              border: "1px solid #e8d5b7",
-              borderRadius: 16,
-              padding: 24,
-            }}
-          >
-            <span className="mb-2 flex h-8 w-8 items-center justify-center" style={{ color: "#1e2a3a" }}>
-              <CallsSvgVideo32 />
-            </span>
-            <span
-              className="text-center text-sm font-bold"
-              style={{ color: "#1e2a3a" }}
-            >
-              Start call
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(copyLink);
-                showCallToast("Link copied!");
-              } catch {
-                showCallToast("Could not copy");
-              }
-            }}
-            className="flex w-[160px] flex-col items-center text-center"
-            style={{
-              background: "#ffffff",
-              border: "1px solid #e8d5b7",
-              borderRadius: 16,
-              padding: 24,
-            }}
-          >
-            <span className="mb-2 flex h-8 w-8 items-center justify-center" style={{ color: "#1e2a3a" }}>
-              <CallsSvgLink32 />
-            </span>
-            <span
-              className="text-center text-sm font-bold"
-              style={{ color: "#1e2a3a" }}
-            >
-              New call link
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => showCallToast("Coming soon")}
-            className="flex w-[160px] flex-col items-center text-center"
-            style={{
-              background: "#ffffff",
-              border: "1px solid #e8d5b7",
-              borderRadius: 16,
-              padding: 24,
-            }}
-          >
-            <span className="mb-2 flex h-8 w-8 items-center justify-center" style={{ color: "#1e2a3a" }}>
-              <CallsSvgKeypad32 />
-            </span>
-            <span
-              className="text-center text-sm font-bold"
-              style={{ color: "#1e2a3a" }}
-            >
-              Call a number
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => showCallToast("Coming soon")}
-            className="flex w-[160px] flex-col items-center text-center"
-            style={{
-              background: "#ffffff",
-              border: "1px solid #e8d5b7",
-              borderRadius: 16,
-              padding: 24,
-            }}
-          >
-            <span className="mb-2 flex h-8 w-8 items-center justify-center" style={{ color: "#1e2a3a" }}>
-              <CallsSvgCalendar32 />
-            </span>
-            <span
-              className="text-center text-sm font-bold"
-              style={{ color: "#1e2a3a" }}
-            >
-              Schedule call
-            </span>
-          </button>
+          {/* Clean 3-button layout - plain and simple, no phone dialer */}
+          <div className="flex flex-col items-center justify-center gap-4">
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {/* Start call - pill style */}
+              <button
+                type="button"
+                onClick={handleStartCallClick}
+                className="flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all hover:shadow-md"
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #d1c4b0",
+                  borderRadius: 24,
+                  color: "#1e2a3a",
+                }}
+              >
+                <CallsSvgVideo32 />
+                Start call
+              </button>
+
+              {/* New call link - pill style */}
+              <button
+                type="button"
+                onClick={handleNewLinkClick}
+                className="flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all hover:shadow-md"
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #d1c4b0",
+                  borderRadius: 24,
+                  color: "#1e2a3a",
+                }}
+              >
+                <CallsSvgLink32 />
+                New call link
+              </button>
+
+              {/* Schedule call - pill style */}
+              <button
+                type="button"
+                onClick={handleScheduleClick}
+                className="flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all hover:shadow-md"
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #d1c4b0",
+                  borderRadius: 24,
+                  color: "#1e2a3a",
+                }}
+              >
+                <CallsSvgCalendar32 />
+                Schedule call
+              </button>
+            </div>
+
+            {/* Show upcoming scheduled calls */}
+            {scheduledCalls.length > 0 && (
+              <div className="mt-4 w-full max-w-sm rounded-lg border p-3" style={{ borderColor: "#d1c4b0", background: "#fff" }}>
+                <p className="mb-2 text-xs font-medium" style={{ color: "#6b7280" }}>
+                  Upcoming calls
+                </p>
+                {scheduledCalls.slice(0, 3).map((call) => (
+                  <div key={call.id} className="mb-2 flex items-center gap-2 text-sm">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full" style={{ background: "#8b5cf620" }}>
+                      <CallsSvgCalendarSmall />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate font-medium" style={{ color: "#1e2a3a" }}>{call.title}</p>
+                      <p className="text-xs" style={{ color: "#8896a0" }}>
+                        {new Date(call.scheduledAt).toLocaleString(undefined, { 
+                          month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" 
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <p className="mt-2 text-xs" style={{ color: "#8896a0" }}>
+              Quick actions for your meetings
+            </p>
+          </div>
         </div>
+        <p
+          className="flex shrink-0 flex-wrap items-center justify-center gap-1.5 px-4 pb-6 text-center text-[12px] leading-snug"
+          style={{ color: "#8896a0" }}
+        >
+          <CallsSvgLock14 />
+          <span>Your calls are end-to-end encrypted</span>
+        </p>
       </div>
-      <p
-        className="flex shrink-0 flex-wrap items-center justify-center gap-1.5 px-4 pb-6 text-center text-[12px] leading-snug"
-        style={{ color: "#8896a0" }}
-      >
-        <CallsSvgLock14 />
-        <span>Your calls are end-to-end encrypted</span>
-      </p>
-    </div>
+
+      {/* Participant Selector Modal */}
+      <CallParticipantSelector
+        isOpen={participantModalOpen}
+        onClose={() => setParticipantModalOpen(false)}
+        contacts={selectableContacts}
+        mode={participantModalMode}
+        onConfirm={handleParticipantConfirm}
+        currentUserId={user?.id || ""}
+      />
+
+      {/* Advanced Scheduled Call Modal */}
+      <AdvancedScheduledCallModal
+        isOpen={scheduleModalOpen}
+        onClose={() => setScheduleModalOpen(false)}
+        contacts={selectableContacts}
+        onSchedule={handleScheduleCall}
+        currentUserId={user?.id || ""}
+      />
+    </>
+  );
+}
+
+// Helper component for scheduled call list
+function CallsSvgCalendarSmall() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
   );
 }
 
@@ -4016,19 +4230,19 @@ function HubCallsTab({
     );
   }, [historySorted, qLower]);
 
-  const nameCol = "#e9edef";
-  const muted = "#8896a0";
-  const iconCol = "#8896a0";
+  const nameCol = LIST_TEXT;
+  const muted = LIST_TEXT_MUTED;
+  const iconCol = BRAND_ACCENT;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col" style={{ background: BG }}>
+    <div className="flex min-h-0 flex-1 flex-col bg-white">
       <div
         className="flex shrink-0 items-center justify-between border-b border-white/[0.06] px-4 py-3"
-        style={{ background: "#1e2a3a" }}
+        style={{ background: "#ffffff", borderColor: LIST_BORDER }}
       >
         <span
           className="text-[16px] font-bold"
-          style={{ color: "#e8eaf0" }}
+          style={{ color: LIST_TEXT }}
         >
           Calls
         </span>
@@ -4046,6 +4260,7 @@ function HubCallsTab({
         value={q}
         onChange={setQ}
         placeholder="Search calls..."
+        tone="light"
       />
       <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
         {friendsLoadDone && favoriteRows.length > 0 ? (
@@ -4068,7 +4283,7 @@ function HubCallsTab({
                   <li
                     key={f.id}
                     className="border-b"
-                    style={{ borderColor: "rgba(255,255,255,0.05)" }}
+                  style={{ borderColor: LIST_BORDER }}
                   >
                     <div
                       className="flex items-center gap-3 px-4"
@@ -4205,7 +4420,7 @@ function HubCallsTab({
                 <li
                   key={`${e.user_id}-${e.timestamp}`}
                   className="border-b"
-                  style={{ borderColor: "rgba(255,255,255,0.05)" }}
+                  style={{ borderColor: LIST_BORDER }}
                 >
                   <div
                     className="flex h-[72px] items-center gap-3 px-4"
@@ -4275,12 +4490,11 @@ function HubCallsTab({
 function HubUpdatesTab({ currentUser }: { currentUser: UserMe | null }) {
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col"
-      style={{ background: BG }}
+      className="flex min-h-0 flex-1 flex-col bg-white"
     >
       <div
         className="flex items-center gap-3 border-b px-4 py-3"
-        style={{ borderColor: BORDER_SUB }}
+        style={{ borderColor: LIST_BORDER }}
       >
         {currentUser ? (
           <InitialsAvatar
@@ -4290,18 +4504,18 @@ function HubUpdatesTab({ currentUser }: { currentUser: UserMe | null }) {
         ) : (
           <div
             className="h-10 w-10 shrink-0 rounded-full"
-            style={{ background: SURFACE }}
+            style={{ background: "#e5e7eb" }}
           />
         )}
         <p
           className="min-w-0 flex-1 text-left text-[15px] font-medium"
-          style={{ color: "#e8eaf0" }}
+          style={{ color: LIST_TEXT }}
         >
           My Status
         </p>
       </div>
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6">
-        <p className="text-center text-sm" style={{ color: TEXT_MUTED }}>
+        <p className="text-center text-sm" style={{ color: LIST_TEXT_MUTED }}>
           No updates yet
         </p>
       </div>
@@ -5397,6 +5611,14 @@ type GroupInfoPanelProps = {
   onViewFullSplit: () => void;
   onSettleAll: () => void;
   masterAbortRef: MutableRefObject<AbortController | null>;
+  onVoiceCall: () => void;
+  onVideoCall: () => void;
+  onScheduleCall: () => void;
+  onClearChat: () => void;
+  onToggleFavorite: () => void;
+  isFavorite: boolean;
+  scheduleVersion: number;
+  onScheduleChanged: () => void;
 };
 
 function GroupInfoPanel({
@@ -5412,7 +5634,71 @@ function GroupInfoPanel({
   onViewFullSplit,
   onSettleAll,
   masterAbortRef,
+  onVoiceCall,
+  onVideoCall,
+  onScheduleCall,
+  onClearChat,
+  onToggleFavorite,
+  isFavorite,
+  scheduleVersion,
+  onScheduleChanged,
 }: GroupInfoPanelProps) {
+  const [scheduledCalls, setScheduledCalls] = useState<
+    {
+      id: string;
+      chatId: string;
+      chatName: string;
+      title: string;
+      at: number;
+    }[]
+  >([]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem("gt_scheduled_calls_v1");
+      const list = raw
+        ? (JSON.parse(raw) as {
+            id: string;
+            chatId: string;
+            chatName: string;
+            title: string;
+            at: number;
+          }[])
+        : [];
+      const groupChatId = `group_${groupProp.id}`;
+      const filtered = list
+        .filter((x) => x.chatId === groupChatId)
+        .sort((a, b) => a.at - b.at);
+      setScheduledCalls(filtered);
+    } catch {
+      setScheduledCalls([]);
+    }
+  }, [groupProp.id, scheduleVersion]);
+
+  const removeScheduledCall = (id: string) => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem("gt_scheduled_calls_v1");
+      const list = raw
+        ? (JSON.parse(raw) as {
+            id: string;
+            chatId: string;
+            chatName: string;
+            title: string;
+            at: number;
+          }[])
+        : [];
+      const next = list.filter((x) => x.id !== id);
+      window.localStorage.setItem(
+        "gt_scheduled_calls_v1",
+        JSON.stringify(next),
+      );
+      onScheduleChanged();
+    } catch {
+      /* localStorage unavailable */
+    }
+  };
   const [panelOpacity, setPanelOpacity] = useState(0);
   const [group, setGroup] = useState<GroupOut>(groupProp);
   const [members, setMembers] = useState<GroupMemberOut[] | null>(null);
@@ -5438,6 +5724,15 @@ function GroupInfoPanel({
       group_name: string;
       net_amount: number;
     }[];
+  } | null>(null);
+  const [adminAction, setAdminAction] = useState<GroupMemberOut | null>(null);
+  const [reassignPickerOpen, setReassignPickerOpen] = useState(false);
+  const [memberActionLoading, setMemberActionLoading] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [budgetTotals, setBudgetTotals] = useState<{
+    total: number;
+    expenses: number;
+    currency: string;
   } | null>(null);
   const actionMoreRef = useRef<HTMLDivElement | null>(null);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -5641,6 +5936,53 @@ function GroupInfoPanel({
     };
   }, [isTravel, firstTrip?.id, onUnauthorized]);
 
+  useEffect(() => {
+    if (!isTravel || !firstTrip) {
+      setBudgetTotals(null);
+      return;
+    }
+    let cancel = false;
+    const runSignal = masterAbortRef.current?.signal;
+    void (async () => {
+      try {
+        const r = await fetchWithTimeout(
+          `${API_V1_BASE}/trips/${encodeURIComponent(firstTrip.id)}/expenses/summary/category`,
+          { headers: groupInfoAuthHeaders(), signal: runSignal },
+        );
+        if (r.status === 401) {
+          onUnauthorized();
+          return;
+        }
+        if (r.status === 200) {
+          const rows = (await r.json()) as {
+            category: string;
+            total: number;
+            currency: string;
+            expense_count: number;
+          }[];
+          if (cancel) return;
+          let total = 0;
+          let count = 0;
+          let currency = "INR";
+          for (const row of rows) {
+            total += Number(row.total) || 0;
+            count += Number(row.expense_count) || 0;
+            if (row.currency) currency = row.currency;
+          }
+          setBudgetTotals({ total, expenses: count, currency });
+        } else {
+          if (!cancel) setBudgetTotals(null);
+        }
+      } catch (e) {
+        if (isAbortError(e)) return;
+        if (!cancel) setBudgetTotals(null);
+      }
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, [isTravel, firstTrip?.id, onUnauthorized]);
+
   const isAdmin = useMemo(() => {
     if (!members) return false;
     return members.some(
@@ -5797,6 +6139,18 @@ function GroupInfoPanel({
     return netForUserInTripSummary(expenseSummary, selfId);
   }, [expenseSummary, selfId]);
 
+  const pendingPeopleCount = useMemo(() => {
+    if (!expenseSummary) return 0;
+    const ids = new Set<string>();
+    for (const r of expenseSummary) {
+      if (Math.abs(r.amount) >= 0.01) {
+        ids.add(String(r.from_user_id).toLowerCase());
+        ids.add(String(r.to_user_id).toLowerCase());
+      }
+    }
+    return ids.size;
+  }, [expenseSummary]);
+
   const travelLeaveDisabled =
     isTravel && firstTrip && !summaryLoading
       ? Math.abs(myTripNet) > 0.01
@@ -5842,14 +6196,9 @@ function GroupInfoPanel({
     })();
   };
 
-  const doLeave = async () => {
-    const name = group.name;
-    if (
-      !window.confirm(
-        `Leave ${name}? You will lose access to all messages.`,
-      )
-    )
-      return;
+  const callLeaveOnce = async (): Promise<
+    "ok" | "deleted" | "needs_admin" | "balance" | "error"
+  > => {
     try {
       const r = await fetchWithTimeout(
         `${API_V1_BASE}/groups/${encodeURIComponent(group.id)}/leave`,
@@ -5861,23 +6210,93 @@ function GroupInfoPanel({
       );
       if (r.status === 401) {
         onUnauthorized();
-        return;
+        return "error";
       }
-      if (r.status === 204 || r.status === 200) {
-        showToast("Left group", "success");
-        onLeaveSuccess(group.id);
-        return;
+      if (r.status === 200 || r.status === 204) {
+        try {
+          const body = (await r.clone().json()) as { deleted?: boolean };
+          return body?.deleted ? "deleted" : "ok";
+        } catch {
+          return "ok";
+        }
       }
-      const errText = await r.text();
-      if (r.status === 400 && isTravel) {
-        showToast("Settle your balance before leaving this travel group", "error");
-        return;
+      if (r.status === 400) {
+        let detail = "";
+        try {
+          const j = (await r.json()) as { detail?: string };
+          detail = (j?.detail ?? "").toLowerCase();
+        } catch {
+          /* ignore */
+        }
+        if (detail.includes("admin")) return "needs_admin";
+        if (detail.includes("balance") || detail.includes("settle"))
+          return "balance";
       }
-      showToast(errText || "Could not leave group", "error");
+      return "error";
     } catch (e) {
-      if (isAbortError(e)) return;
-      showToast("Could not leave group", "error");
+      if (isAbortError(e)) return "error";
+      return "error";
     }
+  };
+
+  const doLeave = async () => {
+    const name = group.name;
+    if (
+      !window.confirm(
+        `Leave ${name}? You will lose access to all messages.`,
+      )
+    )
+      return;
+    const result = await callLeaveOnce();
+    if (result === "ok") {
+      showToast("Left group", "success");
+      onLeaveSuccess(group.id);
+      return;
+    }
+    if (result === "deleted") {
+      showToast("Group dissolved", "success");
+      onLeaveSuccess(group.id);
+      return;
+    }
+    if (result === "balance") {
+      showToast(
+        "Settle your balance before leaving this travel group",
+        "error",
+      );
+      return;
+    }
+    if (result === "needs_admin") {
+      const others = (members ?? group.members).filter(
+        (m) => m.user_id !== selfId,
+      );
+      if (others.length === 0) {
+        showToast("Cannot leave: no other members to promote", "error");
+        return;
+      }
+      setReassignPickerOpen(true);
+      return;
+    }
+    showToast("Could not leave group", "error");
+  };
+
+  const reassignAndLeave = async (newAdminUserId: string) => {
+    const ok = await setMemberRoleApi(newAdminUserId, "admin");
+    if (!ok) return;
+    setReassignPickerOpen(false);
+    const result = await callLeaveOnce();
+    if (result === "ok" || result === "deleted") {
+      showToast("Left group", "success");
+      onLeaveSuccess(group.id);
+      return;
+    }
+    if (result === "balance") {
+      showToast(
+        "Settle your balance before leaving this travel group",
+        "error",
+      );
+      return;
+    }
+    showToast("Could not leave group", "error");
   };
 
   const doCloseGroup = async () => {
@@ -5950,6 +6369,109 @@ function GroupInfoPanel({
       copiedTimerRef.current = setTimeout(() => setCopiedCode(false), 2000);
     } catch {
       showToast("Could not copy", "error");
+    }
+  };
+
+  const reloadMembers = useCallback(async () => {
+    try {
+      const r = await fetchWithTimeout(
+        `${API_V1_BASE}/groups/${encodeURIComponent(group.id)}/members`,
+        {
+          headers: groupInfoAuthHeaders(),
+          signal: masterAbortRef.current?.signal,
+        },
+      );
+      if (r.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      if (r.status === 200) {
+        const list = (await r.json()) as GroupMemberOut[];
+        setMembers(Array.isArray(list) ? list : []);
+      }
+    } catch (e) {
+      if (isAbortError(e)) return;
+    }
+  }, [group.id, onUnauthorized, masterAbortRef]);
+
+  const setMemberRoleApi = async (
+    userId: string,
+    role: "admin" | "member",
+  ): Promise<boolean> => {
+    setMemberActionLoading(true);
+    try {
+      const r = await fetchWithTimeout(
+        `${API_V1_BASE}/groups/${encodeURIComponent(group.id)}/members/${encodeURIComponent(userId)}/role`,
+        {
+          method: "PATCH",
+          headers: {
+            ...groupInfoAuthHeaders(),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ role }),
+          signal: masterAbortRef.current?.signal,
+        },
+      );
+      if (r.status === 401) {
+        onUnauthorized();
+        return false;
+      }
+      if (r.status === 200) {
+        await reloadMembers();
+        return true;
+      }
+      let detail = "";
+      try {
+        const j = (await r.json()) as { detail?: string };
+        detail = j?.detail ?? "";
+      } catch {
+        /* ignore */
+      }
+      showToast(detail || "Could not update role", "error");
+      return false;
+    } catch (e) {
+      if (isAbortError(e)) return false;
+      showToast("Could not update role", "error");
+      return false;
+    } finally {
+      setMemberActionLoading(false);
+    }
+  };
+
+  const removeMemberApi = async (userId: string): Promise<boolean> => {
+    setMemberActionLoading(true);
+    try {
+      const r = await fetchWithTimeout(
+        `${API_V1_BASE}/groups/${encodeURIComponent(group.id)}/members/${encodeURIComponent(userId)}`,
+        {
+          method: "DELETE",
+          headers: groupInfoAuthHeaders(),
+          signal: masterAbortRef.current?.signal,
+        },
+      );
+      if (r.status === 401) {
+        onUnauthorized();
+        return false;
+      }
+      if (r.status === 204 || r.status === 200) {
+        await reloadMembers();
+        return true;
+      }
+      let detail = "";
+      try {
+        const j = (await r.json()) as { detail?: string };
+        detail = j?.detail ?? "";
+      } catch {
+        /* ignore */
+      }
+      showToast(detail || "Could not remove member", "error");
+      return false;
+    } catch (e) {
+      if (isAbortError(e)) return false;
+      showToast("Could not remove member", "error");
+      return false;
+    } finally {
+      setMemberActionLoading(false);
     }
   };
 
@@ -6108,6 +6630,7 @@ function GroupInfoPanel({
                   { key: "search", label: "Search" as const },
                   { key: "voice", label: "Voice" as const },
                   { key: "video", label: "Video" as const },
+                  { key: "schedule", label: "Schedule" as const },
                   { key: "more", label: "More" as const },
                 ] as const
               ).map((row) => {
@@ -6118,6 +6641,11 @@ function GroupInfoPanel({
                     <ThIconPhoneHandset size={18} className="text-[#1e2a3a]" />
                   ) : row.key === "video" ? (
                     <ThIconVideoCam size={18} className="text-[#1e2a3a]" />
+                  ) : row.key === "schedule" ? (
+                    <Calendar
+                      className="h-[18px] w-[18px] text-[#1e2a3a]"
+                      strokeWidth={2}
+                    />
                   ) : (
                     <ThIconMoreDots size={18} className="text-[#1e2a3a]" />
                   );
@@ -6130,9 +6658,12 @@ function GroupInfoPanel({
                     onClick={() => {
                       if (row.key === "search") {
                         onSearchInGroupChat();
-                        onClose();
-                      } else if (row.key === "voice" || row.key === "video") {
-                        globalThis.alert("Coming soon");
+                      } else if (row.key === "voice") {
+                        onVoiceCall();
+                      } else if (row.key === "video") {
+                        onVideoCall();
+                      } else if (row.key === "schedule") {
+                        onScheduleCall();
                       } else {
                         setActionMoreOpen((o) => !o);
                       }
@@ -6148,6 +6679,44 @@ function GroupInfoPanel({
                       className="absolute bottom-full left-0 right-0 z-30 mb-1 overflow-hidden rounded-lg border py-1 shadow-xl"
                       style={{ background: GI_CARD, borderColor: GI_SECTION_BORDER }}
                     >
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-left text-xs hover:bg-black/5"
+                        style={{ color: GI_TEXT }}
+                        onClick={() => {
+                          setActionMoreOpen(false);
+                          onToggleFavorite();
+                        }}
+                      >
+                        {isFavorite
+                          ? "Remove from Favorites"
+                          : "Add to Favorites"}
+                      </button>
+                      {isTravel ? (
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-left text-xs hover:bg-black/5"
+                          style={{ color: GI_GREEN }}
+                          onClick={() => {
+                            setActionMoreOpen(false);
+                            onClose();
+                            onViewFullSplit();
+                          }}
+                        >
+                          Settle up
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-left text-xs hover:bg-black/5"
+                        style={{ color: GI_TEXT }}
+                        onClick={() => {
+                          setActionMoreOpen(false);
+                          onClearChat();
+                        }}
+                      >
+                        Clear Chat
+                      </button>
                       <button
                         type="button"
                         className="w-full px-3 py-2 text-left text-xs hover:bg-black/5"
@@ -6180,6 +6749,72 @@ function GroupInfoPanel({
         </div>
 
         <div className="px-3 pb-6">
+          {scheduledCalls.length > 0 ? (
+            <div className={cardBase} style={cardStyle}>
+              <div className="mb-2 flex items-center justify-between">
+                <p
+                  className="text-xs font-bold uppercase tracking-wide"
+                  style={{ color: GI_MUTED }}
+                >
+                  Scheduled calls
+                </p>
+                <button
+                  type="button"
+                  className="rounded-md px-2 py-1 text-[11px] font-semibold hover:bg-black/5"
+                  style={{ color: GI_CORAL }}
+                  onClick={onScheduleCall}
+                >
+                  + New
+                </button>
+              </div>
+              <ul className="space-y-2">
+                {scheduledCalls.map((s) => {
+                  const upcoming = s.at >= Date.now();
+                  return (
+                    <li
+                      key={s.id}
+                      className="flex items-center gap-2 rounded-lg border px-3 py-2"
+                      style={{
+                        borderColor: GI_SECTION_BORDER,
+                        background: GI_ACTION_BG,
+                        opacity: upcoming ? 1 : 0.6,
+                      }}
+                    >
+                      <Calendar
+                        className="h-4 w-4 shrink-0"
+                        strokeWidth={1.8}
+                        style={{ color: GI_TEXT }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className="truncate text-xs font-semibold"
+                          style={{ color: GI_TEXT }}
+                        >
+                          {s.title}
+                        </p>
+                        <p
+                          className="text-[11px]"
+                          style={{ color: GI_MUTED }}
+                        >
+                          {new Date(s.at).toLocaleString()}
+                          {!upcoming ? " · past" : ""}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="shrink-0 rounded p-1 hover:bg-black/5"
+                        style={{ color: GI_MUTED }}
+                        aria-label="Remove reminder"
+                        onClick={() => removeScheduledCall(s.id)}
+                      >
+                        <X className="h-4 w-4" strokeWidth={1.8} />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
           {isTravel && firstTrip && !tripsLoading ? (
             <div
               className="mb-3 flex items-center justify-between gap-2 rounded-full border px-3 py-2"
@@ -6196,61 +6831,159 @@ function GroupInfoPanel({
             </div>
           ) : null}
 
-          {isTravel ? (
+          {isTravel && firstTrip ? (
             <div className={cardBase} style={cardStyle}>
-              <p
-                className="mb-2.5 text-[11px] font-bold uppercase"
-                style={{ color: GI_MUTED, letterSpacing: "0.06em" }}
-              >
-                Split Summary
-              </p>
-              {summaryLoading || tripsLoading ? (
-                <div className="h-4 w-40 animate-pulse rounded bg-[#e8d5b7]/50" />
-              ) : summaryError || !firstTrip ? (
-                <p className="text-sm" style={{ color: GI_MUTED }}>
-                  {summaryError
-                    ? "No expenses yet"
-                    : "No trip linked to this group yet"}
+              <div className="mb-2 flex items-center justify-between">
+                <p
+                  className="text-[11px] font-bold uppercase"
+                  style={{ color: GI_MUTED, letterSpacing: "0.06em" }}
+                >
+                  Split Activity
                 </p>
-              ) : (
-                <>
-                  {Math.abs(myTripNet) < 0.01 ? (
-                    <p className="flex items-center gap-1.5 text-sm" style={{ color: GI_MUTED }}>
-                      <ThIconCheckCircle size={14} className="text-[#1e2a3a]" />
-                      All settled
-                    </p>
-                  ) : myTripNet > 0 ? (
-                    <p className="text-sm font-semibold" style={{ color: GI_GREEN }}>
-                      You are owed {formatMoneyInr(myTripNet)}
-                    </p>
-                  ) : (
-                    <p className="text-sm font-semibold" style={{ color: GI_CORAL }}>
-                      You owe {formatMoneyInr(myTripNet)}
-                    </p>
-                  )}
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className="min-w-0 flex-1 rounded-xl py-2.5 text-sm font-semibold"
-                      style={{ background: GI_ACTION_BG, color: GI_TEXT }}
-                      onClick={() => {
-                        onClose();
-                        onViewFullSplit();
-                      }}
-                    >
-                      View Full Split
-                    </button>
-                    <button
-                      type="button"
-                      className="min-w-0 flex-1 rounded-xl border border-[#1d9e75] py-2.5 text-sm font-semibold"
-                      style={{ color: GI_GREEN, background: "transparent" }}
-                      onClick={onSettleAll}
-                    >
-                      Settle All
-                    </button>
-                  </div>
-                </>
-              )}
+                {Math.abs(myTripNet) >= 0.01 ? (
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                    style={{
+                      background:
+                        myTripNet > 0
+                          ? "rgba(29,158,117,0.15)"
+                          : "rgba(255,107,107,0.15)",
+                      color: myTripNet > 0 ? GI_GREEN : GI_CORAL,
+                    }}
+                  >
+                    {myTripNet > 0 ? "You're owed" : "You owe"}
+                  </span>
+                ) : (
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                    style={{
+                      background: "rgba(29,158,117,0.15)",
+                      color: GI_GREEN,
+                    }}
+                  >
+                    All settled
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div
+                  className="rounded-lg border px-2.5 py-2 text-center"
+                  style={{
+                    background: GI_ACTION_BG,
+                    borderColor: GI_SECTION_BORDER,
+                  }}
+                >
+                  <p className="text-[10px] uppercase" style={{ color: GI_MUTED }}>
+                    Group total
+                  </p>
+                  <p
+                    className="mt-0.5 truncate text-sm font-bold"
+                    style={{ color: GI_TEXT }}
+                    title={
+                      budgetTotals ? String(budgetTotals.total) : undefined
+                    }
+                  >
+                    {budgetTotals
+                      ? `₹${budgetTotals.total.toFixed(0)}`
+                      : summaryLoading
+                        ? "…"
+                        : "—"}
+                  </p>
+                </div>
+                <div
+                  className="rounded-lg border px-2.5 py-2 text-center"
+                  style={{
+                    background: GI_ACTION_BG,
+                    borderColor: GI_SECTION_BORDER,
+                  }}
+                >
+                  <p className="text-[10px] uppercase" style={{ color: GI_MUTED }}>
+                    Expenses
+                  </p>
+                  <p
+                    className="mt-0.5 text-sm font-bold"
+                    style={{ color: GI_TEXT }}
+                  >
+                    {budgetTotals ? budgetTotals.expenses : "—"}
+                  </p>
+                </div>
+                <div
+                  className="rounded-lg border px-2.5 py-2 text-center"
+                  style={{
+                    background: GI_ACTION_BG,
+                    borderColor: GI_SECTION_BORDER,
+                  }}
+                >
+                  <p className="text-[10px] uppercase" style={{ color: GI_MUTED }}>
+                    Pending
+                  </p>
+                  <p
+                    className="mt-0.5 text-sm font-bold"
+                    style={{
+                      color: pendingPeopleCount > 0 ? GI_CORAL : GI_GREEN,
+                    }}
+                  >
+                    {pendingPeopleCount}
+                  </p>
+                </div>
+              </div>
+              <div
+                className="mt-3 flex items-center justify-between rounded-lg border px-3 py-2"
+                style={{
+                  borderColor: GI_SECTION_BORDER,
+                  background:
+                    Math.abs(myTripNet) < 0.01
+                      ? GI_ACTION_BG
+                      : myTripNet > 0
+                        ? "rgba(29,158,117,0.08)"
+                        : "rgba(255,107,107,0.08)",
+                }}
+              >
+                <span className="text-xs" style={{ color: GI_MUTED }}>
+                  Your balance
+                </span>
+                <span
+                  className="text-sm font-bold"
+                  style={{
+                    color:
+                      Math.abs(myTripNet) < 0.01
+                        ? GI_MUTED
+                        : myTripNet > 0
+                          ? GI_GREEN
+                          : GI_CORAL,
+                  }}
+                >
+                  {Math.abs(myTripNet) < 0.01
+                    ? "₹0"
+                    : myTripNet > 0
+                      ? `+₹${myTripNet.toFixed(2)}`
+                      : `-₹${Math.abs(myTripNet).toFixed(2)}`}
+                </span>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="min-w-0 flex-1 rounded-xl py-2.5 text-sm font-semibold"
+                  style={{ background: GI_ACTION_BG, color: GI_TEXT }}
+                  onClick={() => {
+                    onClose();
+                    onViewFullSplit();
+                  }}
+                >
+                  View full split
+                </button>
+                <button
+                  type="button"
+                  className="min-w-0 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white"
+                  style={{ background: GI_GREEN }}
+                  onClick={() => {
+                    onClose();
+                    onViewFullSplit();
+                  }}
+                >
+                  Settle up
+                </button>
+              </div>
             </div>
           ) : null}
 
@@ -6529,11 +7262,15 @@ function GroupInfoPanel({
             {listSlice.map((m) => {
               const b = memberBalances[m.user_id];
               const hasB = typeof b === "number" && isTravel;
+              const showAdminMenu = isAdmin && m.user_id !== selfId;
               return (
-                <button
+                <div
                   key={m.id ?? m.user_id}
+                  className="mb-2 flex w-full items-center gap-2 rounded-lg py-1 last:mb-0"
+                >
+                <button
                   type="button"
-                  className="mb-2 flex w-full items-center gap-2 rounded-lg py-1 text-left last:mb-0 hover:bg-black/[0.04]"
+                  className="flex min-w-0 flex-1 items-center gap-2 rounded-lg py-1 text-left hover:bg-black/[0.04]"
                   onClick={() => {
                     if (m.user_id === selfId) return;
                     if (isTravel) openMemberSheet(m);
@@ -6585,6 +7322,21 @@ function GroupInfoPanel({
                     </span>
                   ) : null}
                 </button>
+                {showAdminMenu ? (
+                  <button
+                    type="button"
+                    className="shrink-0 rounded p-1 hover:bg-black/[0.06]"
+                    style={{ color: GI_MUTED }}
+                    aria-label={`Manage ${m.full_name}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAdminAction(m);
+                    }}
+                  >
+                    <ThIconMoreDots size={18} className="text-current" />
+                  </button>
+                ) : null}
+                </div>
               );
             })}
             {memberCount > 10 && !showAllMembers ? (
@@ -6643,74 +7395,143 @@ function GroupInfoPanel({
               className="mb-2.5 text-[11px] font-bold uppercase"
               style={{ color: GI_MUTED, letterSpacing: "0.06em" }}
             >
-              Invite Code
+              Invite Link
             </p>
-            <div
-              className="font-mono text-sm"
-              style={{
-                background: GI_ACTION_BG,
-                color: GI_TEXT,
-                border: `1px solid ${GI_SECTION_BORDER}`,
-                borderRadius: 8,
-                padding: "8px 12px",
-              }}
-            >
-              {group.invite_code ?? (membersLoading ? "…" : "—")}
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                className="rounded-lg px-3 py-2 text-sm font-semibold"
-                style={{ background: GI_ACTION_BG, color: GI_TEXT }}
-                onClick={() => void copyCode()}
-              >
-                {copiedCode ? "Copied!" : "Copy Code"}
-              </button>
-              <button
-                type="button"
-                className="rounded-lg px-3 py-2 text-sm font-semibold"
-                style={{ background: GI_ACTION_BG, color: GI_TEXT }}
-                onClick={() => void shareLink()}
-              >
-                Share Link
-              </button>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button
-                type="button"
-                className="rounded-lg px-3 py-1.5 text-xs font-medium"
-                style={{ background: GI_ACTION_BG, color: "#25D366" }}
-                onClick={() => {
-                  const code = group.invite_code ?? "";
-                  const o =
-                    typeof window !== "undefined" ? window.location.origin : "";
-                  const t = `Join ${group.name} on Group Travel: ${o}/?invite=${encodeURIComponent(code)}`;
-                  globalThis.open(
-                    `https://wa.me/?text=${encodeURIComponent(t)}`,
-                    "_blank",
-                  );
-                }}
-              >
-                Share on WhatsApp
-              </button>
-              <button
-                type="button"
-                className="rounded-lg px-3 py-1.5 text-xs font-medium"
-                style={{ background: GI_ACTION_BG, color: "#2AABEE" }}
-                onClick={() => {
-                  const code = group.invite_code ?? "";
-                  const o =
-                    typeof window !== "undefined" ? window.location.origin : "";
-                  const t = `${o}/?invite=${encodeURIComponent(code)}`;
-                  globalThis.open(
-                    `https://t.me/share/url?url=${encodeURIComponent(t)}&text=${encodeURIComponent(`Join ${group.name}`)}`,
-                    "_blank",
-                  );
-                }}
-              >
-                Telegram
-              </button>
-            </div>
+            {(() => {
+              const code = group.invite_code ?? "";
+              const origin =
+                typeof window !== "undefined" ? window.location.origin : "";
+              const link = code
+                ? `${origin}/join?code=${encodeURIComponent(code)}`
+                : "";
+              const shareText = `Join ${group.name} on Group Travel: ${link}`;
+              return (
+                <>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="flex-1 truncate text-sm"
+                      style={{
+                        background: GI_ACTION_BG,
+                        color: GI_TEXT,
+                        border: `1px solid ${GI_SECTION_BORDER}`,
+                        borderRadius: 8,
+                        padding: "8px 12px",
+                      }}
+                      title={link}
+                    >
+                      {link || (membersLoading ? "…" : "—")}
+                    </div>
+                    <button
+                      type="button"
+                      className="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold"
+                      style={{ background: GI_ACTION_BG, color: GI_TEXT }}
+                      disabled={!link}
+                      onClick={async () => {
+                        if (!link) return;
+                        try {
+                          await navigator.clipboard.writeText(link);
+                          setLinkCopied(true);
+                          if (copiedTimerRef.current)
+                            clearTimeout(copiedTimerRef.current);
+                          copiedTimerRef.current = setTimeout(
+                            () => setLinkCopied(false),
+                            2000,
+                          );
+                        } catch {
+                          showToast("Could not copy link", "error");
+                        }
+                      }}
+                    >
+                      {linkCopied ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                  <p className="mt-2 text-[11px]" style={{ color: GI_MUTED }}>
+                    Anyone with this link can request to join the group.
+                    {code ? (
+                      <>
+                        {" "}
+                        Code:{" "}
+                        <span className="font-mono" style={{ color: GI_TEXT }}>
+                          {code}
+                        </span>
+                      </>
+                    ) : null}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="rounded-lg px-3 py-2 text-sm font-semibold"
+                      style={{ background: GI_ACTION_BG, color: GI_TEXT }}
+                      disabled={!link}
+                      onClick={async () => {
+                        if (!link) return;
+                        const nav = navigator as Navigator & {
+                          share?: (data: {
+                            title?: string;
+                            text?: string;
+                            url?: string;
+                          }) => Promise<void>;
+                        };
+                        try {
+                          if (typeof nav.share === "function") {
+                            await nav.share({
+                              title: group.name,
+                              text: `Join ${group.name} on Group Travel`,
+                              url: link,
+                            });
+                            return;
+                          }
+                          await nav.clipboard.writeText(link);
+                          showToast("Link copied", "success");
+                        } catch {
+                          /* user cancelled or no share api */
+                        }
+                      }}
+                    >
+                      Share Link
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-lg px-3 py-1.5 text-xs font-medium"
+                      style={{ background: GI_ACTION_BG, color: "#25D366" }}
+                      disabled={!link}
+                      onClick={() => {
+                        if (!link) return;
+                        globalThis.open(
+                          `https://wa.me/?text=${encodeURIComponent(shareText)}`,
+                          "_blank",
+                        );
+                      }}
+                    >
+                      WhatsApp
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-lg px-3 py-1.5 text-xs font-medium"
+                      style={{ background: GI_ACTION_BG, color: "#2AABEE" }}
+                      disabled={!link}
+                      onClick={() => {
+                        if (!link) return;
+                        globalThis.open(
+                          `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(`Join ${group.name}`)}`,
+                          "_blank",
+                        );
+                      }}
+                    >
+                      Telegram
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-lg px-3 py-1.5 text-xs font-medium"
+                      style={{ background: GI_ACTION_BG, color: GI_TEXT }}
+                      onClick={() => void copyCode()}
+                    >
+                      {copiedCode ? "Copied!" : "Copy Code"}
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           <div className="mb-2 rounded-[12px] p-4" style={cardStyle}>
@@ -6738,6 +7559,16 @@ function GroupInfoPanel({
             >
               Leave Group
             </button>
+            {isAdmin ? (
+              <button
+                type="button"
+                className="mb-2 w-full rounded-lg py-2.5 text-sm font-bold text-white"
+                style={{ background: "#dc2626" }}
+                onClick={() => void doCloseGroup()}
+              >
+                Delete Group
+              </button>
+            ) : null}
             <button
               type="button"
               className="w-full rounded-lg border py-2.5 text-sm"
@@ -6845,6 +7676,2592 @@ function GroupInfoPanel({
           </div>
         </div>
       ) : null}
+
+      {adminAction ? (
+        <div
+          className="fixed inset-0 z-[400] flex items-end justify-center bg-black/50 sm:items-center"
+          onClick={() => setAdminAction(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-t-2xl p-4 shadow-xl sm:rounded-2xl"
+            style={{ background: GI_CARD }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center gap-3">
+              {adminAction.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={adminAction.avatar_url}
+                  alt=""
+                  className="h-10 w-10 rounded-full object-cover"
+                />
+              ) : (
+                <span
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white"
+                  style={{ background: listAvatarColor(adminAction.full_name) }}
+                >
+                  {initialsFromName(adminAction.full_name)}
+                </span>
+              )}
+              <div className="min-w-0">
+                <p
+                  className="truncate text-sm font-semibold"
+                  style={{ color: GI_TEXT }}
+                >
+                  {adminAction.full_name}
+                </p>
+                <p className="text-xs" style={{ color: GI_MUTED }}>
+                  {String(adminAction.role) === "admin" ? "Admin" : "Member"}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <button
+                type="button"
+                disabled={memberActionLoading}
+                className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-black/[0.04] disabled:opacity-60"
+                style={{ color: GI_TEXT }}
+                onClick={() => {
+                  const m = adminAction;
+                  setAdminAction(null);
+                  onClose();
+                  void openDirectChat({
+                    id: m.user_id,
+                    full_name: m.full_name,
+                    avatar_url: m.avatar_url ?? null,
+                  });
+                }}
+              >
+                Message {adminAction.full_name.split(" ")[0] || "member"}
+              </button>
+              {String(adminAction.role) === "admin" ? (
+                <button
+                  type="button"
+                  disabled={memberActionLoading}
+                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-black/[0.04] disabled:opacity-60"
+                  style={{ color: GI_TEXT }}
+                  onClick={async () => {
+                    const m = adminAction;
+                    if (
+                      !window.confirm(
+                        `Demote ${m.full_name} to member?`,
+                      )
+                    )
+                      return;
+                    const ok = await setMemberRoleApi(m.user_id, "member");
+                    if (ok) showToast("Member updated", "success");
+                    setAdminAction(null);
+                  }}
+                >
+                  Dismiss as admin
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={memberActionLoading}
+                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-black/[0.04] disabled:opacity-60"
+                  style={{ color: GI_TEXT }}
+                  onClick={async () => {
+                    const m = adminAction;
+                    const ok = await setMemberRoleApi(m.user_id, "admin");
+                    if (ok)
+                      showToast(
+                        `${m.full_name} is now an admin`,
+                        "success",
+                      );
+                    setAdminAction(null);
+                  }}
+                >
+                  Make group admin
+                </button>
+              )}
+              <div
+                className="my-1 h-px w-full"
+                style={{ background: GI_SECTION_BORDER }}
+              />
+              <button
+                type="button"
+                disabled={memberActionLoading}
+                className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-black/[0.04] disabled:opacity-60"
+                style={{ color: GI_CORAL }}
+                onClick={async () => {
+                  const m = adminAction;
+                  if (
+                    !window.confirm(
+                      `Remove ${m.full_name} from ${group.name}?`,
+                    )
+                  )
+                    return;
+                  const ok = await removeMemberApi(m.user_id);
+                  if (ok)
+                    showToast(
+                      `Removed ${m.full_name}`,
+                      "success",
+                    );
+                  setAdminAction(null);
+                }}
+              >
+                Remove from group
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="mt-3 w-full rounded-lg border py-2 text-sm"
+              style={{ borderColor: GI_SECTION_BORDER, color: GI_MUTED }}
+              onClick={() => setAdminAction(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {reassignPickerOpen ? (
+        <div
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setReassignPickerOpen(false)}
+        >
+          <div
+            className="flex w-full max-w-md flex-col overflow-hidden rounded-2xl shadow-xl"
+            style={{ background: GI_CARD, maxHeight: "80vh" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-4 pt-4">
+              <p
+                className="text-base font-bold"
+                style={{ color: GI_TEXT }}
+              >
+                Choose a new admin
+              </p>
+              <p className="mt-1 text-xs" style={{ color: GI_MUTED }}>
+                You're the only admin of {group.name}. Promote a member, then
+                you can leave.
+              </p>
+            </div>
+            <ul className="flex-1 space-y-1 overflow-y-auto px-2 py-3">
+              {(members ?? group.members)
+                .filter((m) => m.user_id !== selfId)
+                .map((m) => (
+                  <li key={m.user_id}>
+                    <button
+                      type="button"
+                      disabled={memberActionLoading}
+                      className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-black/[0.04] disabled:opacity-60"
+                      onClick={() => {
+                        if (
+                          !window.confirm(
+                            `Make ${m.full_name} the new admin and leave?`,
+                          )
+                        )
+                          return;
+                        void reassignAndLeave(m.user_id);
+                      }}
+                    >
+                      {m.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={m.avatar_url}
+                          alt=""
+                          className="h-9 w-9 shrink-0 rounded-full object-cover"
+                        />
+                      ) : (
+                        <span
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                          style={{ background: listAvatarColor(m.full_name) }}
+                        >
+                          {initialsFromName(m.full_name)}
+                        </span>
+                      )}
+                      <span
+                        className="min-w-0 flex-1 truncate text-sm"
+                        style={{ color: GI_TEXT }}
+                      >
+                        {m.full_name}
+                      </span>
+                      {String(m.role) === "admin" ? (
+                        <span
+                          className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                          style={{
+                            background: "#f0a500",
+                            color: GI_TEXT,
+                          }}
+                        >
+                          Admin
+                        </span>
+                      ) : null}
+                    </button>
+                  </li>
+                ))}
+            </ul>
+            <div className="flex justify-end border-t p-3" style={{ borderColor: GI_SECTION_BORDER }}>
+              <button
+                type="button"
+                className="rounded-lg px-3 py-1.5 text-sm"
+                style={{ color: GI_MUTED }}
+                onClick={() => setReassignPickerOpen(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+type DmInfoPanelProps = {
+  chatId: string;
+  peerName: string;
+  peerUsername: string | null;
+  peerAvatarUrl: string | null;
+  peerOnline: boolean | null;
+  isFavorite: boolean;
+  isMuted: boolean;
+  onClose: () => void;
+  onSearchInChat: () => void;
+  onVoiceCall: () => void;
+  onVideoCall: () => void;
+  onScheduleCall: () => void;
+  onClearChat: () => void;
+  onBlockPeer: () => void;
+  onReport: () => void;
+  onToggleFavorite: () => void;
+  onToggleMute: () => void;
+  onViewFullProfile: () => void;
+  scheduleVersion: number;
+  onScheduleChanged: () => void;
+};
+
+function DmInfoPanel({
+  chatId,
+  peerName,
+  peerUsername,
+  peerAvatarUrl,
+  peerOnline,
+  isFavorite,
+  isMuted,
+  onClose,
+  onSearchInChat,
+  onVoiceCall,
+  onVideoCall,
+  onScheduleCall,
+  onClearChat,
+  onBlockPeer,
+  onReport,
+  onToggleFavorite,
+  onToggleMute,
+  onViewFullProfile,
+  scheduleVersion,
+  onScheduleChanged,
+}: DmInfoPanelProps) {
+  const [actionMoreOpen, setActionMoreOpen] = useState(false);
+  const actionMoreRef = useRef<HTMLDivElement | null>(null);
+  const [scheduledCalls, setScheduledCalls] = useState<
+    {
+      id: string;
+      chatId: string;
+      chatName: string;
+      title: string;
+      at: number;
+    }[]
+  >([]);
+
+  useEffect(() => {
+    if (!actionMoreOpen) return;
+    const close = (e: MouseEvent) => {
+      const el = actionMoreRef.current;
+      if (el && !el.contains(e.target as Node)) setActionMoreOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [actionMoreOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem("gt_scheduled_calls_v1");
+      const list = raw
+        ? (JSON.parse(raw) as {
+            id: string;
+            chatId: string;
+            chatName: string;
+            title: string;
+            at: number;
+          }[])
+        : [];
+      const filtered = list
+        .filter((x) => x.chatId === chatId)
+        .sort((a, b) => a.at - b.at);
+      setScheduledCalls(filtered);
+    } catch {
+      setScheduledCalls([]);
+    }
+  }, [chatId, scheduleVersion]);
+
+  const removeScheduledCall = (id: string) => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem("gt_scheduled_calls_v1");
+      const list = raw
+        ? (JSON.parse(raw) as {
+            id: string;
+            chatId: string;
+            chatName: string;
+            title: string;
+            at: number;
+          }[])
+        : [];
+      const next = list.filter((x) => x.id !== id);
+      window.localStorage.setItem(
+        "gt_scheduled_calls_v1",
+        JSON.stringify(next),
+      );
+      onScheduleChanged();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const ini = initialsFromName(peerName);
+  const avBg = listAvatarColor(peerName);
+  const presenceText =
+    peerOnline === true
+      ? "Active now"
+      : peerOnline === false
+        ? "Last seen recently"
+        : "Last seen recently";
+
+  const cardBase = "mb-3 rounded-[12px] p-4";
+  const cardStyle: CSSProperties = {
+    background: GI_CARD,
+    border: `1px solid ${GI_SECTION_BORDER}`,
+  };
+
+  return (
+    <div
+      className="flex min-h-0 min-w-0 flex-1 flex-col"
+      style={{ background: GI_BG }}
+    >
+      <div
+        className="min-h-0 flex-1 custom-scrollbar overflow-y-auto"
+        style={{ background: GI_BG }}
+      >
+        <div className="relative">
+          <button
+            type="button"
+            className="absolute right-3 top-3 z-20 rounded p-1.5 hover:bg-black/5"
+            style={{ color: GI_MUTED }}
+            onClick={onClose}
+            aria-label="Close contact info"
+          >
+            <X className="h-5 w-5" strokeWidth={2.5} />
+          </button>
+          <div
+            className="h-[100px] w-full"
+            style={{
+              background: GI_ACTION_BG,
+              borderBottom: `1px solid ${GI_SECTION_BORDER}`,
+            }}
+          />
+          <div className="flex flex-col items-center px-4 pb-4 pt-0">
+            <div
+              className="relative -mt-8 flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-[3px] border-white text-lg font-bold text-white"
+              style={{ background: avBg }}
+            >
+              {peerAvatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={peerAvatarUrl}
+                  alt={peerName}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                ini
+              )}
+            </div>
+            <p
+              className="mt-2 text-center text-base font-bold"
+              style={{ color: GI_TEXT }}
+            >
+              {peerName}
+            </p>
+            {peerUsername ? (
+              <p className="text-center text-xs" style={{ color: GI_MUTED }}>
+                @{peerUsername}
+              </p>
+            ) : null}
+            <p
+              className="mt-0.5 inline-flex items-center gap-1 text-center text-xs"
+              style={{ color: GI_MUTED }}
+            >
+              <span
+                className="inline-block h-2 w-2 rounded-full"
+                style={{
+                  background: peerOnline === true ? GI_GREEN : "#9ca3af",
+                }}
+                aria-hidden
+              />
+              {presenceText}
+            </p>
+            <div className="mt-4 flex w-full max-w-sm justify-center gap-2">
+              {(
+                [
+                  { key: "search", label: "Search" as const },
+                  { key: "voice", label: "Voice" as const },
+                  { key: "video", label: "Video" as const },
+                  { key: "schedule", label: "Schedule" as const },
+                  { key: "more", label: "More" as const },
+                ] as const
+              ).map((row) => {
+                const iconNode =
+                  row.key === "search" ? (
+                    <ThIconSearch size={18} className="text-[#1e2a3a]" />
+                  ) : row.key === "voice" ? (
+                    <ThIconPhoneHandset size={18} className="text-[#1e2a3a]" />
+                  ) : row.key === "video" ? (
+                    <ThIconVideoCam size={18} className="text-[#1e2a3a]" />
+                  ) : row.key === "schedule" ? (
+                    <Calendar
+                      className="h-[18px] w-[18px] text-[#1e2a3a]"
+                      strokeWidth={2}
+                    />
+                  ) : (
+                    <ThIconMoreDots size={18} className="text-[#1e2a3a]" />
+                  );
+                return (
+                  <div
+                    key={row.key}
+                    className="relative flex-1"
+                    ref={row.key === "more" ? actionMoreRef : undefined}
+                  >
+                    <button
+                      type="button"
+                      className="flex h-11 w-full flex-col items-center justify-center gap-0.5 rounded-xl"
+                      style={{
+                        background: GI_ACTION_BG,
+                        minHeight: 44,
+                        color: GI_TEXT,
+                      }}
+                      onClick={() => {
+                        if (row.key === "search") onSearchInChat();
+                        else if (row.key === "voice") onVoiceCall();
+                        else if (row.key === "video") onVideoCall();
+                        else if (row.key === "schedule") onScheduleCall();
+                        else setActionMoreOpen((o) => !o);
+                      }}
+                    >
+                      {iconNode}
+                      <span
+                        className="text-[10px]"
+                        style={{ color: GI_MUTED }}
+                      >
+                        {row.label}
+                      </span>
+                    </button>
+                    {row.key === "more" && actionMoreOpen ? (
+                      <div
+                        className="absolute bottom-full left-0 right-0 z-30 mb-1 overflow-hidden rounded-lg border py-1 shadow-xl"
+                        style={{
+                          background: GI_CARD,
+                          borderColor: GI_SECTION_BORDER,
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-left text-xs hover:bg-black/5"
+                          style={{ color: GI_TEXT }}
+                          onClick={() => {
+                            setActionMoreOpen(false);
+                            onToggleFavorite();
+                          }}
+                        >
+                          {isFavorite
+                            ? "Remove from Favorites"
+                            : "Add to Favorites"}
+                        </button>
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-left text-xs hover:bg-black/5"
+                          style={{ color: GI_TEXT }}
+                          onClick={() => {
+                            setActionMoreOpen(false);
+                            onToggleMute();
+                          }}
+                        >
+                          {isMuted ? "Unmute" : "Mute Notifications"}
+                        </button>
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-left text-xs hover:bg-black/5"
+                          style={{ color: GI_TEXT }}
+                          onClick={() => {
+                            setActionMoreOpen(false);
+                            onClearChat();
+                          }}
+                        >
+                          Clear Chat
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-3 pb-6">
+          {scheduledCalls.length > 0 ? (
+            <div className={cardBase} style={cardStyle}>
+              <div className="mb-2 flex items-center justify-between">
+                <p
+                  className="text-xs font-bold uppercase tracking-wide"
+                  style={{ color: GI_MUTED }}
+                >
+                  Scheduled calls
+                </p>
+                <button
+                  type="button"
+                  className="rounded-md px-2 py-1 text-[11px] font-semibold hover:bg-black/5"
+                  style={{ color: GI_CORAL }}
+                  onClick={onScheduleCall}
+                >
+                  + New
+                </button>
+              </div>
+              <ul className="space-y-2">
+                {scheduledCalls.map((s) => {
+                  const upcoming = s.at >= Date.now();
+                  return (
+                    <li
+                      key={s.id}
+                      className="flex items-center gap-2 rounded-lg border px-3 py-2"
+                      style={{
+                        borderColor: GI_SECTION_BORDER,
+                        background: GI_ACTION_BG,
+                        opacity: upcoming ? 1 : 0.6,
+                      }}
+                    >
+                      <Calendar
+                        className="h-4 w-4 shrink-0"
+                        strokeWidth={1.8}
+                        style={{ color: GI_TEXT }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className="truncate text-xs font-semibold"
+                          style={{ color: GI_TEXT }}
+                        >
+                          {s.title}
+                        </p>
+                        <p
+                          className="text-[11px]"
+                          style={{ color: GI_MUTED }}
+                        >
+                          {new Date(s.at).toLocaleString()}
+                          {!upcoming ? " · past" : ""}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="shrink-0 rounded p-1 hover:bg-black/5"
+                        style={{ color: GI_MUTED }}
+                        aria-label="Remove reminder"
+                        onClick={() => removeScheduledCall(s.id)}
+                      >
+                        <X className="h-4 w-4" strokeWidth={1.8} />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            className={`${cardBase} flex w-full items-center justify-between text-left`}
+            style={cardStyle}
+            onClick={onViewFullProfile}
+          >
+            <span
+              className="text-sm font-semibold"
+              style={{ color: GI_TEXT }}
+            >
+              View full profile
+            </span>
+            <ThIconChevronRight size={18} className="text-[#8896a0]" />
+          </button>
+
+          <div className={cardBase} style={cardStyle}>
+            <button
+              type="button"
+              className="flex w-full items-center justify-between py-2 text-left text-sm"
+              style={{ color: GI_TEXT }}
+              onClick={onClearChat}
+            >
+              Clear chat
+              <ThIconChevronRight size={18} className="text-[#8896a0]" />
+            </button>
+            <div
+              className="my-1 h-px w-full"
+              style={{ background: GI_SECTION_BORDER }}
+            />
+            <button
+              type="button"
+              className="flex w-full items-center justify-between py-2 text-left text-sm"
+              style={{ color: GI_CORAL }}
+              onClick={onBlockPeer}
+            >
+              Block {peerName.split(" ")[0] || "user"}
+              <ThIconChevronRight size={18} className="text-[#8896a0]" />
+            </button>
+            <div
+              className="my-1 h-px w-full"
+              style={{ background: GI_SECTION_BORDER }}
+            />
+            <button
+              type="button"
+              className="flex w-full items-center justify-between py-2 text-left text-sm"
+              style={{ color: GI_CORAL }}
+              onClick={onReport}
+            >
+              Report {peerName.split(" ")[0] || "user"}
+              <ThIconChevronRight size={18} className="text-[#8896a0]" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type ConnectScreen =
+  | "main"
+  | "account"
+  | "privacy"
+  | "chats"
+  | "notifications"
+  | "storage"
+  | "lists"
+  | "language"
+  | "help"
+  | "invite"
+  | "blocked"
+  | "delete-account";
+
+type ConnectPrefs = {
+  account: {
+    security_notifications: boolean;
+    two_step_pin_set: boolean;
+  };
+  privacy: {
+    last_seen: "everyone" | "contacts" | "nobody";
+    profile_picture: "everyone" | "contacts" | "nobody";
+    about: "everyone" | "contacts" | "nobody";
+    status: "everyone" | "contacts" | "nobody";
+    groups: "everyone" | "contacts" | "nobody";
+    avatar_stickers: "everyone" | "contacts" | "nobody";
+    live_location: boolean;
+    silence_unknown_callers: boolean;
+    read_receipts: boolean;
+    default_disappearing_seconds: number;
+    app_lock: boolean;
+    chat_lock: boolean;
+    camera_effects: boolean;
+    ip_protect_calls: boolean;
+    disable_link_previews: boolean;
+  };
+  chats: {
+    theme: "light" | "dark" | "system";
+    wallpaper: string;
+    enter_is_send: boolean;
+    media_visibility: boolean;
+    font_size: "small" | "medium" | "large";
+    keep_archived: boolean;
+  };
+  notifications: {
+    conversation_tones: boolean;
+    reminders: boolean;
+    notification_tone: string;
+    vibrate: "off" | "default" | "short" | "long";
+    light: string;
+    high_priority: boolean;
+    reaction_notifications: boolean;
+    call_notifications: boolean;
+  };
+  storage: {
+    use_less_data_for_calls: boolean;
+    media_upload_quality: "standard" | "hd";
+    auto_download_quality: string;
+    auto_download_mobile: string[];
+    auto_download_wifi: string[];
+    auto_download_roaming: string[];
+  };
+  language: string;
+};
+
+const VISIBILITY_OPTIONS: { value: "everyone" | "contacts" | "nobody"; label: string }[] = [
+  { value: "everyone", label: "Everyone" },
+  { value: "contacts", label: "My contacts" },
+  { value: "nobody", label: "Nobody" },
+];
+
+const DISAPPEARING_OPTIONS = [
+  { value: 0, label: "Off" },
+  { value: 86400, label: "24 hours" },
+  { value: 604800, label: "7 days" },
+  { value: 7776000, label: "90 days" },
+];
+
+const LANGUAGE_OPTIONS = [
+  { value: "en", label: "English", sub: "(device's language)" },
+  { value: "es", label: "Español", sub: "Spanish" },
+  { value: "pt-br", label: "Português (Brasil)", sub: "Portuguese (Brazil)" },
+  { value: "ar", label: "العربية", sub: "Arabic" },
+  { value: "zh-cn", label: "简体中文", sub: "Simplified Chinese" },
+  { value: "fr", label: "Français", sub: "French" },
+  { value: "ru", label: "Русский", sub: "Russian" },
+  { value: "vi", label: "Tiếng Việt", sub: "Vietnamese" },
+  { value: "ko", label: "한국어", sub: "Korean" },
+  { value: "hi", label: "हिन्दी", sub: "Hindi" },
+  { value: "te", label: "తెలుగు", sub: "Telugu" },
+  { value: "ta", label: "தமிழ்", sub: "Tamil" },
+];
+
+const visibilityLabel = (v: string) =>
+  VISIBILITY_OPTIONS.find((o) => o.value === v)?.label ?? "Everyone";
+
+const disappearingLabel = (n: number) =>
+  DISAPPEARING_OPTIONS.find((o) => o.value === n)?.label ?? "Off";
+
+function ConnectSettingsPanel({
+  user,
+  onClose,
+  showToast,
+  onShareInvite,
+  onLogout,
+}: {
+  user: UserMe | null;
+  onClose: () => void;
+  showToast: (m: string, t?: "success" | "error") => void;
+  onShareInvite: () => Promise<void> | void;
+  onLogout: () => void;
+}) {
+  const router = useRouter();
+  const [screen, setScreen] = useState<ConnectScreen>("main");
+  const [prefs, setPrefs] = useState<ConnectPrefs | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+
+  // Load prefs from /settings/app
+  useEffect(() => {
+    let cancel = false;
+    void (async () => {
+      try {
+        const data = await apiFetch<{
+          preferences: { connect?: Partial<ConnectPrefs> };
+        }>("/settings/app");
+        const c = data.preferences?.connect ?? {};
+        if (!cancel) {
+          setPrefs({
+            account: {
+              security_notifications: c.account?.security_notifications ?? true,
+              two_step_pin_set: c.account?.two_step_pin_set ?? false,
+            },
+            privacy: {
+              last_seen: c.privacy?.last_seen ?? "everyone",
+              profile_picture: c.privacy?.profile_picture ?? "everyone",
+              about: c.privacy?.about ?? "everyone",
+              status: c.privacy?.status ?? "contacts",
+              groups: c.privacy?.groups ?? "everyone",
+              avatar_stickers: c.privacy?.avatar_stickers ?? "contacts",
+              live_location: c.privacy?.live_location ?? false,
+              silence_unknown_callers: c.privacy?.silence_unknown_callers ?? false,
+              read_receipts: c.privacy?.read_receipts ?? true,
+              default_disappearing_seconds:
+                c.privacy?.default_disappearing_seconds ?? 0,
+              app_lock: c.privacy?.app_lock ?? false,
+              chat_lock: c.privacy?.chat_lock ?? false,
+              camera_effects: c.privacy?.camera_effects ?? true,
+              ip_protect_calls: c.privacy?.ip_protect_calls ?? false,
+              disable_link_previews: c.privacy?.disable_link_previews ?? false,
+            },
+            chats: {
+              theme: c.chats?.theme ?? "system",
+              wallpaper: c.chats?.wallpaper ?? "default",
+              enter_is_send: c.chats?.enter_is_send ?? false,
+              media_visibility: c.chats?.media_visibility ?? true,
+              font_size: c.chats?.font_size ?? "medium",
+              keep_archived: c.chats?.keep_archived ?? false,
+            },
+            notifications: {
+              conversation_tones: c.notifications?.conversation_tones ?? true,
+              reminders: c.notifications?.reminders ?? true,
+              notification_tone: c.notifications?.notification_tone ?? "default",
+              vibrate: c.notifications?.vibrate ?? "default",
+              light: c.notifications?.light ?? "white",
+              high_priority: c.notifications?.high_priority ?? true,
+              reaction_notifications:
+                c.notifications?.reaction_notifications ?? true,
+              call_notifications: c.notifications?.call_notifications ?? true,
+            },
+            storage: {
+              use_less_data_for_calls:
+                c.storage?.use_less_data_for_calls ?? false,
+              media_upload_quality: c.storage?.media_upload_quality ?? "hd",
+              auto_download_quality:
+                c.storage?.auto_download_quality ?? "auto",
+              auto_download_mobile: c.storage?.auto_download_mobile ?? [
+                "photos",
+              ],
+              auto_download_wifi: c.storage?.auto_download_wifi ?? [
+                "photos",
+                "audio",
+                "video",
+                "docs",
+              ],
+              auto_download_roaming: c.storage?.auto_download_roaming ?? [],
+            },
+            language: c.language ?? "en",
+          });
+        }
+      } catch {
+        if (!cancel) setPrefs(null);
+      } finally {
+        if (!cancel) setLoading(false);
+      }
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, []);
+
+  // Patch helper: deep-merge a partial connect.* tree
+  const patchPref = useCallback(
+    async (partial: Record<string, unknown>) => {
+      if (saving) return;
+      setSaving(true);
+      try {
+        await apiFetch("/settings/app", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ preferences: { connect: partial } }),
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Could not save";
+        showToast(msg, "error");
+      } finally {
+        setSaving(false);
+      }
+    },
+    [saving, showToast],
+  );
+
+  const updateAccount = (k: keyof ConnectPrefs["account"], v: boolean) => {
+    setPrefs((p) =>
+      p ? { ...p, account: { ...p.account, [k]: v } } : p,
+    );
+    void patchPref({ account: { [k]: v } });
+  };
+  const updatePrivacy = <K extends keyof ConnectPrefs["privacy"]>(
+    k: K,
+    v: ConnectPrefs["privacy"][K],
+  ) => {
+    setPrefs((p) =>
+      p ? { ...p, privacy: { ...p.privacy, [k]: v } } : p,
+    );
+    void patchPref({ privacy: { [k]: v } });
+  };
+  const updateChats = <K extends keyof ConnectPrefs["chats"]>(
+    k: K,
+    v: ConnectPrefs["chats"][K],
+  ) => {
+    setPrefs((p) => (p ? { ...p, chats: { ...p.chats, [k]: v } } : p));
+    void patchPref({ chats: { [k]: v } });
+  };
+  const updateNotifications = <K extends keyof ConnectPrefs["notifications"]>(
+    k: K,
+    v: ConnectPrefs["notifications"][K],
+  ) => {
+    setPrefs((p) =>
+      p ? { ...p, notifications: { ...p.notifications, [k]: v } } : p,
+    );
+    void patchPref({ notifications: { [k]: v } });
+  };
+  const updateStorage = <K extends keyof ConnectPrefs["storage"]>(
+    k: K,
+    v: ConnectPrefs["storage"][K],
+  ) => {
+    setPrefs((p) =>
+      p ? { ...p, storage: { ...p.storage, [k]: v } } : p,
+    );
+    void patchPref({ storage: { [k]: v } });
+  };
+  const updateLanguage = (v: string) => {
+    setPrefs((p) => (p ? { ...p, language: v } : p));
+    void patchPref({ language: v });
+  };
+
+  const goExternal = (href: string) => {
+    onClose();
+    router.push(href);
+  };
+
+  const headerTitle =
+    screen === "main"
+      ? "Settings"
+      : screen === "account"
+        ? "Account"
+        : screen === "privacy"
+          ? "Privacy"
+          : screen === "chats"
+            ? "Chats"
+            : screen === "notifications"
+              ? "Notifications"
+              : screen === "storage"
+                ? "Storage and data"
+                : screen === "lists"
+                  ? "Lists"
+                  : screen === "language"
+                    ? "App language"
+                    : screen === "help"
+                      ? "Help and feedback"
+                      : screen === "invite"
+                        ? "Invite a contact"
+                        : screen === "blocked"
+                          ? "Blocked contacts"
+                          : screen === "delete-account"
+                            ? "Delete account"
+                            : "Settings";
+
+  const headerBack = () => {
+    if (screen === "main") onClose();
+    else if (screen === "blocked" || screen === "delete-account")
+      setScreen("account");
+    else setScreen("main");
+  };
+
+  const displayName = (user?.full_name ?? "").trim() || "You";
+  const initials = initialsFromName(displayName);
+  const avBg = listAvatarColor(displayName);
+
+  return (
+    <div
+      className="fixed inset-0 z-[380] flex flex-col"
+      style={{ background: "#ffffff" }}
+    >
+      <header
+        className="flex shrink-0 items-center gap-3 border-b px-3 py-3"
+        style={{ borderColor: "#e5e7eb", background: "#ffffff" }}
+      >
+        <button
+          type="button"
+          className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-black/5"
+          aria-label="Back"
+          onClick={headerBack}
+        >
+          <ThIconChevronLeft size={22} className="text-[#1e2a3a]" />
+        </button>
+        <h1
+          className="flex-1 text-lg font-bold"
+          style={{ color: "#1e2a3a" }}
+        >
+          {headerTitle}
+        </h1>
+        {saving ? (
+          <Loader2
+            className="h-4 w-4 animate-spin"
+            style={{ color: "#9ca3af" }}
+            aria-label="Saving"
+          />
+        ) : null}
+      </header>
+
+      <div className="flex-1 overflow-y-auto" style={{ background: "#ffffff" }}>
+        {loading && screen === "main" ? (
+          <div className="flex justify-center py-16">
+            <Loader2
+              className="h-6 w-6 animate-spin"
+              style={{ color: "#9ca3af" }}
+            />
+          </div>
+        ) : null}
+
+        {screen === "main" && !loading ? (
+          <ConnectMainScreen
+            search={search}
+            setSearch={setSearch}
+            user={user}
+            displayName={displayName}
+            initials={initials}
+            avBg={avBg}
+            showToast={showToast}
+            onShareInvite={onShareInvite}
+            goExternal={goExternal}
+            setScreen={setScreen}
+          />
+        ) : null}
+
+        {screen === "account" && prefs ? (
+          <ConnectAccountScreen
+            user={user}
+            prefs={prefs.account}
+            onChange={updateAccount}
+            onOpenDelete={() => setScreen("delete-account")}
+            onOpenBlocked={() => setScreen("blocked")}
+            onLogout={onLogout}
+            showToast={showToast}
+          />
+        ) : null}
+
+        {screen === "privacy" && prefs ? (
+          <ConnectPrivacyScreen
+            prefs={prefs.privacy}
+            onChange={updatePrivacy}
+            onOpenBlocked={() => setScreen("blocked")}
+            showToast={showToast}
+          />
+        ) : null}
+
+        {screen === "chats" && prefs ? (
+          <ConnectChatsScreen
+            prefs={prefs.chats}
+            onChange={updateChats}
+            showToast={showToast}
+          />
+        ) : null}
+
+        {screen === "notifications" && prefs ? (
+          <ConnectNotificationsScreen
+            prefs={prefs.notifications}
+            onChange={updateNotifications}
+          />
+        ) : null}
+
+        {screen === "storage" && prefs ? (
+          <ConnectStorageScreen
+            prefs={prefs.storage}
+            onChange={updateStorage}
+            showToast={showToast}
+          />
+        ) : null}
+
+        {screen === "lists" ? <ConnectListsScreen showToast={showToast} /> : null}
+
+        {screen === "language" && prefs ? (
+          <ConnectLanguageScreen
+            value={prefs.language}
+            onChange={updateLanguage}
+          />
+        ) : null}
+
+        {screen === "help" ? (
+          <ConnectHelpScreen showToast={showToast} goExternal={goExternal} />
+        ) : null}
+
+        {screen === "invite" ? (
+          <ConnectInviteScreen onShareInvite={onShareInvite} />
+        ) : null}
+
+        {screen === "blocked" ? (
+          <ConnectBlockedScreen showToast={showToast} />
+        ) : null}
+
+        {screen === "delete-account" ? (
+          <ConnectDeleteAccountScreen
+            user={user}
+            onCancel={() => setScreen("account")}
+            onDeleted={() => {
+              showToast("Account deleted", "success");
+              onLogout();
+            }}
+          />
+        ) : null}
+
+        {screen === "main" ? (
+          <p
+            className="py-6 text-center text-xs"
+            style={{ color: "#9ca3af" }}
+          >
+            from <span className="font-bold">Group Travel</span>
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+// ── Connect Settings sub-screens ──────────────────────────────────────────────
+
+const SETTINGS_BG = "#ffffff";
+const SETTINGS_HOVER = "rgba(0,0,0,0.03)";
+const SETTINGS_SECTION_BG = "#f1f3f5";
+const SETTINGS_BORDER = "#e5e7eb";
+const SETTINGS_TEXT = "#1e2a3a";
+const SETTINGS_MUTED = "#6b7280";
+const SETTINGS_ACCENT = "#1d9e75";
+
+function SettingsRow({
+  icon,
+  label,
+  sublabel,
+  trailing,
+  onClick,
+  destructive,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  sublabel?: string | React.ReactNode;
+  trailing?: React.ReactNode;
+  onClick?: () => void;
+  destructive?: boolean;
+}) {
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      className={`flex w-full items-center gap-4 px-4 py-3 text-left ${onClick ? "hover:bg-black/[0.03]" : ""}`}
+    >
+      {icon ? (
+        <span
+          className="flex h-9 w-9 shrink-0 items-center justify-center"
+          style={{ color: destructive ? "#dc2626" : SETTINGS_TEXT }}
+        >
+          {icon}
+        </span>
+      ) : null}
+      <div className="min-w-0 flex-1">
+        <p
+          className="truncate text-[15px] font-semibold"
+          style={{ color: destructive ? "#dc2626" : SETTINGS_TEXT }}
+        >
+          {label}
+        </p>
+        {sublabel ? (
+          <div
+            className="truncate text-xs"
+            style={{ color: SETTINGS_MUTED }}
+          >
+            {sublabel}
+          </div>
+        ) : null}
+      </div>
+      {trailing ? (
+        <div className="ml-2 flex shrink-0 items-center gap-2">{trailing}</div>
+      ) : null}
+    </Tag>
+  );
+}
+
+function SettingsToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      className="relative h-6 w-11 shrink-0 rounded-full transition-colors"
+      style={{ background: on ? "#1d2939" : "#d1d5db" }}
+      onClick={onToggle}
+    >
+      <span
+        className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow"
+        style={{
+          left: on ? "calc(100% - 22px)" : "2px",
+          transition: "left 0.18s ease",
+        }}
+      />
+    </button>
+  );
+}
+
+function SettingsSection({
+  title,
+  children,
+}: {
+  title?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      {title ? (
+        <p
+          className="px-4 pt-4 pb-1 text-xs"
+          style={{ color: SETTINGS_MUTED }}
+        >
+          {title}
+        </p>
+      ) : (
+        <div className="h-2" style={{ background: SETTINGS_SECTION_BG }} />
+      )}
+      <div style={{ background: SETTINGS_BG }}>{children}</div>
+    </section>
+  );
+}
+
+function ConnectMainScreen({
+  search,
+  setSearch,
+  user: _user,
+  displayName,
+  initials,
+  avBg,
+  showToast,
+  onShareInvite,
+  goExternal,
+  setScreen,
+}: {
+  search: string;
+  setSearch: (v: string) => void;
+  user: UserMe | null;
+  displayName: string;
+  initials: string;
+  avBg: string;
+  showToast: (m: string, t?: "success" | "error") => void;
+  onShareInvite: () => Promise<void> | void;
+  goExternal: (href: string) => void;
+  setScreen: (s: ConnectScreen) => void;
+}) {
+  type Row = {
+    icon: React.ReactNode;
+    label: string;
+    sublabel?: string;
+    onClick: () => void;
+  };
+
+  const sections: { rows: Row[] }[] = [
+    {
+      rows: [
+        {
+          icon: <UserCircle2 className="h-5 w-5" strokeWidth={1.5} />,
+          label: "Account",
+          sublabel: "Security notifications, change number",
+          onClick: () => setScreen("account"),
+        },
+        {
+          icon: <Lock className="h-5 w-5" strokeWidth={1.5} />,
+          label: "Privacy",
+          sublabel: "Blocked accounts, disappearing messages",
+          onClick: () => setScreen("privacy"),
+        },
+        {
+          icon: <SmilePlus className="h-5 w-5" strokeWidth={1.5} />,
+          label: "Avatar",
+          sublabel: "Create, edit, profile photo",
+          onClick: () => goExternal("/settings/edit-profile"),
+        },
+        {
+          icon: <UsersRound className="h-5 w-5" strokeWidth={1.5} />,
+          label: "Lists",
+          sublabel: "Manage people and groups",
+          onClick: () => setScreen("lists"),
+        },
+      ],
+    },
+    {
+      rows: [
+        {
+          icon: <MessageSquareText className="h-5 w-5" strokeWidth={1.5} />,
+          label: "Chats",
+          sublabel: "Theme, wallpapers, chat history",
+          onClick: () => setScreen("chats"),
+        },
+        {
+          icon: <Bell className="h-5 w-5" strokeWidth={1.5} />,
+          label: "Notifications",
+          sublabel: "Message, group & call tones",
+          onClick: () => setScreen("notifications"),
+        },
+        {
+          icon: <DatabaseIcon className="h-5 w-5" strokeWidth={1.5} />,
+          label: "Storage and data",
+          sublabel: "Network usage, auto-download",
+          onClick: () => setScreen("storage"),
+        },
+        {
+          icon: <Globe2 className="h-5 w-5" strokeWidth={1.5} />,
+          label: "App language",
+          sublabel: "English (device's language)",
+          onClick: () => setScreen("language"),
+        },
+      ],
+    },
+    {
+      rows: [
+        {
+          icon: <LifeBuoy className="h-5 w-5" strokeWidth={1.5} />,
+          label: "Help and feedback",
+          sublabel: "Help center, contact us, privacy policy",
+          onClick: () => setScreen("help"),
+        },
+        {
+          icon: <UserPlus className="h-5 w-5" strokeWidth={1.5} />,
+          label: "Invite a contact",
+          onClick: () => {
+            setScreen("invite");
+          },
+        },
+      ],
+    },
+  ];
+
+  const filtered = (() => {
+    const needle = search.trim().toLowerCase();
+    if (!needle) return sections;
+    return sections
+      .map((s) => ({
+        ...s,
+        rows: s.rows.filter((r) =>
+          `${r.label} ${r.sublabel ?? ""}`.toLowerCase().includes(needle),
+        ),
+      }))
+      .filter((s) => s.rows.length > 0);
+  })();
+
+  return (
+    <>
+      <div className="px-3 py-3">
+        <div
+          className="flex items-center gap-2 rounded-full px-3 py-2"
+          style={{ background: SETTINGS_SECTION_BG }}
+        >
+          <Search
+            className="h-4 w-4 shrink-0"
+            strokeWidth={2}
+            style={{ color: SETTINGS_MUTED }}
+          />
+          <input
+            type="text"
+            placeholder="Search settings"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+            style={{ color: SETTINGS_TEXT }}
+          />
+          {search ? (
+            <button
+              type="button"
+              aria-label="Clear search"
+              className="flex h-5 w-5 items-center justify-center rounded-full"
+              style={{ background: "#d1d5db" }}
+              onClick={() => setSearch("")}
+            >
+              <X className="h-3 w-3" style={{ color: SETTINGS_TEXT }} />
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-black/[0.03]"
+        onClick={() => goExternal("/profile")}
+      >
+        <span
+          className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full text-base font-bold text-white"
+          style={{ background: avBg }}
+        >
+          {initials}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p
+            className="truncate text-base font-bold"
+            style={{ color: SETTINGS_TEXT }}
+          >
+            {displayName}
+          </p>
+          <button
+            type="button"
+            className="mt-1 inline-flex items-center gap-1 rounded-full border px-3 py-0.5 text-xs"
+            style={{ borderColor: SETTINGS_BORDER, color: "#374151" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              showToast("Status coming soon", "success");
+            }}
+          >
+            <span aria-hidden>😊</span>
+            Drop a thought
+          </button>
+        </div>
+        <button
+          type="button"
+          aria-label="Show QR code"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg hover:bg-black/5"
+          onClick={(e) => {
+            e.stopPropagation();
+            showToast("QR profile coming soon", "success");
+          }}
+        >
+          <QrCode className="h-5 w-5" strokeWidth={1.5} style={{ color: SETTINGS_TEXT }} />
+        </button>
+      </button>
+
+      {filtered.map((sec, idx) => (
+        <SettingsSection key={idx}>
+          {sec.rows.map((r) => (
+            <SettingsRow
+              key={r.label}
+              icon={r.icon}
+              label={r.label}
+              sublabel={r.sublabel}
+              onClick={r.onClick}
+            />
+          ))}
+        </SettingsSection>
+      ))}
+
+      <button
+        type="button"
+        className="mt-4 w-full px-4 py-3 text-left text-sm font-semibold"
+        style={{ color: "#dc2626" }}
+        onClick={() => {
+          void onShareInvite();
+        }}
+      >
+        Share Group Travel with a friend
+      </button>
+    </>
+  );
+}
+
+function ConnectAccountScreen({
+  user,
+  prefs,
+  onChange,
+  onOpenDelete,
+  onOpenBlocked: _onOpenBlocked,
+  onLogout,
+  showToast,
+}: {
+  user: UserMe | null;
+  prefs: ConnectPrefs["account"];
+  onChange: (k: keyof ConnectPrefs["account"], v: boolean) => void;
+  onOpenDelete: () => void;
+  onOpenBlocked: () => void;
+  onLogout: () => void;
+  showToast: (m: string, t?: "success" | "error") => void;
+}) {
+  return (
+    <>
+      <SettingsSection>
+        <SettingsRow
+          icon={<Shield className="h-5 w-5" strokeWidth={1.5} />}
+          label="Security notifications"
+          sublabel={
+            prefs.security_notifications
+              ? "On — alerts for new logins"
+              : "Off"
+          }
+          trailing={
+            <SettingsToggle
+              on={prefs.security_notifications}
+              onToggle={() =>
+                onChange(
+                  "security_notifications",
+                  !prefs.security_notifications,
+                )
+              }
+            />
+          }
+        />
+        <SettingsRow
+          icon={<KeyRound className="h-5 w-5" strokeWidth={1.5} />}
+          label="Passkeys"
+          sublabel="Sign in without a password"
+          onClick={() => showToast("Passkeys coming soon", "success")}
+        />
+        <SettingsRow
+          icon={<Mail className="h-5 w-5" strokeWidth={1.5} />}
+          label="Email address"
+          sublabel={user?.email ?? "—"}
+          onClick={() => showToast("Email change coming soon", "success")}
+        />
+        <SettingsRow
+          icon={<Asterisk className="h-5 w-5" strokeWidth={1.5} />}
+          label="Two-step verification"
+          sublabel={prefs.two_step_pin_set ? "Enabled" : "Disabled"}
+          trailing={
+            <SettingsToggle
+              on={prefs.two_step_pin_set}
+              onToggle={() =>
+                onChange("two_step_pin_set", !prefs.two_step_pin_set)
+              }
+            />
+          }
+        />
+        <SettingsRow
+          icon={<PhoneCall className="h-5 w-5" strokeWidth={1.5} />}
+          label="Change phone number"
+          onClick={() => showToast("Phone change coming soon", "success")}
+        />
+        <SettingsRow
+          icon={<FileText className="h-5 w-5" strokeWidth={1.5} />}
+          label="Request account info"
+          onClick={() => showToast("Data export coming soon", "success")}
+        />
+      </SettingsSection>
+
+      <SettingsSection>
+        <SettingsRow
+          icon={<LogOut className="h-5 w-5" strokeWidth={1.5} />}
+          label="Log out"
+          onClick={() => {
+            if (window.confirm("Log out of Group Travel?")) onLogout();
+          }}
+        />
+        <SettingsRow
+          icon={<Trash2 className="h-5 w-5" strokeWidth={1.5} />}
+          label="Delete account"
+          destructive
+          onClick={onOpenDelete}
+        />
+      </SettingsSection>
+    </>
+  );
+}
+
+function VisibilityRow({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: "everyone" | "contacts" | "nobody";
+  onChange: (v: "everyone" | "contacts" | "nobody") => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <SettingsRow
+        label={label}
+        sublabel={visibilityLabel(value)}
+        onClick={() => setOpen(true)}
+      />
+      {open ? (
+        <div
+          className="fixed inset-0 z-[400] flex items-end justify-center bg-black/40 sm:items-center"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-t-2xl bg-white p-2 sm:rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p
+              className="px-3 py-2 text-xs"
+              style={{ color: SETTINGS_MUTED }}
+            >
+              {label}
+            </p>
+            {VISIBILITY_OPTIONS.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                className="flex w-full items-center justify-between rounded-lg px-3 py-3 text-left text-sm hover:bg-black/[0.03]"
+                style={{ color: SETTINGS_TEXT }}
+                onClick={() => {
+                  onChange(o.value);
+                  setOpen(false);
+                }}
+              >
+                {o.label}
+                {value === o.value ? (
+                  <Check
+                    className="h-4 w-4"
+                    style={{ color: SETTINGS_ACCENT }}
+                  />
+                ) : null}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function ConnectPrivacyScreen({
+  prefs,
+  onChange,
+  onOpenBlocked,
+  showToast,
+}: {
+  prefs: ConnectPrefs["privacy"];
+  onChange: <K extends keyof ConnectPrefs["privacy"]>(
+    k: K,
+    v: ConnectPrefs["privacy"][K],
+  ) => void;
+  onOpenBlocked: () => void;
+  showToast: (m: string, t?: "success" | "error") => void;
+}) {
+  const [timerOpen, setTimerOpen] = useState(false);
+  return (
+    <>
+      <SettingsSection title="Who can see my personal info">
+        <VisibilityRow
+          label="Last seen and online"
+          value={prefs.last_seen}
+          onChange={(v) => onChange("last_seen", v)}
+        />
+        <VisibilityRow
+          label="Profile picture"
+          value={prefs.profile_picture}
+          onChange={(v) => onChange("profile_picture", v)}
+        />
+        <VisibilityRow
+          label="About"
+          value={prefs.about}
+          onChange={(v) => onChange("about", v)}
+        />
+        <VisibilityRow
+          label="Status"
+          value={prefs.status}
+          onChange={(v) => onChange("status", v)}
+        />
+        <SettingsRow
+          label="Read receipts"
+          sublabel="If turned off, you won't send or receive read receipts. Read receipts are always sent for group chats."
+          trailing={
+            <SettingsToggle
+              on={prefs.read_receipts}
+              onToggle={() => onChange("read_receipts", !prefs.read_receipts)}
+            />
+          }
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Disappearing messages">
+        <SettingsRow
+          label="Default message timer"
+          sublabel="Start new chats with disappearing messages set to your timer"
+          trailing={
+            <span className="text-sm" style={{ color: SETTINGS_MUTED }}>
+              {disappearingLabel(prefs.default_disappearing_seconds)}
+            </span>
+          }
+          onClick={() => setTimerOpen(true)}
+        />
+        {timerOpen ? (
+          <div
+            className="fixed inset-0 z-[400] flex items-end justify-center bg-black/40 sm:items-center"
+            onClick={() => setTimerOpen(false)}
+          >
+            <div
+              className="w-full max-w-md rounded-t-2xl bg-white p-2 sm:rounded-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {DISAPPEARING_OPTIONS.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-3 text-left text-sm"
+                  style={{ color: SETTINGS_TEXT }}
+                  onClick={() => {
+                    onChange("default_disappearing_seconds", o.value);
+                    setTimerOpen(false);
+                  }}
+                >
+                  {o.label}
+                  {prefs.default_disappearing_seconds === o.value ? (
+                    <Check
+                      className="h-4 w-4"
+                      style={{ color: SETTINGS_ACCENT }}
+                    />
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </SettingsSection>
+
+      <SettingsSection>
+        <VisibilityRow
+          label="Groups"
+          value={prefs.groups}
+          onChange={(v) => onChange("groups", v)}
+        />
+        <VisibilityRow
+          label="Avatar stickers"
+          value={prefs.avatar_stickers}
+          onChange={(v) => onChange("avatar_stickers", v)}
+        />
+        <SettingsRow
+          label="Live location"
+          sublabel={prefs.live_location ? "Sharing enabled" : "Disabled"}
+          trailing={
+            <SettingsToggle
+              on={prefs.live_location}
+              onToggle={() => onChange("live_location", !prefs.live_location)}
+            />
+          }
+        />
+        <SettingsRow
+          label="Calls"
+          sublabel="Silence unknown callers"
+          trailing={
+            <SettingsToggle
+              on={prefs.silence_unknown_callers}
+              onToggle={() =>
+                onChange(
+                  "silence_unknown_callers",
+                  !prefs.silence_unknown_callers,
+                )
+              }
+            />
+          }
+        />
+        <SettingsRow
+          label="Contacts"
+          sublabel="Blocked accounts"
+          onClick={onOpenBlocked}
+        />
+        <SettingsRow
+          label="App lock"
+          sublabel={prefs.app_lock ? "Enabled" : "Disabled"}
+          trailing={
+            <SettingsToggle
+              on={prefs.app_lock}
+              onToggle={() => onChange("app_lock", !prefs.app_lock)}
+            />
+          }
+        />
+        <SettingsRow
+          label="Chat lock"
+          trailing={
+            <SettingsToggle
+              on={prefs.chat_lock}
+              onToggle={() => onChange("chat_lock", !prefs.chat_lock)}
+            />
+          }
+        />
+        <SettingsRow
+          label="Allow camera effects"
+          sublabel="Use effects in the camera and video calls"
+          trailing={
+            <SettingsToggle
+              on={prefs.camera_effects}
+              onToggle={() => onChange("camera_effects", !prefs.camera_effects)}
+            />
+          }
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Advanced">
+        <SettingsRow
+          label="Protect IP address in calls"
+          trailing={
+            <SettingsToggle
+              on={prefs.ip_protect_calls}
+              onToggle={() =>
+                onChange("ip_protect_calls", !prefs.ip_protect_calls)
+              }
+            />
+          }
+        />
+        <SettingsRow
+          label="Disable link previews"
+          trailing={
+            <SettingsToggle
+              on={prefs.disable_link_previews}
+              onToggle={() =>
+                onChange("disable_link_previews", !prefs.disable_link_previews)
+              }
+            />
+          }
+        />
+      </SettingsSection>
+
+      <SettingsSection>
+        <SettingsRow
+          label="Privacy checkup"
+          sublabel="Control your privacy and choose the right settings for you."
+          onClick={() =>
+            showToast("Privacy checkup coming soon", "success")
+          }
+        />
+      </SettingsSection>
+    </>
+  );
+}
+
+function ConnectChatsScreen({
+  prefs,
+  onChange,
+  showToast,
+}: {
+  prefs: ConnectPrefs["chats"];
+  onChange: <K extends keyof ConnectPrefs["chats"]>(
+    k: K,
+    v: ConnectPrefs["chats"][K],
+  ) => void;
+  showToast: (m: string, t?: "success" | "error") => void;
+}) {
+  const [themeOpen, setThemeOpen] = useState(false);
+  const [fontOpen, setFontOpen] = useState(false);
+  return (
+    <>
+      <SettingsSection title="Display">
+        <SettingsRow
+          icon={<MoonIcon className="h-5 w-5" strokeWidth={1.5} />}
+          label="Theme"
+          sublabel={
+            prefs.theme === "system"
+              ? "System default"
+              : prefs.theme === "light"
+                ? "Light"
+                : "Dark"
+          }
+          onClick={() => setThemeOpen(true)}
+        />
+        <SettingsRow
+          icon={<Palette className="h-5 w-5" strokeWidth={1.5} />}
+          label="Default chat theme"
+          onClick={() => showToast("Wallpapers coming soon", "success")}
+        />
+        {themeOpen ? (
+          <div
+            className="fixed inset-0 z-[400] flex items-end justify-center bg-black/40 sm:items-center"
+            onClick={() => setThemeOpen(false)}
+          >
+            <div
+              className="w-full max-w-md rounded-t-2xl bg-white p-2 sm:rounded-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {(["system", "light", "dark"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-3 text-left text-sm"
+                  style={{ color: SETTINGS_TEXT }}
+                  onClick={() => {
+                    onChange("theme", t);
+                    setThemeOpen(false);
+                  }}
+                >
+                  {t === "system"
+                    ? "System default"
+                    : t === "light"
+                      ? "Light"
+                      : "Dark"}
+                  {prefs.theme === t ? (
+                    <Check
+                      className="h-4 w-4"
+                      style={{ color: SETTINGS_ACCENT }}
+                    />
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </SettingsSection>
+
+      <SettingsSection title="Chat settings">
+        <SettingsRow
+          label="Enter is send"
+          sublabel="Enter key will send your message"
+          trailing={
+            <SettingsToggle
+              on={prefs.enter_is_send}
+              onToggle={() => onChange("enter_is_send", !prefs.enter_is_send)}
+            />
+          }
+        />
+        <SettingsRow
+          label="Media visibility"
+          sublabel="Show newly downloaded media in your device's gallery"
+          trailing={
+            <SettingsToggle
+              on={prefs.media_visibility}
+              onToggle={() =>
+                onChange("media_visibility", !prefs.media_visibility)
+              }
+            />
+          }
+        />
+        <SettingsRow
+          label="Font size"
+          sublabel={
+            prefs.font_size === "small"
+              ? "Small"
+              : prefs.font_size === "large"
+                ? "Large"
+                : "Medium"
+          }
+          onClick={() => setFontOpen(true)}
+        />
+        {fontOpen ? (
+          <div
+            className="fixed inset-0 z-[400] flex items-end justify-center bg-black/40 sm:items-center"
+            onClick={() => setFontOpen(false)}
+          >
+            <div
+              className="w-full max-w-md rounded-t-2xl bg-white p-2 sm:rounded-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {(["small", "medium", "large"] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-3 text-left text-sm"
+                  style={{ color: SETTINGS_TEXT }}
+                  onClick={() => {
+                    onChange("font_size", f);
+                    setFontOpen(false);
+                  }}
+                >
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                  {prefs.font_size === f ? (
+                    <Check
+                      className="h-4 w-4"
+                      style={{ color: SETTINGS_ACCENT }}
+                    />
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </SettingsSection>
+
+      <SettingsSection title="Archived chats">
+        <SettingsRow
+          label="Keep chats archived"
+          sublabel="Archived chats will remain archived when you receive a new message"
+          trailing={
+            <SettingsToggle
+              on={prefs.keep_archived}
+              onToggle={() => onChange("keep_archived", !prefs.keep_archived)}
+            />
+          }
+        />
+        <SettingsRow
+          icon={<Cloud className="h-5 w-5" strokeWidth={1.5} />}
+          label="Chat backup"
+          onClick={() => showToast("Chat backup coming soon", "success")}
+        />
+      </SettingsSection>
+    </>
+  );
+}
+
+function ConnectNotificationsScreen({
+  prefs,
+  onChange,
+}: {
+  prefs: ConnectPrefs["notifications"];
+  onChange: <K extends keyof ConnectPrefs["notifications"]>(
+    k: K,
+    v: ConnectPrefs["notifications"][K],
+  ) => void;
+}) {
+  const [vibrateOpen, setVibrateOpen] = useState(false);
+  return (
+    <>
+      <SettingsSection>
+        <SettingsRow
+          label="Conversation tones"
+          sublabel="Play sounds for incoming and outgoing messages."
+          trailing={
+            <SettingsToggle
+              on={prefs.conversation_tones}
+              onToggle={() =>
+                onChange("conversation_tones", !prefs.conversation_tones)
+              }
+            />
+          }
+        />
+        <SettingsRow
+          label="Reminders"
+          sublabel="Get occasional reminders about messages or status updates you haven't seen"
+          trailing={
+            <SettingsToggle
+              on={prefs.reminders}
+              onToggle={() => onChange("reminders", !prefs.reminders)}
+            />
+          }
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Messages">
+        <SettingsRow
+          label="Notification tone"
+          sublabel={prefs.notification_tone || "Default"}
+          onClick={() => onChange("notification_tone", "default")}
+        />
+        <SettingsRow
+          label="Vibrate"
+          sublabel={
+            prefs.vibrate.charAt(0).toUpperCase() + prefs.vibrate.slice(1)
+          }
+          onClick={() => setVibrateOpen(true)}
+        />
+        {vibrateOpen ? (
+          <div
+            className="fixed inset-0 z-[400] flex items-end justify-center bg-black/40 sm:items-center"
+            onClick={() => setVibrateOpen(false)}
+          >
+            <div
+              className="w-full max-w-md rounded-t-2xl bg-white p-2 sm:rounded-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {(["off", "default", "short", "long"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-3 text-left text-sm"
+                  style={{ color: SETTINGS_TEXT }}
+                  onClick={() => {
+                    onChange("vibrate", v);
+                    setVibrateOpen(false);
+                  }}
+                >
+                  {v.charAt(0).toUpperCase() + v.slice(1)}
+                  {prefs.vibrate === v ? (
+                    <Check
+                      className="h-4 w-4"
+                      style={{ color: SETTINGS_ACCENT }}
+                    />
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        <SettingsRow
+          label="Light"
+          sublabel={prefs.light}
+          onClick={() => onChange("light", "white")}
+        />
+        <SettingsRow
+          label="Use high priority notifications"
+          sublabel="Show previews of notifications at the top of the screen"
+          trailing={
+            <SettingsToggle
+              on={prefs.high_priority}
+              onToggle={() => onChange("high_priority", !prefs.high_priority)}
+            />
+          }
+        />
+        <SettingsRow
+          label="Reaction notifications"
+          sublabel="Show notifications for reactions to messages you send"
+          trailing={
+            <SettingsToggle
+              on={prefs.reaction_notifications}
+              onToggle={() =>
+                onChange(
+                  "reaction_notifications",
+                  !prefs.reaction_notifications,
+                )
+              }
+            />
+          }
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Calls">
+        <SettingsRow
+          label="Call notifications"
+          trailing={
+            <SettingsToggle
+              on={prefs.call_notifications}
+              onToggle={() =>
+                onChange("call_notifications", !prefs.call_notifications)
+              }
+            />
+          }
+        />
+      </SettingsSection>
+    </>
+  );
+}
+
+function ConnectStorageScreen({
+  prefs,
+  onChange,
+  showToast,
+}: {
+  prefs: ConnectPrefs["storage"];
+  onChange: <K extends keyof ConnectPrefs["storage"]>(
+    k: K,
+    v: ConnectPrefs["storage"][K],
+  ) => void;
+  showToast: (m: string, t?: "success" | "error") => void;
+}) {
+  const [uploadOpen, setUploadOpen] = useState(false);
+  return (
+    <>
+      <SettingsSection>
+        <SettingsRow
+          icon={<Folder className="h-5 w-5" strokeWidth={1.5} />}
+          label="Manage storage"
+          sublabel="Calculating…"
+          onClick={() => showToast("Storage manager coming soon", "success")}
+        />
+        <SettingsRow
+          icon={<Activity className="h-5 w-5" strokeWidth={1.5} />}
+          label="Network usage"
+          sublabel="Track sent / received"
+          onClick={() => showToast("Network usage coming soon", "success")}
+        />
+        <SettingsRow
+          label="Use less data for calls"
+          trailing={
+            <SettingsToggle
+              on={prefs.use_less_data_for_calls}
+              onToggle={() =>
+                onChange(
+                  "use_less_data_for_calls",
+                  !prefs.use_less_data_for_calls,
+                )
+              }
+            />
+          }
+        />
+        <SettingsRow
+          label="Proxy"
+          sublabel="Off"
+          onClick={() => showToast("Proxy not supported on web", "success")}
+        />
+      </SettingsSection>
+
+      <SettingsSection>
+        <SettingsRow
+          label="Media upload quality"
+          sublabel={prefs.media_upload_quality === "hd" ? "HD quality" : "Standard"}
+          onClick={() => setUploadOpen(true)}
+        />
+        {uploadOpen ? (
+          <div
+            className="fixed inset-0 z-[400] flex items-end justify-center bg-black/40 sm:items-center"
+            onClick={() => setUploadOpen(false)}
+          >
+            <div
+              className="w-full max-w-md rounded-t-2xl bg-white p-2 sm:rounded-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {(["standard", "hd"] as const).map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-3 text-left text-sm"
+                  style={{ color: SETTINGS_TEXT }}
+                  onClick={() => {
+                    onChange("media_upload_quality", q);
+                    setUploadOpen(false);
+                  }}
+                >
+                  {q === "hd" ? "HD quality" : "Standard"}
+                  {prefs.media_upload_quality === q ? (
+                    <Check
+                      className="h-4 w-4"
+                      style={{ color: SETTINGS_ACCENT }}
+                    />
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        <SettingsRow
+          label="Auto-download quality"
+          sublabel={prefs.auto_download_quality}
+          onClick={() => onChange("auto_download_quality", "auto")}
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Media auto-download">
+        <SettingsRow
+          label="When using mobile data"
+          sublabel={prefs.auto_download_mobile.join(", ") || "No media"}
+        />
+        <SettingsRow
+          label="When connected on Wi-Fi"
+          sublabel={prefs.auto_download_wifi.join(", ") || "No media"}
+        />
+        <SettingsRow
+          label="When roaming"
+          sublabel={prefs.auto_download_roaming.join(", ") || "No media"}
+        />
+      </SettingsSection>
+    </>
+  );
+}
+
+function ConnectListsScreen({
+  showToast,
+}: {
+  showToast: (m: string, t?: "success" | "error") => void;
+}) {
+  return (
+    <>
+      <div className="px-6 pt-6 text-center">
+        <p
+          className="text-sm"
+          style={{ color: SETTINGS_MUTED }}
+        >
+          Focus on who matters most. Easily send and share across Connect.
+        </p>
+        <button
+          type="button"
+          className="mt-4 inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold"
+          style={{ background: SETTINGS_SECTION_BG, color: SETTINGS_TEXT }}
+          onClick={() => showToast("Custom lists coming soon", "success")}
+        >
+          <Plus className="h-4 w-4" />
+          Create a custom list
+        </button>
+      </div>
+      <SettingsSection title="Your lists">
+        <SettingsRow
+          icon={<MessageSquareText className="h-5 w-5" strokeWidth={1.5} />}
+          label="Unread"
+          sublabel="Preset"
+          onClick={() => showToast("Filter by unread in chats", "success")}
+        />
+        <SettingsRow
+          icon={<Heart className="h-5 w-5" strokeWidth={1.5} />}
+          label="Favorites"
+          sublabel="Preset"
+          onClick={() => showToast("Filter by favorites in chats", "success")}
+        />
+        <SettingsRow
+          icon={<UsersRound className="h-5 w-5" strokeWidth={1.5} />}
+          label="Groups"
+          sublabel="Preset"
+          onClick={() => showToast("Switch to Groups tab", "success")}
+        />
+      </SettingsSection>
+    </>
+  );
+}
+
+function ConnectLanguageScreen({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <SettingsSection>
+      {LANGUAGE_OPTIONS.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-black/[0.03]"
+          onClick={() => onChange(o.value)}
+        >
+          <span
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border"
+            style={{
+              borderColor: value === o.value ? "#1d2939" : "#9ca3af",
+              background: value === o.value ? "#1d2939" : "transparent",
+            }}
+          >
+            {value === o.value ? (
+              <Check className="h-3 w-3 text-white" strokeWidth={3} />
+            ) : null}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p
+              className="truncate text-[15px]"
+              style={{ color: SETTINGS_TEXT }}
+            >
+              {o.label}
+            </p>
+            <p className="truncate text-xs" style={{ color: SETTINGS_MUTED }}>
+              {o.sub}
+            </p>
+          </div>
+        </button>
+      ))}
+    </SettingsSection>
+  );
+}
+
+function ConnectHelpScreen({
+  showToast,
+  goExternal,
+}: {
+  showToast: (m: string, t?: "success" | "error") => void;
+  goExternal: (href: string) => void;
+}) {
+  return (
+    <SettingsSection>
+      <SettingsRow
+        icon={<HelpCircle className="h-5 w-5" strokeWidth={1.5} />}
+        label="Help center"
+        sublabel="Get help, contact us"
+        onClick={() => goExternal("/settings/support")}
+      />
+      <SettingsRow
+        icon={<Bug className="h-5 w-5" strokeWidth={1.5} />}
+        label="Send feedback"
+        sublabel="Report technical issues"
+        onClick={() => goExternal("/settings/support#bugs")}
+      />
+      <SettingsRow
+        icon={<FileText className="h-5 w-5" strokeWidth={1.5} />}
+        label="Terms"
+        onClick={() => goExternal("/settings/support#terms")}
+      />
+      <SettingsRow
+        icon={<AlertOctagon className="h-5 w-5" strokeWidth={1.5} />}
+        label="Channel reports"
+        onClick={() => showToast("No reports", "success")}
+      />
+      <SettingsRow
+        icon={<Info className="h-5 w-5" strokeWidth={1.5} />}
+        label="App info"
+        sublabel="Group Travel"
+        onClick={() => showToast("Group Travel · web", "success")}
+      />
+    </SettingsSection>
+  );
+}
+
+function ConnectInviteScreen({
+  onShareInvite,
+}: {
+  onShareInvite: () => Promise<void> | void;
+}) {
+  return (
+    <>
+      <SettingsSection>
+        <SettingsRow
+          icon={
+            <span
+              className="flex h-9 w-9 items-center justify-center rounded-full"
+              style={{ background: "#1d2939" }}
+            >
+              <Share2 className="h-4 w-4 text-white" strokeWidth={1.8} />
+            </span>
+          }
+          label="Share link"
+          onClick={() => {
+            void onShareInvite();
+          }}
+        />
+      </SettingsSection>
+      <p
+        className="px-4 pt-4 text-xs"
+        style={{ color: SETTINGS_MUTED }}
+      >
+        We'll soon let you invite contacts directly from your address book.
+      </p>
+    </>
+  );
+}
+
+function ConnectBlockedScreen({
+  showToast,
+}: {
+  showToast: (m: string, t?: "success" | "error") => void;
+}) {
+  const [items, setItems] = useState<
+    { id: string; full_name: string; avatar_url: string | null }[] | null
+  >(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch<
+        { id: string; full_name: string; avatar_url: string | null }[]
+      >("/social/blocked");
+      setItems(Array.isArray(data) ? data : []);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const unblock = async (id: string) => {
+    if (!window.confirm("Unblock this user?")) return;
+    try {
+      await apiFetch(`/social/block/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      showToast("User unblocked", "success");
+      await load();
+    } catch {
+      showToast("Could not unblock", "error");
+    }
+  };
+
+  return (
+    <>
+      {loading ? (
+        <div className="flex justify-center py-10">
+          <Loader2 className="h-6 w-6 animate-spin" style={{ color: "#9ca3af" }} />
+        </div>
+      ) : items && items.length > 0 ? (
+        <SettingsSection>
+          {items.map((it) => (
+            <SettingsRow
+              key={it.id}
+              icon={
+                it.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={it.avatar_url}
+                    alt=""
+                    className="h-9 w-9 rounded-full object-cover"
+                  />
+                ) : (
+                  <span
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
+                    style={{ background: listAvatarColor(it.full_name) }}
+                  >
+                    {initialsFromName(it.full_name)}
+                  </span>
+                )
+              }
+              label={it.full_name}
+              trailing={
+                <button
+                  type="button"
+                  className="rounded-lg px-2 py-1 text-xs font-semibold"
+                  style={{ color: SETTINGS_ACCENT }}
+                  onClick={() => void unblock(it.id)}
+                >
+                  Unblock
+                </button>
+              }
+            />
+          ))}
+        </SettingsSection>
+      ) : (
+        <p className="px-6 py-10 text-center text-sm" style={{ color: SETTINGS_MUTED }}>
+          You haven't blocked anyone.
+        </p>
+      )}
+    </>
+  );
+}
+
+function ConnectDeleteAccountScreen({
+  user,
+  onCancel,
+  onDeleted,
+}: {
+  user: UserMe | null;
+  onCancel: () => void;
+  onDeleted: () => void;
+}) {
+  const [confirmation, setConfirmation] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const userEmail = user?.email ?? "";
+
+  const submit = async () => {
+    if (confirmation !== "DELETE") {
+      setError('Type DELETE in the confirmation field');
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      await apiFetch("/auth/account/deactivate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation, password: password || null }),
+      });
+      onDeleted();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not delete account");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="px-4 py-6">
+      <p className="text-sm" style={{ color: SETTINGS_TEXT }}>
+        Deleting your account will:
+      </p>
+      <ul
+        className="ml-5 mt-2 list-disc text-sm"
+        style={{ color: SETTINGS_MUTED }}
+      >
+        <li>Permanently remove your messages, groups and trips</li>
+        <li>Cancel any active subscriptions</li>
+        <li>Erase your profile from search and friend lists</li>
+      </ul>
+
+      <p
+        className="mt-5 text-xs font-semibold uppercase"
+        style={{ color: SETTINGS_MUTED }}
+      >
+        Confirm
+      </p>
+      <input
+        type="text"
+        placeholder="Type DELETE to confirm"
+        value={confirmation}
+        onChange={(e) => setConfirmation(e.target.value)}
+        className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none"
+        style={{ borderColor: SETTINGS_BORDER, color: SETTINGS_TEXT }}
+      />
+
+      {userEmail ? (
+        <>
+          <p
+            className="mt-4 text-xs font-semibold uppercase"
+            style={{ color: SETTINGS_MUTED }}
+          >
+            Password (leave empty for OAuth-only accounts)
+          </p>
+          <input
+            type="password"
+            placeholder="Your account password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none"
+            style={{ borderColor: SETTINGS_BORDER, color: SETTINGS_TEXT }}
+          />
+        </>
+      ) : null}
+
+      {error ? (
+        <p className="mt-3 text-sm" style={{ color: "#dc2626" }}>
+          {error}
+        </p>
+      ) : null}
+
+      <div className="mt-5 flex gap-2">
+        <button
+          type="button"
+          className="flex-1 rounded-lg border py-2.5 text-sm font-semibold"
+          style={{ borderColor: SETTINGS_BORDER, color: SETTINGS_TEXT }}
+          onClick={onCancel}
+          disabled={submitting}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="flex-1 rounded-lg py-2.5 text-sm font-bold text-white disabled:opacity-60"
+          style={{ background: "#dc2626" }}
+          onClick={() => void submit()}
+          disabled={submitting || confirmation !== "DELETE"}
+        >
+          {submitting ? "Deleting…" : "Delete account"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -7664,6 +11081,7 @@ export default function TravelHubPage() {
   const [showNewChat, setShowNewChat] = useState(false);
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
   const [showMenuDrawer, setShowMenuDrawer] = useState(false);
+  const [showConnectSettings, setShowConnectSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isMd, setIsMd] = useState(false);
   const [chatPrefs, setChatPrefs] = useState<Record<string, ChatPrefs>>({});
@@ -7673,6 +11091,16 @@ export default function TravelHubPage() {
     y: number;
     chat: ChatInfo;
   } | null>(null);
+  // Message context menu (WhatsApp style)
+  const [messageContextMenu, setMessageContextMenu] = useState<{
+    x: number;
+    y: number;
+    message: ChatMessage;
+    mine: boolean;
+  } | null>(null);
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+  const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
+  const [selectMode, setSelectMode] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [contacts, setContacts] = useState<ContactPerson[]>([]);
   const [emojiGifPickerOpen, setEmojiGifPickerOpen] = useState(false);
@@ -7782,6 +11210,30 @@ export default function TravelHubPage() {
   const [showInChatSearch, setShowInChatSearch] = useState(false);
   const [inChatSearchQuery, setInChatSearchQuery] = useState("");
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [showDmInfo, setShowDmInfo] = useState(false);
+  useEffect(() => {
+    setShowDmInfo(false);
+    setShowGroupInfo(false);
+  }, [activeChat?.id]);
+  const [groupCallPicker, setGroupCallPicker] = useState<{
+    type: "audio" | "video";
+    chat: ChatInfo;
+  } | null>(null);
+  const [scheduleCallOpen, setScheduleCallOpen] = useState<{
+    chat: ChatInfo;
+  } | null>(null);
+  const [scheduleCallTitle, setScheduleCallTitle] = useState("");
+  const [scheduleCallAt, setScheduleCallAt] = useState("");
+  const [scheduleVersion, setScheduleVersion] = useState(0);
+  const [groupDrawerWidth, setGroupDrawerWidth] = useState<number>(() => {
+    if (typeof window === "undefined") return 400;
+    const raw = window.localStorage.getItem("gt_group_drawer_width");
+    const n = raw ? parseInt(raw, 10) : NaN;
+    return Number.isFinite(n) && n >= 320 && n <= 640 ? n : 400;
+  });
+  const drawerResizeRef = useRef<{ startX: number; startW: number } | null>(
+    null,
+  );
   const [activeGroupHydrateLoading, setActiveGroupHydrateLoading] =
     useState(false);
   const [groupMemberPanelGroupId, setGroupMemberPanelGroupId] = useState<
@@ -10006,6 +13458,18 @@ export default function TravelHubPage() {
     }
   }, [showInChatSearch]);
 
+  useEffect(() => {
+    if (!showInChatSearch) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowInChatSearch(false);
+        setInChatSearchQuery("");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showInChatSearch]);
+
   const openPeerProfileFromActiveChat = useCallback(async () => {
     if (!activeChat || activeChat.type !== "individual" || !user) return;
     const peerId = activeChat.members.find((m) => m !== user.id);
@@ -10697,11 +14161,11 @@ export default function TravelHubPage() {
           style={{
             lineHeight: "44px",
             padding: 0,
-            color: activeTab === id ? "#f0a500" : "#8896a0",
+            color: activeTab === id ? "#ffffff" : "rgba(255,255,255,0.68)",
             fontWeight: 500,
             borderBottom:
               activeTab === id
-                ? "2px solid #f0a500"
+                ? `2px solid ${BRAND_ACCENT}`
                 : "2px solid transparent",
             background: "transparent",
           }}
@@ -10828,47 +14292,49 @@ export default function TravelHubPage() {
           }}
         >
           <header
-            className="flex shrink-0 items-center justify-between px-4 py-3"
+            className="flex shrink-0 flex-col gap-3 px-4 pb-3 pt-4"
             style={{
               background: BG,
-              borderBottom: `0.5px solid ${BORDER_SUB}`,
             }}
           >
-            <span
-              className="text-[17px] font-medium"
-              style={{ color: "#e8eaf0" }}
-            >
-              Connect
-            </span>
-            <div className="flex items-center gap-4" style={{ color: "#8892a4" }}>
-              <button
-                type="button"
-                aria-label="Search"
-                className="flex items-center justify-center"
-                style={{ color: "#8892a4" }}
-                onClick={() => setShowSearchOverlay(true)}
-              >
-                <Search className="h-5 w-5" strokeWidth={2} />
-              </button>
-              <button
-                type="button"
-                aria-label="Menu"
-                className="flex items-center justify-center"
-                style={{ color: "#8892a4" }}
-                onClick={() => setShowMenuDrawer(true)}
-              >
-                <MenuIcon />
-              </button>
-              <button
-                type="button"
-                aria-label="New chat"
-                className="flex items-center justify-center"
-                style={{ color: "#8892a4" }}
-                onClick={() => setShowNewChatPanel(true)}
-              >
-                <ConnectHeaderComposeIcon />
-              </button>
+            <div className="flex items-center justify-between">
+              <div className="min-w-0">
+                <p className="truncate text-[20px] font-bold tracking-tight text-white">
+                  Travelo Connect
+                </p>
+                <p className="mt-0.5 text-[11px] font-medium text-white/60">
+                  Messages, calls, and updates
+                </p>
+              </div>
+              <div className="flex items-center gap-3 text-white/75">
+                <button
+                  type="button"
+                  aria-label="Menu"
+                  className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/10 hover:text-white"
+                  onClick={() => setShowMenuDrawer(true)}
+                >
+                  <MenuIcon />
+                </button>
+                <button
+                  type="button"
+                  aria-label="New chat"
+                  className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/10 hover:text-white"
+                  onClick={() => setShowNewChatPanel(true)}
+                >
+                  <ConnectHeaderComposeIcon />
+                </button>
+              </div>
             </div>
+            <button
+              type="button"
+              aria-label="Search chats, people, and groups"
+              className="flex h-10 w-full items-center gap-2 rounded-full px-3 text-left text-sm text-white/70 transition hover:bg-white/[0.18]"
+              style={{ background: "rgba(255,255,255,0.14)" }}
+              onClick={() => setShowSearchOverlay(true)}
+            >
+              <Search className="h-4 w-4 shrink-0" strokeWidth={2} />
+              <span className="truncate">Search chats, people, and groups</span>
+            </button>
           </header>
 
           {tabBar}
@@ -10878,6 +14344,7 @@ export default function TravelHubPage() {
               ref={listScrollRef}
               className="min-h-0 flex-1 custom-scrollbar overflow-y-auto overscroll-contain"
               style={{
+                background: "#ffffff",
                 transform: pullDist ? `translateY(${pullDist * 0.35}px)` : undefined,
                 transition: pullDist ? "none" : "transform 0.2s ease-out",
               }}
@@ -11072,6 +14539,9 @@ export default function TravelHubPage() {
                   avatar: chatRowDmAvatarUrl(activeChat),
                 });
               }}
+              mainChatList={mainChatList}
+              groups={groups}
+              startOutgoingCall={startOutgoingCall}
             />
           ) : !activeChat ? (
             <div
@@ -11104,41 +14574,9 @@ export default function TravelHubPage() {
             <TravelloHelpChatPanel />
           ) : activeChat.isAnnouncement ? (
             <CommunityAnnouncementPanel />
-          ) : activeChat.type === "group" &&
-            showGroupInfo &&
-            activeChat.group_id &&
-            user ? (
-            <GroupInfoPanel
-              key={activeChat.group_id}
-              group={
-                groups.find((x) => x.id === activeChat.group_id) ?? {
-                  id: activeChat.group_id,
-                  name: activeChat.name,
-                  description: null,
-                  members: [],
-                }
-              }
-              selfId={user.id}
-              onClose={() => setShowGroupInfo(false)}
-              onSearchInGroupChat={() => setShowInChatSearch(true)}
-              openDirectChat={openDirectChat}
-              onLeaveSuccess={(gid) => {
-                handleGroupLeft(gid);
-              }}
-              showToast={showToast}
-              onUnauthorized={handleUnauthorized}
-              loadBackend={loadBackend}
-              onViewFullSplit={() => {
-                setShowGroupInfo(false);
-                setShowSplitPopup(true);
-              }}
-              onSettleAll={() =>
-                showToast("Open Split in chat to settle expenses", "success")
-              }
-              masterAbortRef={masterAbortRef}
-            />
           ) : (
-            <>
+            <div className="relative flex min-h-0 min-w-0 flex-1">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <ChatHeader
               chat={activeChat}
               onBack={closeMobileChat}
@@ -11148,7 +14586,7 @@ export default function TravelHubPage() {
                   ? dmHeaderPeerOnline
                   : null
               }
-              onDmHeaderClick={openPeerProfileFromActiveChat}
+              onDmHeaderClick={() => setShowDmInfo(true)}
               onOpenGroupInfo={() => setShowGroupInfo(true)}
               onMuteChat={() => {
                 if (activeChat) {
@@ -11185,10 +14623,28 @@ export default function TravelHubPage() {
                   avatar: chatRowDmAvatarUrl(activeChat),
                 });
               }}
+              onDmSchedule={() => {
+                if (!activeChat) return;
+                setScheduleCallTitle("");
+                setScheduleCallAt("");
+                setScheduleCallOpen({ chat: activeChat });
+              }}
               groupTrip={headerGroupTrip}
               groupTripLoading={headerGroupTripLoading}
-              onGroupVoice={() => showCallToast("Group calls coming soon")}
-              onGroupVideoCall={() => showCallToast("Group calls coming soon")}
+              onGroupVoice={() => {
+                if (!activeChat || activeChat.type !== "group") return;
+                setGroupCallPicker({ type: "audio", chat: activeChat });
+              }}
+              onGroupVideoCall={() => {
+                if (!activeChat || activeChat.type !== "group") return;
+                setGroupCallPicker({ type: "video", chat: activeChat });
+              }}
+              onGroupSchedule={() => {
+                if (!activeChat || activeChat.type !== "group") return;
+                setScheduleCallTitle("");
+                setScheduleCallAt("");
+                setScheduleCallOpen({ chat: activeChat });
+              }}
             />
 
             {showInChatSearch ? (
@@ -11277,6 +14733,19 @@ export default function TravelHubPage() {
                         </span>
                       </div>
                     ) : null}
+                    <div
+                      className="message-bubble-wrapper"
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setMessageContextMenu({
+                          x: e.clientX,
+                          y: e.clientY,
+                          message: m,
+                          mine: !!mine,
+                        });
+                      }}
+                    >
                     {isGroup && user ? (
                       <GroupMessageBubble
                         msg={m}
@@ -11289,6 +14758,16 @@ export default function TravelHubPage() {
                             ? groupReadReceipt(m, user.id)
                             : "delivered"
                         }
+                        selectMode={selectMode}
+                        isSelected={selectedMessages.has(m.id)}
+                        onToggleSelect={() => {
+                          setSelectedMessages((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(m.id)) next.delete(m.id);
+                            else next.add(m.id);
+                            return next;
+                          });
+                        }}
                       />
                     ) : (
                     <MessageBubble
@@ -11302,8 +14781,19 @@ export default function TravelHubPage() {
                           : null
                       }
                       dmPeerDisplayName={chatRowDisplayName(activeChat)}
+                      selectMode={selectMode}
+                      isSelected={selectedMessages.has(m.id)}
+                      onToggleSelect={() => {
+                        setSelectedMessages((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(m.id)) next.delete(m.id);
+                          else next.add(m.id);
+                          return next;
+                        });
+                      }}
                     />
                     )}
+                    </div>
                   </div>
                 );
               })}
@@ -11742,7 +15232,279 @@ export default function TravelHubPage() {
                 </div>
               </>
             )}
-          </>
+            </div>
+            {activeChat.type === "group" &&
+            showGroupInfo &&
+            activeChat.group_id &&
+            user ? (
+              <aside
+                className="absolute inset-0 z-[35] flex shrink-0 flex-col border-l lg:relative lg:inset-auto lg:z-auto"
+                style={{
+                  borderColor: BORDER_SUB,
+                  background: SURFACE,
+                  width:
+                    typeof window !== "undefined" && window.innerWidth >= 1024
+                      ? groupDrawerWidth
+                      : undefined,
+                }}
+              >
+                <button
+                  type="button"
+                  aria-label="Resize panel"
+                  className="absolute left-0 top-0 hidden h-full w-1 cursor-col-resize bg-transparent hover:bg-white/10 lg:block"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    drawerResizeRef.current = {
+                      startX: e.clientX,
+                      startW: groupDrawerWidth,
+                    };
+                    const onMove = (ev: MouseEvent) => {
+                      if (!drawerResizeRef.current) return;
+                      const dx =
+                        drawerResizeRef.current.startX - ev.clientX;
+                      const next = Math.min(
+                        640,
+                        Math.max(
+                          320,
+                          drawerResizeRef.current.startW + dx,
+                        ),
+                      );
+                      setGroupDrawerWidth(next);
+                    };
+                    const onUp = () => {
+                      if (drawerResizeRef.current) {
+                        try {
+                          window.localStorage.setItem(
+                            "gt_group_drawer_width",
+                            String(groupDrawerWidth),
+                          );
+                        } catch {
+                          /* ignore */
+                        }
+                      }
+                      drawerResizeRef.current = null;
+                      window.removeEventListener("mousemove", onMove);
+                      window.removeEventListener("mouseup", onUp);
+                    };
+                    window.addEventListener("mousemove", onMove);
+                    window.addEventListener("mouseup", onUp);
+                  }}
+                />
+                <GroupInfoPanel
+                  key={activeChat.group_id}
+                  group={
+                    groups.find((x) => x.id === activeChat.group_id) ?? {
+                      id: activeChat.group_id,
+                      name: activeChat.name,
+                      description: null,
+                      members: [],
+                    }
+                  }
+                  selfId={user.id}
+                  onClose={() => setShowGroupInfo(false)}
+                  onSearchInGroupChat={() => setShowInChatSearch(true)}
+                  openDirectChat={openDirectChat}
+                  onLeaveSuccess={(gid) => {
+                    handleGroupLeft(gid);
+                  }}
+                  showToast={showToast}
+                  onUnauthorized={handleUnauthorized}
+                  loadBackend={loadBackend}
+                  onViewFullSplit={() => {
+                    setShowGroupInfo(false);
+                    setShowSplitPopup(true);
+                  }}
+                  onSettleAll={() =>
+                    showToast(
+                      "Open Split in chat to settle expenses",
+                      "success",
+                    )
+                  }
+                  masterAbortRef={masterAbortRef}
+                  onVoiceCall={() =>
+                    setGroupCallPicker({ type: "audio", chat: activeChat })
+                  }
+                  onVideoCall={() =>
+                    setGroupCallPicker({ type: "video", chat: activeChat })
+                  }
+                  onScheduleCall={() => {
+                    setScheduleCallTitle("");
+                    setScheduleCallAt("");
+                    setScheduleCallOpen({ chat: activeChat });
+                  }}
+                  onClearChat={() => void clearActiveChatMessages()}
+                  onToggleFavorite={() => {
+                    const cur = chatPrefs[activeChat.id]?.favorite ?? false;
+                    updateChatPref(activeChat.id, { favorite: !cur });
+                    showToast(
+                      cur
+                        ? "Removed from favorites"
+                        : "Added to favorites",
+                      "success",
+                    );
+                  }}
+                  isFavorite={
+                    chatPrefs[activeChat.id]?.favorite ?? false
+                  }
+                  scheduleVersion={scheduleVersion}
+                  onScheduleChanged={() =>
+                    setScheduleVersion((v) => v + 1)
+                  }
+                />
+              </aside>
+            ) : null}
+            {activeChat.type === "individual" && showDmInfo && user ? (
+              <aside
+                className="absolute inset-0 z-[35] flex shrink-0 flex-col border-l lg:relative lg:inset-auto lg:z-auto"
+                style={{
+                  borderColor: BORDER_SUB,
+                  background: SURFACE,
+                  width:
+                    typeof window !== "undefined" && window.innerWidth >= 1024
+                      ? groupDrawerWidth
+                      : undefined,
+                }}
+              >
+                <button
+                  type="button"
+                  aria-label="Resize panel"
+                  className="absolute left-0 top-0 hidden h-full w-1 cursor-col-resize bg-transparent hover:bg-white/10 lg:block"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    drawerResizeRef.current = {
+                      startX: e.clientX,
+                      startW: groupDrawerWidth,
+                    };
+                    const onMove = (ev: MouseEvent) => {
+                      if (!drawerResizeRef.current) return;
+                      const dx =
+                        drawerResizeRef.current.startX - ev.clientX;
+                      const next = Math.min(
+                        640,
+                        Math.max(
+                          320,
+                          drawerResizeRef.current.startW + dx,
+                        ),
+                      );
+                      setGroupDrawerWidth(next);
+                    };
+                    const onUp = () => {
+                      if (drawerResizeRef.current) {
+                        try {
+                          window.localStorage.setItem(
+                            "gt_group_drawer_width",
+                            String(groupDrawerWidth),
+                          );
+                        } catch {
+                          /* ignore */
+                        }
+                      }
+                      drawerResizeRef.current = null;
+                      window.removeEventListener("mousemove", onMove);
+                      window.removeEventListener("mouseup", onUp);
+                    };
+                    window.addEventListener("mousemove", onMove);
+                    window.addEventListener("mouseup", onUp);
+                  }}
+                />
+                <DmInfoPanel
+                  key={activeChat.id}
+                  chatId={activeChat.id}
+                  peerName={chatRowDisplayName(activeChat)}
+                  peerUsername={
+                    (() => {
+                      const peerId = activeChat.members.find(
+                        (m) => m !== user.id,
+                      );
+                      const peer = peerId
+                        ? connectionsList.find(
+                            (p) => p.id === peerId,
+                          )
+                        : null;
+                      return peer?.username ?? null;
+                    })()
+                  }
+                  peerAvatarUrl={chatRowDmAvatarUrl(activeChat)}
+                  peerOnline={dmHeaderPeerOnline}
+                  isFavorite={
+                    chatPrefs[activeChat.id]?.favorite ?? false
+                  }
+                  isMuted={chatPrefs[activeChat.id]?.muted ?? false}
+                  onClose={() => setShowDmInfo(false)}
+                  onSearchInChat={() => setShowInChatSearch(true)}
+                  onVoiceCall={() => {
+                    if (
+                      !activeChat ||
+                      activeChat.type !== "individual"
+                    )
+                      return;
+                    const peer = activeChat.members.find(
+                      (m) => m !== user.id,
+                    );
+                    if (!peer) return;
+                    void startOutgoingCall("audio", {
+                      id: peer,
+                      name: chatRowDisplayName(activeChat),
+                      avatar: chatRowDmAvatarUrl(activeChat),
+                    });
+                  }}
+                  onVideoCall={() => {
+                    if (
+                      !activeChat ||
+                      activeChat.type !== "individual"
+                    )
+                      return;
+                    const peer = activeChat.members.find(
+                      (m) => m !== user.id,
+                    );
+                    if (!peer) return;
+                    void startOutgoingCall("video", {
+                      id: peer,
+                      name: chatRowDisplayName(activeChat),
+                      avatar: chatRowDmAvatarUrl(activeChat),
+                    });
+                  }}
+                  onScheduleCall={() => {
+                    setScheduleCallTitle("");
+                    setScheduleCallAt("");
+                    setScheduleCallOpen({ chat: activeChat });
+                  }}
+                  onClearChat={() => void clearActiveChatMessages()}
+                  onBlockPeer={() => void blockActiveChatPeer()}
+                  onReport={() =>
+                    showToast("Report flow coming soon", "success")
+                  }
+                  onToggleFavorite={() => {
+                    const cur =
+                      chatPrefs[activeChat.id]?.favorite ?? false;
+                    updateChatPref(activeChat.id, { favorite: !cur });
+                    showToast(
+                      cur
+                        ? "Removed from favorites"
+                        : "Added to favorites",
+                      "success",
+                    );
+                  }}
+                  onToggleMute={() => {
+                    const cur =
+                      chatPrefs[activeChat.id]?.muted ?? false;
+                    updateChatPref(activeChat.id, { muted: !cur });
+                    showToast(
+                      cur ? "Notifications unmuted" : "Notifications muted",
+                      "success",
+                    );
+                  }}
+                  onViewFullProfile={() => {
+                    void openPeerProfileFromActiveChat();
+                  }}
+                  scheduleVersion={scheduleVersion}
+                  onScheduleChanged={() =>
+                    setScheduleVersion((v) => v + 1)
+                  }
+                />
+              </aside>
+            ) : null}
+            </div>
         )}
       </div>
       </div>
@@ -12741,7 +16503,7 @@ export default function TravelHubPage() {
             onClick={() => setShowMenuDrawer(false)}
           />
           <div
-            className="absolute right-0 top-0 flex h-full w-[min(100%,280px)] flex-col border-l shadow-2xl"
+            className="absolute right-0 top-0 flex h-full w-[min(100%,300px)] flex-col border-l shadow-2xl"
             style={{
               background: BG,
               borderColor: BORDER_SUB,
@@ -12751,12 +16513,12 @@ export default function TravelHubPage() {
               className="border-b px-4 py-4"
               style={{ borderColor: BORDER_SUB }}
             >
-              <p className="text-sm font-medium text-white">Menu</p>
+              <p className="text-sm font-medium text-white">Connect</p>
               <p className="text-xs" style={{ color: TEXT_MUTED }}>
-                Travel Hub
+                {user?.full_name?.trim() || "Travel Hub"}
               </p>
             </div>
-            <nav className="flex flex-col p-2 text-left text-sm text-white">
+            <nav className="flex flex-1 flex-col p-2 text-left text-sm text-white">
               <button
                 type="button"
                 className="rounded-lg px-3 py-3 text-left hover:bg-white/5"
@@ -12766,6 +16528,16 @@ export default function TravelHubPage() {
                 }}
               >
                 New chat
+              </button>
+              <button
+                type="button"
+                className="rounded-lg px-3 py-3 text-left hover:bg-white/5"
+                onClick={() => {
+                  setShowMenuDrawer(false);
+                  setCreateGroupRequestId((n) => n + 1);
+                }}
+              >
+                New group
               </button>
               <button
                 type="button"
@@ -12782,12 +16554,320 @@ export default function TravelHubPage() {
                 className="rounded-lg px-3 py-3 text-left hover:bg-white/5"
                 onClick={() => {
                   setShowMenuDrawer(false);
-                  showToast("Settings coming soon", "success");
+                  showToast("Linked devices coming soon", "success");
+                }}
+              >
+                Linked devices
+              </button>
+              <button
+                type="button"
+                className="rounded-lg px-3 py-3 text-left hover:bg-white/5"
+                onClick={() => {
+                  setShowMenuDrawer(false);
+                  showToast("Starred messages coming soon", "success");
+                }}
+              >
+                Starred
+              </button>
+              <div
+                className="my-2 h-px w-full"
+                style={{ background: BORDER_SUB }}
+              />
+              <button
+                type="button"
+                className="rounded-lg px-3 py-3 text-left font-semibold hover:bg-white/5"
+                onClick={() => {
+                  setShowMenuDrawer(false);
+                  setShowConnectSettings(true);
                 }}
               >
                 Settings
               </button>
             </nav>
+          </div>
+        </div>
+      ) : null}
+
+      {showConnectSettings ? (
+        <ConnectSettingsPanel
+          user={user}
+          onClose={() => setShowConnectSettings(false)}
+          showToast={showToast}
+          onLogout={handleUnauthorized}
+          onShareInvite={async () => {
+            const origin =
+              typeof window !== "undefined"
+                ? window.location.origin
+                : "";
+            const url = `${origin}/`;
+            const text = `Join me on Group Travel: ${url}`;
+            const nav = navigator as Navigator & {
+              share?: (data: {
+                title?: string;
+                text?: string;
+                url?: string;
+              }) => Promise<void>;
+            };
+            try {
+              if (typeof nav.share === "function") {
+                await nav.share({
+                  title: "Group Travel",
+                  text,
+                  url,
+                });
+                return;
+              }
+              await nav.clipboard.writeText(text);
+              showToast("Invite link copied", "success");
+            } catch {
+              /* user cancelled */
+            }
+          }}
+        />
+      ) : null}
+
+      {groupCallPicker && user ? (
+        <div
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 px-4"
+          role="presentation"
+          onClick={() => setGroupCallPicker(null)}
+        >
+          <div
+            role="dialog"
+            aria-label={
+              groupCallPicker.type === "audio"
+                ? "Voice call group member"
+                : "Video call group member"
+            }
+            onClick={(e) => e.stopPropagation()}
+            className="flex w-full max-w-md flex-col rounded-2xl border shadow-2xl"
+            style={{ background: SURFACE, borderColor: BORDER_SUB }}
+          >
+            <div
+              className="flex items-center justify-between border-b px-4 py-3"
+              style={{ borderColor: BORDER_SUB }}
+            >
+              <div className="min-w-0">
+                <p className="truncate text-[15px] font-bold text-white">
+                  {groupCallPicker.type === "audio"
+                    ? "Voice call"
+                    : "Video call"}
+                </p>
+                <p
+                  className="truncate text-[12px]"
+                  style={{ color: TEXT_MUTED }}
+                >
+                  Group calls aren&apos;t supported yet — pick a member to start
+                  a 1-on-1 call.
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close"
+                className="shrink-0 text-slate-400 hover:text-white"
+                onClick={() => setGroupCallPicker(null)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto custom-scrollbar p-2">
+              {(() => {
+                const grp = groups.find(
+                  (g) => g.id === groupCallPicker.chat.group_id,
+                );
+                const members = (grp?.members ?? []).filter(
+                  (m) => m.user_id !== user.id,
+                );
+                if (members.length === 0) {
+                  return (
+                    <p
+                      className="px-3 py-6 text-center text-sm"
+                      style={{ color: TEXT_MUTED }}
+                    >
+                      No other members in this group yet.
+                    </p>
+                  );
+                }
+                return members.map((m) => (
+                  <button
+                    key={m.user_id}
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-white hover:bg-white/10"
+                    onClick={() => {
+                      const callType = groupCallPicker.type;
+                      setGroupCallPicker(null);
+                      void startOutgoingCall(callType, {
+                        id: m.user_id,
+                        name: m.full_name,
+                        avatar: m.avatar_url ?? null,
+                      });
+                    }}
+                  >
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-bold text-white"
+                      style={{
+                        background: listAvatarColor(m.full_name ?? "?"),
+                      }}
+                    >
+                      {initialsFromName(m.full_name ?? "?")}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold">
+                        {m.full_name}
+                      </span>
+                    </span>
+                    {groupCallPicker.type === "audio" ? (
+                      <Phone className="h-4 w-4 shrink-0" />
+                    ) : (
+                      <Video className="h-4 w-4 shrink-0" />
+                    )}
+                  </button>
+                ));
+              })()}
+            </div>
+            <div
+              className="flex items-center justify-between gap-2 border-t px-3 py-3"
+              style={{ borderColor: BORDER_SUB }}
+            >
+              <button
+                type="button"
+                className="text-xs font-medium text-sky-400 hover:underline"
+                onClick={() => {
+                  const chat = groupCallPicker.chat;
+                  setGroupCallPicker(null);
+                  setScheduleCallTitle("");
+                  setScheduleCallAt("");
+                  setScheduleCallOpen({ chat });
+                }}
+              >
+                Schedule a call instead
+              </button>
+              <button
+                type="button"
+                className="rounded-lg px-3 py-1.5 text-xs text-white hover:bg-white/10"
+                onClick={() => setGroupCallPicker(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {scheduleCallOpen && user ? (
+        <div
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 px-4"
+          role="presentation"
+          onClick={() => setScheduleCallOpen(null)}
+        >
+          <div
+            role="dialog"
+            aria-label="Schedule a call"
+            onClick={(e) => e.stopPropagation()}
+            className="flex w-full max-w-md flex-col rounded-2xl border shadow-2xl"
+            style={{ background: SURFACE, borderColor: BORDER_SUB }}
+          >
+            <div
+              className="flex items-center justify-between border-b px-4 py-3"
+              style={{ borderColor: BORDER_SUB }}
+            >
+              <p className="truncate text-[15px] font-bold text-white">
+                Schedule a call · {scheduleCallOpen.chat.name}
+              </p>
+              <button
+                type="button"
+                aria-label="Close"
+                className="shrink-0 text-slate-400 hover:text-white"
+                onClick={() => setScheduleCallOpen(null)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="space-y-3 px-4 py-4">
+              <label className="block text-xs text-slate-300">
+                Title
+                <input
+                  type="text"
+                  value={scheduleCallTitle}
+                  maxLength={120}
+                  onChange={(e) => setScheduleCallTitle(e.target.value)}
+                  placeholder="e.g. Trip planning catch-up"
+                  className="mt-1 w-full rounded-lg border bg-transparent px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500"
+                  style={{ borderColor: BORDER_SUB }}
+                />
+              </label>
+              <label className="block text-xs text-slate-300">
+                When
+                <input
+                  type="datetime-local"
+                  value={scheduleCallAt}
+                  onChange={(e) => setScheduleCallAt(e.target.value)}
+                  className="mt-1 w-full rounded-lg border bg-transparent px-3 py-2 text-sm text-white outline-none"
+                  style={{ borderColor: BORDER_SUB }}
+                />
+              </label>
+              <p className="text-[11px] text-slate-500">
+                Saved as a reminder in this browser. Server-side scheduling will
+                arrive in a later release.
+              </p>
+            </div>
+            <div
+              className="flex items-center justify-end gap-2 border-t px-3 py-3"
+              style={{ borderColor: BORDER_SUB }}
+            >
+              <button
+                type="button"
+                className="rounded-lg px-3 py-1.5 text-xs text-white hover:bg-white/10"
+                onClick={() => setScheduleCallOpen(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white"
+                style={{ background: ACCENT }}
+                disabled={!scheduleCallAt}
+                onClick={() => {
+                  if (!scheduleCallOpen) return;
+                  const at = new Date(scheduleCallAt).getTime();
+                  if (!at || Number.isNaN(at)) {
+                    showToast("Pick a valid date/time", "error");
+                    return;
+                  }
+                  try {
+                    const KEY = "gt_scheduled_calls_v1";
+                    const raw = localStorage.getItem(KEY);
+                    const list: Array<{
+                      id: string;
+                      chatId: string;
+                      chatName: string;
+                      title: string;
+                      at: number;
+                    }> = raw ? JSON.parse(raw) : [];
+                    list.push({
+                      id: `${Date.now()}-${Math.random()
+                        .toString(36)
+                        .slice(2, 8)}`,
+                      chatId: scheduleCallOpen.chat.id,
+                      chatName: scheduleCallOpen.chat.name,
+                      title: scheduleCallTitle.trim() || "Group call",
+                      at,
+                    });
+                    localStorage.setItem(KEY, JSON.stringify(list));
+                  } catch {
+                    /* localStorage unavailable */
+                  }
+                  setScheduleVersion((v) => v + 1);
+                  showToast(
+                    `Reminder set for ${new Date(at).toLocaleString()}`,
+                    "success",
+                  );
+                  setScheduleCallOpen(null);
+                }}
+              >
+                Save reminder
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
@@ -12849,17 +16929,66 @@ export default function TravelHubPage() {
                 ],
                 [
                   "Clear chat",
-                  () =>
-                    showToast("Clear chat history coming soon", "success"),
+                  async () => {
+                    const c = contextMenu.chat;
+                    if (!db || c.isDemo || c.isBot || c.isAnnouncement) {
+                      showToast("Cannot clear this chat", "error");
+                      return;
+                    }
+                    if (
+                      !window.confirm("Clear all messages in this chat?")
+                    )
+                      return;
+                    try {
+                      await remove(ref(db, `chats/${c.id}/messages`));
+                      if (activeChat?.id === c.id) setMessages([]);
+                      showToast("Chat cleared", "success");
+                    } catch {
+                      showToast("Could not clear chat", "error");
+                    }
+                  },
                 ],
-                [
-                  "Exit group",
-                  () =>
-                    showToast(
-                      "Leave group from the group page",
-                      "success",
-                    ),
-                ],
+                ...(contextMenu.chat.type === "group"
+                  ? ([
+                      [
+                        "Exit group",
+                        async () => {
+                          const c = contextMenu.chat;
+                          if (
+                            c.type !== "group" ||
+                            !c.group_id ||
+                            !user?.id
+                          )
+                            return;
+                          if (!window.confirm("Leave this group?")) return;
+                          const r = await apiFetchWithStatus<unknown>(
+                            `/groups/${c.group_id}/leave`,
+                            {
+                              method: "DELETE",
+                              signal: masterAbortRef.current?.signal,
+                            },
+                          );
+                          if (r.status === 401) {
+                            handleUnauthorized();
+                            return;
+                          }
+                          if (r.status === 204 || r.status === 200) {
+                            showToast("You left the group", "success");
+                            handleGroupLeft(c.group_id);
+                            return;
+                          }
+                          if (r.status === 400) {
+                            showToast(
+                              "Settle your balance before leaving this travel group",
+                              "error",
+                            );
+                            return;
+                          }
+                          showToast("Could not leave group", "error");
+                        },
+                      ],
+                    ] as const)
+                  : []),
                 [
                   "Report",
                   () => showToast("Report flow coming soon", "success"),
@@ -12882,6 +17011,216 @@ export default function TravelHubPage() {
           </div>
         </div>
       ) : null}
+
+      {/* Message Context Menu (WhatsApp style) */}
+      {messageContextMenu ? (
+        <div
+          className="fixed inset-0 z-[390]"
+          role="presentation"
+          onClick={() => setMessageContextMenu(null)}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            setMessageContextMenu(null);
+          }}
+        >
+          <div
+            role="menu"
+            className="absolute w-48 overflow-hidden rounded-lg border py-1 shadow-2xl"
+            style={{
+              background: "#ffffff",
+              borderColor: "rgba(0,0,0,0.08)",
+              left: Math.min(
+                messageContextMenu.x,
+                typeof window !== "undefined"
+                  ? window.innerWidth - 200
+                  : messageContextMenu.x,
+              ),
+              top: Math.min(
+                messageContextMenu.y,
+                typeof window !== "undefined"
+                  ? window.innerHeight - 350
+                  : messageContextMenu.y,
+              ),
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {(
+              [
+                [
+                  "Reply",
+                  () => {
+                    setReplyingTo(messageContextMenu.message);
+                    showToast("Reply mode activated", "success");
+                  },
+                  true,
+                ],
+                [
+                  "Copy",
+                  () => {
+                    const text = messageContextMenu.message.text || "";
+                    navigator.clipboard.writeText(text).then(() => {
+                      showToast("Message copied", "success");
+                    });
+                  },
+                  true,
+                ],
+                [
+                  "Forward",
+                  () => {
+                    showToast("Forward feature coming soon", "success");
+                  },
+                  true,
+                ],
+                [
+                  "Pin",
+                  () => {
+                    showToast("Message pinned", "success");
+                  },
+                  true,
+                ],
+                [
+                  "Star",
+                  () => {
+                    showToast("Message starred", "success");
+                  },
+                  true,
+                ],
+                [
+                  "Add text to note",
+                  () => {
+                    showToast("Added to notes", "success");
+                  },
+                  true,
+                ],
+                [
+                  "Select",
+                  () => {
+                    setSelectMode(true);
+                    setSelectedMessages(new Set([messageContextMenu.message.id]));
+                    showToast("Select multiple messages", "success");
+                  },
+                  true,
+                ],
+                ["divider", null, false],
+                [
+                  "Report",
+                  () => {
+                    showToast("Report submitted", "success");
+                  },
+                  true,
+                ],
+                [
+                  "Delete",
+                  () => {
+                    if (window.confirm("Delete this message?")) {
+                      const msgId = messageContextMenu.message.id;
+                      if (activeChat && db) {
+                        remove(ref(db, `chats/${activeChat.id}/messages/${msgId}`))
+                          .then(() => {
+                            showToast("Message deleted", "success");
+                          })
+                          .catch(() => {
+                            showToast("Could not delete message", "error");
+                          });
+                      }
+                    }
+                  },
+                  true,
+                ],
+              ] as [string, (() => void) | null, boolean][]
+            ).map((item, idx) => {
+              if (item[0] === "divider") {
+                return (
+                  <div
+                    key={`divider-${idx}`}
+                    className="my-1 h-px"
+                    style={{ background: "rgba(0,0,0,0.08)" }}
+                  />
+                );
+              }
+              const [label, fn] = item;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-gray-50"
+                  style={{ color: label === "Delete" || label === "Report" ? "#ef4444" : "#111827" }}
+                  onClick={() => {
+                    fn?.();
+                    setMessageContextMenu(null);
+                  }}
+                >
+                  <span className="flex h-5 w-5 items-center justify-center">
+                    {label === "Reply" && "↩️"}
+                    {label === "Copy" && "📋"}
+                    {label === "Forward" && "↪️"}
+                    {label === "Pin" && "📌"}
+                    {label === "Star" && "⭐"}
+                    {label === "Add text to note" && "📝"}
+                    {label === "Select" && "☑️"}
+                    {label === "Report" && "🚩"}
+                    {label === "Delete" && "🗑️"}
+                  </span>
+                  <span className="font-medium">{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {selectMode && (
+        <div
+          className="fixed bottom-0 left-0 right-0 z-[395] flex items-center justify-between border-t px-4 py-3"
+          style={{
+            background: "#ffffff",
+            borderColor: "rgba(0,0,0,0.08)",
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setSelectMode(false);
+                setSelectedMessages(new Set());
+              }}
+              className="rounded-full p-2 hover:bg-gray-100"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <span className="text-sm font-medium">
+              {selectedMessages.size} selected
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                showToast("Forward selected messages", "success");
+              }}
+              className="rounded-lg bg-blue-500 px-3 py-1.5 text-sm text-white hover:bg-blue-600"
+            >
+              Forward
+            </button>
+            <button
+              onClick={() => {
+                if (window.confirm(`Delete ${selectedMessages.size} messages?`)) {
+                  if (activeChat && db) {
+                    selectedMessages.forEach((msgId) => {
+                      remove(ref(db, `chats/${activeChat.id}/messages/${msgId}`));
+                    });
+                    showToast("Messages deleted", "success");
+                  }
+                  setSelectMode(false);
+                  setSelectedMessages(new Set());
+                }
+              }}
+              className="rounded-lg bg-red-500 px-3 py-1.5 text-sm text-white hover:bg-red-600"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
 
       <WebrtcCallOverlays
         callState={callState}
@@ -13017,10 +17356,12 @@ function ChatHeader({
   onReport,
   onDmVoiceCall,
   onDmVideoCall,
+  onDmSchedule,
   groupTrip,
   groupTripLoading,
   onGroupVoice,
   onGroupVideoCall,
+  onGroupSchedule,
 }: {
   chat: ChatInfo;
   onBack: () => void;
@@ -13037,11 +17378,13 @@ function ChatHeader({
   onReport: () => void;
   onDmVoiceCall: () => void;
   onDmVideoCall: () => void;
+  onDmSchedule: () => void;
   /** Travel group: first trip for header subtitle & pill (null = none / still loading) */
   groupTrip: TripOut | null;
   groupTripLoading: boolean;
   onGroupVoice: () => void;
   onGroupVideoCall: () => void;
+  onGroupSchedule: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuWrapRef = useRef<HTMLDivElement | null>(null);
@@ -13176,6 +17519,15 @@ function ChatHeader({
               onClick={onGroupVideoCall}
             >
               <Video className="h-5 w-5" strokeWidth={1.5} />
+            </button>
+            <button
+              type="button"
+              className="flex h-9 w-9 items-center justify-center rounded hover:bg-white/10"
+              style={{ color: TH_MUTED }}
+              aria-label="Schedule a call"
+              onClick={onGroupSchedule}
+            >
+              <Calendar className="h-5 w-5" strokeWidth={1.5} />
             </button>
             <div className="relative" ref={menuWrapRef}>
               <button
@@ -13318,6 +17670,14 @@ function ChatHeader({
         >
           <Video className="h-5 w-5" strokeWidth={1.5} />
         </button>
+        <button
+          type="button"
+          className="rounded p-1.5 text-white hover:bg-white/10"
+          aria-label="Schedule a call"
+          onClick={onDmSchedule}
+        >
+          <Calendar className="h-5 w-5" strokeWidth={1.5} />
+        </button>
       </div>
       <div className="relative flex shrink-0 items-center" ref={menuWrapRef}>
         <button
@@ -13375,6 +17735,17 @@ function ChatHeader({
               className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white hover:bg-white/10"
               onClick={() => {
                 setMenuOpen(false);
+                onDmSchedule();
+              }}
+            >
+              <Calendar className="h-4 w-4 shrink-0 opacity-80" />
+              Schedule a call
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white hover:bg-white/10"
+              onClick={() => {
+                setMenuOpen(false);
                 void onClearChat();
               }}
             >
@@ -13416,6 +17787,9 @@ function GroupMessageBubble({
   showAvatar,
   showName,
   readState,
+  selectMode,
+  isSelected,
+  onToggleSelect,
 }: {
   msg: ChatMessage;
   mine: boolean;
@@ -13423,6 +17797,9 @@ function GroupMessageBubble({
   showAvatar: boolean;
   showName: boolean;
   readState: "sent" | "delivered" | "read";
+  selectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }) {
   const meta = (msg.metadata || {}) as Record<string, unknown>;
   const t = String(msg.type || "text").toLowerCase();
@@ -13690,6 +18067,21 @@ function GroupMessageBubble({
     <div
       className={`mb-0.5 flex w-full min-w-0 items-end gap-1.5 ${mine ? "justify-end" : "justify-start"}`}
     >
+      {selectMode ? (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect?.();
+          }}
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded border-2 ${
+            isSelected
+              ? "border-blue-500 bg-blue-500"
+              : "border-gray-400 bg-transparent"
+          }`}
+        >
+          {isSelected && <Check className="h-4 w-4 text-white" />}
+        </button>
+      ) : null}
       {!mine && showAvatar ? (
         <span
           className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
@@ -13712,6 +18104,9 @@ function MessageBubble({
   readReceipt,
   dmPeerAvatarUrl,
   dmPeerDisplayName,
+  selectMode,
+  isSelected,
+  onToggleSelect,
 }: {
   msg: ChatMessage;
   mine: boolean;
@@ -13720,6 +18115,9 @@ function MessageBubble({
   /** Other user in 1:1 (for avatar when !mine) */
   dmPeerAvatarUrl: string | null;
   dmPeerDisplayName: string;
+  selectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }) {
   const meta = msg.metadata as Record<string, unknown> | undefined;
 
@@ -13749,6 +18147,21 @@ function MessageBubble({
     <div
       className={`mb-2 flex w-full items-end gap-2 ${mine ? "justify-end" : "justify-start"}`}
     >
+      {selectMode ? (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect?.();
+          }}
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded border-2 ${
+            isSelected
+              ? "border-blue-500 bg-blue-500"
+              : "border-gray-400 bg-transparent"
+          }`}
+        >
+          {isSelected && <Check className="h-4 w-4 text-white" />}
+        </button>
+      ) : null}
       {!mine ? (
         otherPhotoUrl ? (
           <img

@@ -110,6 +110,56 @@ DEFAULT_PREFERENCES: dict[str, Any] = {
         "travel_streak_help_viewed": False,
         "bugs_contact_email": "",
     },
+    "connect": {
+        "account": {
+            "security_notifications": True,
+            "two_step_pin_set": False,
+        },
+        "privacy": {
+            "last_seen": "everyone",  # everyone | contacts | nobody
+            "profile_picture": "everyone",
+            "about": "everyone",
+            "status": "contacts",
+            "groups": "everyone",
+            "avatar_stickers": "contacts",
+            "live_location": False,
+            "silence_unknown_callers": False,
+            "read_receipts": True,
+            "default_disappearing_seconds": 0,  # 0 off, 86400 24h, 604800 7d, 7776000 90d
+            "app_lock": False,
+            "chat_lock": False,
+            "camera_effects": True,
+            "ip_protect_calls": False,
+            "disable_link_previews": False,
+        },
+        "chats": {
+            "theme": "system",  # light | dark | system
+            "wallpaper": "default",
+            "enter_is_send": False,
+            "media_visibility": True,
+            "font_size": "medium",  # small | medium | large
+            "keep_archived": False,
+        },
+        "notifications": {
+            "conversation_tones": True,
+            "reminders": True,
+            "notification_tone": "default",
+            "vibrate": "default",  # off | default | short | long
+            "light": "white",
+            "high_priority": True,
+            "reaction_notifications": True,
+            "call_notifications": True,
+        },
+        "storage": {
+            "use_less_data_for_calls": False,
+            "media_upload_quality": "hd",  # standard | hd
+            "auto_download_quality": "auto",
+            "auto_download_mobile": ["photos"],  # photos | audio | video | docs
+            "auto_download_wifi": ["photos", "audio", "video", "docs"],
+            "auto_download_roaming": [],
+        },
+        "language": "en",
+    },
 }
 
 

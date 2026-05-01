@@ -45,6 +45,7 @@ mdurl==0.1.2
 msgpack==1.1.2
 nodeenv==1.10.0
 openai==2.32.0
+google-generativeai==0.8.6
 packaging==26.0
 passlib==1.7.4
 pluggy==1.6.0

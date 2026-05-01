@@ -71,6 +71,16 @@ class InviteCodeOut(BaseModel):
     invite_code: str
 
 
+class MemberRoleUpdate(BaseModel):
+    role: MemberRole
+
+
+class LeaveGroupOut(BaseModel):
+    """Result of leaving a group; `deleted` is true when the group was dissolved (e.g. sole admin left)."""
+
+    deleted: bool = False
+
+
 def group_member_to_out(member: GroupMember) -> GroupMemberOut:
     """Build GroupMemberOut from ORM (pulls profile fields from member.user)."""
     u = member.user
