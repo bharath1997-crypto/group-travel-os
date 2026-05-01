@@ -15,8 +15,41 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
+import {
+  IconHeart,
+  IconMapPin,
+  IconMessageCircle,
+  IconShare,
+  IconBookmark,
+  IconFilter,
+  IconStar,
+} from "@/components/icons";
 import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+
+declare global {
+  interface SpeechRecognitionEvent extends Event {
+    results: SpeechRecognitionResultList;
+  }
+
+  interface SpeechRecognition extends EventTarget {
+    continuous: boolean;
+    interimResults: boolean;
+    lang: string;
+    maxAlternatives: number;
+    onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+    onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
+    onerror: ((this: SpeechRecognition, ev: Event) => void) | null;
+    onend: ((this: SpeechRecognition, ev: Event) => void) | null;
+    start(): void;
+    stop(): void;
+  }
+
+  var SpeechRecognition: {
+    prototype: SpeechRecognition;
+    new (): SpeechRecognition;
+  };
+}
 
 const TM_KEY = process.env.NEXT_PUBLIC_TICKETMASTER_KEY || "";
 const PREDICTHQ_TOKEN = process.env.NEXT_PUBLIC_PREDICTHQ_TOKEN || "";
@@ -81,6 +114,8 @@ const NAVY = "#0F3460";
 const CORAL = "#E94560";
 const BG = "#F8F9FA";
 
+type AgeGroup = "all" | "20s" | "30s" | "40s" | "50s";
+
 type FeedEvent = {
   id: string;
   source: string;
@@ -112,6 +147,8 @@ type FeedEvent = {
   ticketTiers?: { name: string; price: string }[];
   opening_hours?: string;
   website?: string;
+  /** Age groups this event is most appropriate for */
+  ageAppropriate?: AgeGroup[];
 };
 
 function stripHtml(html: string): string {
@@ -457,11 +494,131 @@ function getPlaceEmoji(type?: string): string {
   )
     return "🎨";
   if (t.includes("theatre") || t.includes("cinema")) return "🎭";
-  if (t.includes("park")) return "🌿";
+  // Parks and nature
+  if (t.includes("park")) return "🌳";
+  if (t.includes("garden")) return "🌸";
+  if (t.includes("nature_reserve")) return "🦋";
+  if (t.includes("protected")) return "🏞️";
+  if (t.includes("recreation")) return "🎯";
+  if (t.includes("playground")) return "🎪";
+  // Water features
+  if (t.includes("beach")) return "🏖️";
+  if (t.includes("lake")) return "🌊";
+  // Sports
   if (t.includes("stadium") || t.includes("sports")) return "⚽";
+  if (t.includes("pitch") || t.includes("track")) return "🏃";
+  // Historic and attractions
   if (t.includes("attraction") || t.includes("tourism")) return "🏛️";
-  if (t.includes("zoo") || t.includes("theme")) return "🎪";
+  if (t.includes("historic") || t.includes("monument")) return "🗿";
+  if (t.includes("castle")) return "🏰";
+  if (t.includes("zoo") || t.includes("theme")) return "🦁";
+  // Trails and paths
+  if (t.includes("hiking") || t.includes("path")) return "🥾";
   return "📍";
+}
+
+/** Age group recommendations for different event types */
+const AGE_GROUP_CATEGORIES: Record<AgeGroup, { label: string; emoji: string; activities: string[] }> = {
+  all: { label: "All Ages", emoji: "👥", activities: ["family", "general", "community", "outdoor", "educational"] },
+  "20s": { label: "20s (18-29)", emoji: "🔥", activities: ["nightclub", "party", "concert", "festival", "bar", "pub", "college", "student", "clubbing", "edm", "hip-hop", "rock", "indie"] },
+  "30s": { label: "30s (30-39)", emoji: "🍷", activities: ["wine tasting", "networking", "social", "mixology", "brunch", "cocktail", "art gallery", "jazz", "comedy", "speed dating", "yoga", "fitness", "hiking group"] },
+  "40s": { label: "40s (40-49)", emoji: "🎭", activities: ["theater", "classical", "opera", "fine dining", "wine pairing", "golf", "tennis", "cooking class", "book club", "parenting", "school", "charity", "fundraiser"] },
+  "50s": { label: "50s+ (50+)", emoji: "🎼", activities: ["classical concert", "museum", "lecture", "tour", "religious", "devotional", "spiritual", "garden", "bird watching", "bridge", "cruise", "senior", "wellness", "meditation", "historical", "heritage"] },
+};
+
+/** Determine age appropriateness based on event name, category, and venue */
+function getAgeAppropriate(event: FeedEvent): AgeGroup[] {
+  const name = (event.name || "").toLowerCase();
+  const category = (event.category || "").toLowerCase();
+  const venue = (event.venue || "").toLowerCase();
+  const combined = `${name} ${category} ${venue}`;
+  
+  const ages: AgeGroup[] = ["all"]; // All events are suitable for all ages by default
+  
+  // 20s keywords (energetic, nightlife, party scene)
+  const keywords20s = [
+    "nightclub", "club", "party", "rave", "edm", "dj", "dance party", "college", "student",
+    "hip hop", "rap", "indie", "rock concert", "festival", "spring break", "pub crawl",
+    "beer pong", "karaoke night", "open mic", "battle of bands", "fraternity", "sorority",
+    "after party", "late night", "neon", "glow", "silent disco", "warehouse", "rooftop party"
+  ];
+  
+  // 30s keywords (social, professional, cultural)
+  const keywords30s = [
+    "wine tasting", "winery", "vineyard", "cocktail", "mixology", "happy hour", "networking",
+    "brunch", "bottomless", "mimosas", "bloody mary", "yoga", "pilates", "crossfit",
+    "running club", "hiking group", "art gallery", "gallery opening", "first friday",
+    "speed dating", "singles mixer", "jazz", "blues", "comedy", "stand-up", "improv",
+    "food festival", "trivia night", "board game", "escape room", "ax throwing"
+  ];
+  
+  // 40s keywords (family, refined, leisure)
+  const keywords40s = [
+    "theater", "theatre", "broadway", "play", "musical", "opera", "ballet", "symphony",
+    "orchestra", "fine dining", "wine pairing", "chef's table", "golf tournament",
+    "tennis", "parenting", "pta", "school fundraiser", "book club", "literary",
+    "cooking class", "culinary", "home improvement", "diy", "antique", "auction",
+    "charity gala", "fundraiser", "volunteer", "community service"
+  ];
+  
+  // 50s+ keywords (cultural, educational, devotional, relaxed)
+  const keywords50s = [
+    "classical music", "chamber music", "organ concert", "museum", "art exhibit",
+    "lecture", "guest speaker", "historical tour", "heritage", "walking tour",
+    "garden tour", "botanical", "bird watching", "nature walk", "religious",
+    "church", "temple", "mosque", "synagogue", "prayer", "meditation", "spiritual",
+    "retreat", "wellness", "senior", "retiree", "cruise", "river cruise",
+    "bridge club", "mahjong", "bingo", "line dancing", "ballroom dancing",
+    "devotional", "bhajan", "kirtan", "satsang", "prayer meeting", "bible study",
+    "torah study", "religious gathering", "faith", "spiritual retreat"
+  ];
+  
+  // Check each age group
+  if (keywords20s.some(kw => combined.includes(kw))) ages.push("20s");
+  if (keywords30s.some(kw => combined.includes(kw))) ages.push("30s");
+  if (keywords40s.some(kw => combined.includes(kw))) ages.push("40s");
+  if (keywords50s.some(kw => combined.includes(kw))) ages.push("50s");
+  
+  // Category-based matching for age groups
+  // 20s categories
+  if (category.includes("nightclub") || category.includes("dance") || 
+      category.includes("edm") || category.includes("college")) {
+    if (!ages.includes("20s")) ages.push("20s");
+  }
+  
+  // 30s categories
+  if (category.includes("networking") || category.includes("social") ||
+      category.includes("wine") || category.includes("cocktail") ||
+      category.includes("yoga") || category.includes("fitness")) {
+    if (!ages.includes("30s")) ages.push("30s");
+  }
+  
+  // 40s categories
+  if (category.includes("theater") || category.includes("theatre") ||
+      category.includes("opera") || category.includes("ballet") ||
+      category.includes("parenting") || category.includes("golf")) {
+    if (!ages.includes("40s")) ages.push("40s");
+  }
+  
+  // 50s+ categories
+  if (category.includes("classical") || category.includes("museum") ||
+      category.includes("lecture") || category.includes("tour") ||
+      category.includes("religious") || category.includes("devotional") ||
+      category.includes("spiritual") || category.includes("senior")) {
+    if (!ages.includes("50s")) ages.push("50s");
+  }
+  
+  return ages;
+}
+
+/** Get age-appropriate filter label */
+function getAgeGroupLabel(age: AgeGroup): string {
+  return AGE_GROUP_CATEGORIES[age].label;
+}
+
+/** Get emoji for age group */
+function getAgeGroupEmoji(age: AgeGroup): string {
+  return AGE_GROUP_CATEGORIES[age].emoji;
 }
 
 function sourceBadgeStyle(source: string): { background: string } {
@@ -688,6 +845,116 @@ function cardGradient(category?: string): string {
   return `linear-gradient(135deg, ${NAVY} 0%, #1e5a8a 100%)`;
 }
 
+/** Travel-safe sites shown on the browser home screen */
+const BROWSER_QUICK_SITES: {
+  name: string;
+  url: string;
+  icon: string;
+  color: string;
+  desc: string;
+}[] = [
+  {
+    name: "Google Maps",
+    url: "https://www.google.com/maps/embed",
+    icon: "🗺️",
+    color: "#4285F4",
+    desc: "Navigate & explore",
+  },
+  {
+    name: "Ticketmaster",
+    url: "https://www.ticketmaster.com",
+    icon: "🎟️",
+    color: "#026CDF",
+    desc: "Concerts & events",
+  },
+  {
+    name: "Eventbrite",
+    url: "https://www.eventbrite.com",
+    icon: "🎪",
+    color: "#F05537",
+    desc: "Local events",
+  },
+  {
+    name: "TripAdvisor",
+    url: "https://www.tripadvisor.com",
+    icon: "🏨",
+    color: "#00AA6C",
+    desc: "Travel reviews",
+  },
+  {
+    name: "AllTrails",
+    url: "https://www.alltrails.com",
+    icon: "🥾",
+    color: "#3D7A47",
+    desc: "Hikes & trails",
+  },
+  {
+    name: "OpenStreetMap",
+    url: "https://www.openstreetmap.org/export/embed.html?bbox=-87.9,41.6,-87.5,42.0&layer=mapnik",
+    icon: "🌍",
+    color: "#7EBC6F",
+    desc: "Open map",
+  },
+  {
+    name: "Yelp",
+    url: "https://www.yelp.com",
+    icon: "⭐",
+    color: "#D32323",
+    desc: "Restaurants & spots",
+  },
+  {
+    name: "Timeout",
+    url: "https://www.timeout.com",
+    icon: "🌆",
+    color: "#F1000B",
+    desc: "City guides",
+  },
+  {
+    name: "Viator",
+    url: "https://www.viator.com",
+    icon: "✈️",
+    color: "#172432",
+    desc: "Tours & activities",
+  },
+  {
+    name: "GetYourGuide",
+    url: "https://www.getyourguide.com",
+    icon: "🎯",
+    color: "#FF5A00",
+    desc: "Experiences",
+  },
+  {
+    name: "Meetup",
+    url: "https://www.meetup.com",
+    icon: "👥",
+    color: "#ED1C40",
+    desc: "Group events",
+  },
+  {
+    name: "Parks.com",
+    url: "https://www.nps.gov",
+    icon: "🌲",
+    color: "#2D5B1C",
+    desc: "National parks",
+  },
+];
+
+/** Domains blocked for travel-safety (social media / adult) */
+const BLOCKED_DOMAINS = [
+  "instagram.com",
+  "facebook.com",
+  "twitter.com",
+  "x.com",
+  "tiktok.com",
+  "snapchat.com",
+  "reddit.com",
+  "linkedin.com",
+  "onlyfans.com",
+  "pornhub.com",
+  "xvideos.com",
+  "xnxx.com",
+];
+
 export default function FeedPage() {
   const router = useRouter();
   const [userLocation, setUserLocation] = useState<{
@@ -708,6 +975,7 @@ export default function FeedPage() {
   const [activeTime, setActiveTime] = useState("today");
   const [pickedDate, setPickedDate] = useState("");
   const [activeScope, setActiveScope] = useState("50mi");
+  const [activeAgeGroup, setActiveAgeGroup] = useState<AgeGroup>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedEvent, setSelectedEvent] = useState<FeedEvent | null>(null);
   const [showBuyConfirm, setShowBuyConfirm] = useState(false);
@@ -724,6 +992,7 @@ export default function FeedPage() {
   /** False until first trending fetch finishes (background — not tied to `loading`). */
   const [trendingReady, setTrendingReady] = useState(false);
   const [scopeMenuOpen, setScopeMenuOpen] = useState(false);
+  const [ageGroupMenuOpen, setAgeGroupMenuOpen] = useState(false);
   const [holidays, setHolidays] = useState<{ name: string; date: string }[]>(
     [],
   );
@@ -732,6 +1001,34 @@ export default function FeedPage() {
   const [showMoodPlanner, setShowMoodPlanner] = useState(true);
   const [interestedEvents, setInterestedEvents] = useState<string[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [activePlatform, setActivePlatform] = useState<string>("all");
+  const [discoverScrollIdx, setDiscoverScrollIdx] = useState(0);
+  const [showBrowser, setShowBrowser] = useState(true);
+  const [browserInput, setBrowserInput] = useState("");
+  const [browserUrl, setBrowserUrl] = useState("");
+  const [browserHistory, setBrowserHistory] = useState<string[]>([]);
+  const [browserHistoryIdx, setBrowserHistoryIdx] = useState(-1);
+  const [browserPageLoading, setBrowserPageLoading] = useState(false);
+  const [iframeRefreshKey, setIframeRefreshKey] = useState(0);
+  const [blockedSite, setBlockedSite] = useState<string | null>(null);
+  const browserIframeRef = useRef<HTMLIFrameElement>(null);
+  // AI chat panel
+  const [showBrowserAI, setShowBrowserAI] = useState(false);
+  const [aiMessages, setAiMessages] = useState<
+    { id: string; role: "user" | "assistant"; text: string }[]
+  >([]);
+  const [aiInput, setAiInput] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const aiEndRef = useRef<HTMLDivElement>(null);
+  // Voice
+  const [isListening, setIsListening] = useState(false);
+  const [isVoiceAgent, setIsVoiceAgent] = useState(false);
+  const [voiceAgentStatus, setVoiceAgentStatus] = useState("");
+  const speechRecogRef = useRef<SpeechRecognition | null>(null);
+  // Notifications
+  const [showBrowserNotif, setShowBrowserNotif] = useState(false);
+  // Settings
+  const [showBrowserSettings, setShowBrowserSettings] = useState(false);
   const initialGeoFetchDoneRef = useRef(false);
   /** Only refetch on scope change — not when GPS updates `userLocation`. */
   const prevScopeRef = useRef<string | null>(null);
@@ -1034,11 +1331,50 @@ out center ${outCount};
         : `
 [out:json][timeout:25];
 (
-  node["amenity"~"restaurant|cafe|bar|theatre|cinema|museum|arts_centre|community_centre|nightclub|events_venue"](around:${radiusMeters},${lat},${lon});
+  // Parks and green spaces - priority
+  node["leisure"="park"](around:${radiusMeters},${lat},${lon});
+  way["leisure"="park"](around:${radiusMeters},${lat},${lon});
+  node["leisure"="garden"](around:${radiusMeters},${lat},${lon});
+  way["leisure"="garden"](around:${radiusMeters},${lat},${lon});
+  node["leisure"="nature_reserve"](around:${radiusMeters},${lat},${lon});
+  way["leisure"="nature_reserve"](around:${radiusMeters},${lat},${lon});
+  node["boundary"="protected_area"](around:${radiusMeters},${lat},${lon});
+  way["boundary"="protected_area"](around:${radiusMeters},${lat},${lon});
+  
+  // Water features and beaches
+  node["natural"="beach"](around:${radiusMeters},${lat},${lon});
+  way["natural"="beach"](around:${radiusMeters},${lat},${lon});
+  node["natural"="water"]["water"="lake"](around:${radiusMeters},${lat},${lon});
+  way["natural"="water"]["water"="lake"](around:${radiusMeters},${lat},${lon});
+  
+  // Recreation areas
+  node["leisure"="recreation_ground"](around:${radiusMeters},${lat},${lon});
+  way["leisure"="recreation_ground"](around:${radiusMeters},${lat},${lon});
+  node["leisure"="playground"](around:${radiusMeters},${lat},${lon});
+  way["leisure"="playground"](around:${radiusMeters},${lat},${lon});
+  node["leisure"="picnic_table"](around:${radiusMeters},${lat},${lon});
+  
+  // Trails and outdoor paths
+  way["highway"="path"]["foot"="yes"](around:${radiusMeters},${lat},${lon});
+  way["route"="hiking"](around:${radiusMeters},${lat},${lon});
+  
+  // Cultural attractions
   node["tourism"~"attraction|museum|gallery|viewpoint|theme_park|zoo"](around:${radiusMeters},${lat},${lon});
-  node["leisure"~"park|stadium|sports_centre|fitness_centre"](around:${radiusMeters},${lat},${lon});
+  way["tourism"~"attraction|museum|gallery|viewpoint|theme_park|zoo"](around:${radiusMeters},${lat},${lon});
+  node["historic"~"monument|memorial|castle"](around:${radiusMeters},${lat},${lon});
+  way["historic"~"monument|memorial|castle"](around:${radiusMeters},${lat},${lon});
+  
+  // Entertainment venues
+  node["amenity"~"theatre|cinema|arts_centre|community_centre|events_venue"](around:${radiusMeters},${lat},${lon});
+  way["amenity"~"theatre|cinema|arts_centre|community_centre|events_venue"](around:${radiusMeters},${lat},${lon});
+  
+  // Sports facilities
+  node["leisure"~"stadium|sports_centre|fitness_centre|pitch|track"](around:${radiusMeters},${lat},${lon});
+  way["leisure"~"stadium|sports_centre|fitness_centre|pitch|track"](around:${radiusMeters},${lat},${lon});
 );
 out body ${outCount};
+>; // Recurse to get full way data
+out skel qt; // Output skeleton with geometry for ways
 `;
 
       console.log(
@@ -1477,23 +1813,62 @@ out body ${outCount};
     fetchHolidaysForCountry,
   ]);
 
+  // Enhance events with age-appropriate data
+  const eventsWithAge = useMemo(() => {
+    return tmEvents.map(e => ({
+      ...e,
+      ageAppropriate: getAgeAppropriate(e),
+    }));
+  }, [tmEvents]);
+
   const filteredTmEvents = useMemo(() => {
-    let list = tmEvents.filter((e) => matchesCategoryFilter(e, activeCategory));
+    let list = eventsWithAge.filter((e) => matchesCategoryFilter(e, activeCategory));
     if (searchQuery.trim()) {
       list = list.filter((e) => matchesKeyword(e, searchQuery));
     }
+    if (activePlatform !== "all") {
+      const platformSourceMap: Record<string, string[]> = {
+        ticketmaster: ["Ticketmaster"],
+        eventbrite: ["Eventbrite", "OpenEvent"],
+        music: ["Ticketmaster", "Songkick"],
+        parks: ["Nearby"],
+        predicthq: ["PredictHQ"],
+      };
+      const allowed = platformSourceMap[activePlatform] ?? [];
+      list = list.filter((e) => allowed.includes(e.source));
+    }
+    // Age group filter
+    if (activeAgeGroup !== "all") {
+      list = list.filter((e) => 
+        e.ageAppropriate?.includes(activeAgeGroup) || e.ageAppropriate?.includes("all")
+      );
+    }
     return list;
-  }, [tmEvents, activeCategory, searchQuery]);
+  }, [eventsWithAge, activeCategory, searchQuery, activePlatform, activeAgeGroup]);
+
+  // Enhance nearby places with age-appropriate data
+  const placesWithAge = useMemo(() => {
+    return nearbyPlaces.map(e => ({
+      ...e,
+      ageAppropriate: getAgeAppropriate(e),
+    }));
+  }, [nearbyPlaces]);
 
   const filteredNearbyPlaces = useMemo(() => {
-    let list = nearbyPlaces.filter((e) =>
+    let list = placesWithAge.filter((e) =>
       matchesCategoryFilter(e, activeCategory),
     );
     if (searchQuery.trim()) {
       list = list.filter((e) => matchesKeyword(e, searchQuery));
     }
+    // Age group filter for places
+    if (activeAgeGroup !== "all") {
+      list = list.filter((e) =>
+        e.ageAppropriate?.includes(activeAgeGroup) || e.ageAppropriate?.includes("all")
+      );
+    }
     return list;
-  }, [nearbyPlaces, activeCategory, searchQuery]);
+  }, [placesWithAge, activeCategory, searchQuery, activeAgeGroup]);
 
   useEffect(() => {
     const total = tmEvents.length;
@@ -1676,6 +2051,69 @@ out body ${outCount};
     fetchPredictHQEvents,
     fetchHolidaysForCountry,
   ]);
+
+  // Continuous GPS tracking - updates location when user moves significantly
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    
+    let watchId: number | null = null;
+    let lastLat: number | null = null;
+    let lastLon: number | null = null;
+    const MOVEMENT_THRESHOLD_METERS = 500; // Only update if moved 500m+
+
+    function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+      const R = 6371e3; // Earth's radius in meters
+      const φ1 = (lat1 * Math.PI) / 180;
+      const φ2 = (lat2 * Math.PI) / 180;
+      const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+      const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+      const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const newLat = pos.coords.latitude;
+        const newLon = pos.coords.longitude;
+        
+        // Only update if significantly moved or first location
+        if (lastLat === null || lastLon === null) {
+          lastLat = newLat;
+          lastLon = newLon;
+          return; // Initial position already set by getCurrentPosition
+        }
+        
+        const distance = calculateDistance(lastLat, lastLon, newLat, newLon);
+        
+        if (distance > MOVEMENT_THRESHOLD_METERS) {
+          console.log(`GPS update: moved ${Math.round(distance)}m`);
+          lastLat = newLat;
+          lastLon = newLon;
+          setUserLocation({ lat: newLat, lon: newLon });
+          setUserCityFromGps(true);
+          // Silently refetch without toast for background updates
+          void refetchExternal();
+        }
+      },
+      (err) => {
+        console.log("GPS watch error:", err.message);
+      },
+      {
+        enableHighAccuracy: false, // Save battery
+        maximumAge: 300000, // 5 minutes
+        timeout: 10000,
+      }
+    );
+
+    return () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [refetchExternal]);
 
   const changeLocation = useCallback(
     async (cityName: string, fromPill = false) => {
@@ -1887,6 +2325,263 @@ out body ${outCount};
   const eventsSectionEmpty =
     !feedLoading && filteredTmEvents.length === 0;
 
+  // ── Browser AI Chat ─────────────────────────────────────────────────────
+
+  function aiScrollToEnd() {
+    globalThis.setTimeout(() => {
+      aiEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
+  }
+
+  async function sendAIMessage(msgText?: string) {
+    const text = (msgText ?? aiInput).trim();
+    if (!text || aiLoading) return;
+    setAiInput("");
+    const userMsg = {
+      id: `u-${Date.now()}`,
+      role: "user" as const,
+      text,
+    };
+    setAiMessages((prev) => [...prev, userMsg]);
+    setAiLoading(true);
+    aiScrollToEnd();
+    try {
+      const token =
+        typeof window !== "undefined" ? getToken() : null;
+      const res = await fetchWithTimeout(
+        `${API_BASE}/ai/assistant`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            page: "explore_browser",
+            active_tab: "browser",
+            context: {
+              city: userCity,
+              events: tmEvents.slice(0, 6).map((e) => ({
+                name: e.name,
+                date: e.date,
+                venue: e.venue,
+                price: e.price,
+              })),
+              current_url: browserUrl || "home",
+            },
+            user_message: text,
+          }),
+        },
+        15000,
+      );
+      if (res.ok) {
+        const data = (await res.json()) as { message?: string };
+        const reply = data.message || "I couldn't find an answer right now.";
+        setAiMessages((prev) => [
+          ...prev,
+          { id: `a-${Date.now()}`, role: "assistant" as const, text: reply },
+        ]);
+        if (isVoiceAgent) speakText(reply);
+      } else {
+        setAiMessages((prev) => [
+          ...prev,
+          {
+            id: `a-err-${Date.now()}`,
+            role: "assistant" as const,
+            text: "AI assistant is unavailable. Please check your connection.",
+          },
+        ]);
+      }
+    } catch {
+      setAiMessages((prev) => [
+        ...prev,
+        {
+          id: `a-err2-${Date.now()}`,
+          role: "assistant" as const,
+          text: "Could not reach the AI assistant right now.",
+        },
+      ]);
+    } finally {
+      setAiLoading(false);
+      aiScrollToEnd();
+    }
+  }
+
+  // ── Voice helpers ────────────────────────────────────────────────────────
+
+  function speakText(text: string) {
+    if (typeof window === "undefined") return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text.slice(0, 400));
+    utt.lang = "en-US";
+    utt.rate = 1.05;
+    window.speechSynthesis.speak(utt);
+  }
+
+  function startVoiceSearch() {
+    if (typeof window === "undefined") return;
+    const SR =
+      (window as unknown as { SpeechRecognition?: typeof SpeechRecognition })
+        .SpeechRecognition ??
+      (
+        window as unknown as {
+          webkitSpeechRecognition?: typeof SpeechRecognition;
+        }
+      ).webkitSpeechRecognition;
+    if (!SR) {
+      showToast("Voice search not supported in this browser", "error");
+      return;
+    }
+    if (isListening) {
+      speechRecogRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+    const recognition = new SR();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (ev: SpeechRecognitionEvent) => {
+      const transcript = ev.results[0]?.[0]?.transcript ?? "";
+      setBrowserInput(transcript);
+      setIsListening(false);
+      if (transcript) browserNavigateTo(transcript);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    speechRecogRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }
+
+  function startVoiceAgent() {
+    if (typeof window === "undefined") return;
+    const SR =
+      (window as unknown as { SpeechRecognition?: typeof SpeechRecognition })
+        .SpeechRecognition ??
+      (
+        window as unknown as {
+          webkitSpeechRecognition?: typeof SpeechRecognition;
+        }
+      ).webkitSpeechRecognition;
+    if (!SR) {
+      showToast("Voice agent not supported in this browser", "error");
+      return;
+    }
+    if (isVoiceAgent) {
+      speechRecogRef.current?.stop();
+      setIsVoiceAgent(false);
+      setVoiceAgentStatus("");
+      window.speechSynthesis.cancel();
+      return;
+    }
+    setIsVoiceAgent(true);
+    setShowBrowserAI(true);
+    setVoiceAgentStatus("Listening…");
+    speakText("Hi! I'm your Travello voice agent. What can I help you find today?");
+
+    const recognition = new SR();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.continuous = false;
+    recognition.onresult = (ev: SpeechRecognitionEvent) => {
+      const transcript = ev.results[0]?.[0]?.transcript ?? "";
+      setVoiceAgentStatus(`You said: "${transcript}"`);
+      void sendAIMessage(transcript);
+    };
+    recognition.onerror = () => {
+      setVoiceAgentStatus("Couldn't hear you. Try again.");
+      setIsVoiceAgent(false);
+    };
+    recognition.onend = () => {
+      setVoiceAgentStatus("");
+      setIsVoiceAgent(false);
+    };
+    speechRecogRef.current = recognition;
+    recognition.start();
+  }
+
+  // ── In-App Browser helpers ──────────────────────────────────────────────
+
+  function isBrowserDomainBlocked(url: string): boolean {
+    try {
+      const hostname = new URL(url).hostname.replace(/^www\./, "");
+      return BLOCKED_DOMAINS.some((d) => hostname === d || hostname.endsWith(`.${d}`));
+    } catch {
+      return false;
+    }
+  }
+
+  function buildBrowserUrl(raw: string): string {
+    const trimmed = raw.trim();
+    if (!trimmed) return "";
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      if (trimmed.includes("google.com/maps") && !trimmed.includes("embed")) {
+        return trimmed.replace("/maps", "/maps/embed");
+      }
+      return trimmed;
+    }
+    if (/^[\w-]+\.[a-z]{2,}(\/.*)?$/.test(trimmed)) {
+      return `https://${trimmed}`;
+    }
+    return `https://www.google.com/search?q=${encodeURIComponent(`${trimmed} events travel activities`)}&safe=active`;
+  }
+
+  function browserNavigateTo(raw: string) {
+    const url = buildBrowserUrl(raw);
+    if (!url) return;
+    if (isBrowserDomainBlocked(url)) {
+      try {
+        setBlockedSite(new URL(url).hostname);
+      } catch {
+        setBlockedSite(raw);
+      }
+      setBrowserUrl("");
+      return;
+    }
+    setBlockedSite(null);
+    setBrowserUrl(url);
+    setBrowserInput(url);
+    setBrowserPageLoading(true);
+    const newHist = browserHistory.slice(0, browserHistoryIdx + 1).concat(url);
+    setBrowserHistory(newHist);
+    setBrowserHistoryIdx(newHist.length - 1);
+  }
+
+  function browserGoBack() {
+    if (browserHistoryIdx <= 0) return;
+    const idx = browserHistoryIdx - 1;
+    const url = browserHistory[idx] ?? "";
+    setBrowserHistoryIdx(idx);
+    setBrowserUrl(url);
+    setBrowserInput(url);
+    setBrowserPageLoading(true);
+    setBlockedSite(null);
+  }
+
+  function browserGoForward() {
+    if (browserHistoryIdx >= browserHistory.length - 1) return;
+    const idx = browserHistoryIdx + 1;
+    const url = browserHistory[idx] ?? "";
+    setBrowserHistoryIdx(idx);
+    setBrowserUrl(url);
+    setBrowserInput(url);
+    setBrowserPageLoading(true);
+    setBlockedSite(null);
+  }
+
+  function browserRefresh() {
+    setIframeRefreshKey((k) => k + 1);
+    setBrowserPageLoading(true);
+  }
+
+  function browserGoHome() {
+    setBrowserUrl("");
+    setBrowserInput("");
+    setBlockedSite(null);
+    setBrowserPageLoading(false);
+  }
+
   return (
     <div
       className="relative mx-auto max-w-[1200px] px-4 py-4 md:px-5"
@@ -1925,9 +2620,210 @@ out body ${outCount};
       <style
         dangerouslySetInnerHTML={{
           __html:
-            "@keyframes confetti-fall{0%{transform:translateY(0) rotate(0);opacity:0}12%{opacity:1}100%{transform:translateY(110vh) rotate(540deg);opacity:0}}@keyframes toast-slide-up{0%{transform:translateY(120%);opacity:0}100%{transform:translateY(0);opacity:1}}",
+            "@keyframes confetti-fall{0%{transform:translateY(0) rotate(0);opacity:0}12%{opacity:1}100%{transform:translateY(110vh) rotate(540deg);opacity:0}}@keyframes toast-slide-up{0%{transform:translateY(120%);opacity:0}100%{transform:translateY(0);opacity:1}}@keyframes discover-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}@keyframes slide-in-right{0%{opacity:0;transform:translateX(24px)}100%{opacity:1;transform:translateX(0)}}",
         }}
       />
+
+      {/* ── Discover Feed (Google Discover / Chrome New-Tab style) ── */}
+      <div className="mb-4">
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-sm font-bold text-[#0F3460]">
+            🌟 Discover
+            <span className="ml-1.5 text-[11px] font-normal text-[#6C757D]">
+              Curated for you · {userCity}
+            </span>
+          </p>
+          <span className="rounded-full bg-green-50 px-2 py-0.5 text-[9px] font-bold text-green-700">
+            ✓ Travel-Safe
+          </span>
+        </div>
+        <div className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {feedLoading
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={`disc-sk-${i}`}
+                  className="h-[180px] w-[200px] shrink-0 animate-pulse rounded-2xl bg-gray-100"
+                />
+              ))
+            : (tmEvents.length > 0 ? tmEvents : PLACEHOLDER_EVENTS)
+                .slice(0, 10)
+                .map((e, i) => (
+                  <button
+                    key={`disc-${e.id}`}
+                    type="button"
+                    onClick={() => setSelectedEvent(e)}
+                    className="group relative h-[180px] w-[200px] shrink-0 overflow-hidden rounded-2xl text-left shadow-md transition hover:-translate-y-1 hover:shadow-xl"
+                    style={{
+                      animation: `slide-in-right 0.35s ease-out ${i * 0.06}s both`,
+                    }}
+                  >
+                    {e.image ? (
+                      <img
+                        src={e.image}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div
+                        className="absolute inset-0"
+                        style={{ background: cardGradient(e.category) }}
+                      >
+                        <span className="absolute inset-0 flex items-center justify-center text-5xl opacity-30">
+                          {e.emoji || "🎪"}
+                        </span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <span
+                        className="mb-1 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold text-white"
+                        style={sourceBadgeStyle(e.source)}
+                      >
+                        {e.source}
+                      </span>
+                      <p className="line-clamp-2 text-[12px] font-bold leading-tight text-white">
+                        {e.name}
+                      </p>
+                      <p className="mt-0.5 text-[10px] text-white/80">
+                        {formatDate(e.date)}
+                        {e.venue ? ` · ${e.venue}` : ""}
+                      </p>
+                      <p
+                        className="mt-0.5 text-[10px] font-bold"
+                        style={{ color: e.isFree ? "#4ade80" : "#fbbf24" }}
+                      >
+                        {e.isFree ? "FREE" : e.price || ""}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+        </div>
+      </div>
+
+      {/* ── In-App Browser Launch Button ── */}
+      <button
+        type="button"
+        onClick={() => setShowBrowser(true)}
+        className="mb-4 flex w-full items-center gap-3 rounded-2xl border-2 border-[#0F3460] bg-gradient-to-r from-[#0F3460] to-[#1a5280] px-5 py-3.5 text-left shadow-lg transition hover:shadow-xl active:scale-[0.99]"
+      >
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20 text-2xl">
+          🌐
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-bold text-white">In-App Travel Browser</p>
+          <p className="text-[11px] text-white/70">
+            Browse Ticketmaster, TripAdvisor, Maps &amp; more — travel-safe &amp; restricted
+          </p>
+        </div>
+        <span className="shrink-0 rounded-lg bg-white/20 px-3 py-1.5 text-[11px] font-bold text-white">
+          Open →
+        </span>
+      </button>
+
+      {/* ── In-House Platform Tiles (Ticketmaster, Eventbrite, Parks, etc.) ── */}
+      <div className="mb-4">
+        <p className="mb-2 text-sm font-bold text-[#0F3460]">
+          🎫 Browse by platform
+        </p>
+        <div className="flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {(
+            [
+              {
+                id: "all",
+                emoji: "✨",
+                label: "All Events",
+                color: "#0F3460",
+                sub: "Every source",
+              },
+              {
+                id: "ticketmaster",
+                emoji: "🎟️",
+                label: "Ticketmaster",
+                color: "#026CDF",
+                sub: "Concerts & sports",
+              },
+              {
+                id: "eventbrite",
+                emoji: "🎪",
+                label: "Eventbrite",
+                color: "#F05537",
+                sub: "Local & community",
+              },
+              {
+                id: "music",
+                emoji: "🎵",
+                label: "Live Music",
+                color: "#7C3AED",
+                sub: "Gigs & festivals",
+              },
+              {
+                id: "parks",
+                emoji: "🌳",
+                label: "Parks & Outdoors",
+                color: "#16A34A",
+                sub: "Routes & nature",
+              },
+              {
+                id: "predicthq",
+                emoji: "📊",
+                label: "PredictHQ",
+                color: "#F97316",
+                sub: "Trending events",
+              },
+            ] as const
+          ).map((p) => {
+            const active = activePlatform === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setActivePlatform(p.id)}
+                className="flex shrink-0 flex-col items-center gap-1 rounded-2xl border-2 px-3.5 py-2.5 text-center transition hover:-translate-y-0.5"
+                style={{
+                  borderColor: active ? p.color : "#E9ECEF",
+                  background: active ? `${p.color}12` : "white",
+                  minWidth: 90,
+                }}
+              >
+                <span className="text-2xl">{p.emoji}</span>
+                <span
+                  className="text-[11px] font-bold leading-tight"
+                  style={{ color: active ? p.color : "#0F3460" }}
+                >
+                  {p.label}
+                </span>
+                <span className="text-[9px] text-[#6C757D]">{p.sub}</span>
+                {active ? (
+                  <span
+                    className="mt-0.5 rounded-full px-2 py-0.5 text-[8px] font-bold text-white"
+                    style={{ background: p.color }}
+                  >
+                    Active
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+        {activePlatform !== "all" ? (
+          <p className="mt-1.5 text-[11px] text-[#6C757D]">
+            Showing{" "}
+            <span className="font-semibold text-[#0F3460]">
+              {filteredTmEvents.length}
+            </span>{" "}
+            result{filteredTmEvents.length !== 1 ? "s" : ""} from{" "}
+            <span className="font-semibold text-[#E94560]">{activePlatform}</span>
+            {" · "}
+            <button
+              type="button"
+              className="font-semibold text-[#E94560] underline underline-offset-2"
+              onClick={() => setActivePlatform("all")}
+            >
+              Show all
+            </button>
+          </p>
+        ) : null}
+      </div>
 
       {showMoodPlanner ? (
         <div className="mb-4 rounded-[20px] border border-[#E9ECEF] bg-white p-5">
@@ -2164,13 +3060,154 @@ out body ${outCount};
               </>
             ) : null}
           </div>
+
+          {/* Age Group Filter Button */}
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setAgeGroupMenuOpen((o) => !o)}
+              className="flex h-full min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[14px] border border-[#E9ECEF] bg-white px-3.5 py-2.5 text-xs font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
+              style={{ color: NAVY }}
+              title="Filter events by age group"
+            >
+              {getAgeGroupEmoji(activeAgeGroup)} {getAgeGroupLabel(activeAgeGroup)}
+            </button>
+            {ageGroupMenuOpen ? (
+              <>
+                <button
+                  type="button"
+                  aria-label="Close menu"
+                  className="fixed inset-0 z-40 cursor-default bg-transparent"
+                  onClick={() => setAgeGroupMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-full z-50 mt-2 min-w-[220px] rounded-2xl border border-[#E9ECEF] bg-white p-3 shadow-[0_8px_30px_rgba(0,0,0,0.15)]">
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#6C757D]">
+                    Age Group — Find Events For
+                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    {(["all", "20s", "30s", "40s", "50s"] as AgeGroup[]).map((age) => (
+                      <button
+                        key={age}
+                        type="button"
+                        onClick={() => {
+                          setActiveAgeGroup(age);
+                          setAgeGroupMenuOpen(false);
+                          showToast(`Showing events for ${getAgeGroupLabel(age)}`, "success");
+                        }}
+                        className={`flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                          activeAgeGroup === age
+                            ? "bg-[#E94560] text-white"
+                            : "bg-[#F8F9FA] text-[#6C757D] hover:bg-[#E9ECEF]"
+                        }`}
+                      >
+                        <span className="text-lg">{getAgeGroupEmoji(age)}</span>
+                        <div className="flex flex-col">
+                          <span>{getAgeGroupLabel(age)}</span>
+                          <span className={`text-[10px] ${activeAgeGroup === age ? "text-white/80" : "text-[#6C757D]"}`}>
+                            {age === "20s" && "Nightclubs, concerts, parties"}
+                            {age === "30s" && "Wine tasting, networking, brunch"}
+                            {age === "40s" && "Theater, fine dining, family"}
+                            {age === "50s" && "Classical, tours, spiritual"}
+                            {age === "all" && "All ages welcome"}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 border-t border-[#E9ECEF] pt-2">
+                    <p className="text-[9px] text-[#6C757D]">
+                      💡 Events are matched based on type, venue, and description
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : null}
+          </div>
         </div>
 
-        <p className="mb-2 text-[11px] text-[#6C757D]">
-          {searchQuery.trim()
-            ? `🔍 Showing ${searchQuery.trim()} near ${userCity} within ${scopeLabelMiles(activeScope)}`
-            : `📍 Showing events near ${userCity} within ${scopeLabelMiles(activeScope)}`}
-        </p>
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <p className="text-[11px] text-[#6C757D]">
+            {searchQuery.trim()
+              ? `🔍 Showing ${searchQuery.trim()} near ${userCity} within ${scopeLabelMiles(activeScope)}`
+              : activeAgeGroup !== "all"
+                ? `👥 Showing events for ${getAgeGroupLabel(activeAgeGroup)} near ${userCity}`
+                : `📍 Showing events near ${userCity} within ${scopeLabelMiles(activeScope)}`}
+          </p>
+          
+          {/* GPS Status & Refresh Button */}
+          <div className="flex items-center gap-2">
+            {userCityFromGps ? (
+              <div className="flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5" title="Using your GPS location">
+                <span className="text-[9px]">📡</span>
+                <span className="text-[9px] font-bold text-blue-700">GPS Active</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5" title="Using default location (GPS not available)">
+                <span className="text-[9px]">📍</span>
+                <span className="text-[9px] font-bold text-amber-700">Default Location</span>
+              </div>
+            )}
+            
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof navigator !== "undefined" && navigator.geolocation) {
+                  setLoading(true);
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      const gpsLat = pos.coords.latitude;
+                      const gpsLon = pos.coords.longitude;
+                      setUserLocation({ lat: gpsLat, lon: gpsLon });
+                      
+                      // Reverse geocode to get city name
+                      void (async () => {
+                        try {
+                          const geoRes = await fetchWithTimeout(
+                            `https://nominatim.openstreetmap.org/reverse?lat=${gpsLat}&lon=${gpsLon}&format=json`,
+                            { headers: { "User-Agent": "Travello/1.0" } },
+                            5000,
+                          );
+                          if (geoRes.ok) {
+                            const geo = (await geoRes.json()) as {
+                              address?: { city?: string; town?: string; suburb?: string };
+                            };
+                            const cityName = geo.address?.city || geo.address?.town || geo.address?.suburb || "your location";
+                            setUserCity(cityName);
+                            setUserCityFromGps(true);
+                            showToast(`Location updated: ${cityName}`, "success");
+                          }
+                        } catch {
+                          showToast("Location updated (city unknown)", "success");
+                        }
+                        
+                        // Refetch events with new location
+                        void refetchExternal();
+                      })();
+                    },
+                    () => {
+                      setLoading(false);
+                      showToast("GPS access denied. Using default location.", "error");
+                    },
+                    { timeout: 10000, enableHighAccuracy: true }
+                  );
+                } else {
+                  showToast("GPS not available in your browser", "error");
+                }
+              }}
+              className="flex items-center gap-1 rounded-full border border-[#E9ECEF] bg-white px-2 py-0.5 text-[9px] font-bold text-[#0F3460] shadow-sm hover:bg-[#F8F9FA] transition"
+              title="Refresh my current GPS location"
+            >
+              <span>🔄</span>
+              <span>Locate Me</span>
+            </button>
+          </div>
+          
+          <div className="flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5">
+            <span className="text-[9px] text-green-600">✓</span>
+            <span className="text-[9px] font-bold text-green-700">Travel-Safe</span>
+            <span className="text-[9px] text-green-600">· Events &amp; places only</span>
+          </div>
+        </div>
         {userCityFromGps ? (
           <p className="mt-0.5 text-[10px] font-medium text-[#E94560]">
             Not your location? Change above ↑
@@ -3083,6 +4120,608 @@ out body ${outCount};
           >
             Plan this trip →
           </button>
+        </div>
+      ) : null}
+
+      {/* ══════════════════════════════════════════════════════
+          IN-APP TRAVEL BROWSER  (full-screen overlay)
+          ══════════════════════════════════════════════════════ */}
+      {showBrowser ? (
+        <div
+          className="fixed inset-0 z-[600] flex flex-col"
+          style={{ background: "#F0F2F5" }}
+        >
+          {/* ── Browser Chrome (top bar) ── */}
+          <div
+            className="flex shrink-0 flex-col shadow-md"
+            style={{ background: NAVY }}
+          >
+            {/* Row 1: nav + address + tools */}
+            <div className="flex items-center gap-1.5 px-2 py-2">
+              {/* Nav buttons */}
+              <div className="flex items-center gap-0.5">
+                <button type="button" disabled={browserHistoryIdx <= 0} onClick={browserGoBack} className="flex h-7 w-7 items-center justify-center rounded-md text-sm text-white/80 disabled:opacity-30 hover:bg-white/10" aria-label="Back">←</button>
+                <button type="button" disabled={browserHistoryIdx >= browserHistory.length - 1} onClick={browserGoForward} className="flex h-7 w-7 items-center justify-center rounded-md text-sm text-white/80 disabled:opacity-30 hover:bg-white/10" aria-label="Forward">→</button>
+                <button type="button" onClick={browserRefresh} disabled={!browserUrl} className="flex h-7 w-7 items-center justify-center rounded-md text-sm text-white/80 disabled:opacity-30 hover:bg-white/10" aria-label="Refresh">↻</button>
+                <button type="button" onClick={browserGoHome} className="flex h-7 w-7 items-center justify-center rounded-md text-sm text-white/80 hover:bg-white/10" aria-label="Home">⌂</button>
+              </div>
+
+              {/* Address bar */}
+              <form
+                className="flex flex-1 items-center gap-1.5 rounded-xl bg-white/15 px-3 py-1.5"
+                onSubmit={(ev) => { ev.preventDefault(); browserNavigateTo(browserInput); }}
+              >
+                <span className="shrink-0 text-[10px] text-white/60">
+                  {browserUrl.startsWith("https") ? "🔒" : browserUrl ? "🔓" : "🌐"}
+                </span>
+                <input
+                  value={browserInput}
+                  onChange={(ev) => setBrowserInput(ev.target.value)}
+                  placeholder="Search events, venues, cities or enter a URL..."
+                  className="min-w-0 flex-1 bg-transparent text-[12px] text-white outline-none placeholder:text-white/40"
+                />
+                {/* Voice search mic */}
+                <button
+                  type="button"
+                  onClick={startVoiceSearch}
+                  className={`shrink-0 flex h-6 w-6 items-center justify-center rounded-full text-[13px] transition ${isListening ? "animate-pulse bg-red-500" : "bg-white/15 hover:bg-white/30"}`}
+                  aria-label="Voice search"
+                  title="Voice search"
+                >
+                  🎙️
+                </button>
+                {browserInput ? (
+                  <button type="submit" className="shrink-0 rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-white/30">Go</button>
+                ) : null}
+              </form>
+
+              {/* Loading spinner */}
+              {browserPageLoading && browserUrl ? (
+                <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              ) : null}
+
+              {/* Tool buttons: Voice Agent | AI | Notifications | Settings | Close */}
+              <div className="flex items-center gap-0.5">
+                {/* Voice Agent */}
+                <button
+                  type="button"
+                  onClick={startVoiceAgent}
+                  title="Voice Agent"
+                  className={`flex h-7 w-7 items-center justify-center rounded-md text-sm transition ${isVoiceAgent ? "animate-pulse bg-red-500/80" : "text-white/80 hover:bg-white/10"}`}
+                >
+                  🤖
+                </button>
+
+                {/* AI Chat */}
+                <button
+                  type="button"
+                  onClick={() => setShowBrowserAI((o) => !o)}
+                  title="AI Assistant"
+                  className={`flex h-7 w-7 items-center justify-center rounded-md text-sm transition ${showBrowserAI ? "bg-[#E94560]" : "text-white/80 hover:bg-white/10"}`}
+                >
+                  ✨
+                </button>
+
+                {/* Notifications */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => { setShowBrowserNotif((o) => !o); setShowBrowserSettings(false); }}
+                    title="Notifications"
+                    className={`flex h-7 w-7 items-center justify-center rounded-md text-sm transition ${showBrowserNotif ? "bg-white/20" : "text-white/80 hover:bg-white/10"}`}
+                  >
+                    🔔
+                    {tmEvents.length > 0 ? (
+                      <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#E94560] text-[7px] font-bold text-white">
+                        {Math.min(tmEvents.length, 9)}
+                      </span>
+                    ) : null}
+                  </button>
+                  {showBrowserNotif ? (
+                    <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-2xl border border-[#E9ECEF] bg-white shadow-xl">
+                      <div className="flex items-center justify-between border-b border-[#E9ECEF] px-4 py-2.5">
+                        <p className="text-[12px] font-bold text-[#0F3460]">🔔 Today&apos;s Events</p>
+                        <button type="button" onClick={() => setShowBrowserNotif(false)} className="text-[#6C757D] hover:text-[#0F3460]">✕</button>
+                      </div>
+                      <div className="max-h-64 overflow-y-auto">
+                        {(tmEvents.length > 0 ? tmEvents : PLACEHOLDER_EVENTS).slice(0, 8).map((e) => (
+                          <button
+                            key={`notif-${e.id}`}
+                            type="button"
+                            onClick={() => { if (e.url) browserNavigateTo(e.url); else setSelectedEvent(e); setShowBrowserNotif(false); }}
+                            className="flex w-full items-start gap-3 border-b border-[#F8F9FA] px-4 py-2.5 text-left transition hover:bg-[#F8F9FA]"
+                          >
+                            <span className="mt-0.5 text-xl">{e.emoji || "🎪"}</span>
+                            <div className="min-w-0 flex-1">
+                              <p className="line-clamp-1 text-[11px] font-bold text-[#0F3460]">{e.name}</p>
+                              <p className="text-[10px] text-[#6C757D]">{formatDate(e.date)} · {e.venue || e.city}</p>
+                              <p className="text-[10px] font-semibold" style={{ color: e.isFree ? "#16a34a" : CORAL }}>{e.isFree ? "FREE" : e.price}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="px-4 py-2">
+                        <p className="text-center text-[10px] text-[#6C757D]">Tap any event to open · Updates daily</p>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Settings */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => { setShowBrowserSettings((o) => !o); setShowBrowserNotif(false); }}
+                    title="Browser settings"
+                    className={`flex h-7 w-7 items-center justify-center rounded-md text-sm transition ${showBrowserSettings ? "bg-white/20" : "text-white/80 hover:bg-white/10"}`}
+                  >
+                    ⚙️
+                  </button>
+                  {showBrowserSettings ? (
+                    <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded-2xl border border-[#E9ECEF] bg-white shadow-xl">
+                      <div className="border-b border-[#E9ECEF] px-4 py-2.5">
+                        <p className="text-[12px] font-bold text-[#0F3460]">⚙️ Browser Settings</p>
+                      </div>
+                      <div className="p-3 space-y-1">
+                        {[
+                          { icon: "🔒", label: "Safe Search", sub: "Always on — can't disable", locked: true },
+                          { icon: "🚫", label: "Adult content", sub: "Blocked permanently", locked: true },
+                          { icon: "📍", label: "Location", sub: userCity, locked: false },
+                          { icon: "🗺️", label: "Open Maps", sub: "Navigate to Google Maps", locked: false, action: () => browserNavigateTo("https://maps.google.com/maps?output=embed") },
+                          { icon: "🗑️", label: "Clear history", sub: `${browserHistory.length} pages`, locked: false, action: () => { setBrowserHistory([]); setBrowserHistoryIdx(-1); setShowBrowserSettings(false); } },
+                        ].map((item) => (
+                          <button
+                            key={item.label}
+                            type="button"
+                            disabled={item.locked}
+                            onClick={item.action}
+                            className="flex w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-[#F8F9FA] disabled:cursor-default"
+                          >
+                            <span className="text-lg">{item.icon}</span>
+                            <div>
+                              <p className="text-[11px] font-bold text-[#0F3460]">{item.label}</p>
+                              <p className="text-[9px] text-[#6C757D]">{item.sub}</p>
+                            </div>
+                            {item.locked ? <span className="ml-auto text-[9px] text-green-600 font-bold">ON</span> : null}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Close */}
+                <button type="button" onClick={() => setShowBrowser(false)} className="flex h-7 w-7 items-center justify-center rounded-md font-bold text-white/80 hover:bg-white/20" aria-label="Close">✕</button>
+              </div>
+            </div>
+
+            {/* Voice agent status bar */}
+            {isVoiceAgent && voiceAgentStatus ? (
+              <div className="flex items-center gap-2 border-t border-white/10 px-4 py-1">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-red-400" />
+                <p className="text-[11px] text-white/80">{voiceAgentStatus}</p>
+              </div>
+            ) : null}
+          </div>
+
+          {/* ── Safety ribbon ── */}
+          <div className="flex shrink-0 items-center gap-2 border-b border-green-200 bg-green-50 px-4 py-1">
+            <span className="text-[9px] font-bold text-green-700">✓ Travel-Safe</span>
+            <span className="text-[9px] text-green-600">· Events, parks, routes &amp; travel only · Social media &amp; adult sites blocked</span>
+          </div>
+
+          {/* ── AI Chat Panel (slides in from bottom) ── */}
+          {showBrowserAI ? (
+            <div
+              className="flex shrink-0 flex-col border-b border-[#E9ECEF] bg-white"
+              style={{ maxHeight: "40vh" }}
+            >
+              <div className="flex items-center justify-between border-b border-[#E9ECEF] px-4 py-2" style={{ background: NAVY }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-base">✨</span>
+                  <p className="text-[12px] font-bold text-white">Travello AI Assistant</p>
+                  {isVoiceAgent ? (
+                    <span className="flex items-center gap-1 rounded-full bg-red-500/80 px-2 py-0.5 text-[9px] font-bold text-white">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> Voice Active
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={startVoiceAgent}
+                    title={isVoiceAgent ? "Stop voice agent" : "Start voice agent"}
+                    className={`flex h-6 w-6 items-center justify-center rounded-md text-xs transition ${isVoiceAgent ? "bg-red-500 text-white" : "text-white/70 hover:bg-white/10"}`}
+                  >
+                    🎤
+                  </button>
+                  <button type="button" onClick={() => setShowBrowserAI(false)} className="flex h-6 w-6 items-center justify-center rounded-md text-white/70 hover:bg-white/10">✕</button>
+                </div>
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ minHeight: 80 }}>
+                {aiMessages.length === 0 ? (
+                  <div className="py-3 text-center">
+                    <p className="text-[12px] font-semibold text-[#0F3460]">Hi! I&apos;m your Travello AI.</p>
+                    <p className="mt-0.5 text-[11px] text-[#6C757D]">Ask me about events, places, or travel near {userCity}.</p>
+                    <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+                      {["What's on today?", "Best free events", "Outdoor activities near me", "Plan a weekend trip"].map((q) => (
+                        <button key={q} type="button" onClick={() => void sendAIMessage(q)} className="rounded-full border border-[#E9ECEF] px-2.5 py-1 text-[10px] font-semibold text-[#0F3460] hover:border-[#E94560] hover:text-[#E94560]">
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  aiMessages.map((m) => (
+                    <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-3 py-2 text-[12px] leading-relaxed ${m.role === "user" ? "text-white" : "border border-[#E9ECEF] bg-[#F8F9FA] text-[#2C3E50]"}`}
+                        style={m.role === "user" ? { background: NAVY } : undefined}
+                      >
+                        {m.text}
+                      </div>
+                    </div>
+                  ))
+                )}
+                {aiLoading ? (
+                  <div className="flex justify-start">
+                    <div className="flex items-center gap-1.5 rounded-2xl border border-[#E9ECEF] bg-[#F8F9FA] px-3 py-2">
+                      {[0, 1, 2].map((i) => (
+                        <span key={i} className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#6C757D]" style={{ animationDelay: `${i * 0.15}s` }} />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                <div ref={aiEndRef} />
+              </div>
+
+              {/* Input */}
+              <form
+                className="flex items-center gap-2 border-t border-[#E9ECEF] px-3 py-2"
+                onSubmit={(ev) => { ev.preventDefault(); void sendAIMessage(); }}
+              >
+                <input
+                  value={aiInput}
+                  onChange={(ev) => setAiInput(ev.target.value)}
+                  placeholder="Ask about events, places, travel..."
+                  className="min-w-0 flex-1 rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] px-3 py-1.5 text-[12px] text-[#2C3E50] outline-none placeholder:text-[#ADB5BD] focus:border-[#0F3460]"
+                />
+                <button
+                  type="button"
+                  onClick={startVoiceAgent}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm transition ${isVoiceAgent ? "animate-pulse bg-red-500 text-white" : "border border-[#E9ECEF] text-[#6C757D] hover:border-[#0F3460]"}`}
+                  title="Voice"
+                >
+                  🎙️
+                </button>
+                <button
+                  type="submit"
+                  disabled={aiLoading || !aiInput.trim()}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                  style={{ background: CORAL }}
+                >
+                  ↑
+                </button>
+              </form>
+            </div>
+          ) : null}
+
+          {/* ── Content area ── */}
+          <div className="relative flex-1 overflow-hidden">
+            {/* Home screen — shown when no URL is loaded */}
+            {!browserUrl && !blockedSite ? (
+              <div className="h-full overflow-y-auto px-4 py-6">
+                {/* Search hero */}
+                <div
+                  className="mb-6 rounded-2xl px-6 py-8 text-center shadow-md"
+                  style={{
+                    background: `linear-gradient(135deg, ${NAVY} 0%, #1a5280 100%)`,
+                  }}
+                >
+                  <p className="mb-1 text-2xl font-bold text-white">🌐 Travello Browser</p>
+                  <p className="mb-4 text-sm text-white/70">
+                    Search events, places, maps &amp; travel — all in one place
+                  </p>
+                  <form
+                    className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5"
+                    onSubmit={(ev) => {
+                      ev.preventDefault();
+                      browserNavigateTo(browserInput);
+                    }}
+                  >
+                    <span className="text-lg text-[#6C757D]">🔍</span>
+                    <input
+                      value={browserInput}
+                      onChange={(ev) => setBrowserInput(ev.target.value)}
+                      placeholder="Search events, venues, cities..."
+                      className="min-w-0 flex-1 bg-transparent text-[13px] text-[#2C3E50] outline-none placeholder:text-[#ADB5BD]"
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-lg px-4 py-1.5 text-[12px] font-bold text-white"
+                      style={{ background: CORAL }}
+                    >
+                      Search
+                    </button>
+                  </form>
+                </div>
+
+                {/* Quick-launch grid */}
+                <p className="mb-3 text-sm font-bold text-[#0F3460]">
+                  🚀 Quick access · Travel-approved sites
+                </p>
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+                  {BROWSER_QUICK_SITES.map((site) => (
+                    <button
+                      key={site.name}
+                      type="button"
+                      onClick={() => browserNavigateTo(site.url)}
+                      className="flex flex-col items-center gap-1.5 rounded-2xl border border-[#E9ECEF] bg-white px-2 py-3.5 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                    >
+                      <span className="text-3xl">{site.icon}</span>
+                      <span className="text-[11px] font-bold text-[#0F3460]">
+                        {site.name}
+                      </span>
+                      <span className="text-[9px] text-[#6C757D]">{site.desc}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Popular searches */}
+                <p className="mb-2 mt-5 text-sm font-bold text-[#0F3460]">
+                  🔥 Popular travel searches
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "concerts near me",
+                    "outdoor festivals",
+                    "national parks",
+                    "food festivals",
+                    "art exhibitions",
+                    "hiking trails",
+                    "music events this weekend",
+                    "free events near me",
+                    "sports events",
+                    "travel routes",
+                  ].map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      onClick={() => browserNavigateTo(q)}
+                      className="rounded-full border border-[#E9ECEF] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#0F3460] transition hover:border-[#E94560] hover:text-[#E94560]"
+                    >
+                      🔍 {q}
+                    </button>
+                  ))}
+                </div>
+
+                {/* ── Discover feed inside the browser (events from current location) ── */}
+                <div className="mt-6">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-sm font-bold text-[#0F3460]">
+                      🌟 Discover · Events near {userCity}
+                    </p>
+                    <span className="rounded-full bg-green-50 px-2 py-0.5 text-[9px] font-bold text-green-700">
+                      ✓ Travel-Safe
+                    </span>
+                  </div>
+                  <div className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {feedLoading
+                      ? Array.from({ length: 4 }).map((_, i) => (
+                          <div
+                            key={`br-disc-sk-${i}`}
+                            className="h-[180px] w-[200px] shrink-0 animate-pulse rounded-2xl bg-gray-100"
+                          />
+                        ))
+                      : (tmEvents.length > 0 ? tmEvents : PLACEHOLDER_EVENTS)
+                          .slice(0, 12)
+                          .map((e) => (
+                            <button
+                              key={`br-disc-${e.id}`}
+                              type="button"
+                              onClick={() => {
+                                if (e.url) browserNavigateTo(e.url);
+                                else setSelectedEvent(e);
+                              }}
+                              className="group relative h-[180px] w-[200px] shrink-0 overflow-hidden rounded-2xl text-left shadow-md transition hover:-translate-y-1 hover:shadow-xl"
+                            >
+                              {e.image ? (
+                                <img
+                                  src={e.image}
+                                  alt=""
+                                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                              ) : (
+                                <div
+                                  className="absolute inset-0"
+                                  style={{ background: cardGradient(e.category) }}
+                                >
+                                  <span className="absolute inset-0 flex items-center justify-center text-5xl opacity-30">
+                                    {e.emoji || "🎪"}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                              <div className="absolute bottom-0 left-0 right-0 p-3">
+                                <span
+                                  className="mb-1 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold text-white"
+                                  style={sourceBadgeStyle(e.source)}
+                                >
+                                  {e.source}
+                                </span>
+                                <p className="line-clamp-2 text-[12px] font-bold leading-tight text-white">
+                                  {e.name}
+                                </p>
+                                <p className="mt-0.5 text-[10px] text-white/80">
+                                  {formatDate(e.date)}
+                                  {e.venue ? ` · ${e.venue}` : ""}
+                                </p>
+                                <p
+                                  className="mt-0.5 text-[10px] font-bold"
+                                  style={{ color: e.isFree ? "#4ade80" : "#fbbf24" }}
+                                >
+                                  {e.isFree ? "FREE" : e.price || ""}
+                                </p>
+                              </div>
+                            </button>
+                          ))}
+                  </div>
+                </div>
+
+                {/* ── Platform tiles inside browser ── */}
+                <div className="mt-5">
+                  <p className="mb-2 text-sm font-bold text-[#0F3460]">
+                    🎫 Browse by platform
+                  </p>
+                  <div className="flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {(
+                      [
+                        { id: "ticketmaster", emoji: "🎟️", label: "Ticketmaster", color: "#026CDF", sub: "Concerts & sports", url: "https://www.ticketmaster.com" },
+                        { id: "eventbrite", emoji: "🎪", label: "Eventbrite", color: "#F05537", sub: "Local & community", url: "https://www.eventbrite.com" },
+                        { id: "music", emoji: "🎵", label: "Live Music", color: "#7C3AED", sub: "Gigs & festivals", url: "https://www.songkick.com" },
+                        { id: "parks", emoji: "🌳", label: "Parks & Outdoors", color: "#16A34A", sub: "Routes & nature", url: "https://www.alltrails.com" },
+                        { id: "maps", emoji: "🗺️", label: "Maps", color: "#4285F4", sub: "Navigate & explore", url: "https://www.google.com/maps/embed" },
+                        { id: "tripadvisor", emoji: "🏨", label: "TripAdvisor", color: "#00AA6C", sub: "Reviews & tips", url: "https://www.tripadvisor.com" },
+                      ] as const
+                    ).map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => browserNavigateTo(p.url)}
+                        className="flex shrink-0 flex-col items-center gap-1 rounded-2xl border-2 border-[#E9ECEF] bg-white px-3.5 py-2.5 text-center transition hover:-translate-y-0.5 hover:border-current"
+                        style={{ minWidth: 90 }}
+                      >
+                        <span className="text-2xl">{p.emoji}</span>
+                        <span className="text-[11px] font-bold text-[#0F3460]">{p.label}</span>
+                        <span className="text-[9px] text-[#6C757D]">{p.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── Full event cards grid ── */}
+                {!feedLoading && tmEvents.length > 0 ? (
+                  <div className="mt-5">
+                    <p className="mb-2 text-sm font-bold text-[#0F3460]">
+                      🎪 All events near {userCity}
+                      <span className="ml-1 text-[12px] font-normal text-[#6C757D]">
+                        ({tmEvents.length})
+                      </span>
+                    </p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {tmEvents.slice(0, 9).map((e) => (
+                        <button
+                          key={`br-ev-${e.id}`}
+                          type="button"
+                          onClick={() => {
+                            if (e.url) browserNavigateTo(e.url);
+                            else setSelectedEvent(e);
+                          }}
+                          className="group flex w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-[#E9ECEF] bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                        >
+                          <div
+                            className="relative h-[80px] w-full overflow-hidden"
+                            style={{ background: cardGradient(e.category) }}
+                          >
+                            {e.image ? (
+                              <img
+                                src={e.image}
+                                alt=""
+                                className="h-[80px] w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-3xl">
+                                {e.emoji || "🎪"}
+                              </div>
+                            )}
+                            <span
+                              className="absolute left-2 top-2 rounded-[8px] px-1.5 py-0.5 text-[8px] font-bold text-white"
+                              style={!e.isFree ? { background: CORAL } : { background: "#16a34a" }}
+                            >
+                              {e.isFree ? "FREE" : e.price || "—"}
+                            </span>
+                            <span
+                              className="absolute right-2 top-2 rounded-md px-1.5 py-0.5 text-[8px] font-semibold text-white"
+                              style={sourceBadgeStyle(e.source)}
+                            >
+                              {e.source}
+                            </span>
+                          </div>
+                          <div className="flex flex-1 flex-col p-2.5">
+                            <p className="line-clamp-1 text-xs font-bold text-[#0F3460]">
+                              {e.name}
+                            </p>
+                            <p className="mt-0.5 text-[10px] text-[#6C757D]">
+                              {formatDate(e.date)} {e.venue ? `· ${e.venue}` : ""}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : blockedSite ? (
+              /* Blocked-site screen */
+              <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
+                <span className="text-6xl">🚫</span>
+                <p className="text-xl font-bold text-[#0F3460]">Site Restricted</p>
+                <p className="max-w-sm text-sm text-[#6C757D]">
+                  <span className="font-semibold text-[#E94560]">{blockedSite}</span> is not
+                  available in the Travel Browser. Social media, adult content, and non-travel
+                  sites are blocked to keep the experience safe and focused.
+                </p>
+                <button
+                  type="button"
+                  onClick={browserGoHome}
+                  className="rounded-xl px-6 py-2.5 text-sm font-bold text-white"
+                  style={{ background: CORAL }}
+                >
+                  ← Back to Home
+                </button>
+              </div>
+            ) : (
+              /* iframe content */
+              <>
+                {browserPageLoading ? (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80">
+                    <div className="flex flex-col items-center gap-3">
+                      <span className="h-10 w-10 animate-spin rounded-full border-4 border-[#E9ECEF] border-t-[#E94560]" />
+                      <p className="text-sm font-semibold text-[#6C757D]">Loading…</p>
+                    </div>
+                  </div>
+                ) : null}
+                <iframe
+                  key={`browser-iframe-${iframeRefreshKey}`}
+                  ref={browserIframeRef}
+                  src={browserUrl}
+                  title="Travello In-App Browser"
+                  className="h-full w-full border-0"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                  onLoad={() => setBrowserPageLoading(false)}
+                  onError={() => setBrowserPageLoading(false)}
+                />
+                {/* Fallback bar — always visible at bottom so user can open externally */}
+                <div
+                  className="absolute bottom-0 left-0 right-0 flex items-center justify-between gap-2 px-4 py-2 text-[10px]"
+                  style={{ background: `${NAVY}ee` }}
+                >
+                  <span className="truncate font-medium text-white/70">{browserUrl}</span>
+                  <a
+                    href={browserUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 rounded-lg bg-white/20 px-3 py-1 font-bold text-white hover:bg-white/30"
+                  >
+                    Open in new tab ↗
+                  </a>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       ) : null}
     </div>

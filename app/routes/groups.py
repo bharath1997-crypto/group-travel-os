@@ -16,6 +16,8 @@ from app.schemas.group import (
     GroupOut,
     InviteCodeOut,
     JoinGroupRequest,
+    LeaveGroupOut,
+    MemberRoleUpdate,
     group_member_to_out,
     group_to_detail,
     group_to_out,
@@ -105,15 +107,49 @@ def get_group(
 
 @router.delete(
     "/{group_id}/leave",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Leave the group",
+    response_model=LeaveGroupOut,
+    status_code=status.HTTP_200_OK,
+    summary="Leave the group (auto-deletes the group if you are the sole member)",
 )
 def leave_group(
     group_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    GroupService.leave_group(db, group_id, current_user)
+    deleted = GroupService.leave_group(db, group_id, current_user)
+    return LeaveGroupOut(deleted=deleted)
+
+
+@router.delete(
+    "/{group_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete the group entirely (admin only)",
+)
+def delete_group(
+    group_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    GroupService.delete_group(db, group_id, current_user)
+
+
+@router.patch(
+    "/{group_id}/members/{user_id}/role",
+    response_model=GroupMemberOut,
+    status_code=status.HTTP_200_OK,
+    summary="Change a member's role (admin only)",
+)
+def change_member_role(
+    group_id: uuid.UUID,
+    user_id: uuid.UUID,
+    body: MemberRoleUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    member = GroupService.change_member_role(
+        db, group_id, user_id, body.role, current_user
+    )
+    return group_member_to_out(member)
 
 
 @router.get(

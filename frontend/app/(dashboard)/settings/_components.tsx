@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, ChevronRight, type LucideIcon } from "lucide-react";
+import { IconArrowLeft, IconChevronRight, IconSearch, type IconComponent } from "@/components/icons";
 import type { ReactNode } from "react";
 
 export function SettingsScreenHeader({
@@ -18,7 +18,7 @@ export function SettingsScreenHeader({
         className="flex h-10 w-10 items-center justify-center rounded-full text-[#1e2a3a] hover:bg-stone-100"
         aria-label="Back"
       >
-        <ArrowLeft className="h-5 w-5" strokeWidth={2} />
+        <IconArrowLeft size={20} />
       </Link>
       <h1 className="truncate text-center text-[16px] font-bold text-[#1e2a3a]">
         {title}
@@ -45,7 +45,7 @@ export function SettingsLinkRow({
   onClick,
 }: {
   href?: string;
-  icon?: LucideIcon;
+  icon?: IconComponent;
   label: string;
   sublabel?: string;
   trailing?: ReactNode;
@@ -55,7 +55,7 @@ export function SettingsLinkRow({
     <>
       <div className="flex min-w-0 flex-1 items-center gap-3.5">
         {Icon ? (
-          <Icon className="h-6 w-6 shrink-0 text-neutral-800" strokeWidth={1.5} />
+          <Icon size={24} className="shrink-0" />
         ) : null}
         <div className="min-w-0">
           <p className="text-[15px] leading-snug text-neutral-900">{label}</p>
@@ -68,7 +68,7 @@ export function SettingsLinkRow({
       </div>
       <div className="flex shrink-0 items-center gap-1.5 text-stone-400">
         {trailing}
-        <ChevronRight className="h-[18px] w-[18px]" strokeWidth={2} />
+        <IconChevronRight size={18} />
       </div>
     </>
   );
@@ -96,7 +96,7 @@ export function SettingsToggleRow({
   busy,
   onToggle,
 }: {
-  icon?: LucideIcon;
+  icon?: IconComponent;
   label: string;
   sublabel?: string;
   checked: boolean;
@@ -106,7 +106,7 @@ export function SettingsToggleRow({
   return (
     <div className="flex items-center gap-3 border-b border-stone-100 px-4 py-3.5">
       {Icon ? (
-        <Icon className="h-6 w-6 shrink-0 text-neutral-800" strokeWidth={1.5} />
+        <Icon size={24} className="shrink-0" />
       ) : null}
       <div className="min-w-0 flex-1">
         <p className="text-[15px] text-neutral-900">{label}</p>
@@ -142,9 +142,7 @@ export function SettingsSearchInput({
   return (
     <div className="px-3 pb-2 pt-3">
       <div className="flex items-center gap-2 rounded-xl bg-stone-100 px-3 py-2.5">
-        <span className="text-stone-400" aria-hidden>
-          🔍
-        </span>
+        <IconSearch size={20} className="shrink-0" />
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}

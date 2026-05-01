@@ -2,20 +2,19 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plane } from "lucide-react";
 import {
   Suspense,
   type FormEvent,
+  type InputHTMLAttributes,
+  type ReactNode,
   useEffect,
   useState,
 } from "react";
 
-import { AuthInput } from "@/components/auth/AuthInput";
-import { GradientHeader } from "@/components/auth/GradientHeader";
-import { OAuthButtons } from "@/components/auth/OAuthButtons";
-import { AppLogo } from "@/components/AppLogo";
+import TravelloLogo from "@/components/TravelloLogo";
 import { apiFetch } from "@/lib/api";
 import { saveToken } from "@/lib/auth";
+import { startFacebookOAuth, startGoogleOAuth } from "@/lib/oauth";
 import { syncLocalProfileCache } from "@/lib/profileCache";
 import {
   oauthErrorToRegisterAlert,
@@ -59,6 +58,127 @@ function EyeIcon({ show }: { show: boolean }) {
   );
 }
 
+function UserIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
+      <circle cx="12" cy="8" r="4"/>
+      <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+    </svg>
+  );
+}
+
+function MailIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
+      <rect x="2" y="4" width="20" height="16" rx="3"/>
+      <path d="M2 8l10 6 10-6"/>
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
+      <rect x="5" y="11" width="14" height="10" rx="2"/>
+      <path d="M8 11V7a4 4 0 018 0v4"/>
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
+      <rect x="3" y="5" width="18" height="16" rx="3" />
+      <path d="M8 3v4M16 3v4M3 11h18" />
+    </svg>
+  );
+}
+
+function SignupField({
+  label,
+  icon,
+  endAdornment,
+  error,
+  ...inputProps
+}: {
+  label: string;
+  icon: ReactNode;
+  endAdornment?: ReactNode;
+  error?: string;
+} & InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-xs font-medium text-[#1C2B3A]">
+        {label}
+      </span>
+      <span className="flex h-[42px] items-center gap-2 rounded-[10px] border-[1.5px] border-[#e8e8e8] px-3 transition focus-within:border-[#1C2B3A]">
+        {icon}
+        <input
+          {...inputProps}
+          className="min-w-0 flex-1 bg-transparent text-sm text-[#1C2B3A] outline-none placeholder:text-[#aaa] disabled:cursor-not-allowed disabled:opacity-60"
+        />
+        {endAdornment}
+      </span>
+      {error ? (
+        <span className="mt-1 block text-xs font-medium text-[#E8619A]" role="alert">
+          {error}
+        </span>
+      ) : null}
+    </label>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+      <path d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5c-.2 1.2-.9 2.2-2 2.9v2.4h3.2c1.9-1.7 3-4.3 3-7.1z" fill="#4285F4"/>
+      <path d="M12 22c2.7 0 5-1 6.7-2.6l-3.2-2.4c-.9.6-2 1-3.5 1-2.7 0-5-1.8-5.8-4.3H2.9v2.5C4.6 19.9 8.1 22 12 22z" fill="#34A853"/>
+      <path d="M6.2 13.7c-.2-.6-.3-1.2-.3-1.7s.1-1.2.3-1.7V7.8H2.9C2.3 9 2 10.5 2 12s.3 3 .9 4.2l3.3-2.5z" fill="#FBBC05"/>
+      <path d="M12 6.6c1.5 0 2.8.5 3.9 1.5l2.9-2.9C17 3.6 14.7 2.6 12 2.6c-3.9 0-7.4 2.1-9.1 5.2l3.3 2.5C7 8.4 9.3 6.6 12 6.6z" fill="#EA4335"/>
+    </svg>
+  );
+}
+
+function FacebookIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+      <path d="M22 12c0-5.5-4.5-10-10-10S2 6.5 2 12c0 5 3.7 9.1 8.4 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.3v7C18.3 21.1 22 17 22 12z" fill="#1877F2"/>
+    </svg>
+  );
+}
+
+function AppleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="#1C2B3A" aria-hidden>
+      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.4c1.39.07 2.35.74 3.15.8 1.2-.24 2.35-.93 3.64-.84 1.54.12 2.7.72 3.46 1.83-3.16 1.9-2.41 6.06.52 7.23-.61 1.62-1.43 3.22-2.77 4.86zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+    </svg>
+  );
+}
+
+function SocialButton({
+  children,
+  label,
+  onClick,
+  disabled,
+}: {
+  children: ReactNode;
+  label: string;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      disabled={disabled}
+      className="flex h-[38px] flex-1 items-center justify-center rounded-[10px] border-[1.5px] border-[#f0f0f0] bg-white transition hover:border-[#1C2B3A] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {children}
+    </button>
+  );
+}
+
 function RegisterPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -71,12 +191,13 @@ function RegisterPageInner() {
   const [dob, setDob] = useState("");
   const [dobError, setDobError] = useState<string | undefined>();
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [error, setError] = useState<string | null>(null);
   const [oauthAlert, setOauthAlert] = useState<OauthLoginAlert | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [oauthBusy, setOauthBusy] = useState(false);
-  const [socialToast, setSocialToast] = useState<string | null>(null);
   const [checkEmailFor, setCheckEmailFor] = useState<string | null>(null);
   const isBusy = submitting || oauthBusy;
 
@@ -135,41 +256,22 @@ function RegisterPageInner() {
     }
   }
 
-  const personIcon = (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-    </svg>
-  );
-  const atIcon = (
-    <span className="text-base font-bold" aria-hidden>
-      @
-    </span>
-  );
-  const mailIcon = (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-    </svg>
-  );
-  const lockIcon = (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6a2.25 2.25 0 002.25 2.25z" />
-    </svg>
-  );
-  const calIcon = (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5" />
-    </svg>
-  );
+  function goGoogle() {
+    setOauthBusy(true);
+    window.setTimeout(() => startGoogleOAuth("signup"), 50);
+  }
+
+  function goFacebook() {
+    setOauthBusy(true);
+    window.setTimeout(() => startFacebookOAuth("signup"), 50);
+  }
 
   if (checkEmailFor) {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center bg-white px-4 py-10">
         <div className="w-full max-w-md">
           <div className="mb-6 flex items-center justify-between">
-            <AppLogo variant="onLight" className="h-8 w-auto max-w-[180px]" />
-            <span className="inline-flex text-slate-800" aria-hidden>
-              <Plane className="h-7 w-7" strokeWidth={1.5} />
-            </span>
+            <TravelloLogo variant="pill-dark" size="sm" animated />
           </div>
           <div className="reg-envelope-wrap relative flex justify-center" aria-hidden>
             <style
@@ -252,28 +354,54 @@ function RegisterPageInner() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col bg-slate-100">
-      <GradientHeader
-        gradient="linear-gradient(135deg, #E94560, #FF6B6B, #FF6B9D)"
-        title=""
-        subtitle="Create your account"
-        height={120}
-      >
-        <AppLogo variant="onLight" className="mx-auto h-9 w-auto max-w-[200px]" />
-      </GradientHeader>
+    <div className="flex min-h-screen bg-white">
+      <aside className="relative hidden flex-[1.1] flex-col justify-between overflow-hidden bg-[#1C2B3A] p-9 md:flex">
+        <span className="absolute -left-10 -top-10 h-[180px] w-[180px] rounded-full border border-[rgba(255,255,255,0.08)]" aria-hidden />
+        <span className="absolute -right-5 bottom-[60px] h-[120px] w-[120px] rounded-full border border-[rgba(232,97,154,0.2)]" aria-hidden />
+        <span className="absolute bottom-[100px] left-10 h-[60px] w-[60px] rounded-full bg-[rgba(232,97,154,0.08)]" aria-hidden />
+        <div className="relative z-[1]">
+          <TravelloLogo variant="full" size="md" animated={true} />
+        </div>
+        <div className="relative z-[1] max-w-sm">
+          <h1 className="text-[22px] font-medium leading-tight text-white">
+            Your next adventure starts here.
+          </h1>
+          <p className="mt-2 text-xs leading-relaxed text-white/55">
+            Join thousands of groups planning trips together.
+          </p>
+          <div className="mt-5 flex gap-1.5" aria-hidden>
+            <span className="h-1.5 w-1.5 rounded-full bg-[#E8619A]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
+          </div>
+        </div>
+      </aside>
 
-      <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-3xl bg-white px-4 pb-8 pt-6 shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.12)] sm:mx-auto sm:mb-8 sm:max-w-lg sm:rounded-2xl sm:px-8">
+      <main className="flex w-full flex-1 flex-col justify-center bg-white px-6 py-10 md:px-9">
+        <div className="mx-auto w-full max-w-[390px]">
+          <div className="mb-6 flex justify-center md:justify-start">
+            <TravelloLogo variant="mark" size="sm" animated={true} />
+          </div>
+          <h2 className="text-center text-xl font-medium text-[#1C2B3A] md:text-left">
+            Create your account
+          </h2>
+          <p className="mb-5 mt-1 text-center text-[13px] text-[#888] md:text-left">
+            Start planning your first group trip
+          </p>
+
         {fromOauth ? (
-          <p className="mb-4 rounded-2xl border border-[#667eea]/20 bg-[#667eea]/5 px-3 py-2 text-center text-xs text-[#1E3A5F]">
+          <p className="mb-4 rounded-[10px] border border-[#E8619A]/30 bg-white px-3 py-2 text-center text-xs text-[#1C2B3A]">
             Finish creating your Travello account below, or continue with Google or Facebook.
           </p>
         ) : null}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <AuthInput
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+          <SignupField
+            label="Full name"
             id="reg-full-name"
-            icon={personIcon}
-            placeholder="Full name"
+            icon={<UserIcon />}
+            type="text"
+            placeholder="Your full name"
             autoComplete="name"
             required
             minLength={2}
@@ -281,82 +409,82 @@ function RegisterPageInner() {
             onChange={(e) => setFullName(e.target.value)}
             disabled={isBusy}
           />
-          <AuthInput
-            id="reg-username"
-            icon={atIcon}
-            placeholder="Username"
-            autoComplete="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            maxLength={50}
-            disabled={isBusy}
-          />
-          <AuthInput
+          <SignupField
+            label="Email address"
             id="reg-email"
             type="email"
-            icon={mailIcon}
-            placeholder="Email address"
+            icon={<MailIcon />}
+            placeholder="you@email.com"
             autoComplete="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={isBusy}
           />
-
-          <div>
-            <AuthInput
-              id="reg-password"
-              type={showPassword ? "text" : "password"}
-              icon={lockIcon}
-              placeholder="Password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isBusy}
-              endAdornment={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  disabled={isBusy}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl text-[#1E3A5F]/50 hover:bg-slate-100"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  <EyeIcon show={showPassword} />
-                </button>
-              }
-            />
-          </div>
-
-          <div>
-            <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-[#1E3A5F]/55" aria-hidden>
-                {calIcon}
-              </span>
-              <input
-                id="reg-dob"
-                type="date"
-                required
-                value={dob}
-                onChange={(e) => {
-                  setDob(e.target.value);
-                  setDobError(undefined);
-                }}
+          <SignupField
+            label="Password"
+            id="reg-password"
+            type={showPassword ? "text" : "password"}
+            icon={<LockIcon />}
+            placeholder="Create a password"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={isBusy}
+            endAdornment={
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
                 disabled={isBusy}
-                className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-3 text-sm text-[#1E3A5F] shadow-sm outline-none focus:border-[#667eea]/60 focus:ring-2 focus:ring-[#667eea]/20 disabled:opacity-70"
-              />
-            </div>
-            {dobError ? (
-              <p className="mt-1.5 text-xs font-medium text-red-600" role="alert">
-                {dobError}
-              </p>
-            ) : null}
-          </div>
+                className="flex h-8 w-8 items-center justify-center text-[#aaa] transition hover:text-[#1C2B3A]"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                <EyeIcon show={showPassword} />
+              </button>
+            }
+          />
+          <SignupField
+            label="Confirm password"
+            id="reg-confirm-password"
+            type={showConfirmPassword ? "text" : "password"}
+            icon={<LockIcon />}
+            placeholder="Repeat your password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            disabled={isBusy}
+            endAdornment={
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                disabled={isBusy}
+                className="flex h-8 w-8 items-center justify-center text-[#aaa] transition hover:text-[#1C2B3A]"
+                aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+              >
+                <EyeIcon show={showConfirmPassword} />
+              </button>
+            }
+          />
+          <SignupField
+            label="Date of birth"
+            id="reg-dob"
+            type="date"
+            icon={<CalendarIcon />}
+            required
+            value={dob}
+            onChange={(e) => {
+              setDob(e.target.value);
+              setDobError(undefined);
+            }}
+            disabled={isBusy}
+            error={dobError}
+          />
 
           {oauthAlert ? (
             <div
-              className="rounded-2xl border border-red-200/80 bg-red-50 px-3 py-2.5 text-sm text-red-900"
+              className="rounded-[10px] border border-[#E8619A]/40 bg-white px-3 py-2.5 text-sm text-[#1C2B3A]"
               role="alert"
             >
               {oauthAlert.title ? (
@@ -366,10 +494,21 @@ function RegisterPageInner() {
             </div>
           ) : null}
 
+          <p className="mb-1 text-center text-[11px] text-[#aaa]">
+            By signing up you agree to our{" "}
+            <Link href="/terms" className="text-[#E8619A] hover:underline">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-[#E8619A] hover:underline">
+              Privacy Policy
+            </Link>
+          </p>
+
           <button
             type="submit"
             disabled={isBusy}
-            className="mt-1 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#E94560] to-[#FF6B6B] py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-95 disabled:opacity-60"
+            className="flex h-11 w-full items-center justify-center rounded-[10px] bg-[#E8619A] text-sm font-medium tracking-[0.3px] text-white transition-colors hover:bg-[#1C2B3A] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? (
               <>
@@ -377,50 +516,44 @@ function RegisterPageInner() {
                 Creating…
               </>
             ) : (
-              "Create Account"
+              "Create account"
             )}
           </button>
           {error ? (
-            <p className="text-center text-sm font-medium text-red-600" role="alert">
+            <p className="text-center text-sm font-medium text-[#E8619A]" role="alert">
               {error}
             </p>
           ) : null}
         </form>
 
-        <div className="my-6 flex items-center gap-3">
-          <span className="h-px flex-1 bg-slate-200" />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        <div className="my-5 flex items-center gap-3">
+          <hr className="flex-1 border-0 border-t border-[#f0f0f0]" />
+          <span className="text-[11px] text-[#bbb]">
             or sign up with
           </span>
-          <span className="h-px flex-1 bg-slate-200" />
+          <hr className="flex-1 border-0 border-t border-[#f0f0f0]" />
         </div>
 
-        <OAuthButtons
-          mode="register"
-          disabled={isBusy}
-          onBusyChange={setOauthBusy}
-          onInstagramClick={() => {
-            setSocialToast("Instagram login coming soon");
-            window.setTimeout(() => setSocialToast(null), 3200);
-          }}
-        />
+        <div className="flex gap-2.5">
+          <SocialButton label="Sign up with Google" onClick={goGoogle} disabled={isBusy}>
+            <GoogleIcon />
+          </SocialButton>
+          <SocialButton label="Sign up with Facebook" onClick={goFacebook} disabled={isBusy}>
+            <FacebookIcon />
+          </SocialButton>
+          <SocialButton label="Sign up with Apple" disabled={isBusy}>
+            <AppleIcon />
+          </SocialButton>
+        </div>
 
-        {socialToast ? (
-          <p
-            className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-center text-sm text-amber-950"
-            role="status"
-          >
-            {socialToast}
-          </p>
-        ) : null}
-
-        <p className="mt-8 text-center text-sm text-[#1E3A5F]/80">
-          Already have account?{" "}
-          <Link href="/login" className="font-bold text-[#667eea] underline-offset-4 hover:underline">
-            Sign In
+        <p className="mt-6 text-center text-sm text-[#aaa]">
+          Already have an account?{" "}
+          <Link href="/login" className="font-medium text-[#E8619A] underline-offset-4 hover:underline">
+            Sign in
           </Link>
         </p>
       </div>
+      </main>
     </div>
   );
 }

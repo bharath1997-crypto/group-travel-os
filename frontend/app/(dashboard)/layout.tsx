@@ -1,33 +1,35 @@
 "use client";
 
 import { AIAssistantSidecar } from "@/components/ai/AIAssistantSidecar";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import type { LucideIcon } from "lucide-react";
+
 import {
-  Banknote,
-  BarChart2,
-  Bell,
-  CloudSun,
-  Compass,
-  LayoutDashboard,
-  Check,
-  Map,
-  MapPin,
-  Menu,
-  MoreHorizontal,
-  Plane,
-  Settings,
-  User,
-  Users,
-} from "lucide-react";
+  IconBanknote,
+  IconBarChart,
+  IconBell,
+  IconCheck,
+  IconCloudSun,
+  IconCompass,
+  IconLayoutDashboard,
+  IconLive,
+  IconLogout,
+  IconMap,
+  IconMenu,
+  IconMoreHorizontal,
+  IconPlane,
+  IconSettings,
+  IconUser,
+  IconUsers,
+  type IconComponent,
+} from "@/components/icons";
 
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { VerificationBanner } from "@/components/VerificationBanner";
+import TravelloLogo from "@/components/TravelloLogo";
 import {
   DashboardUserProvider,
   useDashboardUser,
@@ -116,15 +118,15 @@ function isExploreNavActive(pathname: string): boolean {
 const MOBILE_MORE_LINKS: {
   href: string;
   label: string;
-  Icon: LucideIcon;
+  Icon: IconComponent;
 }[] = [
-  { href: "/split-activities", label: "Split Activities", Icon: Banknote },
-  { href: "/map", label: "Map", Icon: Map },
-  { href: "/stats", label: "Stats", Icon: BarChart2 },
-  { href: "/notifications", label: "Notifications", Icon: Bell },
-  { href: "/weather", label: "Weather", Icon: CloudSun },
-  { href: "/settings", label: "Settings", Icon: Settings },
-  { href: "/profile", label: "Profile", Icon: User },
+  { href: "/split-activities", label: "Split Activities", Icon: IconBanknote },
+  { href: "/map", label: "Map", Icon: IconMap },
+  { href: "/stats", label: "Stats", Icon: IconBarChart },
+  { href: "/notifications", label: "Notifications", Icon: IconBell },
+  { href: "/weather", label: "Weather", Icon: IconCloudSun },
+  { href: "/settings", label: "Settings", Icon: IconSettings },
+  { href: "/profile", label: "Profile", Icon: IconUser },
 ];
 
 function isMoreNavActive(pathname: string): boolean {
@@ -155,45 +157,25 @@ function isProfileFullyComplete(
   return emailOk && phoneOk && googleOk && waOk && igOk && userOk;
 }
 
-function IconDoor() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M4 4h9a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z" />
-      <circle cx="10" cy="12" r="1" fill="currentColor" stroke="none" />
-      <path d="M16 12h4M18 10l2 2-2 2" />
-    </svg>
-  );
-}
-
 const MAIN_NAV: {
   href: string;
   label: string;
-  Icon: LucideIcon;
+  Icon: IconComponent;
   kind?: "notifications";
 }[] = [
-  { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
-  { href: "/trips", label: "Trips", Icon: Plane },
-  { href: "/travel-hub", label: "Connect", Icon: Users },
-  { href: "/split-activities", label: "Split Activities", Icon: Banknote },
-  { href: "/live", label: "Live", Icon: MapPin },
-  { href: "/feed", label: "Explore", Icon: Compass },
-  { href: "/map", label: "Map", Icon: Map },
-  { href: "/weather", label: "Weather", Icon: CloudSun },
-  { href: "/stats", label: "Stats", Icon: BarChart2 },
+  { href: "/dashboard", label: "Dashboard", Icon: IconLayoutDashboard },
+  { href: "/trips", label: "Trips", Icon: IconPlane },
+  { href: "/travel-hub", label: "Connect", Icon: IconUsers },
+  { href: "/split-activities", label: "Split Activities", Icon: IconBanknote },
+  { href: "/live", label: "Live", Icon: IconLive },
+  { href: "/feed", label: "Explore", Icon: IconCompass },
+  { href: "/map", label: "Map", Icon: IconMap },
+  { href: "/weather", label: "Weather", Icon: IconCloudSun },
+  { href: "/stats", label: "Stats", Icon: IconBarChart },
   {
     href: "/notifications",
     label: "Notifications",
-    Icon: Bell,
+    Icon: IconBell,
     kind: "notifications",
   },
 ];
@@ -213,7 +195,7 @@ function SidebarNavLink({
 }: {
   href: string;
   label: string;
-  Icon: LucideIcon;
+  Icon: IconComponent;
   active: boolean;
   notifCount: number;
   kind?: "notifications";
@@ -236,11 +218,7 @@ function SidebarNavLink({
       ].join(" ")}
     >
       <span className="inline-flex w-5 shrink-0 justify-center leading-none">
-        <Icon
-          className="h-5 w-5 shrink-0 text-current"
-          strokeWidth={1.5}
-          aria-hidden
-        />
+        <Icon size={20} darkBg active={active} className="shrink-0" aria-hidden />
       </span>
       <span
         className={
@@ -352,7 +330,7 @@ function SidebarProfileAvatar({
           className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-[#0F3460]"
           aria-hidden
         >
-          <Check className="h-2.5 w-2.5" strokeWidth={2.5} />
+          <IconCheck size={10} darkBg />
         </span>
       ) : (
         <span
@@ -525,17 +503,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             href="/dashboard"
             className="flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/50"
           >
-            <Image
-              src="/logo-dark.svg"
-              alt=""
-              width={36}
-              height={36}
-              className="h-9 w-9 shrink-0 rounded-md object-contain"
-              priority
-            />
-            <span className="text-lg font-bold tracking-tight text-white">
-              travello
-            </span>
+            <TravelloLogo variant="full" size="sm" animated />
           </Link>
         </div>
 
@@ -603,7 +571,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[rgba(255,255,255,0.4)] transition-colors hover:text-[rgba(255,255,255,0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
               aria-label="Sign out"
             >
-              <IconDoor />
+              <IconLogout size={20} darkBg />
             </button>
           </div>
         </div>
@@ -618,21 +586,14 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-lg text-2xl text-[#E94560] transition-colors hover:bg-[rgba(255,255,255,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             onClick={() => setSidebarOpen(true)}
           >
-            <Menu className="h-6 w-6" strokeWidth={1.5} />
+            <IconMenu size={24} darkBg />
           </button>
           <Link
             href="/dashboard"
             className="flex items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/50"
             title="travello"
           >
-            <Image
-              src="/logo-dark.svg"
-              alt=""
-              width={36}
-              height={36}
-              className="h-9 w-9 shrink-0 rounded-md object-contain"
-              priority
-            />
+            <TravelloLogo variant="mark" size="sm" animated />
           </Link>
         </div>
 
@@ -692,7 +653,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[rgba(255,255,255,0.4)] transition-colors hover:text-[rgba(255,255,255,0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             aria-label="Sign out"
           >
-            <IconDoor />
+              <IconLogout size={20} darkBg />
           </button>
         </div>
       </aside>
@@ -713,17 +674,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                 onClick={afterNav}
                 className="flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/50"
               >
-                <Image
-                  src="/logo-dark.svg"
-                  alt=""
-                  width={36}
-                  height={36}
-                  className="h-9 w-9 shrink-0 rounded-md object-contain"
-                  priority
-                />
-                <span className="text-lg font-bold tracking-tight text-white">
-                  travello
-                </span>
+                <TravelloLogo variant="full" size="sm" animated />
               </Link>
             </div>
 
@@ -797,7 +748,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[rgba(255,255,255,0.4)] transition-colors hover:text-[rgba(255,255,255,0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                   aria-label="Sign out"
                 >
-                  <IconDoor />
+                  <IconLogout size={20} darkBg />
                 </button>
               </div>
             </div>
@@ -817,14 +768,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             <span className="w-10 shrink-0" aria-hidden />
             <div className="flex min-w-0 justify-center justify-self-center px-2">
               {!isMapPage ? (
-                <Image
-                  src="/logo-light.svg"
-                  alt="Travello"
-                  width={200}
-                  height={60}
-                  className="h-8 w-auto max-w-[160px]"
-                  priority
-                />
+                <TravelloLogo variant="pill-dark" size="sm" animated />
               ) : (
                 <span className="text-[15px] font-semibold text-[#0F3460]">
                   Map
@@ -836,7 +780,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center justify-self-end rounded-xl text-[#6C757D] transition-colors hover:bg-[#F8F9FA] hover:text-[#0F3460] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
               aria-label="Notifications"
             >
-              <Bell className="h-6 w-6" strokeWidth={1.5} />
+              <IconBell size={24} />
               {notifCount > 0 ? (
                 <span className="absolute -right-0.5 -top-0.5 flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white">
                   {notifCount > 99 ? "99+" : notifCount}
@@ -881,10 +825,10 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           <div className="mx-auto flex h-full w-full max-w-lg items-stretch justify-between">
             {(
               [
-                { href: "/dashboard", label: "Home", Icon: LayoutDashboard },
-                { href: "/trips", label: "Trips", Icon: Plane },
-                { href: "/travel-hub", label: "Connect", Icon: Users },
-                { href: "/explore", label: "Explore", Icon: Compass },
+                { href: "/dashboard", label: "Home", Icon: IconLayoutDashboard },
+                { href: "/trips", label: "Trips", Icon: IconPlane },
+                { href: "/travel-hub", label: "Connect", Icon: IconUsers },
+                { href: "/explore", label: "Explore", Icon: IconCompass },
               ] as const
             ).map(({ href, label, Icon }) => {
               const active =
@@ -904,7 +848,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                     }`}
                     aria-hidden
                   >
-                    <Icon className="h-[18px] w-[18px]" strokeWidth={1.5} />
+                    <Icon size={18} active={active} />
                   </span>
                   <span
                     className={`max-w-full truncate text-[10px] font-semibold ${
@@ -929,7 +873,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                 }`}
                 aria-hidden
               >
-                <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.5} />
+                <IconMoreHorizontal size={18} active={isMoreNavActive(pathname)} />
               </span>
               <span
                 className={`max-w-full truncate text-[10px] font-semibold ${
@@ -977,11 +921,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                           }}
                           onClick={() => setMoreSheetOpen(false)}
                         >
-                          <Icon
-                            className="h-5 w-5 shrink-0"
-                            strokeWidth={1.5}
-                            aria-hidden
-                          />
+                          <Icon size={20} active={active} aria-hidden />
                           {label}
                         </Link>
                       </li>

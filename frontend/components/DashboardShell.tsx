@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { AppLogo } from "@/components/AppLogo";
 import { NotificationBell } from "@/components/NotificationBell";
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
+import TravelloLogo from "@/components/TravelloLogo";
 import { VerificationBanner } from "@/components/VerificationBanner";
 import { useDashboardUser } from "@/contexts/dashboard-user-context";
 import { clearToken } from "@/lib/auth";
@@ -77,7 +77,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             href="/dashboard"
             className="inline-block outline-none ring-offset-2 ring-offset-gray-900 focus-visible:ring-2 focus-visible:ring-white/50"
           >
-            <AppLogo variant="onDark" className="h-8 w-auto max-w-[11rem]" />
+            <TravelloLogo variant="full" size="sm" animated />
           </Link>
         </div>
         <div className="flex flex-col items-center border-b border-gray-800/80 px-3 pb-4 pt-5">
@@ -120,7 +120,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           <div className="mb-3 grid grid-cols-[auto_1fr_auto] items-center gap-2">
             <NotificationBell variant="dark" />
             <div className="flex justify-center">
-              <AppLogo variant="onDark" className="h-7 w-auto max-w-[9rem]" />
+              <TravelloLogo variant="pill" size="sm" animated />
             </div>
             <ProfileDropdown
               layout="header"
