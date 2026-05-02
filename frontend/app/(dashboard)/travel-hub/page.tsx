@@ -80,6 +80,7 @@ import {
   MoreHorizontal,
   MoreVertical,
   Music,
+  Navigation,
   Palette,
   Phone,
   PhoneCall,
@@ -171,6 +172,8 @@ const RIGHT_PANEL_BG = "#e8ddd0";
 
 const CHAT_PREFS_KEY = "travelhub_chat_prefs_v1";
 const DELETED_CHATS_KEY = "travelhub_deleted_chats_v1";
+const BOOT_CACHE_KEY = "travelhub_connect_boot_cache_v1";
+const BOOT_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const GT_BUDDY_FAVOURITES = "gt_buddy_favourites";
 const GT_TRAVELHUB_OPEN_PROFILE = "gt_travelhub_open_profile";
 const GT_OPEN_DM_USER_ID = "gt_open_dm_user_id";
@@ -739,6 +742,15 @@ type ContactPerson = {
   avatar_url?: string | null;
 };
 
+type TravelHubBootCache = {
+  tokenKey: string;
+  savedAt: number;
+  user: UserMe;
+  groups: GroupOut[];
+  contacts: ContactPerson[];
+  chats: ChatInfo[];
+};
+
 type UserSearchFriendStatus =
   | "none"
   | "pending_sent"
@@ -756,6 +768,13 @@ type UserSearchResultRow = {
   friend_status: UserSearchFriendStatus;
   is_verified?: boolean;
   plan?: string;
+};
+
+type TravelHubBootstrapOut = {
+  user: UserMe;
+  groups: GroupOut[];
+  connections?: UserSearchResultRow[];
+  server_time?: string;
 };
 
 /** New Group modal: search pick or “add by email” chip. */
@@ -1194,6 +1213,62 @@ function writeJsonLs(key: string, val: unknown): void {
   } catch {
     /* ignore */
   }
+}
+
+function travelHubTokenCacheKey(): string | null {
+  if (typeof window === "undefined") return null;
+  const token = localStorage.getItem("gt_token");
+  if (!token) return null;
+  const [, payload] = token.split(".");
+  if (payload) {
+    try {
+      const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+      const padded = normalized.padEnd(
+        normalized.length + ((4 - (normalized.length % 4)) % 4),
+        "=",
+      );
+      const parsed = JSON.parse(window.atob(padded)) as {
+        sub?: string;
+        user_id?: string;
+        id?: string;
+      };
+      const id = parsed.sub ?? parsed.user_id ?? parsed.id;
+      if (id) return `user:${id}`;
+    } catch {
+      /* fall back to a non-secret token partition */
+    }
+  }
+  return `token:${token.length}:${token.slice(-12)}`;
+}
+
+function readTravelHubBootCache(): TravelHubBootCache | null {
+  if (typeof window === "undefined") return null;
+  const tokenKey = travelHubTokenCacheKey();
+  if (!tokenKey) return null;
+  const cached = readJsonLs<TravelHubBootCache | null>(BOOT_CACHE_KEY, null);
+  if (!cached || cached.tokenKey !== tokenKey) return null;
+  if (Date.now() - cached.savedAt > BOOT_CACHE_TTL_MS) return null;
+  if (!cached.user?.id || !Array.isArray(cached.groups)) return null;
+  return {
+    ...cached,
+    contacts: Array.isArray(cached.contacts) ? cached.contacts : [],
+    chats: Array.isArray(cached.chats) ? cached.chats : [],
+  };
+}
+
+function writeTravelHubBootCache(snapshot: Omit<TravelHubBootCache, "tokenKey" | "savedAt">): void {
+  const tokenKey = travelHubTokenCacheKey();
+  if (!tokenKey || !snapshot.user?.id) return;
+  writeJsonLs(BOOT_CACHE_KEY, {
+    tokenKey,
+    savedAt: Date.now(),
+    user: snapshot.user,
+    groups: snapshot.groups.slice(0, 100),
+    contacts: snapshot.contacts.slice(0, 200),
+    chats: snapshot.chats
+      .filter((c) => !c.isBot && !c.isAnnouncement && !c.isDemo)
+      .slice(0, 100),
+  } satisfies TravelHubBootCache);
 }
 
 function parseLastSeen(v: string | number | null | undefined): number | null {
@@ -11064,6 +11139,8 @@ export default function TravelHubPage() {
   groupsRef.current = groups;
   const [trips, setTrips] = useState<TripOut[]>([]);
   const [chats, setChats] = useState<ChatInfo[]>([]);
+  const chatsRef = useRef<ChatInfo[]>([]);
+  chatsRef.current = chats;
   const [activeChat, setActiveChat] = useState<ChatInfo | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageText, setMessageText] = useState("");
@@ -11077,6 +11154,8 @@ export default function TravelHubPage() {
   const [splitAmount, setSplitAmount] = useState("");
   const [splitEqually, setSplitEqually] = useState(true);
   const [attachMiniOpen, setAttachMiniOpen] = useState(false);
+  const [cameraCaptureOpen, setCameraCaptureOpen] = useState(false);
+  const [locationShareOpen, setLocationShareOpen] = useState(false);
   const attachMenuRef = useRef<HTMLDivElement | null>(null);
   const [showNewChat, setShowNewChat] = useState(false);
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
@@ -11103,6 +11182,8 @@ export default function TravelHubPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [contacts, setContacts] = useState<ContactPerson[]>([]);
+  const contactsRef = useRef<ContactPerson[]>([]);
+  contactsRef.current = contacts;
   const [emojiGifPickerOpen, setEmojiGifPickerOpen] = useState(false);
   const [emojiGifPickerTab, setEmojiGifPickerTab] =
     useState<ChatEmojiGifPickerTab>("emoji");
@@ -12631,6 +12712,14 @@ export default function TravelHubPage() {
     setFirebaseReady(ok);
     setChatPrefs(readJsonLs<Record<string, ChatPrefs>>(CHAT_PREFS_KEY, {}));
     setDeletedChatIds(readJsonLs<string[]>(DELETED_CHATS_KEY, []));
+    const bootCache = readTravelHubBootCache();
+    if (bootCache) {
+      setUser(bootCache.user);
+      setGroups(bootCache.groups);
+      setContacts(bootCache.contacts);
+      setChats(bootCache.chats);
+      setLoading(false);
+    }
     if (typeof window !== "undefined") {
       setProfileBannerDismissed(
         localStorage.getItem("profile_banner_dismissed") === "true",
@@ -12753,16 +12842,16 @@ export default function TravelHubPage() {
     const isGone = () => runSignal?.aborted;
     setLoading(true);
     try {
-      const [meRes, groupsRes] = await Promise.all([
-        apiFetchWithStatus<UserMe>("/auth/me", { signal: runSignal }),
-        apiFetchWithStatus<GroupOut[]>("/groups", { signal: runSignal }),
-      ]);
+      const bootRes = await apiFetchWithStatus<TravelHubBootstrapOut>(
+        "/connect/bootstrap",
+        { signal: runSignal },
+      );
       if (isGone()) return null;
-      if (meRes.status === 401 || groupsRes.status === 401) {
+      if (bootRes.status === 401) {
         handleUnauthorized();
         return null;
       }
-      if (meRes.status === 0 || groupsRes.status === 0) {
+      if (bootRes.status === 0) {
         if (isGone()) return null;
         showToast(
           "Cannot reach the server. Check that the API is running (e.g. localhost:8000) and try again.",
@@ -12770,25 +12859,27 @@ export default function TravelHubPage() {
         );
         return null;
       }
-      if (!meRes.data) {
+      if (!bootRes.data?.user) {
         if (isGone()) return null;
         showToast("Could not load profile", "error");
         return null;
       }
       if (isGone()) return null;
-      setUser(meRes.data);
-      const gList = groupsRes.data ?? [];
+      setUser(bootRes.data.user);
+      const gList = bootRes.data.groups ?? [];
+      const connections = bootRes.data.connections ?? [];
       const enrichedGroups: GroupOut[] = gList.map((g) => ({
         ...g,
         members: g.members ?? [],
       }));
       if (isGone()) return null;
       setGroups(enrichedGroups);
+      setConnectionsList(connections);
 
       const memberSet = new Map<string, ContactPerson>();
       for (const g of enrichedGroups) {
         for (const m of g.members ?? []) {
-          if (m.user_id !== meRes.data.id && !memberSet.has(m.user_id)) {
+          if (m.user_id !== bootRes.data.user.id && !memberSet.has(m.user_id)) {
             memberSet.set(m.user_id, {
               id: m.user_id,
               full_name: m.full_name,
@@ -12798,8 +12889,25 @@ export default function TravelHubPage() {
           }
         }
       }
+      for (const c of connections) {
+        if (c.id !== bootRes.data.user.id && !memberSet.has(c.id)) {
+          memberSet.set(c.id, {
+            id: c.id,
+            full_name: c.full_name,
+            username: c.username,
+            avatar_url: c.profile_picture ?? c.avatar_url ?? null,
+          });
+        }
+      }
+      const nextContacts = [...memberSet.values()];
       if (isGone()) return null;
-      setContacts([...memberSet.values()]);
+      setContacts(nextContacts);
+      writeTravelHubBootCache({
+        user: bootRes.data.user,
+        groups: enrichedGroups,
+        contacts: nextContacts,
+        chats: chatsRef.current,
+      });
       if (isGone()) return null;
       setTrips([]);
       return enrichedGroups;
@@ -12997,6 +13105,12 @@ export default function TravelHubPage() {
               (b.last_message_time ?? 0) - (a.last_message_time ?? 0),
           );
           setChats(list);
+          writeTravelHubBootCache({
+            user,
+            groups: groupsRef.current,
+            contacts: contactsRef.current,
+            chats: list,
+          });
         });
         chatInfoUnsubsRef.current.push(u);
 
@@ -13012,11 +13126,25 @@ export default function TravelHubPage() {
               (b.last_message_time ?? 0) - (a.last_message_time ?? 0),
           );
           setChats(list);
+          writeTravelHubBootCache({
+            user,
+            groups: groupsRef.current,
+            contacts: contactsRef.current,
+            chats: list,
+          });
         });
         chatInfoUnsubsRef.current.push(uMeta);
       });
 
-      if (chatIds.length === 0) setChats([]);
+      if (chatIds.length === 0) {
+        setChats([]);
+        writeTravelHubBootCache({
+          user,
+          groups: groupsRef.current,
+          contacts: contactsRef.current,
+          chats: [],
+        });
+      }
     });
 
     registerCleanup(() => {
@@ -14969,36 +15097,53 @@ export default function TravelHubPage() {
                           <ThIconPaperclip size={18} className="text-[#e5e7eb]" />
                         </button>
                         {attachMiniOpen ? (
-                          <div
-                            className="absolute bottom-full left-0 z-[200] mb-1 min-w-[11rem] overflow-hidden rounded-lg border py-1 shadow-xl"
-                            style={{
-                              background: "#1a1f35",
-                              borderColor: "rgba(255,255,255,0.1)",
+                          <WhatsAppAttachMiniMenu
+                            align="left"
+                            includeTravelActions={isActiveGroupTravel}
+                            onClose={() => setAttachMiniOpen(false)}
+                            onCamera={() => setCameraCaptureOpen(true)}
+                            onGalleryFile={(file) => {
+                              const reader = new FileReader();
+                              reader.onload = () =>
+                                void sendMessage(file.type.startsWith("video/") ? "video" : "image", "", {
+                                  url: reader.result,
+                                  name: file.name,
+                                  size: file.size,
+                                  mime: file.type,
+                                  source: "gallery",
+                                });
+                              reader.readAsDataURL(file);
                             }}
-                          >
-                            {(
-                              [
-                                "Photo/Video",
-                                "Audio",
-                                "Location",
-                                ...(isActiveGroupTravel
-                                  ? (["Split Expense", "Create Poll", "Pin Meeting Point"] as const)
-                                  : []),
-                              ] as const
-                            ).map((label) => (
-                              <button
-                                key={label}
-                                type="button"
-                                className="block w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
-                                onClick={() => {
-                                  setAttachMiniOpen(false);
-                                  showToast("Coming soon", "success");
-                                }}
-                              >
-                                {label}
-                              </button>
-                            ))}
-                          </div>
+                            onDocumentFile={(file) =>
+                              void sendMessage("document", file.name, {
+                                name: file.name,
+                                size: file.size,
+                                mime: file.type,
+                                storage: "external-cloud-pending",
+                              })
+                            }
+                            onAudio={startRecording}
+                            onLocation={() => setLocationShareOpen(true)}
+                            onContact={() => showToast("Contact sharing coming soon", "success")}
+                            onPoll={() => showToast("Polls are next in the chat roadmap", "success")}
+                            onEvent={() => showToast("Event sharing coming soon", "success")}
+                            onSplit={() => {
+                              setShowSplitPopup(true);
+                              setEmojiGifPickerOpen(false);
+                            }}
+                            onTrip={() => showToast("Trip sharing coming soon", "success")}
+                            onPin={() => {
+                              navigator.geolocation.getCurrentPosition(
+                                (pos) =>
+                                  void sendMessage("location", "Pinned meeting point", {
+                                    lat: pos.coords.latitude,
+                                    lon: pos.coords.longitude,
+                                    pinned: true,
+                                  }),
+                                () => showToast("Location denied", "error"),
+                              );
+                            }}
+                          />
                         ) : null}
                       </div>
                       {isActiveGroupTravel ? (
@@ -15184,34 +15329,36 @@ export default function TravelHubPage() {
                           <ThIconPaperclip size={18} className="text-[#e5e7eb]" />
                         </button>
                         {attachMiniOpen ? (
-                          <div
-                            className="absolute bottom-full right-0 z-[200] mb-1 min-w-[10rem] overflow-hidden rounded-lg border py-1 shadow-xl"
-                            style={{
-                              background: SURFACE,
-                              borderColor: MSG_BORDER,
+                          <WhatsAppAttachMiniMenu
+                            align="right"
+                            onClose={() => setAttachMiniOpen(false)}
+                            onCamera={() => setCameraCaptureOpen(true)}
+                            onGalleryFile={(file) => {
+                              const reader = new FileReader();
+                              reader.onload = () =>
+                                void sendMessage(file.type.startsWith("video/") ? "video" : "image", "", {
+                                  url: reader.result,
+                                  name: file.name,
+                                  size: file.size,
+                                  mime: file.type,
+                                  source: "gallery",
+                                });
+                              reader.readAsDataURL(file);
                             }}
-                          >
-                            {(
-                              [
-                                "Image",
-                                "Document",
-                                "Location",
-                                "Trip",
-                              ] as const
-                            ).map((label) => (
-                              <button
-                                key={label}
-                                type="button"
-                                className="block w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
-                                onClick={() => {
-                                  setAttachMiniOpen(false);
-                                  showToast("Coming soon", "success");
-                                }}
-                              >
-                                {label}
-                              </button>
-                            ))}
-                          </div>
+                            onDocumentFile={(file) =>
+                              void sendMessage("document", file.name, {
+                                name: file.name,
+                                size: file.size,
+                                mime: file.type,
+                                storage: "external-cloud-pending",
+                              })
+                            }
+                            onAudio={startRecording}
+                            onLocation={() => setLocationShareOpen(true)}
+                            onContact={() => showToast("Contact sharing coming soon", "success")}
+                            onPoll={() => showToast("Polls are next in the chat roadmap", "success")}
+                            onEvent={() => showToast("Event sharing coming soon", "success")}
+                          />
                         ) : null}
                       </div>
                     </>
@@ -17311,6 +17458,45 @@ export default function TravelHubPage() {
         </div>
       ) : null}
 
+      {cameraCaptureOpen ? (
+        <CameraCaptureModal
+          onClose={() => setCameraCaptureOpen(false)}
+          onCapture={(dataUrl) =>
+            void sendMessage("image", "", {
+              url: dataUrl,
+              source: "camera",
+              captured_at: Date.now(),
+            })
+          }
+          showToast={showToast}
+        />
+      ) : null}
+
+      {locationShareOpen ? (
+        <LocationShareSheet
+          onClose={() => setLocationShareOpen(false)}
+          onShare={(kind) => {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                const isLive = kind === "live";
+                void sendMessage(
+                  isLive ? "live_location" : "location",
+                  isLive ? "Shared live location" : "Shared current location",
+                  {
+                    lat: pos.coords.latitude,
+                    lon: pos.coords.longitude,
+                    accuracy: pos.coords.accuracy,
+                    started_at: Date.now(),
+                  },
+                );
+                setLocationShareOpen(false);
+              },
+              () => showToast("Location denied", "error"),
+            );
+          }}
+        />
+      ) : null}
+
       {toast ? (
         <div
           className={
@@ -17810,6 +17996,18 @@ function GroupMessageBubble({
   const name = (msg.sender_name || "?").trim();
   const senderIni = initialsFromName(name);
   const senderBg = listAvatarColor(name);
+  const mediaUrl = typeof meta.url === "string" ? meta.url : "";
+  const mediaName =
+    typeof meta.name === "string" && meta.name.trim()
+      ? meta.name
+      : t === "video"
+        ? "travel-hub-video.webm"
+        : "travel-hub-image.jpg";
+  const [locationPreview, setLocationPreview] = useState<{
+    lat: number;
+    lon: number;
+    live: boolean;
+  } | null>(null);
 
   if (t === "poll" && meta?.question != null) {
     const options = (meta.options as { label: string; votes: number }[]) ?? [];
@@ -17899,7 +18097,7 @@ function GroupMessageBubble({
           <p className="flex items-center gap-1.5 text-sm" style={{ color: WA_TEXT }}>
             <MapPin className="h-4 w-4 shrink-0 text-[#9ca3af]" strokeWidth={1.5} aria-hidden />
             <span>
-              {name} shared live location
+              {name} shared {t === "live_location" ? "live" : "current"} location
             </span>
           </p>
           <button
@@ -17908,10 +18106,11 @@ function GroupMessageBubble({
             style={{ color: "#60a5fa" }}
             onClick={() => {
               if (meta.lat != null && meta.lon != null) {
-                globalThis.open(
-                  `https://www.google.com/maps?q=${String(meta.lat)},${String(meta.lon)}`,
-                  "_blank",
-                );
+                setLocationPreview({
+                  lat: Number(meta.lat),
+                  lon: Number(meta.lon),
+                  live: t === "live_location",
+                });
               } else globalThis.alert("No map coordinates in this message");
             }}
           >
@@ -17921,6 +18120,15 @@ function GroupMessageBubble({
             {timeStr}
           </p>
         </div>
+        {locationPreview ? (
+          <LocationPreviewModal
+            lat={locationPreview.lat}
+            lon={locationPreview.lon}
+            live={locationPreview.live}
+            senderName={name}
+            onClose={() => setLocationPreview(null)}
+          />
+        ) : null}
       </div>
     );
   }
@@ -18017,11 +18225,23 @@ function GroupMessageBubble({
           className="max-w-[240px] rounded-[8px]"
         />
       ) : t === "image" && meta?.url ? (
-        <img
-          src={String(meta.url)}
-          alt=""
-          className="max-h-60 max-w-full rounded-lg"
-        />
+        <div>
+          <img
+            src={String(meta.url)}
+            alt=""
+            className="max-h-60 max-w-full rounded-lg"
+          />
+          <MediaDownloadButton url={mediaUrl} filename={mediaName} />
+        </div>
+      ) : t === "video" && meta?.url ? (
+        <div>
+          <video
+            src={String(meta.url)}
+            className="max-h-60 max-w-full rounded-lg"
+            controls
+          />
+          <MediaDownloadButton url={mediaUrl} filename={mediaName} />
+        </div>
       ) : t === "audio" ? (
         <div className="flex items-center gap-2 text-sm" style={{ color: BUBBLE_TEXT }}>
           <Play className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
@@ -18120,6 +18340,18 @@ function MessageBubble({
   onToggleSelect?: () => void;
 }) {
   const meta = msg.metadata as Record<string, unknown> | undefined;
+  const mediaUrl = typeof meta?.url === "string" ? meta.url : "";
+  const mediaName =
+    typeof meta?.name === "string" && meta.name.trim()
+      ? meta.name
+      : msg.type === "video"
+        ? "travel-hub-video.webm"
+        : "travel-hub-image.jpg";
+  const [locationPreview, setLocationPreview] = useState<{
+    lat: number;
+    lon: number;
+    live: boolean;
+  } | null>(null);
 
   const otherPhotoUrl = (() => {
     if (isGroup) {
@@ -18270,13 +18502,53 @@ function MessageBubble({
             </p>
           ) : null}
           {msg.type === "image" && meta?.url ? (
-            <img
-              src={String(meta.url)}
-              alt=""
-              className="max-h-60 max-w-[250px] rounded-xl"
-            />
+            <div>
+              <img
+                src={String(meta.url)}
+                alt=""
+                className="max-h-60 max-w-[250px] rounded-xl"
+              />
+              <MediaDownloadButton url={mediaUrl} filename={mediaName} />
+            </div>
           ) : null}
-          {msg.type === "location" ? (
+          {msg.type === "video" && meta?.url ? (
+            <div>
+              <video
+                src={String(meta.url)}
+                className="max-h-60 max-w-[250px] rounded-xl"
+                controls
+              />
+              <MediaDownloadButton url={mediaUrl} filename={mediaName} />
+            </div>
+          ) : null}
+          {msg.type === "document" ? (
+            <div
+              className="flex min-w-[220px] max-w-[280px] items-center gap-2 rounded-lg border px-2.5 py-2"
+              style={{
+                borderColor: "rgba(15,23,42,0.12)",
+                background: "rgba(255,255,255,0.36)",
+                color: BUBBLE_TEXT,
+              }}
+            >
+              <FileText
+                className="h-6 w-6 shrink-0"
+                style={{ color: BUBBLE_TS }}
+                strokeWidth={1.7}
+                aria-hidden
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">
+                  {String(meta?.name ?? msg.text ?? "Document")}
+                </p>
+                <p className="text-[11px]" style={{ color: BUBBLE_TS }}>
+                  {typeof meta?.size === "number"
+                    ? `${Math.ceil(meta.size / 1024)} KB`
+                    : "Cloud file"}
+                </p>
+              </div>
+            </div>
+          ) : null}
+          {msg.type === "location" || msg.type === "live_location" ? (
             <div>
               <p
                 className="flex items-start gap-1.5 text-sm"
@@ -18295,13 +18567,22 @@ function MessageBubble({
                   ? `${meta.lat}, ${meta.lon}`
                   : ""}
               </p>
-              <Link
-                href={`/map?lat=${String(meta?.lat ?? "")}&lon=${String(meta?.lon ?? "")}`}
+              <button
+                type="button"
                 className="mt-1 inline-block text-xs font-bold"
                 style={{ color: ACCENT }}
+                onClick={() => {
+                  if (meta?.lat != null && meta?.lon != null) {
+                    setLocationPreview({
+                      lat: Number(meta.lat),
+                      lon: Number(meta.lon),
+                      live: msg.type === "live_location",
+                    });
+                  }
+                }}
               >
                 Open in Map
-              </Link>
+              </button>
             </div>
           ) : null}
           {msg.type === "expense" ? (
@@ -18400,7 +18681,503 @@ function MessageBubble({
             ) : null}
           </div>
         </div>
+        {locationPreview ? (
+          <LocationPreviewModal
+            lat={locationPreview.lat}
+            lon={locationPreview.lon}
+            live={locationPreview.live}
+            senderName={msg.sender_name || "Shared location"}
+            onClose={() => setLocationPreview(null)}
+          />
+        ) : null}
       </div>
+    </div>
+  );
+}
+
+function downloadMedia(url: string, filename: string) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+function MediaDownloadButton({
+  url,
+  filename,
+}: {
+  url: string;
+  filename: string;
+}) {
+  return (
+    <button
+      type="button"
+      className="mt-1 rounded-full bg-black/45 px-2 py-1 text-[11px] font-semibold text-white hover:bg-black/60"
+      onClick={() => downloadMedia(url, filename)}
+    >
+      Download
+    </button>
+  );
+}
+
+function LocationPreviewModal({
+  lat,
+  lon,
+  senderName,
+  live,
+  onClose,
+}: {
+  lat: number;
+  lon: number;
+  senderName: string;
+  live: boolean;
+  onClose: () => void;
+}) {
+  const initial = initialsFromName(senderName);
+  const avatarBg = listAvatarColor(senderName);
+
+  return (
+    <div className="fixed inset-0 z-[5000] flex items-end justify-center bg-black/60 px-3 pb-3 sm:items-center">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white">
+              {live ? (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-35" />
+              ) : null}
+              <Navigation className="relative h-5 w-5" strokeWidth={1.8} aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-900">
+                {senderName}
+              </p>
+              <p className="text-xs text-slate-500">
+                {live ? "Live location preview" : "Current location preview"}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="rounded-lg px-2 py-1 text-sm font-semibold text-slate-500 hover:bg-slate-100"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
+        <div className="relative h-[min(58vh,380px)] min-h-[280px] overflow-hidden bg-[#dfe8df]">
+          <div
+            className="absolute inset-0 opacity-90"
+            style={{
+              backgroundImage:
+                "linear-gradient(28deg, transparent 0 46%, rgba(255,255,255,0.86) 46% 52%, transparent 52% 100%), linear-gradient(116deg, transparent 0 47%, rgba(255,255,255,0.78) 47% 53%, transparent 53% 100%), linear-gradient(0deg, transparent 0 48%, rgba(148,163,184,0.5) 48% 51%, transparent 51% 100%), linear-gradient(90deg, transparent 0 48%, rgba(148,163,184,0.45) 48% 51%, transparent 51% 100%)",
+              backgroundSize: "180px 180px, 220px 220px, 72px 72px, 72px 72px",
+              backgroundPosition: "12px 8px, -30px 28px, 0 0, 0 0",
+            }}
+          />
+          <div className="absolute left-6 top-5 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 shadow">
+            Map
+          </div>
+          {live ? (
+            <div className="absolute right-5 top-5 flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-blue-700 shadow">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-50" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-600" />
+              </span>
+              Live GPS
+            </div>
+          ) : null}
+          <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-[76%] flex-col items-center">
+            {live ? (
+              <span className="absolute top-3 h-24 w-24 animate-ping rounded-full bg-blue-500/20" />
+            ) : null}
+            <div
+              className="relative flex h-16 w-16 rotate-45 items-center justify-center border-4 border-white shadow-xl"
+              style={{
+                background: avatarBg,
+                borderRadius: "50% 50% 50% 8px",
+              }}
+            >
+              <span className="-rotate-45 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-lg font-bold text-white">
+                {initial}
+              </span>
+            </div>
+            <div className="mt-3 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-slate-800 shadow">
+              {senderName}
+            </div>
+          </div>
+          <div className="absolute bottom-4 left-4 right-4 rounded-2xl bg-white/95 p-3 shadow-lg">
+            <p className="text-sm font-semibold text-slate-900">
+              {live ? "Live location" : "Current location"}
+            </p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Shared inside this chat. No external map tab opened.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
+          <MapPin className="h-4 w-4" strokeWidth={1.6} aria-hidden />
+          <span>
+            {lat.toFixed(5)}, {lon.toFixed(5)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LocationShareSheet({
+  onClose,
+  onShare,
+}: {
+  onClose: () => void;
+  onShare: (kind: "current" | "live") => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[420] flex items-end justify-center bg-black/40 px-3 pb-3 sm:items-center">
+      <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="border-b border-slate-100 px-4 py-3">
+          <p className="text-sm font-semibold text-slate-900">Share location</p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Choose how this location should appear in the chat.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50"
+          onClick={() => onShare("current")}
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white">
+            <MapPin className="h-5 w-5" strokeWidth={1.7} aria-hidden />
+          </span>
+          <span>
+            <span className="block text-sm font-semibold text-slate-900">
+              Share current location
+            </span>
+            <span className="text-xs text-slate-500">
+              Send one map card with your position now.
+            </span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50"
+          onClick={() => onShare("live")}
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white">
+            <Navigation className="h-5 w-5" strokeWidth={1.7} aria-hidden />
+          </span>
+          <span>
+            <span className="block text-sm font-semibold text-slate-900">
+              Present as live location
+            </span>
+            <span className="text-xs text-slate-500">
+              Send a live-location style card to the receiver.
+            </span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className="w-full border-t border-slate-100 px-4 py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50"
+          onClick={onClose}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CameraCaptureModal({
+  onClose,
+  onCapture,
+  showToast,
+}: {
+  onClose: () => void;
+  onCapture: (dataUrl: string) => void;
+  showToast: (message: string, type?: "success" | "error") => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    navigator.mediaDevices
+      ?.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+      .then((stream) => {
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          void videoRef.current.play();
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCameraError("Camera permission denied or no camera available.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    };
+  }, []);
+
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
+      showToast("Camera is still loading", "error");
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      showToast("Could not capture photo", "error");
+      return;
+    }
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    onCapture(canvas.toDataURL("image/jpeg", 0.9));
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[430] flex items-center justify-center bg-black/70 px-4">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-slate-950 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+          <p className="text-sm font-semibold text-white">Camera</p>
+          <button
+            type="button"
+            className="rounded-lg px-2 py-1 text-sm text-slate-300 hover:bg-white/10"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
+        <div className="aspect-[3/4] bg-black">
+          {cameraError ? (
+            <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-200">
+              {cameraError}
+            </div>
+          ) : (
+            <video
+              ref={videoRef}
+              className="h-full w-full object-cover"
+              playsInline
+              muted
+              autoPlay
+            />
+          )}
+        </div>
+        <div className="flex items-center justify-center gap-4 px-4 py-4">
+          <button
+            type="button"
+            className="rounded-full px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-white/10"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-white text-slate-950 shadow-lg"
+            onClick={capturePhoto}
+            aria-label="Capture photo"
+          >
+            <Camera className="h-6 w-6" strokeWidth={1.8} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type WhatsAppAttachMiniMenuProps = {
+  align?: "left" | "right";
+  includeTravelActions?: boolean;
+  onClose: () => void;
+  onCamera: () => void;
+  onGalleryFile: (file: File) => void;
+  onDocumentFile: (file: File) => void;
+  onAudio: () => void;
+  onLocation: () => void;
+  onContact: () => void;
+  onPoll: () => void;
+  onEvent: () => void;
+  onSplit?: () => void;
+  onTrip?: () => void;
+  onPin?: () => void;
+};
+
+function WhatsAppAttachMiniMenu({
+  align = "left",
+  includeTravelActions = false,
+  onClose,
+  onCamera,
+  onGalleryFile,
+  onDocumentFile,
+  onAudio,
+  onLocation,
+  onContact,
+  onPoll,
+  onEvent,
+  onSplit,
+  onTrip,
+  onPin,
+}: WhatsAppAttachMiniMenuProps) {
+  const galleryRef = useRef<HTMLInputElement | null>(null);
+  const docRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFile = (
+    file: File | undefined,
+    handler: (file: File) => void,
+  ) => {
+    if (!file) return;
+    handler(file);
+    onClose();
+  };
+
+  const items: {
+    label: string;
+    icon: ReactNode;
+    bg: string;
+  }[] = [
+    {
+      label: "Document",
+      icon: <FileText className="h-6 w-6" strokeWidth={1.7} />,
+      bg: "#6d5dfc",
+    },
+    {
+      label: "Camera",
+      icon: <Camera className="h-6 w-6" strokeWidth={1.7} />,
+      bg: "#ec407a",
+    },
+    {
+      label: "Gallery",
+      icon: <Folder className="h-6 w-6" strokeWidth={1.7} />,
+      bg: "#1e88e5",
+    },
+    {
+      label: "Audio",
+      icon: <Headphones className="h-6 w-6" strokeWidth={1.7} />,
+      bg: "#f4511e",
+    },
+    {
+      label: "Location",
+      icon: <MapPin className="h-6 w-6" strokeWidth={1.7} />,
+      bg: "#00a884",
+    },
+    {
+      label: "Contact",
+      icon: <UserCircle2 className="h-6 w-6" strokeWidth={1.7} />,
+      bg: "#0ea5e9",
+    },
+    {
+      label: "Poll",
+      icon: <BarChart2 className="h-6 w-6" strokeWidth={1.7} />,
+      bg: "#f59e0b",
+    },
+    {
+      label: "Event",
+      icon: <Calendar className="h-6 w-6" strokeWidth={1.7} />,
+      bg: "#e91e63",
+    },
+  ];
+
+  if (includeTravelActions) {
+    items.push(
+      {
+        label: "Split",
+        icon: <Banknote className="h-6 w-6" strokeWidth={1.7} />,
+        bg: "#16a34a",
+      },
+      {
+        label: "Trip",
+        icon: <ThIconPlane size={24} className="text-white" />,
+        bg: "#e94560",
+      },
+      {
+        label: "Pin",
+        icon: <ThIconPin size={24} className="text-white" />,
+        bg: "#7c3aed",
+      },
+    );
+  }
+
+  const handleItemClick = (label: string) => {
+    if (label === "Document") {
+      docRef.current?.click();
+      return;
+    }
+    if (label === "Camera") {
+      onCamera();
+      onClose();
+      return;
+    }
+    if (label === "Gallery") {
+      galleryRef.current?.click();
+      return;
+    }
+    if (label === "Audio") onAudio();
+    else if (label === "Location") onLocation();
+    else if (label === "Contact") onContact();
+    else if (label === "Poll") onPoll();
+    else if (label === "Event") onEvent();
+    else if (label === "Split") (onSplit ?? onEvent)();
+    else if (label === "Trip") (onTrip ?? onEvent)();
+    else if (label === "Pin") (onPin ?? onLocation)();
+    onClose();
+  };
+
+  return (
+    <div
+      className={`absolute bottom-full z-[200] mb-2 w-[min(92vw,360px)] rounded-2xl border bg-white p-4 shadow-2xl ${
+        align === "right" ? "right-0" : "left-0"
+      }`}
+      style={{ borderColor: "rgba(15,23,42,0.08)" }}
+    >
+      <div className="grid grid-cols-4 gap-x-3 gap-y-4 text-center">
+        {items.map((item) => (
+          <button
+            key={item.label}
+            type="button"
+            className="flex min-w-0 flex-col items-center gap-1.5 text-[11px] font-medium text-slate-700"
+            onClick={() => handleItemClick(item.label)}
+          >
+            <span
+              className="flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-sm"
+              style={{ background: item.bg }}
+              aria-hidden
+            >
+              {item.icon}
+            </span>
+            <span className="truncate">{item.label}</span>
+          </button>
+        ))}
+      </div>
+      <input
+        ref={docRef}
+        type="file"
+        className="hidden"
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        onChange={(e) => handleFile(e.target.files?.[0], onDocumentFile)}
+      />
+      <input
+        ref={galleryRef}
+        type="file"
+        className="hidden"
+        accept="image/*,video/*"
+        onChange={(e) => handleFile(e.target.files?.[0], onGalleryFile)}
+      />
     </div>
   );
 }

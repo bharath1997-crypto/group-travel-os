@@ -137,6 +137,10 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(groups_router, prefix="/api/v1")
 
+    from app.routes.connect import router as connect_router
+
+    app.include_router(connect_router, prefix="/api/v1")
+
     # Step 15 — Trips
     from app.routes.trips import group_trips_router, trips_router
 
