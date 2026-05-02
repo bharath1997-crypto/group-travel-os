@@ -362,6 +362,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading } = useDashboardUser();
+  const hideAssistantSidecar = pathname.startsWith("/travel-hub");
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
@@ -934,7 +935,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         ) : null}
       </div>
 
-      {user ? (
+      {user && !hideAssistantSidecar ? (
         <AIAssistantSidecar
           page={
             pathname

@@ -12,7 +12,7 @@ import secrets
 import uuid
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.expense import Expense, ExpenseSplit
 from app.models.group import Group, GroupMember, MemberRole
@@ -135,6 +135,7 @@ class GroupService:
     def list_user_groups(db: Session, current_user: User) -> list[Group]:
         rows = db.execute(
             select(Group)
+            .options(selectinload(Group.members).joinedload(GroupMember.user))
             .join(GroupMember, Group.id == GroupMember.group_id)
             .where(GroupMember.user_id == current_user.id)
         ).scalars().all()

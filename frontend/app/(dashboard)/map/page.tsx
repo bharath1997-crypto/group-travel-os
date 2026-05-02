@@ -236,6 +236,10 @@ export default function MapPage() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null,
   );
+  const [sharedLocationMeta, setSharedLocationMeta] = useState<{
+    label: string;
+    mode: "current" | "live";
+  } | null>(null);
   const [address, setAddress] = useState("Getting your location...");
   const [coords, setCoords] = useState("");
   const [weather, setWeather] = useState<Record<string, unknown> | null>(null);
@@ -709,6 +713,27 @@ out body 20;
   }, [loadPins, loadTrending, loadLeaders]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sharedLat = Number(params.get("lat"));
+    const sharedLon = Number(params.get("lon") ?? params.get("lng"));
+    if (Number.isFinite(sharedLat) && Number.isFinite(sharedLon)) {
+      const mode = params.get("mode") === "live" ? "live" : "current";
+      setSharedLocationMeta({
+        label: params.get("label") || "Shared location",
+        mode,
+      });
+      setUserLocation([sharedLat, sharedLon]);
+      setCoords(`${sharedLat.toFixed(4)}° N · ${sharedLon.toFixed(4)}° E`);
+      void Promise.all([
+        fetchAddress(sharedLat, sharedLon),
+        fetchWeather(sharedLat, sharedLon),
+        fetchNearbyPlaces(sharedLat, sharedLon),
+        fetchEvents(sharedLat, sharedLon),
+        fetchHolidays(),
+      ]);
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const lat = pos.coords.latitude;
@@ -1299,7 +1324,15 @@ out body 20;
             <Marker position={userLocation} icon={userMarkerIcon}>
               <Popup>
                 <div className="text-sm">
-                  <p className="font-bold text-[#111827]">📍 You are here</p>
+                  <p className="font-bold text-[#111827]">
+                    {sharedLocationMeta
+                      ? `${sharedLocationMeta.label} ${
+                          sharedLocationMeta.mode === "live"
+                            ? "live location"
+                            : "current location"
+                        }`
+                      : "📍 You are here"}
+                  </p>
                   <p className="text-xs text-[#6b7280]">{address}</p>
                   <p className="text-[10px] text-[#6b7280]">{coords}</p>
                 </div>
