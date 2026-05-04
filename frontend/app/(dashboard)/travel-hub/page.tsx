@@ -34,6 +34,7 @@ import {
   type TouchEvent,
 } from "react";
 
+import WayraIcon from "@/components/ui/WayraIcon";
 import {
   Accessibility,
   Activity,
@@ -1340,44 +1341,6 @@ function MenuIcon({ className }: { className?: string }) {
   );
 }
 
-function BotFaceIcon({ className, size = 24 }: { className?: string; size?: number }) {
-  return (
-    <svg
-      className={className}
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-    >
-      <rect
-        x="5"
-        y="7"
-        width="14"
-        height="12"
-        rx="2.5"
-        fill="white"
-        fillOpacity={0.95}
-      />
-      <circle cx="9.5" cy="12.5" r="1.2" fill="#DC2626" />
-      <circle cx="14.5" cy="12.5" r="1.2" fill="#DC2626" />
-      <path
-        d="M10 16.5h4"
-        stroke="#DC2626"
-        strokeWidth={1.4}
-        strokeLinecap="round"
-      />
-      <path
-        d="M12 4.5v2M10 5.5h4"
-        stroke="white"
-        strokeOpacity={0.95}
-        strokeWidth={1.2}
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 function shouldShowDateSeparator(
   messages: ChatMessage[],
   index: number,
@@ -2286,11 +2249,8 @@ function HubChatsTab({
   const renderAvatar = (c: ChatInfo) => {
     if (c.isBot) {
       return (
-        <span
-          className="flex h-10 w-10 items-center justify-center rounded-full"
-          style={{ background: ACCENT }}
-        >
-          <BotFaceIcon size={24} />
+        <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[#E9ECEF] bg-[#F8F9FA]">
+          <WayraIcon state="flying" size={0.5} variant="navy" animate={false} />
         </span>
       );
     }
@@ -5412,11 +5372,8 @@ function TravelloHelpChatPanel() {
         className="flex shrink-0 items-center gap-3 border-b px-4 py-3"
         style={{ borderColor: BORDER_SUB, background: BG }}
       >
-        <span
-          className="flex h-9 w-9 items-center justify-center rounded-full"
-          style={{ background: ACCENT }}
-        >
-          <BotFaceIcon size={22} />
+        <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-[#E9ECEF] bg-[#F8F9FA]">
+          <WayraIcon state="flying" size={0.5} variant="navy" animate={false} />
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-medium text-white">
@@ -11255,6 +11212,8 @@ export default function TravelHubPage() {
     null,
   );
   const streamRef = useRef<MediaStream | null>(null);
+  const recordStartedAtRef = useRef(0);
+  const recordCancelRef = useRef(false);
   const userSearchSeq = useRef(0);
   const [userSearchResults, setUserSearchResults] = useState<
     UserSearchResultRow[]
@@ -13387,6 +13346,7 @@ export default function TravelHubPage() {
         clearTimeout(messagesScrollToEndTimeoutRef.current);
         messagesScrollToEndTimeoutRef.current = null;
       }
+        recordCancelRef.current = true;
       mediaRecorder?.stop();
       streamRef.current?.getTracks().forEach((t) => t.stop());
       if (recordIntervalRef.current) clearInterval(recordIntervalRef.current);
@@ -14174,50 +14134,28 @@ export default function TravelHubPage() {
       );
   }, [contacts, groups, user?.id]);
 
+  const showMediaCaptureUnavailable = useCallback(
+    (kind: "camera" | "voice") => {
+      showToast(
+        kind === "camera"
+          ? "Camera capture is temporarily unavailable. Use Gallery to upload a photo for now."
+          : "Voice messages are temporarily unavailable. Use text or attachments for now.",
+        "error",
+      );
+    },
+    [showToast],
+  );
+
   const startRecording = useCallback(() => {
-    navigator.mediaDevices
-      .getUserMedia({ audio: true })
-      .then((stream) => {
-        streamRef.current = stream;
-        const chunks: BlobPart[] = [];
-        const recorder = new MediaRecorder(stream);
-        setMediaRecorder(recorder);
-        setIsRecording(true);
-        setRecordSeconds(0);
-        recordIntervalRef.current = setInterval(() => {
-          setRecordSeconds((s) => s + 1);
-        }, 1000);
-        recorder.ondataavailable = (e) => {
-          if (e.data.size) chunks.push(e.data);
-        };
-        recorder.onstop = () => {
-          const blob = new Blob(chunks, { type: "audio/webm" });
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            void sendMessage("audio", "Voice message", {
-              url: reader.result,
-              duration: `${Math.floor(recordSeconds / 60)}:${String(recordSeconds % 60).padStart(2, "0")}`,
-            });
-          };
-          reader.readAsDataURL(blob);
-          stream.getTracks().forEach((t) => t.stop());
-          setIsRecording(false);
-          setMediaRecorder(null);
-          if (recordIntervalRef.current) {
-            clearInterval(recordIntervalRef.current);
-            recordIntervalRef.current = null;
-          }
-        };
-        recorder.start();
-      })
-      .catch(() => showToast("Microphone access denied", "error"));
-  }, [recordSeconds, sendMessage, showToast]);
+    showMediaCaptureUnavailable("voice");
+  }, [showMediaCaptureUnavailable]);
 
   const stopRecordingSend = useCallback(() => {
     mediaRecorder?.stop();
   }, [mediaRecorder]);
 
   const cancelRecording = useCallback(() => {
+    recordCancelRef.current = true;
     mediaRecorder?.stop();
     streamRef.current?.getTracks().forEach((t) => t.stop());
     setIsRecording(false);
@@ -15084,8 +15022,6 @@ export default function TravelHubPage() {
                     ...mobileComposerBottomStyle,
                   }}
                 >
-                  {messageText.trim() ? null : (
-                    <>
                       <div className="relative flex shrink-0" ref={attachMenuRef}>
                         <button
                           type="button"
@@ -15101,7 +15037,7 @@ export default function TravelHubPage() {
                             align="left"
                             includeTravelActions={isActiveGroupTravel}
                             onClose={() => setAttachMiniOpen(false)}
-                            onCamera={() => setCameraCaptureOpen(true)}
+                            onCamera={() => showMediaCaptureUnavailable("camera")}
                             onGalleryFile={(file) => {
                               const reader = new FileReader();
                               reader.onload = () =>
@@ -15146,7 +15082,7 @@ export default function TravelHubPage() {
                           />
                         ) : null}
                       </div>
-                      {isActiveGroupTravel ? (
+                      {!messageText.trim() && isActiveGroupTravel ? (
                         <button
                           type="button"
                           className="flex shrink-0 items-center gap-0.5 rounded-full px-2.5 py-2 text-xs font-bold text-white"
@@ -15163,8 +15099,6 @@ export default function TravelHubPage() {
                           Split
                         </button>
                       ) : null}
-                    </>
-                  )}
                   <input
                     ref={messageComposerInputRef}
                     value={messageText}
@@ -15205,17 +15139,28 @@ export default function TravelHubPage() {
                       <ThIconSmile size={18} className="text-current" />
                     )}
                   </button>
-                  {messageText.trim() ? null : !isActiveGroupTravel ? (
+                  {messageText.trim() ? null : (
+                    <button
+                      type="button"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                      style={{ color: TH_MUTED }}
+                      aria-label="Camera"
+                      onClick={() => showMediaCaptureUnavailable("camera")}
+                    >
+                      <Camera className="h-[18px] w-[18px]" strokeWidth={1.7} />
+                    </button>
+                  )}
+                  {messageText.trim() ? null : (
                     <button
                       type="button"
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
                       style={{ color: TH_MUTED }}
                       aria-label="Voice"
-                      onClick={() => showToast("Coming soon", "success")}
+                      onClick={startRecording}
                     >
                       <ThIconMicLine size={18} className="text-current" />
                     </button>
-                  ) : null}
+                  )}
                   {messageText.trim() ? (
                     <button
                       type="button"
@@ -15305,17 +15250,6 @@ export default function TravelHubPage() {
                       <ThIconSmile size={18} className="text-current" />
                     )}
                   </button>
-                  {messageText.trim() ? null : (
-                    <>
-                      <button
-                        type="button"
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-                        style={{ color: TH_MUTED }}
-                        aria-label="Camera"
-                        onClick={() => showToast("Camera coming soon", "success")}
-                      >
-                        <Camera className="h-5 w-5" strokeWidth={1.5} />
-                      </button>
                       <div
                         className="relative flex shrink-0"
                         ref={attachMenuRef}
@@ -15332,7 +15266,7 @@ export default function TravelHubPage() {
                           <WhatsAppAttachMiniMenu
                             align="right"
                             onClose={() => setAttachMiniOpen(false)}
-                            onCamera={() => setCameraCaptureOpen(true)}
+                            onCamera={() => showMediaCaptureUnavailable("camera")}
                             onGalleryFile={(file) => {
                               const reader = new FileReader();
                               reader.onload = () =>
@@ -15361,7 +15295,27 @@ export default function TravelHubPage() {
                           />
                         ) : null}
                       </div>
-                    </>
+                  {messageText.trim() ? null : (
+                    <button
+                      type="button"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                      style={{ color: TH_MUTED }}
+                      aria-label="Camera"
+                      onClick={() => showMediaCaptureUnavailable("camera")}
+                    >
+                      <Camera className="h-[18px] w-[18px]" strokeWidth={1.7} />
+                    </button>
+                  )}
+                  {messageText.trim() ? null : (
+                    <button
+                      type="button"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                      style={{ color: TH_MUTED }}
+                      aria-label="Voice"
+                      onClick={startRecording}
+                    >
+                      <ThIconMicLine size={18} className="text-current" />
+                    </button>
                   )}
                   {messageText.trim() ? (
                     <button

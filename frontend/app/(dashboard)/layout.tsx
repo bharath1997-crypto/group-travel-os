@@ -112,7 +112,7 @@ function isActive(pathname: string, href: string): boolean {
 
 /** Bottom nav "Explore" and More sheet targets */
 function isExploreNavActive(pathname: string): boolean {
-  return pathname === "/explore" || pathname.startsWith("/explore/");
+  return pathname === "/explorer" || pathname.startsWith("/explorer/");
 }
 
 const MOBILE_MORE_LINKS: {
@@ -168,7 +168,7 @@ const MAIN_NAV: {
   { href: "/travel-hub", label: "Connect", Icon: IconUsers },
   { href: "/split-activities", label: "Split Activities", Icon: IconBanknote },
   { href: "/live", label: "Live", Icon: IconLive },
-  { href: "/feed", label: "Explore", Icon: IconCompass },
+  { href: "/explorer", label: "Explore", Icon: IconCompass },
   { href: "/map", label: "Map", Icon: IconMap },
   { href: "/weather", label: "Weather", Icon: IconCloudSun },
   { href: "/stats", label: "Stats", Icon: IconBarChart },
@@ -208,13 +208,13 @@ function SidebarNavLink({
       title={iconOnly ? label : undefined}
       onClick={() => onNavigate?.()}
       className={[
-        "relative flex items-center gap-2.5 rounded-lg border-l-[3px] py-[9px] text-[13px] font-medium transition-all duration-300 ease-in-out",
+        "relative flex items-center gap-2.5 rounded-lg border-l-2 py-[9px] text-[13px] transition-all duration-300 ease-in-out",
         iconOnly
           ? "justify-center px-1 pl-1 pr-1"
           : "pl-[9px] pr-3",
         active
-          ? "border-white bg-[#E94560] text-white"
-          : "border-transparent text-[rgba(255,255,255,0.65)] hover:bg-[rgba(255,255,255,0.1)] hover:text-white",
+          ? "border-[#E94560] bg-[#F8F9FA] font-medium text-[#0F3460]"
+          : "border-transparent font-medium text-[rgba(255,255,255,0.65)] hover:bg-[rgba(255,255,255,0.1)] hover:text-white",
       ].join(" ")}
     >
       <span className="inline-flex w-5 shrink-0 justify-center leading-none">
@@ -290,13 +290,10 @@ function SidebarProfileAvatar({
   displayName: string;
   profileComplete: boolean;
 }) {
-  const [useInitials, setUseInitials] = useState(() => !profilePicUrl);
+  const [imgFailed, setImgFailed] = useState(false);
+  const showInitials = !profilePicUrl || imgFailed;
   const initials = initialsFromFullName(displayName);
   const bg = deterministicAvatarBg(displayName);
-
-  useEffect(() => {
-    setUseInitials(!profilePicUrl);
-  }, [profilePicUrl]);
 
   const ringClass = profileComplete
     ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0F3460]"
@@ -304,7 +301,7 @@ function SidebarProfileAvatar({
 
   return (
     <span className="relative inline-flex shrink-0">
-      {useInitials ? (
+      {showInitials ? (
         <span
           className={`flex h-10 w-10 items-center justify-center rounded-full border-2 border-[rgba(255,255,255,0.2)] text-xs font-bold text-white ${ringClass}`}
           style={{ background: bg }}
@@ -318,10 +315,7 @@ function SidebarProfileAvatar({
             src={profilePicUrl!}
             alt={displayName}
             style={SIDEBAR_AVATAR_IMG_STYLE}
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-              setUseInitials(true);
-            }}
+            onError={() => setImgFailed(true)}
           />
         </span>
       )}
@@ -549,6 +543,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               }}
             >
               <SidebarProfileAvatar
+                key={sidebarPicUrl ?? "no-photo"}
                 profilePicUrl={sidebarPicUrl}
                 displayName={sidebarDisplayName}
                 profileComplete={profileComplete}
@@ -642,6 +637,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             }}
           >
             <SidebarProfileAvatar
+              key={sidebarPicUrl ?? "no-photo"}
               profilePicUrl={sidebarPicUrl}
               displayName={sidebarDisplayName}
               profileComplete={profileComplete}
@@ -726,6 +722,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   }}
                 >
                   <SidebarProfileAvatar
+                    key={sidebarPicUrl ?? "no-photo"}
                     profilePicUrl={sidebarPicUrl}
                     displayName={sidebarDisplayName}
                     profileComplete={profileComplete}
@@ -829,11 +826,11 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                 { href: "/dashboard", label: "Home", Icon: IconLayoutDashboard },
                 { href: "/trips", label: "Trips", Icon: IconPlane },
                 { href: "/travel-hub", label: "Connect", Icon: IconUsers },
-                { href: "/explore", label: "Explore", Icon: IconCompass },
+                { href: "/explorer", label: "Explore", Icon: IconCompass },
               ] as const
             ).map(({ href, label, Icon }) => {
               const active =
-                href === "/explore"
+                href === "/explorer"
                   ? isExploreNavActive(pathname)
                   : isActive(pathname, href);
               return (
