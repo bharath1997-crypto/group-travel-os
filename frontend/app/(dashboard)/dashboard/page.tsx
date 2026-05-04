@@ -1968,7 +1968,7 @@ export default function DashboardPage() {
               </li>
             </ul>
             <Link
-              href="/feed"
+              href="/explorer"
               className="mt-4 inline-block text-sm font-semibold"
               style={{ color: CORAL }}
             >

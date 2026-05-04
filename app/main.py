@@ -222,6 +222,12 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(app_settings_router, prefix="/api/v1")
 
+    from app.routers.explorer import router as explorer_router
+    from app.routers.explorer import wayra_router
+
+    app.include_router(explorer_router, prefix="/api/v1", tags=["explorer"])
+    app.include_router(wayra_router, prefix="/api/v1", tags=["wayra"])
+
 
 # ── App instance ──────────────────────────────────────────────────────────────
 # This is what uvicorn imports. Do not rename.
