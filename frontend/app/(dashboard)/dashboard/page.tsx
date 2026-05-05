@@ -103,6 +103,14 @@ type BalanceRow = {
   amount: number;
 };
 
+type SplitPersonSummary = {
+  userId: string;
+  name: string;
+  net: number;
+  incoming: number;
+  outgoing: number;
+};
+
 type PollOptionOut = {
   id: string;
   poll_id: string;
@@ -582,6 +590,62 @@ export default function DashboardPage() {
       return youOwe || owesYou;
     });
   }, [expenseLines, me]);
+
+  const splitSummary = useMemo(() => {
+    const byPerson = new Map<string, SplitPersonSummary>();
+    let incomingTotal = 0;
+    let outgoingTotal = 0;
+
+    if (!me) {
+      return {
+        incomingTotal,
+        outgoingTotal,
+        netTotal: 0,
+        people: [] as SplitPersonSummary[],
+        visiblePeople: [] as SplitPersonSummary[],
+      };
+    }
+
+    for (const { row } of myPendingExpenses) {
+      if (row.amount <= 0.01) continue;
+
+      const isIncoming = row.to_user_id === me.id;
+      const otherId = isIncoming ? row.from_user_id : row.to_user_id;
+      const existing =
+        byPerson.get(otherId) ??
+        ({
+          userId: otherId,
+          name: userNameMap.get(otherId) ?? otherId,
+          net: 0,
+          incoming: 0,
+          outgoing: 0,
+        } satisfies SplitPersonSummary);
+
+      if (isIncoming) {
+        existing.net += row.amount;
+        existing.incoming += row.amount;
+        incomingTotal += row.amount;
+      } else {
+        existing.net -= row.amount;
+        existing.outgoing += row.amount;
+        outgoingTotal += row.amount;
+      }
+
+      byPerson.set(otherId, existing);
+    }
+
+    const people = Array.from(byPerson.values())
+      .filter((person) => Math.abs(person.net) > 0.01)
+      .sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
+
+    return {
+      incomingTotal,
+      outgoingTotal,
+      netTotal: incomingTotal - outgoingTotal,
+      people,
+      visiblePeople: people.slice(0, 3),
+    };
+  }, [me, myPendingExpenses, userNameMap]);
 
   const checklist = useMemo(() => {
     const desc = tripExpensesList.map((e) => e.description.toLowerCase()).join(" ");
@@ -1300,7 +1364,7 @@ export default function DashboardPage() {
               style={{ borderColor: BORDER, backgroundColor: CARD }}
             >
               <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                Pending expenses
+                Split activity
               </h2>
               <p className="mt-3 text-sm" style={{ color: MUTED }}>
                 Could not load data. Tap to retry.
@@ -1320,7 +1384,7 @@ export default function DashboardPage() {
               style={{ borderColor: BORDER, backgroundColor: CARD }}
             >
               <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                Pending expenses
+                Split activity
               </h2>
               <div className="mt-3 space-y-1.5">
                 <Shimmer height={14} width="90%" />
@@ -1332,9 +1396,25 @@ export default function DashboardPage() {
               className="rounded-xl border p-4 shadow-sm"
               style={{ borderColor: BORDER, backgroundColor: CARD }}
             >
-              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                Pending expenses
-              </h2>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                    Split activity
+                  </h2>
+                  <p className="mt-1 text-xs" style={{ color: MUTED }}>
+                    Your top balances across active trips
+                  </p>
+                </div>
+                {myPendingExpenses.length > 0 ? (
+                  <Link
+                    href="/split-activities"
+                    className="shrink-0 text-xs font-semibold"
+                    style={{ color: CORAL }}
+                  >
+                    View all
+                  </Link>
+                ) : null}
+              </div>
               {myPendingExpenses.length === 0 ? (
                 <div className="mt-4">
                   <span className="inline-flex text-[#22C55E]" aria-hidden>
@@ -1346,61 +1426,101 @@ export default function DashboardPage() {
                   <p className="mt-1 text-sm" style={{ color: MUTED }}>
                     No pending expenses
                   </p>
+                  <Link
+                    href="/split-activities"
+                    className="mt-4 inline-block text-sm font-semibold"
+                    style={{ color: CORAL }}
+                  >
+                    Open split activity →
+                  </Link>
                 </div>
               ) : (
-                <ul className="mt-3 space-y-3">
-                  {myPendingExpenses.map(({ row, tripId, tripTitle }, idx) => {
-                    const fromN =
-                      userNameMap.get(row.from_user_id) ?? row.from_user_id;
-                    const toN =
-                      userNameMap.get(row.to_user_id) ?? row.to_user_id;
-                    const youOwe = Boolean(
-                      me &&
-                        row.from_user_id === me.id &&
-                        row.amount > 0.01,
-                    );
-                    const other = youOwe ? toN : fromN;
-                    const label = youOwe
-                      ? `You owe ${other}`
-                      : `${other} owes you`;
-                    const color = youOwe ? CORAL : SUCCESS;
-                    const initial = (other.trim()[0] ?? "?").toUpperCase();
-                    return (
-                      <li
-                        key={`${tripId}-${idx}-${row.from_user_id}-${row.to_user_id}`}
-                        className="flex gap-2"
-                      >
-                        <div
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                          style={{ backgroundColor: stringHue(other) }}
-                        >
-                          {initial}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-bold" style={{ color }}>
-                            {label}
-                          </p>
-                          <p className="truncate text-[10px]" style={{ color: MUTED }}>
-                            {tripTitle}
-                          </p>
-                          <p className="text-sm font-bold tabular-nums" style={{ color }}>
-                            {formatRupee(row.amount)}
-                          </p>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <>
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    <div className="rounded-xl border border-green-100 bg-green-50 px-3 py-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-green-700">
+                        Positive
+                      </p>
+                      <p className="mt-1 text-sm font-bold tabular-nums text-green-700">
+                        {formatRupee(splitSummary.incomingTotal)}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-rose-700">
+                        Negative
+                      </p>
+                      <p className="mt-1 text-sm font-bold tabular-nums text-rose-700">
+                        {formatRupee(splitSummary.outgoingTotal)}
+                      </p>
+                    </div>
+                    <div
+                      className="rounded-xl border px-3 py-2"
+                      style={{
+                        borderColor:
+                          splitSummary.netTotal >= 0 ? "#BBF7D0" : "#FFE4E6",
+                        backgroundColor:
+                          splitSummary.netTotal >= 0 ? "#F0FDF4" : "#FFF1F2",
+                        color: splitSummary.netTotal >= 0 ? SUCCESS : CORAL,
+                      }}
+                    >
+                      <p className="text-[10px] font-semibold uppercase tracking-wide">
+                        Net
+                      </p>
+                      <p className="mt-1 text-sm font-bold tabular-nums">
+                        {splitSummary.netTotal >= 0 ? "+" : "-"}
+                        {formatRupee(Math.abs(splitSummary.netTotal))}
+                      </p>
+                    </div>
+                  </div>
+
+                  <ul className="mt-3 divide-y divide-[#E9ECEF]">
+                    {splitSummary.visiblePeople.map((person) => {
+                      const positive = person.net > 0;
+                      const color = positive ? SUCCESS : CORAL;
+                      const initial = (person.name.trim()[0] ?? "?").toUpperCase();
+                      return (
+                        <li key={person.userId}>
+                          <Link
+                            href="/split-activities"
+                            className="flex items-center gap-2 py-2.5"
+                            aria-label={`Open split activity for ${person.name}`}
+                          >
+                            <div
+                              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                              style={{ backgroundColor: stringHue(person.name) }}
+                            >
+                              {initial}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-xs font-bold" style={{ color: NAVY }}>
+                                {person.name}
+                              </p>
+                              <p className="text-[10px]" style={{ color: MUTED }}>
+                                {positive ? "They owe you" : "You owe them"}
+                              </p>
+                            </div>
+                            <p className="text-sm font-bold tabular-nums" style={{ color }}>
+                              {positive ? "+" : "-"}
+                              {formatRupee(Math.abs(person.net))}
+                            </p>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  <Link
+                    href="/split-activities"
+                    className="mt-3 inline-flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold text-white"
+                    style={{ backgroundColor: CORAL }}
+                  >
+                    Open split activity
+                    {splitSummary.people.length > 3
+                      ? ` · ${splitSummary.people.length - 3} more`
+                      : ""}
+                  </Link>
+                </>
               )}
-              {myPendingExpenses.length > 0 ? (
-                <Link
-                  href={`/trips/${myPendingExpenses[0].tripId}`}
-                  className="mt-4 inline-block text-sm font-semibold"
-                  style={{ color: CORAL }}
-                >
-                  Settle up →
-                </Link>
-              ) : null}
             </div>
           )}
         </div>
@@ -1848,7 +1968,7 @@ export default function DashboardPage() {
               </li>
             </ul>
             <Link
-              href="/feed"
+              href="/explorer"
               className="mt-4 inline-block text-sm font-semibold"
               style={{ color: CORAL }}
             >

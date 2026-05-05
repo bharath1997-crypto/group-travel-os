@@ -4,6 +4,7 @@ import type React from "react";
 
 const NAVY = "#1C2B3A";
 const PINK = "#E8619A";
+const CORAL_ACTIVE = "#E94560";
 const WHITE = "#FFFFFF";
 
 export type IconProps = Omit<React.SVGProps<SVGSVGElement>, "color"> & {
@@ -17,7 +18,7 @@ export type IconProps = Omit<React.SVGProps<SVGSVGElement>, "color"> & {
 export type IconComponent = React.FC<IconProps>;
 
 function strokeFor(active?: boolean, darkBg?: boolean) {
-  if (active) return PINK;
+  if (active) return CORAL_ACTIVE;
   return darkBg ? WHITE : NAVY;
 }
 

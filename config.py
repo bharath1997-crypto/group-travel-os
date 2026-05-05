@@ -81,6 +81,41 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="OPENWEATHER_API_KEY",
     )
+    serpapi_key: str | None = Field(
+        default=None,
+        validation_alias="SERPAPI_KEY",
+    )
+
+    # ── Explorer third-party APIs (keys in .env) ─────────────────────────────
+    ticketmaster_api_key: str | None = Field(
+        default=None,
+        validation_alias="TICKETMASTER_API_KEY",
+    )
+    eventbrite_token: str | None = Field(
+        default=None,
+        validation_alias="EVENTBRITE_TOKEN",
+    )
+    yelp_api_key: str | None = Field(
+        default=None,
+        validation_alias="YELP_API_KEY",
+    )
+    youtube_api_key: str | None = Field(
+        default=None,
+        validation_alias="YOUTUBE_API_KEY",
+    )
+    google_places_api_key: str | None = Field(
+        default=None,
+        validation_alias="GOOGLE_PLACES_API_KEY",
+    )
+    apify_token: str | None = Field(
+        default=None,
+        validation_alias="APIFY_TOKEN",
+    )
+    apify_explorer_actor_id: str | None = Field(
+        default=None,
+        validation_alias="APIFY_EXPLORER_ACTOR_ID",
+        description="Optional Apify actor id for Explorer enrichment.",
+    )
 
     # ── Stripe (Phase 3) ───────────────────────────────────────────────────────
     stripe_secret_key: str | None = Field(
