@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -34,7 +35,18 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <Script id="gt-register-sw" strategy="afterInteractive">
+          {`
+            if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+              navigator.serviceWorker.register("/sw.js")
+                .then(function (reg) { console.log("SW registered:", reg.scope); })
+                .catch(function (err) { console.log("SW error:", err); });
+            }
+          `}
+        </Script>
+      </body>
     </html>
   );
 }

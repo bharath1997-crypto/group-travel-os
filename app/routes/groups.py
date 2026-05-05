@@ -11,9 +11,15 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.group import (
     GroupCreate,
+    GroupDetail,
+    GroupMemberOut,
     GroupOut,
     InviteCodeOut,
     JoinGroupRequest,
+    LeaveGroupOut,
+    MemberRoleUpdate,
+    group_member_to_out,
+    group_to_detail,
     group_to_out,
 )
 from app.services.group_service import GroupService
@@ -34,7 +40,9 @@ def create_group(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    group = GroupService.create_group(db, data.name, data.description, current_user)
+    group = GroupService.create_group(
+        db, data.name, data.description, current_user, data.group_type, data.default_currency
+    )
     return group_to_out(group)
 
 
@@ -68,8 +76,23 @@ def join_group(
 
 
 @router.get(
+    "/{group_id}/members",
+    response_model=list[GroupMemberOut],
+    status_code=status.HTTP_200_OK,
+    summary="List members of a group (you must be a member)",
+)
+def list_group_members(
+    group_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    group = GroupService.get_group(db, group_id, current_user)
+    return [group_member_to_out(m) for m in group.members]
+
+
+@router.get(
     "/{group_id}",
-    response_model=GroupOut,
+    response_model=GroupDetail,
     status_code=status.HTTP_200_OK,
     summary="Get a group by id",
 )
@@ -79,7 +102,67 @@ def get_group(
     current_user: User = Depends(get_current_user),
 ):
     group = GroupService.get_group(db, group_id, current_user)
-    return group_to_out(group)
+    return group_to_detail(group)
+
+
+@router.delete(
+    "/{group_id}/leave",
+    response_model=LeaveGroupOut,
+    status_code=status.HTTP_200_OK,
+    summary="Leave the group (auto-deletes the group if you are the sole member)",
+)
+def leave_group(
+    group_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    deleted = GroupService.leave_group(db, group_id, current_user)
+    return LeaveGroupOut(deleted=deleted)
+
+
+@router.delete(
+    "/{group_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete the group entirely (admin only)",
+)
+def delete_group(
+    group_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    GroupService.delete_group(db, group_id, current_user)
+
+
+@router.patch(
+    "/{group_id}/members/{user_id}/role",
+    response_model=GroupMemberOut,
+    status_code=status.HTTP_200_OK,
+    summary="Change a member's role (admin only)",
+)
+def change_member_role(
+    group_id: uuid.UUID,
+    user_id: uuid.UUID,
+    body: MemberRoleUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    member = GroupService.change_member_role(
+        db, group_id, user_id, body.role, current_user
+    )
+    return group_member_to_out(member)
+
+
+@router.get(
+    "/{group_id}/close-check",
+    status_code=status.HTTP_200_OK,
+    summary="Unsettled-balance count before closing a group (admin only)",
+)
+def close_group_check(
+    group_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    return GroupService.get_pending_balances_count(db, group_id, current_user.id)
 
 
 @router.delete(

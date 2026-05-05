@@ -1,0 +1,3 @@
+# Avoid CRLF / encoding noise in pip requirement files (Windows editors).
+requirements.txt text eol=lf
+requirements-prod.txt text eol=lf

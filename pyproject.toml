@@ -1,3 +1,6 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [tool.pyright]
 include = ["app", "tests", "alembic", "config.py", "run.py"]
 venvPath = "."

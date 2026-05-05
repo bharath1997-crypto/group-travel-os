@@ -40,6 +40,8 @@ def test_join_group_success(db, mock_user):
     db.execute.side_effect = [
         exec_result(scalar_one_or_none=group),
         exec_result(scalar_one_or_none=None),
+        # NotificationService.on_user_joined_group — no other members yet
+        exec_result(scalars_all=[]),
     ]
 
     out = GroupService.join_group(db, "  abcinvite1  ", mock_user)

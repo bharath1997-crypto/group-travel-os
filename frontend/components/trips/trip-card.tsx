@@ -1,5 +1,6 @@
 "use client";
 
+import { Check } from "lucide-react";
 import type { ReactNode } from "react";
 
 const NAVY = "#0F3460";
@@ -158,7 +159,12 @@ export function TripCard({
       </p>
     );
   } else if (completed) {
-    row4 = <p className="text-xs font-semibold text-green-600">Completed ✓</p>;
+    row4 = (
+      <p className="flex items-center gap-1 text-xs font-semibold text-green-600">
+        <Check className="h-3 w-3" strokeWidth={1.5} aria-hidden />
+        Completed
+      </p>
+    );
   }
 
   const members = (trip.members ?? []).slice(0, 4);

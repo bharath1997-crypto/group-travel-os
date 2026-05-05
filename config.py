@@ -17,7 +17,7 @@ def _parse_origins_string(s: str) -> list[str]:
     """ALLOWED_ORIGINS env: JSON array, comma-separated URLs, or one URL (Cloud Run / gcloud-safe)."""
     s = s.strip()
     if not s:
-        return ["http://localhost:3000"]
+        return ["http://localhost:3000", "http://127.0.0.1:3000"]
     if s.startswith("["):
         try:
             parsed = json.loads(s)
@@ -63,17 +63,58 @@ class Settings(BaseSettings):
         validation_alias="FIREBASE_DATABASE_URL",
     )
 
-    # ── OpenAI (Travello sidecar assistant) ───────────────────────────────────
-    # https://platform.openai.com/api-keys — same key as OPENAI_API_KEY in .env
+    # ── OpenAI (Travello sidecar assistant — fallback) ────────────────────────
     openai_api_key: str | None = Field(
         default=None,
         validation_alias="OPENAI_API_KEY",
+    )
+
+    # ── Gemini (primary Travello AI engine) ───────────────────────────────────
+    # https://aistudio.google.com/app/apikey — set GEMINI_API_KEY in .env
+    gemini_api_key: str | None = Field(
+        default=None,
+        validation_alias="GEMINI_API_KEY",
     )
 
     # ── OpenWeatherMap (Phase 3) ────────────────────────────────────────────────
     openweather_api_key: str | None = Field(
         default=None,
         validation_alias="OPENWEATHER_API_KEY",
+    )
+    serpapi_key: str | None = Field(
+        default=None,
+        validation_alias="SERPAPI_KEY",
+    )
+
+    # ── Explorer third-party APIs (keys in .env) ─────────────────────────────
+    ticketmaster_api_key: str | None = Field(
+        default=None,
+        validation_alias="TICKETMASTER_API_KEY",
+    )
+    eventbrite_token: str | None = Field(
+        default=None,
+        validation_alias="EVENTBRITE_TOKEN",
+    )
+    yelp_api_key: str | None = Field(
+        default=None,
+        validation_alias="YELP_API_KEY",
+    )
+    youtube_api_key: str | None = Field(
+        default=None,
+        validation_alias="YOUTUBE_API_KEY",
+    )
+    google_places_api_key: str | None = Field(
+        default=None,
+        validation_alias="GOOGLE_PLACES_API_KEY",
+    )
+    apify_token: str | None = Field(
+        default=None,
+        validation_alias="APIFY_TOKEN",
+    )
+    apify_explorer_actor_id: str | None = Field(
+        default=None,
+        validation_alias="APIFY_EXPLORER_ACTOR_ID",
+        description="Optional Apify actor id for Explorer enrichment.",
     )
 
     # ── Stripe (Phase 3) ───────────────────────────────────────────────────────
@@ -93,7 +134,7 @@ class Settings(BaseSettings):
     # ── CORS ──────────────────────────────────────────────────────────────────
     # Stored as str so pydantic-settings does not json.loads before validation (breaks plain URLs).
     allowed_origins_raw: str = Field(
-        default="http://localhost:3000",
+        default="http://localhost:3000,http://127.0.0.1:3000",
         validation_alias="ALLOWED_ORIGINS",
     )
 
@@ -134,6 +175,20 @@ class Settings(BaseSettings):
     from_name: str = Field(
         default="Travello",
         validation_alias="FROM_NAME",
+    )
+
+    # ── Twilio (SMS / WhatsApp OTP) ───────────────────────────────────────────
+    twilio_account_sid: str | None = Field(
+        default=None,
+        validation_alias="TWILIO_ACCOUNT_SID",
+    )
+    twilio_auth_token: str | None = Field(
+        default=None,
+        validation_alias="TWILIO_AUTH_TOKEN",
+    )
+    twilio_phone_number: str | None = Field(
+        default=None,
+        validation_alias="TWILIO_PHONE_NUMBER",
     )
 
     # ── Email (verification, transactional) ─────────────────────────────────

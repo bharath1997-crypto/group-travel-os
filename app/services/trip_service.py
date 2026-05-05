@@ -98,6 +98,9 @@ class TripService:
         db.add(trip)
         db.commit()
         db.refresh(trip)
+        from app.services.notification_service import NotificationService
+
+        NotificationService.on_trip_created(db, trip, current_user)
         logger.info("Trip created: %s in group %s", trip.id, group_id)
         return trip
 

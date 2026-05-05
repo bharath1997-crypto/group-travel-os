@@ -1,5 +1,7 @@
 "use client";
 
+import { Check } from "lucide-react";
+
 const CORAL = "#E94560";
 
 export function Stepper({
@@ -48,7 +50,11 @@ export function Stepper({
                     : undefined
                 }
               >
-                {done ? "✓" : n}
+                {done ? (
+                  <Check className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                ) : (
+                  n
+                )}
               </button>
               {i < steps.length - 1 ? (
                 <div

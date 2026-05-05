@@ -27,6 +27,28 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
+import {
+  Banknote,
+  Bot,
+  Camera,
+  CheckCheck,
+  ChevronLeft,
+  FileText,
+  Image as ImageIcon,
+  Keyboard,
+  Link2,
+  MapPin,
+  Mic,
+  MoreVertical,
+  Music,
+  Paperclip,
+  Phone,
+  Pin,
+  Plane,
+  Smile,
+  Tag,
+  Video,
+} from "lucide-react";
 
 import { apiFetch } from "@/lib/api";
 
@@ -37,11 +59,24 @@ const CHAT_BG_DEFAULT = "#0A0F1E";
 const MUTED = "#64748B";
 const SLATE_TEXT = "#94A3B8";
 
-const EMOJI_GRID = [
-  "😀", "😂", "🥰", "😍", "😎", "🤔", "👍", "👎", "❤️", "🔥", "✨", "🎉",
-  "✈️", "🏖️", "🗺️", "📍", "💸", "🍽️", "🎵", "🏨", "🚗", "🌴", "🏔️", "🌊",
-  "💪", "✅", "⭐", "🎯", "🙏", "😭", "🤖", "💬", "📎", "🎤", "📷",
-];
+const QUICK_TEXT_CHIPS = [
+  "OK",
+  "Thanks",
+  "Hi",
+  "On my way",
+  "Yes",
+  "No",
+  "Sounds good",
+  "See you",
+  "Done",
+  "Maybe",
+  "Call me",
+  "Running late",
+  "Arrived",
+  "Stuck in traffic",
+] as const;
+
+const REACTION_CHIPS = ["+1", "Thanks", "Haha", "Fire", "Wow"] as const;
 
 type ChatThemePreset = {
   id: string;
@@ -234,9 +269,18 @@ function readReceiptIcon(
 ): ReactNode {
   if (!mine) return null;
   const othersRead = memberIds.some((id) => id !== senderId && readBy?.[id]);
+  const cls = "h-3 w-3";
   if (othersRead)
-    return <span className="text-[10px] text-sky-400">✓✓</span>;
-  return <span className="text-[10px] text-[#64748B]">✓✓</span>;
+    return (
+      <span className="inline-flex text-sky-400">
+        <CheckCheck className={cls} strokeWidth={1.5} aria-hidden />
+      </span>
+    );
+  return (
+    <span className="inline-flex text-[#64748B]">
+      <CheckCheck className={cls} strokeWidth={1.5} aria-hidden />
+    </span>
+  );
 }
 
 export default function GroupChatPage() {
@@ -538,7 +582,8 @@ export default function GroupChatPage() {
         const newRef = await push(messagesRef, payload);
         const key = newRef.key;
         await update(ref(db, `chats/${chatId}/info`), {
-          last_message: type === "text" ? content.slice(0, 80) : `📎 ${type}`,
+          last_message:
+            type === "text" ? content.slice(0, 80) : `Attachment (${type})`,
           last_message_time: Date.now(),
           last_message_sender: user.full_name || "You",
         });
@@ -766,7 +811,7 @@ export default function GroupChatPage() {
           const reader = new FileReader();
           reader.onloadend = () => {
             const dur = `${Math.floor(elapsed / 60000)}:${String(Math.floor((elapsed % 60000) / 1000)).padStart(2, "0")}`;
-            void sendMessage("audio", "🎤 Voice message", {
+            void sendMessage("audio", "Voice message", {
               url: reader.result,
               duration: dur,
             });
@@ -892,7 +937,7 @@ export default function GroupChatPage() {
           className="text-xl text-white/90"
           onClick={() => router.push("/travel-hub")}
         >
-          ←
+          <ChevronLeft className="h-6 w-6" strokeWidth={1.5} />
         </button>
         <button
           type="button"
@@ -919,7 +964,7 @@ export default function GroupChatPage() {
             className="text-lg"
             onClick={() => showToast("Video call coming soon")}
           >
-            📹
+            <Video className="h-5 w-5" strokeWidth={1.5} />
           </button>
           <button
             type="button"
@@ -927,7 +972,7 @@ export default function GroupChatPage() {
             className="text-lg"
             onClick={() => showToast("Voice call coming soon")}
           >
-            📞
+            <Phone className="h-5 w-5" strokeWidth={1.5} />
           </button>
           <div className="relative" ref={menuRef}>
             <button
@@ -936,7 +981,7 @@ export default function GroupChatPage() {
               aria-label="Menu"
               onClick={() => setMenuOpen((o) => !o)}
             >
-              ⋮
+              <MoreVertical className="h-5 w-5" strokeWidth={1.5} />
             </button>
             {menuOpen ? (
               <div
@@ -1028,7 +1073,7 @@ export default function GroupChatPage() {
             style={{ color: SLATE_TEXT }}
             onClick={jumpToPinned}
           >
-            <span>📌</span>
+            <Pin className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
             <span className="truncate">&quot;{pinned.preview}&quot;</span>
           </button>
         ) : null}
@@ -1126,16 +1171,16 @@ export default function GroupChatPage() {
         >
           {emojiPanelOpen ? (
             <div
-              className="mb-2 grid max-h-[240px] shrink-0 grid-cols-8 gap-1 overflow-y-auto rounded-xl border p-2"
+              className="mb-2 grid max-h-[240px] shrink-0 grid-cols-4 gap-1 overflow-y-auto rounded-xl border p-2 sm:grid-cols-6"
               style={{ borderColor: BORDER, background: NAVY_TOP }}
             >
-              {EMOJI_GRID.map((em) => (
+              {QUICK_TEXT_CHIPS.map((em) => (
                 <button
                   key={em}
                   type="button"
-                  className="rounded p-1 text-2xl hover:bg-white/10"
+                  className="rounded px-1.5 py-1 text-[11px] text-white/90 hover:bg-white/10"
                   onClick={() => {
-                    setMessageText((p) => p + em);
+                    setMessageText((p) => (p ? `${p} ${em}` : em));
                     setEmojiPanelOpen(false);
                   }}
                 >
@@ -1144,10 +1189,11 @@ export default function GroupChatPage() {
               ))}
               <button
                 type="button"
-                className="col-span-8 mt-1 rounded-lg py-2 text-center text-xs text-[#94A3B8]"
+                className="col-span-full mt-1 flex items-center justify-center gap-1 rounded-lg py-2 text-center text-xs text-[#94A3B8]"
                 onClick={() => setEmojiPanelOpen(false)}
               >
-                ⌨ Show keyboard
+                <Keyboard className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                Show keyboard
               </button>
             </div>
           ) : null}
@@ -1166,7 +1212,7 @@ export default function GroupChatPage() {
               onLocation={() => {
                 navigator.geolocation.getCurrentPosition(
                   (pos) =>
-                    void sendMessage("location", "📍 Shared location", {
+                    void sendMessage("location", "Shared location", {
                       lat: pos.coords.latitude,
                       lon: pos.coords.longitude,
                     }),
@@ -1198,7 +1244,7 @@ export default function GroupChatPage() {
                   setAttachOpen(false);
                 }}
               >
-                😊
+                <Smile className="h-5 w-5 text-[#94A3B8]" strokeWidth={1.5} />
               </button>
               <button
                 type="button"
@@ -1208,7 +1254,7 @@ export default function GroupChatPage() {
                   setEmojiPanelOpen(false);
                 }}
               >
-                📎
+                <Paperclip className="h-5 w-5 text-[#94A3B8]" strokeWidth={1.5} />
               </button>
             </div>
             <div className="relative min-w-0 flex-1">
@@ -1247,8 +1293,8 @@ export default function GroupChatPage() {
               >
                 ₹
               </button>
-              <label className="cursor-pointer text-xl">
-                📷
+              <label className="inline-flex cursor-pointer items-center text-xl text-[#94A3B8]">
+                <Camera className="h-5 w-5" strokeWidth={1.5} />
                 <input
                   type="file"
                   accept="image/*"
@@ -1270,7 +1316,7 @@ export default function GroupChatPage() {
                 onPointerUp={onVoicePointerUp}
                 onPointerLeave={onVoicePointerUp}
               >
-                🎤
+                <Mic className="h-5 w-5 text-[#94A3B8]" strokeWidth={1.5} />
               </button>
             </div>
           </div>
@@ -1285,8 +1331,8 @@ export default function GroupChatPage() {
             style={{ background: NAVY_TOP }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button type="button" className="mb-4 text-lg" onClick={() => setGroupInfoOpen(false)}>
-              ←
+            <button type="button" className="mb-4 inline-flex text-lg text-white" onClick={() => setGroupInfoOpen(false)}>
+              <ChevronLeft className="h-6 w-6" strokeWidth={1.5} />
             </button>
             <div className="mb-4 flex flex-col items-center gap-2">
               <span
@@ -1657,11 +1703,11 @@ export default function GroupChatPage() {
       {reactPickerFor ? (
         <div className="fixed inset-0 z-[135] flex items-end justify-center bg-black/40" onClick={() => setReactPickerFor(null)}>
           <div className="mb-8 flex gap-2 rounded-full bg-[#1E293B] px-4 py-2" onClick={(e) => e.stopPropagation()}>
-            {["👍", "❤️", "😂", "🔥", "🎉"].map((em) => (
+            {REACTION_CHIPS.map((em) => (
               <button
                 key={em}
                 type="button"
-                className="text-2xl"
+                className="rounded-full px-3 py-1.5 text-xs font-medium text-white/90"
                 onClick={() => {
                   if (!db || !user) return;
                   const msg = messages.find((x) => x.id === reactPickerFor);
@@ -1867,7 +1913,10 @@ function MessageRow({
           style={{ background: "#1E293B", border: "0.5px solid #22C55E" }}
           onClick={onExpenseClick}
         >
-          <span className="text-[11px] font-semibold text-[#22C55E]">💰 Expense Split</span>
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#22C55E]">
+            <Banknote className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+            Expense Split
+          </span>
           <p className="mt-1 text-[15px] font-bold text-white">
             {title} · ₹{total.toFixed(2)}
           </p>
@@ -1898,7 +1947,7 @@ function MessageRow({
       <div className={`mb-2 flex w-full ${mine ? "justify-end" : "justify-start"}`}>
         <div className="max-w-[85%] rounded-xl border border-[#334155] bg-[#1E293B] p-3">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">✈️</span>
+            <Plane className="h-7 w-7 shrink-0 text-white" strokeWidth={1.5} aria-hidden />
             <div>
               <p className="text-sm font-bold">Booking confirmed</p>
               <p className="text-xs" style={{ color: MUTED }}>
@@ -1954,8 +2003,9 @@ function MessageRow({
           }}
         >
           {isHashCommand ? (
-            <span className="mb-1 inline-block rounded-full bg-indigo-600/40 px-2 py-0.5 text-[7px] font-bold uppercase tracking-wide text-indigo-200">
-              🤖 AI command
+            <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-indigo-600/40 px-2 py-0.5 text-[7px] font-bold uppercase tracking-wide text-indigo-200">
+              <Bot className="h-2.5 w-2.5" strokeWidth={1.5} aria-hidden />
+              AI command
             </span>
           ) : null}
           {msg.type === "text" || msg.type === "link" ? (
@@ -1982,18 +2032,27 @@ function MessageRow({
             />
           ) : null}
           {msg.type === "location" ? (
-            <p className="text-sm">
-              📍 {msg.text}{" "}
-              <span className="text-[11px]" style={{ color: MUTED }}>
-                {meta?.lat != null ? `${meta.lat}, ${meta.lon}` : ""}
+            <p className="flex items-start gap-1.5 text-sm">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+              <span>
+                {msg.text}{" "}
+                <span className="text-[11px]" style={{ color: MUTED }}>
+                  {meta?.lat != null ? `${meta.lat}, ${meta.lon}` : ""}
+                </span>
               </span>
             </p>
           ) : null}
           {msg.type === "document" ? (
-            <p className="text-sm">📄 {msg.text}</p>
+            <p className="flex items-center gap-1.5 text-sm">
+              <FileText className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+              {msg.text}
+            </p>
           ) : null}
           {msg.type === "audio" ? (
-            <p className="text-sm">🎤 Voice · {String(meta?.duration ?? "")}</p>
+            <p className="flex items-center gap-1.5 text-sm">
+              <Mic className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+              Voice · {String(meta?.duration ?? "")}
+            </p>
           ) : null}
           {isHashCommand && meta?.ai_reply ? (
             <div
@@ -2061,7 +2120,9 @@ function AttachSheet({
     >
       <div className="grid grid-cols-3 gap-4 text-center text-[11px]">
         <label className="cursor-pointer">
-          <span className="mb-1 block text-2xl">📸</span>
+          <span className="mb-1 flex justify-center text-[#94A3B8]">
+            <ImageIcon className="h-7 w-7" strokeWidth={1.5} aria-hidden />
+          </span>
           Photo/Camera
           <input
             ref={photoRef}
@@ -2077,7 +2138,9 @@ function AttachSheet({
           />
         </label>
         <label className="cursor-pointer">
-          <span className="mb-1 block text-2xl">📄</span>
+          <span className="mb-1 flex justify-center text-[#94A3B8]">
+            <FileText className="h-7 w-7" strokeWidth={1.5} aria-hidden />
+          </span>
           Document
           <input
             ref={docRef}
@@ -2091,19 +2154,27 @@ function AttachSheet({
           />
         </label>
         <button type="button" onClick={() => { onLocation(); onClose(); }}>
-          <span className="mb-1 block text-2xl">📍</span>
+          <span className="mb-1 flex justify-center text-[#94A3B8]">
+            <MapPin className="h-7 w-7" strokeWidth={1.5} aria-hidden />
+          </span>
           Location
         </button>
         <button type="button" onClick={() => { onAudio(); }}>
-          <span className="mb-1 block text-2xl">🎵</span>
+          <span className="mb-1 flex justify-center text-[#94A3B8]">
+            <Music className="h-7 w-7" strokeWidth={1.5} aria-hidden />
+          </span>
           Audio
         </button>
         <button type="button" onClick={() => { onSticker(); }}>
-          <span className="mb-1 block text-2xl">🏷</span>
+          <span className="mb-1 flex justify-center text-[#94A3B8]">
+            <Tag className="h-7 w-7" strokeWidth={1.5} aria-hidden />
+          </span>
           Sticker
         </button>
         <button type="button" onClick={() => { onLink(); }}>
-          <span className="mb-1 block text-2xl">🔗</span>
+          <span className="mb-1 flex justify-center text-[#94A3B8]">
+            <Link2 className="h-7 w-7" strokeWidth={1.5} aria-hidden />
+          </span>
           Link
         </button>
       </div>

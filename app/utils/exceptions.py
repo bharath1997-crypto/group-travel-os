@@ -96,6 +96,14 @@ class AppException:
         )
 
     @staticmethod
+    def rate_limit(detail: str = "Too many Explorer searches. Try again later.") -> None:
+        """429 — client exceeded a rate budget (Explorer search quota)."""
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=detail,
+        )
+
+    @staticmethod
     def internal(detail: str = "An unexpected error occurred") -> None:
         """500 — something went wrong server-side that should never happen."""
         raise HTTPException(

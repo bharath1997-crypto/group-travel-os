@@ -13,6 +13,7 @@ import {
 
 import { LoadingSkeleton, TabSwitcher } from "@/components/trips";
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
+import { getPreferredCurrency } from "@/lib/user-locale";
 
 import "leaflet/dist/leaflet.css";
 
@@ -153,6 +154,12 @@ type LocationOut = {
   category: string | null;
 };
 
+type CurrencyRow = {
+  code: string;
+  name: string;
+  symbol: string;
+};
+
 type ParsedTripDesc = {
   v?: number;
   type?: string;
@@ -237,7 +244,9 @@ export default function TripDetailPage() {
   const [expFormOpen, setExpFormOpen] = useState(false);
   const [expDesc, setExpDesc] = useState("");
   const [expAmount, setExpAmount] = useState("");
+  const [expCurrency, setExpCurrency] = useState("INR");
   const [expSplit, setExpSplit] = useState<string[]>([]);
+  const [currencies, setCurrencies] = useState<CurrencyRow[]>([]);
   const [expSaving, setExpSaving] = useState(false);
   const [pollOpen, setPollOpen] = useState(false);
   const [pollQ, setPollQ] = useState("");
@@ -284,7 +293,7 @@ export default function TripDetailPage() {
     setTrip(rTrip.data);
     setEditTitle(rTrip.data.title);
 
-    const [rG, rE, rB, rP, rL, rMe, rPins] = await Promise.all([
+    const [rG, rE, rB, rP, rL, rMe, rPins, rCur] = await Promise.all([
       apiFetchWithStatus<GroupOut>(`/groups/${rTrip.data.group_id}`),
       apiFetchWithStatus<ExpenseOut[]>(`/trips/${id}/expenses`),
       apiFetchWithStatus<BalanceSummaryItem[]>(
@@ -302,6 +311,7 @@ export default function TripDetailPage() {
           flag_type: string;
         }[]
       >("/pins"),
+      apiFetchWithStatus<CurrencyRow[]>("/currencies"),
     ]);
     if (
       [rG, rE, rB, rP, rL, rMe].some((x) => x.status === 401)
@@ -312,6 +322,7 @@ export default function TripDetailPage() {
     }
     if (rG.data) setGroup(rG.data);
     setExpenses(rE.data ?? []);
+    if (rCur.data?.length) setCurrencies(rCur.data);
     setBalances(rB.data ?? []);
     setPolls(rP.data ?? []);
     setLocations(rL.data ?? []);
@@ -496,7 +507,8 @@ export default function TripDetailPage() {
         body: JSON.stringify({
           description: expDesc.trim().slice(0, 300),
           amount: amt,
-          currency: "INR",
+          currency:
+            expCurrency.trim().toUpperCase().slice(0, 10) || "INR",
           split_with: expSplit,
         }),
       });
@@ -808,6 +820,7 @@ export default function TripDetailPage() {
             onAdd={() => {
               setExpFormOpen(true);
               setExpSplit(members.map((m) => m.user_id));
+              setExpCurrency(getPreferredCurrency());
             }}
             expFormOpen={expFormOpen}
             setExpFormOpen={setExpFormOpen}
@@ -815,6 +828,9 @@ export default function TripDetailPage() {
             setExpDesc={setExpDesc}
             expAmount={expAmount}
             setExpAmount={setExpAmount}
+            expCurrency={expCurrency}
+            setExpCurrency={setExpCurrency}
+            currencies={currencies}
             expSplit={expSplit}
             setExpSplit={setExpSplit}
             members={members}
@@ -1147,6 +1163,9 @@ function ExpensesTab({
   setExpDesc,
   expAmount,
   setExpAmount,
+  expCurrency,
+  setExpCurrency,
+  currencies,
   expSplit,
   setExpSplit,
   members,
@@ -1166,6 +1185,9 @@ function ExpensesTab({
   setExpDesc: (s: string) => void;
   expAmount: string;
   setExpAmount: (s: string) => void;
+  expCurrency: string;
+  setExpCurrency: (s: string) => void;
+  currencies: CurrencyRow[];
   expSplit: string[];
   setExpSplit: (u: string[]) => void;
   members: GroupMemberOut[];
@@ -1194,6 +1216,9 @@ function ExpensesTab({
     }
     return m;
   }, [expenses]);
+
+  const expAmountSymbol =
+    currencies.find((c) => c.code === expCurrency)?.symbol ?? expCurrency;
 
   return (
     <div className="space-y-4">
@@ -1264,11 +1289,28 @@ function ExpensesTab({
             className="w-full rounded-xl border px-3 py-2 text-sm"
             style={{ borderColor: BORDER }}
           />
+          {currencies.length > 0 ? (
+            <label className="mt-2 block text-xs font-bold text-[#6C757D]">
+              Currency
+              <select
+                value={expCurrency}
+                onChange={(e) => setExpCurrency(e.target.value)}
+                className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
+                style={{ borderColor: BORDER }}
+              >
+                {currencies.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.code} — {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <input
             type="number"
             value={expAmount}
             onChange={(e) => setExpAmount(e.target.value)}
-            placeholder="Amount ₹"
+            placeholder={`Amount (${expAmountSymbol})`}
             className="mt-2 w-full rounded-xl border px-3 py-2 text-sm"
             style={{ borderColor: BORDER }}
           />
@@ -1322,7 +1364,7 @@ function ExpensesTab({
               >
                 <span className="line-clamp-2">{e.description}</span>
                 <span className="shrink-0 font-semibold">
-                  ₹{e.amount.toFixed(0)}
+                  {e.currency} {e.amount.toFixed(0)}
                 </span>
               </li>
             ))}

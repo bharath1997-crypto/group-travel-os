@@ -137,6 +137,10 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(groups_router, prefix="/api/v1")
 
+    from app.routes.connect import router as connect_router
+
+    app.include_router(connect_router, prefix="/api/v1")
+
     # Step 15 — Trips
     from app.routes.trips import group_trips_router, trips_router
 
@@ -156,9 +160,10 @@ def _register_routes(app: FastAPI) -> None:
     app.include_router(polls_router, prefix="/api/v1")
 
     # Step 22 — Expenses
-    from app.routes.expenses import expenses_router
+    from app.routes.expenses import currencies_router, expenses_router
 
     app.include_router(expenses_router, prefix="/api/v1")
+    app.include_router(currencies_router, prefix="/api/v1")
 
     from app.routes.location_shares import router as location_shares_router
 
@@ -196,6 +201,32 @@ def _register_routes(app: FastAPI) -> None:
     from app.routes.ai_assistant import router as ai_assistant_router
 
     app.include_router(ai_assistant_router, prefix="/api/v1")
+
+    from app.routes.notifications import router as notifications_router
+
+    app.include_router(notifications_router, prefix="/api/v1")
+
+    from app.routes.invitations import router as invitations_router
+
+    app.include_router(invitations_router, prefix="/api/v1")
+
+    from app.routes.users import router as users_router
+
+    app.include_router(users_router, prefix="/api/v1")
+
+    from app.routes.social import router as social_router
+
+    app.include_router(social_router, prefix="/api/v1")
+
+    from app.routes.app_settings import router as app_settings_router
+
+    app.include_router(app_settings_router, prefix="/api/v1")
+
+    from app.routers.explorer import router as explorer_router
+    from app.routers.explorer import wayra_router
+
+    app.include_router(explorer_router, prefix="/api/v1", tags=["explorer"])
+    app.include_router(wayra_router, prefix="/api/v1", tags=["wayra"])
 
 
 # ── App instance ──────────────────────────────────────────────────────────────
