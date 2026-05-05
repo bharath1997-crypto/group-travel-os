@@ -185,6 +185,8 @@ def _find_or_create_from_oauth(
             select(User).where(User.google_sub == google_sub)
         ).scalar_one_or_none()
         if u:
+            if google_sub and avatar_url:
+                u.profile_picture = avatar_url
             if avatar_url and not u.avatar_url:
                 u.avatar_url = avatar_url
             u.is_verified = True
@@ -212,6 +214,8 @@ def _find_or_create_from_oauth(
             AppException.conflict("This email is linked to another Facebook account")
         if google_sub:
             u.google_sub = google_sub
+            if avatar_url:
+                u.profile_picture = avatar_url
         if facebook_sub:
             u.facebook_sub = facebook_sub
         u.is_verified = True
@@ -234,6 +238,7 @@ def _find_or_create_from_oauth(
         facebook_sub=facebook_sub,
         is_verified=False,
         avatar_url=avatar_url,
+        profile_picture=avatar_url if google_sub and avatar_url else None,
     )
     db.add(u)
     db.commit()

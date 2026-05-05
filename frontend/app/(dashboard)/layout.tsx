@@ -1,39 +1,90 @@
 "use client";
 
 import { AIAssistantSidecar } from "@/components/ai/AIAssistantSidecar";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+import {
+  IconBanknote,
+  IconBarChart,
+  IconBell,
+  IconCheck,
+  IconCloudSun,
+  IconCompass,
+  IconLayoutDashboard,
+  IconLive,
+  IconLogout,
+  IconMap,
+  IconMenu,
+  IconMoreHorizontal,
+  IconPlane,
+  IconSettings,
+  IconUser,
+  IconUsers,
+  type IconComponent,
+} from "@/components/icons";
 
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { VerificationBanner } from "@/components/VerificationBanner";
+import TravelloLogo from "@/components/TravelloLogo";
 import {
   DashboardUserProvider,
   useDashboardUser,
 } from "@/contexts/dashboard-user-context";
-import { apiFetch } from "@/lib/api";
+import { API_BASE, apiFetch } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
 
 const CORAL = "#E94560";
 
-type PlanOut = {
-  plan: string;
-  status: string;
-  current_period_end: string | null;
+const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
+
+/** GET /auth/me fields used for sidebar photo + name row (fetch uses gt_token in layout only). */
+type SidebarAuthMe = {
+  full_name?: string | null;
+  username?: string | null;
+  avatar_url?: string | null;
+  google_picture?: string | null;
+  facebook_picture?: string | null;
+  subscription_tier?: string | null;
 };
 
-type NavBadges = {
-  has_unread_messages?: boolean;
-  unread_notifications?: number;
-};
+function pickProfilePicUrl(me: SidebarAuthMe | null): string | null {
+  if (!me) return null;
+  const a = me.avatar_url?.trim();
+  if (a) return a;
+  const g = me.google_picture?.trim();
+  if (g) return g;
+  const f = me.facebook_picture?.trim();
+  if (f) return f;
+  return null;
+}
 
-function dicebearLoreleiAvatarSrc(userId: string | null | undefined): string {
-  const seed =
-    userId && userId.length > 0 ? userId : "travello-user";
-  return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;
+function initialsFromFullName(name: string | null | undefined): string {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) {
+    const w = parts[0]!;
+    return w.length >= 2
+      ? (w[0]! + w[1]!).toUpperCase()
+      : w[0]!.toUpperCase();
+  }
+  const first = parts[0]!;
+  const last = parts[parts.length - 1]!;
+  return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase() || "?";
+}
+
+function deterministicAvatarBg(name: string): string {
+  const s = name.trim() || "?";
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    hash = s.charCodeAt(i) + ((hash << 5) - hash);
+    hash |= 0;
+  }
+  const h = Math.abs(hash) % 360;
+  return `hsl(${h} 48% 42%)`;
 }
 
 function formatDisplayName(full: string | null | undefined): string {
@@ -59,74 +110,74 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function IconDoor() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M4 4h9a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z" />
-      <circle cx="10" cy="12" r="1" fill="currentColor" stroke="none" />
-      <path d="M16 12h4M18 10l2 2-2 2" />
-    </svg>
+/** Bottom nav "Explore" and More sheet targets */
+function isExploreNavActive(pathname: string): boolean {
+  return pathname === "/explorer" || pathname.startsWith("/explorer/");
+}
+
+const MOBILE_MORE_LINKS: {
+  href: string;
+  label: string;
+  Icon: IconComponent;
+}[] = [
+  { href: "/split-activities", label: "Split Activities", Icon: IconBanknote },
+  { href: "/map", label: "Map", Icon: IconMap },
+  { href: "/stats", label: "Stats", Icon: IconBarChart },
+  { href: "/notifications", label: "Notifications", Icon: IconBell },
+  { href: "/weather", label: "Weather", Icon: IconCloudSun },
+  { href: "/settings", label: "Settings", Icon: IconSettings },
+  { href: "/profile", label: "Profile", Icon: IconUser },
+];
+
+function isMoreNavActive(pathname: string): boolean {
+  return MOBILE_MORE_LINKS.some(
+    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
 }
 
-function BellIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-    </svg>
-  );
+/** All six verifications from GET /auth/me — not profile_completion_filled. */
+function isProfileFullyComplete(
+  u: {
+    email_verified?: boolean;
+    is_verified?: boolean;
+    phone?: string | null;
+    google_sub?: string | null;
+    whatsapp_verified?: boolean;
+    instagram_handle?: string | null;
+    username?: string | null;
+  } | null | undefined,
+): boolean {
+  if (!u) return false;
+  const emailOk = u.email_verified === true || u.is_verified === true;
+  const phoneOk = Boolean(u.phone && String(u.phone).trim());
+  const googleOk = Boolean(u.google_sub && String(u.google_sub).trim());
+  const waOk = u.whatsapp_verified === true;
+  const igOk = Boolean(u.instagram_handle && String(u.instagram_handle).trim());
+  const userOk = Boolean(u.username && String(u.username).trim());
+  return emailOk && phoneOk && googleOk && waOk && igOk && userOk;
 }
 
 const MAIN_NAV: {
   href: string;
   label: string;
-  emoji: string;
+  Icon: IconComponent;
   kind?: "notifications";
 }[] = [
-  { href: "/dashboard", label: "Dashboard", emoji: "🏠" },
-  { href: "/trips", label: "Trips", emoji: "✈️" },
-  { href: "/travel-hub", label: "Travel Hub", emoji: "👥" },
-  { href: "/split-activities", label: "Split Activities", emoji: "💸" },
-  { href: "/live", label: "Live", emoji: "📍" },
-  { href: "/feed", label: "Explore", emoji: "🧭" },
-  { href: "/map", label: "Map", emoji: "🗺️" },
-  { href: "/weather", label: "Weather", emoji: "🌤️" },
-  { href: "/stats", label: "Stats", emoji: "📊" },
+  { href: "/dashboard", label: "Dashboard", Icon: IconLayoutDashboard },
+  { href: "/trips", label: "Trips", Icon: IconPlane },
+  { href: "/travel-hub", label: "Connect", Icon: IconUsers },
+  { href: "/split-activities", label: "Split Activities", Icon: IconBanknote },
+  { href: "/live", label: "Live", Icon: IconLive },
+  { href: "/explorer", label: "Explore", Icon: IconCompass },
+  { href: "/map", label: "Map", Icon: IconMap },
+  { href: "/weather", label: "Weather", Icon: IconCloudSun },
+  { href: "/stats", label: "Stats", Icon: IconBarChart },
   {
     href: "/notifications",
     label: "Notifications",
-    emoji: "🔔",
+    Icon: IconBell,
     kind: "notifications",
   },
-];
-
-const MOBILE_NAV: { href: string; label: string; emoji: string }[] = [
-  { href: "/dashboard", label: "Home", emoji: "🏠" },
-  { href: "/trips", label: "Trips", emoji: "✈️" },
-  { href: "/travel-hub", label: "Travel Hub", emoji: "👥" },
-  { href: "/map", label: "Map", emoji: "🗺️" },
-  { href: "/profile", label: "Profile", emoji: "👤" },
 ];
 
 const PRIMARY_NAV = MAIN_NAV.slice(0, -1);
@@ -135,7 +186,7 @@ const NOTIF_NAV = MAIN_NAV[MAIN_NAV.length - 1]!;
 function SidebarNavLink({
   href,
   label,
-  emoji,
+  Icon,
   active,
   notifCount,
   kind,
@@ -144,7 +195,7 @@ function SidebarNavLink({
 }: {
   href: string;
   label: string;
-  emoji: string;
+  Icon: IconComponent;
   active: boolean;
   notifCount: number;
   kind?: "notifications";
@@ -157,17 +208,17 @@ function SidebarNavLink({
       title={iconOnly ? label : undefined}
       onClick={() => onNavigate?.()}
       className={[
-        "relative flex items-center gap-2.5 rounded-lg border-l-[3px] py-[9px] text-[13px] font-medium transition-all duration-300 ease-in-out",
+        "relative flex items-center gap-2.5 rounded-lg border-l-2 py-[9px] text-[13px] transition-all duration-300 ease-in-out",
         iconOnly
           ? "justify-center px-1 pl-1 pr-1"
           : "pl-[9px] pr-3",
         active
-          ? "border-white bg-[#E94560] text-white"
-          : "border-transparent text-[rgba(255,255,255,0.65)] hover:bg-[rgba(255,255,255,0.1)] hover:text-white",
+          ? "border-[#E94560] bg-[#F8F9FA] font-medium text-[#0F3460]"
+          : "border-transparent font-medium text-[rgba(255,255,255,0.65)] hover:bg-[rgba(255,255,255,0.1)] hover:text-white",
       ].join(" ")}
     >
-      <span className="inline-flex w-5 shrink-0 justify-center text-base leading-none">
-        {emoji}
+      <span className="inline-flex w-5 shrink-0 justify-center leading-none">
+        <Icon size={20} darkBg active={active} className="shrink-0" aria-hidden />
       </span>
       <span
         className={
@@ -184,7 +235,9 @@ function SidebarNavLink({
         </span>
       ) : null}
       {iconOnly && kind === "notifications" && notifCount > 0 ? (
-        <span className="absolute right-0.5 top-1 h-1.5 w-1.5 rounded-full bg-red-500 ring-1 ring-[#0F3460]" />
+        <span className="absolute -right-1 -top-1 flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold leading-none text-white ring-2 ring-[#0F3460]">
+          {notifCount > 99 ? "99+" : notifCount}
+        </span>
       ) : null}
     </Link>
   );
@@ -220,17 +273,131 @@ function PlanBadgeFooter({ plan }: { plan: string | null }) {
   );
 }
 
+const SIDEBAR_AVATAR_IMG_STYLE: CSSProperties = {
+  width: 40,
+  height: 40,
+  borderRadius: "50%",
+  objectFit: "cover",
+  border: "2px solid rgba(255,255,255,0.2)",
+};
+
+function SidebarProfileAvatar({
+  profilePicUrl,
+  displayName,
+  profileComplete,
+}: {
+  profilePicUrl: string | null;
+  displayName: string;
+  profileComplete: boolean;
+}) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const showInitials = !profilePicUrl || imgFailed;
+  const initials = initialsFromFullName(displayName);
+  const bg = deterministicAvatarBg(displayName);
+
+  const ringClass = profileComplete
+    ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0F3460]"
+    : "ring-2 ring-red-500 ring-offset-2 ring-offset-[#0F3460]";
+
+  return (
+    <span className="relative inline-flex shrink-0">
+      {showInitials ? (
+        <span
+          className={`flex h-10 w-10 items-center justify-center rounded-full border-2 border-[rgba(255,255,255,0.2)] text-xs font-bold text-white ${ringClass}`}
+          style={{ background: bg }}
+          aria-hidden
+        >
+          {initials}
+        </span>
+      ) : (
+        <span className={`relative inline-flex rounded-full ${ringClass}`}>
+          <img
+            src={profilePicUrl!}
+            alt={displayName}
+            style={SIDEBAR_AVATAR_IMG_STYLE}
+            onError={() => setImgFailed(true)}
+          />
+        </span>
+      )}
+      {profileComplete ? (
+        <span
+          className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-[#0F3460]"
+          aria-hidden
+        >
+          <IconCheck size={10} darkBg />
+        </span>
+      ) : (
+        <span
+          className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-red-500 bg-[#0F3460] ring-2 ring-[#0F3460]"
+          aria-hidden
+        />
+      )}
+    </span>
+  );
+}
+
+function SidebarTierLine({
+  loading,
+  subscriptionTier,
+}: {
+  loading: boolean;
+  subscriptionTier: string | null | undefined;
+}) {
+  if (loading) {
+    return (
+      <span className="inline-block h-4 w-14 animate-pulse rounded-full bg-[rgba(255,255,255,0.15)]" />
+    );
+  }
+  const tier = subscriptionTier?.trim().toLowerCase() || "free";
+  return <PlanBadgeFooter plan={tier} />;
+}
+
 function DashboardChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading } = useDashboardUser();
+  const hideAssistantSidecar = pathname.startsWith("/travel-hub");
 
-  const [plan, setPlan] = useState<PlanOut | null>(null);
-  const [planLoading, setPlanLoading] = useState(true);
-  const [notifCount, setNotifCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [isMdUp, setIsMdUp] = useState(false);
   const [isLgUp, setIsLgUp] = useState(false);
+  const [sidebarMe, setSidebarMe] = useState<SidebarAuthMe | null>(null);
+  const [sidebarProfileLoading, setSidebarProfileLoading] = useState(true);
+  const [notifCount, setNotifCount] = useState(0);
+
+  useEffect(() => {
+    let c = false;
+    (async () => {
+      setSidebarProfileLoading(true);
+      try {
+        const token =
+          typeof window !== "undefined"
+            ? window.localStorage.getItem("gt_token")
+            : null;
+        if (!token?.trim()) {
+          if (!c) {
+            setSidebarMe(null);
+            setSidebarProfileLoading(false);
+          }
+          return;
+        }
+        const res = await fetch(`${API_BASE}/auth/me`, {
+          headers: { Authorization: `Bearer ${token.trim()}` },
+        });
+        if (!res.ok) throw new Error("auth/me failed");
+        const data = (await res.json()) as SidebarAuthMe;
+        if (!c) setSidebarMe(data);
+      } catch {
+        if (!c) setSidebarMe(null);
+      } finally {
+        if (!c) setSidebarProfileLoading(false);
+      }
+    })();
+    return () => {
+      c = true;
+    };
+  }, []);
 
   useEffect(() => {
     const mqMd = window.matchMedia("(min-width: 768px)");
@@ -256,28 +423,38 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     router.push("/login");
   }
 
-  const profileFilled = user?.profile_completion_filled ?? 0;
-  const profileTotal = user?.profile_completion_total ?? 6;
-  const profileComplete = profileFilled >= profileTotal;
-  const showProfileBanner =
-    Boolean(user) &&
-    !profileComplete &&
-    pathname !== "/complete-profile";
+  const profileComplete = isProfileFullyComplete(user);
+  const profileTarget = "/profile";
+
+  const sidebarDisplayName = formatDisplayName(
+    sidebarMe?.full_name ?? user?.full_name,
+  );
+  const sidebarPicUrl = useMemo(
+    () => pickProfilePicUrl(sidebarMe),
+    [sidebarMe],
+  );
+  const uname = sidebarMe?.username?.trim();
+  const sidebarPrimaryLabel =
+    uname && uname.length > 0 ? `@${uname}` : sidebarDisplayName;
 
   const isMapPage = pathname === "/map";
 
   useEffect(() => {
+    setMoreSheetOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
     if (loading || !user) return;
     let c = false;
-    setPlanLoading(true);
     (async () => {
       try {
-        const p = await apiFetch<PlanOut>("/subscriptions/me");
-        if (!c) setPlan(p);
+        const u = await apiFetch<{ count: number }>(
+          "/notifications/unread-count",
+        );
+        if (c) return;
+        setNotifCount(Math.max(0, Math.floor(u.count)));
       } catch {
-        if (!c) setPlan(null);
-      } finally {
-        if (!c) setPlanLoading(false);
+        /* keep previous count */
       }
     })();
     return () => {
@@ -286,23 +463,15 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   }, [loading, user]);
 
   useEffect(() => {
-    if (loading || !user) return;
-    let c = false;
-    (async () => {
-      try {
-        const b = await apiFetch<NavBadges>("/users/me/nav-badges");
-        if (c) return;
-        setNotifCount(
-          Math.max(0, Math.floor(b.unread_notifications ?? 0)),
-        );
-      } catch {
-        /* Optional endpoint — keep defaults */
+    function onUnread(e: Event) {
+      const ce = e as CustomEvent<{ count?: number }>;
+      if (typeof ce.detail?.count === "number") {
+        setNotifCount(Math.max(0, Math.floor(ce.detail.count)));
       }
-    })();
-    return () => {
-      c = true;
-    };
-  }, [loading, user]);
+    }
+    window.addEventListener(GT_NOTIFICATIONS_UNREAD, onUnread);
+    return () => window.removeEventListener(GT_NOTIFICATIONS_UNREAD, onUnread);
+  }, []);
 
   if (loading) {
     return (
@@ -329,17 +498,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             href="/dashboard"
             className="flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/50"
           >
-            <Image
-              src="/logo-dark.svg"
-              alt=""
-              width={36}
-              height={36}
-              className="h-9 w-9 shrink-0 rounded-md object-contain"
-              priority
-            />
-            <span className="text-lg font-bold tracking-tight text-white">
-              travello
-            </span>
+            <TravelloLogo variant="full" size="sm" animated />
           </Link>
         </div>
 
@@ -349,7 +508,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               key={item.href}
               href={item.href}
               label={item.label}
-              emoji={item.emoji}
+              Icon={item.Icon}
               active={isActive(pathname, item.href)}
               notifCount={notifCount}
             />
@@ -361,7 +520,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           <SidebarNavLink
             href={NOTIF_NAV.href}
             label={NOTIF_NAV.label}
-            emoji={NOTIF_NAV.emoji}
+            Icon={NOTIF_NAV.Icon}
             active={isActive(pathname, NOTIF_NAV.href)}
             notifCount={notifCount}
             kind="notifications"
@@ -373,32 +532,31 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             <div
               role="button"
               tabIndex={0}
+              title={!profileComplete ? "Complete profile" : undefined}
               className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg p-1 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
-              onClick={() => router.push("/profile")}
+              onClick={() => router.push(profileTarget)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  router.push("/profile");
+                  router.push(profileTarget);
                 }
               }}
             >
-              <img
-                src={dicebearLoreleiAvatarSrc(user?.id)}
-                alt=""
-                width={34}
-                height={34}
-                className="h-[34px] w-[34px] shrink-0 rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover"
+              <SidebarProfileAvatar
+                key={sidebarPicUrl ?? "no-photo"}
+                profilePicUrl={sidebarPicUrl}
+                displayName={sidebarDisplayName}
+                profileComplete={profileComplete}
               />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-bold text-white">
-                  {formatDisplayName(user?.full_name)}
+                  {sidebarPrimaryLabel}
                 </p>
                 <div className="mt-0.5">
-                  {planLoading ? (
-                    <span className="inline-block h-4 w-14 animate-pulse rounded-full bg-[rgba(255,255,255,0.15)]" />
-                  ) : (
-                    <PlanBadgeFooter plan={plan?.plan ?? null} />
-                  )}
+                  <SidebarTierLine
+                    loading={sidebarProfileLoading}
+                    subscriptionTier={sidebarMe?.subscription_tier}
+                  />
                 </div>
               </div>
             </div>
@@ -409,7 +567,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[rgba(255,255,255,0.4)] transition-colors hover:text-[rgba(255,255,255,0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
               aria-label="Sign out"
             >
-              <IconDoor />
+              <IconLogout size={20} darkBg />
             </button>
           </div>
         </div>
@@ -424,21 +582,14 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-lg text-2xl text-[#E94560] transition-colors hover:bg-[rgba(255,255,255,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             onClick={() => setSidebarOpen(true)}
           >
-            ☰
+            <IconMenu size={24} darkBg />
           </button>
           <Link
             href="/dashboard"
             className="flex items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/50"
             title="travello"
           >
-            <Image
-              src="/logo-dark.svg"
-              alt=""
-              width={36}
-              height={36}
-              className="h-9 w-9 shrink-0 rounded-md object-contain"
-              priority
-            />
+            <TravelloLogo variant="mark" size="sm" animated />
           </Link>
         </div>
 
@@ -448,7 +599,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               key={item.href}
               href={item.href}
               label={item.label}
-              emoji={item.emoji}
+              Icon={item.Icon}
               active={isActive(pathname, item.href)}
               notifCount={notifCount}
               iconOnly
@@ -462,7 +613,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           <SidebarNavLink
             href={NOTIF_NAV.href}
             label={NOTIF_NAV.label}
-            emoji={NOTIF_NAV.emoji}
+            Icon={NOTIF_NAV.Icon}
             active={isActive(pathname, NOTIF_NAV.href)}
             notifCount={notifCount}
             kind="notifications"
@@ -474,19 +625,22 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         <div className="mt-auto flex shrink-0 flex-col items-center gap-2 border-t border-[rgba(255,255,255,0.1)] p-2">
           <button
             type="button"
-            title={formatDisplayName(user?.full_name)}
+            title={
+              !profileComplete
+                ? "Complete profile"
+                : sidebarDisplayName
+            }
             className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             onClick={() => {
-              router.push("/profile");
+              router.push(profileTarget);
               afterNav();
             }}
           >
-            <img
-              src={dicebearLoreleiAvatarSrc(user?.id)}
-              alt=""
-              width={32}
-              height={32}
-              className="h-8 w-8 rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover"
+            <SidebarProfileAvatar
+              key={sidebarPicUrl ?? "no-photo"}
+              profilePicUrl={sidebarPicUrl}
+              displayName={sidebarDisplayName}
+              profileComplete={profileComplete}
             />
           </button>
           <button
@@ -496,7 +650,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[rgba(255,255,255,0.4)] transition-colors hover:text-[rgba(255,255,255,0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             aria-label="Sign out"
           >
-            <IconDoor />
+              <IconLogout size={20} darkBg />
           </button>
         </div>
       </aside>
@@ -517,17 +671,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                 onClick={afterNav}
                 className="flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/50"
               >
-                <Image
-                  src="/logo-dark.svg"
-                  alt=""
-                  width={36}
-                  height={36}
-                  className="h-9 w-9 shrink-0 rounded-md object-contain"
-                  priority
-                />
-                <span className="text-lg font-bold tracking-tight text-white">
-                  travello
-                </span>
+                <TravelloLogo variant="full" size="sm" animated />
               </Link>
             </div>
 
@@ -537,7 +681,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   key={item.href}
                   href={item.href}
                   label={item.label}
-                  emoji={item.emoji}
+                  Icon={item.Icon}
                   active={isActive(pathname, item.href)}
                   notifCount={notifCount}
                   onNavigate={afterNav}
@@ -550,7 +694,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               <SidebarNavLink
                 href={NOTIF_NAV.href}
                 label={NOTIF_NAV.label}
-                emoji={NOTIF_NAV.emoji}
+                Icon={NOTIF_NAV.Icon}
                 active={isActive(pathname, NOTIF_NAV.href)}
                 notifCount={notifCount}
                 kind="notifications"
@@ -563,36 +707,35 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                 <div
                   role="button"
                   tabIndex={0}
+                  title={!profileComplete ? "Complete profile" : undefined}
                   className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg p-1 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
                   onClick={() => {
-                    router.push("/profile");
+                    router.push(profileTarget);
                     afterNav();
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      router.push("/profile");
+                      router.push(profileTarget);
                       afterNav();
                     }
                   }}
                 >
-                  <img
-                    src={dicebearLoreleiAvatarSrc(user?.id)}
-                    alt=""
-                    width={34}
-                    height={34}
-                    className="h-[34px] w-[34px] shrink-0 rounded-full border border-[rgba(255,255,255,0.2)] bg-white/10 object-cover"
+                  <SidebarProfileAvatar
+                    key={sidebarPicUrl ?? "no-photo"}
+                    profilePicUrl={sidebarPicUrl}
+                    displayName={sidebarDisplayName}
+                    profileComplete={profileComplete}
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-bold text-white">
-                      {formatDisplayName(user?.full_name)}
+                      {sidebarPrimaryLabel}
                     </p>
                     <div className="mt-0.5">
-                      {planLoading ? (
-                        <span className="inline-block h-4 w-14 animate-pulse rounded-full bg-[rgba(255,255,255,0.15)]" />
-                      ) : (
-                        <PlanBadgeFooter plan={plan?.plan ?? null} />
-                      )}
+                      <SidebarTierLine
+                        loading={sidebarProfileLoading}
+                        subscriptionTier={sidebarMe?.subscription_tier}
+                      />
                     </div>
                   </div>
                 </div>
@@ -603,7 +746,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[rgba(255,255,255,0.4)] transition-colors hover:text-[rgba(255,255,255,0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                   aria-label="Sign out"
                 >
-                  <IconDoor />
+                  <IconLogout size={20} darkBg />
                 </button>
               </div>
             </div>
@@ -615,29 +758,15 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         className={
           isMapPage
             ? "flex min-h-screen min-h-[100dvh] flex-col transition-all duration-300 ease-in-out max-md:ml-0 md:ml-[64px] lg:ml-[220px]"
-            : "flex min-h-screen min-h-[100dvh] flex-col pb-[72px] transition-all duration-300 ease-in-out max-md:ml-0 md:ml-[64px] lg:ml-[220px] md:pb-0"
+            : "flex min-h-screen min-h-[100dvh] flex-col pb-[calc(56px+env(safe-area-inset-bottom,0px))] transition-all duration-300 ease-in-out max-md:ml-0 md:ml-[64px] lg:ml-[220px] md:pb-0"
         }
       >
         {!isMdUp ? (
-          <header className="relative sticky top-0 z-30 flex h-[52px] shrink-0 items-center border-b border-[#E9ECEF] bg-white px-3">
-            <button
-              type="button"
-              aria-label="Open menu"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-2xl text-[#E94560] transition-colors hover:bg-[#F8F9FA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
-              onClick={() => setSidebarOpen(true)}
-            >
-              ☰
-            </button>
-            <div className="flex min-w-0 flex-1 justify-center px-2">
+          <header className="relative sticky top-0 z-30 grid h-[52px] shrink-0 grid-cols-[40px_1fr_40px] items-center border-b border-[#E9ECEF] bg-white px-3">
+            <span className="w-10 shrink-0" aria-hidden />
+            <div className="flex min-w-0 justify-center justify-self-center px-2">
               {!isMapPage ? (
-                <Image
-                  src="/logo-light.svg"
-                  alt="Travello"
-                  width={200}
-                  height={60}
-                  className="h-8 w-auto max-w-[160px]"
-                  priority
-                />
+                <TravelloLogo variant="pill-dark" size="sm" animated />
               ) : (
                 <span className="text-[15px] font-semibold text-[#0F3460]">
                   Map
@@ -646,10 +775,15 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             </div>
             <Link
               href="/notifications"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#6C757D] transition-colors hover:bg-[#F8F9FA] hover:text-[#0F3460] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
+              className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center justify-self-end rounded-xl text-[#6C757D] transition-colors hover:bg-[#F8F9FA] hover:text-[#0F3460] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
               aria-label="Notifications"
             >
-              <BellIcon className="h-6 w-6" />
+              <IconBell size={24} />
+              {notifCount > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white">
+                  {notifCount > 99 ? "99+" : notifCount}
+                </span>
+              ) : null}
             </Link>
           </header>
         ) : null}
@@ -677,55 +811,42 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               <PresenceHeartbeat />
               <PostOAuthWelcomeModal />
               <VerificationBanner />
-              {showProfileBanner ? (
-                <div className="border-b border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-emerald-50/40 px-4 py-3">
-                  <div className="flex max-w-4xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <span
-                        className="mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-slate-400 ring-4 ring-slate-200/80"
-                        aria-hidden
-                      />
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-900">
-                          Complete your profile
-                        </p>
-                        <p className="mt-0.5 text-xs text-slate-600">
-                          {profileFilled} of {profileTotal} details added — finish
-                          anytime for recovery and a better experience.
-                        </p>
-                      </div>
-                    </div>
-                    <Link
-                      href="/complete-profile"
-                      className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#E94560] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
-                    >
-                      Complete now
-                    </Link>
-                  </div>
-                </div>
-              ) : null}
               <div className="w-full">{children}</div>
             </div>
           )}
         </main>
 
-        <nav className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-[#E9ECEF] bg-white px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden">
-          <div className="mx-auto flex w-full max-w-lg justify-between">
-            {MOBILE_NAV.map(({ href, label, emoji }) => {
-              const active = isActive(pathname, href);
+        <nav
+          className="fixed bottom-0 left-0 right-0 z-30 flex h-14 min-h-14 border-t border-[#E9ECEF] bg-white px-1 pb-[env(safe-area-inset-bottom,0px)] pt-0 md:hidden"
+          aria-label="Primary"
+        >
+          <div className="mx-auto flex h-full w-full max-w-lg items-stretch justify-between">
+            {(
+              [
+                { href: "/dashboard", label: "Home", Icon: IconLayoutDashboard },
+                { href: "/trips", label: "Trips", Icon: IconPlane },
+                { href: "/travel-hub", label: "Connect", Icon: IconUsers },
+                { href: "/explorer", label: "Explore", Icon: IconCompass },
+              ] as const
+            ).map(({ href, label, Icon }) => {
+              const active =
+                href === "/explorer"
+                  ? isExploreNavActive(pathname)
+                  : isActive(pathname, href);
               return (
                 <Link
                   key={href}
                   href={href}
-                  className="flex min-w-0 flex-1 flex-col items-center gap-1 py-1"
+                  className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1"
+                  onClick={() => setMoreSheetOpen(false)}
                 >
                   <span
-                    className={`text-lg leading-none ${
+                    className={`inline-flex leading-none ${
                       active ? "text-[#E94560]" : "text-[#6C757D]"
                     }`}
                     aria-hidden
                   >
-                    {emoji}
+                    <Icon size={18} active={active} />
                   </span>
                   <span
                     className={`max-w-full truncate text-[10px] font-semibold ${
@@ -737,11 +858,81 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                 </Link>
               );
             })}
+            <button
+              type="button"
+              className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1 text-[#6C757D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/30"
+              aria-expanded={moreSheetOpen}
+              aria-label="More navigation"
+              onClick={() => setMoreSheetOpen(true)}
+            >
+              <span
+                className={`inline-flex leading-none ${
+                  isMoreNavActive(pathname) ? "text-[#E94560]" : "text-[#6C757D]"
+                }`}
+                aria-hidden
+              >
+                <IconMoreHorizontal size={18} active={isMoreNavActive(pathname)} />
+              </span>
+              <span
+                className={`max-w-full truncate text-[10px] font-semibold ${
+                  isMoreNavActive(pathname)
+                    ? "text-[#E94560]"
+                    : "text-[#6C757D]"
+                }`}
+              >
+                More
+              </span>
+            </button>
           </div>
         </nav>
+
+        {moreSheetOpen ? (
+          <div className="fixed inset-0 z-[3020] md:hidden">
+            <button
+              type="button"
+              aria-label="Close menu"
+              className="absolute inset-0 bg-black/45"
+              onClick={() => setMoreSheetOpen(false)}
+            />
+            <div
+              className="absolute bottom-0 left-0 right-0 max-h-[min(85dvh,520px)] overflow-hidden rounded-t-2xl border-t border-[#E9ECEF] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)]"
+              role="dialog"
+              aria-modal="true"
+              aria-label="More"
+            >
+              <div className="mx-auto w-full max-w-lg px-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))] pt-2">
+                <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#DEE2E6]" />
+                <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-[#6C757D]">
+                  More
+                </p>
+                <ul className="flex flex-col gap-0.5">
+                  {MOBILE_MORE_LINKS.map(({ href, label, Icon }) => {
+                    const active =
+                      pathname === href || pathname.startsWith(`${href}/`);
+                    return (
+                      <li key={href}>
+                        <Link
+                          href={href}
+                          className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium transition-colors hover:bg-[#F8F9FA]"
+                          style={{
+                            color: active ? "#E94560" : "#495057",
+                          }}
+                          onClick={() => setMoreSheetOpen(false)}
+                        >
+                          <Icon size={20} active={active} aria-hidden />
+                          {label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      {user ? (
+      {user && !hideAssistantSidecar ? (
         <AIAssistantSidecar
           page={
             pathname
@@ -760,7 +951,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             return undefined;
           })()}
           context={{ pathname }}
-          className="!z-[100] max-md:bottom-20"
+          className="!z-[100] max-md:!bottom-[80px] max-md:!right-0 max-md:!p-0 [&>div]:max-md:!pb-0 [&>div]:max-md:!pr-4"
         />
       ) : null}
     </div>

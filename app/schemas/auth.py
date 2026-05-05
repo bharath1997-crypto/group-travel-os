@@ -64,6 +64,7 @@ class UserUpdate(BaseModel):
     phone: str | None = Field(None, max_length=32)
     country: str | None = Field(None, max_length=80)
     recovery_email: EmailStr | None = None
+    instagram_handle: str | None = Field(None, max_length=100)
     profile_public: bool | None = None
 
 
@@ -71,6 +72,13 @@ class ChangePasswordRequest(BaseModel):
     """Body for POST /auth/change-password"""
     old_password: str
     new_password: str = Field(..., min_length=8, max_length=100)
+
+
+class DeleteAccountRequest(BaseModel):
+    """Body for POST /auth/account/deactivate — irreversible soft-deactivate."""
+
+    confirmation: str = Field(..., min_length=1, max_length=32)
+    password: str | None = Field(None, max_length=100)
 
 
 # ── Response schemas (output) ─────────────────────────────────────────────────
@@ -84,9 +92,14 @@ class UserOut(BaseModel):
     full_name: str
     username: str | None = None
     phone: str | None = None
+    whatsapp_number: str | None = None
+    whatsapp_verified: bool = False
     country: str | None = None
     recovery_email: str | None = None
+    instagram_handle: str | None = None
     avatar_url: str | None
+    profile_picture: str | None = None
+    google_sub: str | None = None
     is_active: bool
     is_verified: bool
     email_verified: bool
@@ -137,9 +150,14 @@ def build_user_out(user: User) -> UserOut:
         full_name=user.full_name,
         username=user.username,
         phone=user.phone,
+        whatsapp_number=user.whatsapp_number,
+        whatsapp_verified=bool(user.whatsapp_verified),
         country=user.country,
         recovery_email=user.recovery_email,
+        instagram_handle=user.instagram_handle,
         avatar_url=user.avatar_url,
+        profile_picture=user.profile_picture,
+        google_sub=user.google_sub,
         is_active=user.is_active,
         is_verified=user.is_verified,
         email_verified=user.is_verified,

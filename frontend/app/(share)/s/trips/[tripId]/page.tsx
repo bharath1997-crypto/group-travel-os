@@ -452,12 +452,6 @@ export default function TripPublicPage() {
         {data.viewer_is_member ? (
           <div className="max-w-lg space-y-4">
             <p className="text-sm font-medium text-gray-900">You’re in this group</p>
-            <Link
-              href={`/groups/${t.group_id}`}
-              className="inline-flex rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
-            >
-              Open group
-            </Link>
             <div>
               <label className="block text-xs font-medium text-gray-700">
                 Your public trip note (optional)

@@ -4,12 +4,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { AppLogo } from "@/components/AppLogo";
 import { NotificationBell } from "@/components/NotificationBell";
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
-import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
+import TravelloLogo from "@/components/TravelloLogo";
 import { VerificationBanner } from "@/components/VerificationBanner";
 import { useDashboardUser } from "@/contexts/dashboard-user-context";
 import { clearToken } from "@/lib/auth";
@@ -25,7 +24,7 @@ const nav: NavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/trips", label: "Trips" },
   { href: "/travel-hub", label: "Travel Hub" },
-  { href: "/feed", label: "Feed" },
+  { href: "/explorer", label: "Explore" },
   { href: "/map", label: "Map", mapPin: true },
   { href: "/weather", label: "Weather" },
   { href: "/stats", label: "My Stats" },
@@ -62,14 +61,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     router.replace("/login");
   }
 
-  const profileFilled = user?.profile_completion_filled ?? 0;
-  const profileTotal = user?.profile_completion_total ?? 6;
-  const profileComplete = profileFilled >= profileTotal;
-  const showProfileBanner =
-    Boolean(user) &&
-    !profileComplete &&
-    pathname !== "/complete-profile";
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
@@ -86,7 +77,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             href="/dashboard"
             className="inline-block outline-none ring-offset-2 ring-offset-gray-900 focus-visible:ring-2 focus-visible:ring-white/50"
           >
-            <AppLogo variant="onDark" className="h-8 w-auto max-w-[11rem]" />
+            <TravelloLogo variant="full" size="sm" animated />
           </Link>
         </div>
         <div className="flex flex-col items-center border-b border-gray-800/80 px-3 pb-4 pt-5">
@@ -129,7 +120,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           <div className="mb-3 grid grid-cols-[auto_1fr_auto] items-center gap-2">
             <NotificationBell variant="dark" />
             <div className="flex justify-center">
-              <AppLogo variant="onDark" className="h-7 w-auto max-w-[9rem]" />
+              <TravelloLogo variant="pill" size="sm" animated />
             </div>
             <ProfileDropdown
               layout="header"
@@ -155,9 +146,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           <PresenceHeartbeat />
           <PostOAuthWelcomeModal />
           <VerificationBanner />
-          {showProfileBanner ? (
-            <ProfileCompletionBanner filled={profileFilled} total={profileTotal} />
-          ) : null}
           {children}
         </main>
       </div>

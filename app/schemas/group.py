@@ -2,6 +2,7 @@
 app/schemas/group.py — Group request and response schemas (Pydantic v2)
 """
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -18,6 +19,8 @@ def _member_online(last_seen: datetime | None) -> bool:
 class GroupCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=120)
     description: str | None = Field(None, max_length=500)
+    group_type: Literal["travel", "regular"] = "regular"
+    default_currency: str = Field(default="INR", min_length=3, max_length=10)
 
 
 class GroupUpdate(BaseModel):
@@ -44,12 +47,20 @@ class GroupOut(BaseModel):
 
     id: UUID
     name: str
+    group_type: str = "regular"
     description: str | None
     invite_code: str
     is_accepting_members: bool = True
     created_by: UUID
     created_at: datetime
+    default_currency: str = "INR"
     members: list[GroupMemberOut] = Field(default_factory=list)
+
+
+class GroupDetail(GroupOut):
+    """Group detail (same fields as GroupOut, including group_type)."""
+
+    pass
 
 
 class JoinGroupRequest(BaseModel):
@@ -58,6 +69,16 @@ class JoinGroupRequest(BaseModel):
 
 class InviteCodeOut(BaseModel):
     invite_code: str
+
+
+class MemberRoleUpdate(BaseModel):
+    role: MemberRole
+
+
+class LeaveGroupOut(BaseModel):
+    """Result of leaving a group; `deleted` is true when the group was dissolved (e.g. sole admin left)."""
+
+    deleted: bool = False
 
 
 def group_member_to_out(member: GroupMember) -> GroupMemberOut:
@@ -81,10 +102,17 @@ def group_to_out(group: Group) -> GroupOut:
     return GroupOut(
         id=group.id,
         name=group.name,
+        group_type=group.group_type,
         description=group.description,
         invite_code=group.invite_code,
         is_accepting_members=group.is_accepting_members,
         created_by=group.created_by,
         created_at=group.created_at,
+        default_currency=group.default_currency,
         members=[group_member_to_out(m) for m in group.members],
     )
+
+
+def group_to_detail(group: Group) -> GroupDetail:
+    """Build GroupDetail from ORM (same fields as GroupOut, including group_type)."""
+    return GroupDetail.model_validate(group_to_out(group))

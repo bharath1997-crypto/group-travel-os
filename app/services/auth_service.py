@@ -15,7 +15,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.user import User
-from app.schemas.auth import UserCreate, UserUpdate, ChangePasswordRequest
+from app.schemas.auth import UserCreate, UserUpdate, ChangePasswordRequest, DeleteAccountRequest
 from app.utils.auth import hash_password, verify_password, create_access_token
 from app.utils.email import send_password_reset_email, send_verification_email
 from app.utils.exceptions import AppException
@@ -249,6 +249,10 @@ class AuthService:
             else:
                 user.recovery_email = str(r).strip().lower()
             del payload["recovery_email"]
+        if "instagram_handle" in payload:
+            ih = payload["instagram_handle"]
+            user.instagram_handle = (ih.strip() if isinstance(ih, str) and ih.strip() else None)
+            del payload["instagram_handle"]
         for field, value in payload.items():
             setattr(user, field, value)
 
@@ -317,3 +321,21 @@ class AuthService:
         user.password_reset_expires = None
         db.commit()
         logger.info("Password reset via token for user: %s", user.email)
+
+    @staticmethod
+    def deactivate_account(db: Session, user: User, data: DeleteAccountRequest) -> None:
+        """
+        Soft-deactivate account (is_active=False). OAuth users confirm only;
+        email/password users must also supply password.
+        """
+        if data.confirmation.strip().upper() != "DELETE":
+            AppException.bad_request('Confirmation must be exactly "DELETE"')
+        oauth = user.google_sub is not None or user.facebook_sub is not None
+        if not oauth:
+            if not data.password:
+                AppException.bad_request("Password is required for this account")
+            if not verify_password(data.password, user.hashed_password):
+                AppException.unauthorized("Invalid password")
+        user.is_active = False
+        db.commit()
+        logger.info("Account deactivated: %s", user.email)

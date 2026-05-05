@@ -125,6 +125,9 @@ class PollService:
         out = _load_poll_with_options(db, poll.id)
         assert out is not None
         _attach_vote_counts_to_options(db, out)
+        from app.services.notification_service import NotificationService
+
+        NotificationService.on_poll_created(db, trip, out, current_user)
         logger.info("Poll created: %s on trip %s", out.id, trip_id)
         return out
 

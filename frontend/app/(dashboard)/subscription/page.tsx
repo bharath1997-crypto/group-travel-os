@@ -9,6 +9,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import {
+  AlertTriangle,
+  Check,
+  Info,
+  Sparkles,
+  Star,
+  X,
+} from "lucide-react";
 
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
@@ -57,13 +65,6 @@ function formatDateLabel(iso: string | null | undefined): string {
     month: "short",
     year: "numeric",
   });
-}
-
-function groupEmoji(name: string): string {
-  const n = name.toLowerCase();
-  if (/(goa|beach|sea)/.test(n)) return "🏖️";
-  if (/(manali|trek|himal)/.test(n)) return "🏔️";
-  return "👥";
 }
 
 function passProgressPct(
@@ -176,17 +177,17 @@ export default function SubscriptionPage() {
       if (newPlan === "pass_3day") {
         showToast({
           kind: "success",
-          message: `🎉 3-Day Pass activated for ${gname}! All members now have access.`,
+          message: `3-Day Pass activated for ${gname}! All members now have access.`,
         });
       } else if (newPlan === "pass_7day") {
         showToast({
           kind: "success",
-          message: `🎉 7-Day Pass activated for ${gname}! All members now have access.`,
+          message: `7-Day Pass activated for ${gname}! All members now have access.`,
         });
       } else {
         showToast({
           kind: "success",
-          message: `⭐ Pro activated for ${gname}!`,
+          message: `Pro activated for ${gname}!`,
         });
       }
       window.setTimeout(() => router.push("/dashboard"), 1200);
@@ -258,7 +259,7 @@ export default function SubscriptionPage() {
           starts when admin activates Live Mode.
         </p>
         <p className="mt-4 text-[11px] leading-relaxed text-white">
-          ✓ Cancel anytime &nbsp; ✓ Instant activation &nbsp; ✓ All members benefit
+          Cancel anytime · Instant activation · All members benefit
         </p>
       </header>
 
@@ -276,7 +277,10 @@ export default function SubscriptionPage() {
           className="rounded-xl px-4 py-4 text-white shadow-sm"
           style={{ backgroundColor: CORAL }}
         >
-          <p className="text-center font-bold">🎉 3-Day Pass Active</p>
+          <p className="flex items-center justify-center gap-1.5 text-center font-bold">
+            <Sparkles className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            3-Day Pass Active
+          </p>
           <p className="mt-1 text-center text-sm text-white/90">
             Expires: {formatDateLabel(plan?.current_period_end)}
           </p>
@@ -293,7 +297,10 @@ export default function SubscriptionPage() {
           className="rounded-xl border-2 px-4 py-4 text-white shadow-sm"
           style={{ backgroundColor: NAVY, borderColor: NAVY }}
         >
-          <p className="text-center font-bold">🎉 7-Day Pass Active</p>
+          <p className="flex items-center justify-center gap-1.5 text-center font-bold">
+            <Sparkles className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            7-Day Pass Active
+          </p>
           <p className="mt-1 text-center text-sm text-white/85">
             Expires: {formatDateLabel(plan?.current_period_end)}
           </p>
@@ -307,7 +314,10 @@ export default function SubscriptionPage() {
       )}
       {(currentPlan === "pro" || currentPlan === "enterprise") && (
         <div className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-4 text-center text-purple-950">
-          <p className="font-bold">⭐ Pro — Unlimited Access</p>
+          <p className="flex items-center gap-1.5 font-bold">
+            <Star className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            Pro — Unlimited Access
+          </p>
           <p className="mt-1 text-sm text-purple-900/90">
             Member since {formatDateLabel(me?.created_at)}
           </p>
@@ -336,7 +346,7 @@ export default function SubscriptionPage() {
           ) : (
             groups.map((g) => (
               <option key={g.id} value={g.id}>
-                {groupEmoji(g.name)} {g.name} ({g.members?.length ?? 0} members)
+                {g.name} ({g.members?.length ?? 0} members)
               </option>
             ))
           )}
@@ -358,8 +368,9 @@ export default function SubscriptionPage() {
         ) : null}
         {!canBuy && selectedGroup ? (
           <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-            <p>
-              ⚠️ Add at least 2 members before purchasing a pass
+            <p className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+              <span>Add at least 2 members before purchasing a pass</span>
             </p>
             <Link
               href="/travel-hub"
@@ -516,7 +527,10 @@ export default function SubscriptionPage() {
       >
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
           <div className="max-w-md">
-            <h3 className="text-[20px] font-bold">⭐ Pro</h3>
+            <h3 className="flex items-center gap-2 text-[20px] font-bold">
+              <Star className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+              Pro
+            </h3>
             <p className="mt-2 text-[28px] font-bold">{formatInr(799)}/month</p>
             <p className="mt-1 text-[13px] text-white/90">Unlimited everything</p>
             <button
@@ -578,30 +592,33 @@ export default function SubscriptionPage() {
             <CmpRow
               rowIndex={1}
               feature="Live location"
-              cells={["✗", "3 days", "7 days", "✓"]}
+              cells={["No", "3 days", "7 days", "Yes"]}
             />
-            <CmpRow rowIndex={2} feature="Timer" cells={["✗", "✓", "✓", "✓"]} />
-            <CmpRow rowIndex={3} feature="Weather" cells={["✗", "✓", "✓", "✓"]} />
+            <CmpRow rowIndex={2} feature="Timer" cells={["No", "Yes", "Yes", "Yes"]} />
+            <CmpRow rowIndex={3} feature="Weather" cells={["No", "Yes", "Yes", "Yes"]} />
             <CmpRow
               rowIndex={4}
               feature="Receipt scanner"
-              cells={["✗", "✗", "✓", "✓"]}
+              cells={["No", "No", "Yes", "Yes"]}
             />
-            <CmpRow rowIndex={5} feature="PDF export" cells={["✗", "✗", "✓", "✓"]} />
+            <CmpRow rowIndex={5} feature="PDF export" cells={["No", "No", "Yes", "Yes"]} />
             <CmpRow
               rowIndex={6}
               feature="Memory album"
-              cells={["✗", "✗", "✗", "✓"]}
+              cells={["No", "No", "No", "Yes"]}
             />
-            <CmpRow rowIndex={7} feature="Backup" cells={["✗", "✗", "✗", "✓"]} />
-            <CmpRow rowIndex={8} feature="Custom URL" cells={["✗", "✗", "✗", "✓"]} />
+            <CmpRow rowIndex={7} feature="Backup" cells={["No", "No", "No", "Yes"]} />
+            <CmpRow rowIndex={8} feature="Custom URL" cells={["No", "No", "No", "Yes"]} />
           </tbody>
         </table>
       </section>
 
       {/* 7 Info */}
       <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-950">
-        <p className="font-semibold">ℹ️ How group passes work</p>
+        <p className="flex items-center gap-2 font-semibold">
+          <Info className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+          How group passes work
+        </p>
         <ul className="mt-2 list-none space-y-2 text-sky-900/90">
           <li>→ Any member of the group can purchase a pass for the group</li>
           <li>→ All members get access instantly after purchase</li>
@@ -698,10 +715,14 @@ function Feat({ ok, children }: { ok: boolean; children: ReactNode }) {
   return (
     <li className="flex items-start gap-2">
       <span
-        className="shrink-0 font-bold"
+        className="shrink-0"
         style={{ color: ok ? CORAL : "#d1d5db" }}
       >
-        {ok ? "✓" : "✗"}
+        {ok ? (
+          <Check className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+        ) : (
+          <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+        )}
       </span>
       <span className={ok ? "text-[#2C3E50]" : "text-[#9CA3AF]"}>{children}</span>
     </li>
@@ -711,7 +732,9 @@ function Feat({ ok, children }: { ok: boolean; children: ReactNode }) {
 function ProFeat({ children }: { children: ReactNode }) {
   return (
     <div className="flex items-start gap-2">
-      <span className="shrink-0 text-white">✓</span>
+      <span className="shrink-0 text-white">
+        <Check className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+      </span>
       <span className="text-white/95">{children}</span>
     </div>
   );
@@ -729,8 +752,8 @@ function CmpRow({
   const [free, d3, d7, pro] = cells;
   const alt = rowIndex % 2 === 1;
   const cellColor = (v: string) => {
-    if (v === "✓") return CORAL;
-    if (v === "✗") return "#d1d5db";
+    if (v === "Yes") return CORAL;
+    if (v === "No") return "#d1d5db";
     return "#4B5563";
   };
   return (

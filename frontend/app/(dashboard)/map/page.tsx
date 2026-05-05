@@ -224,10 +224,22 @@ function getInitialMapMode(): MapMode {
 export default function MapPage() {
   const router = useRouter();
   const mapRef = useRef<L.Map | null>(null);
+  const [mapEmbedded, setMapEmbedded] = useState(false);
+
+  useEffect(() => {
+    setMapEmbedded(
+      typeof window !== "undefined" &&
+        new URLSearchParams(window.location.search).get("embed") === "1",
+    );
+  }, []);
 
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null,
   );
+  const [sharedLocationMeta, setSharedLocationMeta] = useState<{
+    label: string;
+    mode: "current" | "live";
+  } | null>(null);
   const [address, setAddress] = useState("Getting your location...");
   const [coords, setCoords] = useState("");
   const [weather, setWeather] = useState<Record<string, unknown> | null>(null);
@@ -701,6 +713,27 @@ out body 20;
   }, [loadPins, loadTrending, loadLeaders]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sharedLat = Number(params.get("lat"));
+    const sharedLon = Number(params.get("lon") ?? params.get("lng"));
+    if (Number.isFinite(sharedLat) && Number.isFinite(sharedLon)) {
+      const mode = params.get("mode") === "live" ? "live" : "current";
+      setSharedLocationMeta({
+        label: params.get("label") || "Shared location",
+        mode,
+      });
+      setUserLocation([sharedLat, sharedLon]);
+      setCoords(`${sharedLat.toFixed(4)}° N · ${sharedLon.toFixed(4)}° E`);
+      void Promise.all([
+        fetchAddress(sharedLat, sharedLon),
+        fetchWeather(sharedLat, sharedLon),
+        fetchNearbyPlaces(sharedLat, sharedLon),
+        fetchEvents(sharedLat, sharedLon),
+        fetchHolidays(),
+      ]);
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const lat = pos.coords.latitude;
@@ -1032,7 +1065,13 @@ out body 20;
   }, [events]);
 
   return (
-    <div className="relative h-screen w-full min-h-0 overflow-hidden bg-white md:h-full md:flex-1">
+    <div
+      className={
+        mapEmbedded
+          ? "relative h-[320px] w-full min-h-[260px] overflow-hidden rounded-xl bg-white sm:h-[360px]"
+          : "relative h-screen w-full min-h-0 overflow-hidden bg-white md:h-full md:flex-1"
+      }
+    >
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -1064,7 +1103,9 @@ out body 20;
         }}
       />
 
-      {/* View switcher */}
+      {/* View switcher + top chrome (hidden when ?embed=1) */}
+      {!mapEmbedded ? (
+      <>
       <div
         className="absolute left-1/2 z-[1000] flex -translate-x-1/2 gap-0.5 rounded-[30px] border border-black/10 bg-white p-1 shadow-md"
         style={{ top: 14 }}
@@ -1221,7 +1262,10 @@ out body 20;
         ))}
       </div>
 
-      {addPinMode && (
+      </>
+      ) : null}
+
+      {!mapEmbedded && addPinMode && (
         <div
           className="absolute left-4 right-4 z-[1000] rounded-full border border-black/10 bg-white px-3 py-2 text-center text-xs text-gray-900 shadow-md"
           style={{ top: 100 }}
@@ -1239,7 +1283,10 @@ out body 20;
           className="absolute inset-0 z-0 h-full w-full"
         >
           <MapController mapRef={mapRef} />
-          <MapPinClickHandler active={addPinMode} onPick={onMapPick} />
+          <MapPinClickHandler
+            active={addPinMode && !mapEmbedded}
+            onPick={onMapPick}
+          />
           <TileLayer
             key={mapMode}
             url={tileUrl}
@@ -1277,7 +1324,15 @@ out body 20;
             <Marker position={userLocation} icon={userMarkerIcon}>
               <Popup>
                 <div className="text-sm">
-                  <p className="font-bold text-[#111827]">📍 You are here</p>
+                  <p className="font-bold text-[#111827]">
+                    {sharedLocationMeta
+                      ? `${sharedLocationMeta.label} ${
+                          sharedLocationMeta.mode === "live"
+                            ? "live location"
+                            : "current location"
+                        }`
+                      : "📍 You are here"}
+                  </p>
                   <p className="text-xs text-[#6b7280]">{address}</p>
                   <p className="text-[10px] text-[#6b7280]">{coords}</p>
                 </div>
@@ -1418,6 +1473,8 @@ out body 20;
         </MapContainer>
       </div>
 
+      {!mapEmbedded ? (
+      <>
       {/* Radius */}
       <div
         className="absolute left-3.5 z-[1000] flex -translate-y-1/2 flex-col gap-1"
@@ -1842,10 +1899,45 @@ out body 20;
         </div>
       </div>
 
+      </>
+      ) : null}
+
+      {mapEmbedded ? (
+        <div className="absolute bottom-2 right-2 z-[1000] flex flex-col gap-1.5">
+          <button
+            type="button"
+            aria-label="Go to current GPS location"
+            title="Current location"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-black/10 bg-white text-lg shadow-md"
+            onClick={() => handleLiveGps()}
+          >
+            📍
+          </button>
+          <button
+            type="button"
+            aria-label="Zoom in"
+            className="flex h-9 w-10 items-center justify-center rounded-xl border border-black/10 bg-white text-base font-semibold shadow-md"
+            onClick={() => mapRef.current?.zoomIn()}
+          >
+            +
+          </button>
+          <button
+            type="button"
+            aria-label="Zoom out"
+            className="flex h-9 w-10 items-center justify-center rounded-xl border border-black/10 bg-white text-base font-semibold shadow-md"
+            onClick={() => mapRef.current?.zoomOut()}
+          >
+            −
+          </button>
+        </div>
+      ) : null}
+
       {/* Pin form */}
       {showPinForm && newPinCoords && (
         <div
-          className="absolute bottom-[280px] left-0 right-0 z-[1200] max-h-[55vh] overflow-y-auto rounded-t-[20px] border border-[rgba(0,0,0,0.08)] bg-white p-4 shadow-md"
+          className={`absolute left-0 right-0 z-[1200] max-h-[55vh] overflow-y-auto rounded-t-[20px] border border-[rgba(0,0,0,0.08)] bg-white p-4 shadow-md ${
+            mapEmbedded ? "bottom-3 max-h-[min(55vh,280px)]" : "bottom-[280px]"
+          }`}
         >
           <p className="mb-3 text-sm font-bold text-[#111827]">
             📍 Save this location
@@ -1918,7 +2010,9 @@ out body 20;
       {/* Event detail */}
       {selectedEvent && (
         <div
-          className="absolute bottom-[280px] left-0 right-0 z-[1200] max-h-[50vh] overflow-y-auto rounded-t-[20px] border border-[rgba(0,0,0,0.08)] bg-white p-4 shadow-md"
+          className={`absolute left-0 right-0 z-[1200] max-h-[50vh] overflow-y-auto rounded-t-[20px] border border-[rgba(0,0,0,0.08)] bg-white p-4 shadow-md ${
+            mapEmbedded ? "bottom-3 max-h-[min(50vh,280px)]" : "bottom-[280px]"
+          }`}
         >
           <button
             type="button"
@@ -2100,7 +2194,7 @@ out body 20;
         <div
           className="absolute left-1/2 z-[9999] -translate-x-1/2 whitespace-nowrap rounded-xl px-5 py-2.5 text-[13px] font-bold text-white"
           style={{
-            bottom: 220,
+            bottom: mapEmbedded ? 12 : 220,
             background:
               toast.type === "success"
                 ? "rgba(34,197,94,0.95)"

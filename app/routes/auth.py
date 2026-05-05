@@ -9,18 +9,21 @@ Routes are thin. Every route does exactly three things:
 No business logic here.
 """
 import logging
+import secrets
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+from twilio.rest import Client
 
 from config import settings
 
 from app.models.user import User
 from app.schemas.auth import (
     ChangePasswordRequest,
+    DeleteAccountRequest,
     ForgotPasswordRequest,
     PhoneSendRequest,
     PhoneVerifyRequest,
@@ -50,8 +53,40 @@ from app.services.oauth_service import (
 )
 from app.utils.auth import get_current_user
 from app.utils.database import get_db
+from app.utils.exceptions import AppException
 
 logger = logging.getLogger(__name__)
+
+# In-memory OTP storage (dev; replace with SMS / WhatsApp providers in production).
+# Keys: "sms:{phone}" and "wa:{phone}" so the same E.164 does not share OTP between channels.
+OTP_STORE: dict[str, str] = {}
+
+
+def _otp_key_sms(phone: str) -> str:
+    return f"sms:{phone.strip()}"
+
+
+def _otp_key_wa(phone: str) -> str:
+    return f"wa:{phone.strip()}"
+
+
+def _generate_otp6() -> str:
+    return f"{secrets.randbelow(900_000) + 100_000:06d}"
+
+
+def _normalize_e164(phone: str) -> str:
+    """
+    E.164 for Twilio: leading + and digits only.
+    Stops mismatches when the client omits + or adds spaces.
+    """
+    s = (phone or "").strip()
+    if not s:
+        return ""
+    digits = "".join(c for c in s if c.isdigit())
+    if not digits:
+        return ""
+    return f"+{digits}"
+
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -312,6 +347,20 @@ def change_password(
 
 
 @router.post(
+    "/account/deactivate",
+    status_code=status.HTTP_200_OK,
+    summary="Soft-deactivate account (confirmation DELETE; password if not OAuth)",
+)
+def deactivate_account(
+    data: DeleteAccountRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    AuthService.deactivate_account(db, current_user, data)
+    return {"message": "Account deactivated"}
+
+
+@router.post(
     "/send-verification-email",
     status_code=status.HTTP_200_OK,
     summary="Send or resend email verification link",
@@ -370,23 +419,120 @@ def reset_password(data: ResetPasswordBody, db: Session = Depends(get_db)):
 
 @router.post(
     "/phone/send",
-    status_code=status.HTTP_501_NOT_IMPLEMENTED,
-    summary="Send phone OTP (not implemented)",
+    status_code=status.HTTP_200_OK,
+    summary="Send phone OTP (Twilio SMS; console + dev_mode fallback on failure or in development)",
 )
-def phone_send_otp_stub(_data: PhoneSendRequest):
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Phone OTP is not available yet.",
+def phone_send_otp(data: PhoneSendRequest):
+    phone = _normalize_e164(data.phone)
+    if not phone or len(phone) < 10:
+        AppException.bad_request("Invalid phone number")
+    otp = _generate_otp6()
+    OTP_STORE[_otp_key_sms(phone)] = otp
+    from_num = (settings.twilio_phone_number or "").strip()
+    has_twilio = bool(
+        settings.twilio_account_sid
+        and settings.twilio_auth_token
+        and from_num
     )
+    if has_twilio:
+        if not from_num.startswith("+"):
+            from_num = f"+{from_num.lstrip('+')}"
+        try:
+            client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
+            msg = client.messages.create(
+                body=f"Your Group Travel OS verification code is: {otp}",
+                from_=from_num,
+                to=phone,
+            )
+            logger.info("Twilio SMS API accepted: sid=%s to=%s", msg.sid, phone)
+        except Exception:
+            logger.exception("Twilio SMS send failed to=%s", phone)
+            print(f"[DEV OTP] phone={phone} otp={otp}", flush=True)
+            return {"message": "OTP sent", "dev_mode": True}
+        if settings.ENVIRONMENT == "development":
+            print(f"[DEV OTP] phone={phone} otp={otp}", flush=True)
+            return {"message": "OTP sent", "dev_mode": True}
+        return {"message": "OTP sent"}
+    print(f"[DEV OTP] phone={phone} otp={otp}", flush=True)
+    return {"message": "OTP sent", "dev_mode": True}
 
 
 @router.post(
     "/phone/verify",
-    status_code=status.HTTP_501_NOT_IMPLEMENTED,
-    summary="Verify phone OTP (not implemented)",
+    status_code=status.HTTP_200_OK,
+    summary="Verify phone OTP and save number on the authenticated user",
 )
-def phone_verify_otp_stub(_data: PhoneVerifyRequest):
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Phone OTP is not available yet.",
-    )
+def phone_verify_otp(
+    data: PhoneVerifyRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    phone = _normalize_e164(data.phone)
+    otp = data.otp.strip()
+    key = _otp_key_sms(phone)
+    if OTP_STORE.get(key) == otp:
+        del OTP_STORE[key]
+        current_user.phone = phone
+        db.commit()
+        db.refresh(current_user)
+        return {"message": "Phone verified", "verified": True}
+    AppException.bad_request("Invalid or expired OTP")
+
+
+@router.post(
+    "/whatsapp/send",
+    status_code=status.HTTP_200_OK,
+    summary="Send WhatsApp OTP via Twilio (sandbox; console fallback if not configured)",
+)
+def whatsapp_send_otp(data: PhoneSendRequest):
+    phone = _normalize_e164(data.phone)
+    if not phone or len(phone) < 10:
+        AppException.bad_request("Invalid phone number")
+    otp = _generate_otp6()
+    OTP_STORE[_otp_key_wa(phone)] = otp
+    if settings.twilio_account_sid and settings.twilio_auth_token:
+        try:
+            client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
+            client.messages.create(
+                body=f"Your Group Travel OS verification code is: {otp}",
+                from_="whatsapp:+14155238886",
+                to=f"whatsapp:{phone}",
+            )
+        except Exception as e:
+            logger.exception("Twilio WhatsApp send failed: %s", e)
+            # Do not return 200: clients must know delivery failed (sandbox not joined, wrong number, etc.)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=(
+                    "Could not send WhatsApp. If you use Twilio's sandbox, open WhatsApp, send your "
+                    "join message to the Twilio sandbox number (see Twilio Console → Messaging), "
+                    "then try again. You must also enter the same mobile number in the WhatsApp "
+                    "field on this page (it is separate from the SMS field)."
+                ),
+            ) from e
+    else:
+        print(f"[WhatsApp OTP] {phone} -> {otp}", flush=True)
+    return {"message": "WhatsApp OTP sent"}
+
+
+@router.post(
+    "/whatsapp/verify",
+    status_code=status.HTTP_200_OK,
+    summary="Verify WhatsApp OTP and save number on the authenticated user",
+)
+def whatsapp_verify_otp(
+    data: PhoneVerifyRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    phone = _normalize_e164(data.phone)
+    otp = data.otp.strip()
+    key = _otp_key_wa(phone)
+    if OTP_STORE.get(key) == otp:
+        del OTP_STORE[key]
+        current_user.whatsapp_number = phone
+        current_user.whatsapp_verified = True
+        db.commit()
+        db.refresh(current_user)
+        return {"message": "Phone verified", "verified": True}
+    AppException.bad_request("Invalid or expired OTP")

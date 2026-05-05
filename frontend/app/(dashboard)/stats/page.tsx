@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
 
@@ -44,56 +44,134 @@ function planBadgeClass(plan: string): string {
   }
 }
 
+const Skeleton = ({
+  width = "100%",
+  height = 16,
+}: {
+  width?: string | number;
+  height?: number;
+}) => (
+  <div
+    style={{
+      width,
+      height,
+      background:
+        "linear-gradient(90deg, #1e2538 25%, #2a3248 50%, #1e2538 75%)",
+      backgroundSize: "200% 100%",
+      borderRadius: 8,
+      animation: "shimmer 1.5s infinite",
+    }}
+  />
+);
+
+async function fetchWithDeadline<T>(
+  fn: (signal: AbortSignal) => Promise<T>,
+  pageSignal: AbortSignal,
+): Promise<T> {
+  const t = new AbortController();
+  const timer = setTimeout(() => t.abort(), 8000);
+  const onPageAbort = () => t.abort();
+  pageSignal.addEventListener("abort", onPageAbort);
+  try {
+    if (pageSignal.aborted) {
+      throw new DOMException("Aborted", "AbortError");
+    }
+    return await fn(t.signal);
+  } finally {
+    clearTimeout(timer);
+    pageSignal.removeEventListener("abort", onPageAbort);
+  }
+}
+
 export default function StatsPage() {
+  const inFlightRef = useRef<AbortController | null>(null);
   const [stats, setStats] = useState<TravelStats | null>(null);
   const [plan, setPlan] = useState<PlanOut | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [s, p] = await Promise.all([
-          apiFetch<TravelStats>("/users/me/travel-stats"),
-          apiFetch<PlanOut>("/subscriptions/me"),
-        ]);
-        if (!cancelled) {
-          setStats(s);
-          setPlan(p);
-        }
-      } catch (e) {
-        if (!cancelled)
-          setError(e instanceof Error ? e.message : "Failed to load stats");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const load = useCallback(async () => {
+    inFlightRef.current?.abort();
+    const ac = new AbortController();
+    inFlightRef.current = ac;
+    const pageSignal = ac.signal;
+    setLoading(true);
+    setError(null);
+    try {
+      const [s, p] = await Promise.all([
+        fetchWithDeadline(
+          (sig) => apiFetch<TravelStats>("/users/me/travel-stats", { signal: sig }),
+          pageSignal,
+        ),
+        fetchWithDeadline(
+          (sig) => apiFetch<PlanOut>("/subscriptions/me", { signal: sig }),
+          pageSignal,
+        ),
+      ]);
+      if (pageSignal.aborted) return;
+      setStats(s);
+      setPlan(p);
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") return;
+      setError(
+        e instanceof Error ? e.message : "Could not load data. Tap to retry.",
+      );
+    } finally {
+      if (!pageSignal.aborted) setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+    return () => inFlightRef.current?.abort();
+  }, [load]);
 
   return (
     <div className="p-6 md:p-8">
       <h1 className="text-2xl font-semibold text-[#0F3460]">My Stats</h1>
       <p className="mt-1 text-sm text-[#6C757D]">Your activity overview</p>
 
-      {loading ? (
-        <div className="mt-10 flex flex-col items-center gap-3 py-16">
-          <div
-            className="h-10 w-10 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
-            aria-hidden
-          />
-          <p className="text-sm text-gray-600">Loading…</p>
+      {error && !loading ? (
+        <div className="mt-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p>Could not load data. Tap to retry.</p>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="mt-2 font-semibold text-[#0F3460] underline"
+          >
+            Retry
+          </button>
         </div>
-      ) : error ? (
-        <p className="mt-10 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {error}
-        </p>
-      ) : (
+      ) : null}
+
+      {loading ? (
+        <div className="mt-8 space-y-8">
+          <div className="h-5 w-48">
+            <Skeleton height={20} width="12rem" />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-[#E9ECEF] bg-white px-5 py-6 shadow-sm"
+              >
+                <Skeleton height={36} width="4rem" />
+                <div className="mt-3">
+                  <Skeleton height={14} width="70%" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div>
+            <Skeleton height={16} width="12rem" />
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Skeleton height={28} width={80} />
+              <Skeleton height={28} width={80} />
+              <Skeleton height={28} width={80} />
+            </div>
+          </div>
+        </div>
+      ) : !error ? (
         <>
           {plan ? (
             <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -148,7 +226,7 @@ export default function StatsPage() {
             )}
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -10,7 +10,7 @@ import uuid
 from datetime import date, datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Date, DateTime, String
+from sqlalchemy import Boolean, Date, DateTime, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,9 +20,11 @@ if TYPE_CHECKING:
     from app.models.expense import ExpenseSplit
     from app.models.group import GroupMember
     from app.models.location import Location
+    from app.models.notification import Notification
     from app.models.poll import Vote
     from app.models.trip import Trip
     from app.models.trip_roster import TripRoster
+    from app.models.user_app_settings import UserAppSettings
 
 
 class User(Base):
@@ -68,12 +70,27 @@ class User(Base):
         unique=True,
         index=True,
     )
+    # May store http(s) URLs or inline data: URLs (upload preview); unbounded in DB.
     avatar_url: Mapped[str | None] = mapped_column(
-        String(2048),
+        Text,
+        nullable=True,
+    )
+    # URL from the identity provider (e.g. Google `picture`); may differ from avatar_url.
+    profile_picture: Mapped[str | None] = mapped_column(
+        Text,
         nullable=True,
     )
     phone: Mapped[str | None] = mapped_column(
         String(32),
+        nullable=True,
+    )
+    whatsapp_number: Mapped[str | None] = mapped_column(
+        String(32),
+        nullable=True,
+    )
+    whatsapp_verified: Mapped[bool | None] = mapped_column(
+        Boolean,
+        default=False,
         nullable=True,
     )
     country: Mapped[str | None] = mapped_column(
@@ -86,6 +103,10 @@ class User(Base):
     )
     recovery_email: Mapped[str | None] = mapped_column(
         String(255),
+        nullable=True,
+    )
+    instagram_handle: Mapped[str | None] = mapped_column(
+        String(100),
         nullable=True,
     )
     fcm_token: Mapped[str | None] = mapped_column(
@@ -185,6 +206,17 @@ class User(Base):
     trip_roster_entries: Mapped[list["TripRoster"]] = relationship(
         "TripRoster",
         back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    app_settings: Mapped["UserAppSettings | None"] = relationship(
+        "UserAppSettings",
+        back_populates="user",
+        uselist=False,
         cascade="all, delete-orphan",
     )
 
