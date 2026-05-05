@@ -21,20 +21,27 @@ logger = logging.getLogger(__name__)
 
 # ── Engine ────────────────────────────────────────────────────────────────────
 _url = make_url(settings.DATABASE_URL)
+_driver = _url.drivername
 _engine_kw: dict = {
-    # Drop and re-test stale connections before handing to a request.
-    # Prevents "server closed connection unexpectedly" after idle periods.
-    "pool_pre_ping": True,
-    # Connections kept open in the pool at all times.
-    "pool_size": 10,
-    # Extra connections allowed above pool_size under load, then discarded.
-    "max_overflow": 20,
     # Log every SQL statement when DEBUG=True. Never enable in production.
     "echo": settings.DEBUG,
 }
+# PostgreSQL (and other server DBs): pooling + stale connection checks.
+if not _driver.startswith("sqlite"):
+    _engine_kw.update(
+        {
+            # Drop and re-test stale connections before handing to a request.
+            # Prevents "server closed connection unexpectedly" after idle periods.
+            "pool_pre_ping": True,
+            # Connections kept open in the pool at all times.
+            "pool_size": 10,
+            # Extra connections allowed above pool_size under load, then discarded.
+            "max_overflow": 20,
+        },
+    )
 # SQLite + Starlette TestClient: requests run in a thread pool on Linux; without this,
 # sqlite3 raises "SQLite objects created in a thread can only be used in that same thread".
-if _url.drivername.startswith("sqlite"):
+if _driver.startswith("sqlite"):
     _engine_kw["connect_args"] = {"check_same_thread": False}
 
 engine = create_engine(settings.DATABASE_URL, **_engine_kw)

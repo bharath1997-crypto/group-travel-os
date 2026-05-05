@@ -137,6 +137,10 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(groups_router, prefix="/api/v1")
 
+    from app.routes.connect import router as connect_router
+
+    app.include_router(connect_router, prefix="/api/v1")
+
     # Step 15 — Trips
     from app.routes.trips import group_trips_router, trips_router
 
@@ -217,6 +221,12 @@ def _register_routes(app: FastAPI) -> None:
     from app.routes.app_settings import router as app_settings_router
 
     app.include_router(app_settings_router, prefix="/api/v1")
+
+    from app.routers.explorer import router as explorer_router
+    from app.routers.explorer import wayra_router
+
+    app.include_router(explorer_router, prefix="/api/v1", tags=["explorer"])
+    app.include_router(wayra_router, prefix="/api/v1", tags=["wayra"])
 
 
 # ── App instance ──────────────────────────────────────────────────────────────
