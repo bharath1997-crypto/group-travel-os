@@ -122,9 +122,7 @@ const MOBILE_MORE_LINKS: {
 }[] = [
   { href: "/split-activities", label: "Split Activities", Icon: IconBanknote },
   { href: "/map", label: "Map", Icon: IconMap },
-  { href: "/stats", label: "Stats", Icon: IconBarChart },
   { href: "/notifications", label: "Notifications", Icon: IconBell },
-  { href: "/weather", label: "Weather", Icon: IconCloudSun },
   { href: "/settings", label: "Settings", Icon: IconSettings },
   { href: "/profile", label: "Profile", Icon: IconUser },
 ];
@@ -170,8 +168,6 @@ const MAIN_NAV: {
   { href: "/live", label: "Live", Icon: IconLive },
   { href: "/explorer", label: "Explore", Icon: IconCompass },
   { href: "/map", label: "Map", Icon: IconMap },
-  { href: "/weather", label: "Weather", Icon: IconCloudSun },
-  { href: "/stats", label: "Stats", Icon: IconBarChart },
   {
     href: "/notifications",
     label: "Notifications",
