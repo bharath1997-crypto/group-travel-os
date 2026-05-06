@@ -37,7 +37,7 @@ export function EventCard({ event, view, onOpen }: EventCardProps) {
       type="button"
       onClick={() => onOpen(event)}
       className={[
-        "group overflow-hidden rounded-3xl border border-white/10 bg-[#102f55] text-left shadow-lg transition hover:-translate-y-0.5 hover:border-[#E94560]/60",
+        "group overflow-hidden rounded-3xl border border-[#1e4976] bg-[#162d4a] text-left shadow-lg transition hover:-translate-y-0.5 hover:border-[#E94560]/60",
         list ? "grid gap-0 sm:grid-cols-[220px_1fr]" : "",
       ].join(" ")}
     >

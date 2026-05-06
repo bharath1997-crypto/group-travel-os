@@ -1,5 +1,6 @@
 "use client";
 
+import { LogOut } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -402,6 +403,17 @@ export default function SettingsHubPage() {
     })).filter((sec) => sec.items.length > 0);
   }, [q]);
 
+  const handleSignOut = useCallback(() => {
+    const confirmed = window.confirm(
+      "Are you sure you want to sign out?",
+    );
+    if (!confirmed) return;
+    localStorage.removeItem("gt_token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("travello_user");
+    window.location.href = "/login";
+  }, []);
+
   return (
     <>
       <SettingsScreenHeader title="Settings and activity" backHref="/dashboard" />
@@ -468,6 +480,20 @@ export default function SettingsHubPage() {
             </section>
           ))
         : null}
+
+      <div className="mt-8 border-t border-[#E9ECEF] pt-6">
+        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[#6C757D]">
+          Account
+        </p>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="flex w-full items-center gap-3 rounded-xl border border-[#E9ECEF] bg-white px-4 py-3 text-[#E94560] transition-colors hover:bg-red-50"
+        >
+          <LogOut size={18} />
+          <span className="text-sm font-medium">Sign out</span>
+        </button>
+      </div>
     </>
   );
 }

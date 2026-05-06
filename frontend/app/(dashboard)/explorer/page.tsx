@@ -1,11 +1,14 @@
 "use client";
 
-import { Megaphone, Mic, Newspaper, Search } from "lucide-react";
+import { Megaphone, Mic, Newspaper, Search, MapPin } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { EventCard } from "@/components/explorer/EventCard";
+import { ExplorerItemDetailDrawer, type ExplorerDrawerItem } from "@/components/explorer/ExplorerItemDetailDrawer";
 import { LocationPicker } from "@/components/explorer/LocationPicker";
 import { WayraPanel } from "@/components/explorer/WayraPanel";
+import { WeatherWidget } from "@/components/explorer/WeatherWidget";
+import { ExplorerMediaFeed } from "@/components/explorer/ExplorerMediaFeed";
 import WayraIcon from "@/components/ui/WayraIcon";
 import { apiFetch } from "@/lib/api";
 
@@ -28,12 +31,15 @@ type SpeechRecognitionWindow = Window & {
 type TrendItem = {
   id: string;
   title: string;
+  description: string;
+  venue: string;
   meta: string;
   sourceType: string;
   sourceLabel: string;
   priceLabel: string;
   emoji: string;
   imageUrl?: string | null;
+  url?: string;
 };
 
 type ReelItem = {
@@ -96,6 +102,7 @@ type SearchEventCardItem = {
   isFree: boolean;
   emoji: string;
   imageUrl?: string | null;
+  url?: string;
 };
 
 const FILTERS = ["All", "Music", "Food", "Art", "Sports", "Nature", "Events", "Hotels"];
@@ -104,6 +111,8 @@ const DEMO_TRENDS: TrendItem[] = [
   {
     id: "demo-jazz",
     title: "Jazz nights and rooftop music picks",
+    description: "Enjoy a relaxing evening with live jazz music and great views.",
+    venue: "River North",
     meta: "Tonight · River North",
     sourceType: "google_events",
     sourceLabel: "Google",
@@ -113,6 +122,8 @@ const DEMO_TRENDS: TrendItem[] = [
   {
     id: "demo-food",
     title: "Best food walks for groups",
+    description: "Explore the best local eateries and street food.",
+    venue: "West Loop",
     meta: "Today · West Loop",
     sourceType: "eventbrite",
     sourceLabel: "EB",
@@ -122,6 +133,8 @@ const DEMO_TRENDS: TrendItem[] = [
   {
     id: "demo-free",
     title: "Free park events near downtown",
+    description: "Join community events and outdoor activities for free.",
+    venue: "Millennium Park",
     meta: "Today · Millennium Park",
     sourceType: "free",
     sourceLabel: "FREE",
@@ -131,6 +144,8 @@ const DEMO_TRENDS: TrendItem[] = [
   {
     id: "demo-sports",
     title: "Cubs watch parties and sports bars",
+    description: "Catch the big game with fans and great drinks.",
+    venue: "Wrigleyville",
     meta: "This week · Wrigleyville",
     sourceType: "ticketmaster",
     sourceLabel: "TM",
@@ -140,6 +155,8 @@ const DEMO_TRENDS: TrendItem[] = [
   {
     id: "demo-arts",
     title: "Gallery openings with late entry",
+    description: "Discover local art and exclusive exhibits.",
+    venue: "River North",
     meta: "Today · River North",
     sourceType: "predicthq",
     sourceLabel: "PHQ",
@@ -149,6 +166,8 @@ const DEMO_TRENDS: TrendItem[] = [
   {
     id: "demo-hotel",
     title: "Hotel lounge events with skyline views",
+    description: "Upscale networking and socializing at premier lounges.",
+    venue: "Loop",
     meta: "Tonight · Loop",
     sourceType: "google_places",
     sourceLabel: "Google",
@@ -170,27 +189,27 @@ const DEMO_REELS: ReelItem[] = [
 const DEMO_NEWS: NewsItem[] = [
   {
     id: "news-1",
+    source: "City Pulse",
+    time: "Just now",
+    title: "Perfect 72°F weather for a rooftop bar! Great for groups.",
+    emoji: "☀️",
+    tags: ["Weather", "Actionable"],
+  },
+  {
+    id: "news-2",
     source: "Time Out",
     time: "1h ago",
     title: "Chicago jazz rooms are adding more late-night group-friendly shows",
     emoji: "🎷",
-    tags: ["Music", "Chicago", "Events"],
-  },
-  {
-    id: "news-2",
-    source: "Eater",
-    time: "2h ago",
-    title: "New food tour routes make West Loop easier for first-time visitors",
-    emoji: "🍜",
-    tags: ["Food", "Travel"],
+    tags: ["Music", "Group Vibe"],
   },
   {
     id: "news-3",
-    source: "Choose Chicago",
-    time: "3h ago",
-    title: "Free outdoor events return across parks and riverfront spaces",
-    emoji: "🌿",
-    tags: ["Free", "Events"],
+    source: "Alert",
+    time: "2h ago",
+    title: "Rain expected later – grab an indoor reservation for your crew early.",
+    emoji: "🌧️",
+    tags: ["Weather", "Alert"],
   },
   {
     id: "news-4",
@@ -198,7 +217,7 @@ const DEMO_NEWS: NewsItem[] = [
     time: "4h ago",
     title: "Sports watch parties trend near Wrigleyville and River North",
     emoji: "⚾",
-    tags: ["Sports", "Chicago"],
+    tags: ["Sports", "Groups"],
   },
   {
     id: "news-5",
@@ -249,9 +268,9 @@ function emojiFor(text: string): string {
 
 function normalizeTrend(row: unknown, index: number, city: string): TrendItem {
   const record = typeof row === "object" && row != null ? (row as Record<string, unknown>) : {};
-  const sourceType = textField(record, ["source_type", "sourceType"], "google_events");
+  const sourceType = textField(record, ["source_name", "source_type", "sourceType"], "google_events");
   const sourceLabel =
-    sourceType === "google_events"
+    sourceType === "google_events" || sourceType === "dataforseo"
       ? "Google"
       : sourceType === "google_places"
         ? "Google"
@@ -263,15 +282,25 @@ function normalizeTrend(row: unknown, index: number, city: string): TrendItem {
               ? "PHQ"
               : "FREE";
   const title = textField(record, ["title", "name"], "Trending plan near you");
+  
+  let dateStr = textField(record, ["date_str", "dateLabel", "date"], "");
+  if (!dateStr && record.start_time) {
+    const d = new Date(String(record.start_time));
+    dateStr = !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : "Upcoming";
+  }
+  
   return {
-    id: textField(record, ["id"], `trend-${index}`),
+    id: textField(record, ["external_id", "id"], `trend-${index}`),
     title,
-    meta: `${textField(record, ["date_str", "dateLabel", "date"], "Today")} · ${textField(record, ["venue"], city)}`,
+    description: textField(record, ["description"], "Trending plan near you"),
+    venue: textField(record, ["venue_name", "venue"], city),
+    meta: `${dateStr || "Today"} · ${textField(record, ["venue_name", "venue"], city)}`,
     sourceType,
     sourceLabel,
     priceLabel: textField(record, ["priceLabel", "price", "price_from"], textField(record, ["is_free"], "") || "Free"),
     emoji: textField(record, ["emoji"], emojiFor(title)),
     imageUrl: textField(record, ["image_url", "thumbnail"], "") || null,
+    url: textField(record, ["booking_url", "url", "link"], ""),
   };
 }
 
@@ -333,6 +362,7 @@ function normalizeSearchResult(row: unknown, index: number, city: string): Searc
     isFree,
     emoji: textField(record, ["emoji"], emojiFor(title)),
     imageUrl: textField(record, ["image_url", "thumbnail"], "") || null,
+    url: textField(record, ["booking_url", "url", "link"], ""),
   };
 }
 
@@ -346,17 +376,17 @@ function sourceBadgeClass(sourceType: string): string {
 
 function tagClass(tag: string): string {
   const low = tag.toLowerCase();
-  if (low.includes("jazz") || low.includes("music")) return "bg-rose-50 text-rose-600";
-  if (low.includes("food")) return "bg-orange-50 text-orange-600";
-  if (low.includes("free")) return "bg-green-50 text-green-600";
-  if (low.includes("travel")) return "bg-blue-50 text-blue-600";
-  if (low.includes("sport")) return "bg-emerald-50 text-emerald-600";
-  if (low.includes("event")) return "bg-purple-50 text-purple-600";
-  return "bg-slate-100 text-slate-600";
+  if (low.includes("jazz") || low.includes("music")) return "bg-rose-500/15 text-rose-300";
+  if (low.includes("food")) return "bg-orange-500/15 text-orange-300";
+  if (low.includes("free")) return "bg-emerald-500/15 text-emerald-300";
+  if (low.includes("travel")) return "bg-blue-500/15 text-blue-300";
+  if (low.includes("sport")) return "bg-emerald-500/15 text-emerald-300";
+  if (low.includes("event")) return "bg-purple-500/15 text-purple-300";
+  return "bg-white/10 text-gray-300";
 }
 
 export default function ExplorerPage() {
-  const [currentCity, setCurrentCity] = useState("Chicago");
+  const [currentCity, setCurrentCity] = useState("");
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchEventCardItem[]>([]);
   const [searchSource, setSearchSource] = useState("");
@@ -374,8 +404,56 @@ export default function ExplorerPage() {
   const [listening, setListening] = useState(false);
   const [noResults, setNoResults] = useState("");
   const [wayraOpen, setWayraOpen] = useState(false);
+  const [weatherAlertOpen, setWeatherAlertOpen] = useState(false);
+  const [timeContext, setTimeContext] = useState("today");
+  const [requestingLocation, setRequestingLocation] = useState(true);
+  const [selectedDrawerItem, setSelectedDrawerItem] = useState<ExplorerDrawerItem | null>(null);
   const trendsRef = useRef<HTMLElement | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+
+  useEffect(() => {
+    if (currentCity) {
+      localStorage.setItem("explorer_saved_city", currentCity);
+    }
+  }, [currentCity]);
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 11) setTimeContext("this morning");
+    else if (hour < 16) setTimeContext("this afternoon");
+    else if (hour < 20) setTimeContext("this evening");
+    else setTimeContext("tonight");
+
+    const savedCity = localStorage.getItem("explorer_saved_city");
+    if (savedCity) {
+      setCurrentCity(savedCity);
+      setRequestingLocation(false);
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      setRequestingLocation(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}&zoom=10`);
+          const data = await res.json();
+          const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county || "Chicago";
+          setCurrentCity(city);
+        } catch (e) {
+          setRequestingLocation(false);
+        } finally {
+          setRequestingLocation(false);
+        }
+      },
+      () => {
+        setRequestingLocation(false);
+      }
+    );
+  }, []);
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -383,6 +461,7 @@ export default function ExplorerPage() {
   }, []);
 
   const loadExplorer = useCallback(async () => {
+    if (!currentCity) return;
     setLoadingTrends(true);
     setLoadingReels(true);
     setLoadingNews(true);
@@ -514,11 +593,11 @@ export default function ExplorerPage() {
   }, [activeFilter, trends]);
 
   return (
-    <div className="relative min-h-full bg-[#F8F9FA] text-[#2C3E50]">
-      <section className="border-b border-[#E9ECEF] bg-white px-5 py-3">
+    <div className="relative min-h-full bg-[#1E3A5F] text-gray-300">
+      <section className="border-b border-[#1e4976] bg-[#1E3A5F] px-5 py-3">
         <div className="flex items-center gap-2">
-          <div className="flex min-h-10 min-w-0 flex-1 items-center rounded-full border border-[#E9ECEF] bg-[#F8F9FA] focus-within:border-[#E94560]">
-            <Search size={14} className="ml-3 shrink-0 text-[#6C757D]" />
+          <div className="flex min-h-10 min-w-0 flex-1 items-center rounded-full border border-[#1e4976] bg-[#162d4a] focus-within:border-[#E94560]">
+            <Search size={14} className="ml-3 shrink-0 text-gray-400" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -526,12 +605,12 @@ export default function ExplorerPage() {
                 if (event.key === "Enter") void submitSearch();
               }}
               placeholder="Search events, places, activities near you..."
-              className="min-w-0 flex-1 bg-transparent px-3 text-sm text-[#2C3E50] outline-none placeholder:text-[#6C757D]"
+              className="min-w-0 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-gray-500"
             />
             <button
               type="button"
               onClick={() => void submitSearch()}
-              className="h-6 border-l border-[#E9ECEF] px-3 text-sm font-medium text-[#E94560]"
+              className="h-6 border-l border-[#1e4976] px-3 text-sm font-medium text-[#E94560]"
             >
               Search
             </button>
@@ -540,8 +619,8 @@ export default function ExplorerPage() {
             type="button"
             onClick={startVoice}
             className={[
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-[#F8F9FA]",
-              listening ? "border-[#E94560] text-[#E94560]" : "border-[#E9ECEF] text-[#6C757D]",
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-[#162d4a]",
+              listening ? "border-[#E94560] text-[#E94560]" : "border-[#1e4976] text-gray-400",
             ].join(" ")}
             aria-label="Voice search"
           >
@@ -549,17 +628,17 @@ export default function ExplorerPage() {
           </button>
           <LocationPicker currentCity={currentCity} onCityChange={setCurrentCity} />
         </div>
-        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-track-[#1E3A5F] scrollbar-thumb-[#1e4976] [scrollbar-color:#1e4976_#1E3A5F] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#1e4976] [&::-webkit-scrollbar-track]:bg-[#1E3A5F]">
           {FILTERS.map((filter) => (
             <button
               key={filter}
               type="button"
               onClick={() => setActiveFilter(filter)}
               className={[
-                "shrink-0 rounded-full border px-3 py-1 text-xs font-medium hover:border-[#E94560] hover:text-[#E94560]",
+                "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                 activeFilter === filter
-                  ? "border-[#0F3460] bg-[#0F3460] text-white hover:text-white"
-                  : "border-[#E9ECEF] bg-white text-[#6C757D]",
+                  ? "border-[#E94560] bg-[#162d4a] text-white shadow-sm shadow-black/20 hover:text-white"
+                  : "border-[#1e4976] bg-[#162d4a] text-gray-300 hover:border-[#E94560] hover:text-white",
               ].join(" ")}
             >
               {filter}
@@ -568,26 +647,53 @@ export default function ExplorerPage() {
           <button
             type="button"
             title="Coming soon"
-            className="shrink-0 cursor-default rounded-full border border-dashed border-[#E9ECEF] bg-white px-3 py-1 text-xs font-medium text-[#6C757D]"
+            className="shrink-0 cursor-default rounded-full border border-dashed border-[#1e4976] bg-[#162d4a] px-3 py-1 text-xs font-medium text-gray-500"
           >
             More filters
           </button>
         </div>
       </section>
 
-      <main className="px-5 py-4">
+      {requestingLocation ? (
+        <main className="flex flex-col items-center justify-center px-5 py-32 text-center">
+          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[#E94560] border-t-transparent"></div>
+          <p className="font-medium text-white">Getting your location...</p>
+        </main>
+      ) : !currentCity ? (
+        <main className="flex flex-col items-center justify-center px-5 py-32 text-center">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#162d4a] ring-1 ring-[#1e4976]">
+            <MapPin size={24} className="text-[#E94560]" />
+          </div>
+          <h2 className="mb-2 text-xl font-bold text-white">Explore Your City</h2>
+          <p className="mb-6 max-w-md text-sm text-gray-300">
+            Please allow GPS permissions to discover trending events and activities near you, or select a city manually from the top right.
+          </p>
+          <button 
+            type="button"
+            onClick={() => {
+              // Trigger the location picker focus
+              const locationInput = document.querySelector('input[placeholder="Chicago"]') as HTMLElement;
+              locationInput?.focus();
+            }}
+            className="rounded-full bg-[#E94560] px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-[#d63851]"
+          >
+            Select a Location
+          </button>
+        </main>
+      ) : (
+        <main className="px-5 py-4">
         {searchLoading || searchResults.length > 0 || (wayraSuggestion && !wayraOpen) ? (
           <section className="mb-5">
             {searchLoading ? (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {Array.from({ length: 6 }).map((_, index) => (
-                  <div key={index} className="h-[260px] animate-pulse rounded-xl bg-[#E9ECEF]" />
+                  <div key={index} className="h-[260px] animate-pulse rounded-xl border border-[#1e4976] bg-[#162d4a]/80" />
                 ))}
               </div>
             ) : searchResults.length > 0 ? (
               <>
                 <div className="mb-2.5 flex items-center gap-2">
-                  <h2 className="text-sm font-medium text-[#2C3E50]">Results for &apos;{activeSearch}&apos;</h2>
+                  <h2 className="text-sm font-medium text-white">Results for &apos;{activeSearch}&apos;</h2>
                   <SearchSourceBadge source={searchSource} />
                   <button type="button" onClick={clearSearch} className="ml-auto text-xs text-[#E94560]">
                     Clear
@@ -595,18 +701,35 @@ export default function ExplorerPage() {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {searchResults.map((item) => (
-                    <EventCard key={item.id} event={item} view="grid" onOpen={() => undefined} />
+                    <EventCard 
+                      key={item.id} 
+                      event={item} 
+                      view="grid" 
+                      onOpen={() => setSelectedDrawerItem({
+                        id: item.id,
+                        title: item.title,
+                        source: item.sourceShort,
+                        venue: item.venue,
+                        city: item.city,
+                        dateLabel: item.dateLabel,
+                        priceLabel: item.priceLabel,
+                        description: "",
+                        emoji: item.emoji,
+                        imageUrl: item.imageUrl,
+                        sourceUrl: item.url || `https://www.stubhub.com/search/?q=${encodeURIComponent(item.title + ' ' + item.city)}`,
+                      })} 
+                    />
                   ))}
                 </div>
               </>
             ) : wayraSuggestion && !wayraOpen ? (
-              <div className="rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] p-4">
+              <div className="rounded-xl border border-[#1e4976] bg-[#162d4a] p-4">
                 <div className="flex gap-3">
                   <span className="mt-0.5 flex shrink-0 items-start justify-center">
                     <WayraIcon state="flying" size={0.5} variant="fog" animate={false} />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-[#2C3E50]">{wayraSuggestion}</p>
+                    <p className="text-sm text-gray-300">{wayraSuggestion}</p>
                     <button
                       type="button"
                       onClick={() => setWayraOpen(true)}
@@ -625,83 +748,68 @@ export default function ExplorerPage() {
         ) : null}
 
         <section ref={trendsRef} className="mb-5 scroll-mt-4">
-          <SectionHeader title={`🔥 Trending in ${currentCity} today`} subtitle="Live · Updated hourly" />
-          <div className="flex gap-3 overflow-x-auto pb-1">
+          <SectionHeader title={`🔥 Trending in ${currentCity} ${timeContext}`} subtitle="Live · Updated hourly" onSeeAll={() => showToast("Opening full directory...")} />
+          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-thin scrollbar-track-[#1E3A5F] scrollbar-thumb-[#1e4976] [scrollbar-color:#1e4976_#1E3A5F] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#1e4976] [&::-webkit-scrollbar-track]:bg-[#1E3A5F]">
             {loadingTrends
               ? Array.from({ length: 6 }).map((_, index) => (
-                  <div key={index} className="h-[130px] w-[155px] shrink-0 animate-pulse rounded-xl bg-[#E9ECEF]" />
+                  <div key={index} className="h-[130px] w-[155px] shrink-0 animate-pulse rounded-xl border border-[#1e4976] bg-[#162d4a]/80" />
                 ))
               : noResults
-                ? <div className="w-full rounded-xl border border-[#E9ECEF] bg-white p-4 text-sm text-[#6C757D]">{noResults}</div>
-                : filteredTrends.map((item) => <TrendCard key={item.id} item={item} />)}
+                ? <div className="w-full rounded-xl border border-[#1e4976] bg-[#162d4a] p-4 text-sm text-gray-300">{noResults}</div>
+                : filteredTrends.map((item) => <TrendCard key={item.id} item={item} onOpen={() => setSelectedDrawerItem({
+                    id: item.id,
+                    title: item.title,
+                    source: item.sourceLabel,
+                    venue: item.venue,
+                    city: currentCity,
+                    dateLabel: item.meta.split("·")[0] || "Upcoming",
+                    priceLabel: item.priceLabel,
+                    description: item.description,
+                    emoji: item.emoji,
+                    imageUrl: item.imageUrl,
+                    sourceUrl: item.url || `https://www.stubhub.com/search/?q=${encodeURIComponent(item.title + ' ' + currentCity)}`,
+                })} />)}
           </div>
         </section>
 
-        <section className="mb-5 flex items-center gap-3 rounded-xl border border-dashed border-[#E9ECEF] bg-white p-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#E9ECEF] bg-[#F8F9FA]">
-            <Megaphone size={14} className="text-[#6C757D]" />
+        <section className="mb-5 flex items-center gap-3 rounded-xl border border-dashed border-[#1e4976] bg-[#162d4a] p-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#1e4976] bg-[#1E3A5F]">
+            <Megaphone size={14} className="text-gray-400" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="mb-0.5 text-[9px] font-medium uppercase tracking-wide text-[#6C757D]">
+            <p className="mb-0.5 text-[9px] font-medium uppercase tracking-wide text-gray-400">
               Sponsored · Based on your searches
             </p>
-            <p className="text-[12px] font-medium text-[#2C3E50]">Travel offers that match your group plans</p>
-            <p className="text-[10px] text-[#6C757D]">Hotels, activities and routes near {currentCity}</p>
+            <p className="text-[12px] font-medium text-white">Travel offers that match your group plans</p>
+            <p className="text-[10px] text-gray-300">Hotels, activities and routes near {currentCity}</p>
           </div>
           <button
             type="button"
-            className="shrink-0 rounded-full border border-[#E9ECEF] px-3 py-1 text-[10px] text-[#6C757D] hover:border-[#E94560] hover:text-[#E94560]"
+            className="shrink-0 rounded-full border border-[#1e4976] bg-[#1E3A5F] px-3 py-1 text-[10px] text-gray-300 hover:border-[#E94560] hover:text-[#E94560]"
           >
             Learn more
           </button>
         </section>
 
-        <section className="mb-5">
-          <SectionHeader title="📷 Instagram reels today" subtitle={`#${currentCity} · #travel · Posted today`} />
-          <div className="flex gap-3 overflow-x-auto pb-1">
-            {loadingReels
-              ? Array.from({ length: 7 }).map((_, index) => (
-                  <div key={index} className="h-[162px] w-[106px] shrink-0 animate-pulse rounded-xl bg-[#E9ECEF]" />
-                ))
-              : reels.map((reel) => <ReelCard key={reel.id} reel={reel} />)}
-          </div>
-        </section>
-
-        <section className="mb-5">
-          <SectionHeader
-            titleNode={
-              <span className="flex items-center gap-1.5">
-                <Newspaper size={14} className="text-[#6C757D]" />
-                News for you
-              </span>
-            }
-            subtitle="Based on your interests and past searches"
-          />
-          <div className="space-y-2">
-            {loadingNews
-              ? Array.from({ length: 5 }).map((_, index) => (
-                  <div key={index} className="h-20 animate-pulse rounded-xl bg-[#E9ECEF]" />
-                ))
-              : news.slice(0, 5).map((item) => <NewsCard key={item.id} item={item} />)}
-          </div>
-        </section>
+        <ExplorerMediaFeed city={currentCity} />
       </main>
+      )}
 
       {listening ? (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#0F3460]/35">
-          <div className="flex w-60 flex-col items-center gap-3 rounded-2xl border border-[#E9ECEF] bg-white p-5">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#1E3A5F]/75">
+          <div className="flex w-60 flex-col items-center gap-3 rounded-2xl border border-[#1e4976] bg-[#162d4a] p-5 shadow-xl shadow-black/40">
             <div className="flex h-[60px] w-[60px] animate-pulse items-center justify-center rounded-full border-2 border-[#E94560]">
               <Mic size={22} className="text-[#E94560]" />
             </div>
-            <p className="text-sm font-medium text-[#2C3E50]">Listening...</p>
-            <p className="text-center text-xs text-[#6C757D]">Say something like &apos;jazz events tonight&apos;</p>
+            <p className="text-sm font-medium text-white">Listening...</p>
+            <p className="text-center text-xs text-gray-300">Say something like &apos;jazz events tonight&apos;</p>
             <button
               type="button"
               onClick={() => {
                 recognitionRef.current?.stop();
                 setListening(false);
               }}
-              className="rounded-full border border-[#E9ECEF] px-4 py-1.5 text-xs text-[#6C757D] hover:border-[#E94560] hover:text-[#E94560]"
+              className="rounded-full border border-[#1e4976] bg-[#1E3A5F] px-4 py-1.5 text-xs text-gray-300 hover:border-[#E94560] hover:text-[#E94560]"
             >
               Cancel
             </button>
@@ -716,8 +824,20 @@ export default function ExplorerPage() {
         onClose={() => setWayraOpen(false)}
       />
 
+      <WeatherWidget 
+        isOpen={weatherAlertOpen} 
+        onClose={() => setWeatherAlertOpen(false)} 
+        city={currentCity} 
+      />
+
+      <ExplorerItemDetailDrawer
+        item={selectedDrawerItem}
+        onClose={() => setSelectedDrawerItem(null)}
+        onToast={showToast}
+      />
+
       {toast ? (
-        <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-full border border-[#E9ECEF] bg-white px-4 py-2 text-xs font-medium text-[#2C3E50] shadow">
+        <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-full border border-[#1e4976] bg-[#162d4a] px-4 py-2 text-xs font-medium text-white shadow-lg shadow-black/30">
           {toast}
         </div>
       ) : null}
@@ -729,18 +849,20 @@ function SectionHeader({
   title,
   titleNode,
   subtitle,
+  onSeeAll,
 }: {
   title?: string;
   titleNode?: React.ReactNode;
   subtitle: string;
+  onSeeAll?: () => void;
 }) {
   return (
     <div className="mb-2.5 flex items-end justify-between gap-3">
       <div>
-        <h2 className="text-sm font-semibold text-[#2C3E50]">{titleNode ?? title}</h2>
-        <p className="text-xs text-[#6C757D]">{subtitle}</p>
+        <h2 className="text-sm font-semibold text-white">{titleNode ?? title}</h2>
+        <p className="text-xs text-gray-300">{subtitle}</p>
       </div>
-      <button type="button" className="text-xs text-[#E94560]">
+      <button type="button" onClick={onSeeAll} className="text-xs text-[#E94560]">
         See all
       </button>
     </div>
@@ -750,32 +872,33 @@ function SectionHeader({
 function SearchSourceBadge({ source }: { source: string }) {
   if (source === "internal_db") {
     return (
-      <span className="rounded-full bg-[#0F3460]/10 px-2 py-0.5 text-[10px] font-medium text-[#0F3460]">
+      <span className="rounded-full bg-[#1e4976]/60 px-2 py-0.5 text-[10px] font-medium text-gray-200">
         Your library
       </span>
     );
   }
   if (source === "google_web") {
     return (
-      <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-medium text-purple-600">
+      <span className="rounded-full bg-purple-500/20 px-2 py-0.5 text-[10px] font-medium text-purple-200">
         Google Search
       </span>
     );
   }
   return (
-    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600">
+    <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-medium text-blue-200">
       Google Events
     </span>
   );
 }
 
-function TrendCard({ item }: { item: TrendItem }) {
+function TrendCard({ item, onOpen }: { item: TrendItem; onOpen: () => void }) {
   return (
     <button
       type="button"
-      className="w-[155px] shrink-0 overflow-hidden rounded-xl border border-[#E9ECEF] bg-white text-left transition-all hover:-translate-y-0.5 hover:border-[#E94560]"
+      onClick={onOpen}
+      className="w-[155px] shrink-0 overflow-hidden rounded-xl border border-[#1e4976] bg-[#162d4a] text-left shadow-sm shadow-black/10 transition-all hover:-translate-y-0.5 hover:border-[#E94560]"
     >
-      <div className="relative flex h-[88px] items-center justify-center bg-[#16213E] text-[28px]">
+      <div className="relative flex h-[88px] items-center justify-center bg-[#1E3A5F] text-[28px]">
         {item.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
@@ -785,13 +908,13 @@ function TrendCard({ item }: { item: TrendItem }) {
         <span className={`absolute left-1.5 top-1.5 rounded px-1.5 py-0.5 text-[8px] font-medium text-white ${sourceBadgeClass(item.sourceType)}`}>
           {item.sourceLabel}
         </span>
-        <span className="absolute bottom-1.5 right-1.5 rounded-full border border-[#E9ECEF] bg-white px-1.5 py-0.5 text-[9px] font-medium text-[#2C3E50]">
+        <span className="absolute bottom-1.5 right-1.5 rounded-full border border-[#1e4976] bg-[#162d4a] px-1.5 py-0.5 text-[9px] font-medium text-white">
           {item.priceLabel}
         </span>
       </div>
       <div className="px-2.5 py-[9px]">
-        <p className="line-clamp-2 text-[11px] font-medium text-[#2C3E50]">{item.title}</p>
-        <p className="mt-1 truncate text-[10px] text-[#6C757D]">{item.meta}</p>
+        <p className="line-clamp-2 text-[11px] font-medium text-white">{item.title}</p>
+        <p className="mt-1 truncate text-[10px] text-gray-300">{item.meta}</p>
       </div>
     </button>
   );
@@ -799,45 +922,78 @@ function TrendCard({ item }: { item: TrendItem }) {
 
 function ReelCard({ reel }: { reel: ReelItem }) {
   return (
-    <button
-      type="button"
-      className="relative h-[162px] w-[106px] shrink-0 overflow-hidden rounded-xl border border-[#E9ECEF] bg-[#16213E] transition-all hover:-translate-y-0.5 hover:border-[#E94560]"
-    >
-      {reel.thumbnail ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={reel.thumbnail} alt="" className="absolute inset-0 h-full w-full object-cover" />
-      ) : null}
-      <span className="absolute left-1.5 top-1.5 h-4 w-4 rounded-[5px] bg-[linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)]" />
-      {reel.hot ? (
-        <span className="absolute right-1.5 top-1.5 rounded bg-[#E94560] px-1 py-0.5 text-[8px] font-medium text-white">
-          HOT
+    <div className="relative h-[162px] w-[106px] shrink-0 overflow-hidden rounded-xl border border-[#1e4976] bg-[#162d4a] transition-all hover:-translate-y-0.5 hover:border-[#E94560] group">
+      <button type="button" className="absolute inset-0 h-full w-full text-left">
+        {reel.thumbnail ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={reel.thumbnail} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        ) : null}
+        <span className="absolute left-1.5 top-1.5 h-4 w-4 rounded-[5px] bg-[linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)]" />
+        {reel.hot ? (
+          <span className="absolute right-1.5 top-1.5 rounded bg-[#E94560] px-1 py-0.5 text-[8px] font-medium text-white">
+            HOT
+          </span>
+        ) : null}
+        <span className="absolute left-1/2 top-1/2 flex h-[26px] w-[26px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/25">
+          <span className="ml-0.5 h-0 w-0 border-b-[5px] border-l-[9px] border-t-[5px] border-b-transparent border-l-white border-t-transparent" />
         </span>
-      ) : null}
-      <span className="absolute left-1/2 top-1/2 flex h-[26px] w-[26px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/25">
-        <span className="ml-0.5 h-0 w-0 border-b-[5px] border-l-[9px] border-t-[5px] border-b-transparent border-l-white border-t-transparent" />
-      </span>
-      <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(transparent,rgba(0,0,0,0.88))] px-2 pb-2 pt-10 text-left">
-        <p className="truncate text-[9px] font-medium text-white/90">{reel.author}</p>
-        <p className="text-[8px] text-white/55">{reel.views}</p>
-      </div>
-    </button>
+        <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(transparent,rgba(0,0,0,0.88))] px-2 pb-7 pt-10 text-left">
+          <p className="truncate text-[9px] font-medium text-white/90">{reel.author}</p>
+          <p className="text-[8px] text-white/55">{reel.views}</p>
+        </div>
+      </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          alert("Poll created in your group chat: 'Should we go here?'");
+        }}
+        className="absolute bottom-1.5 left-1.5 right-1.5 rounded bg-white/20 py-1 text-[9px] font-medium text-white backdrop-blur-md transition-colors hover:bg-[#E94560]"
+      >
+        Ask Group
+      </button>
+    </div>
   );
 }
 
-function NewsCard({ item }: { item: NewsItem }) {
+function NewsCard({ item, onAlertClick }: { item: NewsItem; onAlertClick?: () => void }) {
+  const isAlert = item.source.toLowerCase() === "alert" || item.tags.some(t => t.toLowerCase() === "alert");
+
+  if (isAlert) {
+    return (
+      <button
+        type="button"
+        onClick={onAlertClick}
+        className="flex w-full items-center gap-3 rounded-lg border border-orange-400/40 bg-[#162d4a] p-2.5 text-left transition-all hover:border-orange-400/60"
+      >
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#1e4976] bg-[#1E3A5F] text-[14px] shadow-sm">
+          {item.emoji}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[11.5px] font-medium text-orange-200 leading-snug">
+            {item.title}
+          </span>
+        </span>
+        <span className="shrink-0 text-[9px] font-medium text-orange-300/90">
+          {item.time}
+        </span>
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"
-      className="flex w-full gap-3 rounded-xl border border-[#E9ECEF] bg-white p-3 text-left transition-all hover:translate-x-0.5 hover:border-[#E9ECEF]"
+      className="flex w-full gap-3 rounded-xl border border-[#1e4976] bg-[#162d4a] p-3 text-left transition-all hover:translate-x-0.5 hover:border-[#E94560]/50"
     >
-      <span className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-lg border border-[#E9ECEF] bg-[#F8F9FA] text-[22px]">
+      <span className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-lg border border-[#1e4976] bg-[#1E3A5F] text-[22px]">
         {item.emoji}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="mb-1 block text-[9px] font-medium uppercase tracking-wide text-[#6C757D]">
+        <span className="mb-1 block text-[9px] font-medium uppercase tracking-wide text-gray-400">
           {item.source} · {item.time}
         </span>
-        <span className="mb-1 line-clamp-2 text-[12px] font-medium leading-relaxed text-[#2C3E50]">
+        <span className="mb-1 line-clamp-2 text-[12px] font-medium leading-relaxed text-white">
           {item.title}
         </span>
         <span className="flex flex-wrap gap-1">

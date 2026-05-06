@@ -39,24 +39,51 @@ class WayraChatRequest(BaseModel):
     trip_context: str = ""
 
 
+from fastapi import APIRouter, Depends, Query, status, BackgroundTasks
+
+# ...
+
 @router.get("/feed", status_code=status.HTTP_200_OK)
 def get_explorer_feed(
+    background_tasks: BackgroundTasks,
     city: str = Query("Chicago", max_length=120),
     category: str = Query("", max_length=120),
     date_filter: str = Query("today", max_length=40),
     q: str = Query("", max_length=200),
+    db: Session = Depends(get_db),
 ) -> dict[str, Any]:
+    from app.services.explore_service import get_cached_events
+    from app.schemas.explore import ExploreEventResponse
+    
     query_str = q.strip() or category.strip() or "events"
-    events = search_google_events(
-        query=query_str,
-        city=city.strip() or "Chicago",
-        date_filter=date_filter,
-    )
+    events_models = get_cached_events(db, background_tasks, city.strip() or "Chicago", query_str)
+    
+    # Manually serialize to dicts to match the existing UI signature quickly
+    events_dicts = []
+    for e in events_models:
+        events_dicts.append({
+            "id": str(e.id),
+            "external_id": e.external_id,
+            "title": e.title,
+            "description": e.description or "",
+            "category": e.category,
+            "source_type": e.source_name,
+            "source_url": e.booking_url or "",
+            "booking_type": "external_link",
+            "image_url": e.image_url or "",
+            "venue": e.venue_name or "",
+            "city": e.city,
+            "date_str": e.start_time.isoformat() if e.start_time else "",
+            "price_from": e.price_from,
+            "is_free": e.is_free,
+            "ticket_url": e.booking_url or "",
+        })
+        
     return {
-        "events": events,
-        "total": len(events),
+        "events": events_dicts,
+        "total": len(events_dicts),
         "city": city,
-        "source": "google_events",
+        "source": "database_cache",
     }
 
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   useCallback,
@@ -616,6 +617,17 @@ export default function ProfilePage() {
     window.setTimeout(() => setToast(null), 2600);
   }, []);
 
+  const handleSignOut = useCallback(() => {
+    const confirmed = window.confirm(
+      "Are you sure you want to sign out?",
+    );
+    if (!confirmed) return;
+    localStorage.removeItem("gt_token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("travello_user");
+    window.location.href = "/login";
+  }, []);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -1099,7 +1111,6 @@ export default function ProfilePage() {
       return <AvatarFaceSvg o={o} className="h-11 w-11 shrink-0" />;
     }
     if (customizerTab === "skin") {
-      const o = { ...avatarOpts, skin: idx };
       return (
         <div
           className="h-11 w-11 shrink-0 rounded-full border-2 border-stone-200"
@@ -1131,7 +1142,7 @@ export default function ProfilePage() {
 
   const applyCustomizerPick = (idx: number) => {
     setAvatarOpts((prev) => {
-      let next = { ...prev };
+      const next = { ...prev };
       if (customizerTab === "skin") next.skin = idx;
       else if (customizerTab === "hair") next.hair = idx;
       else if (customizerTab === "eyes") next.eyes = idx;
@@ -1441,6 +1452,18 @@ export default function ProfilePage() {
                 <IconMap size={16} className="shrink-0" />
                 Open map
               </Link>
+              <button
+                type="button"
+                role="menuitem"
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-[#E94560] hover:bg-red-50"
+                onClick={() => {
+                  setProfileNavOpen(false);
+                  handleSignOut();
+                }}
+              >
+                <LogOut size={14} className="shrink-0 text-[#E94560]" />
+                Sign out
+              </button>
             </div>
           ) : null}
         </div>
