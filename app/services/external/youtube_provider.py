@@ -22,8 +22,8 @@ def _city_tag_slug(city: str) -> str:
 
 
 def _build_shorts_search_query(city: str, tag: str | None = None) -> str:
-    """Strict query: {city} travel vlog shorts."""
-    base = f"{city} travel vlog shorts"
+    """Query: {city} travel."""
+    base = f"{city} travel"
     if tag:
         extra = tag.strip().lstrip("#")
         if extra:
