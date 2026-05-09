@@ -107,6 +107,22 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="GOOGLE_PLACES_API_KEY",
     )
+    unsplash_access_key: str | None = Field(
+        default=None,
+        validation_alias="UNSPLASH_ACCESS_KEY",
+    )
+    foursquare_api_key: str | None = Field(
+        default=None,
+        validation_alias="FOURSQUARE_API_KEY",
+    )
+    geoapify_api_key: str | None = Field(
+        default=None,
+        validation_alias="GEOAPIFY_API_KEY",
+    )
+    gnews_api_key: str | None = Field(
+        default=None,
+        validation_alias="GNEWS_API_KEY",
+    )
     apify_token: str | None = Field(
         default=None,
         validation_alias="APIFY_TOKEN",
@@ -116,6 +132,15 @@ class Settings(BaseSettings):
         validation_alias="APIFY_EXPLORER_ACTOR_ID",
         description="Optional Apify actor id for Explorer enrichment.",
     )
+    exchangerate_api_key: str | None = Field(
+        default=None,
+        validation_alias="EXCHANGERATE_API_KEY",
+    )
+    geonames_username: str = Field(
+        default="travello",
+        validation_alias="GEONAMES_USERNAME",
+    )
+
 
     # ── Stripe (Phase 3) ───────────────────────────────────────────────────────
     stripe_secret_key: str | None = Field(

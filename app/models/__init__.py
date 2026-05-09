@@ -17,6 +17,10 @@ from app.models.notification import Notification
 from app.models.friend_request import FriendRequest
 from app.models.blocked_user import BlockedUser
 from app.models.user_app_settings import UserAppSettings
+from app.models.explore_event import ExploreEvent
+from app.models.explore_content import ExploreContent
+from app.models.explorer_cache import ExplorerCache
+from app.models.imported_short import ImportedShort
 
 __all__: list[str] = [
     "User",
@@ -49,4 +53,8 @@ __all__: list[str] = [
     "FriendRequest",
     "BlockedUser",
     "UserAppSettings",
+    "ExploreEvent",
+    "ExploreContent",
+    "ExplorerCache",
+    "ImportedShort",
 ]

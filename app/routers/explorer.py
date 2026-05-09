@@ -33,30 +33,65 @@ class ExplorerVoteRequest(BaseModel):
     vote: str = Field(..., min_length=1)
 
 
+class ShortImportRequest(BaseModel):
+    url: str = Field(..., min_length=1)
+    city: str = Field(..., min_length=1)
+    title: str | None = None
+    thumbnail_url: str | None = None
+    hashtags: list[str] | None = None
+
+
 class WayraChatRequest(BaseModel):
     message: str = Field(..., min_length=1)
     city: str = "Chicago"
     trip_context: str = ""
 
 
+from fastapi import APIRouter, Depends, Query, status, BackgroundTasks
+
+# ...
+
 @router.get("/feed", status_code=status.HTTP_200_OK)
 def get_explorer_feed(
+    background_tasks: BackgroundTasks,
     city: str = Query("Chicago", max_length=120),
     category: str = Query("", max_length=120),
     date_filter: str = Query("today", max_length=40),
     q: str = Query("", max_length=200),
+    db: Session = Depends(get_db),
 ) -> dict[str, Any]:
+    from app.services.explore_service import get_cached_events
+    from app.schemas.explore import ExploreEventResponse
+    
     query_str = q.strip() or category.strip() or "events"
-    events = search_google_events(
-        query=query_str,
-        city=city.strip() or "Chicago",
-        date_filter=date_filter,
-    )
+    events_models = get_cached_events(db, background_tasks, city.strip() or "Chicago", query_str)
+    
+    # Manually serialize to dicts to match the existing UI signature quickly
+    events_dicts = []
+    for e in events_models:
+        events_dicts.append({
+            "id": str(e.id),
+            "external_id": e.external_id,
+            "title": e.title,
+            "description": e.description or "",
+            "category": e.category,
+            "source_type": e.source_name,
+            "source_url": e.booking_url or "",
+            "booking_type": "external_link",
+            "image_url": e.image_url or "",
+            "venue": e.venue_name or "",
+            "city": e.city,
+            "date_str": e.start_time.isoformat() if e.start_time else "",
+            "price_from": e.price_from,
+            "is_free": e.is_free,
+            "ticket_url": e.booking_url or "",
+        })
+        
     return {
-        "events": events,
-        "total": len(events),
+        "events": events_dicts,
+        "total": len(events_dicts),
         "city": city,
-        "source": "google_events",
+        "source": "database_cache",
     }
 
 
@@ -146,3 +181,65 @@ def chat_with_wayra(
         )
 
     return {"response": response_text, "city": body.city}
+
+
+@router.post("/shorts/import", status_code=status.HTTP_201_CREATED)
+def import_short(
+    body: ShortImportRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.services.imported_short_service import create_imported_short
+    
+    try:
+        short = create_imported_short(
+            db=db,
+            city=body.city,
+            url=body.url,
+            title=body.title,
+            thumbnail_url=body.thumbnail_url,
+            hashtags=body.hashtags,
+        )
+        return {"status": "success", "id": str(short.id), "video_id": short.external_id}
+    except ValueError as e:
+        AppException.bad_request(str(e))
+    except Exception as e:
+        AppException.internal_error(f"Failed to import short: {e}")
+
+
+@router.post("/shorts/{short_id}/react")
+def react_to_short(
+    short_id: str,
+    reaction_type: str,  # "love", "helpful", "list", or "like"
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.models.imported_short import ImportedShort
+    import uuid
+    from sqlalchemy.orm.attributes import flag_modified
+    
+    try:
+        short_uuid = uuid.UUID(short_id)
+    except ValueError:
+        AppException.bad_request("Invalid short ID format")
+        
+    short = db.query(ImportedShort).filter(ImportedShort.id == short_uuid).first()
+    if not short:
+        AppException.bad_request("Short not found")
+        
+    if reaction_type == "like":
+        short.likes_count += 1
+    elif reaction_type in ["love", "helpful", "list"]:
+        if not short.reaction_counts:
+            short.reaction_counts = {"love": 0, "helpful": 0, "list": 0}
+        
+        # Create a new dict to ensure SQLAlchemy detects the change or use flag_modified
+        counts = dict(short.reaction_counts)
+        counts[reaction_type] = counts.get(reaction_type, 0) + 1
+        short.reaction_counts = counts
+        flag_modified(short, "reaction_counts")
+    else:
+        AppException.bad_request("Invalid reaction type")
+        
+    db.commit()
+    return {"status": "success", "likes": short.likes_count, "reactions": short.reaction_counts}

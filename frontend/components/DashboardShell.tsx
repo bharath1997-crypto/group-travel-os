@@ -26,7 +26,6 @@ const nav: NavItem[] = [
   { href: "/travel-hub", label: "Travel Hub" },
   { href: "/explorer", label: "Explore" },
   { href: "/map", label: "Map", mapPin: true },
-  { href: "/weather", label: "Weather" },
   { href: "/stats", label: "My Stats" },
   { href: "/settings", label: "Settings" },
 ];

@@ -9055,6 +9055,17 @@ function ConnectMainScreen({
       .filter((s) => s.rows.length > 0);
   })();
 
+  const handleSignOut = useCallback(() => {
+    const confirmed = window.confirm(
+      "Are you sure you want to sign out?",
+    );
+    if (!confirmed) return;
+    localStorage.removeItem("gt_token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("travello_user");
+    window.location.href = "/login";
+  }, []);
+
   return (
     <>
       <div className="px-3 py-3">
@@ -9146,6 +9157,17 @@ function ConnectMainScreen({
           ))}
         </SettingsSection>
       ))}
+
+      <div className="mt-4 border-t border-[#E9ECEF] pt-4">
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-[#E94560] transition-colors hover:bg-red-50"
+        >
+          <LogOut size={18} className="text-[#E94560]" />
+          <span className="text-sm font-medium">Sign out</span>
+        </button>
+      </div>
 
       <button
         type="button"

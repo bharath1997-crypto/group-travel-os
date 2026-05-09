@@ -363,7 +363,11 @@ export function AIAssistantSidecar({
         : "AI Travel Guide"
       : "App Guide · offline";
 
-  const isExplorerRoute = pathname === "/explorer" || pathname.startsWith("/explorer/");
+  const isExplorerRoute =
+    pathname === "/explorer" ||
+    pathname.startsWith("/explorer/") ||
+    pathname === "/explore" ||
+    pathname.startsWith("/explore/");
   if (isExplorerRoute) {
     return null;
   }
