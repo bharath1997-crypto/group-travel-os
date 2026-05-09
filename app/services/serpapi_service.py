@@ -40,6 +40,12 @@ def _date_chip(date_filter: str) -> str:
     }.get((date_filter or "").strip().lower(), "date:today")
 
 
+import time
+
+# Aggressive memory cache: 4 hours TTL
+_events_cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
+CACHE_TTL = 4 * 60 * 60  # 4 hours
+
 def search_google_events(
     query: str,
     city: str,
@@ -47,6 +53,15 @@ def search_google_events(
     timeout: float | None = None,
 ) -> list[dict[str, Any]]:
     try:
+        cache_key = f"{city.lower()}_{query.lower()}_{date_filter.lower()}"
+        
+        # Check cache first
+        if cache_key in _events_cache:
+            timestamp, cached_data = _events_cache[cache_key]
+            if time.time() - timestamp < CACHE_TTL:
+                logger.info(f"Serving events from cache for {cache_key}")
+                return cached_data
+
         api_key = _serpapi_key()
         if not api_key:
             return []
@@ -97,6 +112,9 @@ def search_google_events(
                     "ticket_url": first_ticket.get("link", ""),
                 },
             )
+        
+        # Save to aggressive cache
+        _events_cache[cache_key] = (time.time(), out)
         return out
     except Exception as exc:
         logger.warning("SerpAPI Google Events search failed: %s", exc)

@@ -112,7 +112,12 @@ function isActive(pathname: string, href: string): boolean {
 
 /** Bottom nav "Explore" and More sheet targets */
 function isExploreNavActive(pathname: string): boolean {
-  return pathname === "/explorer" || pathname.startsWith("/explorer/");
+  return (
+    pathname === "/explorer" ||
+    pathname.startsWith("/explorer/") ||
+    pathname === "/explore" ||
+    pathname.startsWith("/explore/")
+  );
 }
 
 const MOBILE_MORE_LINKS: {
@@ -122,9 +127,7 @@ const MOBILE_MORE_LINKS: {
 }[] = [
   { href: "/split-activities", label: "Split Activities", Icon: IconBanknote },
   { href: "/map", label: "Map", Icon: IconMap },
-  { href: "/stats", label: "Stats", Icon: IconBarChart },
   { href: "/notifications", label: "Notifications", Icon: IconBell },
-  { href: "/weather", label: "Weather", Icon: IconCloudSun },
   { href: "/settings", label: "Settings", Icon: IconSettings },
   { href: "/profile", label: "Profile", Icon: IconUser },
 ];
@@ -170,8 +173,6 @@ const MAIN_NAV: {
   { href: "/live", label: "Live", Icon: IconLive },
   { href: "/explorer", label: "Explore", Icon: IconCompass },
   { href: "/map", label: "Map", Icon: IconMap },
-  { href: "/weather", label: "Weather", Icon: IconCloudSun },
-  { href: "/stats", label: "Stats", Icon: IconBarChart },
   {
     href: "/notifications",
     label: "Notifications",
@@ -359,6 +360,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const hideAssistantSidecar = pathname.startsWith("/travel-hub");
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isExplorePage = pathname.startsWith("/explore") || pathname.startsWith("/explorer");
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [isMdUp, setIsMdUp] = useState(false);
   const [isLgUp, setIsLgUp] = useState(false);
@@ -492,7 +494,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen min-h-[100dvh] bg-[#F8F9FA]">
       {/* Desktop sidebar — lg+ always 220px */}
-      <aside className="fixed left-0 top-0 z-40 hidden h-full min-h-screen w-[220px] flex-col bg-[#0F3460] transition-all duration-300 ease-in-out lg:flex">
+      <aside className="fixed left-0 top-0 z-40 hidden h-full min-h-screen w-[220px] flex-col border-r-0 bg-[#0F3460] shadow-none transition-all duration-300 ease-in-out lg:flex">
         <div className="shrink-0 border-b border-[rgba(255,255,255,0.1)] px-4 py-5">
           <Link
             href="/dashboard"
@@ -502,7 +504,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           </Link>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden px-3 py-3">
+        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden px-3 py-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#0a2240] [&::-webkit-scrollbar-thumb]:rounded-full [scrollbar-width:thin] [scrollbar-color:#0a2240_transparent]">
           {PRIMARY_NAV.map((item) => (
             <SidebarNavLink
               key={item.href}
@@ -574,16 +576,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Tablet collapsed rail — md only, 64px icons */}
-      <aside className="fixed left-0 top-0 z-40 hidden h-full min-h-screen w-[64px] flex-col bg-[#0F3460] transition-all duration-300 ease-in-out md:flex lg:hidden">
-        <div className="flex shrink-0 flex-col items-center border-b border-[rgba(255,255,255,0.1)] px-1 py-3">
-          <button
-            type="button"
-            aria-label="Expand sidebar"
-            className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-lg text-2xl text-[#E94560] transition-colors hover:bg-[rgba(255,255,255,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <IconMenu size={24} darkBg />
-          </button>
+      <aside className="fixed left-0 top-0 z-40 hidden h-full min-h-screen w-[64px] flex-col bg-[#0F3460] shadow-none transition-all duration-300 ease-in-out md:flex lg:hidden">
+        <div className="flex shrink-0 flex-col items-center border-b border-[rgba(255,255,255,0.1)] px-1 py-4">
           <Link
             href="/dashboard"
             className="flex items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/50"
@@ -593,7 +587,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           </Link>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden px-1 py-2">
+        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden px-1 py-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#0a2240] [&::-webkit-scrollbar-thumb]:rounded-full [scrollbar-width:thin] [scrollbar-color:#0a2240_transparent]">
           {PRIMARY_NAV.map((item) => (
             <SidebarNavLink
               key={item.href}
@@ -675,7 +669,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               </Link>
             </div>
 
-            <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden px-3 py-3">
+            <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden px-3 py-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#0a2240] [&::-webkit-scrollbar-thumb]:rounded-full [scrollbar-width:thin] [scrollbar-color:#0a2240_transparent]">
               {PRIMARY_NAV.map((item) => (
                 <SidebarNavLink
                   key={item.href}
@@ -790,8 +784,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
         <main
           className={
-            isMapPage
-              ? "flex min-h-0 flex-1 flex-col overflow-hidden bg-white p-0"
+            isMapPage || isExplorePage
+              ? "flex min-h-0 flex-1 flex-col overflow-hidden p-0"
               : "min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-5"
           }
         >
@@ -807,7 +801,13 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               </div>
             </div>
           ) : (
-            <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+            <div
+              className={
+                isExplorePage
+                  ? "flex w-full max-w-none flex-col gap-0"
+                  : "mx-auto flex w-full max-w-6xl flex-col gap-5"
+              }
+            >
               <PresenceHeartbeat />
               <PostOAuthWelcomeModal />
               <VerificationBanner />

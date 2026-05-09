@@ -87,13 +87,24 @@ def create_app() -> FastAPI:
 
 def _add_middleware(app: FastAPI) -> None:
     """Register all middleware. Order matters — last added runs first."""
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.allowed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    # Browsers may send Origin as http://[::1]:3000 while dev only listed localhost /
+    # 127.0.0.1, which makes fetch() fail with a generic network error. In development,
+    # allow any localhost / loopback origin and port.
+    cors_kw: dict = {
+        "allow_credentials": True,
+        "allow_methods": ["*"],
+        "allow_headers": ["*"],
+    }
+    env = (settings.ENVIRONMENT or "").strip().lower()
+    if settings.DEBUG or env in ("development", "dev", "local"):
+        cors_kw["allow_origin_regex"] = (
+            r"https?://"
+            r"(localhost|127\.0\.0\.1|\[::1\]|\[::ffff:127\.0\.0\.1\])"
+            r"(:\d+)?"
+        )
+    else:
+        cors_kw["allow_origins"] = settings.allowed_origins
+    app.add_middleware(CORSMiddleware, **cors_kw)
 
 
 def _register_routes(app: FastAPI) -> None:
@@ -224,7 +235,11 @@ def _register_routes(app: FastAPI) -> None:
 
     from app.routers.explorer import router as explorer_router
     from app.routers.explorer import wayra_router
+    from app.routes.explore import router as explore_content_router
+    from app.routes.explorer import router as explorer_feed_router
 
+    app.include_router(explore_content_router, prefix="/api/v1", tags=["explore_content"])
+    app.include_router(explorer_feed_router, prefix="/api/v1", tags=["explorer_pipeline"])
     app.include_router(explorer_router, prefix="/api/v1", tags=["explorer"])
     app.include_router(wayra_router, prefix="/api/v1", tags=["wayra"])
 

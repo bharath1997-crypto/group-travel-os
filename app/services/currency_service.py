@@ -104,15 +104,51 @@ def _db_is_mock(db: Session) -> bool:
 
 
 def _fetch_live_rate(from_currency: str, to_currency: str) -> float:
-    url = f"https://api.exchangerate-api.com/v4/latest/{from_currency}"
-    with httpx.Client(timeout=20.0) as client:
-        r = client.get(url)
-        r.raise_for_status()
-        data = r.json()
-        rates = data.get("rates") or {}
-        if to_currency not in rates:
-            raise KeyError(f"No rate for {to_currency}")
-        return float(rates[to_currency])
+    fr = from_currency.upper()
+    to = to_currency.upper()
+    
+    # 1. Primary: Frankfurter
+    try:
+        url = f"https://api.frankfurter.app/latest?from={fr}&to={to}"
+        with httpx.Client(timeout=10.0) as client:
+            r = client.get(url)
+            if r.status_code == 200:
+                data = r.json()
+                rate = data.get("rates", {}).get(to)
+                if rate:
+                    return float(rate)
+    except Exception as e:
+        logger.warning(f"Frankfurter API failed for {fr}->{to}: {e}")
+
+    # 2. Fallback: fawazahmed0/currency-api
+    try:
+        # Format: currencies/{from}.json
+        url = f"https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{fr.lower()}.json"
+        with httpx.Client(timeout=10.0) as client:
+            r = client.get(url)
+            if r.status_code == 200:
+                data = r.json()
+                # Data is nested under the currency key: data['usd']['inr']
+                rate = data.get(fr.lower(), {}).get(to.lower())
+                if rate:
+                    return float(rate)
+    except Exception as e:
+        logger.warning(f"Currency-API fallback failed for {fr}->{to}: {e}")
+
+    # 3. Last Resort: Generic Open-ER-API
+    try:
+        url = f"https://open.er-api.com/v6/latest/{fr}"
+        with httpx.Client(timeout=10.0) as client:
+            r = client.get(url)
+            if r.status_code == 200:
+                data = r.json()
+                rate = data.get("rates", {}).get(to)
+                if rate:
+                    return float(rate)
+    except Exception as e:
+        logger.error(f"All currency APIs failed for {fr}->{to}: {e}")
+    
+    raise KeyError(f"Could not fetch exchange rate for {fr} to {to} from any provider.")
 
 
 def get_exchange_rate(from_currency: str, to_currency: str, db: Session) -> float:

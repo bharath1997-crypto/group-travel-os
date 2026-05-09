@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
 
-type ExplorerDrawerItem = {
+export type ExplorerDrawerItem = {
   id: string;
   title: string;
   source: string;
@@ -141,32 +141,70 @@ export function ExplorerItemDetailDrawer({
           ))}
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-          <button
-            type="button"
-            onClick={() => openTripModal("save")}
-            className="rounded-2xl bg-[#E94560] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#ff5670]"
-          >
-            Save to trip
-          </button>
-          <button
-            type="button"
-            onClick={() => openTripModal("vote")}
-            className="rounded-2xl border border-[#E94560] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#E94560]/15"
-          >
-            Vote with group
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (item.sourceUrl) window.open(item.sourceUrl, "_blank", "noopener,noreferrer");
-            }}
-            className="rounded-2xl border border-white/10 px-5 py-3 text-white transition hover:bg-white/10"
-            aria-label="Open source link"
-          >
-            <LinkIcon className="h-5 w-5" />
-          </button>
-        </div>
+        {(() => {
+          let tickets: { title: string; url: string }[] = [];
+          let fallbackUrl = item.sourceUrl;
+          if (item.sourceUrl) {
+            try {
+              tickets = JSON.parse(item.sourceUrl);
+              fallbackUrl = null;
+            } catch {
+              // Not JSON, just a normal URL
+            }
+          }
+
+          return (
+            <div className="mt-6">
+              {tickets.length > 0 ? (
+                <>
+                  <p className="mb-3 text-sm font-bold text-white/80">Available Tickets & Info</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {tickets.map((t, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => window.open(t.url, "_blank", "noopener,noreferrer")}
+                        className="flex items-center justify-between rounded-2xl bg-white/10 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/20"
+                      >
+                        <span className="truncate">{t.title}</span>
+                        <LinkIcon className="ml-2 h-4 w-4 shrink-0 opacity-70" />
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                <button
+                  type="button"
+                  onClick={() => openTripModal("save")}
+                  className="rounded-2xl bg-[#E94560] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#ff5670]"
+                >
+                  Save to trip
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openTripModal("vote")}
+                  className="rounded-2xl border border-[#E94560] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#E94560]/15"
+                >
+                  Vote with group
+                </button>
+                {fallbackUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (fallbackUrl) window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+                    }}
+                    className="rounded-2xl border border-white/10 px-5 py-3 text-white transition hover:bg-white/10"
+                    aria-label="Open source link"
+                  >
+                    <LinkIcon className="h-5 w-5" />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          );
+        })()}
 
         {tripModalOpen ? (
           <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4">

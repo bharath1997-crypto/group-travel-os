@@ -1,7 +1,7 @@
 "use client";
 
 import { Send, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import WayraIcon from "@/components/ui/WayraIcon";
 import { apiFetch } from "@/lib/api";
@@ -133,6 +133,9 @@ export type WayraPanelProps = {
   city: string;
   onClose: () => void;
   onOpen: () => void;
+  /** When the panel opens with this text (e.g. garbled search), prefill the composer. */
+  seedMessage?: string | null;
+  onSeedConsumed?: () => void;
 };
 
 const QUICK_CHIPS = [
@@ -142,7 +145,7 @@ const QUICK_CHIPS = [
   "Best food tours?",
 ];
 
-export function WayraPanel({ open, city, onClose, onOpen }: WayraPanelProps) {
+export function WayraPanel({ open, city, onClose, onOpen, seedMessage, onSeedConsumed }: WayraPanelProps) {
   const [birdState, setBirdState] = useState<"flying" | "perched">("perched");
   const prevModeRef = useRef<"flying" | "perched">("perched");
 
@@ -156,6 +159,12 @@ export function WayraPanel({ open, city, onClose, onOpen }: WayraPanelProps) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [fallbackIndex, setFallbackIndex] = useState(0);
+
+  useEffect(() => {
+    if (!open || !seedMessage?.trim()) return;
+    setInput(seedMessage.trim());
+    onSeedConsumed?.();
+  }, [open, seedMessage, onSeedConsumed]);
 
   const send = async (raw: string) => {
     const message = raw.trim();
