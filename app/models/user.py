@@ -134,6 +134,12 @@ class User(Base):
         default=True,
         nullable=False,
     )
+    # Platform superuser — e.g. cache maintenance endpoints.
+    is_admin: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
     email_verification_token_hash: Mapped[str | None] = mapped_column(
         String(64),
         nullable=True,

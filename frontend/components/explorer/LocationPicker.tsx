@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, MapPin, Navigation, Search } from "lucide-react";
+import { Check, ChevronDown, MapPin, Navigation, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type LocationPickerProps = {
@@ -146,9 +146,7 @@ export function LocationPicker({ currentCity, onCityChange }: LocationPickerProp
               data.address?.municipality;
 
             if (!detectedCity) throw new Error("No city found");
-            onCityChange(detectedCity);
-            setOpen(false);
-            setSearch("");
+            selectCity(detectedCity);
           } catch {
             showToast("Could not detect location");
           } finally {
@@ -168,26 +166,45 @@ export function LocationPicker({ currentCity, onCityChange }: LocationPickerProp
 
   return (
     <div ref={ref} className="relative shrink-0">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-[#1e4976] bg-[#162d4a] px-3 py-1.5"
-      >
-        <MapPin size={10} className="fill-[#E94560] text-[#E94560]" />
-        <span className="text-sm font-medium text-white">{currentCity}</span>
-        <ChevronDown size={12} className="text-gray-400" />
-      </button>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          className="group flex cursor-pointer items-center gap-1.5 rounded-full border border-[#1e4976] bg-[#162d4a] px-4 py-2 transition-all hover:border-[#E94560] hover:shadow-lg hover:shadow-[#E94560]/10"
+        >
+          <MapPin size={12} className="fill-[#E94560] text-[#E94560] transition-transform group-hover:scale-110" />
+          <span className="text-sm font-bold text-white uppercase tracking-tight">{currentCity}</span>
+          <ChevronDown size={14} className={`text-gray-400 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+        </button>
+        
+        {open && (
+           <button 
+             type="button"
+             onClick={() => { setOpen(false); setSearch(""); }}
+             className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+             aria-label="Cancel"
+           >
+             <X size={14} />
+           </button>
+        )}
+      </div>
 
       {open ? (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[280px] rounded-xl border border-[#1e4976] bg-[#162d4a] p-3 shadow-xl shadow-black/40">
-          <div className="flex items-center gap-2 rounded-lg border border-[#1e4976] bg-[#1E3A5F] px-3 py-2">
-            <Search size={14} className="shrink-0 text-gray-400" />
+        <div className="absolute right-0 top-[calc(100%+12px)] z-[100] w-[320px] rounded-2xl border border-[#1e4976] bg-[#162d4a] p-4 shadow-2xl shadow-black/60 animate-in fade-in zoom-in-95 duration-200">
+          <div className="mb-4">
+             <h4 className="text-xs font-black uppercase tracking-[0.2em] text-[#E94560] mb-1">Change Location</h4>
+             <p className="text-[10px] text-gray-400 font-medium italic">Your dashboard will refresh to match this city.</p>
+          </div>
+          
+          <div className="flex items-center gap-2 rounded-xl border border-[#1e4976] bg-[#1E3A5F] px-4 py-2.5 focus-within:border-[#E94560] transition-colors">
+            <Search size={16} className="shrink-0 text-gray-400" />
             <input
               value={search}
+              autoFocus
               onChange={(event) => setSearch(event.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Search cities..."
-              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-gray-500"
+              placeholder="Type a city name..."
+              className="min-w-0 flex-1 bg-transparent text-sm font-medium text-white outline-none placeholder:text-gray-500"
             />
           </div>
 

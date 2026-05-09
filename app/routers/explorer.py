@@ -33,6 +33,14 @@ class ExplorerVoteRequest(BaseModel):
     vote: str = Field(..., min_length=1)
 
 
+class ShortImportRequest(BaseModel):
+    url: str = Field(..., min_length=1)
+    city: str = Field(..., min_length=1)
+    title: str | None = None
+    thumbnail_url: str | None = None
+    hashtags: list[str] | None = None
+
+
 class WayraChatRequest(BaseModel):
     message: str = Field(..., min_length=1)
     city: str = "Chicago"
@@ -173,3 +181,65 @@ def chat_with_wayra(
         )
 
     return {"response": response_text, "city": body.city}
+
+
+@router.post("/shorts/import", status_code=status.HTTP_201_CREATED)
+def import_short(
+    body: ShortImportRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.services.imported_short_service import create_imported_short
+    
+    try:
+        short = create_imported_short(
+            db=db,
+            city=body.city,
+            url=body.url,
+            title=body.title,
+            thumbnail_url=body.thumbnail_url,
+            hashtags=body.hashtags,
+        )
+        return {"status": "success", "id": str(short.id), "video_id": short.external_id}
+    except ValueError as e:
+        AppException.bad_request(str(e))
+    except Exception as e:
+        AppException.internal_error(f"Failed to import short: {e}")
+
+
+@router.post("/shorts/{short_id}/react")
+def react_to_short(
+    short_id: str,
+    reaction_type: str,  # "love", "helpful", "list", or "like"
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.models.imported_short import ImportedShort
+    import uuid
+    from sqlalchemy.orm.attributes import flag_modified
+    
+    try:
+        short_uuid = uuid.UUID(short_id)
+    except ValueError:
+        AppException.bad_request("Invalid short ID format")
+        
+    short = db.query(ImportedShort).filter(ImportedShort.id == short_uuid).first()
+    if not short:
+        AppException.bad_request("Short not found")
+        
+    if reaction_type == "like":
+        short.likes_count += 1
+    elif reaction_type in ["love", "helpful", "list"]:
+        if not short.reaction_counts:
+            short.reaction_counts = {"love": 0, "helpful": 0, "list": 0}
+        
+        # Create a new dict to ensure SQLAlchemy detects the change or use flag_modified
+        counts = dict(short.reaction_counts)
+        counts[reaction_type] = counts.get(reaction_type, 0) + 1
+        short.reaction_counts = counts
+        flag_modified(short, "reaction_counts")
+    else:
+        AppException.bad_request("Invalid reaction type")
+        
+    db.commit()
+    return {"status": "success", "likes": short.likes_count, "reactions": short.reaction_counts}

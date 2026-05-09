@@ -21,17 +21,14 @@ def _city_tag_slug(city: str) -> str:
     return s or "travel"
 
 
-def _build_shorts_search_query(city: str) -> str:
-    """Multi-tag query: #{city} #travel #shorts #{city}life #{city}travel"""
-    slug = _city_tag_slug(city)
-    tags = [
-        f"#{slug}",
-        "#travel",
-        "#shorts",
-        f"#{slug}life",
-        f"#{slug}travel",
-    ]
-    return " ".join(tags)
+def _build_shorts_search_query(city: str, tag: str | None = None) -> str:
+    """Strict query: {city} travel vlog shorts."""
+    base = f"{city} travel vlog shorts"
+    if tag:
+        extra = tag.strip().lstrip("#")
+        if extra:
+            base = f"{base} {extra}"
+    return base
 
 
 def _video_id(item: dict[str, Any]) -> str | None:
@@ -43,32 +40,24 @@ def _search_shorts_all_pages(
     city: str,
     api_key: str,
     order: str,
+    tag: str | None = None,
 ) -> list[dict[str, Any]]:
-    """search.list with order (viewCount | date), maxResults=50 per page, follow nextPageToken."""
+    """search.list with order (viewCount | date), maxResults=50 (single page)."""
     url = "https://www.googleapis.com/youtube/v3/search"
-    base_params: dict[str, Any] = {
+    params: dict[str, Any] = {
         "part": "snippet",
-        "q": _build_shorts_search_query(city),
+        "q": _build_shorts_search_query(city, tag),
         "videoDuration": "short",
         "type": "video",
+        "videoCategoryId": "19",
         "order": order,
         "maxResults": 50,
         "key": api_key,
     }
-    items: list[dict[str, Any]] = []
-    page_token: str | None = None
-    while True:
-        params = {**base_params}
-        if page_token:
-            params["pageToken"] = page_token
-        response = requests.get(url, params=params, timeout=15.0)
-        response.raise_for_status()
-        data = response.json()
-        items.extend(data.get("items", []))
-        page_token = data.get("nextPageToken")
-        if not page_token:
-            break
-    return items
+    response = requests.get(url, params=params, timeout=15.0)
+    response.raise_for_status()
+    data = response.json()
+    return data.get("items", [])
 
 
 def _merge_statistics(items: list[dict[str, Any]], api_key: str) -> None:
@@ -140,11 +129,13 @@ def _published_ts(entry: dict[str, Any]) -> float:
 
 
 class YouTubeProvider:
-    def fetch_shorts(self, city: str) -> dict[str, Any]:
+    def fetch_shorts(self, city: str, tag: str | None = None) -> dict[str, Any]:
         """
         Two-tier feed per city:
         - trending: search order=viewCount (paginated), enriched with statistics, sorted by views desc
         - recent: search order=date (paginated), enriched with statistics, sorted by publish date desc
+
+        Optional ``tag`` appends an extra hashtag token to the search query.
 
         Stored as one JSONB: {"trending": [...], "recent": [...]}
         """
@@ -154,9 +145,14 @@ class YouTubeProvider:
             logger.warning("No YOUTUBE_API_KEY configured.")
             return empty
 
+        tag_clean = tag.strip().lstrip("#") if tag else None
+        tag_arg = tag_clean or None
+
         try:
-            trending_items = _search_shorts_all_pages(city, api_key, "viewCount")
-            recent_items = _search_shorts_all_pages(city, api_key, "date")
+            trending_items = _search_shorts_all_pages(
+                city, api_key, "viewCount", tag_arg
+            )
+            recent_items = _search_shorts_all_pages(city, api_key, "date", tag_arg)
 
             combined = trending_items + recent_items
             _merge_statistics(combined, api_key)

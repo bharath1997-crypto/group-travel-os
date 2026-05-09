@@ -1,10 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Play, X } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Play } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
+import {
+  ShortsImmersivePlayer,
+  type ShortsImmersiveItem,
+} from "@/components/explorer/ShortsImmersivePlayer";
+import { CityTag } from "@/components/shared/CityTag";
 import { getToken } from "@/lib/auth";
 
 const API_BASE =
@@ -12,17 +17,21 @@ const API_BASE =
 
 type ExplorePayload = {
   city?: string;
+  tag?: string | null;
   shorts?: unknown;
 };
 
 type ShortItem = {
   key: string;
+  id?: string;
   videoId: string;
   title: string;
   channelTitle: string;
   thumbnailUrl: string;
   viewCount: number;
   publishedAtMs: number;
+  source?: string;
+  is_creator?: boolean;
 };
 
 function asRecord(v: unknown): Record<string, unknown> | null {
@@ -50,8 +59,7 @@ function thumbnailFromSnippet(snippet: Record<string, unknown>): string {
   return "";
 }
 
-function publishedAtMsFromSnippet(sn: Record<string,
- unknown> | null): number {
+function publishedAtMsFromSnippet(sn: Record<string, unknown> | null): number {
   if (!sn) return 0;
   const raw = pickString(sn, ["publishedAt"]);
   if (!raw) return 0;
@@ -82,12 +90,17 @@ function normalizeShortItemList(raw: unknown): ShortItem[] {
       pickString(idBlock as Record<string, unknown>, ["videoId"]) ||
       pickString(o, ["videoId", "video_id"]);
     if (!videoId) return;
+    const id = pickString(o, ["id"]);
+    const source = pickString(o, ["source"]);
+    const is_creator = o.is_creator === true;
+    
     const sn = asRecord(o.snippet);
     const title = sn ? pickString(sn, ["title"]) : "";
     const channelTitle = sn ? pickString(sn, ["channelTitle"]) : "";
     const thumbnailUrl = sn ? thumbnailFromSnippet(sn) : "";
     out.push({
       key: `${videoId}-${index}`,
+      id: id || undefined,
       videoId,
       title: title || "Short video",
       channelTitle: channelTitle || "YouTube",
@@ -95,6 +108,8 @@ function normalizeShortItemList(raw: unknown): ShortItem[] {
         thumbnailUrl || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
       viewCount: parseViewCount(o),
       publishedAtMs: publishedAtMsFromSnippet(sn),
+      source: source || undefined,
+      is_creator,
     });
   });
   return out;
@@ -117,6 +132,38 @@ function parseExploreShortsPayload(shorts: unknown): {
   return { trending: flat, recent: [] };
 }
 
+/** Distinct hashtag tokens from titles (#tag, case-insensitive dedupe). */
+function extractHashtagsFromShortItems(
+  trending: ShortItem[],
+  recent: ShortItem[],
+  max = 20,
+): string[] {
+  const re = /#[\p{L}\p{M}\p{N}_]+/gu;
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const scan = (text: string) => {
+    for (const m of text.matchAll(re)) {
+      const full = m[0];
+      const key = full.slice(1).toLowerCase();
+      if (key.length < 2) continue;
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push(full);
+        if (out.length >= max) return;
+      }
+    }
+  };
+  for (const s of trending) {
+    scan(s.title);
+    if (out.length >= max) return out;
+  }
+  for (const s of recent) {
+    scan(s.title);
+    if (out.length >= max) return out;
+  }
+  return out;
+}
+
 export function formatCompactViews(n: number): string {
   if (n >= 1_000_000) {
     const v = n / 1_000_000;
@@ -132,15 +179,19 @@ export function formatCompactViews(n: number): string {
 
 async function fetchExploreShorts(
   city: string,
-  signal?: AbortSignal,
+  options?: { tag?: string | null; signal?: AbortSignal },
 ): Promise<ExplorePayload> {
+  const { tag, signal } = options ?? {};
   const token = getToken();
   const headers = new Headers();
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  const res = await fetch(
-    `${API_BASE}/explore?city=${encodeURIComponent(city)}`,
-    { signal, headers },
-  );
+  const params = new URLSearchParams({ city });
+  const tagTrim = tag?.trim().replace(/^#+/, "") ?? "";
+  if (tagTrim) params.set("tag", tagTrim);
+  const res = await fetch(`${API_BASE}/explore?${params.toString()}`, {
+    signal,
+    headers,
+  });
   if (!res.ok) {
     let msg = res.statusText || "Request failed";
     try {
@@ -194,6 +245,43 @@ function PageFallback() {
   );
 }
 
+type ShortsHashtagChipProps = {
+  label: string;
+  city: string;
+  slug: string | null;
+  active: boolean;
+};
+
+function ShortsHashtagChip({
+  label,
+  city,
+  slug,
+  active,
+}: ShortsHashtagChipProps) {
+  const router = useRouter();
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (!slug) {
+          router.push(`/explore/shorts?city=${encodeURIComponent(city)}`);
+          return;
+        }
+        router.push(
+          `/explore/shorts?city=${encodeURIComponent(city)}&tag=${encodeURIComponent(slug)}`,
+        );
+      }}
+      className={
+        active
+          ? "shrink-0 rounded-full border border-[#E94560] bg-[#1a3554] px-3 py-1 text-xs font-semibold text-white shadow-sm"
+          : "shrink-0 rounded-full border border-[#1e4976] bg-[#162d4a] px-3 py-1 text-xs font-medium text-[#E94560] transition hover:border-[#E94560]/80 hover:text-white"
+      }
+    >
+      {label}
+    </button>
+  );
+}
+
 type CardProps = {
   item: ShortItem;
   variant: "trending" | "recent";
@@ -242,6 +330,8 @@ function ShortCardButton({ item, variant, onOpen }: CardProps) {
 function ExploreShortsContent() {
   const searchParams = useSearchParams();
   const city = searchParams.get("city")?.trim() || "Chicago";
+  const tagParamRaw = searchParams.get("tag")?.trim() || "";
+  const tagSlug = tagParamRaw.replace(/^#+/, "").toLowerCase();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -249,34 +339,51 @@ function ExploreShortsContent() {
   const [recent, setRecent] = useState<ShortItem[]>([]);
   const [modalVideoId, setModalVideoId] = useState<string | null>(null);
 
-  const allForModalLookup = useMemo(
-    () => [...trending, ...recent],
-    [trending, recent],
-  );
-  const modalTitle = useMemo(() => {
-    if (!modalVideoId) return "";
-    return (
-      allForModalLookup.find((s) => s.videoId === modalVideoId)?.title ?? "Video"
-    );
-  }, [modalVideoId, allForModalLookup]);
+  const playbackQueue = useMemo(() => {
+    const seen = new Set<string>();
+    const q: ShortsImmersiveItem[] = [];
+    const push = (s: ShortItem) => {
+      if (seen.has(s.videoId)) return;
+      seen.add(s.videoId);
+      q.push({
+        id: s.id,
+        videoId: s.videoId,
+        title: s.title,
+        channelTitle: s.channelTitle,
+        thumbnailUrl: s.thumbnailUrl,
+        viewCount: s.viewCount,
+        source: s.source as any,
+        is_creator: s.is_creator,
+      });
+    };
+    trending.forEach(push);
+    recent.forEach(push);
+    return q;
+  }, [trending, recent]);
 
-  const load = useCallback(async (signal?: AbortSignal) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchExploreShorts(city, signal);
-      const parsed = parseExploreShortsPayload(data.shorts);
-      setTrending(parsed.trending);
-      setRecent(parsed.recent);
-    } catch (e) {
-      if (e instanceof Error && e.name === "AbortError") return;
-      setError(e instanceof Error ? e.message : "Could not load shorts");
-      setTrending([]);
-      setRecent([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [city]);
+  const load = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchExploreShorts(city, {
+          signal,
+          tag: tagSlug || null,
+        });
+        const parsed = parseExploreShortsPayload(data.shorts);
+        setTrending(parsed.trending);
+        setRecent(parsed.recent);
+      } catch (e) {
+        if (e instanceof Error && e.name === "AbortError") return;
+        setError(e instanceof Error ? e.message : "Could not load shorts");
+        setTrending([]);
+        setRecent([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [city, tagSlug],
+  );
 
   useEffect(() => {
     const ac = new AbortController();
@@ -284,20 +391,12 @@ function ExploreShortsContent() {
     return () => ac.abort();
   }, [load]);
 
-  useEffect(() => {
-    if (!modalVideoId) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [modalVideoId]);
-
-  const embedUrl = modalVideoId
-    ? `https://www.youtube.com/embed/${modalVideoId}?autoplay=1&playsinline=1&rel=0`
-    : "";
-
   const hasAny = trending.length > 0 || recent.length > 0;
+
+  const hashtagLabels = useMemo(
+    () => extractHashtagsFromShortItems(trending, recent),
+    [trending, recent],
+  );
 
   return (
     <div className="min-h-full bg-[#1E3A5F] px-4 py-6 text-white sm:px-6">
@@ -313,10 +412,18 @@ function ExploreShortsContent() {
             <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
               Travel shorts
             </h1>
-            <p className="mt-1 text-sm text-gray-300">
-              <span className="font-semibold text-white">{city}</span>
-              {" · "}
-              Trending by views, then newest uploads
+            <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-300">
+              <CityTag cityName={city} />
+              {tagSlug ? (
+                <span>
+                  · Filter:{" "}
+                  <span className="font-semibold text-[#E94560]">
+                    #{tagSlug}
+                  </span>
+                </span>
+              ) : (
+                <span>· Trending by views, then newest uploads</span>
+              )}
             </p>
           </div>
           {!loading && error ? (
@@ -329,6 +436,34 @@ function ExploreShortsContent() {
             </button>
           ) : null}
         </div>
+
+        {!loading && hashtagLabels.length > 0 ? (
+          <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-[#1e4976]/80 pb-5">
+            <span className="w-full text-[11px] font-bold uppercase tracking-wide text-gray-400 sm:w-auto">
+              Hashtags in feed
+            </span>
+            {tagSlug ? (
+              <ShortsHashtagChip
+                label="All"
+                city={city}
+                slug={null}
+                active={false}
+              />
+            ) : null}
+            {hashtagLabels.map((h) => {
+              const slug = h.slice(1).toLowerCase();
+              return (
+                <ShortsHashtagChip
+                  key={slug}
+                  label={h}
+                  city={city}
+                  slug={slug}
+                  active={tagSlug === slug}
+                />
+              );
+            })}
+          </div>
+        ) : null}
 
         {loading ? (
           <>
@@ -392,39 +527,12 @@ function ExploreShortsContent() {
         )}
       </div>
 
-      {modalVideoId ? (
-        <div
-          className="fixed inset-0 z-[100] flex flex-col bg-[#1E3A5F]/95 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Video player"
-        >
-          <div className="flex shrink-0 items-center justify-between border-b border-[#1e4976] px-4 py-3">
-            <p className="min-w-0 flex-1 truncate pr-3 text-sm font-semibold text-white">
-              {modalTitle}
-            </p>
-            <button
-              type="button"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#1e4976] bg-[#162d4a] text-white hover:border-[#E94560]"
-              aria-label="Close"
-              onClick={() => setModalVideoId(null)}
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="flex min-h-0 flex-1 items-center justify-center p-4">
-            <div className="aspect-[9/16] h-full max-h-[calc(100dvh-5rem)] w-full max-w-md overflow-hidden rounded-2xl border border-[#1e4976] bg-black shadow-2xl">
-              <iframe
-                title={modalTitle}
-                src={embedUrl}
-                className="h-full w-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <ShortsImmersivePlayer
+        queue={playbackQueue}
+        activeVideoId={modalVideoId}
+        onActiveVideoIdChange={setModalVideoId}
+        city={city}
+      />
     </div>
   );
 }

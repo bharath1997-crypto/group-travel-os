@@ -16,7 +16,7 @@ from app.services.external.youtube_provider import YouTubeProvider
 
 logger = logging.getLogger(__name__)
 
-CACHE_TTL_HOURS = 3
+CACHE_TTL_HOURS = 6
 
 
 def _refresh_cache_for_content_task(db: Session, city: str):
@@ -28,11 +28,17 @@ def _refresh_cache_for_content_task(db: Session, city: str):
         
         # Concurrently fetching using simple thread-based or sequential fetch (since requests is sync)
         # We can just fetch sequentially if we don't want to use thread pool, but let's do sequential for simplicity and safety within db sessions.
+        from app.services.external.apify_provider import ApifyProvider
         dataforseo = DataForSEOProvider()
         youtube = YouTubeProvider()
+        apify = ApifyProvider()
         
         raw_news = dataforseo.fetch_news(city=city)
         raw_shorts = youtube.fetch_shorts(city=city)
+        tiktok_shorts = apify.fetch_tiktok_shorts(city=city)
+        
+        if isinstance(raw_shorts, dict):
+            raw_shorts["tiktok"] = tiktok_shorts
         
         now = datetime.now(timezone.utc)
         
@@ -69,11 +75,25 @@ def _refresh_cache_for_content_task(db: Session, city: str):
         db.rollback()
 
 
-def get_cached_explore_content(db: Session, background_tasks: BackgroundTasks, city: str) -> dict[str, list]:
+def get_cached_explore_content(
+    db: Session,
+    background_tasks: BackgroundTasks,
+    city: str,
+    tag: str | None = None,
+) -> dict[str, list]:
     """
-    Returns News and Shorts from the DB cache. 
+    Returns News and Shorts from the DB cache.
     Triggers a background refresh if the cache is stale or empty.
+
+    When ``tag`` is set, Shorts are fetched live from YouTube with that tag
+    appended to the search query (cache still used for News).
     """
+    city = city.strip()
+    tag_clean: str | None = None
+    if tag:
+        t = tag.strip().lstrip("#")
+        if t:
+            tag_clean = t
     stmt = select(ExploreContent).where(ExploreContent.city.ilike(city))
     contents = list(db.scalars(stmt).all())
     
@@ -114,8 +134,21 @@ def get_cached_explore_content(db: Session, background_tasks: BackgroundTasks, c
         else:
             logger.info(f"Explore content cache stale for {city}. Triggering background fetch.")
             background_tasks.add_task(_refresh_cache_for_content_task, db, city)
-            
-    return {
+
+    result = {
         "news": news_data,
         "shorts": shorts_data,
     }
+    if tag_clean:
+        try:
+            yt = YouTubeProvider()
+            result["shorts"] = yt.fetch_shorts(city=city, tag=tag_clean)
+        except Exception as exc:
+            logger.warning(
+                "Tagged shorts fetch failed for city=%s tag=%s: %s",
+                city,
+                tag_clean,
+                exc,
+            )
+
+    return result

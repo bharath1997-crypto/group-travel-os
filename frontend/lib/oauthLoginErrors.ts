@@ -35,6 +35,14 @@ export function oauthErrorToAlert(raw: string): OauthLoginAlert {
     };
   }
 
+  if (err === "server") {
+    return {
+      variant: "error",
+      body:
+        "We couldn’t finish sign-in with that provider (server error). Try again, or use email and password. If it keeps happening, check API logs and OAuth app settings.",
+    };
+  }
+
   if (err.includes("missing_token")) {
     return {
       variant: "error",
