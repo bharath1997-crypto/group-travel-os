@@ -57,6 +57,49 @@ body {
   }
 }
 
+/* Shorts immersive player — slide-in between clips */
+@keyframes shorts-slide-in {
+  from {
+    opacity: 0.88;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.shorts-player-slide-in {
+  animation: shorts-slide-in 320ms ease-out;
+}
+
+/* Shorts YouTube embed — block native UI; bottom mask for control strip */
+.youtube-wrapper {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.youtube-wrapper iframe {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+}
+
+.youtube-wrapper::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: #000;
+  z-index: 10;
+}
+
 /* Travel hub / chat panels — thin scrollbars (Chromium + Firefox) */
 .custom-scrollbar {
   scrollbar-width: thin;
@@ -118,4 +161,52 @@ body {
 
 .light-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.35);
+}
+
+/* Weather Animations */
+@keyframes rain-fall {
+  0% { transform: translateY(-20px); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(60px); opacity: 0; }
+}
+
+.rain-drop {
+  position: absolute;
+  width: 2px;
+  height: 10px;
+  background: #3b82f6;
+  border-radius: 5px;
+  animation: rain-fall 1s linear infinite;
+}
+
+@keyframes snow-fall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(100px) rotate(360deg); opacity: 0; }
+}
+
+.snowflake {
+  position: absolute;
+  color: #e2e8f0;
+  animation: snow-fall 3s linear infinite;
+}
+
+@keyframes sun-glow {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.8; }
+}
+
+.sun-cycle-glow {
+  animation: sun-glow 4s ease-in-out infinite;
+}
+
+@keyframes moon-float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+
+.moon-float {
+  animation: moon-float 6s ease-in-out infinite;
 }
