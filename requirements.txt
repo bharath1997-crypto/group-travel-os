@@ -28,8 +28,6 @@ google-crc32c==1.8.0
 google-resumable-media==2.8.2
 google-search-results==2.4.2
 googleapis-common-protos==1.74.0
-grpcio==1.80.0
-grpcio-status==1.80.0
 gunicorn==23.0.0
 h11==0.16.0
 httpcore==1.0.9
@@ -50,8 +48,6 @@ google-generativeai==0.8.6
 packaging==26.0
 passlib==1.7.4
 pluggy==1.6.0
-proto-plus==1.27.2
-protobuf==5.28.2
 psycopg2-binary==2.9.11
 pyasn1==0.6.3
 pyasn1_modules==0.4.2
