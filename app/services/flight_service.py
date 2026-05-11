@@ -189,10 +189,22 @@ class FlightService:
         Cache dimensions include origin/destination, outbound date range, passengers,
         cabin class, currency, and return leg when present (Tequila API parameters).
         """
-        a = _normalize_fly_term(fly_from)
-        b = _normalize_fly_term(fly_to)
-        if not a or not b:
-            AppException.bad_request("Origin and destination are required")
+        raw_from = fly_from.strip()
+        raw_to = fly_to.strip()
+        a = _normalize_fly_term(raw_from)
+        fly_anywhere = raw_to.upper() in ("ANYWHERE", "ANY", "")
+        if fly_anywhere:
+            b_norm = "__ANYWHERE__"
+            fly_to_param: str | None = None
+        else:
+            b_actual = _normalize_fly_term(fly_to)
+            b_norm = b_actual
+            fly_to_param = b_actual if b_actual else None
+
+        if not a:
+            AppException.bad_request("Origin is required")
+        if not fly_anywhere and not fly_to_param:
+            AppException.bad_request("Destination is required")
 
         if adults < 1 or adults > 9:
             AppException.bad_request("Adults must be between 1 and 9")
@@ -211,7 +223,7 @@ class FlightService:
 
         key = _cache_key(
             a,
-            b,
+            b_norm,
             date_from,
             date_to,
             adults,
@@ -233,7 +245,6 @@ class FlightService:
 
         params: dict[str, str | int] = {
             "fly_from": a,
-            "fly_to": b,
             "date_from": _to_kiwi_ddmmyyyy(date_from),
             "date_to": _to_kiwi_ddmmyyyy(date_to),
             "adults": adults,
@@ -244,6 +255,8 @@ class FlightService:
             "selected_cabins": cabin_token,
             "partner_market": "us",
         }
+        if fly_to_param is not None:
+            params["fly_to"] = fly_to_param
         if return_from is not None and return_to is not None:
             params["return_from"] = _to_kiwi_ddmmyyyy(return_from)
             params["return_to"] = _to_kiwi_ddmmyyyy(return_to)

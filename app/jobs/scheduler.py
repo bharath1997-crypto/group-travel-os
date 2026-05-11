@@ -6,6 +6,9 @@ from __future__ import annotations
 import logging
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+
+from app.jobs.deal_scan_job import run_weekly_scan_job
 
 from app.jobs.feed_refresh import auto_close_expired_polls, recalculate_trending_scores
 
@@ -29,8 +32,14 @@ def start_scheduler() -> None:
         id="poll_auto_close",
         replace_existing=True,
     )
+    scheduler.add_job(
+        run_weekly_scan_job,
+        trigger=IntervalTrigger(weeks=1),
+        id="flight_deal_scan",
+        replace_existing=True,
+    )
     scheduler.start()
-    logger.info("Scheduler started — 2 jobs registered")
+    logger.info("Scheduler started — 3 jobs registered")
 
 
 def stop_scheduler() -> None:
