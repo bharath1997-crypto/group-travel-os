@@ -97,7 +97,7 @@ def test_search_falls_back_to_google_web(monkeypatch):
     monkeypatch.setattr("app.routers.explorer.search_google_events", lambda query, city: [])
     monkeypatch.setattr("app.routers.explorer.search_google_places", lambda query, city: [])
     monkeypatch.setattr(
-        "app.services.serpapi_service.search_google_web",
+        "app.routers.explorer.search_google_web",
         lambda query, city: [{"id": "google_web_0", "title": "Best jazz Chicago"}],
     )
     try:
@@ -116,7 +116,7 @@ def test_search_returns_wayra_suggestion_when_empty(monkeypatch):
     monkeypatch.setattr("app.routers.explorer._search_internal_db", lambda db, q, city: [])
     monkeypatch.setattr("app.routers.explorer.search_google_events", lambda query, city: [])
     monkeypatch.setattr("app.routers.explorer.search_google_places", lambda query, city: [])
-    monkeypatch.setattr("app.services.serpapi_service.search_google_web", lambda query, city: [])
+    monkeypatch.setattr("app.routers.explorer.search_google_web", lambda query, city: [])
     try:
         response = client.get("/api/v1/explorer/search?q=zzzz&city=Chicago")
     finally:
