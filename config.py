@@ -14,23 +14,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def _parse_origins_string(s: str) -> list[str]:
-    """ALLOWED_ORIGINS env: JSON array, comma-separated URLs, or one URL (Cloud Run / gcloud-safe)."""
-    s = s.strip()
-    if not s:
-        return ["http://localhost:3000", "http://127.0.0.1:3000"]
-    if s.startswith("["):
-        try:
-            parsed = json.loads(s)
-            if isinstance(parsed, list):
-                return [str(x).strip() for x in parsed if str(x).strip()]
-            raise ValueError("ALLOWED_ORIGINS JSON must be an array")
-        except json.JSONDecodeError:
-            if s.endswith("]"):
-                inner = s[1:-1].strip()
-                if inner:
-                    return [p.strip() for p in inner.split(",") if p.strip()]
-            raise ValueError("ALLOWED_ORIGINS is not valid JSON or bracketed URL list") from None
-    return [p.strip() for p in s.split(",") if p.strip()]
+    try:
+        return json.loads(s)
+    except (json.JSONDecodeError, ValueError):
+        return [o.strip() for o in s.split(",") if o.strip()]
 
 
 class Settings(BaseSettings):
