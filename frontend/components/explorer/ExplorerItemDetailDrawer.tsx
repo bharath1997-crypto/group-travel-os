@@ -59,17 +59,29 @@ export function ExplorerItemDetailDrawer({
     setBusy(true);
     try {
       if (pendingAction === "save") {
-        await apiFetch(`/explorer/items/${encodeURIComponent(item.id)}/save`, {
+        // Step 1: Save as location
+        const locationRes = await apiFetch<{ id: string }>("/locations", {
           method: "POST",
-          body: JSON.stringify({ trip_id: tripId.trim() }),
+          body: JSON.stringify({
+            name: item.title,
+            address: item.venue || item.city,
+            latitude: (item as any).latitude || 0,
+            longitude: (item as any).longitude || 0,
+            category: item.source,
+            notes: item.description,
+          }),
         });
+        
+        // Step 2: Add to trip
+        await apiFetch(`/trips/${tripId.trim()}/locations`, {
+          method: "POST",
+          body: JSON.stringify({ location_id: locationRes.id }),
+        });
+        
         onToast?.("Saved to trip");
       } else {
-        await apiFetch(`/explorer/items/${encodeURIComponent(item.id)}/vote`, {
-          method: "POST",
-          body: JSON.stringify({ trip_id: tripId.trim(), vote: "up" }),
-        });
-        onToast?.("Vote sent to group");
+        // Vote is not implemented in backend yet for general explorer items
+        onToast?.("Group voting is coming soon!");
       }
       setTripModalOpen(false);
       setTripId("");

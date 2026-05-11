@@ -1,5 +1,6 @@
 from __future__ import annotations
 import logging
+from datetime import datetime
 from typing import Any, Optional
 from sqlalchemy.orm import Session
 
@@ -33,7 +34,7 @@ def get_travel_info_bundle(
     cc = country_code.strip().upper()
     
     # 1. Country Safety
-    safety_data = get_safety_cached(db, cc)
+    safety_data = get_safety_cached(db, cc, city_hint=city.strip())
     safety_info = None
     if safety_data:
         s = safety_data[0]

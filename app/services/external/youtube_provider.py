@@ -128,7 +128,33 @@ def _published_ts(entry: dict[str, Any]) -> float:
         return 0.0
 
 
+from sqlalchemy.orm import Session
+from app.utils.database import SessionLocal
+from app.models.location_hashtag import LocationHashtag
+
 class YouTubeProvider:
+    def get_hashtags_for_city(self, city: str, db: Session | None = None) -> list[str]:
+        """Fetch hashtags for a city from DB or use fallback."""
+        opened_session = False
+        if not db:
+            db = SessionLocal()
+            opened_session = True
+        try:
+            location = db.query(LocationHashtag).filter(
+                LocationHashtag.city.ilike(city.strip())
+            ).first()
+            if location and location.hashtags:
+                return location.hashtags
+        except Exception as e:
+            logger.warning(f"Failed to query hashtags for {city}: {e}")
+        finally:
+            if opened_session:
+                db.close()
+                
+        # Fallback
+        city_clean = city.lower().replace(" ", "")
+        return [f"#{city_clean}", f"#{city_clean}travel", f"#{city_clean}life", "shorts"]
+
     def fetch_shorts(self, city: str, tag: str | None = None) -> dict[str, Any]:
         """
         Two-tier feed per city:
@@ -145,8 +171,19 @@ class YouTubeProvider:
             logger.warning("No YOUTUBE_API_KEY configured.")
             return empty
 
-        tag_clean = tag.strip().lstrip("#") if tag else None
-        tag_arg = tag_clean or None
+        # Get hashtags from DB
+        db_tags = self.get_hashtags_for_city(city)
+        all_tags = list(db_tags)
+        if tag:
+            all_tags.append(tag)
+            
+        tag_tokens = []
+        for t in all_tags:
+            cleaned = t.strip().lstrip("#")
+            if cleaned:
+                tag_tokens.append(cleaned)
+                
+        tag_arg = " ".join(tag_tokens) if tag_tokens else None
 
         try:
             trending_items = _search_shorts_all_pages(
@@ -157,8 +194,7 @@ class YouTubeProvider:
             combined = trending_items + recent_items
             _merge_statistics(combined, api_key)
 
-            # Re-attach stats from merged items (merge writes into shared dict refs — combined already updated each dict)
-            # trending_items and recent_items are subsets of the same objects as in combined
+            # Re-attach stats from merged items
             trending_items.sort(key=_view_count, reverse=True)
             recent_items.sort(key=_published_ts, reverse=True)
 
@@ -172,3 +208,4 @@ class YouTubeProvider:
         except Exception as exc:
             logger.warning("Failed to fetch shorts from YouTube: %s", exc)
             return empty
+

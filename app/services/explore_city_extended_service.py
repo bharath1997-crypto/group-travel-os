@@ -42,8 +42,8 @@ CONTENT_CITY_SCORES = "city_scores_v6"
 CONTENT_WIKI_SUMMARY = "wiki_summary_v6"
 CONTENT_TIPS = "travel_tips"
 CONTENT_HERO_PHOTO = "hero_photo"
-CONTENT_SAFETY = "safety_score"
-CONTENT_CURRENCY = "currency_rate"
+CONTENT_SAFETY = "safety_score_v2"
+CONTENT_CURRENCY = "currency_rates_v2"
 CONTENT_GUIDE = "city_guide"
 CONTENT_WEATHER = "weather_forecast"
 CONTENT_MUSIC = "music_events"
@@ -711,41 +711,244 @@ def get_travel_tips_cached(db: Session, city: str) -> list[dict[str, Any]]:
     )
 
 
-def _fetch_safety(country_code: str) -> list[dict[str, Any]]:
-    # https://www.travel-advisory.info/api?countrycode={code}
-    url = f"https://www.travel-advisory.info/api?countrycode={country_code.strip().upper()}"
+def _coerce_float(v: Any) -> float | None:
+    try:
+        if v is None:
+            return None
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _travel_advisory_for_country(code: str) -> dict[str, Any] | None:
+    cc = code.strip().upper()
+    urls = (
+        f"https://www.travel-advisory.info/api?countrycode={cc}",
+        f"https://travel-advisory.info/api?countrycode={cc}",
+    )
     try:
         with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
-            r = client.get(url)
-        if r.status_code != 200:
-            return []
-        payload = r.json()
-        data = payload.get("data", {})
-        country_data = data.get(country_code.strip().upper())
-        if not country_data:
-            return []
-        adv = country_data.get("advisory", {})
-        return [
-            {
-                "score": adv.get("score"),
+            payload: dict[str, Any] | None = None
+            last_status = None
+            for url in urls:
+                r = client.get(url)
+                last_status = r.status_code
+                if r.status_code != 200:
+                    continue
+                payload = r.json()
+                break
+            if not isinstance(payload, dict):
+                logger.debug(
+                    "Travel advisory unreachable for country=%s (last HTTP=%s)",
+                    cc,
+                    last_status,
+                )
+                return None
+            data_obj = payload.get("data")
+            if not isinstance(data_obj, dict):
+                return None
+            country_blob = (
+                data_obj.get(cc)
+                or data_obj.get(cc.lower())
+            )
+            if not isinstance(country_blob, dict):
+                for k, v in data_obj.items():
+                    if str(k).strip().upper() == cc and isinstance(v, dict):
+                        country_blob = v
+                        break
+            if not isinstance(country_blob, dict):
+                return None
+            adv = country_blob.get("advisory")
+            if not isinstance(adv, dict):
+                return None
+            raw_score = None
+            for key in ("score", "rating", "risk_score", "dangerLevel"):
+                if adv.get(key) is not None:
+                    raw_score = adv.get(key)
+                    break
+            return {
+                "score": raw_score,
                 "message": adv.get("message"),
                 "updated": adv.get("updated"),
                 "source": adv.get("sources_active"),
             }
-        ]
     except Exception as exc:
-        logger.warning("Safety fetch failed for %s: %s", country_code, exc)
-        return []
+        logger.warning("Travel advisory lookup failed for %s: %s", cc, exc)
+    return None
 
 
-def get_safety_cached(db: Session, country_code: str) -> list[dict[str, Any]]:
+def _fetch_teleport_safety_score_5(city: str) -> float | None:
+    """Maps Teleport 'Safety' (0–10) to the Explorer bar scale (0–5)."""
+    c = city.strip()
+    if not c:
+        return None
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            slug = city.lower().replace(" ", "-")
+            url = f"https://api.teleport.org/api/urban_areas/slug:{slug}/scores/"
+            r = client.get(url)
+            if r.status_code != 200:
+                search_url = "https://api.teleport.org/api/cities/"
+                sr = client.get(search_url, params={"search": city})
+                if sr.status_code == 200:
+                    matches = sr.json().get("_embedded", {}).get("city:search-results", [])
+                    if isinstance(matches, list) and matches:
+                        ua_url = matches[0].get("_links", {}).get("city:item", {}).get("href")
+                        if ua_url:
+                            cr = client.get(ua_url)
+                            if cr.status_code == 200:
+                                ua_link = cr.json().get("_links", {}).get("city:urban_area", {}).get(
+                                    "href"
+                                )
+                                if ua_link:
+                                    r = client.get(f"{ua_link}scores/")
+            if r.status_code != 200:
+                return None
+            data = r.json()
+            cats = data.get("categories")
+            if not isinstance(cats, list):
+                return None
+            for cat in cats:
+                if not isinstance(cat, dict):
+                    continue
+                nm = str(cat.get("name") or "").lower()
+                if "safety" not in nm:
+                    continue
+                raw10 = cat.get("score_out_of_10") or cat.get("score") or cat.get(
+                    "score_out_of_a_hundred"
+                )
+                sx = _coerce_float(raw10)
+                if sx is None:
+                    return None
+                if sx <= 11:
+                    sx_5 = min(5.0, sx / 2.0)
+                elif sx <= 110:
+                    sx_5 = min(5.0, sx / 20.0)
+                else:
+                    sx_5 = min(5.0, sx / 40.0)
+                return round(sx_5, 1)
+    except Exception as exc:
+        logger.debug("Teleport safety fallback failed for %s: %s", city, exc)
+    return None
+
+
+def _fetch_safety(country_code: str, city_hint: str | None = None) -> list[dict[str, Any]]:
+    cc = country_code.strip().upper()
+    adv = _travel_advisory_for_country(cc)
+    raw_score = adv.get("score") if adv else None
+    sco = _coerce_float(raw_score)
+    if adv and sco is not None:
+        return [
+            {
+                "score": sco,
+                "message": adv.get("message"),
+                "updated": adv.get("updated"),
+                "source": adv.get("source"),
+            }
+        ]
+    ch = (city_hint or "").strip()
+    if ch:
+        tel = _fetch_teleport_safety_score_5(ch)
+        if tel is not None:
+            msg = (
+                adv.get("message")
+                if adv and isinstance(adv.get("message"), str)
+                else "City livability safety index"
+            )
+            return [
+                {
+                    "score": tel,
+                    "message": msg,
+                    "updated": None,
+                    "source": {"teleport": True},
+                    "fallback": True,
+                }
+            ]
+    return []
+
+
+def _safety_cache_key(country_code: str, city_hint: str | None) -> str:
+    base = country_code.strip().upper()
+    if city_hint and city_hint.strip():
+        return f"{base}\u241f{city_hint.strip()}"
+    return base
+
+
+def get_safety_cached(
+    db: Session, country_code: str, *, city_hint: str | None = None
+) -> list[dict[str, Any]]:
     return _get_cached_list(
         db,
-        city=country_code.upper(),  # Using country code as 'city' for caching
+        city=_safety_cache_key(country_code, city_hint),
         content_type=CONTENT_SAFETY,
         ttl_hours=TTL_SAFETY_HOURS,
-        fetch_fn=lambda: _fetch_safety(country_code),
+        fetch_fn=lambda: _fetch_safety(country_code, city_hint=city_hint),
     )
+
+
+_PRIMARY_CURRENCY_FALLBACK: dict[str, str] = {
+    "US": "USD",
+    "GB": "GBP",
+    "JP": "JPY",
+    "CH": "CHF",
+    "CA": "CAD",
+    "AU": "AUD",
+    "NZ": "NZD",
+    "IN": "INR",
+    "CN": "CNY",
+    "HK": "HKD",
+    "SG": "SGD",
+    "KR": "KRW",
+    "TW": "TWD",
+    "TH": "THB",
+    "MY": "MYR",
+    "ID": "IDR",
+    "PH": "PHP",
+    "VN": "VND",
+    "MX": "MXN",
+    "BR": "BRL",
+    "AR": "ARS",
+    "CL": "CLP",
+    "CO": "COP",
+    "PE": "PEN",
+    "ZA": "ZAR",
+    "EG": "EGP",
+    "AE": "AED",
+    "SA": "SAR",
+    "IL": "ILS",
+    "TR": "TRY",
+    "RU": "RUB",
+    "UA": "UAH",
+    "PL": "PLN",
+    "CZ": "CZK",
+    "HU": "HUF",
+    "RO": "RON",
+    "SE": "SEK",
+    "NO": "NOK",
+    "DK": "DKK",
+    "IS": "ISK",
+}
+
+
+def _primary_currency(country_alpha2: str) -> str:
+    cc = country_alpha2.strip().upper()
+    try:
+        with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
+            r = client.get(f"https://restcountries.com/v3.1/alpha/{cc}?fields=currencies")
+        if r.status_code != 200:
+            return _PRIMARY_CURRENCY_FALLBACK.get(cc, "USD")
+        blob = r.json()
+        cur = blob.get("currencies")
+        if not isinstance(cur, dict) or not cur:
+            return _PRIMARY_CURRENCY_FALLBACK.get(cc, "USD")
+        first_code = next(iter(cur.keys()))
+        if isinstance(first_code, str):
+            up = first_code.strip().upper()
+            if len(up) == 3:
+                return up
+    except Exception as exc:
+        logger.debug("restcountries currency failed for %s: %s", cc, exc)
+    return _PRIMARY_CURRENCY_FALLBACK.get(cc, "USD")
 
 
 def _fetch_currency(country_code: str) -> list[dict[str, Any]]:
@@ -760,7 +963,18 @@ def _fetch_currency(country_code: str) -> list[dict[str, Any]]:
         if payload.get("result") != "success":
             return []
         rates = payload.get("rates", {})
-        return [{"rates": rates, "base": "USD"}]
+        if not isinstance(rates, dict):
+            return []
+        local = _primary_currency(country_code)
+        rate_usd_unit = _coerce_float(rates.get(local))
+        ro: dict[str, Any] = {
+            "rates": rates,
+            "base": "USD",
+            "local_currency": local,
+        }
+        if rate_usd_unit is not None:
+            ro["rate_per_usd"] = rate_usd_unit
+        return [ro]
     except Exception as exc:
         logger.warning("Currency fetch failed (open.er-api.com): %s", exc)
         return []

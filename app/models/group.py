@@ -16,6 +16,7 @@ from app.utils.database import Base
 
 class MemberRole(str, enum.Enum):
     admin = "admin"
+    coordinator = "coordinator"
     member = "member"
 
 

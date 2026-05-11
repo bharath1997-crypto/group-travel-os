@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Query, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.models.explore_content import ExploreContent
+from app.models.location_hashtag import LocationHashtag
 from app.models.user import User
 from app.utils.auth import get_current_user, get_current_user_optional
 from app.utils.exceptions import AppException
@@ -101,12 +102,32 @@ def get_explore_content(
     except Exception as e:
         logger.error(f"Failed to fetch imported shorts: {e}")
 
+    news_payload = content.get("news")
+    if not isinstance(news_payload, list) or not news_payload:
+        news_payload = get_gnews_cached(db, city_strip)
+
     return {
         "city": city_strip,
         "tag": tag_strip,
-        "news": content["news"],
+        "news": news_payload if isinstance(news_payload, list) else [],
         "shorts": content["shorts"],
     }
+
+
+@router.get("/hashtags", status_code=status.HTTP_200_OK)
+def get_city_hashtags(
+    city: str = Query(..., max_length=120),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    city_strip = city.strip()
+    location = (
+        db.query(LocationHashtag)
+        .filter(LocationHashtag.city.ilike(city_strip))
+        .first()
+    )
+    if not location:
+        AppException.not_found("City not found")
+    return {"city": city_strip, "hashtags": list(location.hashtags or [])}
 
 
 @router.get("/hero-photo", status_code=status.HTTP_200_OK)
@@ -172,10 +193,12 @@ def explore_tips(
 @router.get("/safety", status_code=status.HTTP_200_OK)
 def explore_safety(
     country: str = Query(..., max_length=10),
+    city: str | None = Query(None, max_length=120),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     country_strip = country.strip().upper()
-    safety = get_safety_cached(db, country_strip)
+    city_strip = city.strip() if city else None
+    safety = get_safety_cached(db, country_strip, city_hint=city_strip)
     return {"country": country_strip, "safety": safety[0] if safety else None}
 
 
