@@ -1,8 +1,9 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
+import { API_BASE, apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
 
 type TripType = "oneway" | "return" | "multi";
 type CabinLabel = "economy" | "business" | "first";
@@ -46,6 +47,8 @@ function parseClock(iso: string): number | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
+  const zulu = iso.trim().endsWith("Z");
+  if (zulu) return d.getUTCHours() + d.getUTCMinutes() / 60;
   return d.getHours() + d.getMinutes() / 60;
 }
 
@@ -53,6 +56,8 @@ function formatClock(iso: string): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
+  const zulu = iso.trim().endsWith("Z");
+  if (zulu) return `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`;
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
@@ -114,17 +119,29 @@ export default function FlightsPage() {
   const [depTo, setDepTo] = useState(24);
 
   const priceBounds = useMemo(() => {
-    if (!rows.length) return { min: 0, max: 2000 };
+    if (!rows.length) return { min: 0, max: 5000 };
     let lo = Infinity;
     let hi = -Infinity;
     for (const r of rows) {
       lo = Math.min(lo, r.price);
       hi = Math.max(hi, r.price);
     }
-    if (!Number.isFinite(lo) || !Number.isFinite(hi)) return { min: 0, max: 2000 };
+    if (!Number.isFinite(lo) || !Number.isFinite(hi)) return { min: 0, max: 5000 };
     if (lo === hi) return { min: Math.max(0, lo - 50), max: hi + 50 };
     return { min: Math.floor(lo), max: Math.ceil(hi) };
   }, [rows]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!rows.length) {
+      setPriceMin(0);
+      setPriceMax(5000);
+      return;
+    }
+    const { min, max } = priceBounds;
+    setPriceMin(min);
+    setPriceMax(max);
+  }, [loading, rows, priceBounds.min, priceBounds.max]);
 
   const airlineOptions = useMemo(() => {
     const s = new Set<string>();
@@ -135,8 +152,10 @@ export default function FlightsPage() {
   }, [rows]);
 
   const filteredSorted = useMemo(() => {
+    const effLo = Math.min(priceMin, priceMax);
+    const effHi = Math.max(priceMin, priceMax);
     let list = rows.filter((r) => {
-      if (r.price < priceMin || r.price > priceMax) return false;
+      if (r.price < effLo || r.price > effHi) return false;
       if (stopsFilter === "0" && r.stops > 0) return false;
       if (stopsFilter === "1" && r.stops !== 1) return false;
       if (stopsFilter === "2plus" && r.stops < 2) return false;
@@ -196,17 +215,15 @@ export default function FlightsPage() {
       }
       const data = await apiFetch<FlightRow[]>(`/flights/search?${qs.toString()}`);
       setRows(Array.isArray(data) ? data : []);
-      const raw = Array.isArray(data) ? data : [];
-      const prices = raw.map((r) => r.price);
-      if (prices.length) {
-        const lo = Math.min(...prices);
-        const hi = Math.max(...prices);
-        setPriceMin(Math.floor(lo));
-        setPriceMax(Math.ceil(hi));
-      }
-    } catch {
+    } catch (e) {
       setRows([]);
-      setErrorBanner("Something went wrong. Please try again.");
+      const hint = e instanceof Error ? e.message : String(e);
+      const base = "Something went wrong. Please try again.";
+      setErrorBanner(
+        process.env.NODE_ENV === "development"
+          ? `${base}\n${hint}\nAPI: ${API_BASE}`
+          : base,
+      );
     } finally {
       setLoading(false);
     }
@@ -214,14 +231,15 @@ export default function FlightsPage() {
 
   return (
     <div className="min-h-[calc(100dvh-80px)] text-[#0F3460]">
-      <div className="sticky top-0 z-20 -mx-3 border-b border-slate-200/80 bg-[#0F3460] px-3 py-3 text-white shadow-md md:-mx-5 md:px-5">
+      <div className="sticky top-0 z-20 -mx-3 border-b border-slate-200/80 bg-[#0F3460] px-3 py-4 text-white shadow-md md:-mx-5 md:px-5">
         <div className="mx-auto max-w-6xl">
           <h1 className="text-lg font-bold tracking-tight md:text-xl">Flights</h1>
-          <p className="text-xs text-teal-200/90 md:text-sm">
-            Skyscanner-style search — powered by your Travello account (Kiwi.com).
+          <p className="mt-1 text-xs leading-relaxed text-teal-100/95 md:text-sm">
+            Search deals via Travello (Kiwi.com). Use airport or metro codes
+            (e.g. CHI, LON); the API fills in airlines after you search.
           </p>
 
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             {(
               [
                 ["oneway", "One Way"],
@@ -250,61 +268,61 @@ export default function FlightsPage() {
             </p>
           ) : null}
 
-          <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
-            <label className="flex flex-col gap-1 lg:col-span-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-teal-200/90">
+          <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
+            <label className="flex flex-col gap-2 lg:col-span-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
                 From
               </span>
               <input
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
-                placeholder="City or airport (e.g. NYC)"
-                className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-teal-200/60 focus:border-teal-300 focus:outline-none focus:ring-1 focus:ring-teal-300"
+                placeholder="e.g. CHI, NYC, LAX"
+                className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm placeholder:text-slate-400 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300/60"
               />
             </label>
-            <label className="flex flex-col gap-1 lg:col-span-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-teal-200/90">
+            <label className="flex flex-col gap-2 lg:col-span-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
                 To
               </span>
               <input
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
-                placeholder="City or airport (e.g. LON)"
-                className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-teal-200/60 focus:border-teal-300 focus:outline-none focus:ring-1 focus:ring-teal-300"
+                placeholder="e.g. LON, CDG"
+                className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm placeholder:text-slate-400 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300/60"
               />
             </label>
-            <label className="flex flex-col gap-1 lg:col-span-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-teal-200/90">
+            <label className="flex flex-col gap-2 lg:col-span-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
                 Depart
               </span>
               <input
                 type="date"
                 value={depart}
                 onChange={(e) => setDepart(e.target.value)}
-                className="rounded-lg border border-white/20 bg-white px-3 py-2 text-sm text-[#0F3460] focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
               />
             </label>
             {tripType === "return" ? (
-              <label className="flex flex-col gap-1 lg:col-span-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-teal-200/90">
+              <label className="flex flex-col gap-2 lg:col-span-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
                   Return
                 </span>
                 <input
                   type="date"
                   value={returnDate}
                   onChange={(e) => setReturnDate(e.target.value)}
-                  className="rounded-lg border border-white/20 bg-white px-3 py-2 text-sm text-[#0F3460] focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
                 />
               </label>
             ) : null}
-            <label className="flex flex-col gap-1 lg:col-span-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-teal-200/90">
+            <label className="flex flex-col gap-2 lg:col-span-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
                 Adults
               </span>
               <select
                 value={adults}
                 onChange={(e) => setAdults(Number(e.target.value))}
-                className="rounded-lg border border-white/20 bg-white px-2 py-2 text-sm text-[#0F3460] focus:border-teal-400 focus:outline-none"
+                className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
               >
                 {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
                   <option key={n} value={n}>
@@ -313,14 +331,14 @@ export default function FlightsPage() {
                 ))}
               </select>
             </label>
-            <label className="flex flex-col gap-1 lg:col-span-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-teal-200/90">
+            <label className="flex flex-col gap-2 lg:col-span-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
                 Cabin
               </span>
               <select
                 value={cabin}
                 onChange={(e) => setCabin(e.target.value as CabinLabel)}
-                className="rounded-lg border border-white/20 bg-white px-2 py-2 text-sm text-[#0F3460] focus:border-teal-400 focus:outline-none"
+                className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
               >
                 <option value="economy">Economy</option>
                 <option value="business">Business</option>
@@ -494,8 +512,29 @@ export default function FlightsPage() {
             </div>
 
             {errorBanner ? (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+              <div className="whitespace-pre-wrap rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 shadow-sm">
                 {errorBanner}
+              </div>
+            ) : null}
+
+            {!loading && !searched && tripType !== "multi" ? (
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-8 text-center text-sm text-slate-600 shadow-sm">
+                <p className="font-semibold text-[#0F3460]">
+                  Ready when you are
+                </p>
+                <p className="mt-2 text-slate-600">
+                  Set your airports and dates, then tap{" "}
+                  <span className="font-semibold text-teal-600">Search flights</span>{" "}
+                  above. Keep the FastAPI server running and confirm{" "}
+                  <span className="font-mono text-xs text-slate-500">
+                    NEXT_PUBLIC_API_URL
+                  </span>{" "}
+                  ends with{" "}
+                  <span className="font-mono text-xs text-slate-500">
+                    /api/v1
+                  </span>{" "}
+                  (matches <span className="font-mono text-xs">{API_BASE}</span>).
+                </p>
               </div>
             ) : null}
 
