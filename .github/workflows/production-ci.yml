@@ -34,6 +34,14 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v2
 
+      - name: Create env vars file
+        run: |
+          cat > /tmp/env-vars.yaml << 'EOF'
+          ENVIRONMENT: production
+          DEBUG: "False"
+          ALLOWED_ORIGINS: "https://group-travel-os.vercel.app,http://localhost:3000"
+          EOF
+
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy group-travel-os-api \
@@ -44,6 +52,4 @@ jobs:
             --port 8080 \
             --memory 512Mi \
             --set-secrets="DATABASE_URL=DATABASE_URL:latest,SECRET_KEY=SECRET_KEY:latest" \
-            --set-env-vars="ENVIRONMENT=production" \
-            --set-env-vars="DEBUG=False" \
-            --set-env-vars="ALLOWED_ORIGINS=https://group-travel-os.vercel.app,http://localhost:3000"
+            --env-vars-file=/tmp/env-vars.yaml
