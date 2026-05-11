@@ -44,4 +44,6 @@ jobs:
             --port 8080 \
             --memory 512Mi \
             --set-secrets="DATABASE_URL=DATABASE_URL:latest,SECRET_KEY=SECRET_KEY:latest" \
-            --set-env-vars="ENVIRONMENT=production,DEBUG=False,ALLOWED_ORIGINS=[\"https://group-travel-os.vercel.app\",\"http://localhost:3000\"]"
+            --set-env-vars="ENVIRONMENT=production" \
+            --set-env-vars="DEBUG=False" \
+            --set-env-vars="ALLOWED_ORIGINS=https://group-travel-os.vercel.app,http://localhost:3000"
