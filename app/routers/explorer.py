@@ -207,6 +207,31 @@ def import_short(
         AppException.internal_error(f"Failed to import short: {e}")
 
 
+@router.get("/shorts/{short_id}")
+def get_short(
+    short_id: str,
+    db: Session = Depends(get_db),
+):
+    from app.models.imported_short import ImportedShort
+    import uuid
+    
+    try:
+        short_uuid = uuid.UUID(short_id)
+    except ValueError:
+        AppException.bad_request("Invalid short ID format")
+        
+    short = db.query(ImportedShort).filter(ImportedShort.id == short_uuid).first()
+    if not short:
+        AppException.not_found("Short not found")
+        
+    return {
+        "id": short.id,
+        "likes_count": short.likes_count,
+        "reaction_counts": short.reaction_counts,
+        "comments": short.comments if hasattr(short, "comments") else []
+    }
+
+
 @router.post("/shorts/{short_id}/react")
 def react_to_short(
     short_id: str,

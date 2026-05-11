@@ -21,6 +21,9 @@ from app.models.explore_event import ExploreEvent
 from app.models.explore_content import ExploreContent
 from app.models.explorer_cache import ExplorerCache
 from app.models.imported_short import ImportedShort
+from app.models.location_hashtag import LocationHashtag
+from app.models.live_checklist import LiveChecklist
+from app.models.live_session import LiveSession
 
 __all__: list[str] = [
     "User",
@@ -57,4 +60,7 @@ __all__: list[str] = [
     "ExploreContent",
     "ExplorerCache",
     "ImportedShort",
+    "LocationHashtag",
+    "LiveChecklist",
+    "LiveSession",
 ]

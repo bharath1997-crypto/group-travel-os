@@ -304,19 +304,19 @@ function looksGarbledQuery(s: string): boolean {
 }
 
 /** Forward geocode a city label for the live Explorer feed (Nominatim). */
-async function nominatimCityLatLon(city: string): Promise<{ lat: number; lon: number } | null> {
+async function nominatimCityLatLon(city: string): Promise<{ lat: number; lon: number; countryCode?: string } | null> {
   const q = city.trim();
   if (!q) return null;
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&addressdetails=1`;
   const res = await fetch(url, { headers: { Accept: "application/json" } });
   if (!res.ok) return null;
-  const data = (await res.json()) as Array<{ lat?: string; lon?: string }>;
+  const data = (await res.json()) as Array<{ lat?: string; lon?: string; address?: { country_code?: string } }>;
   const hit = Array.isArray(data) ? data[0] : null;
   if (!hit?.lat || !hit?.lon) return null;
   const lat = Number(hit.lat);
   const lon = Number(hit.lon);
   if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
-  return { lat, lon };
+  return { lat, lon, countryCode: hit.address?.country_code?.toUpperCase() };
 }
 
 function firstHttpLinkFromRecord(links: unknown): string {
@@ -415,20 +415,23 @@ function normalizeTrend(row: unknown, index: number, city: string): TrendItem {
 
 function normalizeNews(row: unknown, index: number): NewsItem {
   const record = typeof row === "object" && row != null ? (row as Record<string, unknown>) : {};
-  const title = textField(record, ["title"], "Travel update for your city");
+  const snippet = textField(record, ["snippet", "subtitle", "lead"], "").trim();
+  const title =
+    textField(record, ["title", "name", "headline"], "").trim() ||
+    (snippet ? snippet.slice(0, 140) : "Travel update for your city");
   const tags = Array.isArray(record.tags) ? record.tags.map(String).slice(0, 3) : ["Travel", "Events"];
   return {
     id: textField(record, ["id"], `news-${index}`),
-    source: textField(record, ["source"], "Travello"),
+    source: textField(record, ["source", "source_name", "domain"], "Travello"),
     time:
-      textField(record, ["time", "published_ago", "publishedAt"], "") ||
+      textField(record, ["time", "published_ago", "publishedAt", "published_at"], "") ||
       textField(record, ["description"], "").slice(0, 52) ||
       "Today",
     title,
     emoji: textField(record, ["emoji"], emojiFor(title)),
     tags,
     url: textField(record, ["url", "link"], "#"),
-    imageUrl: textField(record, ["image", "thumbnail", "image_url"], ""),
+    imageUrl: textField(record, ["image", "thumbnail", "image_url", "poster"], ""),
   };
 }
 
@@ -475,7 +478,7 @@ export default function ExplorerPage() {
   const [seeAllData, setSeeAllData] = useState<TrendItem[]>([]);
   const [stats, setStats] = useState<{
     weather: { temp: number; condition: string } | null;
-    safety: { score: number } | null;
+    safety: { score?: number } | null;
     currency: { rate: number; code: string } | null;
   } | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -538,22 +541,25 @@ export default function ExplorerPage() {
     void (async () => {
       setLoadingStats(true);
       try {
-        // Find country code from a basic mapping or geocode
-        const cityLower = currentCity.toLowerCase();
-        const countryCode = cityLower === "miami" || cityLower === "chicago" ? "US" : 
-                            cityLower === "paris" ? "FR" : 
-                            cityLower === "london" ? "GB" : "US";
-        
-        // Fetch real coordinates for weather
         const coords = await nominatimCityLatLon(currentCity);
-        const lat = coords?.lat ?? 25.7617;
-        const lon = coords?.lon ?? -80.1918;
+        const lat = coords ? coords.lat : 41.8781;
+        const lon = coords ? coords.lon : -87.6298;
+        const countryCode = coords?.countryCode ?? "US";
         
         // Parallel fetch for stats
         const settled = await Promise.allSettled([
-          apiFetch<{ safety: { score: number } }>(`/explore/safety?country=${countryCode}`, { signal: ac.signal }),
-          apiFetch<{ currency: { rates: Record<string, number> } }>(`/explore/currency?country=${countryCode}`, { signal: ac.signal }),
-          apiFetch<{ weather: { current_weather: { temperature: number; weathercode: number } } }>(`/explore/weather?city=${currentCity}&lat=${lat}&lon=${lon}`, { signal: ac.signal }),
+          apiFetch<{ safety: { score?: number } | null }>(
+            `/explore/safety?country=${countryCode}&city=${encodeURIComponent(currentCity)}`,
+            { signal: ac.signal },
+          ),
+          apiFetch<{
+            currency: {
+              rates?: Record<string, number>;
+              local_currency?: string;
+              rate_per_usd?: number;
+            };
+          }>(`/explore/currency?country=${countryCode}`, { signal: ac.signal }),
+          apiFetch<{ weather: { current_weather: { temperature: number; weathercode: number } } }>(`/explore/weather?lat=${lat}&lon=${lon}&city=${encodeURIComponent(currentCity)}`, { signal: ac.signal }),
         ]);
 
         const sRes = settled[0].status === "fulfilled" ? settled[0].value : null;
@@ -566,9 +572,27 @@ export default function ExplorerPage() {
           return "Cloudy";
         };
 
+        const rawCur = cRes?.currency;
+        const rates =
+          rawCur?.rates &&
+          typeof rawCur.rates === "object" &&
+          rawCur.rates !== null
+            ? (rawCur.rates as Record<string, number>)
+            : undefined;
+        const iso = (rawCur?.local_currency ?? "").trim().toUpperCase();
+        let fx: number | null =
+          typeof rawCur?.rate_per_usd === "number" && !Number.isNaN(rawCur.rate_per_usd)
+            ? rawCur.rate_per_usd
+            : null;
+        if ((fx === null || Number.isNaN(fx)) && rates && iso.length === 3) {
+          const v = rates[iso];
+          if (typeof v === "number" && !Number.isNaN(v)) fx = v;
+        }
+
         setStats({
           safety: sRes?.safety ?? null,
-          currency: cRes?.currency?.rates ? { rate: cRes.currency.rates["USD"] || 1, code: "USD" } : null,
+          currency:
+            iso.length === 3 && fx !== null && !Number.isNaN(fx) ? { rate: fx, code: iso } : null,
           weather: wRes?.weather ? { 
             temp: wRes.weather.current_weather.temperature, 
             condition: weatherIcon(wRes.weather.current_weather.weathercode) 
@@ -643,7 +667,7 @@ export default function ExplorerPage() {
 
     try {
       const newsRes = await apiFetch<{ news?: unknown[] }>(`/explore?city=${cityEnc}`);
-      const rawNews = getRows(newsRes, ["news"]);
+      const rawNews = getRows(newsRes, ["news", "articles", "items"]);
       const normalizedNews = rawNews.map(normalizeNews);
       setNews(normalizedNews.length ? normalizedNews : DEMO_NEWS);
     } catch {
@@ -983,7 +1007,7 @@ export default function ExplorerPage() {
               ["#trending-tonight", "Tonight"],
               ["#food-nightlife", "Food"],
               ["#top-events", "Events"],
-              ["#local-news", "Buzz"],
+              ["#local-news", "News"],
               ["#explorer-culture", "Culture"],
               ["#transport", "Transit"],
             ].map(([href, label]) => (
@@ -1138,14 +1162,16 @@ export default function ExplorerPage() {
                   setStatsModal({
                     type: "safety",
                     city: currentCity,
-                    score: stats?.safety?.score ?? null,
+                    score: typeof stats?.safety?.score === "number" ? stats.safety.score : null,
                   })
                 }
                 className="flex min-w-0 flex-1 items-center justify-center gap-2 border-r border-[#1e4976]/30 px-3 hover:bg-emerald-500/10 transition-colors cursor-pointer"
               >
                 <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-400" />
-                {stats?.safety ? (
-                  <span className="truncate text-xs sm:text-sm">Safety {stats.safety.score}/5</span>
+                {(stats?.safety != null && typeof stats.safety.score === "number") || stats?.safety === null ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-300">
+                    Safety {stats?.safety?.score ?? 2.5}/5
+                  </span>
                 ) : loadingStats ? (
                   <span className="text-gray-500">…</span>
                 ) : (
@@ -1168,7 +1194,11 @@ export default function ExplorerPage() {
                 <DollarSign className="h-4 w-4 shrink-0 text-blue-300" />
                 {stats?.currency ? (
                   <span className="truncate text-xs sm:text-sm">
-                    1 USD = {stats.currency.rate?.toFixed(2)} {stats.currency.code}
+                    {stats.currency.code === "USD" ? (
+                      <>USD locally (no fx)</>
+                    ) : (
+                      <>1 USD = {stats.currency.rate.toFixed(2)} {stats.currency.code}</>
+                    )}
                   </span>
                 ) : loadingStats ? (
                   <span className="text-gray-500">…</span>
@@ -1500,14 +1530,16 @@ export default function ExplorerPage() {
             <section id="local-news" className="mb-12 scroll-mt-28">
               <div className="mb-3 flex items-center justify-between gap-2">
                 <div>
-                  <h2 className="text-lg font-bold text-white">Local buzz</h2>
-                  <p className="text-xs text-gray-400">Travel headlines for this city (incl. Google News)</p>
+                  <h2 className="text-lg font-bold text-white">News &amp; local buzz</h2>
+                  <p className="text-xs text-gray-400">
+                    Destination headlines via our news feed (GNews · Google News RSS fallback)
+                  </p>
                 </div>
                 {news.length > 4 && (
                   <button
                     type="button"
                     onClick={() => {
-                      setSeeAllTitle("Local buzz");
+                      setSeeAllTitle("News & local buzz");
                       setSeeAllNewsData(news);
                       setSeeAllModalOpen(true);
                     }}
@@ -1758,7 +1790,7 @@ export default function ExplorerPage() {
             </div>
             <div className="flex-1 overflow-y-auto p-6">
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {seeAllTitle === "Local buzz"
+                {seeAllTitle === "News & local buzz"
                   ? seeAllNewsData.map((item) => (
                       <div key={item.id} className="w-full">
                         <a href={item.url} target="_blank" rel="noopener noreferrer" className="block h-full">

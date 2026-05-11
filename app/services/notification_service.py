@@ -379,9 +379,9 @@ class NotificationService:
         )
         minutes = duration_seconds // 60
         if minutes >= 1:
-            body = f"A {minutes}-minute timer was started for your trip."
+            body = f"Timer started: {minutes} minutes"
         else:
-            body = f"A {duration_seconds}-second timer was started for your trip."
+            body = f"Timer started: {duration_seconds} seconds"
 
         payload = {
             "trip_id": str(trip_id),
@@ -397,4 +397,193 @@ class NotificationService:
                 payload,
             ):
                 ok += 1
+        return ok
+
+    @staticmethod
+    def _group_members_with_fcm_tokens(
+        db: Session,
+        group_id: uuid.UUID,
+    ) -> list[User]:
+        rows = db.execute(
+            select(User)
+            .join(GroupMember, GroupMember.user_id == User.id)
+            .where(
+                GroupMember.group_id == group_id,
+                User.fcm_token.isnot(None),
+            )
+        ).scalars().all()
+        return [u for u in rows if u.fcm_token and u.fcm_token.strip()]
+
+    @staticmethod
+    def notify_live_session_created(
+        db: Session,
+        trip_id: uuid.UUID,
+        acted_by_user_id: uuid.UUID,
+    ) -> int:
+        """FCM only (no DB rows). Exclude the member who started the session."""
+        try:
+            trip = db.execute(select(Trip).where(Trip.id == trip_id)).scalar_one_or_none()
+            if not trip:
+                return 0
+            users = NotificationService._group_member_recipients(
+                db,
+                trip.group_id,
+                acted_by_user_id,
+            )
+            payload = {"trip_id": str(trip_id), "type": "live_session_created"}
+            ok = 0
+            for user in users:
+                try:
+                    if NotificationService.send_to_token(
+                        user.fcm_token or "",
+                        "Live session started",
+                        "Trip coordinator started a live session!",
+                        payload,
+                    ):
+                        ok += 1
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("FCM notify_live_session_created failed: %s", exc)
+            return ok
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("notify_live_session_created failed: %s", exc)
+            return 0
+
+    @staticmethod
+    def notify_live_everyone_ready(
+        db: Session,
+        trip_id: uuid.UUID,
+    ) -> int:
+        """FCM when all checklist items accepted."""
+        try:
+            trip = db.execute(select(Trip).where(Trip.id == trip_id)).scalar_one_or_none()
+            if not trip:
+                return 0
+            users = NotificationService._group_members_with_fcm_tokens(db, trip.group_id)
+            payload = {"trip_id": str(trip_id), "type": "live_everyone_ready"}
+            ok = 0
+            for user in users:
+                try:
+                    if NotificationService.send_to_token(
+                        user.fcm_token or "",
+                        "Live session starting!",
+                        "Everyone is ready! Live starting!",
+                        payload,
+                    ):
+                        ok += 1
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("FCM notify_live_everyone_ready failed: %s", exc)
+            return ok
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("notify_live_everyone_ready failed: %s", exc)
+            return 0
+
+    @staticmethod
+    def notify_live_meet_point_set(
+        db: Session,
+        trip_id: uuid.UUID,
+        set_by_user_id: uuid.UUID,
+        location_label: str,
+    ) -> int:
+        trip = db.execute(select(Trip).where(Trip.id == trip_id)).scalar_one_or_none()
+        if not trip:
+            return 0
+
+        users = NotificationService._group_member_recipients(
+            db,
+            trip.group_id,
+            set_by_user_id,
+        )
+        payload = {"trip_id": str(trip_id), "type": "live_meet_point"}
+        ok = 0
+        for user in users:
+            try:
+                if NotificationService.send_to_token(
+                    user.fcm_token or "",
+                    "Meet point set",
+                    f"Meet point set at {location_label}",
+                    payload,
+                ):
+                    ok += 1
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("FCM notify_live_meet_point_set failed: %s", exc)
+        return ok
+
+    @staticmethod
+    def notify_live_timer_ended(db: Session, trip_id: uuid.UUID) -> int:
+        try:
+            trip = db.execute(select(Trip).where(Trip.id == trip_id)).scalar_one_or_none()
+            if not trip:
+                return 0
+            users = NotificationService._group_members_with_fcm_tokens(db, trip.group_id)
+            payload = {"trip_id": str(trip_id), "type": "live_timer_ended"}
+            ok = 0
+            for user in users:
+                try:
+                    if NotificationService.send_to_token(
+                        user.fcm_token or "",
+                        "Trip timer",
+                        "Time's up! 🔔",
+                        payload,
+                    ):
+                        ok += 1
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("FCM notify_live_timer_ended failed: %s", exc)
+            return ok
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("notify_live_timer_ended failed: %s", exc)
+            return 0
+
+    @staticmethod
+    def notify_live_group_formed(db: Session, trip_id: uuid.UUID) -> int:
+        try:
+            trip = db.execute(select(Trip).where(Trip.id == trip_id)).scalar_one_or_none()
+            if not trip:
+                return 0
+            users = NotificationService._group_members_with_fcm_tokens(db, trip.group_id)
+            payload = {"trip_id": str(trip_id), "type": "live_group_formed"}
+            ok = 0
+            for user in users:
+                try:
+                    if NotificationService.send_to_token(
+                        user.fcm_token or "",
+                        "Group together",
+                        "🎉 Your group is all together!",
+                        payload,
+                    ):
+                        ok += 1
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("FCM notify_live_group_formed failed: %s", exc)
+            return ok
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("notify_live_group_formed failed: %s", exc)
+            return 0
+
+    @staticmethod
+    def notify_live_session_ended(
+        db: Session,
+        trip_id: uuid.UUID,
+        acted_by_user_id: uuid.UUID,
+    ) -> int:
+        trip = db.execute(select(Trip).where(Trip.id == trip_id)).scalar_one_or_none()
+        if not trip:
+            return 0
+
+        users = NotificationService._group_member_recipients(
+            db,
+            trip.group_id,
+            acted_by_user_id,
+        )
+        payload = {"trip_id": str(trip_id), "type": "live_session_ended"}
+        ok = 0
+        for user in users:
+            try:
+                if NotificationService.send_to_token(
+                    user.fcm_token or "",
+                    "Live session ended",
+                    "Live session ended",
+                    payload,
+                ):
+                    ok += 1
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("FCM notify_live_session_ended failed: %s", exc)
         return ok

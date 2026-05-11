@@ -193,6 +193,8 @@ function SidebarNavLink({
   kind,
   iconOnly,
   onNavigate,
+  livePulse,
+  liveAudience,
 }: {
   href: string;
   label: string;
@@ -202,6 +204,9 @@ function SidebarNavLink({
   kind?: "notifications";
   iconOnly?: boolean;
   onNavigate?: () => void;
+  livePulse?: boolean;
+  /** Members in sidebar-active live session (badge on Live nav) */
+  liveAudience?: number;
 }) {
   return (
     <Link
@@ -218,7 +223,13 @@ function SidebarNavLink({
           : "border-transparent font-medium text-[rgba(255,255,255,0.65)] hover:bg-[rgba(255,255,255,0.1)] hover:text-white",
       ].join(" ")}
     >
-      <span className="inline-flex w-5 shrink-0 justify-center leading-none">
+      <span className="inline-flex w-5 shrink-0 justify-center leading-none relative">
+        {livePulse ? (
+          <span
+            className="absolute -right-0.5 -top-0.5 inline-flex h-[7px] w-[7px] rounded-full bg-red-500 animate-pulse"
+            aria-hidden
+          />
+        ) : null}
         <Icon size={20} darkBg active={active} className="shrink-0" aria-hidden />
       </span>
       <span
@@ -238,6 +249,16 @@ function SidebarNavLink({
       {iconOnly && kind === "notifications" && notifCount > 0 ? (
         <span className="absolute -right-1 -top-1 flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold leading-none text-white ring-2 ring-[#0F3460]">
           {notifCount > 99 ? "99+" : notifCount}
+        </span>
+      ) : null}
+      {!iconOnly && href === "/live" && liveAudience !== undefined && liveAudience > 0 ? (
+        <span className="inline-flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-orange-600 px-[5px] text-[9px] font-bold leading-none text-white">
+          {liveAudience > 99 ? "99+" : liveAudience}
+        </span>
+      ) : null}
+      {iconOnly && href === "/live" && liveAudience !== undefined && liveAudience > 0 ? (
+        <span className="absolute -right-2 bottom-[1px] flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-orange-600 px-1 text-[8px] font-bold leading-none text-white ring-2 ring-[#0F3460]">
+          {liveAudience > 99 ? "99+" : liveAudience}
         </span>
       ) : null}
     </Link>
@@ -367,6 +388,10 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const [sidebarMe, setSidebarMe] = useState<SidebarAuthMe | null>(null);
   const [sidebarProfileLoading, setSidebarProfileLoading] = useState(true);
   const [notifCount, setNotifCount] = useState(0);
+  const [liveHud, setLiveHud] = useState<{ active: boolean; memberCount: number }>({
+    active: false,
+    memberCount: 0,
+  });
 
   useEffect(() => {
     let c = false;
@@ -440,6 +465,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     uname && uname.length > 0 ? `@${uname}` : sidebarDisplayName;
 
   const isMapPage = pathname === "/map";
+  const isLivePage = pathname === "/live";
 
   useEffect(() => {
     setMoreSheetOpen(false);
@@ -474,6 +500,32 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     window.addEventListener(GT_NOTIFICATIONS_UNREAD, onUnread);
     return () => window.removeEventListener(GT_NOTIFICATIONS_UNREAD, onUnread);
   }, []);
+
+  useEffect(() => {
+    if (loading || !user) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const r = await apiFetch<{
+          active: boolean;
+          member_count: number;
+        }>("/live/my-active-session");
+        if (cancelled) return;
+        setLiveHud({
+          active: r.active === true && r.member_count !== 46,
+          memberCount: Math.max(0, Math.floor(r.member_count)),
+        });
+      } catch {
+        /* ignore */
+      }
+    };
+    void tick();
+    const id = window.setInterval(tick, 45000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [loading, user]);
 
   if (loading) {
     return (
@@ -513,6 +565,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               Icon={item.Icon}
               active={isActive(pathname, item.href)}
               notifCount={notifCount}
+              livePulse={item.href === "/live" && liveHud.active}
+              liveAudience={
+                item.href === "/live" && liveHud.active
+                  ? liveHud.memberCount
+                  : undefined
+              }
             />
           ))}
           <div
@@ -598,6 +656,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               notifCount={notifCount}
               iconOnly
               onNavigate={afterNav}
+              livePulse={item.href === "/live" && liveHud.active}
+              liveAudience={
+                item.href === "/live" && liveHud.active
+                  ? liveHud.memberCount
+                  : undefined
+              }
             />
           ))}
           <div
@@ -679,6 +743,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   active={isActive(pathname, item.href)}
                   notifCount={notifCount}
                   onNavigate={afterNav}
+                  livePulse={item.href === "/live" && liveHud.active}
+                  liveAudience={
+                    item.href === "/live" && liveHud.active
+                      ? liveHud.memberCount
+                      : undefined
+                  }
                 />
               ))}
               <div
@@ -784,7 +854,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
         <main
           className={
-            isMapPage || isExplorePage
+            isMapPage || isExplorePage || isLivePage
               ? "flex min-h-0 flex-1 flex-col overflow-hidden p-0"
               : "min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-5"
           }
@@ -803,7 +873,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           ) : (
             <div
               className={
-                isExplorePage
+                isExplorePage || isLivePage
                   ? "flex w-full max-w-none flex-col gap-0"
                   : "mx-auto flex w-full max-w-6xl flex-col gap-5"
               }

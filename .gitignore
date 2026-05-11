@@ -67,7 +67,9 @@ logs/
 # ── Firebase ───────────────────────────────────────────────────────────────────
 firebase-credentials.json
 
-# ── Local-only scripts (do not ship on main / production) ──────────────────────
+# ── Claude / Cursor local worktrees (nested git repos; never commit) ─────────────
+.claude/worktrees/
+
 # Root-level ad-hoc scripts (e.g. test_explore_api.py, test_live_api.py).
 # Use leading / so patterns apply only at repo root — bare test_*.py would also
 # ignore the real pytest suite under tests/ and scripts such as scripts/test_*.py.

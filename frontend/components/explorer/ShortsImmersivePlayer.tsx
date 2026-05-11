@@ -4,14 +4,29 @@ import {
   ChevronDown,
   ChevronUp,
   MessageCircle,
+  Pause,
+  Play,
   Search,
   Share2,
+  Square,
+  SkipBack,
+  SkipForward,
   ThumbsDown,
   ThumbsUp,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { CityTag } from "@/components/shared/CityTag";
 import { getToken } from "@/lib/auth";
@@ -167,62 +182,118 @@ function parseShortsPayloadToQueue(shorts: unknown): ShortsImmersiveItem[] {
   return out;
 }
 
-function extractHashtagsFromText(
-  text: string,
-  max = 10,
-): { label: string; slug: string }[] {
-  const re = /#[\p{L}\p{M}\p{N}_]+/gu;
-  const seen = new Set<string>();
-  const out: { label: string; slug: string }[] = [];
-  for (const m of text.matchAll(re)) {
-    const label = m[0];
-    const slug = label.slice(1).toLowerCase();
-    if (slug.length < 2) continue;
-    if (!seen.has(slug)) {
-      seen.add(slug);
-      out.push({ label, slug });
-      if (out.length >= max) break;
-    }
-  }
-  return out;
-}
+export type ShortsYoutubePlayerHandle = {
+  stop: () => void;
+  togglePlay: () => void;
+  skipSeconds: (delta: number) => void;
+};
 
 type ShortsYoutubeIframeProps = {
   videoId: string;
   shortsUrl: string;
 };
 
-function ShortsYoutubeIframe({ videoId, shortsUrl }: ShortsYoutubeIframeProps) {
+const ShortsYoutubeIframe = forwardRef<
+  ShortsYoutubePlayerHandle | null,
+  ShortsYoutubeIframeProps
+>(function ShortsYoutubeIframe({ videoId, shortsUrl }, ref) {
   const [showLoadFallback, setShowLoadFallback] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [volume, setVolume] = useState(100);
+  const [muted, setMuted] = useState(false);
   const playerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const progressTrackRef = useRef<HTMLDivElement>(null);
   const loadTimerRef = useRef<number | null>(null);
+  const draggingProgressRef = useRef(false);
 
   useEffect(() => {
     setProgress(0);
   }, [videoId]);
 
   useEffect(() => {
-    const interval = window.setInterval(() => {
-      const p = playerRef.current;
-      if (!p || typeof p.getCurrentTime !== "function") return;
-      const current = p.getCurrentTime();
-      const duration = p.getDuration();
-      if (
-        typeof duration !== "number" ||
-        !Number.isFinite(duration) ||
-        duration <= 0
-      ) {
-        return;
+    let raf = 0;
+    let cancelled = false;
+
+    const tick = () => {
+      if (cancelled) return;
+      if (!isPlaying) return;
+      if (!draggingProgressRef.current) {
+        const p = playerRef.current;
+        if (p && typeof p.getCurrentTime === "function") {
+          const current = p.getCurrentTime();
+          const duration = p.getDuration();
+          if (
+            typeof duration === "number" &&
+            Number.isFinite(duration) &&
+            duration > 0
+          ) {
+            const cur =
+              typeof current === "number" && Number.isFinite(current)
+                ? current
+                : 0;
+            setProgress((cur / duration) * 100);
+          }
+        }
       }
-      const cur =
-        typeof current === "number" && Number.isFinite(current) ? current : 0;
-      setProgress((cur / duration) * 100);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [videoId]);
+      raf = requestAnimationFrame(tick);
+    };
+
+    if (isPlaying) {
+      raf = requestAnimationFrame(tick);
+    }
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+    };
+  }, [videoId, isPlaying]);
+
+  const seekFromClientX = useCallback((clientX: number) => {
+    const p = playerRef.current;
+    const track = progressTrackRef.current;
+    if (!p || !track || typeof p.seekTo !== "function") return;
+    const duration = p.getDuration();
+    if (
+      typeof duration !== "number" ||
+      !Number.isFinite(duration) ||
+      duration <= 0
+    ) {
+      return;
+    }
+    const rect = track.getBoundingClientRect();
+    const ratio = Math.max(
+      0,
+      Math.min(1, (clientX - rect.left) / rect.width),
+    );
+    p.seekTo(ratio * duration, true);
+    setProgress(ratio * 100);
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      if (!draggingProgressRef.current) return;
+      seekFromClientX(e.clientX);
+    };
+    const onUp = () => {
+      draggingProgressRef.current = false;
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, [seekFromClientX]);
+
+  const onProgressPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    draggingProgressRef.current = true;
+    seekFromClientX(e.clientX);
+  };
 
   useEffect(() => {
     loadTimerRef.current = window.setTimeout(() => {
@@ -230,11 +301,10 @@ function ShortsYoutubeIframe({ videoId, shortsUrl }: ShortsYoutubeIframeProps) {
       loadTimerRef.current = null;
     }, 12_000);
 
-    // Load YouTube Iframe API script
     if (!(window as any).YT) {
-      const tag = document.createElement('script');
+      const tag = document.createElement("script");
       tag.src = "https://www.youtube.com/iframe_api";
-      const firstScriptTag = document.getElementsByTagName('script')[0];
+      const firstScriptTag = document.getElementsByTagName("script")[0];
       firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
     }
 
@@ -248,7 +318,7 @@ function ShortsYoutubeIframe({ videoId, shortsUrl }: ShortsYoutubeIframeProps) {
 
     function createPlayer() {
       if (!containerRef.current) return;
-      
+
       if (loadTimerRef.current) {
         clearTimeout(loadTimerRef.current);
         loadTimerRef.current = null;
@@ -256,18 +326,42 @@ function ShortsYoutubeIframe({ videoId, shortsUrl }: ShortsYoutubeIframeProps) {
       setShowLoadFallback(false);
 
       playerRef.current = new (window as any).YT.Player(containerRef.current, {
-        videoId: videoId,
+        videoId,
         playerVars: {
           autoplay: 1,
           controls: 0,
           modestbranding: 1,
           loop: 1,
-          playlist: videoId, // Required for loop
+          playlist: videoId,
           rel: 0,
         },
         events: {
           onReady: (event: any) => {
             event.target.playVideo();
+            try {
+              event.target.unMute();
+              event.target.setVolume(100);
+            } catch {
+              /* ignore */
+            }
+            setIsPlaying(true);
+            setVolume(100);
+            setMuted(false);
+          },
+          onStateChange: (event: any) => {
+            const YT = (window as any).YT;
+            const playing =
+              event.data === YT?.PlayerState?.PLAYING;
+            setIsPlaying(playing);
+            try {
+              setMuted(!!playerRef.current?.isMuted?.());
+              const v = playerRef.current?.getVolume?.();
+              if (typeof v === "number" && Number.isFinite(v)) {
+                setVolume(v);
+              }
+            } catch {
+              /* ignore */
+            }
           },
         },
       });
@@ -283,12 +377,22 @@ function ShortsYoutubeIframe({ videoId, shortsUrl }: ShortsYoutubeIframeProps) {
     };
   }, [videoId]);
 
-  const onProgressTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
+  const togglePlay = useCallback(() => {
     const p = playerRef.current;
-    const track = progressTrackRef.current;
-    if (!p || !track || typeof p.seekTo !== "function") return;
+    if (!p) return;
+    const state = p.getPlayerState?.();
+    if (state === 1) {
+      p.pauseVideo();
+    } else {
+      p.playVideo();
+    }
+  }, []);
+
+  const skipSeconds = useCallback((delta: number) => {
+    const p = playerRef.current;
+    if (!p || typeof p.getCurrentTime !== "function") return;
     const duration = p.getDuration();
+    const cur = p.getCurrentTime();
     if (
       typeof duration !== "number" ||
       !Number.isFinite(duration) ||
@@ -296,70 +400,194 @@ function ShortsYoutubeIframe({ videoId, shortsUrl }: ShortsYoutubeIframeProps) {
     ) {
       return;
     }
-    const rect = track.getBoundingClientRect();
-    const ratio = Math.max(
-      0,
-      Math.min(1, (e.clientX - rect.left) / rect.width),
-    );
-    p.seekTo(ratio * duration, true);
-    setProgress(ratio * 100);
+    const c = typeof cur === "number" && Number.isFinite(cur) ? cur : 0;
+    const next = Math.max(0, Math.min(duration, c + delta));
+    p.seekTo(next, true);
+    setProgress((next / duration) * 100);
+  }, []);
+
+  const stopPlayback = useCallback(() => {
+    const p = playerRef.current;
+    if (!p) return;
+    p.seekTo(0, true);
+    p.pauseVideo();
+    setProgress(0);
+  }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      stop: stopPlayback,
+      togglePlay,
+      skipSeconds,
+    }),
+    [stopPlayback, togglePlay, skipSeconds],
+  );
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const p = playerRef.current;
+    if (!p) return;
+    if (p.isMuted?.()) {
+      p.unMute();
+      setMuted(false);
+    } else {
+      p.mute();
+      setMuted(true);
+    }
   };
 
-  const togglePlay = () => {
-    if (!playerRef.current) return;
-    const state = playerRef.current.getPlayerState();
-    if (state === 1) {
-      playerRef.current.pauseVideo();
-    } else {
-      playerRef.current.playVideo();
+  const onVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    const v = Number(e.target.value);
+    setVolume(v);
+    const p = playerRef.current;
+    if (p?.setVolume) {
+      p.setVolume(v);
+      if (v > 0 && p.isMuted?.()) {
+        p.unMute();
+        setMuted(false);
+      }
     }
   };
 
   return (
     <>
       <div
-        className="youtube-wrapper relative h-full w-full cursor-pointer"
+        className={`youtube-wrapper relative h-full w-full cursor-pointer ${!isPlaying ? "grayscale" : ""}`}
         onClick={togglePlay}
         role="presentation"
       >
         <div ref={containerRef} />
-        <div
-          ref={progressTrackRef}
-          role="slider"
-          tabIndex={0}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(progress)}
-          aria-label="Video progress"
-          className="absolute bottom-0 left-0 right-0 z-[12] h-2 cursor-pointer bg-white/20"
-          onClick={onProgressTrackClick}
-          onKeyDown={(e) => {
-            if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-            e.preventDefault();
-            const p = playerRef.current;
-            if (!p || typeof p.getCurrentTime !== "function") return;
-            const duration = p.getDuration();
-            const cur = p.getCurrentTime();
-            if (
-              typeof duration !== "number" ||
-              !Number.isFinite(duration) ||
-              duration <= 0
-            ) {
-              return;
-            }
-            const delta = (e.key === "ArrowLeft" ? -5 : 5) / duration;
-            const next = Math.max(0, Math.min(1, cur / duration + delta));
-            p.seekTo(next * duration, true);
-            setProgress(next * 100);
-          }}
-        >
+
+        {!isPlaying && !showLoadFallback ? (
           <div
-            className="h-1 bg-[#E94560]"
-            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+            className="pointer-events-none absolute inset-0 z-[13] flex items-center justify-center"
+            aria-hidden
+          >
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-black/45">
+              <Play
+                className="ml-1 h-16 w-16 text-white"
+                fill="white"
+                strokeWidth={1}
+              />
+            </div>
+          </div>
+        ) : null}
+
+        <div
+          className="absolute left-1/2 top-1/2 z-[14] flex -translate-x-1/2 -translate-y-1/2 items-center gap-2"
+          role="group"
+          aria-label="Playback controls"
+        >
+          <button
+            type="button"
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/70"
+            aria-label="Back 10 seconds"
+            onClick={(e) => {
+              e.stopPropagation();
+              skipSeconds(-10);
+            }}
+          >
+            <SkipBack className="h-6 w-6" strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-black/60 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/75"
+            aria-label={isPlaying ? "Pause" : "Play"}
+            onClick={(e) => {
+              e.stopPropagation();
+              togglePlay();
+            }}
+          >
+            {isPlaying ? (
+              <Pause className="h-7 w-7" fill="currentColor" strokeWidth={2} />
+            ) : (
+              <Play className="h-7 w-7 ml-0.5" fill="currentColor" strokeWidth={2} />
+            )}
+          </button>
+          <button
+            type="button"
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/70"
+            aria-label="Forward 10 seconds"
+            onClick={(e) => {
+              e.stopPropagation();
+              skipSeconds(10);
+            }}
+          >
+            <SkipForward className="h-6 w-6" strokeWidth={2} />
+          </button>
+        </div>
+
+        <div className="absolute bottom-10 left-2 z-[14] flex items-center gap-2 rounded-lg bg-black/50 px-2 py-1.5 backdrop-blur-sm">
+          <button
+            type="button"
+            onClick={toggleMute}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-white transition hover:bg-white/10"
+            aria-label={muted ? "Unmute" : "Mute"}
+          >
+            {muted ? (
+              <VolumeX className="h-5 w-5" strokeWidth={2} />
+            ) : (
+              <Volume2 className="h-5 w-5" strokeWidth={2} />
+            )}
+          </button>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={volume}
+            onChange={onVolumeChange}
+            onClick={(e) => e.stopPropagation()}
+            className="h-1 w-24 cursor-pointer accent-[#E94560]"
+            aria-label="Volume"
           />
         </div>
+
+        <div className="absolute bottom-0 left-0 right-0 z-[12] px-2 pb-1 pt-1">
+          <div
+            ref={progressTrackRef}
+            role="slider"
+            tabIndex={0}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progress)}
+            aria-label="Video progress"
+            className="relative flex h-5 cursor-pointer items-center"
+            onPointerDown={onProgressPointerDown}
+            onKeyDown={(e) => {
+              if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+              e.preventDefault();
+              const p = playerRef.current;
+              if (!p || typeof p.getCurrentTime !== "function") return;
+              const duration = p.getDuration();
+              const cur = p.getCurrentTime();
+              if (
+                typeof duration !== "number" ||
+                !Number.isFinite(duration) ||
+                duration <= 0
+              ) {
+                return;
+              }
+              const delta = (e.key === "ArrowLeft" ? -5 : 5) / duration;
+              const next = Math.max(
+                0,
+                Math.min(1, cur / duration + delta),
+              );
+              p.seekTo(next * duration, true);
+              setProgress(next * 100);
+            }}
+          >
+            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-gray-600">
+              <div
+                className="h-full rounded-full bg-[#E94560]"
+                style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
-      
+
       {showLoadFallback ? (
         <div className="absolute inset-0 z-[15] flex flex-col items-center justify-center gap-4 bg-black/90 px-6 text-center">
           <p className="max-w-sm text-sm text-white/90">
@@ -377,21 +605,30 @@ function ShortsYoutubeIframe({ videoId, shortsUrl }: ShortsYoutubeIframeProps) {
       ) : null}
     </>
   );
-}
+});
+
+ShortsYoutubeIframe.displayName = "ShortsYoutubeIframe";
 
 function RailButton({
   icon: Icon,
   label,
   onClick,
   href,
+  count,
+  active,
+  activeColor,
 }: {
   icon: typeof ThumbsUp;
   label: string;
   onClick?: () => void;
   href?: string;
+  count?: string | number;
+  active?: boolean;
+  activeColor?: string;
 }) {
-  const className =
-    "flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/65 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40";
+  const className = `flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-full bg-black/50 backdrop-blur-sm transition hover:bg-black/65 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40 ${
+    active ? (activeColor || "text-[#E94560]") : "text-white"
+  }`;
 
   if (href) {
     return (
@@ -404,6 +641,9 @@ function RailButton({
         aria-label={label}
       >
         <Icon className="h-5 w-5" strokeWidth={2} />
+        {count !== undefined && count !== null && (
+          <span className="text-[10px] font-semibold">{count}</span>
+        )}
       </a>
     );
   }
@@ -416,6 +656,9 @@ function RailButton({
       onClick={onClick}
     >
       <Icon className="h-5 w-5" strokeWidth={2} />
+      {count !== undefined && count !== null && (
+        <span className="text-[10px] font-semibold">{count}</span>
+      )}
     </button>
   );
 }
@@ -435,9 +678,42 @@ export function ShortsImmersivePlayer({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [reactionsOpen, setReactionsOpen] = useState(false);
+  const [commentDraft, setCommentDraft] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const ytPlayerRef = useRef<ShortsYoutubePlayerHandle | null>(null);
+  const wheelAccumRef = useRef(0);
+
+  const [likesCount, setLikesCount] = useState(0);
+  const [dislikesCount, setDislikesCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(0);
+  const [reactionState, setReactionState] = useState({
+    liked: false,
+    disliked: false,
+    commented: false,
+  });
+
+  // Helper to update localStorage
+  const updateReactionStorage = useCallback((videoId: string, state: any) => {
+    localStorage.setItem(`travello_reactions_${videoId}`, JSON.stringify(state));
+  }, []);
+
+  const effectiveQueue = useMemo(
+    () => overrideQueue ?? queue,
+    [overrideQueue, queue],
+  );
+
+  const index = useMemo(() => {
+    if (!activeVideoId) return -1;
+    return effectiveQueue.findIndex((x) => x.videoId === activeVideoId);
+  }, [effectiveQueue, activeVideoId]);
+
+  const current = useMemo(() => {
+    if (!activeVideoId) return null;
+    if (index >= 0) return effectiveQueue[index];
+    return effectiveQueue.find((x) => x.videoId === activeVideoId) ?? null;
+  }, [effectiveQueue, activeVideoId, index]);
 
   const [showChrome, setShowChrome] = useState(false);
   const chromeHideTimerRef = useRef<number | null>(null);
@@ -461,13 +737,50 @@ export function ShortsImmersivePlayer({
     };
   }, []);
 
+  // Restore reaction state and fetch counts (must run after `current` is defined)
+  useEffect(() => {
+    if (!current?.videoId) return;
+
+    const saved = localStorage.getItem(`travello_reactions_${current.videoId}`);
+    if (saved) {
+      try {
+        setReactionState(JSON.parse(saved));
+      } catch {
+        /* ignore */
+      }
+    } else {
+      setReactionState({ liked: false, disliked: false, commented: false });
+    }
+
+    if (current.id) {
+      const fetchCounts = async () => {
+        try {
+          const res = await fetch(`${API_BASE}/explorer/shorts/${current.id}`);
+          if (res.ok) {
+            const data = await res.json();
+            setLikesCount(data.likes_count || 0);
+            setDislikesCount(data.reaction_counts?.dislike || 0);
+            setCommentCount(data.comments?.length || 0);
+          }
+        } catch (e) {
+          console.error("Failed to fetch counts:", e);
+        }
+      };
+      void fetchCounts();
+    } else {
+      setLikesCount(0);
+      setDislikesCount(0);
+      setCommentCount(0);
+    }
+  }, [current?.videoId, current?.id]);
+
   useEffect(() => {
     if (!activeVideoId) setOverrideQueue(null);
   }, [activeVideoId]);
 
   useEffect(() => {
-    setOverrideQueue(null);
-  }, [queue]);
+    setCommentDraft("");
+  }, [activeVideoId]);
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -477,22 +790,6 @@ export function ShortsImmersivePlayer({
     });
     return () => window.cancelAnimationFrame(id);
   }, [searchOpen]);
-
-  const effectiveQueue = useMemo(
-    () => overrideQueue ?? queue,
-    [overrideQueue, queue],
-  );
-
-  const index = useMemo(() => {
-    if (!activeVideoId) return -1;
-    return effectiveQueue.findIndex((x) => x.videoId === activeVideoId);
-  }, [effectiveQueue, activeVideoId]);
-
-  const current = useMemo(() => {
-    if (!activeVideoId) return null;
-    if (index >= 0) return effectiveQueue[index];
-    return effectiveQueue.find((x) => x.videoId === activeVideoId) ?? null;
-  }, [effectiveQueue, activeVideoId, index]);
 
   useEffect(() => {
     if (!activeVideoId || !current) return;
@@ -548,9 +845,30 @@ export function ShortsImmersivePlayer({
 
   const handleReaction = useCallback(async (type: string) => {
     if (!current || !current.id) {
-      // If it's a pure YouTube short not imported yet, we might not have an ID
       return;
     }
+    
+    const videoId = current.videoId;
+    
+    // Optimistic UI update
+    if (type === "like") {
+      setReactionState(prev => {
+        const next = { ...prev, liked: !prev.liked, disliked: prev.liked ? prev.disliked : false };
+        updateReactionStorage(videoId, next);
+        return next;
+      });
+      setLikesCount(prev => reactionState.liked ? prev - 1 : prev + 1);
+      if (reactionState.disliked) setDislikesCount(prev => prev - 1);
+    } else if (type === "dislike") {
+      setReactionState(prev => {
+        const next = { ...prev, disliked: !prev.disliked, liked: prev.disliked ? prev.liked : false };
+        updateReactionStorage(videoId, next);
+        return next;
+      });
+      setDislikesCount(prev => reactionState.disliked ? prev - 1 : prev + 1);
+      if (reactionState.liked) setLikesCount(prev => prev - 1);
+    }
+
     try {
       const token = getToken();
       const headers = new Headers();
@@ -564,7 +882,48 @@ export function ShortsImmersivePlayer({
     } catch (e) {
       console.error("Failed to react:", e);
     }
-  }, [current]);
+  }, [current, reactionState.liked, reactionState.disliked, updateReactionStorage]);
+
+  const submitComment = useCallback(async () => {
+    const text = commentDraft.slice(0, 280).trim();
+    if (!text || !current?.id) return;
+    
+    const videoId = current.videoId;
+
+    // Optimistic update
+    setReactionState(prev => {
+      const next = { ...prev, commented: true };
+      updateReactionStorage(videoId, next);
+      return next;
+    });
+    setCommentCount(prev => prev + 1);
+
+    try {
+      const key = `short_comment_${current.id}`;
+      const prev = JSON.parse(
+        typeof localStorage !== "undefined"
+          ? localStorage.getItem(key) || "[]"
+          : "[]",
+      ) as unknown[];
+      const next = [...(Array.isArray(prev) ? prev : []), { t: Date.now(), text }];
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch {
+      /* ignore storage */
+    }
+    try {
+      const token = getToken();
+      const headers = new Headers();
+      if (token) headers.set("Authorization", `Bearer ${token}`);
+      const res = await fetch(
+        `${API_BASE}/explorer/shorts/${current.id}/react?reaction_type=list`,
+        { method: "POST", headers },
+      );
+      if (!res.ok) throw new Error("Failed to save");
+    } catch (e) {
+      console.error("Comment reaction failed:", e);
+    }
+    setCommentDraft("");
+  }, [commentDraft, current, updateReactionStorage]);
 
   const runExploreSearch = useCallback(async () => {
     const q = searchQuery.trim();
@@ -624,19 +983,25 @@ export function ShortsImmersivePlayer({
       const end = e.changedTouches[0]?.clientY;
       if (end == null) return;
       const deltaY = end - start;
-      if (deltaY > 50) goNext();
-      else if (deltaY < -50) goPrev();
+      if (Math.abs(deltaY) < 80) return;
+      if (deltaY > 0) goNext();
+      else if (deltaY < 0) goPrev();
     },
     [goNext, goPrev, revealChrome],
   );
 
   useEffect(() => {
     if (!activeVideoId) return;
+    wheelAccumRef.current = 0;
     const handleWheel = (ev: WheelEvent) => {
       revealChrome();
       ev.preventDefault();
-      if (ev.deltaY > 0) goNext();
-      else if (ev.deltaY < 0) goPrev();
+      wheelAccumRef.current += ev.deltaY;
+      if (Math.abs(wheelAccumRef.current) < 150) return;
+      const acc = wheelAccumRef.current;
+      wheelAccumRef.current = 0;
+      if (acc > 0) goNext();
+      else goPrev();
     };
     window.addEventListener("wheel", handleWheel, { passive: false });
     return () => window.removeEventListener("wheel", handleWheel);
@@ -682,8 +1047,22 @@ export function ShortsImmersivePlayer({
       const inSearch = (e.target as HTMLElement | null)?.closest?.(
         "[data-shorts-search-popover]",
       );
+      const inComment = (e.target as HTMLElement | null)?.closest?.(
+        "[data-shorts-comment-area]",
+      );
       if (
         inSearch &&
+        (e.key === "ArrowUp" ||
+          e.key === "ArrowDown" ||
+          e.key === "j" ||
+          e.key === "J" ||
+          e.key === "k" ||
+          e.key === "K")
+      ) {
+        return;
+      }
+      if (
+        inComment &&
         (e.key === "ArrowUp" ||
           e.key === "ArrowDown" ||
           e.key === "j" ||
@@ -709,12 +1088,6 @@ export function ShortsImmersivePlayer({
   if (!activeVideoId || !current) return null;
 
   const source: ShortsVideoSource = current.source ?? "youtube";
-  const isCreator = current.is_creator === true;
-
-  const tagLinks = extractHashtagsFromText(
-    `${current.title} ${current.description ?? ""}`,
-    10,
-  );
 
   const shortsUrl = `https://www.youtube.com/shorts/${current.videoId}`;
   const canPrev = index > 0;
@@ -724,10 +1097,9 @@ export function ShortsImmersivePlayer({
       ? `${formatCompactViews(current.viewCount)} views`
       : null;
 
-  const chromeVisible = showChrome || searchOpen;
-  const chromeOpacity = chromeVisible
-    ? "pointer-events-auto opacity-100"
-    : "pointer-events-none opacity-0";
+  const idleUi = !(showChrome || searchOpen);
+  const railOpacity = idleUi ? "opacity-70" : "opacity-100";
+  const navOpacity = idleUi ? "opacity-70" : "opacity-100";
 
   const frameStyle = {
     width: "min(100vw, 420px, calc(100dvh * 9 / 16))",
@@ -811,7 +1183,7 @@ export function ShortsImmersivePlayer({
           type="button"
           disabled={!canPrev}
           onClick={goPrev}
-          className={`absolute left-2 z-[40] flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 disabled:pointer-events-none disabled:opacity-0 sm:left-4 md:h-12 md:w-12 ${chromeOpacity}`}
+          className={`absolute left-2 z-[40] flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-opacity duration-300 hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-35 sm:left-4 md:h-12 md:w-12 ${navOpacity}`}
           aria-label="Previous short"
         >
           <ChevronUp className="h-6 w-6 md:h-7 md:w-7" strokeWidth={2} />
@@ -821,7 +1193,7 @@ export function ShortsImmersivePlayer({
           type="button"
           disabled={!canNext}
           onClick={goNext}
-          className={`absolute right-2 z-[40] flex h-11 w-11 items-center justify-center rounded-full bg-white text-black transition hover:bg-white/90 disabled:pointer-events-none disabled:opacity-0 sm:right-4 md:h-12 md:w-12 ${chromeOpacity}`}
+          className={`absolute right-2 z-[40] flex h-11 w-11 items-center justify-center rounded-full bg-white text-black transition-opacity duration-300 hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-35 sm:right-4 md:h-12 md:w-12 ${navOpacity}`}
           aria-label="Next short"
         >
           <ChevronDown className="h-6 w-6 md:h-7 md:w-7" strokeWidth={2} />
@@ -833,70 +1205,159 @@ export function ShortsImmersivePlayer({
           style={frameStyle}
         >
           <ShortsYoutubeIframe
+            ref={ytPlayerRef}
             videoId={current.videoId}
             shortsUrl={shortsUrl}
           />
 
           <div
-            className={`absolute inset-0 z-20 flex flex-col justify-between transition-opacity duration-300 ${chromeOpacity}`}
+            className="absolute left-0 right-0 top-0 z-[26] flex flex-col gap-2 bg-black/60 px-3 py-2.5 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-4 pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="pointer-events-none absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30"
-              aria-hidden
-            >
-              {source === "travello" && (
-                <span className="rounded-full bg-[#E94560] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
-                  Travello
-                </span>
-              )}
-            </div>
-
-            <div
-              className="flex shrink-0 items-start justify-between gap-2 bg-gradient-to-b from-black/70 to-transparent p-3 pb-8 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <CityTag cityName={cityTrim} />
-              <button
-                type="button"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
-                aria-label="Close"
-                onClick={close}
-              >
-                <X className="h-5 w-5" strokeWidth={2.25} />
-              </button>
-            </div>
-
-            <div className="relative flex flex-1 items-end">
-              {/* Bottom text overlays removed to prevent clashing with YouTube native UI */}
-
-              <div className="absolute top-1/2 -translate-y-1/2 right-2 flex flex-col gap-3 sm:right-3">
-                <RailButton
-                  icon={ThumbsUp}
-                  label="Like"
-                  onClick={() => handleReaction("like")}
-                />
-                <RailButton
-                  icon={ThumbsDown}
-                  label="Dislike"
-                  onClick={() => handleReaction("dislike")}
-                />
-                <div className="relative">
-                  {reactionsOpen && (
-                    <div className="absolute bottom-0 right-14 flex flex-col gap-2 rounded-2xl border border-[#1e4976] bg-[#1a3554]/90 p-2 backdrop-blur-sm shadow-xl">
-                      <button className="text-xs font-semibold text-white hover:text-[#E94560] p-1 whitespace-nowrap" onClick={() => { handleReaction("love"); setReactionsOpen(false); }}>😍 Love this!</button>
-                      <button className="text-xs font-semibold text-white hover:text-[#E94560] p-1 whitespace-nowrap" onClick={() => { handleReaction("helpful"); setReactionsOpen(false); }}>🔥 Super helpful</button>
-                      <button className="text-xs font-semibold text-white hover:text-[#E94560] p-1 whitespace-nowrap" onClick={() => { handleReaction("list"); setReactionsOpen(false); }}>📍 Adding to list</button>
-                    </div>
-                  )}
-                  <RailButton
-                    icon={MessageCircle}
-                    label="Comment"
-                    onClick={() => setReactionsOpen(!reactionsOpen)}
-                  />
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex flex-wrap items-center gap-2">
+                  {source === "travello" ? (
+                    <span className="rounded-full bg-[#E94560] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
+                      Travello
+                    </span>
+                  ) : null}
+                  <CityTag cityName={cityTrim} />
                 </div>
-                <RailButton icon={Share2} label="Share" onClick={shareShort} />
+                <h3 className="truncate text-sm font-semibold text-white sm:text-base">
+                  {current.title}
+                </h3>
+                <p className="truncate text-xs text-white/85 sm:text-sm">
+                  {current.channelTitle}
+                </p>
+                {views ? (
+                  <p className="mt-0.5 text-[10px] text-white/55">{views}</p>
+                ) : null}
+              </div>
+              <div className="flex shrink-0 gap-1.5">
+                <button
+                  type="button"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition hover:bg-black/75"
+                  aria-label="Stop playback"
+                  title="Stop"
+                  onClick={() => ytPlayerRef.current?.stop()}
+                >
+                  <Square className="h-4 w-4 fill-current" strokeWidth={0} />
+                </button>
+                <button
+                  type="button"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition hover:bg-black/75"
+                  aria-label="Close player"
+                  onClick={close}
+                >
+                  <X className="h-5 w-5" strokeWidth={2.25} />
+                </button>
               </div>
             </div>
+          </div>
+
+          <div
+            className={`absolute top-1/2 right-2 z-[25] flex max-h-[min(70vh,480px)] -translate-y-1/2 flex-col gap-3 overflow-y-auto transition-opacity duration-300 sm:right-3 ${railOpacity} pointer-events-auto`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <RailButton
+              icon={ThumbsUp}
+              label="Like"
+              onClick={() => handleReaction("like")}
+              count={likesCount}
+              active={reactionState.liked}
+              activeColor="text-red-500"
+            />
+            <RailButton
+              icon={ThumbsDown}
+              label="Dislike"
+              onClick={() => handleReaction("dislike")}
+              count={dislikesCount}
+              active={reactionState.disliked}
+              activeColor="text-blue-500"
+            />
+            <div className="relative">
+              {reactionsOpen ? (
+                <div className="absolute bottom-0 right-14 w-[min(240px,calc(100vw-120px))] rounded-2xl border border-[#1e4976] bg-[#1a3554]/95 p-3 shadow-xl backdrop-blur-sm"
+                  data-shorts-comment-area
+                >
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-white/60">
+                    Quick reactions
+                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    <button
+                      type="button"
+                      className="rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-white transition hover:bg-white/10 hover:text-[#E94560]"
+                      onClick={() => {
+                        handleReaction("love");
+                      }}
+                    >
+                      Love this!
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-white transition hover:bg-white/10 hover:text-[#E94560]"
+                      onClick={() => {
+                        handleReaction("helpful");
+                      }}
+                    >
+                      Super helpful
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-white transition hover:bg-white/10 hover:text-[#E94560]"
+                      onClick={() => {
+                        handleReaction("list");
+                      }}
+                    >
+                      Adding to list
+                    </button>
+                  </div>
+                  <div className="mt-3 border-t border-white/10 pt-3">
+                    <label className="sr-only" htmlFor="shorts-comment">
+                      Comment
+                    </label>
+                    <textarea
+                      id="shorts-comment"
+                      rows={2}
+                      maxLength={280}
+                      placeholder={
+                        current.id
+                          ? "Add a comment…"
+                          : "Import this short to comment"
+                      }
+                      disabled={!current.id}
+                      value={commentDraft}
+                      onChange={(e) =>
+                        setCommentDraft(e.target.value.slice(0, 280))
+                      }
+                      className="w-full resize-none rounded-xl border border-white/15 bg-black/40 px-2.5 py-2 text-xs text-white placeholder:text-white/40 focus:border-[#E94560] focus:outline-none disabled:opacity-50"
+                    />
+                    <div className="mt-1.5 flex items-center justify-between gap-2">
+                      <span className="text-[10px] text-white/45">
+                        {commentDraft.length}/280
+                      </span>
+                      <button
+                        type="button"
+                        disabled={!commentDraft.trim() || !current.id}
+                        onClick={() => void submitComment()}
+                        className="rounded-lg bg-[#E94560] px-3 py-1 text-[11px] font-bold text-white transition hover:bg-[#ff5a75] disabled:opacity-40"
+                      >
+                        Send
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+              <RailButton
+                icon={MessageCircle}
+                label="Comment"
+                onClick={() => setReactionsOpen(!reactionsOpen)}
+                count={commentCount}
+                active={reactionState.commented}
+              />
+            </div>
+            <RailButton icon={Share2} label="Share" onClick={shareShort} />
           </div>
         </div>
       </div>
