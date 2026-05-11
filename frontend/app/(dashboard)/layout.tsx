@@ -37,6 +37,16 @@ import {
 import { API_BASE, apiFetch } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
 
+const IconNavFlights: IconComponent = ({ size = 20 }) => (
+  <span
+    className="inline-flex shrink-0 items-center justify-center leading-none"
+    style={{ width: size, height: size, fontSize: Math.max(11, size - 5) }}
+    aria-hidden
+  >
+    ✈️
+  </span>
+);
+
 const CORAL = "#E94560";
 
 const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
@@ -125,6 +135,7 @@ const MOBILE_MORE_LINKS: {
   label: string;
   Icon: IconComponent;
 }[] = [
+  { href: "/flights", label: "Flights ✈️", Icon: IconPlane },
   { href: "/split-activities", label: "Split Activities", Icon: IconBanknote },
   { href: "/map", label: "Map", Icon: IconMap },
   { href: "/notifications", label: "Notifications", Icon: IconBell },
@@ -168,6 +179,7 @@ const MAIN_NAV: {
 }[] = [
   { href: "/dashboard", label: "Dashboard", Icon: IconLayoutDashboard },
   { href: "/trips", label: "Trips", Icon: IconPlane },
+  { href: "/flights", label: "Flights", Icon: IconNavFlights },
   { href: "/travel-hub", label: "Connect", Icon: IconUsers },
   { href: "/split-activities", label: "Split Activities", Icon: IconBanknote },
   { href: "/live", label: "Live", Icon: IconLive },
@@ -379,6 +391,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, loading } = useDashboardUser();
   const hideAssistantSidecar = pathname.startsWith("/travel-hub");
+  const isFlightsPage = pathname.startsWith("/flights");
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isExplorePage = pathname.startsWith("/explore") || pathname.startsWith("/explorer");
@@ -873,7 +886,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           ) : (
             <div
               className={
-                isExplorePage || isLivePage
+                isExplorePage || isLivePage || isFlightsPage
                   ? "flex w-full max-w-none flex-col gap-0"
                   : "mx-auto flex w-full max-w-6xl flex-col gap-5"
               }
