@@ -106,6 +106,12 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="GEOAPIFY_API_KEY",
     )
+
+    # ── Kiwi.com Tequila (flight search) ─────────────────────────────────────────
+    kiwi_api_key: str | None = Field(
+        default=None,
+        validation_alias="KIWI_API_KEY",
+    )
     gnews_api_key: str | None = Field(
         default=None,
         validation_alias="GNEWS_API_KEY",
