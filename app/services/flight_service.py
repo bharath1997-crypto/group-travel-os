@@ -31,6 +31,31 @@ def _to_kiwi_ddmmyyyy(d: date) -> str:
     return d.strftime("%d/%m/%Y")
 
 
+# Common free-text → Tequila-friendly location ids (metro / multi-airport codes)
+_FLY_LOCATION_ALIASES: dict[str, str] = {
+    "CHICAGO": "CHI",
+    "NEWYORK": "NYC",
+    "NEWYORKCITY": "NYC",
+    "SANFRANCISCO": "SFO",
+    "MIAMI": "MIA",
+    "LONDON": "LON",
+    "PARIS": "PAR",
+}
+
+
+def _normalize_fly_term(term: str) -> str:
+    """Maps common city names to Kiwi codes; otherwise uppercases trimmed input."""
+    raw = term.strip()
+    if not raw:
+        return raw
+    letters = "".join(c for c in raw.upper() if c.isalpha())
+    if len(letters) >= 3:
+        hit = _FLY_LOCATION_ALIASES.get(letters)
+        if hit:
+            return hit
+    return raw.upper()
+
+
 def _cache_key(
     fly_from: str,
     fly_to: str,
@@ -57,11 +82,23 @@ def _cache_key(
     )
 
 
-def _parse_flight_item(raw: dict[str, Any]) -> FlightResult | None:
+def _parse_flight_item(raw: dict[str, Any], currency_preference: str) -> FlightResult | None:
     rid = raw.get("id")
     if rid is None:
         return None
     price = raw.get("price")
+    if price is None:
+        conv = raw.get("conversion")
+        if isinstance(conv, dict):
+            pref = currency_preference.strip().upper()
+            if pref and pref in conv:
+                price = conv.get(pref)
+            if price is None and conv:
+                for v in conv.values():
+                    if isinstance(v, (int, float)):
+                        price = v
+                        break
+
     if price is None:
         return None
     try:
@@ -71,7 +108,7 @@ def _parse_flight_item(raw: dict[str, Any]) -> FlightResult | None:
 
     currency = raw.get("currency")
     if not isinstance(currency, str) or not currency.strip():
-        currency = "USD"
+        currency = currency_preference if currency_preference else "USD"
 
     airlines_raw = raw.get("airlines")
     airlines: list[str] = []
@@ -152,8 +189,8 @@ class FlightService:
         Cache dimensions include origin/destination, outbound date range, passengers,
         cabin class, currency, and return leg when present (Tequila API parameters).
         """
-        a = fly_from.strip()
-        b = fly_to.strip()
+        a = _normalize_fly_term(fly_from)
+        b = _normalize_fly_term(fly_to)
         if not a or not b:
             AppException.bad_request("Origin and destination are required")
 
@@ -253,7 +290,7 @@ class FlightService:
         for item in data:
             if not isinstance(item, dict):
                 continue
-            row = _parse_flight_item(item)
+            row = _parse_flight_item(item, curr)
             if row is not None:
                 out.append(row)
 
