@@ -15,6 +15,24 @@ from sqlalchemy.orm import Session
 _SENT = object()
 
 
+@pytest.fixture(scope="session", autouse=True)
+def sqlite_create_explorer_events_table() -> None:
+    """
+    CI uses ``DATABASE_URL=sqlite:///./test.db`` without Alembic migrations.
+    Ensure ``explore_events`` exists so routes using ``ExploreEvent`` do not fail.
+    """
+    from config import settings
+
+    if not str(settings.DATABASE_URL or "").startswith("sqlite"):
+        return
+
+    # Import registers the model on ``Base.metadata``.
+    from app.models.explore_event import ExploreEvent
+    from app.utils.database import Base, engine
+
+    Base.metadata.create_all(bind=engine, tables=[ExploreEvent.__table__])
+
+
 def exec_result(
     *,
     scalar_one_or_none: object = _SENT,

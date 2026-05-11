@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
@@ -22,11 +23,25 @@ def _mock_user() -> MagicMock:
 
 
 def test_explorer_feed_returns_200(monkeypatch):
+    """Feed reads DB cache via ``get_cached_events`` — not SerpAPI on the router."""
+    ev = MagicMock()
+    ev.id = uuid.uuid4()
+    ev.external_id = "ext-jazz"
+    ev.title = "Jazz Night"
+    ev.description = ""
+    ev.category = "Music"
+    ev.source_name = "demo"
+    ev.booking_url = ""
+    ev.image_url = ""
+    ev.venue_name = "Library"
+    ev.city = "Chicago"
+    ev.start_time = datetime.now(timezone.utc)
+    ev.price_from = None
+    ev.is_free = True
+
     monkeypatch.setattr(
-        "app.routers.explorer.search_google_events",
-        lambda query, city, date_filter="today": [
-            {"id": "google_event_0", "title": "Jazz Night"},
-        ],
+        "app.services.explore_service.get_cached_events",
+        lambda db, bt, city, cat: [ev],
     )
 
     response = client.get("/api/v1/explorer/feed?city=Chicago")
@@ -38,29 +53,32 @@ def test_explorer_feed_returns_200(monkeypatch):
 def test_explorer_search_returns_200(monkeypatch):
     app.dependency_overrides[get_current_user] = _mock_user
 
-    def fake_run(session, location, query, *, max_results=48):
-        return ExplorerSearchResponse(
-            location=location,
-            query=query,
-            city=location,
-            results=[
-                ExplorerResultItem(
-                    source="google_places",
-                    source_type="google_places",
-                    type="place",
-                    title="Cafe",
-                    id="c1",
-                    venue="Main",
-                    city=location,
-                ),
-            ],
-            total=1,
-            source="google_places",
+    try:
+        def fake_tier(db, location, query):  # matches _run_tiered_explorer_search
+            return ExplorerSearchResponse(
+                location=location,
+                query=query,
+                city=location,
+                results=[
+                    ExplorerResultItem(
+                        source="google_places",
+                        source_type="google_places",
+                        type="place",
+                        title="Cafe",
+                        id="c1",
+                        venue="Main",
+                        city=location,
+                    ),
+                ],
+                total=1,
+                source="google_places",
+            )
+
+        monkeypatch.setattr(
+            "app.routers.explorer._run_tiered_explorer_search",
+            fake_tier,
         )
 
-    monkeypatch.setattr("app.routers.explorer.run_explorer_aggregate_search", fake_run)
-
-    try:
         response = client.get("/api/v1/explorer/search?q=coffee&city=Chicago&type=all")
         assert response.status_code == 200
         payload = response.json()
@@ -77,7 +95,10 @@ def test_explorer_search_returns_200(monkeypatch):
 
 
 def test_explorer_feed_empty_when_no_key(monkeypatch):
-    monkeypatch.setattr("app.services.serpapi_service.settings.serpapi_key", None)
+    monkeypatch.setattr(
+        "app.services.explore_service.get_cached_events",
+        lambda db, bt, city, cat: [],
+    )
 
     response = client.get("/api/v1/explorer/feed?city=Chicago")
 
