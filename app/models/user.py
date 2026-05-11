@@ -10,7 +10,7 @@ import uuid
 from datetime import date, datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Date, DateTime, String, Text
+from sqlalchemy import Boolean, Date, DateTime, Float, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -113,6 +113,16 @@ class User(Base):
         String(512),
         nullable=True,
         index=True,
+    )
+    home_airport: Mapped[str | None] = mapped_column(
+        String(3),
+        nullable=True,
+    )
+    deal_price_threshold: Mapped[float | None] = mapped_column(Float, nullable=True)
+    deal_alerts_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
     )
 
     # ── Flags ─────────────────────────────────────────────────────────────────
