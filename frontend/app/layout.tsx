@@ -46,6 +46,11 @@ export default function RootLayout({
             }
           `}
         </Script>
+        <Script 
+          id="travelpayouts-drive" 
+          src="https://tpembars.com/NTI4MDky.js?t=528092" 
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

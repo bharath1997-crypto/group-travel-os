@@ -112,6 +112,12 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="KIWI_API_KEY",
     )
+
+    # ── Google Routes API (Directions v2 computeRoutes) ─────────────────────────
+    google_routes_api_key: str | None = Field(
+        default=None,
+        validation_alias="GOOGLE_ROUTES_API_KEY",
+    )
     gnews_api_key: str | None = Field(
         default=None,
         validation_alias="GNEWS_API_KEY",
