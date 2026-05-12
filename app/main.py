@@ -35,18 +35,20 @@ async def lifespan(app: FastAPI):
         # Log but don't crash — health endpoint will surface this
         logger.error("Database connection FAILED on startup — check DATABASE_URL in .env")
 
-    # Verify required production variables for Google Sign-In
+    # Verify required production variables for Google Sign-In and security
     if settings.ENVIRONMENT == "production":
         missing_vars = []
         if not settings.GOOGLE_CLIENT_ID:
             missing_vars.append("GOOGLE_CLIENT_ID")
         if not settings.GOOGLE_CLIENT_SECRET:
             missing_vars.append("GOOGLE_CLIENT_SECRET")
+        if not settings.SECRET_KEY or len(settings.SECRET_KEY) < 32:
+            missing_vars.append("SECRET_KEY (missing or too short)")
         
         if missing_vars:
             logger.error(
-                "CRITICAL: Missing required production environment variables for Google Sign-In: %s. "
-                "Users will not be able to log in with Google!",
+                "CRITICAL: Missing or invalid required production environment variables: %s. "
+                "This will cause login or security failures!",
                 ", ".join(missing_vars)
             )
 
