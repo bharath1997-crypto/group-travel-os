@@ -77,7 +77,7 @@ class DealScannerService:
             price_txt = f"{cheapest_price:.2f}"
         airport = str(user.home_airport).strip().upper()
         title = "✈️ Flight Deal Alert"
-        body = f"Flights from {airport} from ${price_txt}! Tap to explore."
+        body = f"Flights from {airport} from ${price_txt}!"
         try:
             NotificationService.create_notification(
                 db,
