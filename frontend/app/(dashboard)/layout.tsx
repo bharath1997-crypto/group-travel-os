@@ -57,6 +57,36 @@ const IconNavRoutes: IconComponent = ({ size = 20 }) => (
   </span>
 );
 
+const IconNavActivities: IconComponent = ({ size = 20 }) => (
+  <span
+    className="inline-flex shrink-0 items-center justify-center leading-none"
+    style={{ width: size, height: size, fontSize: Math.max(11, size - 5) }}
+    aria-hidden
+  >
+    🎯
+  </span>
+);
+
+const IconNavHotels: IconComponent = ({ size = 20 }) => (
+  <span
+    className="inline-flex shrink-0 items-center justify-center leading-none"
+    style={{ width: size, height: size, fontSize: Math.max(11, size - 5) }}
+    aria-hidden
+  >
+    🏨
+  </span>
+);
+
+const IconNavBuddy: IconComponent = ({ size = 20 }) => (
+  <span
+    className="inline-flex shrink-0 items-center justify-center leading-none"
+    style={{ width: size, height: size, fontSize: Math.max(11, size - 5) }}
+    aria-hidden
+  >
+    👥
+  </span>
+);
+
 const CORAL = "#E94560";
 
 const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
@@ -147,6 +177,9 @@ const MOBILE_MORE_LINKS: {
 }[] = [
   { href: "/flights", label: "Flights ✈️", Icon: IconPlane },
   { href: "/routes", label: "Routes 🧭", Icon: IconNavRoutes },
+  { href: "/activities", label: "Activities 🎯", Icon: IconNavActivities },
+  { href: "/hotels", label: "Hotels 🏨", Icon: IconNavHotels },
+  { href: "/buddy", label: "Buddy trips 👥", Icon: IconNavBuddy },
   { href: "/split-activities", label: "Split Activities", Icon: IconBanknote },
   { href: "/map", label: "Map", Icon: IconMap },
   { href: "/notifications", label: "Notifications", Icon: IconBell },
@@ -192,6 +225,9 @@ const MAIN_NAV: {
   { href: "/trips", label: "Trips", Icon: IconPlane },
   { href: "/flights", label: "Flights", Icon: IconNavFlights },
   { href: "/routes", label: "Routes", Icon: IconNavRoutes },
+  { href: "/activities", label: "Activities", Icon: IconNavActivities },
+  { href: "/hotels", label: "Hotels", Icon: IconNavHotels },
+  { href: "/buddy", label: "Buddy trips", Icon: IconNavBuddy },
   { href: "/travel-hub", label: "Connect", Icon: IconUsers },
   { href: "/split-activities", label: "Split Activities", Icon: IconBanknote },
   { href: "/live", label: "Live", Icon: IconLive },
@@ -405,6 +441,9 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const hideAssistantSidecar = pathname.startsWith("/travel-hub");
   const isFlightsPage = pathname.startsWith("/flights");
   const isRoutesPage = pathname.startsWith("/routes");
+  const isActivitiesPage = pathname.startsWith("/activities");
+  const isHotelsPage = pathname.startsWith("/hotels");
+  const isBuddyPage = pathname.startsWith("/buddy");
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isExplorePage = pathname.startsWith("/explore") || pathname.startsWith("/explorer");
@@ -899,7 +938,13 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           ) : (
             <div
               className={
-                isExplorePage || isLivePage || isFlightsPage || isRoutesPage
+                isExplorePage ||
+                isLivePage ||
+                isFlightsPage ||
+                isRoutesPage ||
+                isActivitiesPage ||
+                isHotelsPage ||
+                isBuddyPage
                   ? "flex w-full max-w-none flex-col gap-0"
                   : "mx-auto flex w-full max-w-6xl flex-col gap-5"
               }

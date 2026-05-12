@@ -24,6 +24,8 @@ from app.models.imported_short import ImportedShort
 from app.models.location_hashtag import LocationHashtag
 from app.models.live_checklist import LiveChecklist
 from app.models.live_session import LiveSession
+from app.models.saved_pin import SavedPin
+from app.models.buddy_trip import BuddyJoinRequest, BuddyTrip
 
 __all__: list[str] = [
     "User",
@@ -63,4 +65,6 @@ __all__: list[str] = [
     "LocationHashtag",
     "LiveChecklist",
     "LiveSession",
+    "BuddyTrip",
+    "BuddyJoinRequest",
 ]
