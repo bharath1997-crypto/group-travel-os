@@ -35,6 +35,21 @@ async def lifespan(app: FastAPI):
         # Log but don't crash — health endpoint will surface this
         logger.error("Database connection FAILED on startup — check DATABASE_URL in .env")
 
+    # Verify required production variables for Google Sign-In
+    if settings.ENVIRONMENT == "production":
+        missing_vars = []
+        if not settings.GOOGLE_CLIENT_ID:
+            missing_vars.append("GOOGLE_CLIENT_ID")
+        if not settings.GOOGLE_CLIENT_SECRET:
+            missing_vars.append("GOOGLE_CLIENT_SECRET")
+        
+        if missing_vars:
+            logger.error(
+                "CRITICAL: Missing required production environment variables for Google Sign-In: %s. "
+                "Users will not be able to log in with Google!",
+                ", ".join(missing_vars)
+            )
+
     # With a custom lifespan, Starlette does not run on_event handlers unless we call this.
     await app.router.startup()
 
