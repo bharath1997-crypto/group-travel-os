@@ -56,6 +56,8 @@ export default function BuddyTripsPage() {
 
   const [browseRows, setBrowseRows] = useState<BuddyTripRow[]>([]);
   const [mineRows, setMineRows] = useState<BuddyTripRow[]>([]);
+  const [requests, setRequests] = useState<Record<string, any[]>>({});
+  const [expandedRequests, setExpandedRequests] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
 
@@ -196,6 +198,29 @@ export default function BuddyTripsPage() {
       setErrorBanner(hint);
     } finally {
       setCreateBusy(false);
+    }
+  };
+
+  const loadRequests = async (tripId: string) => {
+    try {
+      const data = await apiFetch<any[]>((`/buddy/trips/${tripId}/requests`));
+      setRequests((p) => ({ ...p, [tripId]: Array.isArray(data) ? data : [] }));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleRequestAction = async (tripId: string, reqId: string, approve: boolean) => {
+    try {
+      await apiFetch((`/buddy/trips/${tripId}/requests/${reqId}`), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approve }),
+      });
+      await loadRequests(tripId);
+      if (approve) await loadMine();
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -481,6 +506,63 @@ export default function BuddyTripsPage() {
                         ) : null}
                       </div>
                     </div>
+                    {mineOrg && tab === "mine" && (
+                      <div className="mt-4 border-t border-slate-100 pt-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = !expandedRequests[t.id];
+                            setExpandedRequests((p) => ({ ...p, [t.id]: next }));
+                            if (next && !requests[t.id]) {
+                              void loadRequests(t.id);
+                            }
+                          }}
+                          className="flex items-center text-sm font-semibold text-[#0F3460] hover:text-[#0c2d52]"
+                        >
+                          <span>Requests</span>
+                          <span className="ml-1">{expandedRequests[t.id] ? "▲" : "▼"}</span>
+                        </button>
+                        
+                        {expandedRequests[t.id] && (
+                          <div className="mt-3 space-y-2">
+                            {!requests[t.id] ? (
+                              <p className="text-xs text-slate-500">Loading...</p>
+                            ) : requests[t.id].length === 0 ? (
+                              <p className="text-xs text-slate-500">No pending requests.</p>
+                            ) : (
+                              requests[t.id].map((r: any) => (
+                                <div key={r.id} className="flex flex-col gap-2 rounded-lg bg-slate-50 p-3 text-sm md:flex-row md:items-center md:justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <img src={dicebear(r.user_id)} alt="" className="h-8 w-8 rounded-full border border-slate-200 bg-white" />
+                                    <div>
+                                      <span className="font-semibold text-[#0F3460]">{r.user?.full_name ?? "Traveler"}</span>
+                                      {r.message && <p className="mt-0.5 text-xs text-slate-600">&ldquo;{r.message}&rdquo;</p>}
+                                      <p className="text-[10px] text-slate-400">{r.created_at ? new Date(r.created_at).toLocaleDateString() : ""}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-1 self-end md:self-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleRequestAction(t.id, r.id, true)}
+                                      className="rounded-lg bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-700 hover:bg-teal-100"
+                                    >
+                                      ✅ Approve
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleRequestAction(t.id, r.id, false)}
+                                      className="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100"
+                                    >
+                                      ❌ Decline
+                                    </button>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </li>
                 );
               })
