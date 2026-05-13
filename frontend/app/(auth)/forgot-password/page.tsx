@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
         {!sent ? (
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <p className="text-sm leading-relaxed text-[#1E3A5F]/85">
-              Enter the email for your Travello account and we&apos;ll send you a reset link.
+              Enter the email for your Rovvy account and we&apos;ll send you a reset link.
             </p>
             <AuthInput
               id="forgot-email"

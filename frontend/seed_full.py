@@ -1,5 +1,5 @@
 """
-Travello Fixed Seeder
+Rovvy Fixed Seeder
 Run: python seed_full.py
 """
 
@@ -42,7 +42,7 @@ def extract_access_token(login_data: dict) -> str | None:
 
 
 async def seed():
-    print("\n🌱 Travello Seeder")
+    print("\n🌱 Rovvy Seeder")
     print("=" * 45)
 
     async with httpx.AsyncClient(

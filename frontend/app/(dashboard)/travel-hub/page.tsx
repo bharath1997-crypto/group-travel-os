@@ -189,7 +189,7 @@ const INITIALS_AVATAR_COLORS = [
   "#8B5CF6",
 ] as const;
 
-const DEMO_CHAT_TRAVELLO_HELP_ID = "__demo_travello_help__";
+const DEMO_CHAT_ROVVY_HELP_ID = "__demo_travello_help__";
 const DEMO_CHAT_COMMUNITY_ID = "__demo_community_updates__";
 
 /** Legacy message thread colors */
@@ -1168,9 +1168,9 @@ function InitialsAvatar({
   );
 }
 
-const DEMO_CHAT_TRAVELLO_HELP: ChatInfo = {
-  id: DEMO_CHAT_TRAVELLO_HELP_ID,
-  name: "Travello Help",
+const DEMO_CHAT_ROVVY_HELP: ChatInfo = {
+  id: DEMO_CHAT_ROVVY_HELP_ID,
+  name: "Rovvy Help",
   type: "individual",
   members: [],
   created_by: "system",
@@ -2179,7 +2179,7 @@ function HubChatsTab({
   setContextMenu: (v: { x: number; y: number; chat: ChatInfo } | null) => void;
   longPressTimerRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
 }) {
-  const demosAlways = [DEMO_CHAT_TRAVELLO_HELP, DEMO_CHAT_COMMUNITY];
+  const demosAlways = [DEMO_CHAT_ROVVY_HELP, DEMO_CHAT_COMMUNITY];
   const syntheticGroupChats: ChatInfo[] = useMemo(() => {
     if (!user) return [];
     return groups
@@ -2209,7 +2209,7 @@ function HubChatsTab({
 
   const mergedFlat = useMemo(() => {
     const skipDemo = new Set<string>([
-      DEMO_CHAT_TRAVELLO_HELP.id,
+      DEMO_CHAT_ROVVY_HELP.id,
       DEMO_CHAT_COMMUNITY.id,
     ]);
     const list = mainChatList.filter((c) => !skipDemo.has(c.id));
@@ -5309,13 +5309,13 @@ type BotMsg = {
   timestamp: number;
 };
 
-function TravelloHelpChatPanel() {
+function RovvyHelpChatPanel() {
   const isResponding = useRef(false);
   const [messages, setMessages] = useState<BotMsg[]>(() => [
     {
       id: `welcome-${Date.now()}-${Math.random()}`,
       role: "bot",
-      text: "Hi! I'm your Travello assistant. I can help you plan trips, split expenses, find destinations, and more. Try asking me something!",
+      text: "Hi! I'm your Rovvy assistant. I can help you plan trips, split expenses, find destinations, and more. Try asking me something!",
       timestamp: Date.now(),
     },
   ]);
@@ -5377,7 +5377,7 @@ function TravelloHelpChatPanel() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-medium text-white">
-            Travello Help
+            Rovvy Help
           </p>
           <p className="flex items-center gap-1.5 text-[12px]" style={{ color: TEXT_MUTED }}>
             <span
@@ -5430,7 +5430,7 @@ function TravelloHelpChatPanel() {
                   {
                     id: `${Date.now()}-${Math.random()}`,
                     role: "bot",
-                    text: "Hi! I'm your Travello assistant. I can help you plan trips, split expenses, find destinations, and more. Try asking me something!",
+                    text: "Hi! I'm your Rovvy assistant. I can help you plan trips, split expenses, find destinations, and more. Try asking me something!",
                     timestamp: Date.now(),
                   },
                 ]);
@@ -5510,7 +5510,7 @@ function CommunityAnnouncementPanel() {
         </div>
         <div className="mb-3 max-w-[90%] rounded-2xl px-3 py-2" style={{ background: SURFACE }}>
           <p className="text-[11px] font-semibold" style={{ color: ACCENT }}>
-            Travello Team
+            Rovvy Team
           </p>
           <p className="mt-1 text-[14px] leading-relaxed text-white">
             New feature alert: AI Trip Planner is now live. Upload any document
@@ -5523,7 +5523,7 @@ function CommunityAnnouncementPanel() {
         </div>
         <div className="mb-3 max-w-[90%] rounded-2xl px-3 py-2" style={{ background: SURFACE }}>
           <p className="text-[11px] font-semibold" style={{ color: ACCENT }}>
-            Travello Team
+            Rovvy Team
           </p>
           <p className="mt-1 text-[14px] leading-relaxed text-white">
             Live Coordination upgrade: meetup pins now show distance in real
@@ -5544,7 +5544,7 @@ function CommunityAnnouncementPanel() {
         </div>
         <div className="mb-3 max-w-[90%] rounded-2xl px-3 py-2" style={{ background: SURFACE }}>
           <p className="text-[11px] font-semibold" style={{ color: ACCENT }}>
-            Travello Team
+            Rovvy Team
           </p>
           <p className="mt-1 text-[14px] leading-relaxed text-white">
             Buddy Trips launching soon. Solo traveler? Post a trip listing and
@@ -5557,7 +5557,7 @@ function CommunityAnnouncementPanel() {
         </div>
         <div className="mb-3 max-w-[90%] rounded-2xl px-3 py-2" style={{ background: SURFACE }}>
           <p className="text-[11px] font-semibold" style={{ color: ACCENT }}>
-            Travello Team
+            Rovvy Team
           </p>
           <p className="mt-1 text-[14px] leading-relaxed text-white">
             Split money in chat: you can now split expenses directly from the
@@ -5577,7 +5577,7 @@ function CommunityAnnouncementPanel() {
           color: TEXT_MUTED,
         }}
       >
-        This is an official announcement channel. Only the Travello team can
+        This is an official announcement channel. Only the Rovvy team can
         post here.
       </div>
     </div>
@@ -14659,7 +14659,7 @@ export default function TravelHubPage() {
               showToast={(m, t) => showToast(m, t ?? "success")}
             />
           ) : activeChat.isBot ? (
-            <TravelloHelpChatPanel />
+            <RovvyHelpChatPanel />
           ) : activeChat.isAnnouncement ? (
             <CommunityAnnouncementPanel />
           ) : (

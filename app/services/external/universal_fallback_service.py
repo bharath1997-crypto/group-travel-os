@@ -70,7 +70,7 @@ async def get_universal_fallback(db: Session, lat: float, lon: float, city: str,
             r = await client.get(
                 "https://nominatim.openstreetmap.org/reverse",
                 params={"lat": lat, "lon": lon, "format": "json"},
-                headers={"User-Agent": "Travello/1.0"}
+                headers={"User-Agent": "Rovvy/1.0"}
             )
             if r.status_code == 200:
                 results["reverse_geocode"] = r.json()

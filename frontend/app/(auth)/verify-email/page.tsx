@@ -247,7 +247,7 @@ function VerifyEmailInner() {
               </div>
               <h1 className="mt-6 text-[28px] font-bold text-[#15803D]">Email verified!</h1>
               <p className="mt-2 text-base text-[#166534]">
-                Welcome to Travello, {firstName(user?.full_name)}!
+                Welcome to Rovvy, {firstName(user?.full_name)}!
               </p>
             </div>
             <div className="mt-8 flex gap-3">

@@ -1,28 +1,42 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
   subsets: ["latin"],
+  variable: "--font-inter",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const outfit = Outfit({
   subsets: ["latin"],
+  variable: "--font-outfit",
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "Travello",
-    template: "%s | Travello",
+  title: "Rovvy — Roam together",
+  description:
+    "Group travel coordination. Plan trips, coordinate live, split expenses.",
+  keywords: [
+    "group travel",
+    "trip planning",
+    "travel coordination",
+    "expense splitting",
+  ],
+  openGraph: {
+    title: "Rovvy — Roam together",
+    description: "Group travel made simple.",
+    siteName: "Rovvy",
   },
-  description: "Group travel planning, trips, and coordination.",
+  manifest: "/manifest.json",
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/icon-512.svg", sizes: "512x512", type: "image/svg+xml" }],
+    icon: [{ url: "/logo-icon.png", type: "image/png" }],
+    apple: [{ url: "/logo-icon.png", sizes: "512x512", type: "image/png" }],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0F766E",
 };
 
 export default function RootLayout({
@@ -33,9 +47,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${outfit.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col font-sans">
         {children}
         <Script id="gt-register-sw" strategy="afterInteractive">
           {`
@@ -46,9 +60,9 @@ export default function RootLayout({
             }
           `}
         </Script>
-        <Script 
-          id="travelpayouts-drive" 
-          src="https://tpembars.com/NTI4MDky.js?t=528092" 
+        <Script
+          id="travelpayouts-drive"
+          src="https://tpembars.com/NTI4MDky.js?t=528092"
           strategy="afterInteractive"
         />
       </body>

@@ -524,7 +524,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             href="/dashboard"
             className="flex items-center gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#CCFBF1]/40"
           >
-            <TravelloLogo variant="full" size="sm" animated />
+            <TravelloLogo variant="dark" width={120} height={40} />
           </Link>
         </div>
 
@@ -612,7 +612,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             <span className="w-10 shrink-0" aria-hidden />
             <div className="flex min-w-0 justify-center justify-self-center px-2">
               {!isMapPage ? (
-                <TravelloLogo variant="pill-dark" size="sm" animated />
+                <TravelloLogo variant="primary" width={112} height={36} />
               ) : (
                 <span className="text-[15px] font-semibold text-[#0F3460]">
                   Map

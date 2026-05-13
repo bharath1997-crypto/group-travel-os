@@ -30,7 +30,7 @@ class UserCreate(BaseModel):
         today = date.today()
         age = today.year - v.year - ((today.month, today.day) < (v.month, v.day))
         if age < 18:
-            raise ValueError("You must be 18 or older to use Travello")
+            raise ValueError("You must be 18 or older to use Rovvy")
         return v
 
 

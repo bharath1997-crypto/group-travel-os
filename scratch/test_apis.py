@@ -50,7 +50,7 @@ test_api("Radio Browser", "https://de1.api.radio-browser.info/json/stations/byco
 # 5. Fallback Geocode: Nominatim
 test_api("Nominatim", "https://nominatim.openstreetmap.org/reverse", 
          params={"lat": 41.8781, "lon": -87.6298, "format": "json"},
-         headers={"User-Agent": "TravelloTest/1.0"})
+         headers={"User-Agent": "RovvyTest/1.0"})
 
 # 6. Fallback Features: Overpass
 overpass_query = """

@@ -1,5 +1,5 @@
 """
-Pydantic v2 request/response models for the Travello AI sidecar assistant.
+Pydantic v2 request/response models for the Rovvy AI sidecar assistant.
 """
 from __future__ import annotations
 

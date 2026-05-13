@@ -235,7 +235,7 @@ export default function FlightsPage() {
         <div className="mx-auto max-w-6xl">
           <h1 className="text-lg font-bold tracking-tight md:text-xl">Flights</h1>
           <p className="mt-1 text-xs leading-relaxed text-teal-100/95 md:text-sm">
-            Search deals via Travello (Kiwi.com). Use airport or metro codes
+            Search deals via Rovvy (Kiwi.com). Use airport or metro codes
             (e.g. CHI, LON); the API fills in airlines after you search.
           </p>
 
