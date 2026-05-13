@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { LogOut, User, Lock, Eye, Archive, HelpCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import TravelloLogo from "@/components/TravelloLogo";
 import {
   useCallback,
   useEffect,
@@ -1403,12 +1404,14 @@ export default function ProfilePage() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
           
           {/* Floating Action Buttons - Styled elegantly */}
-          <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4">
-            <span className="text-white font-bold text-lg drop-shadow-md">Profile</span>
-            <div className="flex gap-2">
+          <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/40 to-transparent">
+            <div className="flex items-center gap-2">
+              <TravelloLogo variant="full" size="sm" animated={false} />
+            </div>
+            <div className="flex gap-3">
               <button
                 type="button"
-                className="rounded-full bg-white/20 backdrop-blur-md p-2.5 text-white hover:bg-white/40 transition-colors shadow-sm"
+                className="rounded-full bg-white/20 backdrop-blur-md p-2.5 text-white hover:bg-white/40 transition-colors shadow-sm flex items-center justify-center"
                 aria-label="Share"
                 onClick={() => void shareProfile()}
               >
@@ -1416,7 +1419,7 @@ export default function ProfilePage() {
               </button>
               <button
                 type="button"
-                className="rounded-full bg-white/20 backdrop-blur-md p-2.5 text-white hover:bg-white/40 transition-colors shadow-sm"
+                className="rounded-full bg-white/20 backdrop-blur-md p-2.5 text-white hover:bg-white/40 transition-colors shadow-sm flex items-center justify-center"
                 aria-label="Menu"
                 onClick={() => setProfileNavOpen(!profileNavOpen)}
               >
@@ -1440,12 +1443,12 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* Identity & Actions */}
-            <div className="mt-4 flex flex-1 flex-col items-center text-center sm:mt-0 sm:items-start sm:pb-2 sm:text-left">
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-extrabold text-stone-800 sm:text-3xl">{displayName}</h1>
+            {/* Identity */}
+            <div className="mt-4 flex flex-1 flex-col items-center text-center sm:mt-0 sm:items-start sm:pb-2 sm:text-left min-w-0">
+              <div className="flex items-center gap-2 max-w-full">
+                <h1 className="text-2xl font-extrabold text-stone-800 sm:text-3xl break-words">{displayName}</h1>
                 {me?.is_verified && (
-                  <span className="text-teal-600" title="Verified">
+                  <span className="text-teal-600 shrink-0" title="Verified">
                     <IconPlane size={20} active />
                   </span>
                 )}
@@ -1458,17 +1461,17 @@ export default function ProfilePage() {
                   <span>{locationLine}</span>
                 </div>
               )}
-            </div>
-
-            {/* CTAs */}
-            <div className="mt-4 flex gap-2 sm:mt-0 sm:pb-2">
-              <button 
-                type="button"
-                className="flex items-center gap-2 rounded-full bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-colors shadow-sm"
-                onClick={() => setEditOpen(true)}
-              >
-                <span>Edit Profile</span>
-              </button>
+              
+              {/* Action Row - Separated clearly */}
+              <div className="mt-4 flex gap-2 w-full sm:w-auto">
+                <button 
+                  type="button"
+                  className="flex items-center justify-center gap-2 rounded-full bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-colors shadow-sm w-full sm:w-auto"
+                  onClick={() => setEditOpen(true)}
+                >
+                  <span>Edit Profile</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1501,18 +1504,28 @@ export default function ProfilePage() {
         {/* 2. PREMIUM STATS ROW */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: "Trips Done", value: tripsLoading ? "…" : String(tripsCount), icon: IconPlane, color: "bg-teal-50 text-teal-600" },
-            { label: "Countries", value: String(stats?.countries_from_trips?.length ?? 0), icon: IconMap, color: "bg-sky-50 text-sky-600" },
-            { label: "Cities", value: String(stats?.locations_saved ?? 0), icon: IconMapPin, color: "bg-amber-50 text-amber-600" },
-            { label: "Buddies", value: String(buddiesCount), icon: IconUserSquare, color: "bg-rose-50 text-rose-600" },
+            { label: "Trips Done", value: tripsLoading ? "…" : String(tripsCount), icon: IconPlane, color: "bg-teal-50 text-teal-600", onClick: () => setContentTab("trips") },
+            { label: "Countries", value: String(stats?.countries_from_trips?.length ?? 0), icon: IconMap, color: "bg-sky-50 text-sky-600", href: "/map" },
+            { label: "Cities", value: String(stats?.locations_saved ?? 0), icon: IconMapPin, color: "bg-amber-50 text-amber-600", href: "/map" },
+            { label: "Buddies", value: String(buddiesCount), icon: IconUserSquare, color: "bg-rose-50 text-rose-600", onClick: () => setContentTab("friends") },
           ].map((stat) => (
-            <div key={stat.label} className="flex flex-col items-center rounded-2xl border border-stone-100 bg-white p-5 text-center shadow-sm hover:shadow-md transition-shadow">
-              <div className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full ${stat.color}`}>
-                <stat.icon size={20} active />
-              </div>
-              <div className="text-2xl font-bold text-stone-800">{stat.value}</div>
-              <div className="text-xs font-medium text-stone-500 uppercase tracking-wide mt-0.5">{stat.label}</div>
-            </div>
+            stat.href ? (
+              <Link href={stat.href} key={stat.label} className="flex flex-col items-center rounded-2xl border border-stone-100 bg-white p-5 text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                <div className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full ${stat.color}`}>
+                  <stat.icon size={20} active />
+                </div>
+                <div className="text-2xl font-bold text-stone-800">{stat.value}</div>
+                <div className="text-xs font-medium text-stone-500 uppercase tracking-wide mt-0.5">{stat.label}</div>
+              </Link>
+            ) : (
+              <button key={stat.label} onClick={stat.onClick} className="flex flex-col items-center rounded-2xl border border-stone-100 bg-white p-5 text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer w-full">
+                <div className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full ${stat.color}`}>
+                  <stat.icon size={20} active />
+                </div>
+                <div className="text-2xl font-bold text-stone-800">{stat.value}</div>
+                <div className="text-xs font-medium text-stone-500 uppercase tracking-wide mt-0.5">{stat.label}</div>
+              </button>
+            )
           ))}
         </div>
 
@@ -1540,22 +1553,7 @@ export default function ProfilePage() {
             {/* Minimal overlay to prevent accidental scrolling while browsing profile */}
             <div className="absolute inset-0 bg-black/5 pointer-events-none" />
           </div>
-          <div className="flex items-center justify-between gap-3 px-5 py-3 bg-stone-50/50">
-            <span className="text-sm text-stone-600 font-medium">Share my location</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={mapShare}
-              className="relative h-7 w-12 shrink-0 rounded-full transition-colors"
-              style={{ background: mapShare ? "#0d9488" : "#ccc" }}
-              onClick={() => persistMapShare(!mapShare)}
-            >
-              <span
-                className="absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all"
-                style={{ left: mapShare ? 22 : 2 }}
-              />
-            </button>
-          </div>
+
         </div>
 
         {/* 4. INTENTIONAL CARDS: COMMUNITIES & SPOTLIGHT */}
@@ -1880,6 +1878,81 @@ export default function ProfilePage() {
                 onClick={() => void onSaveProfile()}
               >
                 {saveBusy ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 8. SETTINGS DRAWER / ACTION SHEET */}
+      {profileNavOpen && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 sm:items-center">
+          {/* Backdrop */}
+          <div className="absolute inset-0" onClick={() => setProfileNavOpen(false)} />
+          
+          {/* Sheet */}
+          <div className="relative w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl transition-transform sm:rounded-3xl sm:max-w-sm">
+            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-stone-300 sm:hidden" />
+            
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-stone-800">Options</h3>
+              <button 
+                type="button" 
+                className="text-sm font-semibold text-teal-600"
+                onClick={() => setProfileNavOpen(false)}
+              >
+                Done
+              </button>
+            </div>
+            
+            <div className="space-y-1">
+              {[
+                { label: "Edit Profile", icon: User, onClick: () => { setEditOpen(true); setProfileNavOpen(false); } },
+                { label: "Settings", icon: IconSettings, href: "/settings" },
+                { label: "Privacy", icon: Lock, href: "/settings/privacy" },
+                { label: "Travel Visibility", icon: Eye, href: "/settings/visibility" },
+                { label: "Map Sharing", icon: IconMap, onClick: () => persistMapShare(!mapShare) },
+                { label: "Buddy Visibility", icon: IconUserSquare, href: "/settings/buddies" },
+                { label: "Saved Trips", icon: IconBookmark, href: "/settings/saved" },
+                { label: "Archive", icon: Archive, href: "/settings/archive" },
+                { label: "Help", icon: HelpCircle, href: "/settings/help" },
+              ].map((item) => (
+                item.href ? (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="flex items-center gap-3 w-full p-3 text-sm font-semibold text-stone-700 hover:bg-stone-50 rounded-xl transition-colors"
+                  >
+                    <item.icon size={18} className="text-stone-500" />
+                    <span>{item.label}</span>
+                  </Link>
+                ) : (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={item.onClick}
+                    className="flex items-center gap-3 w-full p-3 text-sm font-semibold text-stone-700 hover:bg-stone-50 rounded-xl transition-colors text-left"
+                  >
+                    <item.icon size={18} className="text-stone-500" />
+                    <span>{item.label}</span>
+                    {item.label === "Map Sharing" && (
+                      <span className={`ml-auto text-xs font-bold ${mapShare ? "text-teal-600" : "text-stone-400"}`}>
+                        {mapShare ? "ON" : "OFF"}
+                      </span>
+                    )}
+                  </button>
+                )
+              ))}
+              
+              <div className="my-2 border-t border-stone-100" />
+              
+              <button
+                type="button"
+                onClick={() => void handleSignOut()}
+                className="flex items-center gap-3 w-full p-3 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors text-left"
+              >
+                <LogOut size={18} />
+                <span>Sign Out</span>
               </button>
             </div>
           </div>
