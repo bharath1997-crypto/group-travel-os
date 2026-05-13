@@ -422,7 +422,7 @@ function normalizeNews(row: unknown, index: number): NewsItem {
   const tags = Array.isArray(record.tags) ? record.tags.map(String).slice(0, 3) : ["Travel", "Events"];
   return {
     id: textField(record, ["id"], `news-${index}`),
-    source: textField(record, ["source", "source_name", "domain"], "Travello"),
+    source: textField(record, ["source", "source_name", "domain"], "Rovvy"),
     time:
       textField(record, ["time", "published_ago", "publishedAt", "published_at"], "") ||
       textField(record, ["description"], "").slice(0, 52) ||
@@ -1701,7 +1701,7 @@ export default function ExplorerPage() {
                   Settings
                 </Link>
                 <span className="text-white/25">|</span>
-                <span>Travello</span>
+                <span>Rovvy</span>
               </div>
             </footer>
         </div>

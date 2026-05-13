@@ -216,7 +216,7 @@ export default function ProfileRedesignPage() {
                 </li>
                 <li className="flex items-center gap-3">
                   <Info className="h-4 w-4 text-teal-600" />
-                  <span>Joined Travello: March 2024</span>
+                  <span>Joined Rovvy: March 2024</span>
                 </li>
               </ul>
             </div>

@@ -104,7 +104,7 @@ export function LiveQrScanner({
         playsInline
       />
       <p className="px-4 pb-6 pt-3 text-center text-xs text-white/70">
-        Point the camera at the Travello live QR on another device.
+        Point the camera at the Rovvy live QR on another device.
       </p>
     </div>
   );

@@ -222,7 +222,7 @@ function RegisterPageInner() {
 
     const age = ageFromDob(dob);
     if (age < 18) {
-      setDobError("You must be 18 or older to use Travello");
+      setDobError("You must be 18 or older to use Rovvy");
       return;
     }
 
@@ -271,7 +271,7 @@ function RegisterPageInner() {
       <div className="flex min-h-svh flex-col items-center justify-center bg-white px-4 py-10">
         <div className="w-full max-w-md">
           <div className="mb-6 flex items-center justify-between">
-            <TravelloLogo variant="pill-dark" size="sm" animated />
+            <TravelloLogo variant="primary" width={112} height={36} />
           </div>
           <div className="reg-envelope-wrap relative flex justify-center" aria-hidden>
             <style
@@ -359,8 +359,9 @@ function RegisterPageInner() {
         <span className="absolute -left-10 -top-10 h-[180px] w-[180px] rounded-full border border-[rgba(255,255,255,0.08)]" aria-hidden />
         <span className="absolute -right-5 bottom-[60px] h-[120px] w-[120px] rounded-full border border-[rgba(232,97,154,0.2)]" aria-hidden />
         <span className="absolute bottom-[100px] left-10 h-[60px] w-[60px] rounded-full bg-[rgba(232,97,154,0.08)]" aria-hidden />
-        <div className="relative z-[1]">
-          <TravelloLogo variant="full" size="md" animated={true} />
+        <div className="relative z-[1] flex flex-col items-start">
+          <TravelloLogo variant="dark" width={140} height={48} />
+          <p className="mt-2 text-sm text-[#94A3B8]">Roam together</p>
         </div>
         <div className="relative z-[1] max-w-sm">
           <h1 className="text-[22px] font-medium leading-tight text-white">
@@ -379,8 +380,11 @@ function RegisterPageInner() {
 
       <main className="flex w-full flex-1 flex-col justify-center bg-white px-6 py-10 md:px-9">
         <div className="mx-auto w-full max-w-[390px]">
-          <div className="mb-6 flex justify-center md:justify-start">
-            <TravelloLogo variant="mark" size="sm" animated={true} />
+          <div className="mb-6 flex flex-col items-center md:items-start">
+            <TravelloLogo variant="primary" width={140} height={48} />
+            <p className="mt-2 text-center text-sm text-[#94A3B8] md:text-left">
+              Roam together
+            </p>
           </div>
           <h2 className="text-center text-xl font-medium text-[#1C2B3A] md:text-left">
             Create your account
@@ -391,7 +395,7 @@ function RegisterPageInner() {
 
         {fromOauth ? (
           <p className="mb-4 rounded-[10px] border border-[#E8619A]/30 bg-white px-3 py-2 text-center text-xs text-[#1C2B3A]">
-            Finish creating your Travello account below, or continue with Google or Facebook.
+            Finish creating your Rovvy account below, or continue with Google or Facebook.
           </p>
         ) : null}
 

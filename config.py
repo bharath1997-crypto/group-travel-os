@@ -22,7 +22,7 @@ def _parse_origins_string(s: str) -> list[str]:
 
 class Settings(BaseSettings):
     # ── Application ───────────────────────────────────────────────────────────
-    APP_NAME: str = "Group Travel OS"
+    APP_NAME: str = "Rovvy"
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = False
     ENVIRONMENT: str = "development"  # development | staging | production
@@ -50,13 +50,13 @@ class Settings(BaseSettings):
         validation_alias="FIREBASE_DATABASE_URL",
     )
 
-    # ── OpenAI (Travello sidecar assistant — fallback) ────────────────────────
+    # ── OpenAI (Rovvy sidecar assistant — fallback) ───────────────────────────
     openai_api_key: str | None = Field(
         default=None,
         validation_alias="OPENAI_API_KEY",
     )
 
-    # ── Gemini (primary Travello AI engine) ───────────────────────────────────
+    # ── Gemini (primary Rovvy AI engine) ────────────────────────────────────────
     # https://aistudio.google.com/app/apikey — set GEMINI_API_KEY in .env
     gemini_api_key: str | None = Field(
         default=None,
@@ -203,7 +203,7 @@ class Settings(BaseSettings):
         validation_alias="FROM_EMAIL",
     )
     from_name: str = Field(
-        default="Travello",
+        default="Rovvy",
         validation_alias="FROM_NAME",
     )
 

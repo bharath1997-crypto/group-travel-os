@@ -57,10 +57,10 @@ export default function Home() {
 
       <div className="relative z-10 flex max-w-sm flex-col items-center text-center">
         <div className="travello-logo-pulse">
-          <TravelloLogo variant="full" size="lg" animated />
+          <TravelloLogo variant="primary" width={160} height={52} />
         </div>
         <p className="mt-6 text-lg font-semibold text-white drop-shadow-sm sm:text-xl">
-          Group Travel. Simplified.
+          Roam together.
         </p>
 
         <div className="mt-8 flex items-center justify-center gap-2">

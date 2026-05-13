@@ -76,7 +76,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             href="/dashboard"
             className="inline-block outline-none ring-offset-2 ring-offset-gray-900 focus-visible:ring-2 focus-visible:ring-white/50"
           >
-            <TravelloLogo variant="full" size="sm" animated />
+            <TravelloLogo variant="dark" width={120} height={40} />
           </Link>
         </div>
         <div className="flex flex-col items-center border-b border-gray-800/80 px-3 pb-4 pt-5">
@@ -119,7 +119,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           <div className="mb-3 grid grid-cols-[auto_1fr_auto] items-center gap-2">
             <NotificationBell variant="dark" />
             <div className="flex justify-center">
-              <TravelloLogo variant="pill" size="sm" animated />
+              <TravelloLogo variant="dark" width={112} height={36} />
             </div>
             <ProfileDropdown
               layout="header"

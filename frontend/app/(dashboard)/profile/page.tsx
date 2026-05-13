@@ -1427,7 +1427,7 @@ export default function ProfilePage() {
           {/* Floating Action Buttons - Styled elegantly */}
           <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/40 to-transparent">
             <div className="flex items-center gap-2">
-              <TravelloLogo variant="full" size="sm" animated={false} />
+              <TravelloLogo variant="primary" width={120} height={40} />
             </div>
             <div className="flex gap-3">
               <button
@@ -1857,8 +1857,8 @@ export default function ProfilePage() {
       <footer className="mx-auto max-w-3xl px-3 pb-12 pt-12 text-center">
         <p className="text-xs text-stone-400">
           {joinedLabel
-            ? `Joined Travello on ${joinedLabel}.`
-            : "Travello — your trips, your crew."}
+            ? `Joined Rovvy on ${joinedLabel}.`
+            : "Rovvy — your trips, your crew."}
         </p>
         <p className="mt-2 text-[11px] text-stone-300">Travel avatar · Map · Stories</p>
       </footer>

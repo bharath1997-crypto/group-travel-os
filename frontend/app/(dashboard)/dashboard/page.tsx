@@ -454,7 +454,7 @@ async function geocodeCity(
   const res = await fetch(url, {
     signal,
     headers: {
-      "User-Agent": "TravelloDashboard/1.0 (travello.app)",
+      "User-Agent": "RovvyDashboard/1.0 (rovvy.app)",
       Accept: "application/json",
     },
   });

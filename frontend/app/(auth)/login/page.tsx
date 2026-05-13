@@ -245,8 +245,11 @@ function LoginPageInner() {
         <span className="absolute -right-5 bottom-[60px] h-[120px] w-[120px] rounded-full border border-[rgba(232,97,154,0.2)]" aria-hidden />
         <span className="absolute bottom-[100px] left-10 h-[60px] w-[60px] rounded-full bg-[rgba(232,97,154,0.08)]" aria-hidden />
 
-        <div className="relative z-[1]">
-          <TravelloLogo variant="full" size="md" animated={true} />
+        <div className="relative z-[1] flex flex-col items-start">
+          <TravelloLogo variant="dark" width={140} height={48} />
+          <p className="mt-2 text-center text-sm text-[#94A3B8]">
+            Roam together
+          </p>
         </div>
 
         <div className="relative z-[1] max-w-sm">
@@ -271,8 +274,11 @@ function LoginPageInner() {
 
       <main className="flex w-full flex-1 flex-col justify-center bg-white px-6 py-10 md:px-9">
         <div className="mx-auto w-full max-w-[360px]">
-          <div className="mb-7 flex justify-center md:justify-start">
-            <TravelloLogo variant="mark" size="sm" animated={true} />
+          <div className="mb-7 flex flex-col items-center md:items-start">
+            <TravelloLogo variant="primary" width={140} height={48} />
+            <p className="mt-2 text-center text-sm text-[#94A3B8] md:text-left">
+              Roam together
+            </p>
           </div>
           <h2 className="text-center text-xl font-medium text-[#1C2B3A] md:text-left">Welcome back</h2>
           <p className="mb-6 mt-1 text-center text-[13px] text-[#888] md:text-left">

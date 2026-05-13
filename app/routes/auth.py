@@ -440,7 +440,7 @@ def phone_send_otp(data: PhoneSendRequest):
         try:
             client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
             msg = client.messages.create(
-                body=f"Your Group Travel OS verification code is: {otp}",
+                body=f"Your Rovvy verification code is: {otp}",
                 from_=from_num,
                 to=phone,
             )
@@ -494,7 +494,7 @@ def whatsapp_send_otp(data: PhoneSendRequest):
         try:
             client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
             client.messages.create(
-                body=f"Your Group Travel OS verification code is: {otp}",
+                body=f"Your Rovvy verification code is: {otp}",
                 from_="whatsapp:+14155238886",
                 to=f"whatsapp:{phone}",
             )
