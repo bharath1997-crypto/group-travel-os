@@ -14,6 +14,7 @@ from fastapi import HTTPException
 
 from app.schemas.activity import ActivityResult
 from app.utils.exceptions import AppException
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +23,10 @@ _activity_cache: dict[str, tuple[float, list[ActivityResult]]] = {}
 
 
 def _gyg_booking_url(search_query: str) -> str:
+    m = (settings.travelpayouts_marker or "").strip() or "727732"
     inner = "https://www.getyourguide.com/s/?q=" + quote(search_query, safe="")
     return (
-        "https://tp.media/r?marker=PENDING_APPROVAL&trs=PENDING_APPROVAL&p=4307&u="
+        f"https://tp.media/r?marker={m}&trs={m}&p=4307&u="
         + quote(inner, safe="")
     )
 

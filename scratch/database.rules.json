@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "trips": {
+      "$tripId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    }
+  }
+}
