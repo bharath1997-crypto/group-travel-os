@@ -1218,8 +1218,8 @@ export function ShortsImmersivePlayer({
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex flex-wrap items-center gap-2">
                   {source === "travello" ? (
-                    <span className="rounded-full bg-[#E94560] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
-                      Travello
+                    <span className="rounded-full bg-[#E94560] px-2 py-0.5 text-[10px] font-bold tracking-wide text-white shadow-sm">
+                      travello
                     </span>
                   ) : null}
                   <CityTag cityName={cityTrim} />

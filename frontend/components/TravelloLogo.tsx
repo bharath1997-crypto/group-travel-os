@@ -196,7 +196,7 @@ function Wordmark({
         whiteSpace: "nowrap",
       }}
     >
-      Travel<span style={{ color: splitPink ? PINK : color }}>lo</span>
+      travel<span style={{ color: splitPink ? PINK : color }}>lo</span>
     </span>
   );
 }
