@@ -4,7 +4,7 @@ import { API_BASE } from "@/lib/api";
 export const OAUTH_EMAIL_NOT_REGISTERED_CODE = "oauth_email_not_registered";
 
 export const OAUTH_EMAIL_NOT_REGISTERED_MESSAGE =
-  "We verified your social account, but it is not registered with Group Travel OS yet.";
+  "We verified your social account, but it is not registered with Travello yet.";
 
 export const OAUTH_NOT_REGISTERED_MODAL_TITLE = "Account not found";
 
