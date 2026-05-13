@@ -37,7 +37,7 @@ export function ExplorerLocalNav({ city }: ExplorerLocalNavProps) {
           <LayoutDashboard className="h-4 w-4 shrink-0 opacity-80" />
           Dashboard
         </Link>
-        <Link href="/explorer" className={`${wrap} border-[#E94560] bg-white/5 text-white`}>
+        <Link href="/explore/events" className={`${wrap} border-[#E94560] bg-white/5 text-white`}>
           <Compass className="h-4 w-4 shrink-0 text-[#E94560]" />
           Cities
         </Link>

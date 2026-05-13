@@ -1968,7 +1968,7 @@ export default function DashboardPage() {
               </li>
             </ul>
             <Link
-              href="/explorer"
+              href="/explore"
               className="mt-4 inline-block text-sm font-semibold"
               style={{ color: CORAL }}
             >

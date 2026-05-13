@@ -6,25 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
-import {
-  IconBanknote,
-  IconBarChart,
-  IconBell,
-  IconCheck,
-  IconCloudSun,
-  IconCompass,
-  IconLayoutDashboard,
-  IconLive,
-  IconLogout,
-  IconMap,
-  IconMenu,
-  IconMoreHorizontal,
-  IconPlane,
-  IconSettings,
-  IconUser,
-  IconUsers,
-  type IconComponent,
-} from "@/components/icons";
+import { IconBell, IconCheck, IconLogout } from "@/components/icons";
 
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
@@ -37,61 +19,68 @@ import {
 import { API_BASE, apiFetch } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
 
-const IconNavFlights: IconComponent = ({ size = 20 }) => (
-  <span
-    className="inline-flex shrink-0 items-center justify-center leading-none"
-    style={{ width: size, height: size, fontSize: Math.max(11, size - 5) }}
-    aria-hidden
-  >
-    ✈️
-  </span>
-);
-
-const IconNavRoutes: IconComponent = ({ size = 20 }) => (
-  <span
-    className="inline-flex shrink-0 items-center justify-center leading-none"
-    style={{ width: size, height: size, fontSize: Math.max(11, size - 5) }}
-    aria-hidden
-  >
-    🧭
-  </span>
-);
-
-const IconNavActivities: IconComponent = ({ size = 20 }) => (
-  <span
-    className="inline-flex shrink-0 items-center justify-center leading-none"
-    style={{ width: size, height: size, fontSize: Math.max(11, size - 5) }}
-    aria-hidden
-  >
-    🎯
-  </span>
-);
-
-const IconNavHotels: IconComponent = ({ size = 20 }) => (
-  <span
-    className="inline-flex shrink-0 items-center justify-center leading-none"
-    style={{ width: size, height: size, fontSize: Math.max(11, size - 5) }}
-    aria-hidden
-  >
-    🏨
-  </span>
-);
-
-const IconNavBuddy: IconComponent = ({ size = 20 }) => (
-  <span
-    className="inline-flex shrink-0 items-center justify-center leading-none"
-    style={{ width: size, height: size, fontSize: Math.max(11, size - 5) }}
-    aria-hidden
-  >
-    👥
-  </span>
-);
-
 const CORAL = "#E94560";
+
+const NAV_BG = "#0F172A";
+const MUTED = "#94A3B8";
 
 const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
 
-/** GET /auth/me fields used for sidebar photo + name row (fetch uses gt_token in layout only). */
+type SubNavItem = { href: string; label: string };
+
+type NavSectionDef = {
+  id: "home" | "plan" | "explore" | "group" | "profile";
+  href: string;
+  label: string;
+  emoji: string;
+  subs: SubNavItem[];
+};
+
+const NAV_SECTIONS: NavSectionDef[] = [
+  { id: "home", href: "/dashboard", label: "Home", emoji: "🏠", subs: [] },
+  {
+    id: "plan",
+    href: "/plan",
+    label: "Plan",
+    emoji: "🗓️",
+    subs: [
+      { href: "/flights", label: "Flights" },
+      { href: "/hotels", label: "Hotels" },
+      { href: "/routes", label: "Routes" },
+      { href: "/buses", label: "Buses" },
+    ],
+  },
+  {
+    id: "explore",
+    href: "/explore",
+    label: "Explore",
+    emoji: "🔍",
+    subs: [
+      { href: "/activities", label: "Activities" },
+      { href: "/explore/events", label: "Events" },
+      { href: "/weather", label: "Weather" },
+    ],
+  },
+  {
+    id: "group",
+    href: "/group",
+    label: "Group",
+    emoji: "👥",
+    subs: [
+      { href: "/buddy", label: "Buddy Trips" },
+      { href: "/travel-hub", label: "Travel Hub" },
+      { href: "/live", label: "Live" },
+    ],
+  },
+  {
+    id: "profile",
+    href: "/profile",
+    label: "Profile",
+    emoji: "👤",
+    subs: [],
+  },
+];
+
 type SidebarAuthMe = {
   full_name?: string | null;
   username?: string | null;
@@ -149,51 +138,6 @@ function formatDisplayName(full: string | null | undefined): string {
     .join(" ");
 }
 
-function isActive(pathname: string, href: string): boolean {
-  if (href === "/dashboard") return pathname === "/dashboard";
-  if (href === "/travel-hub") {
-    return pathname === "/travel-hub" || pathname.startsWith("/groups/");
-  }
-  if (href === "/split-activities") {
-    return pathname === "/split-activities";
-  }
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-/** Bottom nav "Explore" and More sheet targets */
-function isExploreNavActive(pathname: string): boolean {
-  return (
-    pathname === "/explorer" ||
-    pathname.startsWith("/explorer/") ||
-    pathname === "/explore" ||
-    pathname.startsWith("/explore/")
-  );
-}
-
-const MOBILE_MORE_LINKS: {
-  href: string;
-  label: string;
-  Icon: IconComponent;
-}[] = [
-  { href: "/flights", label: "Flights ✈️", Icon: IconPlane },
-  { href: "/routes", label: "Routes 🧭", Icon: IconNavRoutes },
-  { href: "/activities", label: "Activities 🎯", Icon: IconNavActivities },
-  { href: "/hotels", label: "Hotels 🏨", Icon: IconNavHotels },
-  { href: "/buddy", label: "Buddy trips 👥", Icon: IconNavBuddy },
-  { href: "/split-activities", label: "Split Activities", Icon: IconBanknote },
-  { href: "/map", label: "Map", Icon: IconMap },
-  { href: "/notifications", label: "Notifications", Icon: IconBell },
-  { href: "/settings", label: "Settings", Icon: IconSettings },
-  { href: "/profile", label: "Profile", Icon: IconUser },
-];
-
-function isMoreNavActive(pathname: string): boolean {
-  return MOBILE_MORE_LINKS.some(
-    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
-  );
-}
-
-/** All six verifications from GET /auth/me — not profile_completion_filled. */
 function isProfileFullyComplete(
   u: {
     email_verified?: boolean;
@@ -215,114 +159,41 @@ function isProfileFullyComplete(
   return emailOk && phoneOk && googleOk && waOk && igOk && userOk;
 }
 
-const MAIN_NAV: {
-  href: string;
-  label: string;
-  Icon: IconComponent;
-  kind?: "notifications";
-}[] = [
-  { href: "/dashboard", label: "Dashboard", Icon: IconLayoutDashboard },
-  { href: "/trips", label: "Trips", Icon: IconPlane },
-  { href: "/flights", label: "Flights", Icon: IconNavFlights },
-  { href: "/routes", label: "Routes", Icon: IconNavRoutes },
-  { href: "/activities", label: "Activities", Icon: IconNavActivities },
-  { href: "/hotels", label: "Hotels", Icon: IconNavHotels },
-  { href: "/buddy", label: "Buddy trips", Icon: IconNavBuddy },
-  { href: "/travel-hub", label: "Connect", Icon: IconUsers },
-  { href: "/split-activities", label: "Split Activities", Icon: IconBanknote },
-  { href: "/live", label: "Live", Icon: IconLive },
-  { href: "/explorer", label: "Explore", Icon: IconCompass },
-  { href: "/map", label: "Map", Icon: IconMap },
-  {
-    href: "/notifications",
-    label: "Notifications",
-    Icon: IconBell,
-    kind: "notifications",
-  },
-];
+function sectionActive(pathname: string, section: NavSectionDef): boolean {
+  if (section.id === "home") return pathname === "/dashboard";
+  if (section.id === "plan") {
+    return (
+      pathname === "/plan" ||
+      pathname.startsWith("/flights") ||
+      pathname.startsWith("/hotels") ||
+      pathname.startsWith("/routes") ||
+      pathname.startsWith("/buses")
+    );
+  }
+  if (section.id === "explore") {
+    return (
+      pathname === "/explore" ||
+      pathname.startsWith("/explore/") ||
+      pathname.startsWith("/activities") ||
+      pathname.startsWith("/weather")
+    );
+  }
+  if (section.id === "group") {
+    return (
+      pathname === "/group" ||
+      pathname.startsWith("/buddy") ||
+      pathname.startsWith("/travel-hub") ||
+      pathname.startsWith("/live")
+    );
+  }
+  if (section.id === "profile") {
+    return pathname === "/profile" || pathname.startsWith("/profile/");
+  }
+  return false;
+}
 
-const PRIMARY_NAV = MAIN_NAV.slice(0, -1);
-const NOTIF_NAV = MAIN_NAV[MAIN_NAV.length - 1]!;
-
-function SidebarNavLink({
-  href,
-  label,
-  Icon,
-  active,
-  notifCount,
-  kind,
-  iconOnly,
-  onNavigate,
-  livePulse,
-  liveAudience,
-}: {
-  href: string;
-  label: string;
-  Icon: IconComponent;
-  active: boolean;
-  notifCount: number;
-  kind?: "notifications";
-  iconOnly?: boolean;
-  onNavigate?: () => void;
-  livePulse?: boolean;
-  /** Members in sidebar-active live session (badge on Live nav) */
-  liveAudience?: number;
-}) {
-  return (
-    <Link
-      href={href}
-      title={iconOnly ? label : undefined}
-      onClick={() => onNavigate?.()}
-      className={[
-        "relative flex items-center gap-2.5 rounded-lg border-l-2 py-[9px] text-[13px] transition-all duration-300 ease-in-out",
-        iconOnly
-          ? "justify-center px-1 pl-1 pr-1"
-          : "pl-[9px] pr-3",
-        active
-          ? "border-[#E94560] bg-[#F8F9FA] font-medium text-[#0F3460]"
-          : "border-transparent font-medium text-[rgba(255,255,255,0.65)] hover:bg-[rgba(255,255,255,0.1)] hover:text-white",
-      ].join(" ")}
-    >
-      <span className="inline-flex w-5 shrink-0 justify-center leading-none relative">
-        {livePulse ? (
-          <span
-            className="absolute -right-0.5 -top-0.5 inline-flex h-[7px] w-[7px] rounded-full bg-red-500 animate-pulse"
-            aria-hidden
-          />
-        ) : null}
-        <Icon size={20} darkBg active={active} className="shrink-0" aria-hidden />
-      </span>
-      <span
-        className={
-          iconOnly
-            ? "sr-only"
-            : "min-w-0 flex-1 truncate"
-        }
-      >
-        {label}
-      </span>
-      {!iconOnly && kind === "notifications" && notifCount > 0 ? (
-        <span className="inline-flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white">
-          {notifCount > 99 ? "99+" : notifCount}
-        </span>
-      ) : null}
-      {iconOnly && kind === "notifications" && notifCount > 0 ? (
-        <span className="absolute -right-1 -top-1 flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold leading-none text-white ring-2 ring-[#0F3460]">
-          {notifCount > 99 ? "99+" : notifCount}
-        </span>
-      ) : null}
-      {!iconOnly && href === "/live" && liveAudience !== undefined && liveAudience > 0 ? (
-        <span className="inline-flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-orange-600 px-[5px] text-[9px] font-bold leading-none text-white">
-          {liveAudience > 99 ? "99+" : liveAudience}
-        </span>
-      ) : null}
-      {iconOnly && href === "/live" && liveAudience !== undefined && liveAudience > 0 ? (
-        <span className="absolute -right-2 bottom-[1px] flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-orange-600 px-1 text-[8px] font-bold leading-none text-white ring-2 ring-[#0F3460]">
-          {liveAudience > 99 ? "99+" : liveAudience}
-        </span>
-      ) : null}
-    </Link>
-  );
+function subActive(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 function PlanBadgeFooter({ plan }: { plan: string | null }) {
@@ -360,7 +231,7 @@ const SIDEBAR_AVATAR_IMG_STYLE: CSSProperties = {
   height: 40,
   borderRadius: "50%",
   objectFit: "cover",
-  border: "2px solid rgba(255,255,255,0.2)",
+  border: "2px solid rgba(248,250,252,0.2)",
 };
 
 function SidebarProfileAvatar({
@@ -378,14 +249,14 @@ function SidebarProfileAvatar({
   const bg = deterministicAvatarBg(displayName);
 
   const ringClass = profileComplete
-    ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0F3460]"
-    : "ring-2 ring-red-500 ring-offset-2 ring-offset-[#0F3460]";
+    ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0F172A]"
+    : "ring-2 ring-red-500 ring-offset-2 ring-offset-[#0F172A]";
 
   return (
     <span className="relative inline-flex shrink-0">
       {showInitials ? (
         <span
-          className={`flex h-10 w-10 items-center justify-center rounded-full border-2 border-[rgba(255,255,255,0.2)] text-xs font-bold text-white ${ringClass}`}
+          className={`flex h-10 w-10 items-center justify-center rounded-full border-2 border-[rgba(248,250,252,0.2)] text-xs font-bold text-[#F8FAFC] ${ringClass}`}
           style={{ background: bg }}
           aria-hidden
         >
@@ -403,14 +274,14 @@ function SidebarProfileAvatar({
       )}
       {profileComplete ? (
         <span
-          className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-[#0F3460]"
+          className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-[#0F172A]"
           aria-hidden
         >
           <IconCheck size={10} darkBg />
         </span>
       ) : (
         <span
-          className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-red-500 bg-[#0F3460] ring-2 ring-[#0F3460]"
+          className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-red-500 bg-[#0F172A] ring-2 ring-[#0F172A]"
           aria-hidden
         />
       )}
@@ -427,11 +298,65 @@ function SidebarTierLine({
 }) {
   if (loading) {
     return (
-      <span className="inline-block h-4 w-14 animate-pulse rounded-full bg-[rgba(255,255,255,0.15)]" />
+      <span className="inline-block h-4 w-14 animate-pulse rounded-full bg-[rgba(248,250,252,0.15)]" />
     );
   }
   const tier = subscriptionTier?.trim().toLowerCase() || "free";
   return <PlanBadgeFooter plan={tier} />;
+}
+
+function SidebarNavSection({
+  section,
+  pathname,
+}: {
+  section: NavSectionDef;
+  pathname: string;
+}) {
+  const active = sectionActive(pathname, section);
+  const showSubs = section.subs.length > 0 && active;
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <Link
+        href={section.href}
+        className={[
+          "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors",
+          active
+            ? "bg-[rgba(204,251,241,0.1)] text-[#F8FAFC] shadow-[inset_0_0_0_1px_rgba(15,118,110,0.35)]"
+            : "text-[#94A3B8] hover:bg-[rgba(248,250,252,0.06)] hover:text-[#F8FAFC]",
+        ].join(" ")}
+      >
+        <span
+          className="flex h-5 w-5 shrink-0 items-center justify-center text-base leading-none"
+          aria-hidden
+          style={{ opacity: active ? 1 : 0.85 }}
+        >
+          {section.emoji}
+        </span>
+        <span className="min-w-0 flex-1 truncate">{section.label}</span>
+      </Link>
+      {showSubs ? (
+        <div className="ml-2 flex flex-col gap-0.5 border-l border-[#334155] py-0.5 pl-3">
+          {section.subs.map((sub) => {
+            const subIsActive = subActive(pathname, sub.href);
+            return (
+              <Link
+                key={sub.href}
+                href={sub.href}
+                className={
+                  subIsActive
+                    ? "rounded-md px-2 py-1.5 text-[12px] font-medium text-[#CCFBF1]"
+                    : "rounded-md px-2 py-1.5 text-[12px] font-normal text-[#94A3B8] hover:text-[#F8FAFC]"
+                }
+              >
+                {sub.label}
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function DashboardChrome({ children }: { children: ReactNode }) {
@@ -439,24 +364,26 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, loading } = useDashboardUser();
   const hideAssistantSidecar = pathname.startsWith("/travel-hub");
+
+  const isMapPage = pathname === "/map";
+  const isLivePage = pathname === "/live";
+  const isExplorerEventsShell = pathname.startsWith("/explore/events");
+  const isExploreShortsShell = pathname.startsWith("/explore/shorts");
   const isFlightsPage = pathname.startsWith("/flights");
   const isRoutesPage = pathname.startsWith("/routes");
   const isActivitiesPage = pathname.startsWith("/activities");
   const isHotelsPage = pathname.startsWith("/hotels");
   const isBuddyPage = pathname.startsWith("/buddy");
+  const isDarkHub =
+    pathname === "/plan" ||
+    pathname === "/group" ||
+    pathname === "/explore" ||
+    pathname === "/buses";
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const isExplorePage = pathname.startsWith("/explore") || pathname.startsWith("/explorer");
-  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [isMdUp, setIsMdUp] = useState(false);
-  const [isLgUp, setIsLgUp] = useState(false);
   const [sidebarMe, setSidebarMe] = useState<SidebarAuthMe | null>(null);
   const [sidebarProfileLoading, setSidebarProfileLoading] = useState(true);
   const [notifCount, setNotifCount] = useState(0);
-  const [liveHud, setLiveHud] = useState<{ active: boolean; memberCount: number }>({
-    active: false,
-    memberCount: 0,
-  });
 
   useEffect(() => {
     let c = false;
@@ -493,21 +420,10 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const mqMd = window.matchMedia("(min-width: 768px)");
-    const mqLg = window.matchMedia("(min-width: 1024px)");
-    const apply = () => {
-      const md = mqMd.matches;
-      const lg = mqLg.matches;
-      setIsMdUp(md);
-      setIsLgUp(lg);
-      if (lg) setSidebarOpen(false);
-    };
+    const apply = () => setIsMdUp(mqMd.matches);
     apply();
     mqMd.addEventListener("change", apply);
-    mqLg.addEventListener("change", apply);
-    return () => {
-      mqMd.removeEventListener("change", apply);
-      mqLg.removeEventListener("change", apply);
-    };
+    return () => mqMd.removeEventListener("change", apply);
   }, []);
 
   function handleLogout() {
@@ -529,12 +445,23 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const sidebarPrimaryLabel =
     uname && uname.length > 0 ? `@${uname}` : sidebarDisplayName;
 
-  const isMapPage = pathname === "/map";
-  const isLivePage = pathname === "/live";
+  const needsZeroOuterPadding =
+    isMapPage ||
+    isExplorerEventsShell ||
+    isExploreShortsShell ||
+    isLivePage;
 
-  useEffect(() => {
-    setMoreSheetOpen(false);
-  }, [pathname]);
+  const useFullWidthInner =
+    isMapPage ||
+    isLivePage ||
+    isExplorerEventsShell ||
+    isExploreShortsShell ||
+    isFlightsPage ||
+    isRoutesPage ||
+    isActivitiesPage ||
+    isHotelsPage ||
+    isBuddyPage ||
+    isDarkHub;
 
   useEffect(() => {
     if (loading || !user) return;
@@ -566,99 +493,73 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     return () => window.removeEventListener(GT_NOTIFICATIONS_UNREAD, onUnread);
   }, []);
 
-  useEffect(() => {
-    if (loading || !user) return;
-    let cancelled = false;
-    const tick = async () => {
-      try {
-        const r = await apiFetch<{
-          active: boolean;
-          member_count: number;
-        }>("/live/my-active-session");
-        if (cancelled) return;
-        setLiveHud({
-          active: r.active === true && r.member_count !== 46,
-          memberCount: Math.max(0, Math.floor(r.member_count)),
-        });
-      } catch {
-        /* ignore */
-      }
-    };
-    void tick();
-    const id = window.setInterval(tick, 45000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
-  }, [loading, user]);
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F8F9FA]">
         <div
-          className="h-10 w-10 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
+          className="h-10 w-10 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#0F766E]"
           aria-hidden
         />
       </div>
     );
   }
 
-  const closeSidebar = () => setSidebarOpen(false);
-  const afterNav = () => {
-    if (!isLgUp) setSidebarOpen(false);
-  };
+  const MOBILE_TABS = NAV_SECTIONS.map((s) => ({
+    href: s.href,
+    label: s.label,
+    emoji: s.emoji,
+    id: s.id,
+  }));
 
   return (
     <div className="min-h-screen min-h-[100dvh] bg-[#F8F9FA]">
-      {/* Desktop sidebar — lg+ always 220px */}
-      <aside className="fixed left-0 top-0 z-40 hidden h-full min-h-screen w-[220px] flex-col border-r-0 bg-[#0F3460] shadow-none transition-all duration-300 ease-in-out lg:flex">
-        <div className="shrink-0 border-b border-[rgba(255,255,255,0.1)] px-4 py-5">
+      {/* Desktop / tablet sidebar */}
+      <aside
+        className="fixed left-0 top-0 z-40 hidden h-full min-h-screen w-[240px] flex-col border-r border-[#1E293B] md:flex"
+        style={{ backgroundColor: NAV_BG }}
+      >
+        <div className="shrink-0 border-b border-[rgba(248,250,252,0.08)] px-4 py-5">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+            className="flex items-center gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#CCFBF1]/40"
           >
             <TravelloLogo variant="full" size="sm" animated />
           </Link>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden px-3 py-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#0a2240] [&::-webkit-scrollbar-thumb]:rounded-full [scrollbar-width:thin] [scrollbar-color:#0a2240_transparent]">
-          {PRIMARY_NAV.map((item) => (
-            <SidebarNavLink
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              Icon={item.Icon}
-              active={isActive(pathname, item.href)}
-              notifCount={notifCount}
-              livePulse={item.href === "/live" && liveHud.active}
-              liveAudience={
-                item.href === "/live" && liveHud.active
-                  ? liveHud.memberCount
-                  : undefined
-              }
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden px-3 py-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#334155] [scrollbar-color:#334155_transparent] [scrollbar-width:thin]">
+          {NAV_SECTIONS.map((section) => (
+            <SidebarNavSection
+              key={section.id}
+              section={section}
+              pathname={pathname}
             />
           ))}
-          <div
-            className="my-2 h-px shrink-0 bg-[rgba(255,255,255,0.1)]"
-            aria-hidden
-          />
-          <SidebarNavLink
-            href={NOTIF_NAV.href}
-            label={NOTIF_NAV.label}
-            Icon={NOTIF_NAV.Icon}
-            active={isActive(pathname, NOTIF_NAV.href)}
-            notifCount={notifCount}
-            kind="notifications"
-          />
         </nav>
 
-        <div className="shrink-0 border-t border-[rgba(255,255,255,0.1)] p-3">
-          <div className="flex items-center gap-2">
+        <div className="shrink-0 space-y-2 border-t border-[rgba(248,250,252,0.08)] p-3">
+          <Link
+            href="/notifications"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] transition-colors hover:bg-[rgba(248,250,252,0.06)]"
+            style={{ color: MUTED }}
+          >
+            <IconBell size={18} darkBg className="shrink-0 opacity-90" />
+            <span className="flex-1 truncate text-[#F8FAFC]/90">
+              Notifications
+            </span>
+            {notifCount > 0 ? (
+              <span className="inline-flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white">
+                {notifCount > 99 ? "99+" : notifCount}
+              </span>
+            ) : null}
+          </Link>
+
+          <div className="flex items-center gap-2 rounded-lg p-1">
             <div
               role="button"
               tabIndex={0}
               title={!profileComplete ? "Complete profile" : undefined}
-              className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg p-1 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+              className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg p-1 transition-colors hover:bg-[rgba(248,250,252,0.06)]"
               onClick={() => router.push(profileTarget)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -674,7 +575,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                 profileComplete={profileComplete}
               />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-bold text-white">
+                <p className="truncate text-xs font-bold text-[#F8FAFC]">
                   {sidebarPrimaryLabel}
                 </p>
                 <div className="mt-0.5">
@@ -689,7 +590,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               type="button"
               title="Sign out"
               onClick={handleLogout}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[rgba(255,255,255,0.4)] transition-colors hover:text-[rgba(255,255,255,0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#94A3B8] transition-colors hover:bg-[rgba(248,250,252,0.06)] hover:text-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#CCFBF1]/40"
               aria-label="Sign out"
             >
               <IconLogout size={20} darkBg />
@@ -698,196 +599,11 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      {/* Tablet collapsed rail — md only, 64px icons */}
-      <aside className="fixed left-0 top-0 z-40 hidden h-full min-h-screen w-[64px] flex-col bg-[#0F3460] shadow-none transition-all duration-300 ease-in-out md:flex lg:hidden">
-        <div className="flex shrink-0 flex-col items-center border-b border-[rgba(255,255,255,0.1)] px-1 py-4">
-          <Link
-            href="/dashboard"
-            className="flex items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-            title="travello"
-          >
-            <TravelloLogo variant="mark" size="sm" animated />
-          </Link>
-        </div>
-
-        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden px-1 py-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#0a2240] [&::-webkit-scrollbar-thumb]:rounded-full [scrollbar-width:thin] [scrollbar-color:#0a2240_transparent]">
-          {PRIMARY_NAV.map((item) => (
-            <SidebarNavLink
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              Icon={item.Icon}
-              active={isActive(pathname, item.href)}
-              notifCount={notifCount}
-              iconOnly
-              onNavigate={afterNav}
-              livePulse={item.href === "/live" && liveHud.active}
-              liveAudience={
-                item.href === "/live" && liveHud.active
-                  ? liveHud.memberCount
-                  : undefined
-              }
-            />
-          ))}
-          <div
-            className="my-2 h-px shrink-0 bg-[rgba(255,255,255,0.1)]"
-            aria-hidden
-          />
-          <SidebarNavLink
-            href={NOTIF_NAV.href}
-            label={NOTIF_NAV.label}
-            Icon={NOTIF_NAV.Icon}
-            active={isActive(pathname, NOTIF_NAV.href)}
-            notifCount={notifCount}
-            kind="notifications"
-            iconOnly
-            onNavigate={afterNav}
-          />
-        </nav>
-
-        <div className="mt-auto flex shrink-0 flex-col items-center gap-2 border-t border-[rgba(255,255,255,0.1)] p-2">
-          <button
-            type="button"
-            title={
-              !profileComplete
-                ? "Complete profile"
-                : sidebarDisplayName
-            }
-            className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-            onClick={() => {
-              router.push(profileTarget);
-              afterNav();
-            }}
-          >
-            <SidebarProfileAvatar
-              key={sidebarPicUrl ?? "no-photo"}
-              profilePicUrl={sidebarPicUrl}
-              displayName={sidebarDisplayName}
-              profileComplete={profileComplete}
-            />
-          </button>
-          <button
-            type="button"
-            title="Sign out"
-            onClick={handleLogout}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[rgba(255,255,255,0.4)] transition-colors hover:text-[rgba(255,255,255,0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-            aria-label="Sign out"
-          >
-              <IconLogout size={20} darkBg />
-          </button>
-        </div>
-      </aside>
-
-      {/* Slide-over drawer — tablet + mobile when open (ignored on lg+) */}
-      {sidebarOpen && !isLgUp ? (
-        <>
-          <button
-            type="button"
-            aria-label="Close menu"
-            className="fixed inset-0 z-[3000] bg-[rgba(0,0,0,0.5)] transition-opacity duration-300"
-            onClick={closeSidebar}
-          />
-          <aside className="fixed left-0 top-0 z-[3010] flex h-full min-h-0 w-[220px] flex-col bg-[#0F3460] shadow-2xl transition-all duration-300 ease-in-out md:left-[64px]">
-            <div className="shrink-0 border-b border-[rgba(255,255,255,0.1)] px-4 py-5">
-              <Link
-                href="/dashboard"
-                onClick={afterNav}
-                className="flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-              >
-                <TravelloLogo variant="full" size="sm" animated />
-              </Link>
-            </div>
-
-            <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden px-3 py-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#0a2240] [&::-webkit-scrollbar-thumb]:rounded-full [scrollbar-width:thin] [scrollbar-color:#0a2240_transparent]">
-              {PRIMARY_NAV.map((item) => (
-                <SidebarNavLink
-                  key={item.href}
-                  href={item.href}
-                  label={item.label}
-                  Icon={item.Icon}
-                  active={isActive(pathname, item.href)}
-                  notifCount={notifCount}
-                  onNavigate={afterNav}
-                  livePulse={item.href === "/live" && liveHud.active}
-                  liveAudience={
-                    item.href === "/live" && liveHud.active
-                      ? liveHud.memberCount
-                      : undefined
-                  }
-                />
-              ))}
-              <div
-                className="my-2 h-px shrink-0 bg-[rgba(255,255,255,0.1)]"
-                aria-hidden
-              />
-              <SidebarNavLink
-                href={NOTIF_NAV.href}
-                label={NOTIF_NAV.label}
-                Icon={NOTIF_NAV.Icon}
-                active={isActive(pathname, NOTIF_NAV.href)}
-                notifCount={notifCount}
-                kind="notifications"
-                onNavigate={afterNav}
-              />
-            </nav>
-
-            <div className="shrink-0 border-t border-[rgba(255,255,255,0.1)] p-3">
-              <div className="flex items-center gap-2">
-                <div
-                  role="button"
-                  tabIndex={0}
-                  title={!profileComplete ? "Complete profile" : undefined}
-                  className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg p-1 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
-                  onClick={() => {
-                    router.push(profileTarget);
-                    afterNav();
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      router.push(profileTarget);
-                      afterNav();
-                    }
-                  }}
-                >
-                  <SidebarProfileAvatar
-                    key={sidebarPicUrl ?? "no-photo"}
-                    profilePicUrl={sidebarPicUrl}
-                    displayName={sidebarDisplayName}
-                    profileComplete={profileComplete}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-bold text-white">
-                      {sidebarPrimaryLabel}
-                    </p>
-                    <div className="mt-0.5">
-                      <SidebarTierLine
-                        loading={sidebarProfileLoading}
-                        subscriptionTier={sidebarMe?.subscription_tier}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  title="Sign out"
-                  onClick={handleLogout}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[rgba(255,255,255,0.4)] transition-colors hover:text-[rgba(255,255,255,0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-                  aria-label="Sign out"
-                >
-                  <IconLogout size={20} darkBg />
-                </button>
-              </div>
-            </div>
-          </aside>
-        </>
-      ) : null}
-
       <div
         className={
           isMapPage
-            ? "flex min-h-screen min-h-[100dvh] flex-col transition-all duration-300 ease-in-out max-md:ml-0 md:ml-[64px] lg:ml-[220px]"
-            : "flex min-h-screen min-h-[100dvh] flex-col pb-[calc(56px+env(safe-area-inset-bottom,0px))] transition-all duration-300 ease-in-out max-md:ml-0 md:ml-[64px] lg:ml-[220px] md:pb-0"
+            ? "flex min-h-screen min-h-[100dvh] flex-col transition-all duration-300 ease-in-out max-md:ml-0 md:ml-[240px]"
+            : "flex min-h-screen min-h-[100dvh] flex-col pb-[calc(56px+env(safe-area-inset-bottom,0px))] transition-all duration-300 ease-in-out max-md:ml-0 max-md:pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:ml-[240px] md:pb-0"
         }
       >
         {!isMdUp ? (
@@ -904,12 +620,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             </div>
             <Link
               href="/notifications"
-              className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center justify-self-end rounded-xl text-[#6C757D] transition-colors hover:bg-[#F8F9FA] hover:text-[#0F3460] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/40"
+              className="relative inline-flex h-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center justify-self-end rounded-xl text-[#64748B] transition-colors hover:bg-[#F8F9FA] hover:text-[#0F172A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/40"
               aria-label="Notifications"
             >
               <IconBell size={24} />
               {notifCount > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white">
+                <span className="absolute right-1 top-1 flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white">
                   {notifCount > 99 ? "99+" : notifCount}
                 </span>
               ) : null}
@@ -919,7 +635,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
         <main
           className={
-            isMapPage || isExplorePage || isLivePage
+            needsZeroOuterPadding
               ? "flex min-h-0 flex-1 flex-col overflow-hidden p-0"
               : "min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-5"
           }
@@ -938,13 +654,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           ) : (
             <div
               className={
-                isExplorePage ||
-                isLivePage ||
-                isFlightsPage ||
-                isRoutesPage ||
-                isActivitiesPage ||
-                isHotelsPage ||
-                isBuddyPage
+                useFullWidthInner
                   ? "flex w-full max-w-none flex-col gap-0"
                   : "mx-auto flex w-full max-w-6xl flex-col gap-5"
               }
@@ -958,40 +668,39 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         </main>
 
         <nav
-          className="fixed bottom-0 left-0 right-0 z-30 flex h-14 min-h-14 border-t border-[#E9ECEF] bg-white px-1 pb-[env(safe-area-inset-bottom,0px)] pt-0 md:hidden"
+          className="fixed bottom-0 left-0 right-0 z-30 flex min-h-14 border-t border-[#E2E8F0] bg-white pb-[env(safe-area-inset-bottom,0px)] pt-0 md:hidden"
           aria-label="Primary"
         >
-          <div className="mx-auto flex h-full w-full max-w-lg items-stretch justify-between">
-            {(
-              [
-                { href: "/dashboard", label: "Home", Icon: IconLayoutDashboard },
-                { href: "/trips", label: "Trips", Icon: IconPlane },
-                { href: "/travel-hub", label: "Connect", Icon: IconUsers },
-                { href: "/explorer", label: "Explore", Icon: IconCompass },
-              ] as const
-            ).map(({ href, label, Icon }) => {
-              const active =
-                href === "/explorer"
-                  ? isExploreNavActive(pathname)
-                  : isActive(pathname, href);
+          <div className="mx-auto flex h-14 w-full max-w-lg items-stretch justify-between px-1">
+            {MOBILE_TABS.map(({ href, label, emoji, id }) => {
+              const def = NAV_SECTIONS.find((s) => s.id === id)!;
+              const active = sectionActive(pathname, def);
               return (
                 <Link
                   key={href}
                   href={href}
-                  className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1"
-                  onClick={() => setMoreSheetOpen(false)}
+                  className="relative flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-1"
                 >
+                  {id === "group" ? (
+                    <span
+                      className="absolute right-[20%] top-1 h-2 w-2 rounded-full bg-[#0F766E] ring-2 ring-white"
+                      aria-hidden
+                      title="Updates"
+                    />
+                  ) : null}
                   <span
-                    className={`inline-flex leading-none ${
-                      active ? "text-[#E94560]" : "text-[#6C757D]"
-                    }`}
+                    className="text-lg leading-none"
                     aria-hidden
+                    style={{
+                      filter: active ? "none" : "grayscale(1)",
+                      opacity: active ? 1 : 0.55,
+                    }}
                   >
-                    <Icon size={18} active={active} />
+                    {emoji}
                   </span>
                   <span
                     className={`max-w-full truncate text-[10px] font-semibold ${
-                      active ? "text-[#E94560]" : "text-[#6C757D]"
+                      active ? "text-[#0F766E]" : "text-[#94A3B8]"
                     }`}
                   >
                     {label}
@@ -999,78 +708,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                 </Link>
               );
             })}
-            <button
-              type="button"
-              className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1 text-[#6C757D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/30"
-              aria-expanded={moreSheetOpen}
-              aria-label="More navigation"
-              onClick={() => setMoreSheetOpen(true)}
-            >
-              <span
-                className={`inline-flex leading-none ${
-                  isMoreNavActive(pathname) ? "text-[#E94560]" : "text-[#6C757D]"
-                }`}
-                aria-hidden
-              >
-                <IconMoreHorizontal size={18} active={isMoreNavActive(pathname)} />
-              </span>
-              <span
-                className={`max-w-full truncate text-[10px] font-semibold ${
-                  isMoreNavActive(pathname)
-                    ? "text-[#E94560]"
-                    : "text-[#6C757D]"
-                }`}
-              >
-                More
-              </span>
-            </button>
           </div>
         </nav>
-
-        {moreSheetOpen ? (
-          <div className="fixed inset-0 z-[3020] md:hidden">
-            <button
-              type="button"
-              aria-label="Close menu"
-              className="absolute inset-0 bg-black/45"
-              onClick={() => setMoreSheetOpen(false)}
-            />
-            <div
-              className="absolute bottom-0 left-0 right-0 max-h-[min(85dvh,520px)] overflow-hidden rounded-t-2xl border-t border-[#E9ECEF] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)]"
-              role="dialog"
-              aria-modal="true"
-              aria-label="More"
-            >
-              <div className="mx-auto w-full max-w-lg px-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))] pt-2">
-                <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#DEE2E6]" />
-                <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-[#6C757D]">
-                  More
-                </p>
-                <ul className="flex flex-col gap-0.5">
-                  {MOBILE_MORE_LINKS.map(({ href, label, Icon }) => {
-                    const active =
-                      pathname === href || pathname.startsWith(`${href}/`);
-                    return (
-                      <li key={href}>
-                        <Link
-                          href={href}
-                          className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium transition-colors hover:bg-[#F8F9FA]"
-                          style={{
-                            color: active ? "#E94560" : "#495057",
-                          }}
-                          onClick={() => setMoreSheetOpen(false)}
-                        >
-                          <Icon size={20} active={active} aria-hidden />
-                          {label}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            </div>
-          </div>
-        ) : null}
       </div>
 
       {user && !hideAssistantSidecar ? (
@@ -1092,7 +731,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             return undefined;
           })()}
           context={{ pathname }}
-          className="!z-[100] max-md:!bottom-[80px] max-md:!right-0 max-md:!p-0 [&>div]:max-md:!pb-0 [&>div]:max-md:!pr-4"
+          className="!z-[100] max-md:!bottom-[72px] max-md:!right-0 max-md:!p-0 [&>div]:max-md:!pb-0 [&>div]:max-md:!pr-4"
         />
       ) : null}
     </div>

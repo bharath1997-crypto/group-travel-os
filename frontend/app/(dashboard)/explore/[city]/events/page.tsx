@@ -221,7 +221,7 @@ export default function CityEventsPage() {
 
   useEffect(() => {
     if (!apiCity) {
-      router.replace("/explorer");
+      router.replace("/explore/events");
       return;
     }
     document.title = `${displayCity} Events`;
