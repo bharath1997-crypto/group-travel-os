@@ -1393,60 +1393,57 @@ export default function ProfilePage() {
 
       {/* 1. PROFILE HERO HEADER */}
       <div className="relative">
-        {/* Cover Image */}
-        <div className="relative h-48 w-full overflow-hidden bg-stone-200 md:h-64">
+        {/* Cover Image - Full Bleed */}
+        <div className="relative h-56 w-full overflow-hidden bg-stone-200 md:h-72">
           <img 
             src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&h=400&fit=crop" 
             alt="Cover" 
             className="h-full w-full object-cover" 
           />
-          {/* Floating Action Buttons */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
+          
+          {/* Floating Action Buttons - Styled elegantly */}
           <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4">
-            <button
-              type="button"
-              className="rounded-full bg-white/80 p-2 text-[#1e2a3a] hover:bg-white shadow-sm"
-              aria-label="Back"
-              onClick={() => router.back()}
-            >
-              <IconArrowLeft size={20} />
-            </button>
+            <span className="text-white font-bold text-lg drop-shadow-md">Profile</span>
             <div className="flex gap-2">
               <button
                 type="button"
-                className="rounded-full bg-white/80 p-2 text-[#1e2a3a] hover:bg-white shadow-sm"
+                className="rounded-full bg-white/20 backdrop-blur-md p-2.5 text-white hover:bg-white/40 transition-colors shadow-sm"
                 aria-label="Share"
                 onClick={() => void shareProfile()}
               >
-                <IconShare size={20} />
+                <IconShare size={18} />
               </button>
               <button
                 type="button"
-                className="rounded-full bg-white/80 p-2 text-[#1e2a3a] hover:bg-white shadow-sm"
+                className="rounded-full bg-white/20 backdrop-blur-md p-2.5 text-white hover:bg-white/40 transition-colors shadow-sm"
                 aria-label="Menu"
                 onClick={() => setProfileNavOpen(!profileNavOpen)}
               >
-                <IconMenu size={20} />
+                <IconMenu size={18} />
               </button>
             </div>
           </div>
         </div>
 
-        {/* Profile Info Area */}
+        {/* Profile Info Area - Overlapping */}
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <div className="relative -mt-16 flex flex-col items-center sm:-mt-20 sm:flex-row sm:items-end sm:gap-6">
+          <div className="relative -mt-20 flex flex-col items-center sm:-mt-24 sm:flex-row sm:items-end sm:gap-6">
             {/* Avatar */}
-            <div className="relative h-32 w-32 shrink-0 overflow-hidden rounded-full border-4 border-white bg-white shadow-md sm:h-40 sm:w-40">
+            <div className="relative h-36 w-36 shrink-0 overflow-hidden rounded-full border-4 border-white bg-white shadow-lg sm:h-44 sm:w-44">
               {photoUrl ? (
                 <img src={photoUrl} alt={displayName} className="h-full w-full object-cover" />
               ) : (
-                <AvatarFaceSvg o={avatarOpts} className="h-full w-full" />
+                <div className="h-full w-full bg-stone-100 flex items-center justify-center">
+                  <AvatarFaceSvg o={avatarOpts} className="h-32 w-32" />
+                </div>
               )}
             </div>
 
             {/* Identity & Actions */}
             <div className="mt-4 flex flex-1 flex-col items-center text-center sm:mt-0 sm:items-start sm:pb-2 sm:text-left">
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-stone-800 sm:text-3xl">{displayName}</h1>
+                <h1 className="text-2xl font-extrabold text-stone-800 sm:text-3xl">{displayName}</h1>
                 {me?.is_verified && (
                   <span className="text-teal-600" title="Verified">
                     <IconPlane size={20} active />
@@ -1457,7 +1454,7 @@ export default function ProfilePage() {
               
               {locationLine && (
                 <div className="mt-2 flex items-center gap-1 text-sm text-stone-600">
-                  <IconMapPin size={16} />
+                  <IconMapPin size={16} className="text-teal-600" />
                   <span>{locationLine}</span>
                 </div>
               )}
@@ -1467,7 +1464,7 @@ export default function ProfilePage() {
             <div className="mt-4 flex gap-2 sm:mt-0 sm:pb-2">
               <button 
                 type="button"
-                className="flex items-center gap-2 rounded-full bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700 transition-colors shadow-sm"
+                className="flex items-center gap-2 rounded-full bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-colors shadow-sm"
                 onClick={() => setEditOpen(true)}
               >
                 <span>Edit Profile</span>
@@ -1476,22 +1473,22 @@ export default function ProfilePage() {
           </div>
 
           {/* Bio & Vibe Tags */}
-          <div className="mt-4 max-w-3xl text-center sm:text-left">
+          <div className="mt-5 max-w-3xl text-center sm:text-left">
             {bioLine ? (
               <p className="text-sm text-stone-600 leading-relaxed">{bioLine}</p>
             ) : (
-              <p className="text-sm text-stone-400">Add your story ✈️</p>
+              <p className="text-sm text-stone-400 italic">Add your story ✈️</p>
             )}
             
-            <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
-              <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">
+            <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
+              <span className="rounded-full bg-teal-50 px-3.5 py-1 text-xs font-semibold text-teal-700">
                 {level.emoji} {level.label}
               </span>
-              <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-700">
-                ✈️ {pts.toLocaleString()} pts
+              <span className="rounded-full bg-stone-100 px-3.5 py-1 text-xs font-semibold text-stone-700">
+                🏆 {pts.toLocaleString()} pts
               </span>
               {zodiacLabel && (
-                <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-700">
+                <span className="rounded-full bg-amber-50 px-3.5 py-1 text-xs font-semibold text-amber-700">
                   {zodiacLabel}
                 </span>
               )}
@@ -1500,187 +1497,149 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="mx-auto mt-8 max-w-4xl px-4 sm:px-6 lg:px-8">
-        {/* 2. STATS ROW */}
+      <div className="mx-auto mt-8 max-w-4xl px-4 sm:px-6 lg:px-8 space-y-8">
+        {/* 2. PREMIUM STATS ROW */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: "Trips Done", value: tripsLoading ? "…" : String(tripsCount), icon: IconPlane },
-            { label: "Countries", value: String(stats?.countries_from_trips?.length ?? 0), icon: IconMap },
-            { label: "Cities", value: String(stats?.locations_saved ?? 0), icon: IconMapPin },
-            { label: "Buddies", value: String(buddiesCount), icon: IconUserSquare },
+            { label: "Trips Done", value: tripsLoading ? "…" : String(tripsCount), icon: IconPlane, color: "bg-teal-50 text-teal-600" },
+            { label: "Countries", value: String(stats?.countries_from_trips?.length ?? 0), icon: IconMap, color: "bg-sky-50 text-sky-600" },
+            { label: "Cities", value: String(stats?.locations_saved ?? 0), icon: IconMapPin, color: "bg-amber-50 text-amber-600" },
+            { label: "Buddies", value: String(buddiesCount), icon: IconUserSquare, color: "bg-rose-50 text-rose-600" },
           ].map((stat) => (
-            <div key={stat.label} className="flex flex-col items-center rounded-2xl border border-stone-100 bg-white p-4 text-center shadow-sm hover:shadow-md transition-shadow">
+            <div key={stat.label} className="flex flex-col items-center rounded-2xl border border-stone-100 bg-white p-5 text-center shadow-sm hover:shadow-md transition-shadow">
+              <div className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full ${stat.color}`}>
+                <stat.icon size={20} active />
+              </div>
               <div className="text-2xl font-bold text-stone-800">{stat.value}</div>
               <div className="text-xs font-medium text-stone-500 uppercase tracking-wide mt-0.5">{stat.label}</div>
             </div>
           ))}
         </div>
 
-      <div className="mx-auto max-w-3xl space-y-4 px-3 pt-2">
-        {/* Group map — same Map page as /map (?embed=1 strips chrome) */}
-        <section
-          className="overflow-hidden rounded-2xl bg-white"
-          style={{
-            border: CARD_BORDER,
-            boxShadow: "0 8px 28px rgba(30, 42, 58, 0.1)",
-          }}
-        >
-          <div className="px-4 pb-0 pt-4">
-            <h2 className="text-lg font-bold tracking-tight text-neutral-900">
-              Group map
-            </h2>
-            <p className="mt-1 text-xs text-stone-500">
-              Live view of the Map tab — pan and zoom here; open the full map for
-              search, layers, and adding pins.
-            </p>
+        {/* 3. GROUP MAP - Cleaned Up */}
+        <div className="overflow-hidden rounded-2xl border border-stone-100 bg-white shadow-sm hover:shadow-md transition-shadow">
+          <div className="px-5 py-4 flex items-center justify-between border-b border-stone-50">
+            <div>
+              <h2 className="text-lg font-bold text-stone-800">Travel Map</h2>
+              <p className="text-xs text-stone-500 mt-0.5">Live view of your group travels</p>
+            </div>
+            <Link
+              href="/map"
+              className="text-sm font-semibold text-teal-600 hover:text-teal-700"
+            >
+              Full Map →
+            </Link>
           </div>
-          <div className="relative mx-4 mb-3 mt-3 h-[min(360px,52vh)] min-h-[260px] overflow-hidden rounded-[1.25rem] shadow-md ring-1 ring-black/8">
+          <div className="relative h-64 bg-stone-50">
             <iframe
               title="Group map"
               src="/map?embed=1"
-              className="pointer-events-auto size-full border-0 bg-stone-100"
+              className="pointer-events-auto size-full border-0"
               loading="lazy"
             />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[800] flex flex-col items-center bg-gradient-to-t from-black/65 via-black/25 to-transparent px-4 pb-4 pt-20">
-              <p className="mb-2 max-w-[18rem] text-center text-sm font-semibold text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.5)]">
-                Explore everywhere your group travels
-              </p>
-              <Link
-                href="/map"
-                className="pointer-events-auto rounded-full px-9 py-2.5 text-sm font-bold text-white shadow-lg transition-transform hover:scale-[1.03] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
-                style={{ background: RED }}
-              >
-                Open full map
-              </Link>
-            </div>
+            {/* Minimal overlay to prevent accidental scrolling while browsing profile */}
+            <div className="absolute inset-0 bg-black/5 pointer-events-none" />
           </div>
-          <p className="px-4 pb-1 text-center text-[11px] text-stone-500">
-            The full map adds search, forecast, pins sheet, and route tools.
-          </p>
-          <div className="flex items-center justify-between gap-3 border-t border-stone-100 px-4 py-3">
-            <span className="text-sm text-stone-600">Share my location</span>
+          <div className="flex items-center justify-between gap-3 px-5 py-3 bg-stone-50/50">
+            <span className="text-sm text-stone-600 font-medium">Share my location</span>
             <button
               type="button"
               role="switch"
               aria-checked={mapShare}
-              className="relative h-8 w-14 shrink-0 rounded-full transition-colors"
-              style={{ background: mapShare ? GREEN : "#ccc" }}
+              className="relative h-7 w-12 shrink-0 rounded-full transition-colors"
+              style={{ background: mapShare ? "#0d9488" : "#ccc" }}
               onClick={() => persistMapShare(!mapShare)}
             >
               <span
-                className="absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all"
-                style={{ left: mapShare ? 30 : 4 }}
+                className="absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all"
+                style={{ left: mapShare ? 22 : 2 }}
               />
             </button>
           </div>
-        </section>
+        </div>
 
-        {/* Communities */}
-        <section
-          className="rounded-2xl bg-white p-4 shadow-sm"
-          style={{ border: CARD_BORDER }}
-        >
-          <h2 className="text-base font-bold text-[#1e2a3a]">Communities</h2>
-          <Link
-            href="/travel-hub"
-            className="mt-3 flex items-center gap-3 rounded-xl border border-stone-100 p-3 transition-colors hover:bg-stone-50"
-          >
-            <span className="text-2xl" aria-hidden>
-              🎒
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-[#1e2a3a]">Add a trip group</p>
-              <p className="text-xs text-stone-500">
-                Meet travelers and share your group trip story.
-              </p>
+        {/* 4. INTENTIONAL CARDS: COMMUNITIES & SPOTLIGHT */}
+        <div className="grid gap-6 sm:grid-cols-2">
+          {/* Communities Card */}
+          <div className="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-stone-800">Communities</h2>
+              <span className="text-xl">🎒</span>
             </div>
-            <span
-              className="rounded-md px-2 py-0.5 text-[10px] font-bold text-white"
-              style={{ background: "#3182ce" }}
+            <p className="text-sm text-stone-600 leading-relaxed">
+              Join travel groups, meet like-minded explorers, and share your journey.
+            </p>
+            <Link
+              href="/travel-hub"
+              className="mt-4 inline-flex items-center gap-2 rounded-full border border-teal-600 px-4 py-1.5 text-xs font-semibold text-teal-600 hover:bg-teal-50"
             >
-              NEW
-            </span>
-            <IconChevronRight size={20} className="shrink-0" />
-          </Link>
-        </section>
+              Explore Hub
+              <IconChevronRight size={14} />
+            </Link>
+          </div>
 
-        <section
-          className="rounded-2xl bg-white shadow-sm"
-          style={{ border: CARD_BORDER }}
-        >
-          <button
-            type="button"
-            className="flex w-full items-center gap-3 p-4 text-left hover:bg-stone-50"
-            onClick={() => {
-              document
-                .getElementById("trip-countdown-section")
-                ?.scrollIntoView({ behavior: "smooth", block: "start" });
-            }}
-          >
-            <IconCalendarPlus size={32} className="shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-[#1e2a3a]">
-                Create a new countdown!
-              </p>
-              <p className="text-xs text-stone-500">
-                Invite friends or keep it private until takeoff.
-              </p>
+          {/* Spotlight Card */}
+          <div className="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-stone-800">Spotlight</h2>
+              <span className="text-xl">✨</span>
             </div>
-            <IconChevronRight size={20} className="shrink-0" />
-          </button>
-        </section>
-      </div>
-
-        {/* 3. HIGHLIGHT STRIP */}
-        <div className="mt-8">
-          <h2 className="mb-3 text-sm font-semibold text-stone-500 uppercase tracking-wide">Spotlight</h2>
-          <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:thin]">
-            {/* Upcoming Trip Card */}
             {upcomingTrips.length > 0 ? (
-              <div className="min-w-[280px] rounded-2xl border border-stone-100 bg-white p-4 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
-                  <IconPlane size={24} active />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-semibold text-teal-600 uppercase">Next Trip</p>
-                  <h3 className="truncate font-bold text-stone-800">{upcomingTrips[0].title}</h3>
-                  <p className="text-xs text-stone-500">{upcomingTrips[0].start_date}</p>
+              <div>
+                <p className="text-sm text-stone-600 font-medium truncate">{upcomingTrips[0].title}</p>
+                <p className="text-xs text-stone-500 mt-0.5">{upcomingTrips[0].start_date}</p>
+                <div className="mt-3 flex -space-x-2">
+                  {Array.from({ length: Math.min(3, upcomingTrips[0].member_count) }).map((_, i) => (
+                    <div key={i} className="h-6 w-6 rounded-full bg-stone-200 border-2 border-white flex items-center justify-center text-[10px] font-bold text-stone-600">
+                      ?
+                    </div>
+                  ))}
+                  {upcomingTrips[0].member_count > 3 && (
+                    <div className="h-6 w-6 rounded-full bg-stone-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-stone-500">
+                      +{upcomingTrips[0].member_count - 3}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
-              <div className="min-w-[280px] rounded-2xl border border-stone-100 bg-white p-4 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-stone-50 text-stone-400">
-                  <IconPlane size={24} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-semibold text-stone-400 uppercase">No upcoming trips</p>
-                  <Link href="/trips/plan" className="text-xs text-teal-600 font-semibold">Plan a trip →</Link>
-                </div>
+              <div>
+                <p className="text-sm text-stone-500">No upcoming trips planned yet.</p>
+                <Link href="/trips/plan" className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-teal-700">
+                  Plan a Trip
+                </Link>
               </div>
             )}
+          </div>
+        </div>
 
-            {/* Stories as Highlights */}
-            {!tripsLoading &&
-              storyTrips.slice(0, 5).map(({ trip, label }, i) => (
+        {/* 5. HIGHLIGHT STRIP (Stories) */}
+        {storyTrips.length > 0 && (
+          <div>
+            <h2 className="mb-3 text-sm font-semibold text-stone-500 uppercase tracking-wide">Highlights</h2>
+            <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:thin]">
+              {storyTrips.slice(0, 8).map(({ trip, label }, i) => (
                 <button
                   key={trip.id}
                   type="button"
                   onClick={() => openStory(i)}
-                  className="min-w-[120px] rounded-2xl border border-stone-100 bg-white p-3 shadow-sm flex flex-col items-center text-center hover:shadow-md transition-shadow"
+                  className="flex flex-col items-center gap-1.5 shrink-0"
                 >
-                  <div className="h-12 w-12 rounded-full p-0.5 border-2 border-teal-600">
-                    <div className="h-full w-full rounded-full bg-stone-100 flex items-center justify-center text-xs font-bold text-stone-500 overflow-hidden">
-                      <AvatarFaceSvg o={avatarOpts} className="h-10 w-10" />
+                  <div className="h-16 w-16 rounded-full p-0.5 border-2 border-teal-600 bg-white flex items-center justify-center shadow-sm">
+                    <div className="h-14 w-14 rounded-full bg-stone-100 overflow-hidden flex items-center justify-center">
+                      <AvatarFaceSvg o={avatarOpts} className="h-12 w-12" />
                     </div>
                   </div>
-                  <p className="mt-2 text-xs font-semibold text-stone-800 truncate w-full">{label}</p>
+                  <span className="max-w-[72px] truncate text-xs font-medium text-stone-700">
+                    {label}
+                  </span>
                 </button>
               ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* 4. MAIN PROFILE TABS */}
-        <div className="mt-8 border-b border-stone-200">
+        {/* 6. MAIN PROFILE TABS */}
+        <div className="border-b border-stone-200">
           <nav className="flex gap-6 overflow-x-auto [scrollbar-width:none]">
             {[
               { id: "posts", label: "Photos", icon: IconGrid },
@@ -1692,7 +1651,7 @@ export default function ProfilePage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setContentTab(tab.id as any)}
-                className={`flex items-center gap-2 border-b-2 py-3 px-1 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2 border-b-2 py-3.5 px-1 text-sm font-semibold transition-colors ${
                   contentTab === tab.id
                     ? "border-teal-600 text-teal-600"
                     : "border-transparent text-stone-500 hover:text-stone-700"
@@ -1705,22 +1664,28 @@ export default function ProfilePage() {
           </nav>
         </div>
 
-        {/* 5. TAB CONTENT */}
-        <div className="mt-6">
+        {/* 7. TAB CONTENT - Better Empty States */}
+        <div className="min-h-[200px]">
           {contentTab === "posts" && (
             <div>
               {postsLoading ? (
-                <div className="grid grid-cols-3 gap-1">
+                <div className="grid grid-cols-3 gap-2">
                   {Array.from({ length: 6 }).map((_, i) => (
-                    <SkeletonBar key={i} className="aspect-square w-full" h={120} />
+                    <SkeletonBar key={i} className="aspect-square w-full rounded-xl" h={120} />
                   ))}
                 </div>
               ) : posts.length === 0 ? (
-                <p className="py-8 text-center text-sm text-stone-500">No posts yet.</p>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="h-16 w-16 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 mb-4">
+                    <IconGrid size={24} />
+                  </div>
+                  <h3 className="text-lg font-bold text-stone-800">No photos yet</h3>
+                  <p className="text-sm text-stone-500 mt-1 max-w-sm">Complete a trip and share your favorite moments with your crew.</p>
+                </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {posts.map((p) => (
-                    <div key={p.id} className="aspect-square overflow-hidden rounded-xl bg-stone-100 group relative">
+                    <div key={p.id} className="aspect-square overflow-hidden rounded-xl bg-stone-100 group relative shadow-sm">
                       <img src={p.src} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
                       <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-sm font-semibold">
                         ♥ {p.likes}
@@ -1733,78 +1698,125 @@ export default function ProfilePage() {
           )}
 
           {contentTab === "trips" && (
-            <div className="space-y-4">
+            <div>
               {tripsLoading ? (
-                <SkeletonBar className="w-full" h={80} />
-              ) : trips.length === 0 ? (
-                <p className="text-center text-sm text-stone-500">No trips yet.</p>
-              ) : (
-                trips.map((t) => (
-                  <div key={t.id} className="rounded-2xl border border-stone-100 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="font-semibold text-[#1e2a3a]">{t.title}</div>
-                        <div className="text-xs text-stone-500">{t.group_name || "Group trip"}</div>
-                      </div>
-                      <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-stone-100 text-stone-600">
-                        {t.status}
-                      </span>
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-3 text-xs text-stone-600">
-                      <span>{t.start_date ?? "?"} → {t.end_date ?? "?"}</span>
-                      <span>{t.member_count} members</span>
-                    </div>
+                <SkeletonBar className="w-full rounded-xl" h={80} />
+              ) : completedTrips.length === 0 && upcomingTrips.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="h-16 w-16 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 mb-4">
+                    <IconPlane size={24} />
                   </div>
-                ))
+                  <h3 className="text-lg font-bold text-stone-800">No trips yet</h3>
+                  <p className="text-sm text-stone-500 mt-1 max-w-sm">Start planning your next adventure with friends.</p>
+                  <Link href="/trips/plan" className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700">
+                    Plan a Trip
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {upcomingTrips.map((t) => (
+                    <div key={t.id} className="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="font-bold text-stone-800">{t.title}</div>
+                          <div className="text-xs text-stone-500 mt-0.5">{t.group_name || "Group trip"}</div>
+                        </div>
+                        <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-teal-50 text-teal-700">
+                          Upcoming
+                        </span>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-4 text-xs text-stone-600">
+                        <span>📅 {t.start_date ?? "?"}</span>
+                        <span>👥 {t.member_count} members</span>
+                      </div>
+                    </div>
+                  ))}
+                  {completedTrips.map((t) => (
+                    <div key={t.id} className="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="font-bold text-stone-800">{t.title}</div>
+                          <div className="text-xs text-stone-500 mt-0.5">{t.group_name || "Group trip"}</div>
+                        </div>
+                        <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-stone-100 text-stone-600">
+                          Completed
+                        </span>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-4 text-xs text-stone-600">
+                        <span>📅 {t.start_date ?? "?"}</span>
+                        <span>👥 {t.member_count} members</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}
 
           {contentTab === "saved" && (
-            <div className="space-y-2">
+            <div>
               {savedPins.length === 0 ? (
-                <p className="py-6 text-center text-sm text-stone-500">No saved pins yet.</p>
-              ) : (
-                savedPins.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between rounded-xl border border-stone-100 px-3 py-2 bg-white">
-                    <span className="text-sm font-medium text-[#1e2a3a]">{p.name}</span>
-                    <Link href="/map" className="text-sm text-teal-600 font-semibold">Map</Link>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="h-16 w-16 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 mb-4">
+                    <IconBookmark size={24} />
                   </div>
-                ))
+                  <h3 className="text-lg font-bold text-stone-800">Your bucket list is empty</h3>
+                  <p className="text-sm text-stone-500 mt-1 max-w-sm">Save spots from the map to build your dream itinerary.</p>
+                  <Link href="/map" className="mt-4 inline-flex items-center gap-2 rounded-full border border-teal-600 px-5 py-2 text-sm font-semibold text-teal-600 hover:bg-teal-50">
+                    Explore Map
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {savedPins.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between rounded-xl border border-stone-100 bg-white px-4 py-3 shadow-sm">
+                      <span className="text-sm font-semibold text-stone-800">{p.name}</span>
+                      <Link href="/map" className="text-sm font-semibold text-teal-600 hover:text-teal-700">View</Link>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}
 
           {contentTab === "friends" && (
-            <div className="space-y-4">
+            <div>
               {connections.length === 0 ? (
-                <p className="py-6 text-center text-sm text-stone-500">No friends connected yet.</p>
-              ) : (
-                connections.map((c) => (
-                  <div key={c.id} className="flex items-center justify-between rounded-2xl border border-stone-100 bg-white p-4 shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 overflow-hidden rounded-full bg-stone-100 flex items-center justify-center text-sm font-bold text-stone-500">
-                        {c.username?.charAt(0).toUpperCase() || "?"}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-stone-800">@{c.username}</h4>
-                      </div>
-                    </div>
-                    <button className="rounded-full border border-teal-600 px-4 py-1.5 text-xs font-semibold text-teal-600 hover:bg-teal-50">
-                      Message
-                    </button>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="h-16 w-16 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 mb-4">
+                    <IconUserSquare size={24} />
                   </div>
-                ))
+                  <h3 className="text-lg font-bold text-stone-800">No friends connected</h3>
+                  <p className="text-sm text-stone-500 mt-1 max-w-sm">Connect with other travelers to coordinate group trips.</p>
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {connections.map((c) => (
+                    <div key={c.id} className="flex items-center justify-between rounded-2xl border border-stone-100 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 overflow-hidden rounded-full bg-stone-100 flex items-center justify-center text-sm font-bold text-stone-500">
+                          {c.username?.charAt(0).toUpperCase() || "?"}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-stone-800">@{c.username}</h4>
+                        </div>
+                      </div>
+                      <button className="rounded-full border border-teal-600 px-4 py-1.5 text-xs font-semibold text-teal-600 hover:bg-teal-50">
+                        Message
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}
         </div>
       </div>
 
-      <footer className="mx-auto max-w-3xl px-3 pb-12 pt-6 text-center">
+      <footer className="mx-auto max-w-3xl px-3 pb-12 pt-12 text-center">
         <p className="text-xs text-stone-400">
           {joinedLabel
-            ? `Joined Group Travel on ${joinedLabel}.`
+            ? `Joined Travello on ${joinedLabel}.`
             : "Travello — your trips, your crew."}
         </p>
         <p className="mt-2 text-[11px] text-stone-300">Travel avatar · Map · Stories</p>

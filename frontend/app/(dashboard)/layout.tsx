@@ -449,7 +449,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     isMapPage ||
     isExplorerEventsShell ||
     isExploreShortsShell ||
-    isLivePage;
+    isLivePage ||
+    pathname.startsWith("/profile");
 
   const useFullWidthInner =
     isMapPage ||
