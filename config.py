@@ -113,6 +113,12 @@ class Settings(BaseSettings):
         validation_alias="KIWI_API_KEY",
     )
 
+    # ── Travelpayouts (tp.media affiliate marker / trs) ──────────────────────────
+    travelpayouts_marker: str = Field(
+        default="727732",
+        validation_alias="TRAVELPAYOUTS_MARKER",
+    )
+
     # ── Google Routes API (Directions v2 computeRoutes) ─────────────────────────
     google_routes_api_key: str | None = Field(
         default=None,

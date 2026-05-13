@@ -40,10 +40,11 @@ _ground_cache: dict[
 
 
 def _travelpayouts_placeholder(origin: str, destination: str) -> str:
-    """Busbud / ground affiliate placeholder until Travelpayouts approval."""
+    """Ground-segment affiliate deep link (Travelpayouts marker from env)."""
+    m = (settings.travelpayouts_marker or "").strip() or "727732"
     return (
         "https://www.travelpayouts.com/"
-        f"?partner_type=busbud_placeholder&utm_source=travello"
+        f"?marker={quote_plus(m)}&partner_type=busbud_placeholder&utm_source=travello"
         f"&origin={quote_plus(origin.strip())}&destination={quote_plus(destination.strip())}"
     )
 
