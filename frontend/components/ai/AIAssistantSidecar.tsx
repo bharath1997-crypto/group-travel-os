@@ -364,10 +364,10 @@ export function AIAssistantSidecar({
       : "App Guide · offline";
 
   const isExplorerRoute =
-    pathname === "/explorer" ||
-    pathname.startsWith("/explorer/") ||
-    pathname === "/explore" ||
-    pathname.startsWith("/explore/");
+    pathname.startsWith("/explore/events") ||
+    pathname.startsWith("/explore/shorts") ||
+    pathname.startsWith("/activities") ||
+    pathname.startsWith("/weather");
   if (isExplorerRoute) {
     return null;
   }

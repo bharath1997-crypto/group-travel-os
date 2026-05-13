@@ -1694,7 +1694,7 @@ export default function ExplorerPage() {
                 <Link href="/dashboard" className="hover:text-white">
                   Dashboard
                 </Link>
-                <Link href="/explorer" className="hover:text-white">
+                <Link href="/explore/events" className="hover:text-white">
                   Explorer
                 </Link>
                 <Link href="/settings" className="hover:text-white">

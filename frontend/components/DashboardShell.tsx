@@ -24,7 +24,7 @@ const nav: NavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/trips", label: "Trips" },
   { href: "/travel-hub", label: "Travel Hub" },
-  { href: "/explorer", label: "Explore" },
+  { href: "/explore", label: "Explore" },
   { href: "/map", label: "Map", mapPin: true },
   { href: "/stats", label: "My Stats" },
   { href: "/settings", label: "Settings" },

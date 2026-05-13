@@ -8,7 +8,15 @@ const nextConfig: NextConfig = {
     root: path.resolve(__dirname, ".."),
   },
   async redirects() {
-    return [{ source: "/feed", destination: "/explorer", permanent: false }];
+    return [
+      { source: "/feed", destination: "/explore/events", permanent: false },
+      { source: "/explorer", destination: "/explore", permanent: false },
+      {
+        source: "/explorer/:path*",
+        destination: "/explore/:path*",
+        permanent: false,
+      },
+    ];
   },
 };
 

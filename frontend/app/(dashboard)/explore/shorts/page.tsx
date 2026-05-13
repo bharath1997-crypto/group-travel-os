@@ -404,7 +404,7 @@ function ExploreShortsContent() {
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
             <Link
-              href="/explorer"
+              href="/explore/events"
               className="mb-1 inline-block text-sm text-gray-300 hover:text-white hover:underline"
             >
               ← Back to Explorer
