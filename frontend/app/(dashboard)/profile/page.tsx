@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, User, Lock, Eye, Archive, HelpCircle } from "lucide-react";
+import { LogOut, User, Lock, Eye, EyeOff, Archive, HelpCircle, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import TravelloLogo from "@/components/TravelloLogo";
 import {
@@ -586,6 +586,13 @@ export default function ProfilePage() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState("");
+  const [birthdayVisibility, setBirthdayVisibility] = useState("friends"); // only_me, friends, everyone
+  const [statsVisibility, setStatsVisibility] = useState({
+    trips: true,
+    countries: true,
+    cities: true,
+    buddies: true,
+  });
   const [editUsername, setEditUsername] = useState("");
   const [editBio, setEditBio] = useState("");
   const [editBirthday, setEditBirthday] = useState("");
@@ -890,6 +897,10 @@ export default function ProfilePage() {
   const level = globeLevelFromPoints(pts);
 
   const joinedLabel = formatJoinedDate(me?.created_at ?? null);
+  
+  // Ownership check: for now we assume true as this is the /profile route
+  // In the future, this can be checked against a URL param vs me.id
+  const isOwner = true;
 
   const zodiacLabel = useMemo(() => {
     if (!birthdayIso?.trim()) return "✨ Set birthday";
@@ -1395,13 +1406,23 @@ export default function ProfilePage() {
       {/* 1. PROFILE HERO HEADER */}
       <div className="relative">
         {/* Cover Image - Full Bleed */}
-        <div className="relative h-56 w-full overflow-hidden bg-stone-200 md:h-72">
+        <div 
+          className={`relative h-56 w-full overflow-hidden bg-stone-200 md:h-72 ${isOwner ? "cursor-pointer" : ""}`}
+          onClick={isOwner ? () => showToast("Change cover feature coming soon!") : undefined}
+        >
           <img 
             src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&h=400&fit=crop" 
             alt="Cover" 
             className="h-full w-full object-cover" 
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
+          
+          {isOwner && (
+            <div className="absolute bottom-4 right-4 rounded-full bg-black/50 p-2 text-white text-xs font-semibold backdrop-blur-sm flex items-center gap-1">
+              <span>📷</span>
+              <span>Change Cover</span>
+            </div>
+          )}
           
           {/* Floating Action Buttons - Styled elegantly */}
           <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/40 to-transparent">
@@ -1463,15 +1484,17 @@ export default function ProfilePage() {
               )}
               
               {/* Action Row - Separated clearly */}
-              <div className="mt-4 flex gap-2 w-full sm:w-auto">
-                <button 
-                  type="button"
-                  className="flex items-center justify-center gap-2 rounded-full bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-colors shadow-sm w-full sm:w-auto"
-                  onClick={() => setEditOpen(true)}
-                >
-                  <span>Edit Profile</span>
-                </button>
-              </div>
+              {isOwner && (
+                <div className="mt-4 flex gap-2 w-full sm:w-auto">
+                  <button 
+                    type="button"
+                    className="flex items-center justify-center gap-2 rounded-full bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-colors shadow-sm w-full sm:w-auto"
+                    onClick={() => setEditOpen(true)}
+                  >
+                    <span>Edit Profile</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1479,8 +1502,10 @@ export default function ProfilePage() {
           <div className="mt-5 max-w-3xl text-center sm:text-left">
             {bioLine ? (
               <p className="text-sm text-stone-600 leading-relaxed">{bioLine}</p>
-            ) : (
+            ) : isOwner ? (
               <p className="text-sm text-stone-400 italic">Add your story ✈️</p>
+            ) : (
+              <p className="text-sm text-stone-400 italic">No bio yet.</p>
             )}
             
             <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
@@ -1504,29 +1529,47 @@ export default function ProfilePage() {
         {/* 2. PREMIUM STATS ROW */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: "Trips Done", value: tripsLoading ? "…" : String(tripsCount), icon: IconPlane, color: "bg-teal-50 text-teal-600", onClick: () => setContentTab("trips") },
-            { label: "Countries", value: String(stats?.countries_from_trips?.length ?? 0), icon: IconMap, color: "bg-sky-50 text-sky-600", href: "/map" },
-            { label: "Cities", value: String(stats?.locations_saved ?? 0), icon: IconMapPin, color: "bg-amber-50 text-amber-600", href: "/map" },
-            { label: "Buddies", value: String(buddiesCount), icon: IconUserSquare, color: "bg-rose-50 text-rose-600", onClick: () => setContentTab("friends") },
-          ].map((stat) => (
-            stat.href ? (
-              <Link href={stat.href} key={stat.label} className="flex flex-col items-center rounded-2xl border border-stone-100 bg-white p-5 text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                <div className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full ${stat.color}`}>
-                  <stat.icon size={20} active />
-                </div>
-                <div className="text-2xl font-bold text-stone-800">{stat.value}</div>
-                <div className="text-xs font-medium text-stone-500 uppercase tracking-wide mt-0.5">{stat.label}</div>
-              </Link>
-            ) : (
-              <button key={stat.label} onClick={stat.onClick} className="flex flex-col items-center rounded-2xl border border-stone-100 bg-white p-5 text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer w-full">
-                <div className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full ${stat.color}`}>
-                  <stat.icon size={20} active />
-                </div>
-                <div className="text-2xl font-bold text-stone-800">{stat.value}</div>
-                <div className="text-xs font-medium text-stone-500 uppercase tracking-wide mt-0.5">{stat.label}</div>
-              </button>
-            )
-          ))}
+            { key: "trips", label: "Trips Done", value: tripsLoading ? "…" : String(tripsCount), icon: IconPlane, color: "bg-teal-50 text-teal-600", onClick: () => setContentTab("trips") },
+            { key: "countries", label: "Countries", value: String(stats?.countries_from_trips?.length ?? 0), icon: IconMap, color: "bg-sky-50 text-sky-600", href: "/map" },
+            { key: "cities", label: "Cities", value: String(stats?.locations_saved ?? 0), icon: IconMapPin, color: "bg-amber-50 text-amber-600", href: "/map" },
+            { key: "buddies", label: "Buddies", value: String(buddiesCount), icon: IconUserSquare, color: "bg-rose-50 text-rose-600", onClick: () => setContentTab("friends") },
+          ]
+            .filter((stat) => isOwner || statsVisibility[stat.key as keyof typeof statsVisibility])
+            .map((stat) => {
+              const isVisible = statsVisibility[stat.key as keyof typeof statsVisibility];
+              const CardContent = (
+                <>
+                  <div className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full ${stat.color}`}>
+                    <stat.icon size={20} active />
+                  </div>
+                  <div className="text-2xl font-bold text-stone-800">{stat.value}</div>
+                  <div className="text-xs font-medium text-stone-500 uppercase tracking-wide mt-0.5">{stat.label}</div>
+                  
+                  {isOwner && (
+                    <div
+                      className="absolute top-2 right-2 p-1 text-stone-400 hover:text-stone-600 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setStatsVisibility((prev) => ({ ...prev, [stat.key]: !isVisible }));
+                      }}
+                    >
+                      {isVisible ? <Eye size={16} /> : <EyeOff size={16} />}
+                    </div>
+                  )}
+                </>
+              );
+              
+              return stat.href ? (
+                <Link href={stat.href} key={stat.key} className="relative flex flex-col items-center rounded-2xl border border-stone-100 bg-white p-5 text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                  {CardContent}
+                </Link>
+              ) : (
+                <button key={stat.key} onClick={stat.onClick} className="relative flex flex-col items-center rounded-2xl border border-stone-100 bg-white p-5 text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer w-full">
+                  {CardContent}
+                </button>
+              )
+            })}
         </div>
 
         {/* 3. GROUP MAP - Cleaned Up */}
@@ -1846,12 +1889,23 @@ export default function ProfilePage() {
             <label className="mt-2 block text-xs font-semibold text-stone-500">
               Birthday (for zodiac pill)
             </label>
-            <input
-              type="date"
-              value={editBirthday}
-              onChange={(e) => setEditBirthday(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-stone-200 px-3 py-2"
-            />
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={editBirthday}
+                onChange={(e) => setEditBirthday(e.target.value)}
+                className="mt-1 flex-1 rounded-xl border border-stone-200 px-3 py-2 text-sm"
+              />
+              <select
+                value={birthdayVisibility}
+                onChange={(e) => setBirthdayVisibility(e.target.value)}
+                className="mt-1 rounded-xl border border-stone-200 px-3 py-2 text-sm text-stone-700"
+              >
+                <option value="only_me">Only me</option>
+                <option value="friends">Friends</option>
+                <option value="everyone">Everyone</option>
+              </select>
+            </div>
             <label className="mt-2 block text-xs font-semibold text-stone-500">
               Bio
             </label>
@@ -1898,10 +1952,11 @@ export default function ProfilePage() {
               <h3 className="text-xl font-bold text-stone-800">Options</h3>
               <button 
                 type="button" 
-                className="text-sm font-semibold text-teal-600"
+                className="p-1 text-stone-500 hover:text-stone-700 transition-colors"
                 onClick={() => setProfileNavOpen(false)}
+                aria-label="Close"
               >
-                Done
+                <X size={20} />
               </button>
             </div>
             
