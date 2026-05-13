@@ -565,7 +565,7 @@ export default function ProfilePage() {
   const storyTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [contentTab, setContentTab] = useState<
-    "posts" | "reels" | "trips" | "saved" | "tagged"
+    "posts" | "reels" | "trips" | "saved" | "tagged" | "friends"
   >("posts");
 
   const [mapShare, setMapShare] = useState(false);
@@ -1391,319 +1391,130 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Top navigation bar */}
-      <header className="sticky top-0 z-50 flex items-center gap-1 border-b border-stone-200/90 bg-white/95 px-1 py-2 backdrop-blur-md sm:px-3">
-        <button
-          type="button"
-          className="rounded-full p-2 text-[#1e2a3a] hover:bg-stone-100"
-          aria-label="Back"
-          onClick={() => router.back()}
-        >
-          <IconArrowLeft size={20} />
-        </button>
-        <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
-          <PlaceholderAppLogo className="h-8 w-8 shrink-0 rounded-lg" />
-          <span className="min-w-0 truncate text-center text-sm font-bold text-[#1e2a3a] sm:text-base">
-            {displayName}
-          </span>
-        </div>
-        <div
-          ref={profileNavRef}
-          className="relative flex shrink-0 items-center gap-0.5"
-        >
-          <button
-            type="button"
-            className="rounded-full p-2 text-[#1e2a3a] hover:bg-stone-100"
-            aria-label="Share"
-            onClick={() => void shareProfile()}
-          >
-            <IconShare size={20} />
-          </button>
-          <button
-            type="button"
-            className="rounded-full p-2 text-[#1e2a3a] hover:bg-stone-100"
-            aria-label="Menu"
-            aria-expanded={profileNavOpen}
-            aria-haspopup="true"
-            onClick={() => setProfileNavOpen((o) => !o)}
-          >
-            <IconMenu size={20} />
-          </button>
-          {profileNavOpen ? (
-            <div
-              className="absolute right-0 top-full z-[60] mt-1.5 min-w-[11rem] overflow-hidden rounded-xl border border-stone-200 bg-white py-1 shadow-lg"
-              role="menu"
+      {/* 1. PROFILE HERO HEADER */}
+      <div className="relative">
+        {/* Cover Image */}
+        <div className="relative h-48 w-full overflow-hidden bg-stone-200 md:h-64">
+          <img 
+            src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&h=400&fit=crop" 
+            alt="Cover" 
+            className="h-full w-full object-cover" 
+          />
+          {/* Floating Action Buttons */}
+          <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4">
+            <button
+              type="button"
+              className="rounded-full bg-white/80 p-2 text-[#1e2a3a] hover:bg-white shadow-sm"
+              aria-label="Back"
+              onClick={() => router.back()}
             >
-              <Link
-                href="/settings"
-                role="menuitem"
-                className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#1e2a3a] hover:bg-stone-50"
-                onClick={() => setProfileNavOpen(false)}
-              >
-                <IconSettings size={16} className="shrink-0" />
-                Account settings
-              </Link>
-              <Link
-                href="/map"
-                role="menuitem"
-                className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#1e2a3a] hover:bg-stone-50"
-                onClick={() => setProfileNavOpen(false)}
-              >
-                <IconMap size={16} className="shrink-0" />
-                Open map
-              </Link>
+              <IconArrowLeft size={20} />
+            </button>
+            <div className="flex gap-2">
               <button
                 type="button"
-                role="menuitem"
-                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-[#E94560] hover:bg-red-50"
-                onClick={() => {
-                  setProfileNavOpen(false);
-                  handleSignOut();
-                }}
+                className="rounded-full bg-white/80 p-2 text-[#1e2a3a] hover:bg-white shadow-sm"
+                aria-label="Share"
+                onClick={() => void shareProfile()}
               >
-                <LogOut size={14} className="shrink-0 text-[#E94560]" />
-                Sign out
+                <IconShare size={20} />
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-white/80 p-2 text-[#1e2a3a] hover:bg-white shadow-sm"
+                aria-label="Menu"
+                onClick={() => setProfileNavOpen(!profileNavOpen)}
+              >
+                <IconMenu size={20} />
               </button>
             </div>
-          ) : null}
-        </div>
-      </header>
-
-      {/* Hero: navy banner + overlapping avatars */}
-      <div className="relative">
-        <div
-          className="relative h-36 w-full overflow-hidden sm:h-40"
-          style={{ background: NAVY }}
-        >
-          <div
-            className="pointer-events-none absolute inset-0 opacity-25"
-            style={{
-              background:
-                "radial-gradient(circle at 20% 30%, #38a169 0%, transparent 45%), radial-gradient(circle at 80% 70%, #e53e3e 0%, transparent 40%)",
-            }}
-          />
-          <div className="absolute bottom-3 right-4 hidden text-xs font-medium text-white/70 sm:block">
-            {handle}
-          </div>
-          <div className="pointer-events-none absolute bottom-0 left-4 translate-y-1/2">
-            <div className="flex items-end gap-2 sm:gap-3">
-              <AvatarFaceSvg
-                o={avatarOpts}
-                className="h-[5.25rem] w-[4.75rem] drop-shadow-lg sm:h-24 sm:w-[5.25rem]"
-              />
-              <div
-                className="relative h-14 w-14 overflow-hidden rounded-full border-4 border-white bg-stone-200 shadow-md sm:h-16 sm:w-16"
-                style={{ marginBottom: -2 }}
-              >
-                {photoUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={photoUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-lg font-bold text-stone-500">
-                    {displayName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* Identity block + quick stat pills */}
-        <div className="bg-white px-4 pb-4 pt-14 sm:pt-16">
-          <div className="mx-auto flex max-w-3xl flex-col gap-3 lg:flex-row lg:items-start lg:gap-8">
-            <div className="-mt-20 hidden self-start lg:block lg:w-36">
-              <div
-                className="mx-auto h-32 w-32 overflow-hidden rounded-full border-4 border-white bg-stone-100 shadow-lg lg:mx-0"
-                style={{ boxShadow: "0 8px 24px rgba(30,42,58,0.12)" }}
-              >
-                {photoUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={photoUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-stone-400">
-                    {displayName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="min-w-0 flex-1">
-              {bootLoading ? (
-                <div className="space-y-2">
-                  <SkeletonBar className="w-48" />
-                  <SkeletonBar className="w-32" h={14} />
-                </div>
+        {/* Profile Info Area */}
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="relative -mt-16 flex flex-col items-center sm:-mt-20 sm:flex-row sm:items-end sm:gap-6">
+            {/* Avatar */}
+            <div className="relative h-32 w-32 shrink-0 overflow-hidden rounded-full border-4 border-white bg-white shadow-md sm:h-40 sm:w-40">
+              {photoUrl ? (
+                <img src={photoUrl} alt={displayName} className="h-full w-full object-cover" />
               ) : (
-                <>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className="text-lg font-bold sm:text-xl"
-                      style={{ color: NAVY }}
-                    >
-                      {handle}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className="rounded-lg bg-stone-100 px-4 py-1.5 text-sm font-semibold text-[#1e2a3a] hover:bg-stone-200"
-                      onClick={() => setEditOpen(true)}
-                    >
-                      Edit profile
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-lg bg-stone-100 px-4 py-1.5 text-sm font-semibold text-[#1e2a3a] hover:bg-stone-200"
-                      onClick={() => setContentTab("trips")}
-                    >
-                      View archive
-                    </button>
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-[#1e2a3a]">
-                    {displayName}
-                  </p>
-                  {bioLine ? (
-                    <p className="mt-1 max-w-lg text-sm leading-relaxed text-stone-700">
-                      {bioLine}
-                    </p>
-                  ) : (
-                    <p className="mt-1 text-sm text-stone-400">
-                      Tap edit profile to add your story ✈️
-                    </p>
-                  )}
-                  {locationLine ? (
-                    <p className="mt-1 text-sm text-stone-500">{locationLine}</p>
-                  ) : null}
-                  <p
-                    className="mt-2 text-xs font-medium sm:text-sm"
-                    style={{ color: GREEN }}
-                  >
-                    {level.emoji} Globe Points · {level.label} ·{" "}
-                    {pts.toLocaleString()} pts
-                  </p>
-                  {/* Instagram stats row */}
-                  <p className="mt-3 text-sm text-[#1e2a3a]">
-                    <button
-                      type="button"
-                      className="mr-3 font-semibold hover:underline"
-                      onClick={() => setContentTab("posts")}
-                    >
-                      <span className="font-bold">{posts.length}</span> posts
-                    </button>
-                    <span className="mr-3">
-                      <span className="font-bold">{followersCount}</span>{" "}
-                      followers
-                    </span>
-                    <span>
-                      <span className="font-bold">{followingCount}</span>{" "}
-                      following
-                    </span>
-                  </p>
-                </>
+                <AvatarFaceSvg o={avatarOpts} className="h-full w-full" />
               )}
+            </div>
 
-              {/* Quick stat pills */}
-              <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditBio(bioLine);
-                    setEditBirthday(birthdayIso);
-                    setEditOpen(true);
-                  }}
-                  className="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold sm:text-sm"
-                  style={{ borderColor: "#e8e8e0", color: NAVY }}
-                >
-                  {birthdayShort ? `🎈 ${birthdayShort}` : "🎈 Birthday"}
-                </button>
-                <span
-                  className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold sm:text-sm"
-                  style={{ background: "#f0f0eb", color: NAVY }}
-                >
-                  ✈️ {pts.toLocaleString()} score
-                </span>
-                <span
-                  className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold sm:text-sm"
-                  style={{ background: "#f5f0ff", color: "#553c9a" }}
-                >
+            {/* Identity & Actions */}
+            <div className="mt-4 flex flex-1 flex-col items-center text-center sm:mt-0 sm:items-start sm:pb-2 sm:text-left">
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-stone-800 sm:text-3xl">{displayName}</h1>
+                {me?.is_verified && (
+                  <span className="text-teal-600" title="Verified">
+                    <IconPlane size={20} active />
+                  </span>
+                )}
+              </div>
+              <p className="text-sm font-medium text-stone-500">@{handle}</p>
+              
+              {locationLine && (
+                <div className="mt-2 flex items-center gap-1 text-sm text-stone-600">
+                  <IconMapPin size={16} />
+                  <span>{locationLine}</span>
+                </div>
+              )}
+            </div>
+
+            {/* CTAs */}
+            <div className="mt-4 flex gap-2 sm:mt-0 sm:pb-2">
+              <button 
+                type="button"
+                className="flex items-center gap-2 rounded-full bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700 transition-colors shadow-sm"
+                onClick={() => setEditOpen(true)}
+              >
+                <span>Edit Profile</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Bio & Vibe Tags */}
+          <div className="mt-4 max-w-3xl text-center sm:text-left">
+            {bioLine ? (
+              <p className="text-sm text-stone-600 leading-relaxed">{bioLine}</p>
+            ) : (
+              <p className="text-sm text-stone-400">Add your story ✈️</p>
+            )}
+            
+            <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
+              <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">
+                {level.emoji} {level.label}
+              </span>
+              <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-700">
+                ✈️ {pts.toLocaleString()} pts
+              </span>
+              {zodiacLabel && (
+                <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-700">
                   {zodiacLabel}
                 </span>
-                <Link
-                  href="/travel-hub"
-                  className="flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold text-white sm:text-sm"
-                  style={{ background: "#3182ce" }}
-                >
-                  + Trip group
-                </Link>
-              </div>
-
-              <div className="mt-4 grid grid-cols-4 gap-2 text-center text-sm">
-                {[
-                  ["Trips", tripsLoading ? "…" : String(tripsCount)],
-                  ["Followers", String(followersCount)],
-                  ["Following", String(followingCount)],
-                  ["Buddies", String(buddiesCount)],
-                ].map(([k, v]) => (
-                  <div key={k}>
-                    <div className="font-bold text-[#1e2a3a]">{v}</div>
-                    <div className="text-xs text-stone-500">{k}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {[
-                  isPro ? "Pro" : "Free",
-                  me?.is_verified ? "Verified" : "Unverified",
-                  me?.profile_public !== false ? "Public" : "Private",
-                  "Early Adopter",
-                ].map((b) => (
-                  <span
-                    key={b}
-                    className="rounded-full border px-2 py-0.5 text-xs font-medium"
-                    style={{ borderColor: "#e8e8e0", color: NAVY }}
-                  >
-                    {b}
-                  </span>
-                ))}
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className="rounded-full px-4 py-2 text-sm font-semibold text-white"
-                  style={{ background: RED }}
-                  onClick={() => setEditOpen(true)}
-                >
-                  Edit profile
-                </button>
-                <button
-                  type="button"
-                  className="rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-[#1e2a3a]"
-                  onClick={() => void shareProfile()}
-                >
-                  Share profile
-                </button>
-                <button
-                  type="button"
-                  className="rounded-full border px-4 py-2 text-sm font-semibold"
-                  style={{ borderColor: GREEN, color: GREEN }}
-                >
-                  Follow +
-                </button>
-              </div>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      <div className="mx-auto mt-8 max-w-4xl px-4 sm:px-6 lg:px-8">
+        {/* 2. STATS ROW */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {[
+            { label: "Trips Done", value: tripsLoading ? "…" : String(tripsCount), icon: IconPlane },
+            { label: "Countries", value: String(stats?.countries_from_trips?.length ?? 0), icon: IconMap },
+            { label: "Cities", value: String(stats?.locations_saved ?? 0), icon: IconMapPin },
+            { label: "Buddies", value: String(buddiesCount), icon: IconUserSquare },
+          ].map((stat) => (
+            <div key={stat.label} className="flex flex-col items-center rounded-2xl border border-stone-100 bg-white p-4 text-center shadow-sm hover:shadow-md transition-shadow">
+              <div className="text-2xl font-bold text-stone-800">{stat.value}</div>
+              <div className="text-xs font-medium text-stone-500 uppercase tracking-wide mt-0.5">{stat.label}</div>
+            </div>
+          ))}
+        </div>
 
       <div className="mx-auto max-w-3xl space-y-4 px-3 pt-2">
         {/* Group map — same Map page as /map (?embed=1 strips chrome) */}
@@ -1818,710 +1629,176 @@ export default function ProfilePage() {
             <IconChevronRight size={20} className="shrink-0" />
           </button>
         </section>
+      </div>
 
-        {/* Spotlight-style trip strips */}
-        <section
-          className="rounded-2xl bg-white p-4 shadow-sm"
-          style={{ border: CARD_BORDER }}
-        >
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="text-base font-bold text-[#1e2a3a]">
-              Spotlight &amp; map moments
-            </h2>
-            <button
-              type="button"
-              className="text-xs font-semibold"
-              style={{ color: RED }}
-              onClick={() => setContentTab("trips")}
-            >
-              View all →
-            </button>
-          </div>
-          <div className="-mx-1 flex gap-2 overflow-x-auto pb-2">
-            {tripsLoading &&
-              Array.from({ length: 5 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-40 w-24 shrink-0 animate-pulse rounded-lg bg-stone-200"
-                />
-              ))}
+        {/* 3. HIGHLIGHT STRIP */}
+        <div className="mt-8">
+          <h2 className="mb-3 text-sm font-semibold text-stone-500 uppercase tracking-wide">Spotlight</h2>
+          <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:thin]">
+            {/* Upcoming Trip Card */}
+            {upcomingTrips.length > 0 ? (
+              <div className="min-w-[280px] rounded-2xl border border-stone-100 bg-white p-4 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
+                  <IconPlane size={24} active />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold text-teal-600 uppercase">Next Trip</p>
+                  <h3 className="truncate font-bold text-stone-800">{upcomingTrips[0].title}</h3>
+                  <p className="text-xs text-stone-500">{upcomingTrips[0].start_date}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="min-w-[280px] rounded-2xl border border-stone-100 bg-white p-4 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-stone-50 text-stone-400">
+                  <IconPlane size={24} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold text-stone-400 uppercase">No upcoming trips</p>
+                  <Link href="/trips/plan" className="text-xs text-teal-600 font-semibold">Plan a trip →</Link>
+                </div>
+              </div>
+            )}
+
+            {/* Stories as Highlights */}
             {!tripsLoading &&
-              storyTrips.slice(0, 8).map(({ trip, label }, i) => {
-                const hue =
-                  (trip.id.charCodeAt(0) + trip.id.charCodeAt(1)) % 360;
-                return (
-                  <button
-                    key={trip.id}
-                    type="button"
-                    onClick={() => openStory(i)}
-                    className="group relative h-40 w-24 shrink-0 overflow-hidden rounded-lg text-left shadow-sm"
-                    style={{
-                      background: `linear-gradient(165deg, hsl(${hue} 42% 38%) 0%, hsl(${(hue + 50) % 360} 30% 18%) 100%)`,
-                    }}
-                  >
-                    <div className="absolute right-1.5 top-1.5">
-                      <IconMapPin size={16} className="text-white/90 drop-shadow" active />
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-2 pt-8">
-                      <div className="flex items-center gap-1 text-[10px] font-medium text-white">
-                        <IconPlay size={14} active />
-                        {fauxViewsFromId(trip.id).toLocaleString()}
-                      </div>
-                    </div>
-                    <p className="absolute left-2 top-10 line-clamp-2 pr-6 text-[11px] font-semibold leading-tight text-white drop-shadow">
-                      {label}
-                    </p>
-                  </button>
-                );
-              })}
-            {!tripsLoading && storyTrips.length === 0 && (
-              <p className="py-6 text-sm text-stone-500">
-                Plan a trip to fill this row with stories.
-              </p>
-            )}
-          </div>
-        </section>
-
-        {/* Favorites & reposts */}
-        <section
-          className="rounded-2xl bg-white p-4 shadow-sm"
-          style={{ border: CARD_BORDER }}
-        >
-          <h2 className="mb-3 text-base font-bold text-[#1e2a3a]">
-            My favorites &amp; reposts
-          </h2>
-          <div className="-mx-1 flex gap-2 overflow-x-auto pb-2">
-            {favoriteTripCards.map((t) => {
-              const hue = (t.id.charCodeAt(0) * 7) % 360;
-              return (
-                <Link
-                  key={t.id}
-                  href={`/trips/${t.id}`}
-                  className="relative h-36 w-[5.75rem] shrink-0 overflow-hidden rounded-lg sm:w-24"
-                  style={{
-                    background: `linear-gradient(165deg, hsl(${hue} 35% 45%) 0%, hsl(${(hue + 40) % 360} 28% 25%) 100%)`,
-                  }}
-                >
-                  <div className="absolute right-1.5 top-1.5">
-                    <IconBookmark size={16} className="text-white/90" />
-                  </div>
-                  <p className="absolute inset-x-0 bottom-0 line-clamp-2 bg-black/50 p-2 text-[10px] font-medium text-white">
-                    {t.title}
-                  </p>
-                </Link>
-              );
-            })}
-            {favoriteTripCards.length === 0 && !tripsLoading && (
-              <p className="text-sm text-stone-500">
-                Heart trips from your archive — we&apos;ll show them here.
-              </p>
-            )}
-          </div>
-        </section>
-
-        {/* Travel selfie shortcut → avatar builder */}
-        <section
-          className="rounded-2xl bg-white p-4 shadow-sm"
-          style={{ border: CARD_BORDER }}
-        >
-          <h2 className="mb-3 text-base font-bold text-[#1e2a3a]">
-            My travel selfie
-          </h2>
-          <button
-            type="button"
-            className="flex w-full items-center gap-4 rounded-xl border border-dashed border-stone-300 p-4 text-left transition-colors hover:bg-stone-50"
-            onClick={() =>
-              avatarSectionRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-              })
-            }
-          >
-            <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-stone-300 bg-stone-50">
-              <AvatarFaceSvg o={avatarOpts} className="h-12 w-12" />
-            </div>
-            <div>
-              <p className="font-semibold text-[#1e2a3a]">
-                Update my travel avatar
-              </p>
-              <p className="text-xs text-stone-500">
-                Customize skin, hair, and outfits — saved on this device.
-              </p>
-            </div>
-                      <IconChevronRight size={20} className="ml-auto" />
-          </button>
-        </section>
-
-        {/* ── Avatar builder card ── */}
-        <section
-          ref={avatarSectionRef}
-          className="rounded-2xl bg-white p-4 shadow-sm"
-          style={{ border: CARD_BORDER }}
-        >
-          <p className="text-sm text-stone-500">
-            Custom look — saved on this device
-          </p>
-          <div className="mt-4 flex flex-col items-center">
-            <AvatarFaceSvg
-              o={avatarOpts}
-              className="mx-auto h-[140px] w-[120px]"
-            />
-            {hairColorRow}
-            <div className="mt-4 flex w-full flex-wrap justify-center gap-2">
-              {(
-                [
-                  "skin",
-                  "hair",
-                  "eyes",
-                  "mouth",
-                  "outfit",
-                  "more",
-                ] as const
-              ).map((t) => (
+              storyTrips.slice(0, 5).map(({ trip, label }, i) => (
                 <button
-                  key={t}
+                  key={trip.id}
                   type="button"
-                  onClick={() => setCustomizerTab(t)}
-                  className="rounded-full px-3 py-1.5 text-xs font-semibold capitalize transition-colors"
-                  style={{
-                    background: customizerTab === t ? NAVY : "#f0f0eb",
-                    color: customizerTab === t ? "#fff" : NAVY,
-                  }}
+                  onClick={() => openStory(i)}
+                  className="min-w-[120px] rounded-2xl border border-stone-100 bg-white p-3 shadow-sm flex flex-col items-center text-center hover:shadow-md transition-shadow"
                 >
-                  {t === "more" ? "More" : t}
+                  <div className="h-12 w-12 rounded-full p-0.5 border-2 border-teal-600">
+                    <div className="h-full w-full rounded-full bg-stone-100 flex items-center justify-center text-xs font-bold text-stone-500 overflow-hidden">
+                      <AvatarFaceSvg o={avatarOpts} className="h-10 w-10" />
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs font-semibold text-stone-800 truncate w-full">{label}</p>
                 </button>
               ))}
-            </div>
-            <div className="mt-3 flex w-full gap-2 overflow-x-auto pb-2">
-              {(customizerTab === "more"
-                ? [...ACCESSORY_IDS, ...BG_IDS]
-                : customizerSlices[customizerTab]
-              ).map((idx) => {
-                const active =
-                  customizerTab === "more"
-                    ? idx >= 100
-                      ? avatarOpts.background === idx - 100
-                      : avatarOpts.accessory === idx
-                    : pickerActiveIdx() === idx;
-                return (
-                  <button
-                    key={`${customizerTab}-${idx}`}
-                    type="button"
-                    onClick={() => applyCustomizerPick(idx)}
-                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 bg-stone-50 transition-all"
-                    style={{
-                      borderColor: active ? RED : "#e5e5e0",
-                    }}
-                  >
-                    {renderCustomizerPreview(idx)}
-                  </button>
-                );
-              })}
-            </div>
-            <button
-              type="button"
-              className="mt-3 w-full max-w-xs rounded-full py-2.5 text-sm font-bold text-white"
-              style={{ background: GREEN }}
-              onClick={saveAvatar}
-            >
-              Save avatar
-            </button>
           </div>
-        </section>
+        </div>
 
-        {/* ── Stories ── */}
-        <section
-          className="rounded-2xl bg-white p-4 shadow-sm"
-          style={{ border: CARD_BORDER }}
-        >
-          <h2 className="text-lg font-bold" style={{ color: NAVY }}>
-            Stories & highlights
-          </h2>
-          <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
-            <Link
-              href="/trips/plan"
-              className="flex w-[54px] shrink-0 flex-col items-center gap-1"
-            >
-              <div
-                className="flex h-[54px] w-[54px] items-center justify-center rounded-full border-2 border-dashed border-stone-300 text-xl text-stone-400"
-              >
-                +
-              </div>
-              <span className="max-w-[64px] truncate text-center text-[11px] text-stone-500">
-                New
-              </span>
-            </Link>
-            {tripsLoading &&
-              Array.from({ length: 5 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-[54px] w-[54px] shrink-0 animate-pulse rounded-full bg-stone-200"
-                />
-              ))}
-            {!tripsLoading &&
-              storyTrips.map(({ trip, label }, i) => {
-                const watched = watchedStoryIds.has(trip.id);
-                return (
-                  <button
-                    key={trip.id}
-                    type="button"
-                    className="flex w-[54px] shrink-0 flex-col items-center gap-1"
-                    onClick={() => openStory(i)}
-                  >
-                    <div
-                      className="h-[54px] w-[54px] rounded-full p-[3px]"
-                      style={{
-                        background: watched ? "#ccc" : RED,
-                      }}
-                    >
-                      <div className="flex h-full w-full items-center justify-center rounded-full bg-white p-0.5">
-                        <AvatarFaceSvg o={avatarOpts} className="h-10 w-10" />
-                      </div>
-                    </div>
-                    <span className="max-w-[64px] truncate text-center text-[11px] text-stone-600">
-                      {label}
-                    </span>
-                  </button>
-                );
-              })}
-          </div>
-        </section>
-
-        {/* ── Content tabs ── */}
-        <section
-          className="rounded-2xl bg-white p-2 shadow-sm"
-          style={{ border: CARD_BORDER }}
-        >
-          <div className="flex justify-around border-b border-stone-100 px-1">
-            {(
-              [
-                { id: "posts" as const, Icon: IconGrid },
-                { id: "reels" as const, Icon: IconClapperboard },
-                { id: "trips" as const, Icon: IconPlane },
-                { id: "saved" as const, Icon: IconBookmark },
-                { id: "tagged" as const, Icon: IconUserSquare },
-              ] as const
-            ).map(({ id: t, Icon }) => (
+        {/* 4. MAIN PROFILE TABS */}
+        <div className="mt-8 border-b border-stone-200">
+          <nav className="flex gap-6 overflow-x-auto [scrollbar-width:none]">
+            {[
+              { id: "posts", label: "Photos", icon: IconGrid },
+              { id: "trips", label: "Trips", icon: IconPlane },
+              { id: "saved", label: "Bucket List", icon: IconBookmark },
+              { id: "friends", label: "Friends", icon: IconUserSquare },
+            ].map((tab) => (
               <button
-                key={t}
+                key={tab.id}
                 type="button"
-                onClick={() => setContentTab(t)}
-                className="relative flex min-w-[52px] flex-1 flex-col items-center gap-1 py-3"
-                style={{ color: contentTab === t ? RED : "#64748b" }}
-                aria-label={t}
-                title={t}
+                onClick={() => setContentTab(tab.id as any)}
+                className={`flex items-center gap-2 border-b-2 py-3 px-1 text-sm font-medium transition-colors ${
+                  contentTab === tab.id
+                    ? "border-teal-600 text-teal-600"
+                    : "border-transparent text-stone-500 hover:text-stone-700"
+                }`}
               >
-                <Icon
-                  size={24}
-                  active={contentTab === t}
-                />
-                {contentTab === t && (
-                  <span
-                    className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full"
-                    style={{ background: RED }}
-                  />
-                )}
+                <tab.icon size={16} active={contentTab === tab.id} />
+                <span>{tab.label}</span>
               </button>
             ))}
-          </div>
-          <div className="p-3">
-            {contentTab === "posts" && (
-              <>
-                {postsLoading && (
-                  <div className="grid grid-cols-3 gap-1">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <SkeletonBar key={i} className="aspect-square w-full" h={120} />
-                    ))}
-                  </div>
-                )}
-                {!postsLoading && posts.length === 0 && (
-                  <p className="py-8 text-center text-sm text-stone-500">
-                    No posts yet — complete a trip to share memories!
-                  </p>
-                )}
-                {!postsLoading && posts.length > 0 && (
-                  <div className="grid grid-cols-3 gap-1">
-                    {posts.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        className="group relative aspect-square overflow-hidden rounded-sm bg-stone-100"
-                        onClick={() => setPostModal(p)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={p.src}
-                          alt=""
-                          className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                        />
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-3 bg-black/50 text-sm font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100">
-                          <span className="flex items-center gap-1">
-                            ♥ {p.likes}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <IconMessageCircle size={16} />
-                            0
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-            {contentTab === "reels" && (
-              <p className="py-10 text-center text-stone-500">Coming soon</p>
-            )}
-            {contentTab === "trips" && (
-              <div className="space-y-3">
-                {tripsLoading && <SkeletonBar className="w-full" h={80} />}
-                {!tripsLoading && completedTrips.length === 0 && (
-                  <p className="text-center text-sm text-stone-500">
-                    No completed trips yet.
-                  </p>
-                )}
-                {completedTrips.map((t) => (
-                  <div
-                    key={t.id}
-                    className="rounded-xl border border-stone-100 p-3"
-                  >
+          </nav>
+        </div>
+
+        {/* 5. TAB CONTENT */}
+        <div className="mt-6">
+          {contentTab === "posts" && (
+            <div>
+              {postsLoading ? (
+                <div className="grid grid-cols-3 gap-1">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <SkeletonBar key={i} className="aspect-square w-full" h={120} />
+                  ))}
+                </div>
+              ) : posts.length === 0 ? (
+                <p className="py-8 text-center text-sm text-stone-500">No posts yet.</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {posts.map((p) => (
+                    <div key={p.id} className="aspect-square overflow-hidden rounded-xl bg-stone-100 group relative">
+                      <img src={p.src} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-sm font-semibold">
+                        ♥ {p.likes}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {contentTab === "trips" && (
+            <div className="space-y-4">
+              {tripsLoading ? (
+                <SkeletonBar className="w-full" h={80} />
+              ) : trips.length === 0 ? (
+                <p className="text-center text-sm text-stone-500">No trips yet.</p>
+              ) : (
+                trips.map((t) => (
+                  <div key={t.id} className="rounded-2xl border border-stone-100 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <div className="font-semibold text-[#1e2a3a]">
-                          {t.title}
-                        </div>
-                        <div className="text-xs text-stone-500">
-                          {t.group_name || "Group trip"}
-                        </div>
+                        <div className="font-semibold text-[#1e2a3a]">{t.title}</div>
+                        <div className="text-xs text-stone-500">{t.group_name || "Group trip"}</div>
                       </div>
-                      <span
-                        className="rounded-full px-2 py-0.5 text-xs font-medium"
-                        style={{ background: "#eef2e8", color: NAVY }}
-                      >
+                      <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-stone-100 text-stone-600">
                         {t.status}
                       </span>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-3 text-xs text-stone-600">
-                      <span>
-                        {t.start_date ?? "?"} → {t.end_date ?? "?"}
-                      </span>
+                      <span>{t.start_date ?? "?"} → {t.end_date ?? "?"}</span>
                       <span>{t.member_count} members</span>
-                      <span>
-                        Expenses: $
-                        {(expenseTotals[t.id] ?? 0).toLocaleString(undefined, {
-                          maximumFractionDigits: 0,
-                        })}
-                      </span>
                     </div>
-                    <Link
-                      href={`/trips/${t.id}`}
-                      className="mt-2 inline-block text-sm font-semibold"
-                      style={{ color: RED }}
-                    >
-                      Open trip →
-                    </Link>
                   </div>
-                ))}
-              </div>
-            )}
-            {contentTab === "saved" && (
-              <div className="space-y-2">
-                {savedPins.length === 0 && (
-                  <p className="py-6 text-center text-sm text-stone-500">
-                    No saved pins yet. Save spots from the map!
-                  </p>
-                )}
-                {savedPins.map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex items-center justify-between rounded-xl border border-stone-100 px-3 py-2"
-                  >
-                    <span className="text-sm font-medium text-[#1e2a3a]">
-                      {p.name}
-                    </span>
-                    <Link href="/map" className="text-sm" style={{ color: RED }}>
-                      Map
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            )}
-            {contentTab === "tagged" && (
-              <p className="py-10 text-center text-stone-500">Coming soon</p>
-            )}
-          </div>
-        </section>
-
-        {/* Trip countdown */}
-        <section
-          id="trip-countdown-section"
-          className="rounded-2xl bg-white p-4 shadow-sm"
-          style={{ border: CARD_BORDER }}
-        >
-          <h2 className="text-lg font-bold" style={{ color: NAVY }}>
-            Trip countdown
-          </h2>
-          {tripsLoading && <SkeletonBar className="mt-3" h={100} />}
-          {!tripsLoading && upcomingTrips.length === 0 && (
-            <div className="mt-4 text-center">
-              <p className="text-sm text-stone-500">
-                Create a trip to see your countdown here
-              </p>
-              <Link
-                href="/trips/plan"
-                className="mt-3 inline-flex rounded-full px-5 py-2 text-sm font-bold text-white"
-                style={{ background: RED }}
-              >
-                + Plan a trip
-              </Link>
+                ))
+              )}
             </div>
           )}
-          {!tripsLoading &&
-            upcomingTrips.map((t) => {
-              const d0 = parseYmd(t.start_date);
-              const now = new Date();
-              now.setHours(0, 0, 0, 0);
-              const diff = d0
-                ? Math.max(
-                    0,
-                    Math.ceil(
-                      (d0.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-                    ),
-                  )
-                : 0;
-              return (
-                <div
-                  key={t.id}
-                  className="mt-4 rounded-xl border border-stone-100 p-4 text-center"
-                  style={{ background: "#fafaf8" }}
-                >
-                  <div
-                    className="text-5xl font-black tabular-nums"
-                    style={{ color: RED }}
-                  >
-                    {diff}
-                  </div>
-                  <div className="text-xs uppercase tracking-wide text-stone-500">
-                    days to go
-                  </div>
-                  <p className="mt-2 font-semibold text-[#1e2a3a]">{t.title}</p>
-                  <p className="text-sm text-stone-500">{t.start_date}</p>
-                  <p className="text-xs text-stone-500">
-                    {t.member_count} members joined
-                  </p>
-                  <button
-                    type="button"
-                    className="mt-3 w-full rounded-full border py-2 text-sm font-semibold"
-                    style={{ borderColor: RED, color: RED }}
-                    onClick={() => {
-                      const msg = `⏳ ${diff} days until ${t.title}! (${t.start_date ?? ""}) — Travello`;
-                      void navigator.clipboard
-                        .writeText(msg)
-                        .then(() =>
-                          showToast("Countdown copied — paste in group chat"),
-                        )
-                        .catch(() => showToast("Could not copy"));
-                    }}
-                  >
-                    Share countdown
-                  </button>
-                </div>
-              );
-            })}
-        </section>
 
-        {/* Social */}
-        <section
-          className="rounded-2xl bg-white p-4 shadow-sm"
-          style={{ border: CARD_BORDER }}
-        >
-          <h2 className="text-lg font-bold" style={{ color: NAVY }}>
-            Connected accounts
-          </h2>
-          <div className="mt-3 space-y-3">
-            {[
-              {
-                name: "Instagram",
-                emoji: "📸",
-                connected: Boolean(igUser),
-                onConnect: () => {
-                  setIgDraft(igUser);
-                  setIgModal(true);
-                },
-                href: igUser ? `https://instagram.com/${igUser}` : null,
-              },
-              {
-                name: "Snapchat",
-                emoji: "👻",
-                connected: Boolean(snapUser),
-                onConnect: () => {
-                  setSnapDraft(snapUser);
-                  setSnapModal(true);
-                },
-                href: snapUser ? `https://www.snapchat.com/add/${snapUser}` : null,
-              },
-              {
-                name: "Facebook",
-                emoji: "f",
-                connected: false,
-                disabled: true,
-                onConnect: () => {},
-                href: null,
-              },
-              {
-                name: "WhatsApp",
-                emoji: "💬",
-                connected: Boolean(waPhone),
-                onConnect: () => {
-                  const n = window.prompt("Phone number (with country code)") ?? "";
-                  if (n.trim()) {
-                    localStorage.setItem(LS_WHATSAPP, n.trim());
-                    setWaPhone(n.trim());
-                    showToast("WhatsApp saved");
-                  }
-                },
-                href: waPhone ? `https://wa.me/${waPhone.replace(/\D/g, "")}` : null,
-              },
-            ].map((row) => (
-              <div
-                key={row.name}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-stone-100 p-3"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{row.emoji}</span>
-                  <span className="font-medium text-[#1e2a3a]">{row.name}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {row.connected && (
-                    <span className="text-xs text-green-700">Connected</span>
-                  )}
-                  {"disabled" in row && row.disabled ? (
-                    <button
-                      type="button"
-                      disabled
-                      className="rounded-full bg-stone-100 px-3 py-1 text-xs text-stone-400"
-                    >
-                      Soon
-                    </button>
-                  ) : row.connected ? (
-                    row.href && (
-                      <a
-                        href={row.href}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs font-semibold"
-                        style={{ color: RED }}
-                      >
-                        View profile
-                      </a>
-                    )
-                  ) : (
-                    <button
-                      type="button"
-                      className="rounded-full px-3 py-1 text-xs font-bold text-white"
-                      style={{ background: NAVY }}
-                      onClick={row.onConnect}
-                    >
-                      Connect
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Stats & globe */}
-        <section
-          className="mb-8 rounded-2xl bg-white p-4 shadow-sm"
-          style={{ border: CARD_BORDER }}
-        >
-          <h2 className="text-lg font-bold" style={{ color: NAVY }}>
-            Travel stats & Globe Points
-          </h2>
-          {bootLoading ? (
-            <SkeletonBar className="mt-3" h={120} />
-          ) : (
-            <>
-              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {[
-                  ["Globe Points", String(pts)],
-                  ["Day streak", String(streakDays)],
-                  ["Countries", String(stats?.countries_from_trips?.length ?? 0)],
-                  ["Trips done", String(stats?.trips_created ?? tripsCount)],
-                ].map(([k, v]) => (
-                  <div
-                    key={k}
-                    className="rounded-xl p-3 text-center"
-                    style={{ background: "#f8f8f4" }}
-                  >
-                    <div className="text-lg font-bold text-[#1e2a3a]">{v}</div>
-                    <div className="text-[11px] text-stone-500">{k}</div>
+          {contentTab === "saved" && (
+            <div className="space-y-2">
+              {savedPins.length === 0 ? (
+                <p className="py-6 text-center text-sm text-stone-500">No saved pins yet.</p>
+              ) : (
+                savedPins.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between rounded-xl border border-stone-100 px-3 py-2 bg-white">
+                    <span className="text-sm font-medium text-[#1e2a3a]">{p.name}</span>
+                    <Link href="/map" className="text-sm text-teal-600 font-semibold">Map</Link>
                   </div>
-                ))}
-              </div>
-              <div className="mt-4">
-                <div className="mb-1 flex justify-between text-xs text-stone-600">
-                  <span>
-                    {level.label} ({level.min}+)
-                  </span>
-                  <span>
-                    {level.next
-                      ? `Next: ${level.next.label} (${level.next.min})`
-                      : "Max level"}
-                  </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      width: `${levelBarFraction(pts) * 100}%`,
-                      background: GREEN,
-                    }}
-                  />
-                </div>
-              </div>
-              <h3 className="mt-4 text-sm font-bold text-[#1e2a3a]">Badges</h3>
-              <div className="mt-2 grid grid-cols-3 gap-3 sm:grid-cols-6">
-                {badges.map((b) => (
-                  <div key={b.id} className="flex flex-col items-center text-center">
-                    <div
-                      className="flex h-11 w-11 items-center justify-center rounded-full text-lg"
-                      style={{
-                        background: b.earned ? "#e8f8f1" : "#eee",
-                        opacity: b.earned ? 1 : 0.45,
-                      }}
-                    >
-                      {b.earned ? b.icon : "🔒"}
-                    </div>
-                    <span className="mt-1 max-w-[72px] text-[10px] text-stone-600">
-                      {b.name}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <h3 className="mt-4 text-sm font-bold text-[#1e2a3a]">
-                Activity (last 7 days)
-              </h3>
-              <div className="mt-2 flex justify-between gap-1">
-                {activityWeek.map((on, i) => (
-                  <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                    <div
-                      className="h-3 w-3 rounded-full"
-                      style={{
-                        background: on ? GREEN : "#e5e5e0",
-                        boxShadow: on ? `0 0 0 2px ${GREEN}33` : "none",
-                      }}
-                    />
-                    <span className="text-[9px] text-stone-400">
-                      D{7 - i}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
+                ))
+              )}
+            </div>
           )}
-        </section>
+
+          {contentTab === "friends" && (
+            <div className="space-y-4">
+              {connections.length === 0 ? (
+                <p className="py-6 text-center text-sm text-stone-500">No friends connected yet.</p>
+              ) : (
+                connections.map((c) => (
+                  <div key={c.id} className="flex items-center justify-between rounded-2xl border border-stone-100 bg-white p-4 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 overflow-hidden rounded-full bg-stone-100 flex items-center justify-center text-sm font-bold text-stone-500">
+                        {c.username?.charAt(0).toUpperCase() || "?"}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-stone-800">@{c.username}</h4>
+                      </div>
+                    </div>
+                    <button className="rounded-full border border-teal-600 px-4 py-1.5 text-xs font-semibold text-teal-600 hover:bg-teal-50">
+                      Message
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <footer className="mx-auto max-w-3xl px-3 pb-12 pt-6 text-center">
