@@ -256,6 +256,11 @@ function LoginPageInner() {
           <p className="mb-4 text-xs leading-relaxed text-white/55">
             Coordinate, vote, and travel — together.
           </p>
+          <ul className="mb-4 text-sm text-white/80 space-y-2">
+            <li>✈️ Plan trips together</li>
+            <li>💸 Split expenses instantly</li>
+            <li>📍 Coordinate live</li>
+          </ul>
           <div className="flex gap-1.5" aria-hidden>
             <span className="h-1.5 w-1.5 rounded-full bg-[#E8619A]" />
             <span className="h-1.5 w-1.5 rounded-full bg-white/20" />

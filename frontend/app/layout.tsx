@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Group Travel OS",
-    template: "%s | Group Travel OS",
+    default: "Travello",
+    template: "%s | Travello",
   },
   description: "Group travel planning, trips, and coordination.",
   icons: {

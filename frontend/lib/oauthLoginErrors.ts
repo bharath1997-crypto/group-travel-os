@@ -30,7 +30,7 @@ export function oauthErrorToAlert(raw: string): OauthLoginAlert {
     return {
       variant: "warning",
       title: OAUTH_NOT_REGISTERED_MODAL_TITLE,
-      body: OAUTH_EMAIL_NOT_REGISTERED_MESSAGE.replace("Group Travel OS", "Travello"),
+      body: OAUTH_EMAIL_NOT_REGISTERED_MESSAGE,
       showCreateAccount: true,
     };
   }

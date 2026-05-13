@@ -1701,7 +1701,7 @@ export default function ExplorerPage() {
                   Settings
                 </Link>
                 <span className="text-white/25">|</span>
-                <span>Travello · Group travel OS</span>
+                <span>Travello</span>
               </div>
             </footer>
         </div>

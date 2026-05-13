@@ -2314,7 +2314,7 @@ export default function ProfilePage() {
                     className="mt-3 w-full rounded-full border py-2 text-sm font-semibold"
                     style={{ borderColor: RED, color: RED }}
                     onClick={() => {
-                      const msg = `⏳ ${diff} days until ${t.title}! (${t.start_date ?? ""}) — Group Travel OS`;
+                      const msg = `⏳ ${diff} days until ${t.title}! (${t.start_date ?? ""}) — Travello`;
                       void navigator.clipboard
                         .writeText(msg)
                         .then(() =>
@@ -2528,7 +2528,7 @@ export default function ProfilePage() {
         <p className="text-xs text-stone-400">
           {joinedLabel
             ? `Joined Group Travel on ${joinedLabel}.`
-            : "Group Travel OS — your trips, your crew."}
+            : "Travello — your trips, your crew."}
         </p>
         <p className="mt-2 text-[11px] text-stone-300">Travel avatar · Map · Stories</p>
       </footer>
