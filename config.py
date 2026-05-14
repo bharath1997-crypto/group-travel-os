@@ -255,6 +255,14 @@ class Settings(BaseSettings):
         default=587,
         validation_alias="MAIL_PORT",
     )
+    mail_username: str = Field(
+        default="",
+        validation_alias="MAIL_USERNAME",
+    )
+    mail_password: str = Field(
+        default="",
+        validation_alias="MAIL_PASSWORD",
+    )
 
     @field_validator(
         "GOOGLE_CLIENT_ID",

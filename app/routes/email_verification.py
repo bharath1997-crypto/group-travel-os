@@ -91,9 +91,11 @@ async def verify_email(
     db.commit()
     
     # Send welcome email (non-blocking)
-    name = getattr(user, 'full_name', '') \
-        or getattr(user, 'username', '') or ''
-    await svc.send_welcome_email(user.email, name)
+    await svc.send_welcome_email(
+        user.email,
+        name=getattr(user, 'name', '') or '',
+        first_name=getattr(user, 'first_name', '') or ''
+    )
     
     return {
         "message": "Email verified successfully! Welcome to Rovvy.",
