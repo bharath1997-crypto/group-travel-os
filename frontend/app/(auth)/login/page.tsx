@@ -12,7 +12,7 @@ import {
 } from "react";
 import { Mail } from "lucide-react";
 
-import RovvyLogo from "@/components/RovvyLogo";
+import { RovvyLogo } from "@/components/RovvyLogo";
 import { apiFetch } from "@/lib/api";
 import { saveToken } from "@/lib/auth";
 import { startFacebookOAuth, startGoogleOAuth } from "@/lib/oauth";
@@ -273,7 +273,7 @@ function LoginPageInner() {
       <main className="flex w-full flex-1 flex-col justify-center bg-[#F8FAFC] px-6 py-10 md:px-9">
         <div className="mx-auto w-full max-w-[400px] bg-white p-8 rounded-[20px] border border-[#e8e8e8] shadow-sm">
           <div className="mb-7 flex flex-col items-center md:items-start">
-            <RovvyLogo variant="primary" size="lg" showTagline={true} />
+            <RovvyLogo variant="primary" size="md" />
           </div>
           <h2 className="text-center text-xl font-medium text-[#1C2B3A] md:text-left">Welcome back</h2>
           <p className="mb-6 mt-1 text-center text-[13px] text-[#888] md:text-left">

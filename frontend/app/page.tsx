@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import RovvyLogo from "@/components/RovvyLogo";
+import { RovvyLogo } from "@/components/RovvyLogo";
 import { getToken } from "@/lib/auth";
 
 const ONBOARD_KEY = "travello_onboarded";

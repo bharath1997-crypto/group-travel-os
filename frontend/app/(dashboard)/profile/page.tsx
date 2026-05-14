@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { LogOut, User, Lock, Eye, EyeOff, Archive, HelpCircle, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import TravelloLogo from "@/components/TravelloLogo";
+import { RovvyLogo } from "@/components/RovvyLogo";
 import {
   useCallback,
   useEffect,
@@ -1427,7 +1427,7 @@ export default function ProfilePage() {
           {/* Floating Action Buttons - Styled elegantly */}
           <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/40 to-transparent">
             <div className="flex items-center gap-2">
-              <TravelloLogo variant="primary" width={120} height={40} />
+              <RovvyLogo variant="dark" size="md" />
             </div>
             <div className="flex gap-3">
               <button

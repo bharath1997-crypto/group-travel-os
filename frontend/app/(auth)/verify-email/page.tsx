@@ -11,7 +11,7 @@ import {
 } from "react";
 import { Banknote, Plane, Users } from "lucide-react";
 
-import RovvyLogo from "@/components/RovvyLogo";
+import { RovvyLogo } from "@/components/RovvyLogo";
 import { apiFetch } from "@/lib/api";
 
 type UserOut = {

@@ -11,7 +11,7 @@ import { IconBell, IconCheck, IconLogout } from "@/components/icons";
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { VerificationBanner } from "@/components/VerificationBanner";
-import RovvyLogo, { RovvyIcon } from "@/components/RovvyLogo";
+import { RovvyLogo, RovvyIcon } from "@/components/RovvyLogo";
 import BrandedLoading from "@/components/BrandedLoading";
 import ConnectionStatusBanner from "@/components/ConnectionStatusBanner";
 import {
@@ -520,7 +520,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             href="/dashboard"
             className="flex items-center gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#CCFBF1]/40"
           >
-            <RovvyLogo variant="dark" size="md" showTagline={false} />
+            <RovvyLogo variant="dark" size="md" />
           </Link>
         </div>
 
@@ -608,7 +608,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             <span className="w-10 shrink-0" aria-hidden />
             <div className="flex min-w-0 justify-center justify-self-center px-2">
               {!isMapPage ? (
-                <RovvyIcon size={32} />
+                <RovvyIcon size={28} />
               ) : (
                 <span className="text-[15px] font-semibold text-[#0F3460]">
                   Map

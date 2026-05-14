@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 
-import RovvyLogo from "@/components/RovvyLogo";
+import { RovvyLogo } from "@/components/RovvyLogo";
 import { apiFetch } from "@/lib/api";
 import { saveToken } from "@/lib/auth";
 import { startFacebookOAuth, startGoogleOAuth } from "@/lib/oauth";
