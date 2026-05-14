@@ -152,8 +152,10 @@ def _register_routes(app: FastAPI) -> None:
 
     # Step 9 — Auth
     from app.routes.auth import router as auth_router
+    from app.routes.email_verification import router as email_verification_router
 
     app.include_router(auth_router, prefix="/api/v1")
+    app.include_router(email_verification_router, prefix="/api/v1")
 
     # Join requests — register before groups so POST /groups/join uses request flow
     from app.routes.join_requests import router as join_requests_router

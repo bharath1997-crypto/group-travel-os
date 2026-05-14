@@ -235,6 +235,26 @@ class Settings(BaseSettings):
         default=48,
         validation_alias="EMAIL_VERIFICATION_TOKEN_HOURS",
     )
+    email_verification_secret: str = Field(
+        default="rovvy-secret-change-in-production",
+        validation_alias="EMAIL_VERIFICATION_SECRET",
+    )
+    mail_from: str = Field(
+        default="noreply@rovvy.app",
+        validation_alias="MAIL_FROM",
+    )
+    mail_from_name: str = Field(
+        default="Rovvy",
+        validation_alias="MAIL_FROM_NAME",
+    )
+    mail_server: str = Field(
+        default="smtp-relay.brevo.com",
+        validation_alias="MAIL_SERVER",
+    )
+    mail_port: int = Field(
+        default=587,
+        validation_alias="MAIL_PORT",
+    )
 
     @field_validator(
         "GOOGLE_CLIENT_ID",
