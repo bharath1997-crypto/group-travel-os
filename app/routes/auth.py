@@ -40,10 +40,7 @@ from app.schemas.auth import (
 )
 from app.services.auth_service import AuthService
 from app.services.presence_service import PresenceService
-from app.services.email_verification_service import (
-    confirm_verification_token,
-    request_verification_email,
-)
+
 from app.services.oauth_service import (
     complete_facebook,
     complete_google,
@@ -240,17 +237,36 @@ def oauth_facebook_callback(
     )
 
 
+from fastapi import BackgroundTasks
+from datetime import datetime, timezone
+
 @router.post(
     "/register",
     response_model=RegisterResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user account",
 )
-def register(data: UserCreate, db: Session = Depends(get_db)):
+def register(data: UserCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     user, token, expires_in = AuthService.register(
         db,
         data,
     )
+    
+    try:
+        from app.services.email_verification_service import EmailVerificationService
+        svc = EmailVerificationService()
+        v_token = svc.generate_token(user.email)
+        background_tasks.add_task(
+            svc.send_verification_email,
+            user.email,
+            v_token,
+            user.full_name
+        )
+        user.verification_token_sent_at = datetime.now(timezone.utc)
+        db.commit()
+    except Exception as e:
+        logger.error(f"Verification email failed: {e}")
+
     return RegisterResponse(
         user=build_user_out(user),
         token=TokenResponse(access_token=token, expires_in=expires_in),
@@ -270,31 +286,7 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
     )
 
 
-@router.post(
-    "/verify-email",
-    response_model=VerifyEmailSuccessResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Verify email using token from inbox link",
-)
-def verify_email_post(data: VerifyEmailRequest, db: Session = Depends(get_db)):
-    user = AuthService.verify_email(db, data.token)
-    return VerifyEmailSuccessResponse(
-        message="Email verified successfully",
-        user=build_user_out(user),
-    )
 
-
-@router.post(
-    "/resend-verification",
-    status_code=status.HTTP_200_OK,
-    summary="Resend verification email (no hint if email is unknown)",
-)
-def resend_verification_public_route(
-    data: ResendVerificationPublicRequest,
-    db: Session = Depends(get_db),
-):
-    AuthService.resend_verification_public(db, str(data.email))
-    return {"message": "If that email exists, a link was sent"}
 
 
 @router.get(
@@ -360,35 +352,7 @@ def deactivate_account(
     return {"message": "Account deactivated"}
 
 
-@router.post(
-    "/send-verification-email",
-    status_code=status.HTTP_200_OK,
-    summary="Send or resend email verification link",
-)
-def send_verification_email_route(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    request_verification_email(db, current_user)
-    return {"message": "Verification email sent"}
 
-
-@router.get(
-    "/verify-email/confirm",
-    summary="Confirm email from inbox link; redirects to the app",
-)
-def verify_email_confirm(
-    token: str | None = None,
-    db: Session = Depends(get_db),
-):
-    fe = _frontend()
-    if not token:
-        return RedirectResponse(f"{fe}/verify-email?error=missing_token")
-    try:
-        confirm_verification_token(db, token.strip())
-    except HTTPException:
-        return RedirectResponse(f"{fe}/verify-email?error=invalid_or_expired")
-    return RedirectResponse(f"{fe}/verify-email?verified=1")
 
 
 @router.post(

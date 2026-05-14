@@ -249,7 +249,7 @@ function RegisterPageInner() {
         );
         syncLocalProfileCache(data.user);
       }
-      setCheckEmailFor(data.user.email.trim());
+      router.push("/check-email");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -267,92 +267,7 @@ function RegisterPageInner() {
     window.setTimeout(() => startFacebookOAuth("signup"), 50);
   }
 
-  if (checkEmailFor) {
-    return (
-      <div className="flex min-h-svh flex-col items-center justify-center bg-white px-4 py-10">
-        <div className="w-full max-w-md">
-          <div className="mb-6 flex items-center justify-between">
-            <RovvyLogo variant="primary" size="lg" showTagline={false} />
-          </div>
-          <div className="reg-envelope-wrap relative flex justify-center" aria-hidden>
-            <style
-              dangerouslySetInnerHTML={{
-                __html: `
-@keyframes reg-envelope-flap {
-  0%, 100% { transform: rotateX(0deg); }
-  50% { transform: rotateX(-18deg); }
-}
-.reg-envelope-flap { transform-origin: top center; animation: reg-envelope-flap 2.2s ease-in-out infinite; }
-`,
-              }}
-            />
-            <svg
-              className="h-20 w-20 text-[#DC2626]"
-              viewBox="0 0 64 64"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect
-                x="6"
-                y="18"
-                width="52"
-                height="36"
-                rx="4"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                fill="white"
-              />
-              <path
-                className="reg-envelope-flap"
-                d="M8 20 L32 36 L56 20"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                fill="white"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <h1 className="mt-6 text-center text-2xl font-bold text-slate-900">
-            Check your email
-          </h1>
-          <p className="mt-2 text-center text-slate-500">We sent a link to</p>
-          <div className="mt-2 flex justify-center">
-            <span className="inline-flex rounded-full bg-red-50 px-4 py-1.5 text-sm font-semibold text-[#DC2626]">
-              {checkEmailFor}
-            </span>
-          </div>
-          <div className="mt-8 flex items-center justify-center gap-2 text-xs text-slate-500">
-            <span className="text-emerald-600">Register ✓</span>
-            <span className="text-slate-300">|</span>
-            <span className="font-semibold text-[#DC2626]">Verify email</span>
-            <span className="text-slate-300">|</span>
-            <span>Start planning</span>
-          </div>
-          <div className="mt-6 flex flex-col items-center gap-2">
-            <Link
-              href="/resend-verification"
-              className="text-sm font-medium text-slate-500 hover:text-[#DC2626] hover:underline"
-            >
-              Resend email
-            </Link>
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard")}
-              className="text-xs text-slate-400 transition hover:text-slate-600"
-            >
-              Skip for now →
-            </button>
-          </div>
-          <Link
-            href="/login"
-            className="mt-6 block text-center text-sm text-slate-400 hover:text-slate-600"
-          >
-            Sign in instead
-          </Link>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="flex min-h-screen bg-white">
