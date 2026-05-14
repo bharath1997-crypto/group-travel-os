@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import RovvyLogo from "@/components/RovvyLogo";
+import { RovvyLogo } from "@/components/RovvyLogo";
 
 /**
  * Minimal shell for shareable pages (trip preview) so they work without a login.

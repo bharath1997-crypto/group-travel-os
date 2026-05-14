@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -15 60 75" width="32" height="32" fill="none">
+  <!-- orbital ring -->
+  <ellipse cx="32" cy="42" rx="22" ry="9" stroke="#0F766E" stroke-width="2.5" fill="none" transform="rotate(-15 32 42)"/>
+  <!-- r letterform -->
+  <rect x="22" y="28" width="5" height="26" rx="2" fill="#0F766E"/>
+  <path d="M27 30 Q38 26 38 34 Q38 40 27 40" stroke="#0F766E" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <!-- paper plane -->
+  <g transform="translate(34, 10) rotate(45)">
+    <polygon points="0,0 14,5 5,14" fill="#0F766E"/>
+    <line x1="5" y1="14" x2="7" y2="7" stroke="white" stroke-width="1.2"/>
+  </g>
+</svg>

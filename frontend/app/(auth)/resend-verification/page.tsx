@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
 
-import RovvyLogo from "@/components/RovvyLogo";
+import { RovvyLogo } from "@/components/RovvyLogo";
 import { apiFetch } from "@/lib/api";
 
 export default function ResendVerificationPage() {

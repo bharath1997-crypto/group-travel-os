@@ -14,25 +14,24 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Rovvy — Roam together",
-  description:
-    "Group travel coordination. Plan trips, coordinate live, split expenses.",
-  keywords: [
-    "group travel",
-    "trip planning",
-    "travel coordination",
-    "expense splitting",
-  ],
+  title: {
+    default: 'Rovvy — Roam together',
+    template: '%s | Rovvy',
+  },
+  description: 'Group travel coordination. Plan trips, coordinate live, split expenses.',
+  applicationName: 'Rovvy',
+  keywords: ['group travel', 'trip planning', 'travel coordination', 'expense splitting'],
   openGraph: {
-    title: "Rovvy — Roam together",
-    description: "Group travel made simple.",
-    siteName: "Rovvy",
+    title: 'Rovvy — Roam together',
+    description: 'Group travel made simple.',
+    siteName: 'Rovvy',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Rovvy — Roam together',
   },
   manifest: "/manifest.json",
-  icons: {
-    icon: [{ url: "/favicon.ico" }],
-    apple: [{ url: "/logo-icon.png", sizes: "512x512", type: "image/png" }],
-  },
 };
 
 export const viewport: Viewport = {
