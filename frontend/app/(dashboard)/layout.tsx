@@ -11,7 +11,9 @@ import { IconBell, IconCheck, IconLogout } from "@/components/icons";
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { VerificationBanner } from "@/components/VerificationBanner";
-import TravelloLogo from "@/components/TravelloLogo";
+import RovvyLogo, { RovvyIcon } from "@/components/RovvyLogo";
+import BrandedLoading from "@/components/BrandedLoading";
+import ConnectionStatusBanner from "@/components/ConnectionStatusBanner";
 import {
   DashboardUserProvider,
   useDashboardUser,
@@ -495,14 +497,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8F9FA]">
-        <div
-          className="h-10 w-10 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#0F766E]"
-          aria-hidden
-        />
-      </div>
-    );
+    return <BrandedLoading fullScreen={true} />;
   }
 
   const MOBILE_TABS = NAV_SECTIONS.map((s) => ({
@@ -514,6 +509,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen min-h-[100dvh] bg-[#F8F9FA]">
+      <ConnectionStatusBanner />
       {/* Desktop / tablet sidebar */}
       <aside
         className="fixed left-0 top-0 z-40 hidden h-full min-h-screen w-[240px] flex-col border-r border-[#1E293B] md:flex"
@@ -524,7 +520,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             href="/dashboard"
             className="flex items-center gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#CCFBF1]/40"
           >
-            <TravelloLogo variant="dark" width={120} height={40} />
+            <RovvyLogo variant="dark" size="md" showTagline={false} />
           </Link>
         </div>
 
@@ -612,7 +608,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             <span className="w-10 shrink-0" aria-hidden />
             <div className="flex min-w-0 justify-center justify-self-center px-2">
               {!isMapPage ? (
-                <TravelloLogo variant="primary" width={112} height={36} />
+                <RovvyIcon size={32} />
               ) : (
                 <span className="text-[15px] font-semibold text-[#0F3460]">
                   Map

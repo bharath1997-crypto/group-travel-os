@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 
-import TravelloLogo from "@/components/TravelloLogo";
+import RovvyLogo from "@/components/RovvyLogo";
 import { apiFetch } from "@/lib/api";
 import { saveToken } from "@/lib/auth";
 import { startFacebookOAuth, startGoogleOAuth } from "@/lib/oauth";
@@ -20,6 +20,7 @@ import {
   oauthErrorToRegisterAlert,
   type OauthLoginAlert,
 } from "@/lib/oauthLoginErrors";
+import BrandedLoading from "@/components/BrandedLoading";
 
 type RegisterResponse = {
   user: {
@@ -271,7 +272,7 @@ function RegisterPageInner() {
       <div className="flex min-h-svh flex-col items-center justify-center bg-white px-4 py-10">
         <div className="w-full max-w-md">
           <div className="mb-6 flex items-center justify-between">
-            <TravelloLogo variant="primary" width={112} height={36} />
+            <RovvyLogo variant="primary" size="lg" showTagline={false} />
           </div>
           <div className="reg-envelope-wrap relative flex justify-center" aria-hidden>
             <style
@@ -355,13 +356,12 @@ function RegisterPageInner() {
 
   return (
     <div className="flex min-h-screen bg-white">
-      <aside className="relative hidden flex-[1.1] flex-col justify-between overflow-hidden bg-[#1C2B3A] p-9 md:flex">
+      <aside className="relative hidden flex-[1.1] flex-col justify-between overflow-hidden bg-[#0F172A] p-9 md:flex">
         <span className="absolute -left-10 -top-10 h-[180px] w-[180px] rounded-full border border-[rgba(255,255,255,0.08)]" aria-hidden />
         <span className="absolute -right-5 bottom-[60px] h-[120px] w-[120px] rounded-full border border-[rgba(232,97,154,0.2)]" aria-hidden />
         <span className="absolute bottom-[100px] left-10 h-[60px] w-[60px] rounded-full bg-[rgba(232,97,154,0.08)]" aria-hidden />
         <div className="relative z-[1] flex flex-col items-start">
-          <TravelloLogo variant="dark" width={140} height={48} />
-          <p className="mt-2 text-sm text-[#94A3B8]">Roam together</p>
+          <RovvyLogo variant="dark" size="lg" showTagline={false} />
         </div>
         <div className="relative z-[1] max-w-sm">
           <h1 className="text-[22px] font-medium leading-tight text-white">
@@ -378,13 +378,10 @@ function RegisterPageInner() {
         </div>
       </aside>
 
-      <main className="flex w-full flex-1 flex-col justify-center bg-white px-6 py-10 md:px-9">
-        <div className="mx-auto w-full max-w-[390px]">
+      <main className="flex w-full flex-1 flex-col justify-center bg-[#F8FAFC] px-6 py-10 md:px-9">
+        <div className="mx-auto w-full max-w-[420px] bg-white p-8 rounded-[20px] border border-[#e8e8e8] shadow-sm">
           <div className="mb-6 flex flex-col items-center md:items-start">
-            <TravelloLogo variant="primary" width={140} height={48} />
-            <p className="mt-2 text-center text-sm text-[#94A3B8] md:text-left">
-              Roam together
-            </p>
+            <RovvyLogo variant="primary" size="lg" showTagline={false} />
           </div>
           <h2 className="text-center text-xl font-medium text-[#1C2B3A] md:text-left">
             Create your account
@@ -512,7 +509,7 @@ function RegisterPageInner() {
           <button
             type="submit"
             disabled={isBusy}
-            className="flex h-11 w-full items-center justify-center rounded-[10px] bg-[#E8619A] text-sm font-medium tracking-[0.3px] text-white transition-colors hover:bg-[#1C2B3A] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-11 w-full items-center justify-center rounded-[10px] bg-[#0F766E] text-sm font-medium tracking-[0.3px] text-white transition-colors hover:bg-[#0D6B63] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? (
               <>
@@ -565,11 +562,7 @@ function RegisterPageInner() {
 export default function RegisterPage() {
   return (
     <Suspense
-      fallback={
-        <div className="flex min-h-svh items-center justify-center bg-slate-100">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#E94560] border-t-transparent" />
-        </div>
-      }
+      fallback={<BrandedLoading fullScreen={true} />}
     >
       <RegisterPageInner />
     </Suspense>

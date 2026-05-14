@@ -67,3 +67,13 @@
 
 ### App Store Header
 ![App Store Mockup](./rovvy_mockup_appstore.png)
+
+### Web Browser Login
+![Web Browser Login](./rovvy_mockup_web_login.png)
+
+### Mac Browser Sign Up
+![Mac Browser Sign Up](./rovvy_mockup_mac_signup.png)
+
+### Tablet Browser Login
+![Tablet Browser Login](./rovvy_mockup_tablet_login.png)
+
