@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   icons: {
-    icon: [{ url: "/logo-icon.png", type: "image/png" }],
+    icon: [{ url: "/favicon.ico" }],
     apple: [{ url: "/logo-icon.png", sizes: "512x512", type: "image/png" }],
   },
 };

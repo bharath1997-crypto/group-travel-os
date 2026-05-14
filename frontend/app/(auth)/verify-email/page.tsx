@@ -11,7 +11,7 @@ import {
 } from "react";
 import { Banknote, Plane, Users } from "lucide-react";
 
-import { AppLogo } from "@/components/AppLogo";
+import RovvyLogo from "@/components/RovvyLogo";
 import { apiFetch } from "@/lib/api";
 
 type UserOut = {
@@ -174,7 +174,7 @@ function VerifyEmailInner() {
       />
 
       <header className="flex w-full items-center justify-between border-b border-slate-100 px-4 py-4 sm:px-6">
-        <AppLogo variant="onLight" className="h-8 w-auto max-w-[180px]" />
+        <RovvyLogo variant="primary" size="md" />
         <span className="inline-flex text-slate-800" aria-hidden>
           <Plane className="h-7 w-7" strokeWidth={1.5} />
         </span>

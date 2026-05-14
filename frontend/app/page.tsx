@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import TravelloLogo from "@/components/TravelloLogo";
+import RovvyLogo from "@/components/RovvyLogo";
 import { getToken } from "@/lib/auth";
 
 const ONBOARD_KEY = "travello_onboarded";
@@ -57,7 +57,7 @@ export default function Home() {
 
       <div className="relative z-10 flex max-w-sm flex-col items-center text-center">
         <div className="travello-logo-pulse">
-          <TravelloLogo variant="primary" width={160} height={52} />
+          <RovvyLogo variant="primary" size="lg" />
         </div>
         <p className="mt-6 text-lg font-semibold text-white drop-shadow-sm sm:text-xl">
           Roam together.
