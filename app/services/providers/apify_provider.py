@@ -1,7 +1,7 @@
 """
 Apify optional enrichment stub.
 
-Requires a deployed actor URL and payload shape tailored to Travello use cases.
+Requires a deployed actor URL and payload shape tailored to Rovvy use cases.
 Extend ACTOR_IDS / run_input when ready.
 """
 from __future__ import annotations

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { AppLogo } from "@/components/AppLogo";
+import { RovvyLogo } from "@/components/RovvyLogo";
 
 /**
  * Minimal shell for shareable pages (trip preview) so they work without a login.
@@ -15,7 +15,7 @@ export default function ShareLayout({ children }: { children: ReactNode }) {
             href="/"
             className="inline-block outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
           >
-            <AppLogo variant="onLight" className="h-8 w-auto" />
+            <RovvyLogo variant="primary" size="md" />
           </Link>
           <div className="flex items-center gap-4 text-sm">
             <Link

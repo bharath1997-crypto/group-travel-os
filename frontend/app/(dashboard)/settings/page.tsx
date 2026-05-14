@@ -171,7 +171,7 @@ const HUB: HubSection[] = [
     items: [
       {
         label: "Saved",
-        href: "/explorer",
+        href: "/explore",
         icon: IconBookmark,
         keywords: "bookmarks trips pins",
       },

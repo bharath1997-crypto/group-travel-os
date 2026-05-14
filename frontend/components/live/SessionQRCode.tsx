@@ -29,7 +29,7 @@ export function SessionQRCode({ sessionCode, tripTitle }: Props) {
   const share = useCallback(async () => {
     const sharePayload = {
       title: `${tripTitle ? `${tripTitle} — ` : ""}Live session`,
-      text: `Join our live Travello session — code ${sessionCode}`,
+      text: `Join our live Rovvy session — code ${sessionCode}`,
       url:
         typeof window !== "undefined"
           ? `${window.location.origin}/live?code=${encodeURIComponent(sessionCode)}`

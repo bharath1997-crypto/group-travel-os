@@ -138,6 +138,14 @@ class User(Base):
         default=False,
         nullable=False,
     )
+    verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    verification_token_sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     # When False, name/avatar are hidden on public trip previews (counts still shown).
     profile_public: Mapped[bool] = mapped_column(
         Boolean,

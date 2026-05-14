@@ -7,7 +7,7 @@ export default function CityTravelGuidePage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/explorer");
+    router.replace("/explore/events");
   }, [router]);
 
   return (

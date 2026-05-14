@@ -1,5 +1,5 @@
 """
-Wayra — Travello explorer-facing Gemini summaries (Explorer results → short copy).
+Wayra — Rovvy explorer-facing Gemini summaries (Explorer results → short copy).
 Bounded HTTP timeouts; failures never propagate to callers.
 """
 from __future__ import annotations
@@ -114,7 +114,7 @@ def _call_gemini_explorer_suggestion(
     results_minimal: list[dict[str, Any]],
 ) -> str:
     instruction = (
-        "You are Wayra, Travello's group travel AI assistant. Based on this user's "
+        "You are Wayra, Rovvy's group travel AI assistant. Based on this user's "
         "search and available Explorer results, write a helpful 2-3 sentence suggestion. "
         "Be practical, friendly, and concise. Do not invent places not included in the results."
     )

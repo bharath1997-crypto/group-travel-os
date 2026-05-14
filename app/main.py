@@ -35,6 +35,23 @@ async def lifespan(app: FastAPI):
         # Log but don't crash — health endpoint will surface this
         logger.error("Database connection FAILED on startup — check DATABASE_URL in .env")
 
+    # Verify required production variables for Google Sign-In and security
+    if settings.ENVIRONMENT == "production":
+        missing_vars = []
+        if not settings.GOOGLE_CLIENT_ID:
+            missing_vars.append("GOOGLE_CLIENT_ID")
+        if not settings.GOOGLE_CLIENT_SECRET:
+            missing_vars.append("GOOGLE_CLIENT_SECRET")
+        if not settings.SECRET_KEY or len(settings.SECRET_KEY) < 32:
+            missing_vars.append("SECRET_KEY (missing or too short)")
+        
+        if missing_vars:
+            logger.error(
+                "CRITICAL: Missing or invalid required production environment variables: %s. "
+                "This will cause login or security failures!",
+                ", ".join(missing_vars)
+            )
+
     # With a custom lifespan, Starlette does not run on_event handlers unless we call this.
     await app.router.startup()
 
@@ -135,8 +152,10 @@ def _register_routes(app: FastAPI) -> None:
 
     # Step 9 — Auth
     from app.routes.auth import router as auth_router
+    from app.routes.email_verification import router as email_verification_router
 
     app.include_router(auth_router, prefix="/api/v1")
+    app.include_router(email_verification_router, prefix="/api/v1")
 
     # Join requests — register before groups so POST /groups/join uses request flow
     from app.routes.join_requests import router as join_requests_router

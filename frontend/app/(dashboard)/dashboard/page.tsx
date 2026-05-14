@@ -454,7 +454,7 @@ async function geocodeCity(
   const res = await fetch(url, {
     signal,
     headers: {
-      "User-Agent": "TravelloDashboard/1.0 (travello.app)",
+      "User-Agent": "RovvyDashboard/1.0 (rovvy.app)",
       Accept: "application/json",
     },
   });
@@ -1968,7 +1968,7 @@ export default function DashboardPage() {
               </li>
             </ul>
             <Link
-              href="/explorer"
+              href="/explore"
               className="mt-4 inline-block text-sm font-semibold"
               style={{ color: CORAL }}
             >

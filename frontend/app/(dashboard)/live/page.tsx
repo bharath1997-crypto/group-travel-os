@@ -482,7 +482,7 @@ export default function LivePage() {
     try {
       if (navigator.share)
         await navigator.share({
-          title: "Travello Live",
+          title: "Rovvy Live",
           text: `Live session ${session.session_code}`,
           url,
         });
@@ -729,7 +729,7 @@ export default function LivePage() {
             <aside className="space-y-4 rounded-[28px] border border-[#24407f] bg-[#0f1f44]/70 p-5 text-[13px] text-[#cae0ff]">
               <h3 className="text-[15px] font-semibold text-white">While you wait</h3>
               <ol className="list-decimal space-y-3 pl-4 text-[#93aaeb] marker:text-[#E94560]">
-                <li>Confirm everyone installed Travello notifications.</li>
+                <li>Confirm everyone installed Rovvy notifications.</li>
                 <li>Drop the meet pin early so arrivals badges stay truthful.</li>
                 <li>Keep Location Services on before going active.</li>
               </ol>

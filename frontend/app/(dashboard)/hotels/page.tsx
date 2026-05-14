@@ -145,7 +145,7 @@ export default function HotelsPage() {
         <div className="mx-auto max-w-6xl">
           <h1 className="text-lg font-bold tracking-tight md:text-xl">Hotels</h1>
           <p className="mt-1 text-xs leading-relaxed text-teal-100/95 md:text-sm">
-            Curated nightly rates via Agoda (Travelpayouts links — marker pending approval).
+            Curated nightly rates via Agoda (Travelpayouts affiliate links).
           </p>
           <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
             <label className="flex flex-col gap-2 lg:col-span-3">

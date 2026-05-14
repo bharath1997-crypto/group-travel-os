@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 
-import TravelloLogo from "@/components/TravelloLogo";
+import { RovvyLogo } from "@/components/RovvyLogo";
 import { apiFetch } from "@/lib/api";
 import { saveToken } from "@/lib/auth";
 import { startFacebookOAuth, startGoogleOAuth } from "@/lib/oauth";
@@ -20,6 +20,7 @@ import {
   oauthErrorToRegisterAlert,
   type OauthLoginAlert,
 } from "@/lib/oauthLoginErrors";
+import BrandedLoading from "@/components/BrandedLoading";
 
 type RegisterResponse = {
   user: {
@@ -222,7 +223,7 @@ function RegisterPageInner() {
 
     const age = ageFromDob(dob);
     if (age < 18) {
-      setDobError("You must be 18 or older to use Travello");
+      setDobError("You must be 18 or older to use Rovvy");
       return;
     }
 
@@ -248,7 +249,7 @@ function RegisterPageInner() {
         );
         syncLocalProfileCache(data.user);
       }
-      setCheckEmailFor(data.user.email.trim());
+      router.push("/check-email");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -266,101 +267,16 @@ function RegisterPageInner() {
     window.setTimeout(() => startFacebookOAuth("signup"), 50);
   }
 
-  if (checkEmailFor) {
-    return (
-      <div className="flex min-h-svh flex-col items-center justify-center bg-white px-4 py-10">
-        <div className="w-full max-w-md">
-          <div className="mb-6 flex items-center justify-between">
-            <TravelloLogo variant="pill-dark" size="sm" animated />
-          </div>
-          <div className="reg-envelope-wrap relative flex justify-center" aria-hidden>
-            <style
-              dangerouslySetInnerHTML={{
-                __html: `
-@keyframes reg-envelope-flap {
-  0%, 100% { transform: rotateX(0deg); }
-  50% { transform: rotateX(-18deg); }
-}
-.reg-envelope-flap { transform-origin: top center; animation: reg-envelope-flap 2.2s ease-in-out infinite; }
-`,
-              }}
-            />
-            <svg
-              className="h-20 w-20 text-[#DC2626]"
-              viewBox="0 0 64 64"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect
-                x="6"
-                y="18"
-                width="52"
-                height="36"
-                rx="4"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                fill="white"
-              />
-              <path
-                className="reg-envelope-flap"
-                d="M8 20 L32 36 L56 20"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                fill="white"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <h1 className="mt-6 text-center text-2xl font-bold text-slate-900">
-            Check your email
-          </h1>
-          <p className="mt-2 text-center text-slate-500">We sent a link to</p>
-          <div className="mt-2 flex justify-center">
-            <span className="inline-flex rounded-full bg-red-50 px-4 py-1.5 text-sm font-semibold text-[#DC2626]">
-              {checkEmailFor}
-            </span>
-          </div>
-          <div className="mt-8 flex items-center justify-center gap-2 text-xs text-slate-500">
-            <span className="text-emerald-600">Register ✓</span>
-            <span className="text-slate-300">|</span>
-            <span className="font-semibold text-[#DC2626]">Verify email</span>
-            <span className="text-slate-300">|</span>
-            <span>Start planning</span>
-          </div>
-          <div className="mt-6 flex flex-col items-center gap-2">
-            <Link
-              href="/resend-verification"
-              className="text-sm font-medium text-slate-500 hover:text-[#DC2626] hover:underline"
-            >
-              Resend email
-            </Link>
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard")}
-              className="text-xs text-slate-400 transition hover:text-slate-600"
-            >
-              Skip for now →
-            </button>
-          </div>
-          <Link
-            href="/login"
-            className="mt-6 block text-center text-sm text-slate-400 hover:text-slate-600"
-          >
-            Sign in instead
-          </Link>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="flex min-h-screen bg-white">
-      <aside className="relative hidden flex-[1.1] flex-col justify-between overflow-hidden bg-[#1C2B3A] p-9 md:flex">
+      <aside className="relative hidden flex-[1.1] flex-col justify-between overflow-hidden bg-[#0F172A] p-9 md:flex">
         <span className="absolute -left-10 -top-10 h-[180px] w-[180px] rounded-full border border-[rgba(255,255,255,0.08)]" aria-hidden />
         <span className="absolute -right-5 bottom-[60px] h-[120px] w-[120px] rounded-full border border-[rgba(232,97,154,0.2)]" aria-hidden />
         <span className="absolute bottom-[100px] left-10 h-[60px] w-[60px] rounded-full bg-[rgba(232,97,154,0.08)]" aria-hidden />
-        <div className="relative z-[1]">
-          <TravelloLogo variant="full" size="md" animated={true} />
+        <div className="relative z-[1] flex flex-col items-start">
+          <RovvyLogo variant="dark" size="lg" showTagline={false} />
         </div>
         <div className="relative z-[1] max-w-sm">
           <h1 className="text-[22px] font-medium leading-tight text-white">
@@ -377,10 +293,10 @@ function RegisterPageInner() {
         </div>
       </aside>
 
-      <main className="flex w-full flex-1 flex-col justify-center bg-white px-6 py-10 md:px-9">
-        <div className="mx-auto w-full max-w-[390px]">
-          <div className="mb-6 flex justify-center md:justify-start">
-            <TravelloLogo variant="mark" size="sm" animated={true} />
+      <main className="flex w-full flex-1 flex-col justify-center bg-[#F8FAFC] px-6 py-10 md:px-9">
+        <div className="mx-auto w-full max-w-[420px] bg-white p-8 rounded-[20px] border border-[#e8e8e8] shadow-sm">
+          <div className="mb-6 flex flex-col items-center md:items-start">
+            <RovvyLogo variant="primary" size="lg" showTagline={false} />
           </div>
           <h2 className="text-center text-xl font-medium text-[#1C2B3A] md:text-left">
             Create your account
@@ -391,7 +307,7 @@ function RegisterPageInner() {
 
         {fromOauth ? (
           <p className="mb-4 rounded-[10px] border border-[#E8619A]/30 bg-white px-3 py-2 text-center text-xs text-[#1C2B3A]">
-            Finish creating your Travello account below, or continue with Google or Facebook.
+            Finish creating your Rovvy account below, or continue with Google or Facebook.
           </p>
         ) : null}
 
@@ -508,7 +424,7 @@ function RegisterPageInner() {
           <button
             type="submit"
             disabled={isBusy}
-            className="flex h-11 w-full items-center justify-center rounded-[10px] bg-[#E8619A] text-sm font-medium tracking-[0.3px] text-white transition-colors hover:bg-[#1C2B3A] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-11 w-full items-center justify-center rounded-[10px] bg-[#0F766E] text-sm font-medium tracking-[0.3px] text-white transition-colors hover:bg-[#0D6B63] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? (
               <>
@@ -561,11 +477,7 @@ function RegisterPageInner() {
 export default function RegisterPage() {
   return (
     <Suspense
-      fallback={
-        <div className="flex min-h-svh items-center justify-center bg-slate-100">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#E94560] border-t-transparent" />
-        </div>
-      }
+      fallback={<BrandedLoading fullScreen={true} />}
     >
       <RegisterPageInner />
     </Suspense>

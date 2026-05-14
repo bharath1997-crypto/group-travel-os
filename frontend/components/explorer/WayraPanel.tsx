@@ -109,7 +109,7 @@ const APP_GUIDE_RESPONSES: { keys: string[]; text: string }[] = [
   },
   {
     keys: ["notification", "account", "setting", "password", "profile", "login"],
-    text: "Profile and security live under Settings: update contact info there and keep Travello synced.",
+    text: "Profile and security live under Settings: update contact info there and keep Rovvy synced.",
   },
 ];
 

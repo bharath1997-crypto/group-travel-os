@@ -1,13 +1,13 @@
 """
-Travello AI assistant service.
+Rovvy AI assistant service.
 
 Primary engine  : Google Gemini (gemini-2.0-flash via google-generativeai SDK)
 Fallback engine : OpenAI GPT-4o-mini
 Branding rule   : NEVER reveal the underlying model or provider to the user.
-                  All responses must appear as Travello's own native AI.
+                  All responses must appear as Rovvy's own native AI.
 
 The system prompt explicitly forbids the model from mentioning Google, Gemini,
-OpenAI, GPT, or any third-party AI name — the user experience is "Travello AI".
+OpenAI, GPT, or any third-party AI name — the user experience is "Rovvy AI".
 """
 from __future__ import annotations
 
@@ -35,22 +35,22 @@ _MAX_OUTPUT_TOKENS = 2048
 
 def _build_system_prompt(page: str, active_tab: str | None) -> str:
     tab = active_tab or "(not specified)"
-    return f"""You are the built-in AI assistant for Travello, a group travel app.
-Your name is "Travello AI". You are a native feature of Travello — not a third-party service.
+    return f"""You are the built-in AI assistant for Rovvy, a group travel app.
+Your name is "Rovvy AI". You are a native feature of Rovvy — not a third-party service.
 
 CRITICAL IDENTITY RULES (never break these):
 - NEVER mention Google, Gemini, OpenAI, GPT, Claude, or any AI provider or model name.
 - NEVER say you are "powered by" anything external.
-- If asked what AI you are, say: "I'm Travello AI, your built-in travel assistant."
-- If asked about your underlying technology, say: "I'm Travello's own AI, built to help you explore and plan travel."
-- Always present yourself as a core part of the Travello product.
+- If asked what AI you are, say: "I'm Rovvy AI, your built-in travel assistant."
+- If asked about your underlying technology, say: "I'm Rovvy's own AI, built to help you explore and plan travel."
+- Always present yourself as a core part of the Rovvy product.
 
 The user is on page: {page!r} (active tab/section: {tab!r}).
 
 Your role:
 - Help users find events, parks, routes, venues, and travel activities.
 - Suggest what to do based on location, time of day, mood, and interests.
-- Explain Travello features: trips, maps, expenses, polls, group planning.
+- Explain Rovvy features: trips, maps, expenses, polls, group planning.
 - Be friendly, concise, and practical. Suggest clear next steps.
 - You are read-only: do NOT claim to have saved, deleted, or changed anything.
 
@@ -274,24 +274,24 @@ class AIAssistantService:
         if _gemini_key():
             try:
                 raw_text = _call_gemini(system_prompt, user_block)
-                logger.debug("Travello AI (primary) responded OK")
+                logger.debug("Rovvy AI (primary) responded OK")
             except Exception as exc:  # noqa: BLE001
-                logger.warning("Travello AI primary call failed: %s", exc, exc_info=False)
+                logger.warning("Rovvy AI primary call failed: %s", exc, exc_info=False)
                 raw_text = ""
 
         # 2. Fall back to OpenAI if Gemini failed or key missing
         if not raw_text and _openai_key():
             try:
                 raw_text = _call_openai(system_prompt, user_block)
-                logger.debug("Travello AI (secondary) responded OK")
+                logger.debug("Rovvy AI (secondary) responded OK")
             except Exception as exc:  # noqa: BLE001
-                logger.warning("Travello AI secondary call failed: %s", exc, exc_info=False)
+                logger.warning("Rovvy AI secondary call failed: %s", exc, exc_info=False)
                 raw_text = ""
 
         if not raw_text:
             return _fallback_response(
                 request.user_message,
-                "Travello AI is temporarily unavailable. Please try again in a moment.",
+                "Rovvy AI is temporarily unavailable. Please try again in a moment.",
             )
 
         data = _parse_model_json(raw_text)

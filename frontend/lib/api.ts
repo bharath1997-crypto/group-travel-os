@@ -79,10 +79,18 @@ export async function apiFetch<T = unknown>(
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seconds timeout
+
   let res: Response;
   try {
-    res = await fetch(url, { ...options, headers });
+    res = await fetch(url, { ...options, headers, signal: controller.signal });
+    clearTimeout(timeoutId);
   } catch (e) {
+    clearTimeout(timeoutId);
+    if (e instanceof Error && e.name === "AbortError") {
+      throw new Error("The request timed out. The database might be waking up or experiencing high latency.");
+    }
     throw new Error(networkErrorMessage(url, e));
   }
 
@@ -119,8 +127,12 @@ export async function apiFetchWithStatus<T>(
     headers.set("Content-Type", "application/json");
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seconds timeout
+
   try {
-    const res = await fetch(url, { ...options, headers });
+    const res = await fetch(url, { ...options, headers, signal: controller.signal });
+    clearTimeout(timeoutId);
     if (!res.ok) return { data: null, status: res.status };
     if (res.status === 204) return { data: null, status: res.status };
     try {
@@ -129,7 +141,11 @@ export async function apiFetchWithStatus<T>(
     } catch {
       return { data: null, status: res.status };
     }
-  } catch {
+  } catch (e) {
+    clearTimeout(timeoutId);
+    if (e instanceof Error && e.name === "AbortError") {
+      return { data: null, status: 408 }; // Request Timeout
+    }
     return { data: null, status: 0 };
   }
 }
@@ -155,10 +171,18 @@ export async function apiFetchPublic<T = unknown>(
     headers.set("Content-Type", "application/json");
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seconds timeout
+
   let res: Response;
   try {
-    res = await fetch(url, { ...options, headers });
+    res = await fetch(url, { ...options, headers, signal: controller.signal });
+    clearTimeout(timeoutId);
   } catch (e) {
+    clearTimeout(timeoutId);
+    if (e instanceof Error && e.name === "AbortError") {
+      throw new Error("The request timed out. The database might be waking up or experiencing high latency.");
+    }
     throw new Error(networkErrorMessage(url, e));
   }
 

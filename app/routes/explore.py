@@ -79,12 +79,12 @@ def get_explore_content(
                 "id": str(s.id),
                 "videoId": s.external_id,
                 "title": s.title,
-                "channelTitle": "Travello Contributor",
+                "channelTitle": "Rovvy Contributor",
                 "thumbnailUrl": s.thumbnail_url or f"https://i.ytimg.com/vi/{s.external_id}/hqdefault.jpg",
                 "statistics": {"viewCount": str(s.likes_count)},  # Use likes as a proxy or fallback
                 "snippet": {
                     "title": s.title,
-                    "channelTitle": "Travello Contributor",
+                    "channelTitle": "Rovvy Contributor",
                     "publishedAt": s.created_at.isoformat(),
                 },
                 "source": "travello",

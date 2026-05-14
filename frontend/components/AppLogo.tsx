@@ -1,8 +1,8 @@
 type AppLogoVariant = "onDark" | "onLight";
 
 const SRC: Record<AppLogoVariant, string> = {
-  onDark: "/logo-light.svg",
-  onLight: "/logo-dark.svg",
+  onDark: "/logo-light.png",
+  onLight: "/logo-dark.png",
 };
 
 /**
@@ -20,7 +20,7 @@ export function AppLogo({
     // eslint-disable-next-line @next/next/no-img-element -- local SVG wordmarks
     <img
       src={SRC[variant]}
-      alt="Travello"
+      alt="Rovvy"
       width={200}
       height={48}
       className={className}
