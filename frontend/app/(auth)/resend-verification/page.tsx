@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
 
-import { AppLogo } from "@/components/AppLogo";
+import { RovvyLogo } from "@/components/RovvyLogo";
 import { apiFetch } from "@/lib/api";
 
 export default function ResendVerificationPage() {
@@ -44,7 +44,7 @@ export default function ResendVerificationPage() {
     <div className="flex min-h-svh flex-col items-center bg-white px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-8 flex justify-center">
-          <AppLogo variant="onLight" className="h-9 w-auto max-w-[200px]" />
+          <RovvyLogo variant="primary" size="md" />
         </div>
 
         {!ok ? (

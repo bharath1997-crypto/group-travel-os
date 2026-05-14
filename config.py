@@ -22,7 +22,7 @@ def _parse_origins_string(s: str) -> list[str]:
 
 class Settings(BaseSettings):
     # ── Application ───────────────────────────────────────────────────────────
-    APP_NAME: str = "Group Travel OS"
+    APP_NAME: str = "Rovvy"
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = False
     ENVIRONMENT: str = "development"  # development | staging | production
@@ -50,13 +50,13 @@ class Settings(BaseSettings):
         validation_alias="FIREBASE_DATABASE_URL",
     )
 
-    # ── OpenAI (Travello sidecar assistant — fallback) ────────────────────────
+    # ── OpenAI (Rovvy sidecar assistant — fallback) ───────────────────────────
     openai_api_key: str | None = Field(
         default=None,
         validation_alias="OPENAI_API_KEY",
     )
 
-    # ── Gemini (primary Travello AI engine) ───────────────────────────────────
+    # ── Gemini (primary Rovvy AI engine) ────────────────────────────────────────
     # https://aistudio.google.com/app/apikey — set GEMINI_API_KEY in .env
     gemini_api_key: str | None = Field(
         default=None,
@@ -111,6 +111,12 @@ class Settings(BaseSettings):
     kiwi_api_key: str | None = Field(
         default=None,
         validation_alias="KIWI_API_KEY",
+    )
+
+    # ── Travelpayouts (tp.media affiliate marker / trs) ──────────────────────────
+    travelpayouts_marker: str = Field(
+        default="727732",
+        validation_alias="TRAVELPAYOUTS_MARKER",
     )
 
     # ── Google Routes API (Directions v2 computeRoutes) ─────────────────────────
@@ -197,7 +203,7 @@ class Settings(BaseSettings):
         validation_alias="FROM_EMAIL",
     )
     from_name: str = Field(
-        default="Travello",
+        default="Rovvy",
         validation_alias="FROM_NAME",
     )
 
@@ -228,6 +234,34 @@ class Settings(BaseSettings):
     EMAIL_VERIFICATION_TOKEN_HOURS: int = Field(
         default=48,
         validation_alias="EMAIL_VERIFICATION_TOKEN_HOURS",
+    )
+    email_verification_secret: str = Field(
+        default="rovvy-secret-change-in-production",
+        validation_alias="EMAIL_VERIFICATION_SECRET",
+    )
+    mail_from: str = Field(
+        default="noreply@rovvy.app",
+        validation_alias="MAIL_FROM",
+    )
+    mail_from_name: str = Field(
+        default="Rovvy",
+        validation_alias="MAIL_FROM_NAME",
+    )
+    mail_server: str = Field(
+        default="smtp-relay.brevo.com",
+        validation_alias="MAIL_SERVER",
+    )
+    mail_port: int = Field(
+        default=587,
+        validation_alias="MAIL_PORT",
+    )
+    mail_username: str = Field(
+        default="",
+        validation_alias="MAIL_USERNAME",
+    )
+    mail_password: str = Field(
+        default="",
+        validation_alias="MAIL_PASSWORD",
     )
 
     @field_validator(

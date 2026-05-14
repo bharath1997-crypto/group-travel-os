@@ -299,7 +299,7 @@ def explorer_unified_search(
     Combined Explorer search (`q`/`city` and `query`/`location` aliases).
 
     Tier order: internal catalog → Google Events → Places → organic web SerpAPI.
-    Returns normalized Explorer items plus compatibility fields for Travello Explorer UI.
+    Returns normalized Explorer items plus compatibility fields for Rovvy Explorer UI.
     """
     clean_query = (query or q or "").strip()
     clean_location = (location or city or "Chicago").strip()

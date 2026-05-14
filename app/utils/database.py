@@ -37,6 +37,9 @@ if not _driver.startswith("sqlite"):
             "pool_size": 10,
             # Extra connections allowed above pool_size under load, then discarded.
             "max_overflow": 20,
+            # Timeout for connecting to the database (in seconds).
+            # Prevents hanging indefinitely if Supabase is paused or slow.
+            "connect_args": {"connect_timeout": 5},
         },
     )
 # SQLite + Starlette TestClient: requests run in a thread pool on Linux; without this,

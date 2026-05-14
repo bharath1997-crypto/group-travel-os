@@ -1,5 +1,5 @@
 """
-Travello Test Data Seeder
+Rovvy Test Data Seeder
 Run: python seed_test_data.py
 Adds 5 test users + 2 groups + trips
 + pins + expenses all at once
@@ -195,7 +195,7 @@ TEST_EXPENSES = [
 # MAIN SEEDER
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async def seed():
-    print("\n🌱 Travello Test Data Seeder")
+    print("\n🌱 Rovvy Test Data Seeder")
     print("=" * 40)
 
     tokens = {}

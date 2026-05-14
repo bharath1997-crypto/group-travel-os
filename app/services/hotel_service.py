@@ -14,6 +14,7 @@ from fastapi import HTTPException
 
 from app.schemas.hotel import HotelResult
 from app.utils.exceptions import AppException
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -234,9 +235,10 @@ _HOTEL_TEMPLATES: dict[str, list[dict[str, Any]]] = {
 
 
 def _agoda_booking_url(city_token: str) -> str:
+    m = (settings.travelpayouts_marker or "").strip() or "727732"
     inner = "https://www.agoda.com/search?city=" + city_token
     return (
-        "https://tp.media/r?marker=PENDING_APPROVAL&p=4363&u="
+        f"https://tp.media/r?marker={m}&trs={m}&p=4363&u="
         + quote(inner, safe="")
     )
 

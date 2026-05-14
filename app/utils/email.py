@@ -30,7 +30,7 @@ def send_verification_email(to_email: str, full_name: str, token: str) -> None:
     send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
         to=[{"email": to_email, "name": full_name}],
         sender={"email": settings.from_email, "name": settings.from_name},
-        subject="Verify your Travello account ✈️",
+        subject="Verify your Rovvy account ✈️",
         html_content=_verification_html(full_name, verify_url, settings.frontend_url),
     )
     try:
@@ -51,7 +51,7 @@ def send_password_reset_email(to_email: str, full_name: str, token: str) -> None
     send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
         to=[{"email": to_email, "name": full_name}],
         sender={"email": settings.from_email, "name": settings.from_name},
-        subject="Reset your Travello password 🔐",
+        subject="Reset your Rovvy password 🔐",
         html_content=_reset_html(full_name, reset_url, settings.frontend_url),
     )
     try:
@@ -75,7 +75,7 @@ def _verification_html(full_name: str, verify_url: str, app_url: str) -> str:
             <tr><td style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#dc2626 100%);padding:48px 40px;text-align:center;">
               <div style="font-size:48px;margin-bottom:16px;">✈️</div>
               <h1 style="color:white;font-size:28px;font-weight:700;margin:0;letter-spacing:-0.5px;">
-                Welcome to Travello
+                Welcome to Rovvy
               </h1>
               <p style="color:rgba(255,255,255,0.75);font-size:15px;margin:8px 0 0;">
                 Your group travel companion
@@ -134,7 +134,7 @@ def _verification_html(full_name: str, verify_url: str, app_url: str) -> str:
             <!-- FOOTER -->
             <tr><td style="background:#f9fafb;padding:24px 40px;text-align:center;border-top:1px solid #e5e7eb;">
               <p style="color:#9ca3af;font-size:12px;margin:0;">
-                © 2026 Travello · Group Travel OS<br>
+                © 2026 Rovvy · Roam together<br>
                 <a href="{app_url}" style="color:#dc2626;text-decoration:none;">
                   {app_url}
                 </a>
@@ -165,7 +165,7 @@ def _reset_html(full_name: str, reset_url: str, app_url: str) -> str:
             <tr><td style="padding:40px;">
               <p style="color:#374151;font-size:16px;line-height:1.6;">Hey {first_name},</p>
               <p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 32px;">
-                We received a request to reset your Travello password. Click below to choose a new one.
+                We received a request to reset your Rovvy password. Click below to choose a new one.
               </p>
               <table width="100%"><tr><td align="center" style="padding-bottom:32px;">
                 <a href="{reset_url}" style="display:inline-block;background:#dc2626;color:white;padding:16px 48px;border-radius:12px;font-size:16px;font-weight:600;text-decoration:none;">

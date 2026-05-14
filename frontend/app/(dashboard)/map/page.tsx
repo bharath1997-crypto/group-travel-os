@@ -369,7 +369,7 @@ export default function MapPage() {
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
-        { headers: { "User-Agent": "Travello/1.0" } },
+        { headers: { "User-Agent": "Rovvy/1.0" } },
       );
       if (!res.ok) throw new Error("reverse failed");
       const data = (await res.json()) as {
@@ -830,7 +830,7 @@ out body 20;
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=5&addressdetails=1`,
-          { headers: { "User-Agent": "Travello/1.0" } },
+          { headers: { "User-Agent": "Rovvy/1.0" } },
         );
         if (!res.ok) return;
         const j = (await res.json()) as {
@@ -2040,7 +2040,7 @@ out body 20;
             {selectedEvent.price}
           </span>
           <p className="mt-2 text-[11px] text-[#6b7280]">
-            {hashStable(selectedEvent.id, 18) + 2} Travello users going
+            {hashStable(selectedEvent.id, 18) + 2} Rovvy users going
           </p>
           <p className="mt-1 text-[11px] text-[#6b7280]">
             {selectedEvent.description || "Discover local experiences with your group."}

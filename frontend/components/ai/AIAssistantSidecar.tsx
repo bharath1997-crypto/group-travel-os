@@ -103,7 +103,7 @@ const APP_GUIDE_RESPONSES: { keys: string[]; text: string }[] = [
   },
   {
     keys: ["notification", "account", "setting", "password", "profile", "login"],
-    text: "Profile and security live under Settings: update contact info there and keep Travello synced.",
+    text: "Profile and security live under Settings: update contact info there and keep Rovvy synced.",
   },
 ];
 
@@ -364,10 +364,10 @@ export function AIAssistantSidecar({
       : "App Guide · offline";
 
   const isExplorerRoute =
-    pathname === "/explorer" ||
-    pathname.startsWith("/explorer/") ||
-    pathname === "/explore" ||
-    pathname.startsWith("/explore/");
+    pathname.startsWith("/explore/events") ||
+    pathname.startsWith("/explore/shorts") ||
+    pathname.startsWith("/activities") ||
+    pathname.startsWith("/weather");
   if (isExplorerRoute) {
     return null;
   }
@@ -452,7 +452,7 @@ export function AIAssistantSidecar({
             >
               {messages.length === 0 ? (
                 <p className="rounded-xl border border-[#E9ECEF] bg-white p-3 text-sm leading-relaxed text-[#2C3E50]">
-                  Hi — I&apos;m <strong>Wayra</strong>, your companion across Travello. Ask how to use{" "}
+                  Hi — I&apos;m <strong>Wayra</strong>, your companion across Rovvy. Ask how to use{" "}
                   <strong>{pageLabel}</strong>, or ask about destinations and plans — I&apos;ll match
                   travel vs app guide from your wording.
                 </p>

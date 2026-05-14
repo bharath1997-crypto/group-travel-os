@@ -3,7 +3,7 @@
 # Example: app.include_router(ai_assistant.router, prefix=settings.api_v1_prefix) or equivalent.
 
 """
-app/routes/ai_assistant.py — Thin API for the Travello sidecar AI helper.
+app/routes/ai_assistant.py — Thin API for the Rovvy sidecar AI helper.
 """
 from fastapi import APIRouter, Depends
 

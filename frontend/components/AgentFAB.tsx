@@ -19,7 +19,7 @@ export function AgentFAB({ onToggle, className = "" }: AgentFABProps) {
         window.dispatchEvent(new CustomEvent("travello-agent-toggle"));
 
         const existingAgentButton = document.querySelector<HTMLButtonElement>(
-          'button[aria-label="Open Travello assistant"], button[aria-label="Close Travello assistant"]',
+          'button[aria-label="Open Rovvy assistant"], button[aria-label="Close Rovvy assistant"]',
         );
 
         if (existingAgentButton) {
@@ -48,7 +48,7 @@ export function AgentFAB({ onToggle, className = "" }: AgentFABProps) {
           type="button"
           className="agent-fab__button"
           onClick={handleClick}
-          aria-label={open ? "Close Travello agent" : "Open Travello agent"}
+          aria-label={open ? "Close Rovvy agent" : "Open Rovvy agent"}
           aria-pressed={open}
         >
           <svg width="26" height="24" viewBox="0 0 28 26" fill="none">

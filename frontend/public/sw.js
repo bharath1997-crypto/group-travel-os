@@ -3,7 +3,7 @@ self.addEventListener('push', function (event) {
 
   const raw = event.data.json()
   const n = raw.notification || {}
-  const title = n.title || raw.title || 'Travello'
+  const title = n.title || raw.title || 'Rovvy'
   const body = n.body || raw.body || ''
   const dataFields =
     raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data)

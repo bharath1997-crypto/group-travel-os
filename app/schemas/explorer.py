@@ -24,7 +24,7 @@ class ExplorerResultItem(BaseModel):
     longitude: float | None = None
     price: float | None = Field(None, description="Numeric price when known (e.g. ticket from)")
 
-    # Compatibility with existing Travello Explorer UI
+    # Compatibility with existing Rovvy Explorer UI
     id: str = ""
     source_type: str = ""
     venue: str = ""

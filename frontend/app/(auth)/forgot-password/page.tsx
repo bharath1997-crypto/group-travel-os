@@ -5,6 +5,7 @@ import { useState, type FormEvent } from "react";
 
 import { AuthInput } from "@/components/auth/AuthInput";
 import { GradientHeader } from "@/components/auth/GradientHeader";
+import { TravelloIcon } from "@/components/TravelloLogo";
 import { apiFetch } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
@@ -43,7 +44,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="flex min-h-svh flex-col bg-slate-100">
       <GradientHeader
-        gradient="linear-gradient(135deg, #E94560, #FF6B6B, #FF6B9D)"
+        gradient="linear-gradient(135deg, #0F766E, #0D9488, #14B8A6)"
         title=""
         subtitle={sent ? "We emailed you a link" : "Forgot Password?"}
         height={sent ? 100 : 120}
@@ -52,8 +53,13 @@ export default function ForgotPasswordPage() {
       <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-3xl bg-white px-4 pb-10 pt-6 shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.12)] sm:mx-auto sm:mb-8 sm:max-w-lg sm:rounded-2xl sm:px-8">
         {!sent ? (
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
-            <p className="text-sm leading-relaxed text-[#1E3A5F]/85">
-              Enter the email for your Travello account and we&apos;ll send you a reset link.
+            <div className="flex justify-center mb-2">
+              <div className="bg-[#0F766E] p-2.5 rounded-xl flex items-center justify-center">
+                <TravelloIcon size={32} />
+              </div>
+            </div>
+            <p className="text-sm leading-relaxed text-[#1E3A5F]/85 text-center">
+              Enter the email for your Rovvy account and we&apos;ll send you a reset link.
             </p>
             <AuthInput
               id="forgot-email"
@@ -74,7 +80,7 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={busy}
-              className="mt-2 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#E94560] to-[#FF6B6B] py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-95 disabled:opacity-60"
+              className="mt-2 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-[#0F766E] py-3 text-sm font-bold text-white shadow-lg transition hover:bg-[#0D9488] disabled:opacity-60"
             >
               {busy ? "Sending…" : "Send Reset Link"}
             </button>
@@ -99,7 +105,7 @@ export default function ForgotPasswordPage() {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="none"
-                className="h-20 w-20 text-[#E94560]"
+                className="h-20 w-20 text-[#0F766E]"
                 aria-hidden
               >
                 <path
@@ -118,7 +124,7 @@ export default function ForgotPasswordPage() {
               type="button"
               onClick={() => void submitEmail()}
               disabled={busy}
-              className="mt-6 text-sm font-semibold text-[#667eea] underline-offset-4 hover:underline disabled:opacity-60"
+              className="mt-6 text-sm font-semibold text-[#0F766E] underline-offset-4 hover:underline disabled:opacity-60"
             >
               Resend email
             </button>
