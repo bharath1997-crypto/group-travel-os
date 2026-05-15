@@ -1,212 +1,113 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# Group Travel OS — Cursor AI Standing Instructions
-# ─────────────────────────────────────────────────────────────────────────────
-# READ THIS BEFORE GENERATING ANY CODE.
-# These rules are non-negotiable. Apply them to every file in this project.
-# ─────────────────────────────────────────────────────────────────────────────
+# Rovvy — Cursor AI Rules
+# Read this before every task.
 
-## Project context
-Backend API for a group travel planning platform.
-Solo founder build. Clarity and correctness matter more than cleverness.
+## Project
+Name: Rovvy (formerly Group Travel OS)
+Type: Group travel coordination platform
+Tagline: Roam together
+Branch: Production-main (always push here)
 
-## Stack (exact versions)
-- Python 3.11+
-- FastAPI 0.111.1
-- SQLAlchemy 2.0.31 — use 2.0 style ONLY (see patterns below)
-- Pydantic 2.8.2 — use v2 style ONLY (see patterns below)
-- Alembic 1.13.2
-- python-jose[cryptography] 3.3.0
-- passlib[bcrypt] 1.7.4
-- PostgreSQL via psycopg2-binary
+## Stack
+Backend: FastAPI (Python 3.13)
+Database: PostgreSQL via Supabase
+ORM: SQLAlchemy 2.0 ONLY
+Validation: Pydantic v2 ONLY
+Frontend: Next.js + Tailwind CSS
+Deployment: Cloud Run (backend) + Vercel (frontend)
+Real-time: Firebase RTDB
+Email: Brevo SMTP via fastapi-mail
+Auth: JWT stored as 'gt_token' in localStorage
 
-## Architecture — enforced without exception
+## CRITICAL — NEVER DO THESE
+- NEVER modify frontend/lib/api.ts
+- NEVER modify frontend/lib/auth.ts
+- NEVER commit .env file
+- NEVER use old SQLAlchemy Query API
+- NEVER use Pydantic v1 style
+- NEVER put logic in route handlers
+- NEVER hardcode API keys
+- NEVER push to main (only Production-main)
+- NEVER store vote counts as columns
+- NEVER write to Firebase for permanent data
 
-### Layer rule
-Routes → Services → Models. Nothing else.
-- Routes: call services, return responses. Zero business logic.
-- Services: all business logic lives here. Call ORM directly.
-- Models: SQLAlchemy ORM classes. No methods that contain business logic.
+## Architecture Rules
+Routes → Services → Models (strict layering)
+- Routes: call services only, no business logic
+- Services: all business logic lives here
+- Models: SQLAlchemy models only
 
-### Dependency injection
-- DB session: always injected via Depends(get_db) — never created inside a service
-- Current user: always injected via Depends(get_current_user) — never called manually
-- Never import SessionLocal directly in services or routes
+## Backend Patterns
+New endpoint:
+- Add route to app/routes/[feature].py
+- Add logic to app/services/[feature]_service.py
+- Register router in app/main.py
+- Add tests to tests/test_[feature].py
 
-### Error handling
-- ALL HTTP errors raised via AppException (from app/utils/exceptions.py)
-- NEVER raise HTTPException directly anywhere in the codebase
-- NEVER use generic `except Exception` — catch specific exceptions
+SQLAlchemy style:
+result = await db.execute(
+  select(Model).where(Model.field == value)
+)
 
-### File naming
-- Models:   app/models/{name}.py         one file per domain entity
-- Routes:   app/routes/{name}.py         one file per domain
-- Services: app/services/{name}_service.py
-- Schemas:  app/schemas/{name}.py
+Pydantic style:
+class Schema(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
 
-### Model registry
-- Every new model MUST be imported in app/models/__init__.py immediately after creation
-- This is required for Alembic autogenerate to work
+Error handling:
+raise AppException.not_found("message")
+raise AppException.bad_request("message")
+raise AppException.unauthorized("message")
 
-## SQLAlchemy 2.0 patterns — use these exactly
+## Frontend Patterns
+- apiFetch from @/lib/api for ALL API calls
+- getToken from @/lib/auth for JWT
+- RovvyLogo from @/components/RovvyLogo
+- BRAND from @/lib/brand for colors/names
+- Tailwind CSS only — no inline styles
+- Dark navy theme: bg-[#0F172A]
+- Teal accent: text-[#0F766E] bg-[#0F766E]
 
-### Queries (2.0 style — REQUIRED)
-```python
-from sqlalchemy import select
+## Testing Rules
+- Mock ALL external APIs in tests
+- Never make real HTTP calls in tests
+- Every new endpoint needs at minimum:
+  * 200 success test
+  * 401 unauthorized test
+  * 422 validation error test
+- Run: pytest -q (expect 154+ passing)
 
-# Single record — returns None if not found
-result = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+## Git Rules
+- Always: git push origin Production-main
+- Commit after each verified working step
+- Small commits, one feature at a time
+- Never force push
 
-# Multiple records
-results = db.execute(select(Trip).where(Trip.group_id == group_id)).scalars().all()
+## Existing Services (DO NOT recreate)
+app/services/flight_service.py
+app/services/route_service.py
+app/services/activity_service.py
+app/services/hotel_service.py
+app/services/deal_scanner_service.py
+app/services/buddy_service.py
+app/services/email_verification_service.py
+app/services/notification_service.py
 
-# With joins
-result = db.execute(
-    select(User).join(GroupMember).where(GroupMember.group_id == group_id)
-).scalars().all()
-```
+## Existing Routes (DO NOT recreate)
+/api/v1/auth/* — authentication
+/api/v1/users/* — user management
+/api/v1/groups/* — groups
+/api/v1/trips/* — trips
+/api/v1/flights/search — Kiwi.com
+/api/v1/routes/search — Google Routes
+/api/v1/activities/search — GetYourGuide
+/api/v1/hotels/search — Agoda
+/api/v1/buddy/* — Buddy Trips
+/api/v1/weather/* — weather
+/api/v1/explore/* — events
 
-### NEVER use legacy 1.x style
-```python
-# WRONG — do not write this
-db.query(User).filter(User.email == email).first()
-```
-
-### Creating records
-```python
-obj = ModelClass(field=value, other_field=other_value)
-db.add(obj)
-db.commit()
-db.refresh(obj)  # Reload from DB to get server-set values (id, created_at)
-return obj
-```
-
-### Updating records
-```python
-obj.field = new_value
-db.commit()
-db.refresh(obj)
-return obj
-```
-
-### Deleting records
-```python
-db.delete(obj)
-db.commit()
-```
-
-## Pydantic v2 patterns — use these exactly
-
-### Schema definition (v2 style — REQUIRED)
-```python
-from pydantic import BaseModel, ConfigDict, Field
-from uuid import UUID
-
-class UserOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)  # replaces class Config
-    id: UUID
-    email: str
-    full_name: str
-```
-
-### NEVER use v1 style
-```python
-# WRONG — do not write this
-class Config:
-    orm_mode = True
-```
-
-### Input schemas
-```python
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str = Field(..., min_length=8, max_length=100)
-    full_name: str = Field(..., min_length=2, max_length=120)
-
-class UserUpdate(BaseModel):
-    # All fields Optional in update schemas
-    full_name: str | None = Field(None, min_length=2, max_length=120)
-    avatar_url: str | None = None
-```
-
-## Schema naming convention
-- Input (POST body): UserCreate, GroupCreate, TripCreate
-- Update (PATCH body): UserUpdate, GroupUpdate, TripUpdate
-- Response: UserOut, GroupOut, TripOut
-- Never expose: hashed_password — never include in any Out schema
-
-## UUID and timestamp rules
-```python
-import uuid
-from datetime import datetime, timezone
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import Column, DateTime
-
-# Primary key
-id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-
-# Timestamps — always UTC, always timezone-aware
-created_at = Column(DateTime(timezone=True), nullable=False,
-                    default=lambda: datetime.now(timezone.utc))
-updated_at = Column(DateTime(timezone=True), nullable=False,
-                    default=lambda: datetime.now(timezone.utc),
-                    onupdate=lambda: datetime.now(timezone.utc))
-```
-
-## Route structure
-```python
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
-from app.utils.database import get_db
-from app.utils.auth import get_current_user
-
-router = APIRouter(prefix="/groups", tags=["Groups"])
-
-@router.post("/", response_model=GroupOut, status_code=status.HTTP_201_CREATED)
-def create_group(
-    data: GroupCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> GroupOut:
-    return GroupService.create_group(db, data, current_user)
-```
-
-## Service structure
-```python
-from sqlalchemy.orm import Session
-from app.utils.exceptions import AppException
-
-class GroupService:
-
-    @staticmethod
-    def create_group(db: Session, data: GroupCreate, current_user: User) -> Group:
-        # Business logic here
-        # Raise via AppException — never return error dicts
-        ...
-```
-
-## HTTP status codes
-- POST (create): 201 Created
-- GET (read): 200 OK
-- PATCH (update): 200 OK
-- DELETE (remove): 204 No Content
-- Validation error: 422 (FastAPI handles automatically)
-
-## Code style
-- Full type hints on every function — parameters AND return type
-- Functions max 40 lines — split if longer
-- No print() — use: import logging; logger = logging.getLogger(__name__)
-- No commented-out dead code
-- No hardcoded strings for error messages — use descriptive AppException calls
-- Imports at top of file, grouped: stdlib → third-party → local
-
-## What never to build in Phase 1
-- WebSockets or Firebase
-- Background jobs (APScheduler, Celery)
-- Email sending
-- Redis or caching
-- Docker configuration
-- Frontend code
-- Stripe or payments
-- Repository pattern
-- CQRS, event sourcing, microservices
-- Abstract base classes for services
+## Brand
+Primary color: #0F766E (teal)
+Background: #0F172A (navy)
+Surface: #1E293B
+Font: Inter + Outfit (Google Fonts)
+Logo component: @/components/RovvyLogo
+NEVER hardcode "Travello" — always "Rovvy"

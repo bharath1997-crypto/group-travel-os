@@ -236,6 +236,10 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(hotels_router, prefix="/api/v1")
 
+    from app.routes.buses import router as buses_router
+
+    app.include_router(buses_router, prefix="/api/v1")
+
     from app.routes.buddy import router as buddy_router
 
     app.include_router(buddy_router, prefix="/api/v1")
