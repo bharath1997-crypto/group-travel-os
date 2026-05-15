@@ -18,7 +18,7 @@ class BusResult(BaseModel):
     available_seats: int | None = None
     booking_url: str = Field(description="Travelpayouts link")
     provider: str = "Busbud"
-    amenities: list[str] = []
+    amenities: list[str] = Field(default_factory=list)
 
 
 class BusSearchResponse(BaseModel):
