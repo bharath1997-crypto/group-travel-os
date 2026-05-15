@@ -11,8 +11,7 @@ export default function PlanHubPage() {
       href: "/buses",
       emoji: "🚌",
       title: "Buses",
-      desc: "Coming soon",
-      badge: true,
+      desc: "Bus routes & fares",
     },
   ];
 
@@ -33,11 +32,6 @@ export default function PlanHubPage() {
                 href={c.href}
                 className="group relative flex h-full flex-col rounded-2xl border border-[#1E293B] bg-[#1E293B] p-5 shadow-lg transition hover:border-[#0F766E]/50 hover:bg-[#263548]"
               >
-                {c.badge ? (
-                  <span className="absolute right-3 top-3 rounded-full bg-[#115E59]/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#CCFBF1]">
-                    Soon
-                  </span>
-                ) : null}
                 <span className="text-3xl" aria-hidden>
                   {c.emoji}
                 </span>
