@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import quote
 
-from fastapi import HTTPException
+from pydantic import ValidationError
 
 from app.schemas.bus import BusResult
 from app.utils.exceptions import AppException
@@ -207,9 +207,7 @@ class BusService:
                 _bus_cache[ck] = (now, rows)
 
             return rows
-            
-        except HTTPException:
-            raise
-        except Exception as exc:
+
+        except (TypeError, ValueError, ValidationError) as exc:
             logger.exception("bus search failed")
             AppException.internal(str(exc))
