@@ -237,7 +237,11 @@ function LoginPageInner() {
       await startGoogleOAuth("login");
     } catch (err) {
       setOauthBusy(false);
-      setOauthAlert({ title: "Login Failed", body: err instanceof Error ? err.message : String(err) });
+      setOauthAlert({
+        variant: "error",
+        title: "Login Failed",
+        body: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -249,7 +253,11 @@ function LoginPageInner() {
       await startFacebookOAuth("login");
     } catch (err) {
       setOauthBusy(false);
-      setOauthAlert({ title: "Login Failed", body: err instanceof Error ? err.message : String(err) });
+      setOauthAlert({
+        variant: "error",
+        title: "Login Failed",
+        body: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
