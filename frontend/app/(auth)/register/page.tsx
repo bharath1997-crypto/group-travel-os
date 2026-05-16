@@ -257,14 +257,28 @@ function RegisterPageInner() {
     }
   }
 
-  function goGoogle() {
+  async function goGoogle() {
     setOauthBusy(true);
-    window.setTimeout(() => startGoogleOAuth("signup"), 50);
+    setOauthAlert(null);
+    setError(null);
+    try {
+      await startGoogleOAuth("signup");
+    } catch (err) {
+      setOauthBusy(false);
+      setOauthAlert({ title: "Registration Failed", body: err instanceof Error ? err.message : String(err) });
+    }
   }
 
-  function goFacebook() {
+  async function goFacebook() {
     setOauthBusy(true);
-    window.setTimeout(() => startFacebookOAuth("signup"), 50);
+    setOauthAlert(null);
+    setError(null);
+    try {
+      await startFacebookOAuth("signup");
+    } catch (err) {
+      setOauthBusy(false);
+      setOauthAlert({ title: "Registration Failed", body: err instanceof Error ? err.message : String(err) });
+    }
   }
 
 

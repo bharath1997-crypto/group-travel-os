@@ -116,14 +116,12 @@ def _oauth_detail_str(exc: HTTPException) -> str:
     return str(d)
 
 
-@router.get("/oauth/google/start", summary="Redirect to Google OAuth")
+@router.get("/oauth/google/start", summary="Get Google OAuth URL")
 def oauth_google_start(intent: str = "login"):
     """intent=login: existing accounts only. intent=signup|register: create account if needed."""
     oauth_intent = _normalize_oauth_start_intent(intent)
-    return RedirectResponse(
-        google_authorize_url(oauth_intent=oauth_intent),
-        status_code=status.HTTP_302_FOUND,
-    )
+    url = google_authorize_url(oauth_intent=oauth_intent)
+    return {"url": url}
 
 
 @router.get("/oauth/google/callback", summary="Google OAuth callback")
@@ -176,13 +174,11 @@ def oauth_google_callback(
     )
 
 
-@router.get("/oauth/facebook/start", summary="Redirect to Facebook OAuth")
+@router.get("/oauth/facebook/start", summary="Get Facebook OAuth URL")
 def oauth_facebook_start(intent: str = "login"):
     oauth_intent = _normalize_oauth_start_intent(intent)
-    return RedirectResponse(
-        facebook_authorize_url(oauth_intent=oauth_intent),
-        status_code=status.HTTP_302_FOUND,
-    )
+    url = facebook_authorize_url(oauth_intent=oauth_intent)
+    return {"url": url}
 
 
 @router.get("/oauth/facebook/callback", summary="Facebook OAuth callback")

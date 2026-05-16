@@ -229,14 +229,28 @@ function LoginPageInner() {
     }
   }
 
-  function goGoogle() {
+  async function goGoogle() {
     setOauthBusy(true);
-    window.setTimeout(() => startGoogleOAuth("login"), 50);
+    setOauthAlert(null);
+    setError(null);
+    try {
+      await startGoogleOAuth("login");
+    } catch (err) {
+      setOauthBusy(false);
+      setOauthAlert({ title: "Login Failed", body: err instanceof Error ? err.message : String(err) });
+    }
   }
 
-  function goFacebook() {
+  async function goFacebook() {
     setOauthBusy(true);
-    window.setTimeout(() => startFacebookOAuth("login"), 50);
+    setOauthAlert(null);
+    setError(null);
+    try {
+      await startFacebookOAuth("login");
+    } catch (err) {
+      setOauthBusy(false);
+      setOauthAlert({ title: "Login Failed", body: err instanceof Error ? err.message : String(err) });
+    }
   }
 
   return (

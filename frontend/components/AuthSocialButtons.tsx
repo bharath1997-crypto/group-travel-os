@@ -27,16 +27,30 @@ export function AuthSocialButtons({
   const ig = intent === "signup" ? "signup" : "login";
   const busy = Boolean(loadingProvider);
 
-  function goGoogle() {
+  async function goGoogle() {
     if (disabled || busy) return;
-    if (onGoogleClick) onGoogleClick();
-    else startGoogleOAuth(ig);
+    if (onGoogleClick) {
+      onGoogleClick();
+    } else {
+      try {
+        await startGoogleOAuth(ig);
+      } catch (err) {
+        console.error(err);
+      }
+    }
   }
 
-  function goFacebook() {
+  async function goFacebook() {
     if (disabled || busy) return;
-    if (onFacebookClick) onFacebookClick();
-    else startFacebookOAuth(ig);
+    if (onFacebookClick) {
+      onFacebookClick();
+    } else {
+      try {
+        await startFacebookOAuth(ig);
+      } catch (err) {
+        console.error(err);
+      }
+    }
   }
 
   return (

@@ -16,11 +16,17 @@ function intentQuery(intent: OAuthIntent): string {
   return `?intent=${q}`;
 }
 
+import { apiFetch } from "@/lib/api";
+
 /** Full browser navigation to backend OAuth start (redirects to provider). */
-export function startGoogleOAuth(intent: OAuthIntent = "login"): void {
-  window.location.href = `${API_BASE}/auth/oauth/google/start${intentQuery(intent)}`;
+export async function startGoogleOAuth(intent: OAuthIntent = "login"): Promise<void> {
+  const q = intentQuery(intent);
+  const data = await apiFetch<{ url: string }>(`/auth/oauth/google/start${q}`);
+  if (data?.url) window.location.href = data.url;
 }
 
-export function startFacebookOAuth(intent: OAuthIntent = "login"): void {
-  window.location.href = `${API_BASE}/auth/oauth/facebook/start${intentQuery(intent)}`;
+export async function startFacebookOAuth(intent: OAuthIntent = "login"): Promise<void> {
+  const q = intentQuery(intent);
+  const data = await apiFetch<{ url: string }>(`/auth/oauth/facebook/start${q}`);
+  if (data?.url) window.location.href = data.url;
 }
