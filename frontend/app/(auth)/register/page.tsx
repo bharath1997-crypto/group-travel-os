@@ -265,7 +265,11 @@ function RegisterPageInner() {
       await startGoogleOAuth("signup");
     } catch (err) {
       setOauthBusy(false);
-      setOauthAlert({ title: "Registration Failed", body: err instanceof Error ? err.message : String(err) });
+      setOauthAlert({
+        variant: "error",
+        title: "Registration Failed",
+        body: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -277,7 +281,11 @@ function RegisterPageInner() {
       await startFacebookOAuth("signup");
     } catch (err) {
       setOauthBusy(false);
-      setOauthAlert({ title: "Registration Failed", body: err instanceof Error ? err.message : String(err) });
+      setOauthAlert({
+        variant: "error",
+        title: "Registration Failed",
+        body: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
