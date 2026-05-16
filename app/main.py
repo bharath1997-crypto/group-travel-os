@@ -120,7 +120,13 @@ def _add_middleware(app: FastAPI) -> None:
             r"(:\d+)?"
         )
     else:
-        cors_kw["allow_origins"] = settings.allowed_origins
+        # In production, we strictly use settings.allowed_origins but ensure 
+        # the primary domains are always included if not already present.
+        origins = list(settings.allowed_origins)
+        for domain in ["https://rovvy.app", "https://www.rovvy.app"]:
+            if domain not in origins:
+                origins.append(domain)
+        cors_kw["allow_origins"] = origins
     app.add_middleware(CORSMiddleware, **cors_kw)
 
 
