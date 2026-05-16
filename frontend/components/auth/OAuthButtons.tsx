@@ -61,14 +61,25 @@ export function OAuthButtons({
   const phoneLabel =
     mode === "register" ? "Continue with Phone" : "Phone OTP";
 
-  function goGoogle() {
+  async function goGoogle() {
     onBusyChange?.(true);
-    window.setTimeout(() => startGoogleOAuth(intent), 50);
+    try {
+      await startGoogleOAuth(intent);
+    } catch (err) {
+      onBusyChange?.(false);
+      console.error(err);
+      // Let the parent component handle error presentation or just rely on console
+    }
   }
 
-  function goFacebook() {
+  async function goFacebook() {
     onBusyChange?.(true);
-    window.setTimeout(() => startFacebookOAuth(intent), 50);
+    try {
+      await startFacebookOAuth(intent);
+    } catch (err) {
+      onBusyChange?.(false);
+      console.error(err);
+    }
   }
 
   const showGoogleHint = Boolean(googleHint?.trim());

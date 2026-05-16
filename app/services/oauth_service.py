@@ -41,7 +41,10 @@ OAUTH_UPSTREAM_FAILED = "oauth_upstream_failed"
 
 def oauth_redirect_uri(provider: str) -> str:
     p = provider.lower()
-    return f"{settings.API_PUBLIC_URL.rstrip('/')}/api/v1/auth/oauth/{p}/callback"
+    base = settings.API_PUBLIC_URL.rstrip('/')
+    if base.endswith("/api"):
+        base = base[:-4]
+    return f"{base}/api/v1/auth/oauth/{p}/callback"
 
 
 def _oauth_diagnostics_enabled() -> bool:
