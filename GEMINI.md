@@ -35,6 +35,19 @@
 13. PostgreSQL = source of truth
 14. Firebase RTDB = ephemeral only
 
+## Environment Configuration Rule
+NEVER modify, check, or suggest changes to:
+- frontend/.env.local
+- frontend/.env.production  
+- .env (root)
+- Any environment variable files
+
+For ALL environment configuration issues (CORS, OAuth, API URLs, secrets):
+- Backend env vars → Claude decides → gcloud CLI commands only
+- Frontend env vars → Claude decides → Vercel dashboard only
+
+Do NOT touch production or local frontend/backend configs without explicit Claude approval.
+
 ## Brand
 - Primary: #0F766E (teal)
 - Background: #0F172A (navy)
