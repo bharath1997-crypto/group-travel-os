@@ -81,6 +81,19 @@ raise AppException.unauthorized("message")
 - Small commits, one feature at a time
 - Never force push
 
+## Environment Configuration Rule
+NEVER modify, check, or suggest changes to:
+- frontend/.env.local
+- frontend/.env.production  
+- .env (root)
+- Any environment variable files
+
+For ALL environment configuration issues (CORS, OAuth, API URLs, secrets):
+- Backend env vars → Claude decides → gcloud CLI commands only
+- Frontend env vars → Claude decides → Vercel dashboard only
+
+Do NOT touch production or local frontend/backend configs without explicit Claude approval.
+
 ## Existing Services (DO NOT recreate)
 app/services/flight_service.py
 app/services/route_service.py
