@@ -8,6 +8,7 @@ from app.utils.database import get_db
 from app.utils.auth import get_current_user
 from app.models.user import User
 from app.services.email_verification_service import EmailVerificationService
+from app.services.otp_service import OtpService
 from app.utils.exceptions import AppException
 
 router = APIRouter(
@@ -36,15 +37,20 @@ async def request_verification(
                 "Please wait 60 seconds before requesting again"
             )
     
+    OtpService.check_resend_allowed(current_user)
+
     token = svc.generate_token(current_user.email)
-    
+
+    otp_plain = OtpService.issue_email_otp_for_user(db, current_user)
+
     name = getattr(current_user, 'full_name', '') \
         or getattr(current_user, 'username', '') or ''
     
     await svc.send_verification_email(
         current_user.email, 
         token,
-        name
+        name,
+        otp=otp_plain,
     )
     
     current_user.verification_token_sent_at = datetime.now(timezone.utc)
@@ -88,6 +94,7 @@ async def verify_email(
     
     user.is_verified = True
     user.verified_at = datetime.now(timezone.utc)
+    OtpService.clear_all_otp_fields(user)
     db.commit()
     
     # Send welcome email (non-blocking)
