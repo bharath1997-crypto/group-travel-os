@@ -271,7 +271,7 @@ function LoginPageInner() {
   }
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen md:h-screen md:overflow-hidden bg-white">
       <aside className="relative hidden w-[38%] xl:w-[42%] flex-col justify-between overflow-hidden bg-[#0F172A] p-6 xl:p-9 md:flex">
         <span className="absolute -left-10 -top-10 h-[180px] w-[180px] rounded-full border border-[rgba(255,255,255,0.08)]" aria-hidden />
         <span className="absolute -right-5 bottom-[60px] h-[120px] w-[120px] rounded-full border border-[rgba(232,97,154,0.2)]" aria-hidden />
