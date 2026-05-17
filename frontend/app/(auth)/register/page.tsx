@@ -102,7 +102,7 @@ function SignupField({
   error,
   ...inputProps
 }: {
-  label: string;
+  label: ReactNode;
   icon: ReactNode;
   endAdornment?: ReactNode;
   error?: string;
@@ -187,6 +187,7 @@ function RegisterPageInner() {
 
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
+  const [usernameError, setUsernameError] = useState<string | undefined>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [dob, setDob] = useState("");
@@ -220,10 +221,25 @@ function RegisterPageInner() {
     setError(null);
     setOauthAlert(null);
     setDobError(undefined);
+    setUsernameError(undefined);
 
-    const age = ageFromDob(dob);
-    if (age < 18) {
-      setDobError("You must be 18 or older to use Rovvy");
+    let hasError = false;
+    if (!username.trim()) {
+      setUsernameError("This field is required");
+      hasError = true;
+    }
+    if (!dob) {
+      setDobError("This field is required");
+      hasError = true;
+    } else {
+      const age = ageFromDob(dob);
+      if (age < 18) {
+        setDobError("You must be 18 or older to use Rovvy");
+        hasError = true;
+      }
+    }
+
+    if (hasError) {
       return;
     }
 
@@ -233,7 +249,7 @@ function RegisterPageInner() {
         method: "POST",
         body: JSON.stringify({
           full_name: fullName.trim(),
-          username: username.trim() || undefined,
+          username: username.trim(),
           email: email.trim(),
           password,
           date_of_birth: dob,
@@ -298,7 +314,7 @@ function RegisterPageInner() {
         <span className="absolute -right-5 bottom-[60px] h-[120px] w-[120px] rounded-full border border-[rgba(232,97,154,0.2)]" aria-hidden />
         <span className="absolute bottom-[100px] left-10 h-[60px] w-[60px] rounded-full bg-[rgba(232,97,154,0.08)]" aria-hidden />
         <div className="relative z-[1] flex flex-col items-start">
-          <RovvyLogo variant="dark" size="lg" showTagline={false} />
+          <RovvyLogo variant="dark" size="lg" showTagline={true} />
         </div>
         <div className="relative z-[1] max-w-sm">
           <h1 className="text-[22px] font-medium leading-tight text-white">
@@ -317,8 +333,8 @@ function RegisterPageInner() {
 
       <main className="flex w-full flex-1 flex-col justify-center bg-[#F8FAFC] px-6 py-10 md:px-9">
         <div className="mx-auto w-full max-w-[420px] bg-white p-8 rounded-[20px] border border-[#e8e8e8] shadow-sm">
-          <div className="mb-6 flex flex-col items-center md:items-start">
-            <RovvyLogo variant="primary" size="lg" showTagline={false} />
+          <div className="mb-7 flex flex-col items-center md:items-start">
+            <RovvyLogo variant="primary" size="md" />
           </div>
           <h2 className="text-center text-xl font-medium text-[#1C2B3A] md:text-left">
             Create your account
@@ -346,6 +362,29 @@ function RegisterPageInner() {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             disabled={isBusy}
+          />
+          <SignupField
+            label={
+              <>
+                Username <span className="text-[#E8619A]">*</span>
+              </>
+            }
+            id="reg-username"
+            icon={<UserIcon />}
+            type="text"
+            placeholder="Choose a username"
+            required
+            value={username}
+            onChange={(e) => {
+              setUsername(e.target.value);
+              setUsernameError(undefined);
+            }}
+            onInvalid={(e) => {
+              e.preventDefault();
+              setUsernameError("This field is required");
+            }}
+            disabled={isBusy}
+            error={usernameError}
           />
           <SignupField
             label="Email address"
@@ -406,7 +445,11 @@ function RegisterPageInner() {
             }
           />
           <SignupField
-            label="Date of birth"
+            label={
+              <>
+                Date of Birth <span className="text-[#E8619A]">*</span>
+              </>
+            }
             id="reg-dob"
             type="date"
             icon={<CalendarIcon />}
@@ -415,6 +458,10 @@ function RegisterPageInner() {
             onChange={(e) => {
               setDob(e.target.value);
               setDobError(undefined);
+            }}
+            onInvalid={(e) => {
+              e.preventDefault();
+              setDobError("This field is required");
             }}
             disabled={isBusy}
             error={dobError}
@@ -446,6 +493,14 @@ function RegisterPageInner() {
           <button
             type="submit"
             disabled={isBusy}
+            onClick={() => {
+              if (!username.trim()) {
+                setUsernameError("This field is required");
+              }
+              if (!dob) {
+                setDobError("This field is required");
+              }
+            }}
             className="flex h-11 w-full items-center justify-center rounded-[10px] bg-[#0F766E] text-sm font-medium tracking-[0.3px] text-white transition-colors hover:bg-[#0D6B63] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? (
