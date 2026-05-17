@@ -12,7 +12,7 @@ import logging
 import secrets
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
@@ -28,7 +28,6 @@ from app.schemas.auth import (
     PhoneSendRequest,
     PhoneVerifyRequest,
     RegisterResponse,
-    ResendVerificationPublicRequest,
     TokenResponse,
     UserCreate,
     UserLogin,
@@ -36,6 +35,7 @@ from app.schemas.auth import (
     UserUpdate,
     VerifyEmailRequest,
     VerifyEmailSuccessResponse,
+    VerifyOtpRequest,
     build_user_out,
 )
 from app.services.auth_service import AuthService
@@ -250,13 +250,17 @@ def register(data: UserCreate, background_tasks: BackgroundTasks, db: Session = 
     
     try:
         from app.services.email_verification_service import EmailVerificationService
+        from app.services.otp_service import OtpService
+
         svc = EmailVerificationService()
         v_token = svc.generate_token(user.email)
+        otp_plain = OtpService.issue_email_otp_for_user(db, user)
         background_tasks.add_task(
             svc.send_verification_email,
             user.email,
             v_token,
-            user.full_name
+            user.full_name,
+            otp=otp_plain,
         )
         user.verification_token_sent_at = datetime.now(timezone.utc)
         db.commit()
@@ -267,6 +271,28 @@ def register(data: UserCreate, background_tasks: BackgroundTasks, db: Session = 
         user=build_user_out(user),
         token=TokenResponse(access_token=token, expires_in=expires_in),
     )
+
+
+@router.post(
+    "/verify-otp",
+    status_code=status.HTTP_200_OK,
+    summary="Verify email with 6-digit code from email",
+)
+async def verify_otp_route(
+    data: VerifyOtpRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    from app.services.email_verification_service import EmailVerificationService
+    from app.services.otp_service import OtpService, consume_verify_otp_rate_slot
+
+    peer = getattr(request.client, "host", None)
+    consume_verify_otp_rate_slot(peer or "unknown")
+
+    user = OtpService.verify_otp(db, str(data.email), data.otp)
+    svc_email = EmailVerificationService()
+    await svc_email.send_welcome_email(user.email, name=user.full_name, first_name=user.full_name)
+    return {"message": "Email verified successfully"}
 
 
 @router.post(

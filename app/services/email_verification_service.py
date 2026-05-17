@@ -3,6 +3,8 @@ from itsdangerous import (
     BadSignature,
     SignatureExpired
 )
+from urllib.parse import quote
+
 from fastapi_mail import (
     ConnectionConfig,
     FastMail,
@@ -89,13 +91,13 @@ class EmailVerificationService:
         self,
         email: str,
         token: str,
-        user_name: str = ""
+        user_name: str = "",
+        *,
+        otp: str,
     ) -> bool:
         try:
-            verify_url = (
-                f"https://rovvy.app"
-                f"/auth/verify-email?token={token}"
-            )
+            encoded_token = quote(token, safe="")
+            verify_url = f"https://rovvy.app/verify?token={encoded_token}"
             html = f"""
             <div style="font-family:Inter,sans-serif;
                 max-width:600px;margin:0 auto;
@@ -113,12 +115,24 @@ class EmailVerificationService:
                     font-size:20px">
                     Verify your email
                 </h2>
+                <p style="color:#CBE8E5;
+                    font-size:28px;
+                    font-weight:700;
+                    letter-spacing:0.35em;
+                    margin:24px 0 12px">
+                    {otp}
+                </p>
+                <p style="color:#94A3B8;
+                    line-height:1.6;
+                    margin:0 0 16px">
+                    Your verification code: <strong style="color:#F8FAFC">{otp}</strong><br/>
+                    This code expires in 15 minutes.
+                </p>
                 <p style="color:#94A3B8;
                     line-height:1.6">
-                    Hi {user_name or 'there'}! 
-                    Click the button below to verify 
-                    your Rovvy account. 
-                    This link expires in 24 hours.
+                    Hi {user_name or 'there'}!
+                    Click the button below to verify instantly, or enter the code above.
+                    Your link expires in 24 hours.
                 </p>
                 <a href="{verify_url}"
                     style="display:inline-block;

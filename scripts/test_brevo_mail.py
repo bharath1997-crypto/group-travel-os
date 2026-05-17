@@ -22,7 +22,8 @@ async def main():
     success = await svc.send_verification_email(
         email="bnidumol@depaul.edu", # User's email from screenshot
         token=token,
-        user_name="Test User"
+        user_name="Test User",
+        otp="482910",
     )
     
     if success:

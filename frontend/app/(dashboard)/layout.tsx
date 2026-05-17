@@ -322,7 +322,7 @@ function SidebarNavSection({
       <Link
         href={section.href}
         className={[
-          "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors",
+          "flex items-center gap-2 xl:gap-2.5 rounded-lg px-3 py-2 xl:py-2.5 text-[13px] font-medium transition-colors",
           active
             ? "bg-[rgba(204,251,241,0.1)] text-[#F8FAFC] shadow-[inset_0_0_0_1px_rgba(15,118,110,0.35)]"
             : "text-[#94A3B8] hover:bg-[rgba(248,250,252,0.06)] hover:text-[#F8FAFC]",
@@ -347,8 +347,8 @@ function SidebarNavSection({
                 href={sub.href}
                 className={
                   subIsActive
-                    ? "rounded-md px-2 py-1.5 text-[12px] font-medium text-[#CCFBF1]"
-                    : "rounded-md px-2 py-1.5 text-[12px] font-normal text-[#94A3B8] hover:text-[#F8FAFC]"
+                    ? "rounded-md px-2 py-1 xl:py-1.5 text-[12px] font-medium text-[#CCFBF1]"
+                    : "rounded-md px-2 py-1 xl:py-1.5 text-[12px] font-normal text-[#94A3B8] hover:text-[#F8FAFC]"
                 }
               >
                 {sub.label}
@@ -512,10 +512,10 @@ function DashboardChrome({ children }: { children: ReactNode }) {
       <ConnectionStatusBanner />
       {/* Desktop / tablet sidebar */}
       <aside
-        className="fixed left-0 top-0 z-40 hidden h-full min-h-screen w-[240px] flex-col border-r border-[#1E293B] md:flex"
+        className="fixed left-0 top-0 z-40 hidden h-full min-h-screen w-[200px] xl:w-[240px] flex-col border-r border-[#1E293B] md:flex"
         style={{ backgroundColor: NAV_BG }}
       >
-        <div className="shrink-0 border-b border-[rgba(248,250,252,0.08)] px-4 py-5">
+        <div className="shrink-0 border-b border-[rgba(248,250,252,0.08)] px-4 py-4 xl:py-5">
           <Link
             href="/dashboard"
             className="flex items-center gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#CCFBF1]/40"
@@ -534,7 +534,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <div className="shrink-0 space-y-2 border-t border-[rgba(248,250,252,0.08)] p-3">
+        <div className="shrink-0 space-y-1.5 xl:space-y-2 border-t border-[rgba(248,250,252,0.08)] p-2.5 xl:p-3">
           <Link
             href="/notifications"
             className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] transition-colors hover:bg-[rgba(248,250,252,0.06)]"
@@ -551,12 +551,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             ) : null}
           </Link>
 
-          <div className="flex items-center gap-2 rounded-lg p-1">
+          <div className="flex items-center gap-1.5 xl:gap-2 rounded-lg p-0.5 xl:p-1">
             <div
               role="button"
               tabIndex={0}
               title={!profileComplete ? "Complete profile" : undefined}
-              className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg p-1 transition-colors hover:bg-[rgba(248,250,252,0.06)]"
+              className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 xl:gap-2 rounded-lg p-0.5 xl:p-1 transition-colors hover:bg-[rgba(248,250,252,0.06)]"
               onClick={() => router.push(profileTarget)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -599,8 +599,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
       <div
         className={
           isMapPage
-            ? "flex min-h-screen min-h-[100dvh] flex-col transition-all duration-300 ease-in-out max-md:ml-0 md:ml-[240px]"
-            : "flex min-h-screen min-h-[100dvh] flex-col pb-[calc(56px+env(safe-area-inset-bottom,0px))] transition-all duration-300 ease-in-out max-md:ml-0 max-md:pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:ml-[240px] md:pb-0"
+            ? "flex min-h-screen min-h-[100dvh] flex-col transition-all duration-300 ease-in-out max-md:ml-0 md:ml-[200px] xl:ml-[240px]"
+            : "flex min-h-screen min-h-[100dvh] flex-col pb-[calc(56px+env(safe-area-inset-bottom,0px))] transition-all duration-300 ease-in-out max-md:ml-0 max-md:pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:ml-[200px] xl:ml-[240px] md:pb-0"
         }
       >
         {!isMdUp ? (
@@ -634,7 +634,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           className={
             needsZeroOuterPadding
               ? "flex min-h-0 flex-1 flex-col overflow-hidden p-0"
-              : "min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-5"
+              : "min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-4 xl:p-5"
           }
         >
           {isMapPage ? (

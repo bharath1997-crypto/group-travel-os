@@ -104,6 +104,14 @@ class AppException:
         )
 
     @staticmethod
+    def too_many_requests(detail: str = "Too many requests. Try again later.") -> None:
+        """429 — email OTP resends, verification quotas, etc."""
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=detail,
+        )
+
+    @staticmethod
     def internal(detail: str = "An unexpected error occurred") -> None:
         """500 — something went wrong server-side that should never happen."""
         raise HTTPException(
