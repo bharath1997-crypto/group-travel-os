@@ -203,6 +203,31 @@ function RegisterPageInner() {
   const [checkEmailFor, setCheckEmailFor] = useState<string | null>(null);
   const isBusy = submitting || oauthBusy;
 
+  // Read-tracking states
+  const [termsRead, setTermsRead] = useState(false);
+  const [privacyRead, setPrivacyRead] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [agreeError, setAgreeError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkReadStatus = () => {
+      if (typeof window !== "undefined") {
+        const terms = localStorage.getItem("rovvy_terms_read") === "true";
+        const privacy = localStorage.getItem("rovvy_privacy_read") === "true";
+        setTermsRead(terms);
+        setPrivacyRead(privacy);
+      }
+    };
+
+    checkReadStatus();
+
+    // Listen to focus changes to update when coming back from other tabs
+    window.addEventListener("focus", checkReadStatus);
+    return () => {
+      window.removeEventListener("focus", checkReadStatus);
+    };
+  }, []);
+
   useEffect(() => {
     const oauthErr = searchParams.get("oauth_error");
     if (!oauthErr) return;
@@ -222,8 +247,16 @@ function RegisterPageInner() {
     setOauthAlert(null);
     setDobError(undefined);
     setUsernameError(undefined);
+    setAgreeError(null);
 
     let hasError = false;
+
+    // Check Terms and Privacy agreements
+    if (!termsRead || !privacyRead || !agreed) {
+      setAgreeError("Please agree to our Terms and Privacy Policy to continue");
+      hasError = true;
+    }
+
     if (!username.trim()) {
       setUsernameError("This field is required");
       hasError = true;
@@ -486,16 +519,66 @@ function RegisterPageInner() {
             </div>
           ) : null}
 
-          <p className="mb-1 text-center text-[11px] text-[#aaa]">
-            By signing up you agree to our{" "}
-            <Link href="/terms" className="text-[#E8619A] hover:underline">
-              Terms
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="text-[#E8619A] hover:underline">
-              Privacy Policy
-            </Link>
-          </p>
+          {/* Terms & Privacy checkbox tracking */}
+          <div className="flex flex-col gap-1.5 mt-1 mb-2">
+            <label className={`flex items-start gap-2 text-xs text-[#64748B] select-none ${
+              !(termsRead && privacyRead) ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+            }`}>
+              <div className="relative flex items-center justify-center mt-0.5 shrink-0">
+                <input
+                  type="checkbox"
+                  id="agree-checkbox"
+                  disabled={!(termsRead && privacyRead)}
+                  checked={agreed}
+                  onChange={(e) => {
+                    setAgreed(e.target.checked);
+                    if (e.target.checked) setAgreeError(null);
+                  }}
+                  className={`h-4 w-4 appearance-none rounded border border-[#E2E8F0] bg-white transition checked:bg-[#0F766E] checked:border-[#0F766E] disabled:bg-[#F1F5F9] disabled:border-[#E2E8F0] ${
+                    !(termsRead && privacyRead) ? "cursor-not-allowed" : "cursor-pointer focus:ring-1 focus:ring-[#0F766E]"
+                  }`}
+                />
+                {agreed && (
+                  <svg className="absolute pointer-events-none h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+              <span className="leading-normal text-[11px] sm:text-xs text-[#64748B]">
+                I agree to the{" "}
+                <Link href="/terms" target="_blank" className="font-semibold text-[#0F766E] hover:underline">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" target="_blank" className="font-semibold text-[#0F766E] hover:underline">
+                  Privacy Policy
+                </Link>
+                .
+              </span>
+            </label>
+
+            {!(termsRead && privacyRead) ? (
+              <p className="text-[10px] text-[#94A3B8] flex items-center gap-1 font-medium bg-[#F8FAFC] border border-[#E2E8F0] p-1.5 rounded-md">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 text-[#94A3B8] shrink-0">
+                  <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+                </svg>
+                Please read our Terms and Privacy Policy first to unlock this checkbox.
+              </p>
+            ) : !agreed ? (
+              <p className="text-[10px] text-[#0F766E] flex items-center gap-1 font-medium bg-[#0F766E]/5 border border-[#0F766E]/10 p-1.5 rounded-md">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 text-[#0F766E] shrink-0">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4.13-5.69z" clipRule="evenodd" />
+                </svg>
+                Checkbox unlocked! Please check the box to continue.
+              </p>
+            ) : null}
+
+            {agreeError && (
+              <p className="text-[10px] sm:text-[11px] font-medium text-[#E8619A]" role="alert">
+                {agreeError}
+              </p>
+            )}
+          </div>
 
           <button
             type="submit"
@@ -507,8 +590,17 @@ function RegisterPageInner() {
               if (!dob) {
                 setDobError("This field is required");
               }
+              if (!agreed) {
+                setAgreeError("Please agree to our Terms and Privacy Policy to continue");
+              }
             }}
-            className="flex h-[40px] sm:h-11 w-full items-center justify-center rounded-[8px] bg-[#0F766E] text-[13px] sm:text-sm font-medium tracking-[0.3px] text-white transition-colors hover:bg-[#0D6B63] disabled:cursor-not-allowed disabled:opacity-60"
+            className={`flex h-[40px] sm:h-11 w-full items-center justify-center rounded-[8px] text-[13px] sm:text-sm font-medium tracking-[0.3px] text-white transition-all ${
+              isBusy 
+                ? "bg-[#0F766E]/60 cursor-not-allowed"
+                : !agreed 
+                  ? "bg-[#0F766E]/50 cursor-not-allowed hover:bg-[#0F766E]/50" 
+                  : "bg-[#0F766E] hover:bg-[#0D6B63] cursor-pointer"
+            }`}
           >
             {submitting ? (
               <>
