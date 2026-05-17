@@ -175,6 +175,13 @@ class VerifyEmailRequest(BaseModel):
     token: str = Field(..., min_length=1)
 
 
+class VerifyOtpRequest(BaseModel):
+    """Body for POST /auth/verify-otp"""
+
+    email: EmailStr
+    otp: str = Field(..., min_length=6, max_length=6, pattern=r"^\d{6}$")
+
+
 class ResendVerificationPublicRequest(BaseModel):
     """Body for POST /auth/resend-verification"""
 

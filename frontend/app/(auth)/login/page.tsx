@@ -67,11 +67,11 @@ function LoginField({
   return (
     <label className="block">
       <span className="sr-only">{label}</span>
-      <span className="flex h-[42px] items-center gap-2 rounded-[10px] border-[1.5px] border-[#e8e8e8] px-3 transition focus-within:border-[#1C2B3A]">
+      <span className="flex h-[40px] sm:h-[42px] items-center gap-2 rounded-[8px] border border-[#E2E8F0] px-3 transition focus-within:border-[#1C2B3A] focus-within:ring-1 focus-within:ring-[#1C2B3A]">
         {icon}
         <input
           id={id}
-          className="min-w-0 flex-1 bg-transparent text-sm text-[#1C2B3A] outline-none placeholder:text-[#aaa] disabled:cursor-not-allowed disabled:opacity-60"
+          className="min-w-0 flex-1 bg-transparent text-[13px] sm:text-sm text-[#1C2B3A] outline-none placeholder:text-[#aaa] disabled:cursor-not-allowed disabled:opacity-60 py-1.5 sm:py-2"
           {...props}
         />
         {endAdornment}
@@ -169,7 +169,16 @@ function LoginPageInner() {
     const oauthErr = searchParams.get("oauth_error");
     if (!oauthErr) return;
 
-    setOauthAlert(oauthErrorToAlert(oauthErr));
+    if (oauthErr === "oauth_email_not_registered") {
+      setOauthAlert({
+        variant: "warning",
+        title: "Account not found",
+        body: "No Rovvy account found for this Google account. Would you like to create one?",
+        showCreateAccount: true,
+      });
+    } else {
+      setOauthAlert(oauthErrorToAlert(oauthErr));
+    }
     setError(null);
 
     const next = searchParams.get("next");
@@ -262,8 +271,8 @@ function LoginPageInner() {
   }
 
   return (
-    <div className="flex min-h-screen bg-white">
-      <aside className="relative hidden w-[42%] flex-col justify-between overflow-hidden bg-[#0F172A] p-9 md:flex">
+    <div className="flex min-h-screen md:h-screen md:overflow-hidden bg-white">
+      <aside className="relative hidden w-[38%] xl:w-[42%] flex-col justify-between overflow-hidden bg-[#0F172A] p-6 xl:p-9 md:flex">
         <span className="absolute -left-10 -top-10 h-[180px] w-[180px] rounded-full border border-[rgba(255,255,255,0.08)]" aria-hidden />
         <span className="absolute -right-5 bottom-[60px] h-[120px] w-[120px] rounded-full border border-[rgba(232,97,154,0.2)]" aria-hidden />
         <span className="absolute bottom-[100px] left-10 h-[60px] w-[60px] rounded-full bg-[rgba(232,97,154,0.08)]" aria-hidden />
@@ -292,17 +301,17 @@ function LoginPageInner() {
         </div>
       </aside>
 
-      <main className="flex w-full flex-1 flex-col justify-center bg-[#F8FAFC] px-6 py-10 md:px-9">
-        <div className="mx-auto w-full max-w-[400px] bg-white p-8 rounded-[20px] border border-[#e8e8e8] shadow-sm">
-          <div className="mb-7 flex flex-col items-center md:items-start">
+      <main className="flex w-full flex-1 flex-col justify-center bg-white px-4 py-6 md:px-8 xl:px-12">
+        <div className="mx-auto w-full max-w-[320px] xs:max-w-[360px] md:max-w-[420px] xl:max-w-[460px] p-2 xs:p-4 md:p-6">
+          <div className="mb-6 flex flex-col items-center md:items-start">
             <RovvyLogo variant="primary" size="md" />
           </div>
-          <h2 className="text-center text-xl font-medium text-[#1C2B3A] md:text-left">Welcome back</h2>
-          <p className="mb-6 mt-1 text-center text-[13px] text-[#888] md:text-left">
+          <h2 className="text-center text-lg sm:text-xl font-semibold text-[#1C2B3A] md:text-left">Welcome back</h2>
+          <p className="mb-4 sm:mb-6 mt-1 text-center text-xs sm:text-[13px] text-[#888] md:text-left">
             Sign in to continue your travel plans
           </p>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
           <LoginField
             label="Email address"
             id="login-email"
@@ -349,9 +358,9 @@ function LoginPageInner() {
             </Link>
           </div>
 
-          {verifiedNotice ? (
+           {verifiedNotice ? (
             <div
-              className="rounded-[10px] border border-[#1C2B3A] bg-white px-3 py-2.5 text-sm text-[#1C2B3A]"
+              className="rounded-[8px] border border-[#1C2B3A] bg-white px-3 py-2 text-xs sm:text-sm text-[#1C2B3A]"
               role="status"
             >
               Your email is verified. Sign in with your password to continue.
@@ -360,24 +369,27 @@ function LoginPageInner() {
 
           {oauthAlert ? (
             <div
-              className="rounded-[10px] border border-[#E8619A] bg-white px-3 py-2.5 text-sm text-[#1C2B3A]"
+              className="rounded-[8px] border border-[#E8619A] bg-white px-3 py-2 text-xs sm:text-sm text-[#1C2B3A]"
               role="alert"
             >
               {oauthAlert.title ? <p className="font-semibold">{oauthAlert.title}</p> : null}
               <p className={oauthAlert.title ? "mt-1" : ""}>{oauthAlert.body}</p>
               {oauthAlert.showCreateAccount ? (
-                <p className="mt-2 text-xs">
-                  <Link href="/register?from=oauth" className="font-semibold text-[#E8619A] underline-offset-2 hover:underline">
+                <div className="mt-2">
+                  <Link
+                    href="/register"
+                    className="inline-flex h-7 items-center justify-center rounded-[6px] bg-[#0F766E] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#0D6B63]"
+                  >
                     Create account
                   </Link>
-                </p>
+                </div>
               ) : null}
             </div>
           ) : null}
 
           {unverifiedBanner ? (
             <div
-              className="rounded-[10px] border border-[#E8619A] bg-white px-4 py-3 text-sm text-[#1C2B3A]"
+              className="rounded-[8px] border border-[#E8619A] bg-white px-3 py-2.5 text-xs sm:text-sm text-[#1C2B3A]"
               role="status"
             >
               <p className="flex items-center gap-2 font-medium text-[#1C2B3A]">
@@ -386,7 +398,7 @@ function LoginPageInner() {
               </p>
               <Link
                 href="/resend-verification"
-                className="mt-1 inline-block text-sm font-bold text-[#E8619A] underline-offset-2 hover:underline"
+                className="mt-1 inline-block text-xs sm:text-sm font-bold text-[#E8619A] underline-offset-2 hover:underline"
               >
                 Resend verification link
               </Link>
@@ -395,7 +407,7 @@ function LoginPageInner() {
                 onClick={() => {
                   if (pendingNext) router.replace(pendingNext);
                 }}
-                className="mt-2 block w-full text-left text-xs font-medium text-[#1C2B3A] hover:underline"
+                className="mt-1.5 block w-full text-left text-[11px] sm:text-xs font-medium text-[#1C2B3A] hover:underline"
               >
                 Skip for now
               </button>
@@ -405,7 +417,7 @@ function LoginPageInner() {
           <button
             type="submit"
             disabled={isBusy}
-            className="flex h-11 w-full items-center justify-center rounded-[10px] bg-[#0F766E] text-sm font-medium text-white transition-colors hover:bg-[#0D6B63] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-[40px] sm:h-11 w-full items-center justify-center rounded-[8px] bg-[#0F766E] text-[13px] sm:text-sm font-medium text-white transition-colors hover:bg-[#0D6B63] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? (
               <>
@@ -424,12 +436,12 @@ function LoginPageInner() {
           ) : null}
         </form>
 
-        <div className="my-5 flex items-center gap-3">
-          <hr className="flex-1 border-0 border-t border-[#f0f0f0]" />
-          <span className="text-[11px] text-[#bbb]">
+        <div className="my-4 sm:my-5 flex items-center gap-3">
+          <hr className="flex-1 border-0 border-t border-[#E2E8F0]" />
+          <span className="text-[10px] sm:text-[11px] text-[#94A3B8]">
             or continue with
           </span>
-          <hr className="flex-1 border-0 border-t border-[#f0f0f0]" />
+          <hr className="flex-1 border-0 border-t border-[#E2E8F0]" />
         </div>
 
         <div className="flex gap-2.5">

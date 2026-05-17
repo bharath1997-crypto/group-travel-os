@@ -89,4 +89,9 @@ def mock_user():
     user.is_active = True
     user.is_verified = False
     user.hashed_password = ""
+    user.otp_resend_count = 0
+    user.otp_resend_reset_at = None
+    user.otp_attempt_count = 0
+    user.verification_otp_hash = None
+    user.otp_expires_at = None
     return user
