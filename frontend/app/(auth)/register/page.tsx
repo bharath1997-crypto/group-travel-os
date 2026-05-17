@@ -308,7 +308,7 @@ function RegisterPageInner() {
 
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen md:h-screen md:overflow-hidden bg-white">
       <aside className="relative hidden w-[38%] xl:w-[42%] flex-col justify-between overflow-hidden bg-[#0F172A] p-6 xl:p-9 md:flex">
         <span className="absolute -left-10 -top-10 h-[180px] w-[180px] rounded-full border border-[rgba(255,255,255,0.08)]" aria-hidden />
         <span className="absolute -right-5 bottom-[60px] h-[120px] w-[120px] rounded-full border border-[rgba(232,97,154,0.2)]" aria-hidden />
@@ -349,43 +349,46 @@ function RegisterPageInner() {
           </p>
         ) : null}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-          <SignupField
-            label="Full name"
-            id="reg-full-name"
-            icon={<UserIcon />}
-            type="text"
-            placeholder="Your full name"
-            autoComplete="name"
-            required
-            minLength={2}
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            disabled={isBusy}
-          />
-          <SignupField
-            label={
-              <>
-                Username <span className="text-[#E8619A]">*</span>
-              </>
-            }
-            id="reg-username"
-            icon={<UserIcon />}
-            type="text"
-            placeholder="Choose a username"
-            required
-            value={username}
-            onChange={(e) => {
-              setUsername(e.target.value);
-              setUsernameError(undefined);
-            }}
-            onInvalid={(e) => {
-              e.preventDefault();
-              setUsernameError("This field is required");
-            }}
-            disabled={isBusy}
-            error={usernameError}
-          />
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <SignupField
+              label="Full name"
+              id="reg-full-name"
+              icon={<UserIcon />}
+              type="text"
+              placeholder="Your full name"
+              autoComplete="name"
+              required
+              minLength={2}
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              disabled={isBusy}
+            />
+            <SignupField
+              label={
+                <>
+                  Username <span className="text-[#E8619A]">*</span>
+                </>
+              }
+              id="reg-username"
+              icon={<UserIcon />}
+              type="text"
+              placeholder="Choose a username"
+              required
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                setUsernameError(undefined);
+              }}
+              onInvalid={(e) => {
+                e.preventDefault();
+                setUsernameError("This field is required");
+              }}
+              disabled={isBusy}
+              error={usernameError}
+            />
+          </div>
+
           <SignupField
             label="Email address"
             id="reg-email"
@@ -398,52 +401,56 @@ function RegisterPageInner() {
             onChange={(e) => setEmail(e.target.value)}
             disabled={isBusy}
           />
-          <SignupField
-            label="Password"
-            id="reg-password"
-            type={showPassword ? "text" : "password"}
-            icon={<LockIcon />}
-            placeholder="Create a password"
-            autoComplete="new-password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={isBusy}
-            endAdornment={
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                disabled={isBusy}
-                className="flex h-8 w-8 items-center justify-center text-[#aaa] transition hover:text-[#1C2B3A]"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                <EyeIcon show={showPassword} />
-              </button>
-            }
-          />
-          <SignupField
-            label="Confirm password"
-            id="reg-confirm-password"
-            type={showConfirmPassword ? "text" : "password"}
-            icon={<LockIcon />}
-            placeholder="Repeat your password"
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            disabled={isBusy}
-            endAdornment={
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword((v) => !v)}
-                disabled={isBusy}
-                className="flex h-8 w-8 items-center justify-center text-[#aaa] transition hover:text-[#1C2B3A]"
-                aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
-              >
-                <EyeIcon show={showConfirmPassword} />
-              </button>
-            }
-          />
+
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <SignupField
+              label="Password"
+              id="reg-password"
+              type={showPassword ? "text" : "password"}
+              icon={<LockIcon />}
+              placeholder="Create a password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isBusy}
+              endAdornment={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  disabled={isBusy}
+                  className="flex h-8 w-8 items-center justify-center text-[#aaa] transition hover:text-[#1C2B3A]"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  <EyeIcon show={showPassword} />
+                </button>
+              }
+            />
+            <SignupField
+              label="Confirm password"
+              id="reg-confirm-password"
+              type={showConfirmPassword ? "text" : "password"}
+              icon={<LockIcon />}
+              placeholder="Repeat your password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={isBusy}
+              endAdornment={
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  disabled={isBusy}
+                  className="flex h-8 w-8 items-center justify-center text-[#aaa] transition hover:text-[#1C2B3A]"
+                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                >
+                  <EyeIcon show={showConfirmPassword} />
+                </button>
+              }
+            />
+          </div>
+
           <SignupField
             label={
               <>
