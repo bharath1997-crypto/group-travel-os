@@ -112,11 +112,11 @@ function SignupField({
       <span className="mb-1.5 block text-xs font-medium text-[#1C2B3A]">
         {label}
       </span>
-      <span className="flex h-[42px] items-center gap-2 rounded-[10px] border-[1.5px] border-[#e8e8e8] px-3 transition focus-within:border-[#1C2B3A]">
+      <span className="flex h-[44px] sm:h-[42px] items-center gap-2 rounded-[10px] border-[1.5px] border-[#e8e8e8] px-3 transition focus-within:border-[#1C2B3A]">
         {icon}
         <input
           {...inputProps}
-          className="min-w-0 flex-1 bg-transparent text-sm text-[#1C2B3A] outline-none placeholder:text-[#aaa] disabled:cursor-not-allowed disabled:opacity-60"
+          className="min-w-0 flex-1 bg-transparent text-sm text-[#1C2B3A] outline-none placeholder:text-[#aaa] disabled:cursor-not-allowed disabled:opacity-60 py-2.5 sm:py-2"
         />
         {endAdornment}
       </span>
@@ -309,7 +309,7 @@ function RegisterPageInner() {
 
   return (
     <div className="flex min-h-screen bg-white">
-      <aside className="relative hidden flex-[1.1] flex-col justify-between overflow-hidden bg-[#0F172A] p-9 md:flex">
+      <aside className="relative hidden w-[38%] xl:w-[42%] flex-col justify-between overflow-hidden bg-[#0F172A] p-6 xl:p-9 md:flex">
         <span className="absolute -left-10 -top-10 h-[180px] w-[180px] rounded-full border border-[rgba(255,255,255,0.08)]" aria-hidden />
         <span className="absolute -right-5 bottom-[60px] h-[120px] w-[120px] rounded-full border border-[rgba(232,97,154,0.2)]" aria-hidden />
         <span className="absolute bottom-[100px] left-10 h-[60px] w-[60px] rounded-full bg-[rgba(232,97,154,0.08)]" aria-hidden />
@@ -331,8 +331,8 @@ function RegisterPageInner() {
         </div>
       </aside>
 
-      <main className="flex w-full flex-1 flex-col justify-center bg-[#F8FAFC] px-6 py-10 md:px-9">
-        <div className="mx-auto w-full max-w-[420px] bg-white p-8 rounded-[20px] border border-[#e8e8e8] shadow-sm">
+      <main className="flex w-full flex-1 flex-col justify-center bg-[#F8FAFC] px-4 py-8 md:px-6 xl:px-9 xl:py-10">
+        <div className="mx-auto w-full max-w-[340px] xs:max-w-[380px] md:max-w-[400px] xl:max-w-[420px] bg-white p-5 xs:p-6 md:p-7 xl:p-8 rounded-[20px] border border-[#e8e8e8] shadow-sm">
           <div className="mb-7 flex flex-col items-center md:items-start">
             <RovvyLogo variant="primary" size="md" />
           </div>
@@ -501,7 +501,7 @@ function RegisterPageInner() {
                 setDobError("This field is required");
               }
             }}
-            className="flex h-11 w-full items-center justify-center rounded-[10px] bg-[#0F766E] text-sm font-medium tracking-[0.3px] text-white transition-colors hover:bg-[#0D6B63] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-12 sm:h-11 w-full items-center justify-center rounded-[10px] bg-[#0F766E] text-sm font-medium tracking-[0.3px] text-white transition-colors hover:bg-[#0D6B63] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? (
               <>
