@@ -21,10 +21,10 @@ export function goToVerifyEmail(
   router?: { push: (href: string) => void },
 ): void {
   if (router) {
-    router.push("/verify-email");
+    router.push("/verify");
     return;
   }
   if (typeof window !== "undefined") {
-    window.location.href = "/verify-email";
+    window.location.href = "/verify";
   }
 }

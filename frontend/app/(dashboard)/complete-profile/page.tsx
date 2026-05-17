@@ -16,6 +16,7 @@ type Me = {
   avatar_url: string | null;
   profile_completion_filled: number;
   profile_completion_total: number;
+  is_verified?: boolean;
 };
 
 const field =
@@ -34,6 +35,29 @@ export default function CompleteProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  // Verification states
+  const [resending, setResending] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  async function handleVerifyNow() {
+    if (!me?.email) return;
+    setResending(true);
+    try {
+      await apiFetch("/auth/resend-verification", {
+        method: "POST",
+      });
+      if (typeof window !== "undefined") {
+        localStorage.setItem("rovvy_pending_email", me.email.trim());
+      }
+      router.push("/verify");
+    } catch (err) {
+      setToastMsg("Too many resend attempts. Please wait before trying again.");
+      setTimeout(() => setToastMsg(null), 3000);
+    } finally {
+      setResending(false);
+    }
+  }
 
   useEffect(() => {
     let c = false;
@@ -124,6 +148,39 @@ export default function CompleteProfilePage() {
             />
           </div>
         </div>
+
+        {me && !me.is_verified && (
+          <div className="mx-auto mt-6 max-w-sm rounded-xl border border-amber-200 bg-amber-50/50 p-4 text-left shadow-sm">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4.5 w-4.5">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+                </svg>
+              </span>
+              <div className="flex-1">
+                <h3 className="text-xs font-bold text-amber-950">Email not verified</h3>
+                <p className="mt-1 text-[11px] leading-relaxed text-amber-900/80">
+                  Verify your email to unlock full features, secure your account, and start planning.
+                </p>
+                <button
+                  type="button"
+                  disabled={resending}
+                  onClick={handleVerifyNow}
+                  className="mt-3 inline-flex h-8 items-center justify-center rounded-lg bg-amber-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-500 disabled:opacity-60"
+                >
+                  {resending ? (
+                    <>
+                      <span className="mr-1.5 h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Sending…
+                    </>
+                  ) : (
+                    "Verify Now"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <form
@@ -296,6 +353,12 @@ export default function CompleteProfilePage() {
           </button>
         </div>
       </form>
+
+      {toastMsg && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-2xl border border-slate-800">
+          <span>{toastMsg}</span>
+        </div>
+      )}
     </div>
   );
 }

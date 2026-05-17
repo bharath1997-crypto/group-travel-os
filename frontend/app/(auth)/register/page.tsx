@@ -292,13 +292,14 @@ function RegisterPageInner() {
       if (typeof window !== "undefined") {
         const em = data.user.email.trim();
         localStorage.setItem("pending_verification_email", em);
+        localStorage.setItem("rovvy_pending_email", em);
         localStorage.setItem(
           "gt_user_name",
           data.user.full_name.trim() || "Traveler",
         );
         syncLocalProfileCache(data.user);
       }
-      router.push("/check-email");
+      router.push("/verify");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
