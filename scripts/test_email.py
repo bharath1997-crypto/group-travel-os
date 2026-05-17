@@ -7,7 +7,8 @@ async def test():
     result = await svc.send_verification_email(
         "nidumolubharath230@gmail.com",
         token,
-        "Bharath"
+        "Bharath",
+        otp="482910",
     )
     print("Email sent:", result)
 
