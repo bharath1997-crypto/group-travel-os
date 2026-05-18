@@ -38,15 +38,6 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v2
 
-      - name: Create env vars file
-        run: |
-          cat > /tmp/env-vars.yaml << 'EOF'
-          ENVIRONMENT: production
-          DEBUG: "False"
-          ALLOWED_ORIGINS: "https://group-travel-os.vercel.app,http://localhost:3000,https://rovvy.app,https://www.rovvy.app"
-          API_PUBLIC_URL: "https://group-travel-os-api-704551807369.asia-south1.run.app"
-          EOF
-
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy group-travel-os-api \
