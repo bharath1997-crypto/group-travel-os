@@ -361,7 +361,7 @@ export function AIAssistantSidecar({
       ? loading
         ? "AI Travel Guide · thinking..."
         : "AI Travel Guide"
-      : "App Guide · offline";
+      : "App Guide · online";
 
   const isExplorerRoute =
     pathname.startsWith("/explore/events") ||
