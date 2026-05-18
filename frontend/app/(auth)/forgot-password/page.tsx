@@ -5,7 +5,7 @@ import { useState, type FormEvent } from "react";
 
 import { AuthInput } from "@/components/auth/AuthInput";
 import { GradientHeader } from "@/components/auth/GradientHeader";
-import { TravelloIcon } from "@/components/TravelloLogo";
+import { RovvyLogo } from "@/components/RovvyLogo";
 import { apiFetch } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
@@ -54,9 +54,7 @@ export default function ForgotPasswordPage() {
         {!sent ? (
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <div className="flex justify-center mb-2">
-              <div className="bg-[#0F766E] p-2.5 rounded-xl flex items-center justify-center">
-                <TravelloIcon size={32} />
-              </div>
+              <RovvyLogo variant="primary" size="md" />
             </div>
             <p className="text-sm leading-relaxed text-[#1E3A5F]/85 text-center">
               Enter the email for your Rovvy account and we&apos;ll send you a reset link.
@@ -84,6 +82,14 @@ export default function ForgotPasswordPage() {
             >
               {busy ? "Sending…" : "Send Reset Link"}
             </button>
+            <div className="mt-4 text-center">
+              <Link
+                href="/login"
+                className="text-sm font-semibold text-[#1E3A5F]/70 hover:text-[#1E3A5F] hover:underline"
+              >
+                Back to login
+              </Link>
+            </div>
           </form>
         ) : (
           <div className="flex flex-col items-center text-center">
