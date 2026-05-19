@@ -246,18 +246,6 @@ export function AIAssistantSidecar({
       setInput("");
       setMessages((m) => [...m, userRow, ...(systemRow ? [systemRow] : [])]);
 
-      if (mode === "perched") {
-        setLoading(true);
-        window.setTimeout(() => {
-          setMessages((m) => [
-            ...m,
-            { id: newId(), role: "assistant", text: appGuideReply(userMessage) },
-          ]);
-          setLoading(false);
-        }, 240);
-        return;
-      }
-
       setLoading(true);
 
       try {

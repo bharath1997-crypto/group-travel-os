@@ -347,30 +347,15 @@ def chat_with_wayra(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
     message = body.message.strip()
-    lowered = message.lower()
     context = f"city={body.city}; trip_context={body.trip_context}".strip()
-    logger.info("Wayra demo chat user=%s %s", current_user.id, context)
+    logger.info("Wayra chat user=%s %s", current_user.id, context)
 
-    if "food" in lowered:
-        response_text = (
-            f"In {body.city}, I would start with food tours, local markets, "
-            "and a casual dinner spot that works for groups."
-        )
-    elif "music" in lowered or "jazz" in lowered:
-        response_text = (
-            f"{body.city} is a good fit for live music tonight. Look for jazz, "
-            "small venues, and late evening shows near your stay."
-        )
-    elif "free" in lowered:
-        response_text = (
-            f"I can prioritize free events in {body.city}: parks, galleries, "
-            "community festivals, and outdoor performances."
-        )
-    else:
-        response_text = (
-            f"I can help your group find events, places, and easy plans in {body.city}. "
-            "Tell me your mood, budget, and timing."
-        )
+    from app.services.wayra_service import WayraService
+    response_text = WayraService().chat(
+        message=message,
+        city=body.city,
+        trip_context=body.trip_context,
+    )
 
     return {"response": response_text, "city": body.city}
 
