@@ -45,7 +45,9 @@ export function DashboardUserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoggedIn()) {
-      router.replace("/login");
+      const next = typeof window !== "undefined" ? window.location.pathname + window.location.search : "";
+      const path = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
+      router.replace(path);
       return;
     }
     let c = false;
