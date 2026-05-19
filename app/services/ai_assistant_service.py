@@ -23,6 +23,14 @@ from app.schemas.ai_assistant import (
     AIAssistantResponse,
     AISuggestedAction,
 )
+from app.services.wayra_intent import (
+    WayraMode,
+    classify_mode,
+    contextual_app_fallback,
+    degraded_message,
+    resolve_app_guide_message,
+    travel_fallback_message,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +56,9 @@ The user is currently on page: {page!r} (active tab: {tab!r}).
 ROVVY FEATURE KNOWLEDGE — answer ALL these accurately:
 
 GROUPS:
-- Create group: Dashboard → "+ New Group" → add name → share invite link
-- Invite friends: Open group → Share invite link or go to Connect tab
-- View groups: Click "Group" in left sidebar
+- Create group: Group in left sidebar → Travel Hub → create workspace → name it → share invite link
+- Invite friends: Travel Hub → share invite link with your group
+- View groups: Group in left sidebar → Travel Hub
 - Delete/leave group: Group settings → Leave or Delete
 
 TRIPS:
@@ -310,13 +318,23 @@ def _build_response(data: dict[str, Any] | None, raw: str, user_message: str) ->
     )
 
 
-def _fallback_response(user_message: str, detail: str = "") -> AIAssistantResponse:
-    msg = detail or "I'm having trouble right now. Please try again in a moment."
-    safe = f"{msg} You asked: {user_message[:200]}{'…' if len(user_message) > 200 else ''}"
+def _fallback_response(
+    request: AIAssistantRequest,
+    *,
+    prefer_travel: bool,
+) -> AIAssistantResponse:
+    ctx = request.context if isinstance(request.context, dict) else None
+    msg = degraded_message(
+        request.user_message,
+        request.page,
+        request.active_tab,
+        ctx,
+        prefer_travel=prefer_travel,
+    )
     return AIAssistantResponse(
-        message=safe[:1200],
+        message=msg[:1200],
         suggested_actions=[],
-        summary={"fallback": True},
+        summary={"fallback": True, "local": True},
     )
 
 
@@ -325,6 +343,19 @@ def _fallback_response(user_message: str, detail: str = "") -> AIAssistantRespon
 class AIAssistantService:
     @staticmethod
     def respond(request: AIAssistantRequest) -> AIAssistantResponse:
+        mode = classify_mode(request.user_message)
+        ctx = request.context if isinstance(request.context, dict) else None
+
+        # Reliable App Guide: answer locally for known product intents (no LLM latency).
+        if mode == WayraMode.APP_GUIDE:
+            local_app = resolve_app_guide_message(request.user_message, request.page)
+            if local_app:
+                return AIAssistantResponse(
+                    message=local_app,
+                    suggested_actions=[],
+                    summary={"intent": "app_guide", "local": True},
+                )
+
         system_prompt = _build_system_prompt(request.page, request.active_tab)
         user_block = _build_input_payload(request)
 
@@ -349,10 +380,22 @@ class AIAssistantService:
                 raw_text = ""
 
         if not raw_text:
-            return _fallback_response(
-                request.user_message,
-                "Rovvy AI is temporarily unavailable. Please try again in a moment.",
-            )
+            prefer_travel = mode == WayraMode.TRAVEL
+            if prefer_travel:
+                travel_local = travel_fallback_message(request.user_message, ctx)
+                if travel_local:
+                    return AIAssistantResponse(
+                        message=travel_local[:1200],
+                        suggested_actions=[],
+                        summary={"fallback": True, "local": True, "mode": "travel"},
+                    )
+            if mode == WayraMode.APP_GUIDE:
+                return AIAssistantResponse(
+                    message=contextual_app_fallback(request.page, request.active_tab)[:1200],
+                    suggested_actions=[],
+                    summary={"fallback": True, "local": True, "mode": "app_guide"},
+                )
+            return _fallback_response(request, prefer_travel=prefer_travel)
 
         data = _parse_model_json(raw_text)
         return _build_response(data, raw_text, request.user_message)

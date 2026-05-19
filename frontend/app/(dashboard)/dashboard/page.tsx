@@ -33,6 +33,7 @@ import {
 
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
+import { emitOpenWayra } from "@/lib/open-wayra";
 
 const NAVY = "#0F3460";
 const CORAL = "#E94560";
@@ -518,6 +519,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const pageAbortRef = useRef<AbortController | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+  const [openPollsCount, setOpenPollsCount] = useState(0);
 
   const [me, setMe] = useState<UserMe | null>(null);
 
@@ -911,6 +913,7 @@ export default function DashboardPage() {
             pollsAccum.push({ poll: pol, tripId: trip.id });
           }
         });
+        setOpenPollsCount(pollsAccum.length);
         setPollItems(pollsAccum.slice(0, 2));
         setPollsLoading(false);
       })();
@@ -977,10 +980,12 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-bold leading-snug tracking-tight md:text-2xl">
-            Hey <span style={{ color: CORAL }}>{fn}</span>! Ready for your next
-            adventure?
+            <span style={{ color: CORAL }}>{fn}</span>, your travel world, organized.
           </h1>
-          <p className="mt-1 text-sm" style={{ color: MUTED }}>
+          <p className="mt-1 text-sm font-medium" style={{ color: NAVY }}>
+            Plan trips, align groups, track decisions, and move together.
+          </p>
+          <p className="mt-1 text-xs" style={{ color: MUTED }}>
             Today is {subtextDayDate()} ·{" "}
             {statsLoading ? "—" : tripCount} trips ·{" "}
             {groupsLoading ? "—" : groupCount} groups
@@ -1009,6 +1014,58 @@ export default function DashboardPage() {
         </Link>
       </div>
 
+      {/* WAYRA AI ASSISTANT SECTION */}
+      <section 
+        className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#0F766E] via-[#115E59] to-[#0F172A] p-4 text-white shadow-md border border-teal-500/20 flex flex-col justify-between sm:flex-row sm:items-center gap-3 transition-all duration-300 hover:shadow-lg hover:border-teal-500/30"
+        style={{ height: "100px" }}
+      >
+        {/* Decorative background glows */}
+        <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-teal-400/20 blur-2xl pointer-events-none" />
+        <div className="absolute -left-10 -bottom-10 h-28 w-28 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
+
+        <div className="min-w-0 flex-1 flex flex-col justify-center">
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex h-2 w-2 rounded-full bg-teal-400 animate-pulse" />
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-teal-200">
+              Wayra — your travel assistant
+            </h2>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2 overflow-hidden">
+            {[
+              "What should I do next?",
+              "Suggest a destination",
+              "Help me plan a trip",
+            ].map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => emitOpenWayra({ prompt })}
+                className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-white transition hover:border-white/30 hover:bg-white/15 active:scale-95"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => emitOpenWayra()}
+          className="shrink-0 flex items-center justify-center gap-1.5 rounded-lg bg-white px-4 py-2 text-xs font-bold text-[#0F766E] shadow transition hover:bg-teal-50 active:scale-95 sm:self-center"
+        >
+          <span>Open Wayra</span>
+          <svg
+            className="h-3 w-3"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </button>
+      </section>
+
       {/* ROW 1 — 6 STAT CARDS */}
       <section>
         {statsError && !statsLoading ? (
@@ -1029,27 +1086,27 @@ export default function DashboardPage() {
               {
                 Icon: Plane,
                 n: stats?.trips_created ?? 0,
-                label: "Trips created",
+                label: "Active Trips",
                 dash: statsLoading,
               },
               {
                 Icon: Users,
                 n: stats?.groups_joined ?? 0,
-                label: "Groups joined",
+                label: "Group Momentum",
                 dash: statsLoading,
               },
               {
                 Icon: Globe,
                 n: stats?.countries_from_trips?.length ?? 0,
-                label: "Countries visited",
+                label: "Travel Footprint",
                 dash: statsLoading,
               },
-              { Icon: Camera, n: 0, label: "Posts", dash: false },
+              { Icon: Vote, n: openPollsCount, label: "Open Decisions", dash: pollsLoading },
               { Icon: Clapperboard, n: 0, label: "Memories", dash: false },
               {
                 Icon: MapPin,
                 n: stats?.locations_saved ?? 0,
-                label: "Pins saved",
+                label: "Saved Places",
                 dash: statsLoading,
               },
             ] as const
@@ -1364,7 +1421,7 @@ export default function DashboardPage() {
               style={{ borderColor: BORDER, backgroundColor: CARD }}
             >
               <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                Split activity
+                Shared Expenses
               </h2>
               <p className="mt-3 text-sm" style={{ color: MUTED }}>
                 Could not load data. Tap to retry.
@@ -1384,7 +1441,7 @@ export default function DashboardPage() {
               style={{ borderColor: BORDER, backgroundColor: CARD }}
             >
               <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                Split activity
+                Shared Expenses
               </h2>
               <div className="mt-3 space-y-1.5">
                 <Shimmer height={14} width="90%" />
@@ -1399,7 +1456,7 @@ export default function DashboardPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                    Split activity
+                    Shared Expenses
                   </h2>
                   <p className="mt-1 text-xs" style={{ color: MUTED }}>
                     Your top balances across active trips
@@ -1431,7 +1488,7 @@ export default function DashboardPage() {
                     className="mt-4 inline-block text-sm font-semibold"
                     style={{ color: CORAL }}
                   >
-                    Open split activity →
+                    Open Shared Expenses →
                   </Link>
                 </div>
               ) : (
@@ -1514,7 +1571,7 @@ export default function DashboardPage() {
                     className="mt-3 inline-flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold text-white"
                     style={{ backgroundColor: CORAL }}
                   >
-                    Open split activity
+                    Open Shared Expenses
                     {splitSummary.people.length > 3
                       ? ` · ${splitSummary.people.length - 3} more`
                       : ""}
