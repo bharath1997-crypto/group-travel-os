@@ -5,118 +5,13 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import WayraIcon from "@/components/ui/WayraIcon";
 import { apiFetchWithStatus } from "@/lib/api";
-
-const TRAVEL_KEYWORDS = [
-  "event",
-  "events",
-  "restaurant",
-  "bar",
-  "bars",
-  "hotel",
-  "food",
-  "eat",
-  "drink",
-  "music",
-  "concert",
-  "show",
-  "tour",
-  "ticket",
-  "book",
-  "reserve",
-  "weather",
-  "chicago",
-  "city",
-  "place",
-  "park",
-  "museum",
-  "club",
-  "tonight",
-  "weekend",
-  "near",
-  "recommend",
-  "best",
-  "jazz",
-  "sports",
-  "art",
-  "beach",
-  "flight",
-  "trip",
-  "stay",
-  "visit",
-  "explore",
-  "activity",
-  "fun",
-  "nightlife",
-];
-
-const APP_KEYWORDS = [
-  "how",
-  "create",
-  "trip",
-  "expense",
-  "split",
-  "invite",
-  "member",
-  "group",
-  "poll",
-  "vote",
-  "live",
-  "map",
-  "setting",
-  "profile",
-  "password",
-  "login",
-  "account",
-  "notification",
-  "timer",
-  "share",
-  "location",
-];
-
-function detectMode(message: string): "flying" | "perched" {
-  const lower = message.toLowerCase();
-  const travelScore = TRAVEL_KEYWORDS.filter((k) => lower.includes(k)).length;
-  const appScore = APP_KEYWORDS.filter((k) => lower.includes(k)).length;
-  return travelScore > appScore ? "flying" : "perched";
-}
-
-const APP_GUIDE_RESPONSES: { keys: string[]; text: string }[] = [
-  {
-    keys: ["invite", "member"],
-    text: "Invite people from Connect: open your group, share the invite link, and confirm seats before splitting costs.",
-  },
-  {
-    keys: ["split", "expense"],
-    text: "For expenses open Split Activities → add amounts, assign who paid, split evenly or custom weights.",
-  },
-  {
-    keys: ["poll", "vote"],
-    text: "Create a poll in your trip drawer so everyone can vote dates and venues before bookings.",
-  },
-  {
-    keys: ["trip", "create"],
-    text: "Start in Trips → New Trip, add destinations and dates; then wire budget and participants from there.",
-  },
-  {
-    keys: ["map", "location", "live"],
-    text: "Use Map/Live tabs to coordinate meetups safely; pins update as people share arrivals.",
-  },
-  {
-    keys: ["notification", "account", "setting", "password", "profile", "login"],
-    text: "Profile and security live under Settings: update contact info there and keep Rovvy synced.",
-  },
-];
-
-function appGuideReply(userMessage: string): string {
-  const low = userMessage.toLowerCase();
-  for (const row of APP_GUIDE_RESPONSES) {
-    if (row.keys.some((k) => low.includes(k))) return row.text;
-  }
-  return (
-    "I can walk you through trips, groups, splits, polls, Live/Map, timers, invites, and Settings. " +
-    "What do you want to do in the app? Or ask about destinations and plans for fuller travel suggestions."
-  );
-}
+import { OPEN_WAYRA_EVENT, type OpenWayraDetail } from "@/lib/open-wayra";
+import {
+  classifyMode,
+  detectBirdState,
+  localAssistantReply,
+  resolveAppGuideReply,
+} from "@/lib/wayra/intent";
 
 type ChatMessage =
   | { id: string; role: "user"; text: string }
@@ -212,6 +107,18 @@ export function AIAssistantSidecar({
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen]);
 
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const ce = e as CustomEvent<OpenWayraDetail | undefined>;
+      setIsOpen(true);
+      const p = ce.detail?.prompt?.trim();
+      if (p) setInput(p);
+    };
+    window.addEventListener(OPEN_WAYRA_EVENT, onOpen as EventListener);
+    return () =>
+      window.removeEventListener(OPEN_WAYRA_EVENT, onOpen as EventListener);
+  }, []);
+
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     window.setTimeout(() => setToast(null), 5000);
@@ -227,24 +134,42 @@ export function AIAssistantSidecar({
       const userMessage = (override ?? input).trim();
       if (!userMessage || loading) return;
 
-      const mode = detectMode(userMessage);
-      const modeChanged = mode !== prevModeRef.current;
+      const bird = detectBirdState(userMessage);
+      const modeChanged = bird !== prevModeRef.current;
       if (modeChanged) {
-        prevModeRef.current = mode;
+        prevModeRef.current = bird;
       }
-      setBirdState(mode);
+      setBirdState(bird);
 
       const userRow: ChatMessage = { id: newId(), role: "user", text: userMessage };
       const systemRow: ChatMessage | null = modeChanged
         ? {
             id: newId(),
             role: "system",
-            text: mode === "flying" ? "✦ switched to travel mode" : "✦ switched to app guide",
+            text:
+              bird === "flying"
+                ? "✦ Wayra · travel guide"
+                : "✦ Wayra · app guide",
           }
         : null;
 
       setInput("");
       setMessages((m) => [...m, userRow, ...(systemRow ? [systemRow] : [])]);
+
+      const ctx = (context ?? {}) as Record<string, unknown>;
+      const wayraMode = classifyMode(userMessage);
+
+      // Fast path: known App Guide intents answered locally (matches backend).
+      if (wayraMode === "app_guide") {
+        const instant = resolveAppGuideReply(userMessage);
+        if (instant) {
+          setMessages((m) => [
+            ...m,
+            { id: newId(), role: "assistant", text: instant },
+          ]);
+          return;
+        }
+      }
 
       setLoading(true);
 
@@ -270,14 +195,22 @@ export function AIAssistantSidecar({
         }
 
         if (status < 200 || status >= 300 || !data) {
+          const local = localAssistantReply(userMessage, page, activeTab, ctx);
+          if (local) {
+            setMessages((m) => [
+              ...m,
+              { id: newId(), role: "assistant", text: local },
+            ]);
+            return;
+          }
           const inline =
             status === 404
-              ? "The assistant service was not found on the server. Restart the API after registering the /ai/assistant route."
+              ? "Wayra could not reach the assistant service. Check that the API is running with the /ai/assistant route enabled."
               : status === 400
-                ? "The assistant is not available yet (for example, OPENAI_API_KEY may be missing on the server) or the request was rejected."
+                ? "Wayra could not process that request. Try rephrasing, or ask a how-to question about Rovvy."
                 : status >= 500
-                  ? "The assistant hit a server error. Try again in a moment."
-                  : "Could not reach the assistant. Check that the API is running and try again.";
+                  ? "Wayra hit a server hiccup. Try again in a moment—I can still help with how-to questions about the app."
+                  : "Wayra could not connect. Check your network and that the API is reachable.";
           showToast(inline);
           setMessages((m) => [...m, { id: newId(), role: "assistant", text: inline }]);
           return;
@@ -306,9 +239,18 @@ export function AIAssistantSidecar({
           },
         ]);
       } catch {
-        const err = "Network error. Check your connection and that the API is reachable.";
-        showToast(err);
-        setMessages((m) => [...m, { id: newId(), role: "assistant", text: err }]);
+        const local = localAssistantReply(userMessage, page, activeTab, ctx);
+        if (local) {
+          setMessages((m) => [
+            ...m,
+            { id: newId(), role: "assistant", text: local },
+          ]);
+        } else {
+          const err =
+            "Wayra could not reach the server. Check your connection—I can still answer how-to questions once you're back online.";
+          showToast(err);
+          setMessages((m) => [...m, { id: newId(), role: "assistant", text: err }]);
+        }
       } finally {
         setLoading(false);
       }
