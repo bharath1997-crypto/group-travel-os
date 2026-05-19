@@ -43,6 +43,7 @@ jobs:
           gcloud run deploy group-travel-os-api \
             --source . \
             --region asia-south1 \
+            --min-instances=1 \
             --allow-unauthenticated \
             --port 8080 \
             --memory 512Mi \
