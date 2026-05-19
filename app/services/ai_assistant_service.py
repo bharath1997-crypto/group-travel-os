@@ -26,7 +26,7 @@ from app.schemas.ai_assistant import (
 
 logger = logging.getLogger(__name__)
 
-_GEMINI_MODEL = "gemini-2.5-flash"  # 2.0-flash deprecated June 1 2026
+_GEMINI_MODEL = "gemini-1.5-flash"  # 2.0-flash deprecated June 1 2026
 _OPENAI_MODEL = "gpt-4o-mini"
 _MAX_OUTPUT_TOKENS = 2048
 
