@@ -1,14 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import React from "react";
 import { RovvyLogo } from "@/components/RovvyLogo";
 
 export default function GroupsPage() {
-  const handleCreateGroup = () => {
-    alert("Group creation will be available soon! You can also manage groups directly from the Travel Hub.");
-  };
-
   return (
     <div className="flex min-h-[calc(100vh-80px)] flex-col items-center justify-center bg-[#0F172A] px-6 py-12 text-[#F8FAFC]">
       <div className="w-full max-w-md text-center">
@@ -38,13 +33,12 @@ export default function GroupsPage() {
 
         {/* Action Button */}
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <button
-            type="button"
-            onClick={handleCreateGroup}
+          <Link
+            href="/groups/new"
             className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#0F766E] to-[#14B8A6] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#0F766E]/20 transition-all hover:brightness-110 active:scale-95"
           >
             Create a Group
-          </button>
+          </Link>
           <Link
             href="/travel-hub"
             className="inline-flex items-center justify-center rounded-xl border border-[#334155] bg-[#1E293B]/40 px-5 py-3 text-sm font-semibold text-[#94A3B8] transition-all hover:bg-[#1E293B] hover:text-[#F8FAFC]"
