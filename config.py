@@ -122,14 +122,7 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="DUFFEL_API_KEY",
     )
-    amadeus_api_key: str | None = Field(
-        default=None,
-        validation_alias="AMADEUS_API_KEY",
-    )
-    amadeus_api_secret: str | None = Field(
-        default=None,
-        validation_alias="AMADEUS_API_SECRET",
-    )
+
 
 
     # ── Travelpayouts (tp.media affiliate marker / trs) ──────────────────────────
