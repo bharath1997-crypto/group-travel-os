@@ -9,7 +9,7 @@ import json
 from functools import lru_cache
 from typing import Any
 
-from pydantic import Field, computed_field, field_validator
+from pydantic import Field, computed_field, field_validator, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -96,7 +96,7 @@ class Settings(BaseSettings):
     )
     google_places_api_key: str | None = Field(
         default=None,
-        validation_alias="GOOGLE_PLACES_API_KEY",
+        validation_alias=AliasChoices("GOOGLE_PLACES_API_KEY", "GOOGLE_PLACES_KEY"),
     )
     unsplash_access_key: str | None = Field(
         default=None,

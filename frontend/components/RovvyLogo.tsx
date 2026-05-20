@@ -41,6 +41,10 @@ export function RovvyLogo({
     ? '/logo-primary.png'
     : '/logo-dark.png'
 
+  const imgStyle = variant === 'dark' || variant === 'white'
+    ? { objectFit: 'contain' as const, filter: 'brightness(0) invert(1)' }
+    : { objectFit: 'contain' as const };
+
   return (
     <div className={`flex flex-col items-start ${className}`}>
       <Image
@@ -49,12 +53,12 @@ export function RovvyLogo({
         width={w}
         height={h}
         priority
-        style={{ objectFit: 'contain' }}
+        style={imgStyle}
       />
       {showTagline && (
-        <span className={`text-xs -mt-2 font-medium ${
+        <span className={`text-xs -mt-2 font-bold ${
           variant === 'dark' 
-            ? 'text-[#94A3B8]' 
+            ? 'text-white' 
             : 'text-[#6B7280]'
         }`}>
           Roam together

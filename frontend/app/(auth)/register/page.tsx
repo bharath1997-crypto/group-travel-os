@@ -343,24 +343,24 @@ function RegisterPageInner() {
 
   return (
     <div className="flex min-h-screen md:h-screen md:overflow-hidden bg-white">
-      <aside className="relative hidden w-[38%] xl:w-[42%] flex-col justify-between overflow-hidden bg-white border-r border-[#E2E8F0] p-6 xl:p-9 md:flex">
-        <span className="absolute -left-10 -top-10 h-[180px] w-[180px] rounded-full border border-slate-100 bg-slate-50/50" aria-hidden />
-        <span className="absolute -right-5 bottom-[60px] h-[120px] w-[120px] rounded-full border border-[#E8619A]/15 bg-[#E8619A]/5" aria-hidden />
-        <span className="absolute bottom-[100px] left-10 h-[60px] w-[60px] rounded-full bg-[#E8619A]/5" aria-hidden />
+      <aside className="relative hidden w-[38%] xl:w-[42%] flex-col justify-between overflow-hidden bg-[#0F172A] p-6 xl:p-9 md:flex">
+        <span className="absolute -left-10 -top-10 h-[180px] w-[180px] rounded-full border border-[rgba(255,255,255,0.08)]" aria-hidden />
+        <span className="absolute -right-5 bottom-[60px] h-[120px] w-[120px] rounded-full border border-[rgba(232,97,154,0.2)]" aria-hidden />
+        <span className="absolute bottom-[100px] left-10 h-[60px] w-[60px] rounded-full bg-[rgba(232,97,154,0.08)]" aria-hidden />
         <div className="relative z-[1] flex flex-col items-start">
-          <RovvyLogo variant="primary" size="lg" showTagline={true} />
+          <RovvyLogo variant="dark" size="lg" showTagline={true} />
         </div>
         <div className="relative z-[1] max-w-sm">
-          <h1 className="text-[22px] font-bold leading-tight text-[#0F172A]">
+          <h1 className="text-[22px] font-medium leading-tight text-white">
             Your next adventure starts here.
           </h1>
-          <p className="mt-2 text-xs leading-relaxed text-slate-500">
+          <p className="mt-2 text-xs leading-relaxed text-white/55">
             Join thousands of groups planning trips together.
           </p>
           <div className="mt-5 flex gap-1.5" aria-hidden>
-            <span className="h-1.5 w-1.5 rounded-full bg-[#0F766E]" />
-            <span className="h-1.5 w-1.5 rounded-full bg-slate-200" />
-            <span className="h-1.5 w-1.5 rounded-full bg-slate-200" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#E8619A]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
           </div>
         </div>
       </aside>
