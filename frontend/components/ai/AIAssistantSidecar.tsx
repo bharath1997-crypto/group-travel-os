@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import WayraIcon from "@/components/ui/WayraIcon";
 import { apiFetchWithStatus } from "@/lib/api";
@@ -48,12 +48,32 @@ export interface AIAssistantSidecarProps {
   className?: string;
 }
 
-const QUICK_PROMPTS = [
-  "What should I do next?",
+const QUICK_PROMPTS_DEFAULT = [
   "Explain this page",
-  "Summarize my task",
+  "What should I do next?",
   "Help me finish this",
 ];
+
+const QUICK_PROMPTS_BY_PAGE: Record<string, string[]> = {
+  dashboard: [
+    "What should I do first on Rovvy?",
+    "How do I create a group?",
+  ],
+};
+
+const OFFLINE_HELP_REPLY =
+  "I'm in offline help mode right now. Ask how to plan a trip, create a group, run polls, or split expenses—I can walk you through Rovvy without the full assistant.";
+
+function appendAssistantFallback(
+  userMessage: string,
+  page: string,
+  activeTab: string | undefined,
+  ctx: Record<string, unknown>,
+): string {
+  return (
+    localAssistantReply(userMessage, page, activeTab, ctx) ?? OFFLINE_HELP_REPLY
+  );
+}
 
 function newId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -79,7 +99,6 @@ export function AIAssistantSidecar({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
   const [actionHint, setActionHint] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -117,11 +136,6 @@ export function AIAssistantSidecar({
     window.addEventListener(OPEN_WAYRA_EVENT, onOpen as EventListener);
     return () =>
       window.removeEventListener(OPEN_WAYRA_EVENT, onOpen as EventListener);
-  }, []);
-
-  const showToast = useCallback((msg: string) => {
-    setToast(msg);
-    window.setTimeout(() => setToast(null), 5000);
   }, []);
 
   const showActionHint = useCallback((msg: string) => {
@@ -195,32 +209,30 @@ export function AIAssistantSidecar({
         }
 
         if (status < 200 || status >= 300 || !data) {
-          const local = localAssistantReply(userMessage, page, activeTab, ctx);
-          if (local) {
-            setMessages((m) => [
-              ...m,
-              { id: newId(), role: "assistant", text: local },
-            ]);
-            return;
-          }
-          const inline =
-            status === 404
-              ? "Wayra could not reach the assistant service. Check that the API is running with the /ai/assistant route enabled."
-              : status === 400
-                ? "Wayra could not process that request. Try rephrasing, or ask a how-to question about Rovvy."
-                : status >= 500
-                  ? "Wayra hit a server hiccup. Try again in a moment—I can still help with how-to questions about the app."
-                  : "Wayra could not connect. Check your network and that the API is reachable.";
-          showToast(inline);
-          setMessages((m) => [...m, { id: newId(), role: "assistant", text: inline }]);
+          const fallback = appendAssistantFallback(
+            userMessage,
+            page,
+            activeTab,
+            ctx,
+          );
+          setMessages((m) => [
+            ...m,
+            { id: newId(), role: "assistant", text: fallback },
+          ]);
           return;
         }
 
         if (!data.message || typeof data.message !== "string") {
-          const err =
-            "The assistant returned an unexpected response. Please try again.";
-          showToast(err);
-          setMessages((m) => [...m, { id: newId(), role: "assistant", text: err }]);
+          const fallback = appendAssistantFallback(
+            userMessage,
+            page,
+            activeTab,
+            ctx,
+          );
+          setMessages((m) => [
+            ...m,
+            { id: newId(), role: "assistant", text: fallback },
+          ]);
           return;
         }
 
@@ -239,18 +251,16 @@ export function AIAssistantSidecar({
           },
         ]);
       } catch {
-        const local = localAssistantReply(userMessage, page, activeTab, ctx);
-        if (local) {
-          setMessages((m) => [
-            ...m,
-            { id: newId(), role: "assistant", text: local },
-          ]);
-        } else {
-          const err =
-            "Wayra could not reach the server. Check your connection—I can still answer how-to questions once you're back online.";
-          showToast(err);
-          setMessages((m) => [...m, { id: newId(), role: "assistant", text: err }]);
-        }
+        const fallback = appendAssistantFallback(
+          userMessage,
+          page,
+          activeTab,
+          ctx,
+        );
+        setMessages((m) => [
+          ...m,
+          { id: newId(), role: "assistant", text: fallback },
+        ]);
       } finally {
         setLoading(false);
       }
@@ -263,7 +273,6 @@ export function AIAssistantSidecar({
       loading,
       page,
       router,
-      showToast,
       tripId,
     ],
   );
@@ -285,6 +294,11 @@ export function AIAssistantSidecar({
   );
 
   const pageLabel = page.replace(/_/g, "/").replace(/^/, "/");
+
+  const quickPrompts = useMemo(
+    () => QUICK_PROMPTS_BY_PAGE[page] ?? QUICK_PROMPTS_DEFAULT,
+    [page],
+  );
 
   const headerStatus =
     birdState === "flying"
@@ -313,12 +327,6 @@ export function AIAssistantSidecar({
             aria-modal="true"
             aria-labelledby={`${panelId}-title`}
           >
-            {toast ? (
-              <div className="absolute right-2 top-2 z-10 max-w-[85%] rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-right text-xs text-red-800 shadow">
-                {toast}
-              </div>
-            ) : null}
-
             <div className="flex items-start justify-between gap-2 border-b border-[#E9ECEF] bg-white px-4 py-3">
               <div className="flex min-w-0 shrink-0 items-center gap-2">
                 <WayraIcon
@@ -362,7 +370,7 @@ export function AIAssistantSidecar({
                 Quick prompts
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {QUICK_PROMPTS.map((q) => (
+                {quickPrompts.map((q) => (
                   <button
                     key={q}
                     type="button"
@@ -382,9 +390,9 @@ export function AIAssistantSidecar({
             >
               {messages.length === 0 ? (
                 <p className="rounded-xl border border-[#E9ECEF] bg-white p-3 text-sm leading-relaxed text-[#2C3E50]">
-                  Hi — I&apos;m <strong>Wayra</strong>, your companion across Rovvy. Ask how to use{" "}
-                  <strong>{pageLabel}</strong>, or ask about destinations and plans — I&apos;ll match
-                  travel vs app guide from your wording.
+                  Hi — I&apos;m <strong>Wayra</strong>. Ask how{" "}
+                  <strong>{pageLabel}</strong> works, or get destination ideas. App
+                  how-tos work offline; travel tips need the assistant when it&apos;s up.
                 </p>
               ) : null}
 

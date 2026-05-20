@@ -52,7 +52,7 @@ export function RovvyLogo({
         style={{ objectFit: 'contain' }}
       />
       {showTagline && (
-        <span className={`text-xs mt-1 font-medium ${
+        <span className={`text-xs -mt-2 font-medium ${
           variant === 'dark' 
             ? 'text-[#94A3B8]' 
             : 'text-[#6B7280]'

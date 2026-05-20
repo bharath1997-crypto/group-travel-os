@@ -11127,6 +11127,14 @@ export default function TravelHubPage() {
     "chats" | "calls" | "updates"
   >("chats");
   const [createGroupRequestId, setCreateGroupRequestId] = useState(0);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("action") === "create-group") {
+      setCreateGroupRequestId((n) => n + 1);
+    }
+  }, []);
+
   const [showNewChatPanel, setShowNewChatPanel] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
   const [showSplitPopup, setShowSplitPopup] = useState(false);
