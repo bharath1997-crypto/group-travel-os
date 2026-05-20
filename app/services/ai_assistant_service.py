@@ -432,3 +432,35 @@ class AIAssistantService:
 
         data = _parse_model_json(raw_text)
         return _build_response(data, raw_text, request.user_message)
+
+
+class AwaitableString(str):
+    def __await__(self):
+        async def _async_val():
+            return self
+        return _async_val().__await__()
+
+
+def generate_gemini_content(prompt: str) -> AwaitableString:
+    """Call Gemini directly with a single prompt string."""
+    import google.generativeai as genai  # type: ignore[import-untyped]
+
+    key = _gemini_key()
+    if not key:
+        logger.warning("GEMINI_API_KEY not configured for generate_gemini_content")
+        return AwaitableString("")
+
+    try:
+        genai.configure(api_key=key)
+        model = genai.GenerativeModel(
+            model_name=_GEMINI_MODEL,
+            generation_config=genai.types.GenerationConfig(  # type: ignore[attr-defined]
+                max_output_tokens=_MAX_OUTPUT_TOKENS,
+                temperature=0.4,
+            ),
+        )
+        response = model.generate_content(prompt)
+        return AwaitableString(response.text or "")
+    except Exception as e:
+        logger.error(f"Gemini generate content failed: {e}")
+        return AwaitableString("")
