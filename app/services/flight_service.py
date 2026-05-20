@@ -1,5 +1,5 @@
 """
-app/services/flight_service.py — Flight search via Duffel API (Primary) and Amadeus API (Fallback)
+app/services/flight_service.py — Flight search via Duffel API (Primary)
 
 TTL in-memory cache (30 min); key includes outbound window, cabin, currency, pax, return leg.
 """
@@ -11,7 +11,6 @@ import re
 from datetime import date
 from typing import Any
 
-import httpx
 from duffel_api import Duffel
 
 from app.schemas.flight import FlightResult
@@ -151,63 +150,6 @@ def _parse_duffel_offer(offer: Any, currency_preference: str) -> FlightResult | 
         return None
 
 
-def _parse_amadeus_offer(raw: dict[str, Any], currency_preference: str) -> FlightResult | None:
-    try:
-        rid = raw.get("id")
-        if not rid:
-            return None
-        price_obj = raw.get("price") or {}
-        price_str = price_obj.get("grandTotal") or price_obj.get("total")
-        if not price_str:
-            return None
-        price_f = float(price_str)
-        currency = price_obj.get("currency") or currency_preference or "USD"
-
-        itineraries = raw.get("itineraries") or []
-        if not itineraries:
-            return None
-
-        # Collect unique carrier codes
-        airlines: list[str] = []
-        for it in itineraries:
-            for seg in it.get("segments") or []:
-                carrier = seg.get("carrierCode")
-                if carrier and carrier not in airlines:
-                    airlines.append(carrier)
-
-        # First itinerary first segment departure
-        first_it = itineraries[0]
-        first_seg = (first_it.get("segments") or [])[0] if first_it.get("segments") else {}
-        departure_at = first_seg.get("departure", {}).get("at", "")
-
-        # Last itinerary last segment arrival
-        last_it = itineraries[-1]
-        last_seg = (last_it.get("segments") or [])[-1] if last_it.get("segments") else {}
-        arrival_at = last_seg.get("arrival", {}).get("at", "")
-
-        origin = first_seg.get("departure", {}).get("iataCode", "")
-        destination = last_seg.get("arrival", {}).get("iataCode", "")
-
-        duration_minutes = sum(_parse_iso_duration_to_minutes(it.get("duration")) for it in itineraries)
-        stops = sum(max(0, len(it.get("segments") or []) - 1) for it in itineraries)
-
-        return FlightResult(
-            id=str(rid),
-            price=price_f,
-            currency=currency.strip().upper(),
-            airlines=airlines,
-            departure_at=departure_at,
-            arrival_at=arrival_at,
-            origin=origin,
-            destination=destination,
-            duration_minutes=duration_minutes,
-            deep_link="",
-            stops=stops,
-        )
-    except Exception as e:
-        logger.warning("Error parsing Amadeus offer: %s", e)
-        return None
-
 
 def _search_duffel(
     fly_from: str,
@@ -264,80 +206,6 @@ def _search_duffel(
     return out
 
 
-def _search_amadeus(
-    fly_from: str,
-    fly_to: str,
-    date_from: date,
-    adults: int,
-    currency: str,
-    cabins: str,
-    return_from: date | None,
-) -> list[FlightResult]:
-    amadeus_key = (settings.amadeus_api_key or "").strip()
-    amadeus_secret = (settings.amadeus_api_secret or "").strip()
-    
-    base_url = (
-        "https://api.amadeus.com"
-        if settings.ENVIRONMENT == "production"
-        else "https://test.api.amadeus.com"
-    )
-    
-    # Authenticate
-    token_url = f"{base_url}/v1/security/oauth2/token"
-    token_data = {
-        "grant_type": "client_credentials",
-        "client_id": amadeus_key,
-        "client_secret": amadeus_secret,
-    }
-    
-    with httpx.Client(timeout=10.0) as client:
-        resp = client.post(token_url, data=token_data)
-        resp.raise_for_status()
-        access_token = resp.json()["access_token"]
-
-    # Search
-    search_url = f"{base_url}/v2/shopping/flight-offers"
-    
-    amadeus_cabin_map = {
-        "M": "ECONOMY",
-        "W": "PREMIUM_ECONOMY",
-        "C": "BUSINESS",
-        "F": "FIRST",
-    }
-    travel_class = amadeus_cabin_map.get(cabins, "ECONOMY")
-
-    params: dict[str, Any] = {
-        "originLocationCode": fly_from,
-        "destinationLocationCode": fly_to,
-        "departureDate": date_from.isoformat(),
-        "adults": adults,
-        "currencyCode": currency,
-        "travelClass": travel_class,
-        "max": 250,
-    }
-    if return_from is not None:
-        params["returnDate"] = return_from.isoformat()
-
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Accept": "application/json"
-    }
-
-    with httpx.Client(timeout=25.0) as client:
-        resp = client.get(search_url, params=params, headers=headers)
-        resp.raise_for_status()
-        body = resp.json()
-
-    out: list[FlightResult] = []
-    data = body.get("data") or []
-    for item in data:
-        parsed = _parse_amadeus_offer(item, currency)
-        if parsed:
-            out.append(parsed)
-
-    out.sort(key=lambda x: x.price)
-    return out
-
 
 class FlightService:
     @staticmethod
@@ -353,7 +221,7 @@ class FlightService:
         return_to: date | None = None,
     ) -> list[FlightResult]:
         """
-        Search flights using Duffel API (Primary) and Amadeus API (Fallback).
+        Search flights using Duffel API.
         Results are cached for CACHE_TTL_SECONDS.
         """
         raw_from = fly_from.strip()
@@ -364,7 +232,7 @@ class FlightService:
         if not a:
             AppException.bad_request("Origin is required")
         if not b or b == "__ANYWHERE__" or b == "ANYWHERE":
-            AppException.bad_request("Duffel and Amadeus require a specific destination airport code")
+            AppException.bad_request("Duffel requires a specific destination airport code")
 
         if adults < 1 or adults > 9:
             AppException.bad_request("Adults must be between 1 and 9")
@@ -399,45 +267,24 @@ class FlightService:
             if now < expires_at:
                 return list(rows)
 
-        # 1. Duffel (Primary)
         duffel_api_key = (settings.duffel_api_key or "").strip()
-        if duffel_api_key:
-            try:
-                logger.info("Attempting flight search via Duffel API")
-                results = _search_duffel(
-                    fly_from=a,
-                    fly_to=b,
-                    date_from=date_from,
-                    adults=adults,
-                    currency=curr,
-                    cabins=cabin_token,
-                    return_from=return_from
-                )
-                _flight_cache[key] = (now + CACHE_TTL_SECONDS, results)
-                return results
-            except Exception as e:
-                logger.warning("Duffel flight search failed, falling back to Amadeus: %s", e)
+        if not duffel_api_key:
+            logger.warning("Duffel API key is not configured")
+            return []
 
-        # 2. Amadeus (Fallback)
-        amadeus_key = (settings.amadeus_api_key or "").strip()
-        amadeus_secret = (settings.amadeus_api_secret or "").strip()
-        if amadeus_key and amadeus_secret:
-            try:
-                logger.info("Attempting flight search via Amadeus API")
-                results = _search_amadeus(
-                    fly_from=a,
-                    fly_to=b,
-                    date_from=date_from,
-                    adults=adults,
-                    currency=curr,
-                    cabins=cabin_token,
-                    return_from=return_from
-                )
-                _flight_cache[key] = (now + CACHE_TTL_SECONDS, results)
-                return results
-            except Exception as e:
-                logger.error("Amadeus fallback flight search failed: %s", e)
-                AppException.bad_gateway("Flight search service temporarily unavailable")
-
-        # 3. If neither is configured/working
-        AppException.service_unavailable("Flight search is not configured")
+        try:
+            logger.info("Attempting flight search via Duffel API")
+            results = _search_duffel(
+                fly_from=a,
+                fly_to=b,
+                date_from=date_from,
+                adults=adults,
+                currency=curr,
+                cabins=cabin_token,
+                return_from=return_from
+            )
+            _flight_cache[key] = (now + CACHE_TTL_SECONDS, results)
+            return results
+        except Exception as e:
+            logger.warning("Duffel flight search failed: %s", e)
+            return []
