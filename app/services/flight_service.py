@@ -1,5 +1,5 @@
 """
-app/services/flight_service.py — Kiwi.com Tequila flight search
+app/services/flight_service.py — Flight search via Duffel API (Primary) and Amadeus API (Fallback)
 
 TTL in-memory cache (30 min); key includes outbound window, cabin, currency, pax, return leg.
 """
@@ -7,10 +7,12 @@ from __future__ import annotations
 
 import logging
 import time
+import re
 from datetime import date
 from typing import Any
 
 import httpx
+from duffel_api import Duffel
 
 from app.schemas.flight import FlightResult
 from app.utils.exceptions import AppException
@@ -18,7 +20,6 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
-KIWI_SEARCH_URL = "https://api.tequila.kiwi.com/v2/search"
 CACHE_TTL_SECONDS = 1_800  # 30 minutes
 
 _flight_cache: dict[
@@ -27,11 +28,7 @@ _flight_cache: dict[
 ] = {}
 
 
-def _to_kiwi_ddmmyyyy(d: date) -> str:
-    return d.strftime("%d/%m/%Y")
-
-
-# Common free-text → Tequila-friendly location ids (metro / multi-airport codes)
+# Common free-text → location ids (metro / multi-airport codes)
 _FLY_LOCATION_ALIASES: dict[str, str] = {
     "CHICAGO": "CHI",
     "NEWYORK": "NYC",
@@ -44,7 +41,7 @@ _FLY_LOCATION_ALIASES: dict[str, str] = {
 
 
 def _normalize_fly_term(term: str) -> str:
-    """Maps common city names to Kiwi codes; otherwise uppercases trimmed input."""
+    """Maps common city names to IATA codes; otherwise uppercases trimmed input."""
     raw = term.strip()
     if not raw:
         return raw
@@ -82,92 +79,264 @@ def _cache_key(
     )
 
 
-def _parse_flight_item(raw: dict[str, Any], currency_preference: str) -> FlightResult | None:
-    rid = raw.get("id")
-    if rid is None:
-        return None
-    price = raw.get("price")
-    if price is None:
-        conv = raw.get("conversion")
-        if isinstance(conv, dict):
-            pref = currency_preference.strip().upper()
-            if pref and pref in conv:
-                price = conv.get(pref)
-            if price is None and conv:
-                for v in conv.values():
-                    if isinstance(v, (int, float)):
-                        price = v
-                        break
+def _parse_iso_duration_to_minutes(duration_str: str | None) -> int:
+    """Parses an ISO 8601 duration string (e.g. PT2H30M) into total minutes."""
+    if not duration_str:
+        return 0
+    match = re.match(r"PT(?:(\d+)H)?(?:(\d+)M)?", duration_str)
+    if not match:
+        return 0
+    hours = int(match.group(1)) if match.group(1) else 0
+    minutes = int(match.group(2)) if match.group(2) else 0
+    return hours * 60 + minutes
 
-    if price is None:
-        return None
+
+def _parse_duffel_offer(offer: Any, currency_preference: str) -> FlightResult | None:
     try:
-        price_f = float(price)
-    except (TypeError, ValueError):
+        rid = offer.id
+        price_str = offer.total_amount
+        if not price_str:
+            return None
+        price_f = float(price_str)
+        currency = offer.total_currency or currency_preference
+
+        slices = offer.slices or []
+        if not slices:
+            return None
+
+        # Collect unique carrier codes
+        airlines: list[str] = []
+        for s in slices:
+            for seg in s.segments or []:
+                carrier = seg.marketing_carrier
+                if carrier and carrier.iata_code:
+                    if carrier.iata_code not in airlines:
+                        airlines.append(carrier.iata_code)
+
+        # First slice first segment departing_at
+        first_slice = slices[0]
+        first_seg = first_slice.segments[0] if first_slice.segments else None
+        if not first_seg:
+            return None
+        departure_at = first_seg.departing_at or ""
+
+        # Last slice last segment arriving_at
+        last_slice = slices[-1]
+        last_seg = last_slice.segments[-1] if last_slice.segments else None
+        if not last_seg:
+            return None
+        arrival_at = last_seg.arriving_at or ""
+
+        origin = first_slice.origin.iata_code if first_slice.origin else ""
+        destination = last_slice.destination.iata_code if last_slice.destination else ""
+
+        duration_minutes = sum(_parse_iso_duration_to_minutes(s.duration) for s in slices)
+        stops = sum(max(0, len(s.segments or []) - 1) for s in slices)
+
+        return FlightResult(
+            id=str(rid),
+            price=price_f,
+            currency=currency.strip().upper(),
+            airlines=airlines,
+            departure_at=departure_at,
+            arrival_at=arrival_at,
+            origin=origin,
+            destination=destination,
+            duration_minutes=duration_minutes,
+            deep_link="",
+            stops=stops,
+        )
+    except Exception as e:
+        logger.warning("Error parsing Duffel offer: %s", e)
         return None
 
-    currency = raw.get("currency")
-    if not isinstance(currency, str) or not currency.strip():
-        currency = currency_preference if currency_preference else "USD"
 
-    airlines_raw = raw.get("airlines")
-    airlines: list[str] = []
-    if isinstance(airlines_raw, list):
-        airlines = [str(a) for a in airlines_raw if a is not None]
+def _parse_amadeus_offer(raw: dict[str, Any], currency_preference: str) -> FlightResult | None:
+    try:
+        rid = raw.get("id")
+        if not rid:
+            return None
+        price_obj = raw.get("price") or {}
+        price_str = price_obj.get("grandTotal") or price_obj.get("total")
+        if not price_str:
+            return None
+        price_f = float(price_str)
+        currency = price_obj.get("currency") or currency_preference or "USD"
 
-    route = raw.get("route") or []
-    origin = str(raw.get("flyFrom") or "")
-    destination = str(raw.get("flyTo") or "")
-    dep_iso = raw.get("local_departure")
-    arr_iso = raw.get("local_arrival")
+        itineraries = raw.get("itineraries") or []
+        if not itineraries:
+            return None
 
-    if isinstance(route, list) and route:
-        first = route[0] if isinstance(route[0], dict) else {}
-        last = route[-1] if isinstance(route[-1], dict) else {}
-        origin = str(first.get("flyFrom") or origin)
-        destination = str(last.get("flyTo") or destination)
-        dep_iso = first.get("local_departure") or dep_iso
-        arr_iso = last.get("local_arrival") or arr_iso
+        # Collect unique carrier codes
+        airlines: list[str] = []
+        for it in itineraries:
+            for seg in it.get("segments") or []:
+                carrier = seg.get("carrierCode")
+                if carrier and carrier not in airlines:
+                    airlines.append(carrier)
 
-    departure_at = str(dep_iso or "")
-    arrival_at = str(arr_iso or "")
+        # First itinerary first segment departure
+        first_it = itineraries[0]
+        first_seg = (first_it.get("segments") or [])[0] if first_it.get("segments") else {}
+        departure_at = first_seg.get("departure", {}).get("at", "")
 
-    stops = 0
-    if isinstance(route, list) and route:
-        stops = max(0, len(route) - 1)
+        # Last itinerary last segment arrival
+        last_it = itineraries[-1]
+        last_seg = (last_it.get("segments") or [])[-1] if last_it.get("segments") else {}
+        arrival_at = last_seg.get("arrival", {}).get("at", "")
 
-    duration_minutes = 0
-    dur = raw.get("duration")
-    if isinstance(dur, dict):
-        total = dur.get("total")
-        if total is not None:
-            try:
-                duration_minutes = max(0, int(round(float(total) / 60.0)))
-            except (TypeError, ValueError):
-                duration_minutes = 0
-    elif isinstance(dur, (int, float)):
-        try:
-            duration_minutes = max(0, int(round(float(dur) / 60.0)))
-        except (TypeError, ValueError):
-            duration_minutes = 0
+        origin = first_seg.get("departure", {}).get("iataCode", "")
+        destination = last_seg.get("arrival", {}).get("iataCode", "")
 
-    deep_link = raw.get("deep_link")
-    if not isinstance(deep_link, str):
-        deep_link = ""
+        duration_minutes = sum(_parse_iso_duration_to_minutes(it.get("duration")) for it in itineraries)
+        stops = sum(max(0, len(it.get("segments") or []) - 1) for it in itineraries)
 
-    return FlightResult(
-        id=str(rid),
-        price=price_f,
-        currency=currency.strip().upper(),
-        airlines=airlines,
-        departure_at=departure_at,
-        arrival_at=arrival_at,
-        origin=origin.strip(),
-        destination=destination.strip(),
-        duration_minutes=duration_minutes,
-        deep_link=deep_link.strip(),
-        stops=stops,
+        return FlightResult(
+            id=str(rid),
+            price=price_f,
+            currency=currency.strip().upper(),
+            airlines=airlines,
+            departure_at=departure_at,
+            arrival_at=arrival_at,
+            origin=origin,
+            destination=destination,
+            duration_minutes=duration_minutes,
+            deep_link="",
+            stops=stops,
+        )
+    except Exception as e:
+        logger.warning("Error parsing Amadeus offer: %s", e)
+        return None
+
+
+def _search_duffel(
+    fly_from: str,
+    fly_to: str,
+    date_from: date,
+    adults: int,
+    currency: str,
+    cabins: str,
+    return_from: date | None,
+) -> list[FlightResult]:
+    client = Duffel(access_token=settings.duffel_api_key)
+
+    slices = [
+        {
+            "origin": fly_from,
+            "destination": fly_to,
+            "departure_date": date_from.isoformat()
+        }
+    ]
+    if return_from is not None:
+        slices.append({
+            "origin": fly_to,
+            "destination": fly_from,
+            "departure_date": return_from.isoformat()
+        })
+
+    passengers = [{"type": "adult"} for _ in range(adults)]
+    
+    cabin_map = {
+        "M": "economy",
+        "W": "premium_economy",
+        "C": "business",
+        "F": "first",
+    }
+    duffel_cabin = cabin_map.get(cabins, "economy")
+
+    req = (
+        client.offer_requests.create()
+        .passengers(passengers)
+        .slices(slices)
+        .cabin_class(duffel_cabin)
+        .return_offers()
     )
+    offer_request = req.execute()
+
+    out: list[FlightResult] = []
+    offers = getattr(offer_request, "offers", []) or []
+    for offer in offers:
+        parsed = _parse_duffel_offer(offer, currency)
+        if parsed:
+            out.append(parsed)
+
+    out.sort(key=lambda x: x.price)
+    return out
+
+
+def _search_amadeus(
+    fly_from: str,
+    fly_to: str,
+    date_from: date,
+    adults: int,
+    currency: str,
+    cabins: str,
+    return_from: date | None,
+) -> list[FlightResult]:
+    amadeus_key = (settings.amadeus_api_key or "").strip()
+    amadeus_secret = (settings.amadeus_api_secret or "").strip()
+    
+    base_url = (
+        "https://api.amadeus.com"
+        if settings.ENVIRONMENT == "production"
+        else "https://test.api.amadeus.com"
+    )
+    
+    # Authenticate
+    token_url = f"{base_url}/v1/security/oauth2/token"
+    token_data = {
+        "grant_type": "client_credentials",
+        "client_id": amadeus_key,
+        "client_secret": amadeus_secret,
+    }
+    
+    with httpx.Client(timeout=10.0) as client:
+        resp = client.post(token_url, data=token_data)
+        resp.raise_for_status()
+        access_token = resp.json()["access_token"]
+
+    # Search
+    search_url = f"{base_url}/v2/shopping/flight-offers"
+    
+    amadeus_cabin_map = {
+        "M": "ECONOMY",
+        "W": "PREMIUM_ECONOMY",
+        "C": "BUSINESS",
+        "F": "FIRST",
+    }
+    travel_class = amadeus_cabin_map.get(cabins, "ECONOMY")
+
+    params: dict[str, Any] = {
+        "originLocationCode": fly_from,
+        "destinationLocationCode": fly_to,
+        "departureDate": date_from.isoformat(),
+        "adults": adults,
+        "currencyCode": currency,
+        "travelClass": travel_class,
+        "max": 250,
+    }
+    if return_from is not None:
+        params["returnDate"] = return_from.isoformat()
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Accept": "application/json"
+    }
+
+    with httpx.Client(timeout=25.0) as client:
+        resp = client.get(search_url, params=params, headers=headers)
+        resp.raise_for_status()
+        body = resp.json()
+
+    out: list[FlightResult] = []
+    data = body.get("data") or []
+    for item in data:
+        parsed = _parse_amadeus_offer(item, currency)
+        if parsed:
+            out.append(parsed)
+
+    out.sort(key=lambda x: x.price)
+    return out
 
 
 class FlightService:
@@ -184,27 +353,18 @@ class FlightService:
         return_to: date | None = None,
     ) -> list[FlightResult]:
         """
-        Query Kiwi search; results cached for CACHE_TTL_SECONDS seconds.
-
-        Cache dimensions include origin/destination, outbound date range, passengers,
-        cabin class, currency, and return leg when present (Tequila API parameters).
+        Search flights using Duffel API (Primary) and Amadeus API (Fallback).
+        Results are cached for CACHE_TTL_SECONDS.
         """
         raw_from = fly_from.strip()
         raw_to = fly_to.strip()
         a = _normalize_fly_term(raw_from)
-        fly_anywhere = raw_to.upper() in ("ANYWHERE", "ANY", "")
-        if fly_anywhere:
-            b_norm = "__ANYWHERE__"
-            fly_to_param: str | None = None
-        else:
-            b_actual = _normalize_fly_term(fly_to)
-            b_norm = b_actual
-            fly_to_param = b_actual if b_actual else None
+        b = _normalize_fly_term(raw_to)
 
         if not a:
             AppException.bad_request("Origin is required")
-        if not fly_anywhere and not fly_to_param:
-            AppException.bad_request("Destination is required")
+        if not b or b == "__ANYWHERE__" or b == "ANYWHERE":
+            AppException.bad_request("Duffel and Amadeus require a specific destination airport code")
 
         if adults < 1 or adults > 9:
             AppException.bad_request("Adults must be between 1 and 9")
@@ -223,7 +383,7 @@ class FlightService:
 
         key = _cache_key(
             a,
-            b_norm,
+            b,
             date_from,
             date_to,
             adults,
@@ -239,73 +399,45 @@ class FlightService:
             if now < expires_at:
                 return list(rows)
 
-        api_key = (settings.kiwi_api_key or "").strip()
-        if not api_key:
-            AppException.service_unavailable("Flight search is not configured")
+        # 1. Duffel (Primary)
+        duffel_api_key = (settings.duffel_api_key or "").strip()
+        if duffel_api_key:
+            try:
+                logger.info("Attempting flight search via Duffel API")
+                results = _search_duffel(
+                    fly_from=a,
+                    fly_to=b,
+                    date_from=date_from,
+                    adults=adults,
+                    currency=curr,
+                    cabins=cabin_token,
+                    return_from=return_from
+                )
+                _flight_cache[key] = (now + CACHE_TTL_SECONDS, results)
+                return results
+            except Exception as e:
+                logger.warning("Duffel flight search failed, falling back to Amadeus: %s", e)
 
-        params: dict[str, str | int] = {
-            "fly_from": a,
-            "date_from": _to_kiwi_ddmmyyyy(date_from),
-            "date_to": _to_kiwi_ddmmyyyy(date_to),
-            "adults": adults,
-            "curr": curr,
-            "locale": "en",
-            "sort": "price",
-            "limit": 250,
-            "selected_cabins": cabin_token,
-            "partner_market": "us",
-        }
-        if fly_to_param is not None:
-            params["fly_to"] = fly_to_param
-        if return_from is not None and return_to is not None:
-            params["return_from"] = _to_kiwi_ddmmyyyy(return_from)
-            params["return_to"] = _to_kiwi_ddmmyyyy(return_to)
+        # 2. Amadeus (Fallback)
+        amadeus_key = (settings.amadeus_api_key or "").strip()
+        amadeus_secret = (settings.amadeus_api_secret or "").strip()
+        if amadeus_key and amadeus_secret:
+            try:
+                logger.info("Attempting flight search via Amadeus API")
+                results = _search_amadeus(
+                    fly_from=a,
+                    fly_to=b,
+                    date_from=date_from,
+                    adults=adults,
+                    currency=curr,
+                    cabins=cabin_token,
+                    return_from=return_from
+                )
+                _flight_cache[key] = (now + CACHE_TTL_SECONDS, results)
+                return results
+            except Exception as e:
+                logger.error("Amadeus fallback flight search failed: %s", e)
+                AppException.bad_gateway("Flight search service temporarily unavailable")
 
-        headers = {"apikey": api_key, "Accept": "application/json"}
-
-        timeout = httpx.Timeout(25.0)
-        resp: httpx.Response | None = None
-        try:
-            with httpx.Client(timeout=timeout) as client:
-                resp = client.get(KIWI_SEARCH_URL, params=params, headers=headers)
-        except httpx.HTTPError as exc:
-            logger.warning("Kiwi HTTP error: %s", exc)
-            AppException.bad_gateway("Flight search temporarily unavailable")
-
-        if resp is None:
-            AppException.bad_gateway("Flight search temporarily unavailable")
-
-        if resp.status_code == 401 or resp.status_code == 403:
-            AppException.service_unavailable("Flight search authorization failed")
-
-        if resp.status_code != 200:
-            logger.warning("Kiwi non-200: %s %s", resp.status_code, resp.text[:500])
-            AppException.bad_gateway("Flight provider returned an error")
-
-        parsed: dict[str, Any] | None = None
-        try:
-            body = resp.json()
-            if isinstance(body, dict):
-                parsed = body
-        except ValueError:
-            parsed = None
-
-        if parsed is None:
-            AppException.bad_gateway("Invalid flight search response")
-
-        data = parsed.get("data")
-        if not isinstance(data, list):
-            results: list[FlightResult] = []
-            _flight_cache[key] = (now + CACHE_TTL_SECONDS, results)
-            return list(results)
-
-        out: list[FlightResult] = []
-        for item in data:
-            if not isinstance(item, dict):
-                continue
-            row = _parse_flight_item(item, curr)
-            if row is not None:
-                out.append(row)
-
-        _flight_cache[key] = (now + CACHE_TTL_SECONDS, list(out))
-        return list(out)
+        # 3. If neither is configured/working
+        AppException.service_unavailable("Flight search is not configured")
