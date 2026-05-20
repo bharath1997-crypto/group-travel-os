@@ -63,10 +63,14 @@ class Settings(BaseSettings):
         validation_alias="GEMINI_API_KEY",
     )
 
-    # ── OpenWeatherMap (Phase 3) ────────────────────────────────────────────────
+    # ── OpenWeatherMap (Phase 3 / travel intel) ────────────────────────────────
     openweather_api_key: str | None = Field(
         default=None,
         validation_alias="OPENWEATHER_API_KEY",
+    )
+    openweathermap_api_key: str = Field(
+        default="",
+        validation_alias="OPENWEATHERMAP_API_KEY",
     )
     serpapi_key: str | None = Field(
         default=None,

@@ -1,18 +1,35 @@
 """
-app/services/weather_service.py — Open-Meteo forecast (no API key)
+app/services/weather_service.py — Weather data
 
-In-memory TTL cache (6h), synchronous httpx. No Redis/Celery.
+- Open-Meteo forecast by coordinates (no API key) — trip dashboard forecast
+- OpenWeatherMap current weather by city (travel intel / Explore / Wayra)
 """
 from __future__ import annotations
 
+import logging
 import time
 from datetime import date, datetime, timezone
+from typing import Any
 
 import httpx
 
+from app.core.api_limits import API_TIMEOUT_SECONDS
 from app.utils.exceptions import AppException
+from config import settings
 
-TTL_SECONDS = 21_600  # 6 hours
+logger = logging.getLogger(__name__)
+
+TTL_SECONDS = 21_600  # 6 hours — Open-Meteo forecast cache
+OWM_TTL_SECONDS = 3_600  # 1 hour — OpenWeatherMap city cache
+OWM_URL = "https://api.openweathermap.org/data/2.5/weather"
+
+# Open-Meteo forecast cache: key (lat, lng, date_str) -> (unix_expiry, payload without "cached")
+_forecast_cache: dict[tuple[float, float, str], tuple[float, dict[str, object]]] = {}
+
+# OpenWeatherMap city cache: city_lower -> (unix_expiry, payload)
+_owm_cache: dict[str, tuple[float, dict[str, Any]]] = {}
+
+OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
 _WMO_CODES: dict[int, str] = {
     0: "clear sky",
@@ -37,10 +54,85 @@ _WMO_CODES: dict[int, str] = {
     99: "thunderstorm with hail",
 }
 
-# Cache: key (lat, lng, date_str) -> (unix_expiry, payload without "cached")
-_forecast_cache: dict[tuple[float, float, str], tuple[float, dict[str, object]]] = {}
 
-OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
+def _openweathermap_key() -> str:
+    return (
+        (settings.openweathermap_api_key or "").strip()
+        or (settings.openweather_api_key or "").strip()
+    )
+
+
+def get_weather(city: str) -> dict[str, Any] | None:
+    """
+    Current weather for a city via OpenWeatherMap.
+    Returns temp, description, humidity, wind_speed — or None if unavailable.
+    """
+    city = (city or "").strip()
+    if not city:
+        return None
+
+    cache_key = city.lower()
+    now = time.time()
+    cached = _owm_cache.get(cache_key)
+    if cached and now < cached[0]:
+        return dict(cached[1])
+
+    api_key = _openweathermap_key()
+    if not api_key:
+        return None
+
+    params = {
+        "q": city,
+        "appid": api_key,
+        "units": "metric",
+    }
+
+    try:
+        with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
+            resp = client.get(OWM_URL, params=params)
+        if resp.status_code != 200:
+            logger.warning("OpenWeatherMap HTTP %s for city=%s", resp.status_code, city)
+            return None
+
+        data = resp.json()
+        main = data.get("main") if isinstance(data.get("main"), dict) else {}
+        wind = data.get("wind") if isinstance(data.get("wind"), dict) else {}
+        weather_list = data.get("weather")
+        description = "unknown"
+        if isinstance(weather_list, list) and weather_list and isinstance(weather_list[0], dict):
+            description = str(weather_list[0].get("description") or "unknown")
+
+        temp = main.get("temp")
+        humidity = main.get("humidity")
+        wind_speed = wind.get("speed")
+
+        try:
+            temp_f = float(temp) if temp is not None else None
+        except (TypeError, ValueError):
+            temp_f = None
+        try:
+            humidity_i = int(humidity) if humidity is not None else None
+        except (TypeError, ValueError):
+            humidity_i = None
+        try:
+            wind_f = float(wind_speed) if wind_speed is not None else None
+        except (TypeError, ValueError):
+            wind_f = None
+
+        if temp_f is None:
+            return None
+
+        body: dict[str, Any] = {
+            "temp": temp_f,
+            "description": description,
+            "humidity": humidity_i if humidity_i is not None else 0,
+            "wind_speed": wind_f if wind_f is not None else 0.0,
+        }
+        _owm_cache[cache_key] = (now + OWM_TTL_SECONDS, body)
+        return body
+    except Exception as exc:
+        logger.warning("OpenWeatherMap fetch failed for city=%s: %s", city, exc)
+        return None
 
 
 def _cache_key(lat: float, lng: float, d: date) -> tuple[float, float, str]:
