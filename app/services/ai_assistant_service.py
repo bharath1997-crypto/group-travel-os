@@ -138,8 +138,38 @@ Output format — single JSON object only:
 }}"""
 
 
+def _extract_city_from_context(ctx: dict[str, Any] | None) -> str | None:
+    if not ctx:
+        return None
+    for key in ("city", "destination", "destination_city", "place", "location"):
+        val = ctx.get(key)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+    return None
+
+
+def _enrich_destination_intel(ctx: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Fetch live weather and events when context includes a destination city."""
+    city = _extract_city_from_context(ctx)
+    if not city:
+        return None
+
+    from app.services.events_service import get_events
+    from app.services.weather_service import get_weather
+
+    intel: dict[str, Any] = {"city": city}
+    weather = get_weather(city)
+    if weather:
+        intel["weather"] = weather
+    events = get_events(city)
+    if events:
+        intel["events"] = events[:5]
+    return intel if len(intel) > 1 else None
+
+
 def _build_input_payload(request: AIAssistantRequest) -> str:
-    payload = {
+    ctx = request.context if isinstance(request.context, dict) else {}
+    payload: dict[str, Any] = {
         "page": request.page,
         "active_tab": request.active_tab,
         "trip_id": str(request.trip_id) if request.trip_id is not None else None,
@@ -147,6 +177,9 @@ def _build_input_payload(request: AIAssistantRequest) -> str:
         "context": request.context,
         "user_message": request.user_message,
     }
+    destination_intel = _enrich_destination_intel(ctx)
+    if destination_intel:
+        payload["destination_intel"] = destination_intel
     return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
 
