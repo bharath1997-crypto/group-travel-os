@@ -383,6 +383,30 @@ function BuddyTripsCard({ compact = false }: { compact?: boolean }) {
   const titleClass = compact ? "text-xs" : "text-sm";
   const metaClass = compact ? "text-[9px]" : "text-[10px]";
 
+  const [trips, setTrips] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const data = await apiFetch<any[]>("/buddy/trips?status=open");
+        if (active) {
+          setTrips(Array.isArray(data) ? data : []);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <div
       className="rounded-xl border p-4 shadow-sm"
@@ -392,64 +416,65 @@ function BuddyTripsCard({ compact = false }: { compact?: boolean }) {
         Open trips on Buddy
       </h2>
       <BuddyTripsIntro />
-      <BuddySampleNote />
-      <ul className="mt-3 space-y-3">
-        <li>
+      {loading ? (
+        <div className="mt-4 space-y-2 animate-pulse">
+          <div className="h-10 bg-slate-100 rounded-lg" />
+          <div className="h-10 bg-slate-100 rounded-lg" />
+        </div>
+      ) : trips.length === 0 ? (
+        <div className="mt-4 text-center py-6 px-4 rounded-xl border border-dashed border-[#E9ECEF] bg-[#F8F9FA]">
+          <p className="text-xs font-medium" style={{ color: MUTED }}>
+            No buddy trips nearby yet. Be the first to create one!
+          </p>
           <Link
             href={DASHBOARD_ROUTES.buddy}
-            className={`block rounded-lg border transition hover:border-[#0F766E]/25 hover:bg-[#F0FDFA] ${itemPad}`}
-            style={{ borderColor: BORDER }}
+            className="mt-3 inline-flex items-center justify-center rounded-xl bg-[#0F766E] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:opacity-95"
           >
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className={`font-bold ${titleClass}`} style={{ color: NAVY }}>
-                  Goa weekend
-                </p>
-                <p className={`mt-0.5 ${metaClass}`} style={{ color: MUTED }}>
-                  Apr 18–20 · 5 members · {compact ? "2 spots" : "2 spots left"}
-                </p>
-              </div>
-              <span
-                className="shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-semibold"
-                style={{ borderColor: BRAND, color: BRAND, backgroundColor: CARD }}
-              >
-                Join →
-              </span>
-            </div>
+            Create Buddy Trip →
           </Link>
-        </li>
-        <li>
+        </div>
+      ) : (
+        <>
+          <ul className="mt-3 space-y-3">
+            {trips.slice(0, 3).map((t) => {
+              const spots = Math.max(0, t.max_size - t.current_size);
+              return (
+                <li key={t.id}>
+                  <Link
+                    href={DASHBOARD_ROUTES.buddy}
+                    className={`block rounded-lg border transition hover:border-[#0F766E]/25 hover:bg-[#F0FDFA] ${itemPad}`}
+                    style={{ borderColor: BORDER }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className={`font-bold ${titleClass}`} style={{ color: NAVY }}>
+                          {t.destination}
+                        </p>
+                        <p className={`mt-0.5 ${metaClass}`} style={{ color: MUTED }}>
+                          {t.date_from} · {t.current_size} members · {compact ? `${spots} spots` : `${spots} spots left`}
+                        </p>
+                      </div>
+                      <span
+                        className="shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-semibold"
+                        style={{ borderColor: BRAND, color: BRAND, backgroundColor: CARD }}
+                      >
+                        Join →
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
           <Link
             href={DASHBOARD_ROUTES.buddy}
-            className={`block rounded-lg border transition hover:border-[#0F766E]/25 hover:bg-[#F0FDFA] ${itemPad}`}
-            style={{ borderColor: BORDER }}
+            className="mt-4 inline-block text-xs font-semibold hover:underline"
+            style={{ color: LINK }}
           >
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className={`font-bold ${titleClass}`} style={{ color: NAVY }}>
-                  Manali trek
-                </p>
-                <p className={`mt-0.5 ${metaClass}`} style={{ color: MUTED }}>
-                  May 2–6 · 8 members · {compact ? "4 spots" : "4 spots left"}
-                </p>
-              </div>
-              <span
-                className="shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-semibold"
-                style={{ borderColor: BRAND, color: BRAND, backgroundColor: CARD }}
-              >
-                Join →
-              </span>
-            </div>
+            Browse Buddy trips →
           </Link>
-        </li>
-      </ul>
-      <Link
-        href={DASHBOARD_ROUTES.buddy}
-        className="mt-4 inline-block text-xs font-semibold hover:underline"
-        style={{ color: LINK }}
-      >
-        Browse Buddy trips →
-      </Link>
+        </>
+      )}
     </div>
   );
 }
