@@ -30,8 +30,14 @@ import {
   IconUserSquare,
 } from "@/components/icons";
 
+import BrandedLoading from "@/components/BrandedLoading";
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
+import {
+  bindAvatarStorageToUser,
+  isSyntheticGuestUsername,
+  LS_AVATAR,
+} from "@/lib/userSessionStorage";
 
 /* ─── design tokens ───────────────────────────────────────── */
 const RED = "#e53e3e";
@@ -40,7 +46,6 @@ const GREEN = "#1d9e75";
 const CREAM = "#f5f5f0";
 const CARD_BORDER = "1px solid #e8e8e0";
 
-const LS_AVATAR = "gt_avatar";
 const LS_INSTAGRAM = "gt_social_instagram";
 const LS_SNAPCHAT = "gt_social_snapchat";
 const LS_WHATSAPP = "gt_social_whatsapp";
@@ -182,8 +187,9 @@ function loadJsonLs<T>(key: string, fallback: T): T {
   }
 }
 
-function saveAvatarLs(opts: AvatarOptions) {
+function saveAvatarLs(opts: AvatarOptions, userId: string) {
   try {
+    bindAvatarStorageToUser(userId);
     localStorage.setItem(LS_AVATAR, JSON.stringify(opts));
     window.dispatchEvent(new Event("gt_avatar_updated"));
   } catch {
@@ -630,9 +636,7 @@ export default function ProfilePage() {
       "Are you sure you want to sign out?",
     );
     if (!confirmed) return;
-    localStorage.removeItem("gt_token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("travello_user");
+    clearToken();
     window.location.href = "/login";
   }, []);
 
@@ -651,6 +655,8 @@ export default function ProfilePage() {
   }, [profileNavOpen]);
 
   useEffect(() => {
+    if (!me?.id) return;
+    bindAvatarStorageToUser(me.id);
     setAvatarOpts(loadJsonLs(LS_AVATAR, DEFAULT_AVATAR));
     setMapShare(localStorage.getItem(LS_MAP_SHARE) === "1");
     setIgUser(localStorage.getItem(LS_INSTAGRAM)?.trim() ?? "");
@@ -705,7 +711,7 @@ export default function ProfilePage() {
       localStorage.setItem("travello_last_opened", today);
     }
     setStreakDays(s);
-  }, []);
+  }, [me?.id]);
 
   const loadTripsAggregate = useCallback(async () => {
     setTripsLoading(true);
@@ -799,18 +805,25 @@ export default function ProfilePage() {
         }
         const meRes = await apiFetchWithStatus<UserMe>("/auth/me");
         if (c) return;
-        if (meRes.status === 401) {
+        if (meRes.status === 401 || !meRes.data?.id) {
           clearToken();
           router.replace("/login");
           return;
         }
-        if (meRes.data) {
-          setMe(meRes.data);
-          setEditName(meRes.data.full_name ?? "");
-          setEditUsername(meRes.data.username?.trim() ?? "");
-          setEditBio(localStorage.getItem(LS_BIO) ?? "");
-          setEditBirthday(localStorage.getItem(LS_BIRTHDAY) ?? "");
+        if (
+          isSyntheticGuestUsername(meRes.data.username) &&
+          meRes.data.username
+        ) {
+          clearToken();
+          router.replace("/login");
+          return;
         }
+        bindAvatarStorageToUser(meRes.data.id);
+        setMe(meRes.data);
+        setEditName(meRes.data.full_name ?? "");
+        setEditUsername(meRes.data.username?.trim() ?? "");
+        setEditBio(localStorage.getItem(LS_BIO) ?? "");
+        setEditBirthday(localStorage.getItem(LS_BIRTHDAY) ?? "");
 
         let st: TravelStats | null = null;
         try {
@@ -845,7 +858,10 @@ export default function ProfilePage() {
         if (!c) void loadTripsAggregate();
         if (!c) void loadPosts();
       } catch {
-        if (!c) showToast("Could not load profile.");
+        if (!c) {
+          clearToken();
+          router.replace("/login");
+        }
       } finally {
         if (!c) setBootLoading(false);
       }
@@ -884,10 +900,16 @@ export default function ProfilePage() {
   }, [trips]);
 
   const today = todayYmd();
-  const displayName = me?.full_name?.trim() || "Traveler";
-  const handle = me?.username?.trim()
-    ? `@${me.username.trim()}`
-    : `@traveler_${me?.id?.slice(0, 6) ?? "guest"}`;
+  const displayName = me?.full_name?.trim() || me?.email?.split("@")[0] || "Account";
+  const handle = (() => {
+    if (!me?.id) return "";
+    const raw = me.username?.trim();
+    if (raw && !isSyntheticGuestUsername(raw)) {
+      const bare = raw.replace(/^@/, "");
+      return bare;
+    }
+    return `user_${me.id.replace(/-/g, "").slice(0, 8)}`;
+  })();
   const locationLine = [me?.home_city, me?.country].filter(Boolean).join(", ");
   const photoUrl =
     me?.profile_picture?.trim() ||
@@ -1178,7 +1200,8 @@ export default function ProfilePage() {
   };
 
   const saveAvatar = () => {
-    saveAvatarLs(avatarOpts);
+    if (!me?.id) return;
+    saveAvatarLs(avatarOpts, me.id);
     showToast("Avatar saved");
   };
 
@@ -1388,6 +1411,10 @@ export default function ProfilePage() {
       document.body,
     );
 
+  if (bootLoading || !me?.id) {
+    return <BrandedLoading fullScreen message="Loading your profile…" />;
+  }
+
   return (
     <div className="min-h-screen pb-16" style={{ background: CREAM }}>
       {storyViewer}
@@ -1474,7 +1501,7 @@ export default function ProfilePage() {
                   </span>
                 )}
               </div>
-              <p className="text-sm font-medium text-stone-500">@{handle}</p>
+              <p className="text-sm font-medium text-stone-500">@{handle.replace(/^@/, "")}</p>
               
               {locationLine && (
                 <div className="mt-2 flex items-center gap-1 text-sm text-stone-600">
