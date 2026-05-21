@@ -221,3 +221,14 @@ body, html {
     padding: 16px 12px;
   }
 }
+
+/* Hide native browser date picker icons and spin-buttons to prevent double icons and layout shifts */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+input[type="date"]::-webkit-inner-spin-button,
+input[type="date"]::-webkit-outer-spin-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+}

@@ -428,8 +428,8 @@ function RegisterPageInner() {
         </div>
       </aside>
 
-      <main className="flex w-full flex-1 flex-col justify-center bg-[#0F172A] px-4 pt-12 pb-6 md:px-8 xl:px-12 md:overflow-y-auto">
-        <div className="mx-auto w-full max-w-[480px] p-2 xs:p-4 md:p-6 page-wrapper">
+      <main className="flex w-full flex-1 flex-col justify-start bg-[#0F172A] px-4 pt-12 pb-6 md:px-8 xl:px-12 md:overflow-y-auto">
+        <div className="mx-auto my-auto w-full max-w-[480px] p-2 xs:p-4 md:p-6 page-wrapper">
           <div className="mb-6 flex flex-col items-center md:items-start">
             <RovvyLogo variant="white" size="md" showTagline={false} />
           </div>
