@@ -13,11 +13,11 @@ logger = logging.getLogger(__name__)
 
 
 class GeminiRanker:
-    """Ranks ExplorerCards using Gemini 1.5 Flash with strict JSON output."""
+    """Ranks ExplorerCards using Gemini 2.5 Flash with strict JSON output."""
 
     def __init__(self):
         self.api_key = (settings.gemini_api_key or "").strip()
-        self.model = "gemini-1.5-flash"
+        self.model = "gemini-2.5-flash"
         self.url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
 
     async def rank_cards(
