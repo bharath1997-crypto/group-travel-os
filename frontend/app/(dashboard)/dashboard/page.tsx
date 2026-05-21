@@ -1016,6 +1016,7 @@ export default function DashboardPage() {
   const pageAbortRef = useRef<AbortController | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
   const [openPollsCount, setOpenPollsCount] = useState(0);
+  const [postComingSoonOpen, setPostComingSoonOpen] = useState(false);
 
   const [me, setMe] = useState<UserMe | null>(null);
   const [userName, setUserName] = useState("there");
@@ -1721,7 +1722,6 @@ export default function DashboardPage() {
                 href: DASHBOARD_ROUTES.groupsNew,
                 primary: false,
               },
-              { Icon: Compass, label: "Search travel", href: DASHBOARD_ROUTES.plan, primary: false },
               { Icon: MapIcon, label: "View map", href: DASHBOARD_ROUTES.map, primary: false },
             ] as const
           ).map((a) => {
@@ -1748,6 +1748,17 @@ export default function DashboardPage() {
               </Link>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setPostComingSoonOpen(true)}
+            className="group rounded-xl border bg-white px-3 py-4 text-center text-[11px] font-bold transition hover:border-[#0F3460]/25 hover:bg-[#F8F9FA]"
+            style={{ borderColor: BORDER, color: NAVY }}
+          >
+            <span className="flex justify-center text-current leading-none" aria-hidden>
+              <Camera className="h-[18px] w-[18px]" strokeWidth={1.5} />
+            </span>
+            <span className="mt-2 block">+New Post</span>
+          </button>
         </div>
       </section>
 
@@ -2483,6 +2494,46 @@ export default function DashboardPage() {
       )}
 
       <DashboardWayraHelper />
+
+      {postComingSoonOpen ? (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="new-post-soon-title"
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border bg-white p-6 shadow-xl"
+            style={{ borderColor: BORDER }}
+          >
+            <h2 id="new-post-soon-title" className="text-lg font-semibold" style={{ color: NAVY }}>
+              Posts are coming soon
+            </h2>
+            <p className="mt-2 text-sm" style={{ color: MUTED }}>
+              Share trip photos and updates from your profile once posts launch. For now, plan a trip or
+              open Travel Hub with your group.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPostComingSoonOpen(false)}
+                className="rounded-lg border px-4 py-2 text-sm font-semibold"
+                style={{ borderColor: BORDER, color: NAVY }}
+              >
+                Close
+              </button>
+              <Link
+                href={DASHBOARD_ROUTES.tripsPlan}
+                onClick={() => setPostComingSoonOpen(false)}
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-white"
+                style={{ backgroundColor: BRAND }}
+              >
+                Plan a trip
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
