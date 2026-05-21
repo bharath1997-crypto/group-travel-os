@@ -42,7 +42,7 @@ export default function ForgotPasswordPage() {
   );
 
   return (
-    <div className="flex min-h-svh flex-col bg-slate-100">
+    <div className="flex min-h-svh flex-col bg-[#0F172A]">
       <GradientHeader
         gradient="linear-gradient(135deg, #0F766E, #0D9488, #14B8A6)"
         title=""
@@ -50,13 +50,13 @@ export default function ForgotPasswordPage() {
         height={sent ? 100 : 120}
       />
 
-      <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-3xl bg-white px-4 pb-10 pt-6 shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.12)] sm:mx-auto sm:mb-8 sm:max-w-lg sm:rounded-2xl sm:px-8">
+      <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-3xl bg-[#1E293B] border border-[#334155] px-4 pb-10 pt-6 shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.12)] sm:mx-auto sm:mb-8 sm:max-w-lg sm:rounded-2xl sm:px-8">
         {!sent ? (
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <div className="flex justify-center mb-2">
-              <RovvyLogo variant="primary" size="md" />
+              <RovvyLogo variant="white" size="md" />
             </div>
-            <p className="text-sm leading-relaxed text-[#1E3A5F]/85 text-center">
+            <p className="text-sm leading-relaxed text-[#94A3B8] text-center">
               Enter the email for your Rovvy account and we&apos;ll send you a reset link.
             </p>
             <AuthInput
@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
               disabled={busy}
             />
             {error ? (
-              <p className="text-sm font-medium text-red-600" role="alert">
+              <p className="text-sm font-medium text-red-400" role="alert">
                 {error}
               </p>
             ) : null}
@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
             <div className="mt-4 text-center">
               <Link
                 href="/login"
-                className="text-sm font-semibold text-[#1E3A5F]/70 hover:text-[#1E3A5F] hover:underline"
+                className="text-sm font-semibold text-[#0F766E] hover:underline"
               >
                 Back to login
               </Link>
@@ -122,9 +122,9 @@ export default function ForgotPasswordPage() {
                 />
               </svg>
             </div>
-            <h2 className="mt-4 text-lg font-bold text-[#1E3A5F]">Check your inbox</h2>
-            <p className="mt-2 text-sm leading-relaxed text-[#1E3A5F]/80">
-              We sent a reset link to <span className="font-semibold">{email}</span>
+            <h2 className="mt-4 text-lg font-bold text-white">Check your inbox</h2>
+            <p className="mt-2 text-sm leading-relaxed text-slate-300">
+              We sent a reset link to <span className="font-semibold text-white">{email}</span>
             </p>
             <button
               type="button"
@@ -136,7 +136,7 @@ export default function ForgotPasswordPage() {
             </button>
             <Link
               href="/login"
-              className="mt-4 text-sm font-semibold text-[#1E3A5F]/70 hover:text-[#1E3A5F]"
+              className="mt-4 text-sm font-semibold text-[#0F766E] hover:underline"
             >
               Back to login
             </Link>
