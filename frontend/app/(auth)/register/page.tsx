@@ -10,6 +10,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { MapPin, Plane, Receipt } from "lucide-react";
 
 import { RovvyLogo } from "@/components/RovvyLogo";
 import { apiFetch } from "@/lib/api";
@@ -156,6 +157,24 @@ function AppleIcon() {
   );
 }
 
+const INTRO_FEATURES = [
+  {
+    icon: Plane,
+    title: "Plan together",
+    body: "Build itineraries, vote on stops, and keep everyone aligned.",
+  },
+  {
+    icon: Receipt,
+    title: "Split fairly",
+    body: "Track shared costs and settle up without the spreadsheet chaos.",
+  },
+  {
+    icon: MapPin,
+    title: "Move in sync",
+    body: "Coordinate live location, updates, and decisions from one hub.",
+  },
+] as const;
+
 function SocialButton({
   children,
   label,
@@ -173,9 +192,40 @@ function SocialButton({
       aria-label={label}
       onClick={onClick}
       disabled={disabled}
-      className="flex h-[38px] flex-1 items-center justify-center rounded-[10px] border-[1.5px] border-[#334155] bg-[#1E293B] text-white transition hover:bg-[#334155] disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-[#334155] bg-[#1E293B] text-xs font-medium text-white transition hover:bg-[#334155] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {children}
+    </button>
+  );
+}
+
+function GoogleSignUpButton({
+  onClick,
+  disabled,
+  busy,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  busy?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#334155] bg-[#1E293B] px-4 text-[15px] font-semibold text-white shadow-sm transition hover:bg-[#334155] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {busy ? (
+        <>
+          <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+          Signing up…
+        </>
+      ) : (
+        <>
+          <GoogleIcon />
+          <span>Sign up with Google</span>
+        </>
+      )}
     </button>
   );
 }
@@ -350,18 +400,31 @@ function RegisterPageInner() {
         <div className="relative z-[1] flex flex-col items-start">
           <RovvyLogo variant="dark" size="lg" showTagline={true} />
         </div>
-        <div className="relative z-[1] max-w-sm">
+        <div className="relative z-[1] max-w-sm my-auto">
           <h1 className="text-[22px] font-medium leading-tight text-white">
             Your next adventure starts here.
           </h1>
           <p className="mt-2 text-xs leading-relaxed text-white/55">
             Join thousands of groups planning trips together.
           </p>
-          <div className="mt-5 flex gap-1.5" aria-hidden>
-            <span className="h-1.5 w-1.5 rounded-full bg-[#E8619A]" />
-            <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
-            <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
-          </div>
+          <ul className="mt-8 space-y-4">
+            {INTRO_FEATURES.map(({ icon: Icon, title, body }) => (
+              <li key={title} className="flex gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.08] text-[#5EEAD4]" aria-hidden>
+                  <Icon className="h-4.5 w-4.5" strokeWidth={1.75} />
+                </span>
+                <span>
+                  <span className="block text-xs font-semibold text-white">{title}</span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-white/55">{body}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="relative z-[1] flex gap-1.5" aria-hidden>
+          <span className="h-1.5 w-1.5 rounded-full bg-[#E8619A]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
+          <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
         </div>
       </aside>
 
@@ -619,31 +682,36 @@ function RegisterPageInner() {
 
             <div className="my-4 sm:my-5 flex items-center gap-3">
               <hr className="flex-1 border-0 border-t border-[#334155]" />
-              <span className="text-[10px] sm:text-[11px] text-[#94A3B8]">
-                or sign up with
+              <span className="text-xs font-medium uppercase tracking-wide text-[#94A3B8]">
+                or continue with
               </span>
               <hr className="flex-1 border-0 border-t border-[#334155]" />
             </div>
 
-            <div className="flex gap-2.5">
-              <SocialButton label="Sign up with Google" onClick={goGoogle} disabled={isBusy}>
-                <GoogleIcon />
-              </SocialButton>
-              <SocialButton label="Sign up with Facebook" onClick={goFacebook} disabled={isBusy}>
-                <FacebookIcon />
-              </SocialButton>
-              <SocialButton label="Sign up with Apple" disabled={isBusy}>
-                <AppleIcon />
-              </SocialButton>
+            <div className="mt-4 flex flex-col gap-3">
+              <GoogleSignUpButton onClick={goGoogle} disabled={isBusy} busy={oauthBusy} />
+              <div className="flex gap-3">
+                <SocialButton label="Sign up with Facebook" onClick={goFacebook} disabled={isBusy}>
+                  <FacebookIcon />
+                  <span className="hidden sm:inline">Facebook</span>
+                </SocialButton>
+                <SocialButton label="Sign up with Apple" disabled={isBusy}>
+                  <AppleIcon />
+                  <span className="hidden sm:inline">Apple</span>
+                </SocialButton>
+              </div>
             </div>
-          </div>
 
-          <p className="mt-5 text-center text-xs sm:text-sm text-white">
-            Already have an account?{" "}
-            <Link href="/login" className="font-medium text-[#0F766E] underline-offset-4 hover:underline">
-              Sign in
-            </Link>
-          </p>
+            <p className="mt-8 text-center text-sm text-white">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="font-semibold text-[#0F766E] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:rounded-sm focus-visible:outline-[#0F766E]"
+              >
+                Sign in
+              </Link>
+            </p>
+          </div>
         </div>
       </main>
     </div>
