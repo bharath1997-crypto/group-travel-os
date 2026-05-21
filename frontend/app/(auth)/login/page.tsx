@@ -357,7 +357,7 @@ function LoginPageInner() {
         </p>
       </aside>
 
-      <main className="flex flex-col justify-center bg-[#0F172A] px-5 py-10 sm:px-8 sm:py-12 lg:px-12 xl:px-16 xl:py-16">
+      <main className="flex flex-col justify-center bg-[#0F172A] px-5 pt-12 pb-10 sm:px-8 sm:pt-16 sm:pb-12 lg:px-12 lg:pt-16 lg:pb-12 xl:px-16 xl:pt-20 xl:pb-16">
         <div className="mx-auto w-full max-w-[480px] page-wrapper">
           <div className="mb-8 flex flex-col items-center text-center lg:mb-10 lg:items-start lg:text-left">
             <RovvyLogo variant="white" size="md" showTagline={false} className="items-center lg:items-start" />
