@@ -67,11 +67,11 @@ function LoginField({
   return (
     <label className="block">
       <span className="sr-only">{label}</span>
-      <span className="flex h-11 sm:h-12 items-center gap-2.5 rounded-lg border border-[#E2E8F0] bg-white px-3.5 transition focus-within:border-[#1C2B3A] focus-within:ring-1 focus-within:ring-[#1C2B3A]">
+      <span className="flex h-11 sm:h-12 items-center gap-2.5 rounded-lg border border-[#334155] bg-[#1E293B] px-3.5 transition focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]">
         {icon}
         <input
           id={id}
-          className="min-w-0 flex-1 bg-transparent text-[13px] sm:text-sm text-[#1C2B3A] outline-none placeholder:text-[#aaa] disabled:cursor-not-allowed disabled:opacity-60 py-1.5 sm:py-2"
+          className="min-w-0 flex-1 bg-transparent text-[13px] sm:text-sm text-white outline-none placeholder:text-[#94A3B8] disabled:cursor-not-allowed disabled:opacity-60 py-1.5 sm:py-2"
           {...props}
         />
         {endAdornment}
@@ -82,7 +82,7 @@ function LoginField({
 
 function EnvelopeIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
       <rect x="2" y="4" width="20" height="16" rx="3" />
       <path d="M2 8l10 6 10-6" />
     </svg>
@@ -91,7 +91,7 @@ function EnvelopeIcon() {
 
 function LockIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
       <rect x="5" y="11" width="14" height="10" rx="2" />
       <path d="M8 11V7a4 4 0 018 0v4" />
     </svg>
@@ -119,7 +119,7 @@ function FacebookIcon() {
 
 function AppleIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="#1C2B3A" aria-hidden>
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="white" aria-hidden>
       <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.4c1.39.07 2.35.74 3.15.8 1.2-.24 2.35-.93 3.64-.84 1.54.12 2.7.72 3.46 1.83-3.16 1.9-2.41 6.06.52 7.23-.61 1.62-1.43 3.22-2.77 4.86zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
     </svg>
   );
@@ -160,7 +160,7 @@ function SocialButton({
       aria-label={label}
       onClick={onClick}
       disabled={disabled}
-      className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-[#E2E8F0] bg-white text-xs font-medium text-[#64748B] transition hover:border-[#CBD5E1] hover:text-[#1C2B3A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-[#334155] bg-[#1E293B] text-xs font-medium text-white transition hover:bg-[#334155] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {children}
     </button>
@@ -181,7 +181,7 @@ function GoogleSignInButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#E2E8F0] bg-white px-4 text-[15px] font-semibold text-[#1C2B3A] shadow-sm transition hover:border-[#CBD5E1] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#334155] bg-[#1E293B] px-4 text-[15px] font-semibold text-white shadow-sm transition hover:bg-[#334155] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {busy ? (
         <>
@@ -320,7 +320,7 @@ function LoginPageInner() {
   }
 
   return (
-    <div className="grid min-h-svh bg-white lg:grid-cols-2 lg:min-h-screen">
+    <div className="grid min-h-svh bg-[#0F172A] lg:grid-cols-2 lg:min-h-screen">
       <aside className="relative hidden flex-col justify-between overflow-hidden bg-[#0F172A] px-10 py-12 xl:px-14 xl:py-16 lg:flex">
         <span className="absolute -left-16 -top-16 h-[220px] w-[220px] rounded-full border border-white/[0.08]" aria-hidden />
         <span className="absolute -right-8 bottom-24 h-[140px] w-[140px] rounded-full border border-[#0F766E]/25" aria-hidden />
@@ -357,33 +357,33 @@ function LoginPageInner() {
         </p>
       </aside>
 
-      <main className="flex flex-col justify-center bg-white px-5 py-10 sm:px-8 sm:py-12 lg:px-12 xl:px-16 xl:py-16">
-        <div className="mx-auto w-full max-w-[520px]">
+      <main className="flex flex-col justify-center bg-[#0F172A] px-5 py-10 sm:px-8 sm:py-12 lg:px-12 xl:px-16 xl:py-16">
+        <div className="mx-auto w-full max-w-[480px] page-wrapper">
           <div className="mb-8 flex flex-col items-center text-center lg:mb-10 lg:items-start lg:text-left">
-            <RovvyLogo variant="primary" size="md" showTagline={true} className="items-center lg:items-start" />
-            <h2 className="mt-5 text-2xl font-semibold tracking-tight text-[#0F172A] sm:text-[1.75rem]">
+            <RovvyLogo variant="white" size="md" showTagline={false} className="items-center lg:items-start" />
+            <h2 className="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-[1.75rem]">
               Welcome back
             </h2>
-            <p className="mt-2 max-w-md text-sm leading-relaxed text-[#64748B] sm:text-[15px]">
+            <p className="mt-2 max-w-md text-sm leading-relaxed text-[#94A3B8] sm:text-[15px]">
               Sign in to pick up your trips, groups, and plans right where you left off.
             </p>
-            <ul className="mt-6 grid gap-3 text-left sm:grid-cols-3 lg:hidden">
+            <ul className="mt-6 flex flex-wrap gap-3 text-left justify-center lg:hidden">
               {INTRO_FEATURES.map(({ icon: Icon, title }) => (
                 <li
                   key={title}
-                  className="flex items-center gap-2.5 rounded-xl border border-[#E2E8F0]/80 bg-white px-3 py-2.5 text-xs text-[#475569]"
+                  className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-[#1E293B] px-3 py-2.5 text-xs text-slate-300"
                 >
                   <Icon className="h-4 w-4 shrink-0 text-[#0F766E]" strokeWidth={1.75} aria-hidden />
-                  <span className="font-medium text-[#0F172A]">{title}</span>
+                  <span className="font-medium text-white">{title}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="rounded-2xl border border-[#E2E8F0] bg-white p-6 sm:p-8">
+          <div className="rounded-2xl border border-[#334155] bg-[#1E293B] p-6 sm:p-8">
             {verifiedNotice ? (
               <div
-                className="mb-5 rounded-lg border border-[#E2E8F0] bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#1C2B3A]"
+                className="mb-5 rounded-lg border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-xs sm:text-sm text-slate-200"
                 role="status"
               >
                 Your email is verified. Sign in with your password to continue.
@@ -392,10 +392,10 @@ function LoginPageInner() {
 
             {oauthAlert ? (
               <div
-                className="mb-5 rounded-lg border border-[#E8619A]/50 bg-[#FFF8FA] px-3.5 py-2.5 text-xs sm:text-sm text-[#1C2B3A]"
+                className="mb-5 rounded-lg border border-red-500/30 bg-red-950/20 px-3.5 py-2.5 text-xs sm:text-sm text-slate-200"
                 role="alert"
               >
-                {oauthAlert.title ? <p className="font-semibold">{oauthAlert.title}</p> : null}
+                {oauthAlert.title ? <p className="font-semibold text-white">{oauthAlert.title}</p> : null}
                 <p className={oauthAlert.title ? "mt-1" : ""}>{oauthAlert.body}</p>
                 {oauthAlert.showCreateAccount ? (
                   <div className="mt-2">
@@ -440,7 +440,7 @@ function LoginPageInner() {
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   disabled={isBusy}
-                  className="flex h-8 w-8 items-center justify-center text-[#aaa] transition hover:text-[#1C2B3A]"
+                  className="flex h-8 w-8 items-center justify-center text-[#94A3B8] transition hover:text-white"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   <EyeIcon show={showPassword} />
@@ -451,7 +451,7 @@ function LoginPageInner() {
             <div className="text-right">
               <Link
                 href="/forgot-password"
-                className="text-[11px] font-medium text-[#E8619A] hover:underline"
+                className="text-[11px] font-medium text-[#0F766E] hover:underline"
               >
                 Forgot password?
               </Link>
@@ -459,16 +459,16 @@ function LoginPageInner() {
 
             {unverifiedBanner ? (
               <div
-                className="rounded-lg border border-[#E8619A]/50 bg-[#FFF8FA] px-3.5 py-2.5 text-xs sm:text-sm text-[#1C2B3A]"
+                className="rounded-lg border border-red-500/30 bg-red-950/20 px-3.5 py-2.5 text-xs sm:text-sm text-slate-200"
                 role="status"
               >
-                <p className="flex items-center gap-2 font-medium text-[#1C2B3A]">
+                <p className="flex items-center gap-2 font-medium text-white">
                   <Mail className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
                   Please verify your email address
                 </p>
                 <Link
                   href="/resend-verification"
-                  className="mt-1 inline-block text-xs sm:text-sm font-bold text-[#E8619A] underline-offset-2 hover:underline"
+                  className="mt-1 inline-block text-xs sm:text-sm font-bold text-[#0F766E] underline-offset-2 hover:underline"
                 >
                   Resend verification link
                 </Link>
@@ -477,7 +477,7 @@ function LoginPageInner() {
                   onClick={() => {
                     if (pendingNext) router.replace(pendingNext);
                   }}
-                  className="mt-1.5 block w-full text-left text-[11px] sm:text-xs font-medium text-[#1C2B3A] hover:underline"
+                  className="mt-1.5 block w-full text-left text-[11px] sm:text-xs font-medium text-slate-300 hover:text-white hover:underline"
                 >
                   Skip for now
                 </button>
@@ -500,18 +500,18 @@ function LoginPageInner() {
             </button>
 
             {error ? (
-              <p className="text-center text-sm font-medium text-[#E8619A]" role="alert">
+              <p className="text-center text-sm font-medium text-red-400" role="alert">
                 {error}
               </p>
             ) : null}
             </form>
 
             <div className="mt-6 flex items-center gap-3">
-              <hr className="flex-1 border-0 border-t border-[#E2E8F0]" />
+              <hr className="flex-1 border-0 border-t border-[#334155]" />
               <span className="text-xs font-medium uppercase tracking-wide text-[#94A3B8]">
                 or continue with
               </span>
-              <hr className="flex-1 border-0 border-t border-[#E2E8F0]" />
+              <hr className="flex-1 border-0 border-t border-[#334155]" />
             </div>
 
             <div className="mt-4 flex flex-col gap-3">
@@ -529,7 +529,7 @@ function LoginPageInner() {
             </div>
           </div>
 
-          <p className="mt-8 text-center text-sm text-[#64748B] lg:text-left">
+          <p className="mt-8 text-center text-sm text-white lg:text-left">
             New here?{" "}
             <Link
               href="/register"

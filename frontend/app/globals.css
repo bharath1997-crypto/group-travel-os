@@ -211,3 +211,13 @@ body {
 .moon-float {
   animation: moon-float 6s ease-in-out infinite;
 }
+
+body, html {
+  overflow-x: hidden;
+}
+
+@media (max-width: 480px) {
+  .page-wrapper {
+    padding: 16px 12px;
+  }
+}
