@@ -1712,7 +1712,7 @@ export default function DashboardPage() {
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: MUTED }}>
           Quick actions
         </p>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {(
             [
               { Icon: Plane, label: "+New Trip", href: DASHBOARD_ROUTES.tripsPlan, primary: true },
@@ -1748,17 +1748,6 @@ export default function DashboardPage() {
               </Link>
             );
           })}
-          <button
-            type="button"
-            onClick={() => setPostComingSoonOpen(true)}
-            className="group rounded-xl border bg-white px-3 py-4 text-center text-[11px] font-bold transition hover:border-[#0F3460]/25 hover:bg-[#F8F9FA]"
-            style={{ borderColor: BORDER, color: NAVY }}
-          >
-            <span className="flex justify-center text-current leading-none" aria-hidden>
-              <Camera className="h-[18px] w-[18px]" strokeWidth={1.5} />
-            </span>
-            <span className="mt-2 block">+New Post</span>
-          </button>
         </div>
       </section>
 
