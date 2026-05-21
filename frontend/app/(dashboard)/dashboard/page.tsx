@@ -993,6 +993,20 @@ export default function DashboardPage() {
   const [openPollsCount, setOpenPollsCount] = useState(0);
 
   const [me, setMe] = useState<UserMe | null>(null);
+  const [userName, setUserName] = useState("there");
+
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem("gt_token");
+      if (token) {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        const name = payload.full_name || payload.username || "there";
+        setUserName(firstToken(name));
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
   const [stats, setStats] = useState<TravelStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -1308,6 +1322,7 @@ export default function DashboardPage() {
         return;
       }
       setMe(meRes.data);
+      setUserName(firstToken(meRes.data.full_name ?? meRes.data.email ?? "there"));
 
       const settled = await Promise.allSettled([
         apiFetchWithDeadline<TravelStats>("/users/me/travel-stats", pageSignal),
@@ -1463,9 +1478,6 @@ export default function DashboardPage() {
     };
   }, [router, reloadTick]);
 
-  const fn = me
-    ? firstToken(me.full_name ?? me.email ?? "")
-    : "there";
   const groupCount = stats?.groups_joined ?? groups.length;
 
   const showSmartSkeleton =
@@ -1487,7 +1499,7 @@ export default function DashboardPage() {
             Rovvy · Roam together
           </p>
           <h1 className="mt-2 text-xl font-bold leading-snug tracking-tight md:text-2xl">
-            <span style={{ color: BRAND }}>{fn}</span>, your group travel dashboard.
+            <span style={{ color: BRAND }}>{userName}</span>, your group travel dashboard.
           </h1>
           <p className="mt-2 text-sm font-medium" style={{ color: NAVY }}>
             Active trips, open polls, shared costs, and your group—all on one page.
@@ -1677,10 +1689,10 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {(
             [
-              { Icon: Plane, label: "Plan a trip", href: DASHBOARD_ROUTES.tripsPlan, primary: true },
+              { Icon: Plane, label: "+New Trip", href: DASHBOARD_ROUTES.tripsPlan, primary: true },
               {
                 Icon: Users,
-                label: "Create a group",
+                label: "+New Group",
                 href: DASHBOARD_ROUTES.groupsNew,
                 primary: false,
               },
