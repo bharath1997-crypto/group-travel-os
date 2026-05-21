@@ -34,7 +34,7 @@ from app.services.wayra_intent import (
 
 logger = logging.getLogger(__name__)
 
-_GEMINI_MODEL = "gemini-1.5-flash"  # 2.0-flash deprecated June 1 2026
+_GEMINI_MODEL = "gemini-2.5-flash"  # updated for 2026 model compatibility
 _OPENAI_MODEL = "gpt-4o-mini"
 _MAX_OUTPUT_TOKENS = 2048
 
@@ -214,8 +214,12 @@ def _call_gemini(system_prompt: str, user_block: str) -> str:
         "Context and user message (JSON). Reply with JSON only as specified.\n"
         + user_block
     )
-    response = model.generate_content(prompt)
-    return response.text or ""
+    try:
+        response = model.generate_content(prompt)
+        return response.text or ""
+    except Exception as exc:
+        logger.error("DEBUG: Gemini generate_content failed inside _call_gemini: %s", exc, exc_info=True)
+        raise
 
 
 # ── OpenAI fallback ────────────────────────────────────────────────────────────

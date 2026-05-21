@@ -62,7 +62,7 @@ _TM_URL = "https://app.ticketmaster.com/discovery/v2/events.json"
 _FSQ_URL = "https://api.foursquare.com/v3/places/search"
 _UNSPLASH_SEARCH = "https://api.unsplash.com/search/photos"
 _GNEWS_URL = "https://gnews.io/api/v4/search"
-_GEMINI_TIPS_MODEL = "gemini-1.5-flash"
+_GEMINI_TIPS_MODEL = "gemini-2.5-flash"
 _GEMINI_TIPS_URL = (
     f"https://generativelanguage.googleapis.com/v1beta/models/{_GEMINI_TIPS_MODEL}:generateContent"
 )
