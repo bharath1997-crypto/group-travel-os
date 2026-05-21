@@ -12,7 +12,7 @@ export default function FlightsPage() {
     container.innerHTML = "";
 
     const script = document.createElement("script");
-    script.src = "https://tpwdg.com/content?currency=usd&trs=528092&shmarker=727732&show_hotels=true&search_host=www.aviasales.com%2Fsearch&results_item=1&locale=en&powered_by=true&origin_iat=CHI&id=7879&primary=%2332A8DD&button=%2332A8DD&icon=%2332A8DD&text=%23FFFFFF&background=%231F2326&border=%23C4C4C4&input_background=%23FFFFFF&focus=%2332A8DD&font_family=Arial&font_size=16&border_radius=0";
+    script.src = "https://tpwdg.com/content?currency=usd&trs=528092&shmarker=727732&show_hotels=true&powered_by=true&locale=en&searchUrl=www.aviasales.com%2Fsearch&primary_override=%2332a8dd&color_button=%2332a8dd&color_icons=%2332a8dd&color_text=%23FFFFFF&color_bg=%23FFFFFF&color_bg_search=%231F2326&color_border=%23C4C4C4&color_focused=%2332a8dd&border_radius=0&plain=false&promo_id=7879&campaign_id=100";
     script.charset = "utf-8";
     script.async = true;
 
