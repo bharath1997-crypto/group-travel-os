@@ -317,8 +317,8 @@ export function AIAssistantSidecar({
   }
 
   return (
-    <div className={`pointer-events-none fixed bottom-0 right-0 z-50 p-0 ${className}`.trim()}>
-      <div className="pointer-events-auto flex max-w-full flex-col items-end gap-3 pr-4 pb-4 pl-2 sm:pr-5 sm:pb-5">
+    <div className={`pointer-events-none fixed bottom-0 left-0 z-40 p-0 ${className}`.trim()}>
+      <div className="pointer-events-auto flex max-w-full flex-col items-start gap-3 pl-4 pb-4 pr-2 sm:pl-5 sm:pb-5">
         {isOpen ? (
           <div
             id={panelId}

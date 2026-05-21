@@ -728,7 +728,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             return undefined;
           })()}
           context={{ pathname }}
-          className="!z-[100] max-md:!bottom-[72px] max-md:!right-0 max-md:!p-0 [&>div]:max-md:!pb-0 [&>div]:max-md:!pr-4"
+          className="!z-[40] max-md:!bottom-[72px] max-md:!left-0 max-md:!p-0 [&>div]:max-md:!pb-0 [&>div]:max-md:!pl-4"
         />
       ) : null}
     </div>
