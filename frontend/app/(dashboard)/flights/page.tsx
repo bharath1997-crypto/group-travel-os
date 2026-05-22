@@ -29,25 +29,25 @@ export default function FlightsPage() {
     // 2. Pricing Calendar Widget
     loadWidget(
       "tp-widget-pricing-calendar",
-      "https://tpwdg.com/content?currency=usd&trs=528092&shmarker=727732&searchUrl=www.aviasales.com%2Fsearch&locale=en&powered_by=true&one_way=false&only_direct=false&period=year&range=7%2C14&origin=CHI&promo_id=4041&campaign_id=100&color_button=%2332A8DD&color_focused=%2332A8DD&color_text=%23FFFFFF&color_bg=%231F2326&color_bg_search=%231F2326"
+      "https://tpwdg.com/content?currency=usd&trs=528092&shmarker=727732&searchUrl=www.aviasales.com%2Fsearch&locale=en&powered_by=true&one_way=false&only_direct=false&period=year&range=7%2C14&origin=CHI&promo_id=4041&campaign_id=100"
     );
 
     // 3. Schedule Widget
     loadWidget(
       "tp-widget-schedule",
-      "https://tpwdg.com/content?currency=usd&trs=528092&shmarker=727732&color_button=%2332A8DD&color_text=%23FFFFFF&color_bg=%231F2326&target_host=www.aviasales.com%2Fsearch&locale=en&powered_by=true&one_way=false&only_direct=false&period=year&range=7%2C14&origin=CHI&destination=LON&promo_id=2811&campaign_id=100"
+      "https://tpwdg.com/content?currency=usd&trs=528092&shmarker=727732&color_button=%2332a8dd&target_host=www.aviasales.com%2Fsearch&locale=en&powered_by=true&one_way=false&only_direct=false&period=year&range=7%2C14&origin=CHI&destination=LON&promo_id=2811&campaign_id=100"
     );
 
     // 4. Popular Routes Widget
     loadWidget(
       "tp-widget-popular-routes",
-      "https://tpwdg.com/content?currency=usd&trs=528092&shmarker=727732&origin=CHI&target_host=www.aviasales.com%2Fsearch&locale=en&limit=6&powered_by=true&primary=%2332A8DD&color_button=%2332A8DD&color_text=%23FFFFFF&color_bg=%231F2326&promo_id=4044&campaign_id=100"
+      "https://tpwdg.com/content?currency=usd&trs=528092&shmarker=727732&destination=CHI&target_host=www.aviasales.com%2Fsearch&locale=en&limit=6&powered_by=true&primary=%2332a8dd&promo_id=4044&campaign_id=100"
     );
 
     // 5. Prices on Map Widget
     loadWidget(
       "tp-widget-map",
-      "https://tpwdg.com/content?currency=usd&trs=528092&shmarker=727732&lat=41.8781&lng=-87.6298&powered_by=true&search_host=www.aviasales.com%2Fsearch&origin_iata=CHI&destination_iata=&one_way=false&only_direct=false&locale=en&period=year&range=7%2C14&theme=dark&draggable=true&disable_zoom=false&show_buttons=true&scroll_zoom=false&zoom=3&width=100%25&height=500px&type=map&promo_id=4054"
+      "https://tpwdg.com/content?currency=usd&trs=528092&shmarker=727732&lat=41.8781&lng=-87.6298&powered_by=true&search_host=www.aviasales.com%2Fsearch&origin_iata=CHI&destination_iata=&one_way=false&only_direct=false&locale=en&period=year&range=7%2C14&theme=light&draggable=true&disable_zoom=false&show_buttons=true&scroll_zoom=false&zoom=3&width=100%25&height=500px&type=map&promo_id=4054"
     );
   }, []);
 
