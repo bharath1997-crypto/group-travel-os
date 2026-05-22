@@ -226,6 +226,10 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(weather_router, prefix="/api/v1")
 
+    from app.routes.travel_intel import router as travel_intel_router
+
+    app.include_router(travel_intel_router, prefix="/api/v1")
+
     from app.routes.flights import router as flights_router
 
     app.include_router(flights_router, prefix="/api/v1")

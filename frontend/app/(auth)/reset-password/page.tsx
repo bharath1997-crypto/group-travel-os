@@ -99,7 +99,7 @@ function ResetPasswordInner() {
 
   if (!hasToken) {
     return (
-      <div className="flex min-h-svh flex-col bg-slate-100">
+      <div className="flex min-h-svh flex-col bg-[#0F172A]">
         <GradientHeader
           gradient={ORANGE_GRADIENT}
           title=""
@@ -110,13 +110,13 @@ function ResetPasswordInner() {
             <LockIcon />
           </div>
         </GradientHeader>
-        <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-3xl bg-white px-4 pb-10 pt-6 shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.12)] sm:mx-auto sm:mb-8 sm:max-w-lg sm:rounded-2xl sm:px-8">
-          <p className="text-center text-sm font-medium text-red-600" role="alert">
+        <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-3xl bg-[#1E293B] border border-[#334155] px-4 pb-10 pt-6 shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.12)] sm:mx-auto sm:mb-8 sm:max-w-lg sm:rounded-2xl sm:px-8">
+          <p className="text-center text-sm font-medium text-red-400" role="alert">
             Invalid or incomplete reset link.
           </p>
           <Link
             href="/forgot-password"
-            className="mt-6 flex min-h-[48px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#E94560] to-[#FF6B6B] py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-95"
+            className="mt-6 flex min-h-[48px] w-full items-center justify-center rounded-2xl bg-[#0F766E] py-3 text-sm font-bold text-white shadow-lg transition hover:bg-[#0D6B63]"
           >
             Request a new link
           </Link>
@@ -127,7 +127,7 @@ function ResetPasswordInner() {
 
   if (success) {
     return (
-      <div className="flex min-h-svh flex-col bg-slate-100">
+      <div className="flex min-h-svh flex-col bg-[#0F172A]">
         <GradientHeader
           gradient={GREEN_GRADIENT}
           title=""
@@ -139,10 +139,10 @@ function ResetPasswordInner() {
           </div>
           <p className="mt-3 text-xl font-bold leading-tight text-white">Password reset!</p>
         </GradientHeader>
-        <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-3xl bg-white px-4 pb-10 pt-8 text-center shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.12)] sm:mx-auto sm:mb-8 sm:max-w-lg sm:rounded-2xl sm:px-8">
+        <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-3xl bg-[#1E293B] border border-[#334155] px-4 pb-10 pt-8 text-center shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.12)] sm:mx-auto sm:mb-8 sm:max-w-lg sm:rounded-2xl sm:px-8">
           <Link
             href="/login"
-            className="flex min-h-[52px] w-full items-center justify-center rounded-2xl py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-95"
+            className="flex min-h-[52px] w-full items-center justify-center rounded-2xl py-3 text-sm font-bold text-white shadow-lg transition hover:bg-[#0D6B63]"
             style={{ background: GREEN_GRADIENT }}
           >
             Sign In
@@ -153,7 +153,7 @@ function ResetPasswordInner() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col bg-slate-100">
+    <div className="flex min-h-svh flex-col bg-[#0F172A]">
       <GradientHeader
         gradient={ORANGE_GRADIENT}
         title=""
@@ -165,7 +165,7 @@ function ResetPasswordInner() {
         </div>
       </GradientHeader>
 
-      <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-3xl bg-white px-4 pb-10 pt-6 shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.12)] sm:mx-auto sm:mb-8 sm:max-w-lg sm:rounded-2xl sm:px-8">
+      <div className="relative z-[1] -mt-4 flex flex-1 flex-col rounded-t-3xl bg-[#1E293B] border border-[#334155] px-4 pb-10 pt-6 shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.12)] sm:mx-auto sm:mb-8 sm:max-w-lg sm:rounded-2xl sm:px-8">
         <h1 className="sr-only">Reset your password</h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
           <AuthInput
@@ -192,7 +192,7 @@ function ResetPasswordInner() {
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 disabled={submitting}
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-[#1E3A5F]/50 hover:bg-slate-100"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-[#94A3B8] transition hover:text-white"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 <EyeIcon show={showPassword} />
@@ -224,7 +224,7 @@ function ResetPasswordInner() {
                 type="button"
                 onClick={() => setShowConfirm((v) => !v)}
                 disabled={submitting}
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-[#1E3A5F]/50 hover:bg-slate-100"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-[#94A3B8] transition hover:text-white"
                 aria-label={showConfirm ? "Hide password" : "Show password"}
               >
                 <EyeIcon show={showConfirm} />
@@ -233,9 +233,9 @@ function ResetPasswordInner() {
           />
 
           {submitError ? (
-            <div className="rounded-2xl border border-red-100 bg-red-50 px-3 py-2.5 text-center text-sm text-red-800" role="alert">
+            <div className="rounded-2xl border border-red-500/30 bg-red-950/20 px-3 py-2.5 text-center text-sm text-slate-200" role="alert">
               <p>{submitError}</p>
-              <Link href="/forgot-password" className="mt-2 inline-block font-semibold text-[#667eea] underline-offset-2 hover:underline">
+              <Link href="/forgot-password" className="mt-2 inline-block font-semibold text-[#0F766E] underline-offset-2 hover:underline">
                 Request a new reset link
               </Link>
             </div>
@@ -244,7 +244,7 @@ function ResetPasswordInner() {
           <button
             type="submit"
             disabled={submitting}
-            className="mt-1 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#E94560] to-[#FF6B6B] py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-95 disabled:opacity-60"
+            className="mt-1 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-[#0F766E] py-3 text-sm font-bold text-white shadow-lg transition hover:bg-[#0D6B63] disabled:opacity-60"
           >
             {submitting ? "Resetting…" : "Reset Password"}
           </button>
@@ -258,9 +258,9 @@ export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-svh flex-col items-center justify-center bg-slate-100">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#E94560] border-t-transparent" aria-hidden />
-          <p className="mt-3 text-sm text-[#1E3A5F]/70">Loading…</p>
+        <div className="flex min-h-svh flex-col items-center justify-center bg-[#0F172A]">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#0F766E] border-t-transparent" aria-hidden />
+          <p className="mt-3 text-sm text-slate-400">Loading…</p>
         </div>
       }
     >

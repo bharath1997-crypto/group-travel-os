@@ -1,3 +1,5 @@
+import { clearUserSessionStorage } from "@/lib/userSessionStorage";
+
 const TOKEN_KEY = "gt_token";
 
 export function saveToken(token: string): void {
@@ -13,6 +15,7 @@ export function getToken(): string | null {
 export function clearToken(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(TOKEN_KEY);
+  clearUserSessionStorage();
 }
 
 export function isLoggedIn(): boolean {

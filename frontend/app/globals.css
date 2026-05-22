@@ -211,3 +211,24 @@ body {
 .moon-float {
   animation: moon-float 6s ease-in-out infinite;
 }
+
+body, html {
+  overflow-x: hidden;
+}
+
+@media (max-width: 480px) {
+  .page-wrapper {
+    padding: 16px 12px;
+  }
+}
+
+/* Hide native browser date picker icons and spin-buttons to prevent double icons and layout shifts */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+input[type="date"]::-webkit-inner-spin-button,
+input[type="date"]::-webkit-outer-spin-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+}

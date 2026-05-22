@@ -1,122 +1,17 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import WayraIcon from "@/components/ui/WayraIcon";
 import { apiFetchWithStatus } from "@/lib/api";
-
-const TRAVEL_KEYWORDS = [
-  "event",
-  "events",
-  "restaurant",
-  "bar",
-  "bars",
-  "hotel",
-  "food",
-  "eat",
-  "drink",
-  "music",
-  "concert",
-  "show",
-  "tour",
-  "ticket",
-  "book",
-  "reserve",
-  "weather",
-  "chicago",
-  "city",
-  "place",
-  "park",
-  "museum",
-  "club",
-  "tonight",
-  "weekend",
-  "near",
-  "recommend",
-  "best",
-  "jazz",
-  "sports",
-  "art",
-  "beach",
-  "flight",
-  "trip",
-  "stay",
-  "visit",
-  "explore",
-  "activity",
-  "fun",
-  "nightlife",
-];
-
-const APP_KEYWORDS = [
-  "how",
-  "create",
-  "trip",
-  "expense",
-  "split",
-  "invite",
-  "member",
-  "group",
-  "poll",
-  "vote",
-  "live",
-  "map",
-  "setting",
-  "profile",
-  "password",
-  "login",
-  "account",
-  "notification",
-  "timer",
-  "share",
-  "location",
-];
-
-function detectMode(message: string): "flying" | "perched" {
-  const lower = message.toLowerCase();
-  const travelScore = TRAVEL_KEYWORDS.filter((k) => lower.includes(k)).length;
-  const appScore = APP_KEYWORDS.filter((k) => lower.includes(k)).length;
-  return travelScore > appScore ? "flying" : "perched";
-}
-
-const APP_GUIDE_RESPONSES: { keys: string[]; text: string }[] = [
-  {
-    keys: ["invite", "member"],
-    text: "Invite people from Connect: open your group, share the invite link, and confirm seats before splitting costs.",
-  },
-  {
-    keys: ["split", "expense"],
-    text: "For expenses open Split Activities → add amounts, assign who paid, split evenly or custom weights.",
-  },
-  {
-    keys: ["poll", "vote"],
-    text: "Create a poll in your trip drawer so everyone can vote dates and venues before bookings.",
-  },
-  {
-    keys: ["trip", "create"],
-    text: "Start in Trips → New Trip, add destinations and dates; then wire budget and participants from there.",
-  },
-  {
-    keys: ["map", "location", "live"],
-    text: "Use Map/Live tabs to coordinate meetups safely; pins update as people share arrivals.",
-  },
-  {
-    keys: ["notification", "account", "setting", "password", "profile", "login"],
-    text: "Profile and security live under Settings: update contact info there and keep Rovvy synced.",
-  },
-];
-
-function appGuideReply(userMessage: string): string {
-  const low = userMessage.toLowerCase();
-  for (const row of APP_GUIDE_RESPONSES) {
-    if (row.keys.some((k) => low.includes(k))) return row.text;
-  }
-  return (
-    "I can walk you through trips, groups, splits, polls, Live/Map, timers, invites, and Settings. " +
-    "What do you want to do in the app? Or ask about destinations and plans for fuller travel suggestions."
-  );
-}
+import { OPEN_WAYRA_EVENT, type OpenWayraDetail } from "@/lib/open-wayra";
+import {
+  classifyMode,
+  detectBirdState,
+  localAssistantReply,
+  resolveAppGuideReply,
+} from "@/lib/wayra/intent";
 
 type ChatMessage =
   | { id: string; role: "user"; text: string }
@@ -153,12 +48,32 @@ export interface AIAssistantSidecarProps {
   className?: string;
 }
 
-const QUICK_PROMPTS = [
-  "What should I do next?",
+const QUICK_PROMPTS_DEFAULT = [
   "Explain this page",
-  "Summarize my task",
+  "What should I do next?",
   "Help me finish this",
 ];
+
+const QUICK_PROMPTS_BY_PAGE: Record<string, string[]> = {
+  dashboard: [
+    "What should I do first on Rovvy?",
+    "How do I create a group?",
+  ],
+};
+
+const OFFLINE_HELP_REPLY =
+  "I'm in offline help mode right now. Ask how to plan a trip, create a group, run polls, or split expenses—I can walk you through Rovvy without the full assistant.";
+
+function appendAssistantFallback(
+  userMessage: string,
+  page: string,
+  activeTab: string | undefined,
+  ctx: Record<string, unknown>,
+): string {
+  return (
+    localAssistantReply(userMessage, page, activeTab, ctx) ?? OFFLINE_HELP_REPLY
+  );
+}
 
 function newId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -184,7 +99,6 @@ export function AIAssistantSidecar({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
   const [actionHint, setActionHint] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -212,9 +126,16 @@ export function AIAssistantSidecar({
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen]);
 
-  const showToast = useCallback((msg: string) => {
-    setToast(msg);
-    window.setTimeout(() => setToast(null), 5000);
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const ce = e as CustomEvent<OpenWayraDetail | undefined>;
+      setIsOpen(true);
+      const p = ce.detail?.prompt?.trim();
+      if (p) setInput(p);
+    };
+    window.addEventListener(OPEN_WAYRA_EVENT, onOpen as EventListener);
+    return () =>
+      window.removeEventListener(OPEN_WAYRA_EVENT, onOpen as EventListener);
   }, []);
 
   const showActionHint = useCallback((msg: string) => {
@@ -227,35 +148,41 @@ export function AIAssistantSidecar({
       const userMessage = (override ?? input).trim();
       if (!userMessage || loading) return;
 
-      const mode = detectMode(userMessage);
-      const modeChanged = mode !== prevModeRef.current;
+      const bird = detectBirdState(userMessage);
+      const modeChanged = bird !== prevModeRef.current;
       if (modeChanged) {
-        prevModeRef.current = mode;
+        prevModeRef.current = bird;
       }
-      setBirdState(mode);
+      setBirdState(bird);
 
       const userRow: ChatMessage = { id: newId(), role: "user", text: userMessage };
       const systemRow: ChatMessage | null = modeChanged
         ? {
             id: newId(),
             role: "system",
-            text: mode === "flying" ? "✦ switched to travel mode" : "✦ switched to app guide",
+            text:
+              bird === "flying"
+                ? "✦ Wayra · travel guide"
+                : "✦ Wayra · app guide",
           }
         : null;
 
       setInput("");
       setMessages((m) => [...m, userRow, ...(systemRow ? [systemRow] : [])]);
 
-      if (mode === "perched") {
-        setLoading(true);
-        window.setTimeout(() => {
+      const ctx = (context ?? {}) as Record<string, unknown>;
+      const wayraMode = classifyMode(userMessage);
+
+      // Fast path: known App Guide intents answered locally (matches backend).
+      if (wayraMode === "app_guide") {
+        const instant = resolveAppGuideReply(userMessage);
+        if (instant) {
           setMessages((m) => [
             ...m,
-            { id: newId(), role: "assistant", text: appGuideReply(userMessage) },
+            { id: newId(), role: "assistant", text: instant },
           ]);
-          setLoading(false);
-        }, 240);
-        return;
+          return;
+        }
       }
 
       setLoading(true);
@@ -282,24 +209,30 @@ export function AIAssistantSidecar({
         }
 
         if (status < 200 || status >= 300 || !data) {
-          const inline =
-            status === 404
-              ? "The assistant service was not found on the server. Restart the API after registering the /ai/assistant route."
-              : status === 400
-                ? "The assistant is not available yet (for example, OPENAI_API_KEY may be missing on the server) or the request was rejected."
-                : status >= 500
-                  ? "The assistant hit a server error. Try again in a moment."
-                  : "Could not reach the assistant. Check that the API is running and try again.";
-          showToast(inline);
-          setMessages((m) => [...m, { id: newId(), role: "assistant", text: inline }]);
+          const fallback = appendAssistantFallback(
+            userMessage,
+            page,
+            activeTab,
+            ctx,
+          );
+          setMessages((m) => [
+            ...m,
+            { id: newId(), role: "assistant", text: fallback },
+          ]);
           return;
         }
 
         if (!data.message || typeof data.message !== "string") {
-          const err =
-            "The assistant returned an unexpected response. Please try again.";
-          showToast(err);
-          setMessages((m) => [...m, { id: newId(), role: "assistant", text: err }]);
+          const fallback = appendAssistantFallback(
+            userMessage,
+            page,
+            activeTab,
+            ctx,
+          );
+          setMessages((m) => [
+            ...m,
+            { id: newId(), role: "assistant", text: fallback },
+          ]);
           return;
         }
 
@@ -318,9 +251,16 @@ export function AIAssistantSidecar({
           },
         ]);
       } catch {
-        const err = "Network error. Check your connection and that the API is reachable.";
-        showToast(err);
-        setMessages((m) => [...m, { id: newId(), role: "assistant", text: err }]);
+        const fallback = appendAssistantFallback(
+          userMessage,
+          page,
+          activeTab,
+          ctx,
+        );
+        setMessages((m) => [
+          ...m,
+          { id: newId(), role: "assistant", text: fallback },
+        ]);
       } finally {
         setLoading(false);
       }
@@ -333,7 +273,6 @@ export function AIAssistantSidecar({
       loading,
       page,
       router,
-      showToast,
       tripId,
     ],
   );
@@ -356,12 +295,17 @@ export function AIAssistantSidecar({
 
   const pageLabel = page.replace(/_/g, "/").replace(/^/, "/");
 
+  const quickPrompts = useMemo(
+    () => QUICK_PROMPTS_BY_PAGE[page] ?? QUICK_PROMPTS_DEFAULT,
+    [page],
+  );
+
   const headerStatus =
     birdState === "flying"
       ? loading
         ? "AI Travel Guide · thinking..."
         : "AI Travel Guide"
-      : "App Guide · offline";
+      : "App Guide · online";
 
   const isExplorerRoute =
     pathname.startsWith("/explore/events") ||
@@ -373,8 +317,8 @@ export function AIAssistantSidecar({
   }
 
   return (
-    <div className={`pointer-events-none fixed bottom-0 right-0 z-50 p-0 ${className}`.trim()}>
-      <div className="pointer-events-auto flex max-w-full flex-col items-end gap-3 pr-4 pb-4 pl-2 sm:pr-5 sm:pb-5">
+    <div className={`pointer-events-none fixed bottom-0 left-0 md:left-[200px] xl:left-[240px] z-40 p-0 ${className}`.trim()}>
+      <div className="pointer-events-auto flex max-w-full flex-col items-start gap-3 pl-4 pb-4 pr-2 sm:pl-5 sm:pb-5">
         {isOpen ? (
           <div
             id={panelId}
@@ -383,12 +327,6 @@ export function AIAssistantSidecar({
             aria-modal="true"
             aria-labelledby={`${panelId}-title`}
           >
-            {toast ? (
-              <div className="absolute right-2 top-2 z-10 max-w-[85%] rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-right text-xs text-red-800 shadow">
-                {toast}
-              </div>
-            ) : null}
-
             <div className="flex items-start justify-between gap-2 border-b border-[#E9ECEF] bg-white px-4 py-3">
               <div className="flex min-w-0 shrink-0 items-center gap-2">
                 <WayraIcon
@@ -432,7 +370,7 @@ export function AIAssistantSidecar({
                 Quick prompts
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {QUICK_PROMPTS.map((q) => (
+                {quickPrompts.map((q) => (
                   <button
                     key={q}
                     type="button"
@@ -452,9 +390,9 @@ export function AIAssistantSidecar({
             >
               {messages.length === 0 ? (
                 <p className="rounded-xl border border-[#E9ECEF] bg-white p-3 text-sm leading-relaxed text-[#2C3E50]">
-                  Hi — I&apos;m <strong>Wayra</strong>, your companion across Rovvy. Ask how to use{" "}
-                  <strong>{pageLabel}</strong>, or ask about destinations and plans — I&apos;ll match
-                  travel vs app guide from your wording.
+                  Hi — I&apos;m <strong>Wayra</strong>. Ask how{" "}
+                  <strong>{pageLabel}</strong> works, or get destination ideas. App
+                  how-tos work offline; travel tips need the assistant when it&apos;s up.
                 </p>
               ) : null}
 

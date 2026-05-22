@@ -48,7 +48,7 @@ class CountryTemplateService:
             ],
             "ai_ranking": {
                 "enabled": True,
-                "model": "gemini-1.5-flash",
+                "model": "gemini-2.5-flash",
                 "max_items": 100,  # "max 50–100 normalized cards per batch"
             },
         }

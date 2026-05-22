@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import L from "leaflet";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -179,6 +179,20 @@ type TabId =
   | "members"
   | "map";
 
+const TRIP_TAB_IDS: TabId[] = [
+  "overview",
+  "itinerary",
+  "expenses",
+  "polls",
+  "members",
+  "map",
+];
+
+function parseTripTab(raw: string | null): TabId {
+  if (raw && TRIP_TAB_IDS.includes(raw as TabId)) return raw as TabId;
+  return "overview";
+}
+
 function diceBear(id: string) {
   return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(id)}`;
 }
@@ -218,9 +232,12 @@ function mergeDescNotes(
 export default function TripDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = typeof params?.id === "string" ? params.id : "";
 
-  const [tab, setTab] = useState<TabId>("overview");
+  const [tab, setTabInternal] = useState<TabId>(() =>
+    parseTripTab(searchParams.get("tab")),
+  );
   const [trip, setTrip] = useState<TripOut | null>(null);
   const [group, setGroup] = useState<GroupOut | null>(null);
   const [expenses, setExpenses] = useState<ExpenseOut[]>([]);
@@ -268,6 +285,27 @@ export default function TripDetailPage() {
       flag_type: string;
     }[]
   >([]);
+
+  useEffect(() => {
+    setTabInternal(parseTripTab(searchParams.get("tab")));
+  }, [searchParams]);
+
+  const setTab = useCallback(
+    (next: TabId) => {
+      setTabInternal(next);
+      const params = new URLSearchParams(searchParams.toString());
+      if (next === "overview") {
+        params.delete("tab");
+      } else {
+        params.set("tab", next);
+      }
+      const query = params.toString();
+      router.replace(query ? `/trips/${id}?${query}` : `/trips/${id}`, {
+        scroll: false,
+      });
+    },
+    [router, id, searchParams],
+  );
 
   const showToast = useCallback((m: string, k: "success" | "error" = "success") => {
     setToast({ m, k });

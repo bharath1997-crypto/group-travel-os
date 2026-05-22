@@ -34,12 +34,13 @@ export function RovvyLogo({
   const w = width || defaultSize.w;
   const h = height || defaultSize.h;
   
-  // Use logo-primary for dark variant (white background) 
-  // and logo-dark for primary/white variant (dark background)
-  // based on the user's explicit code in Step 1
-  const src = variant === 'primary' || variant === 'white'
-    ? '/logo-primary.png'
-    : '/logo-dark.png'
+  // primary: teal on pure white (#FFFFFF) — logo-primary matches white surfaces
+  // dark / white: logo-dark on navy or colored backgrounds (inverted to white)
+  const src = variant === 'primary' ? '/logo-primary.png' : '/logo-dark.png'
+  const imgStyle =
+    variant === 'dark' || variant === 'white'
+      ? { objectFit: 'contain' as const, filter: 'brightness(0) invert(1)' }
+      : { objectFit: 'contain' as const }
 
   return (
     <div className={`flex flex-col items-start ${className}`}>
@@ -49,12 +50,12 @@ export function RovvyLogo({
         width={w}
         height={h}
         priority
-        style={{ objectFit: 'contain' }}
+        style={imgStyle}
       />
       {showTagline && (
-        <span className={`text-xs mt-1 font-medium ${
+        <span className={`text-xs -mt-2 font-bold ${
           variant === 'dark' 
-            ? 'text-[#94A3B8]' 
+            ? 'text-white' 
             : 'text-[#6B7280]'
         }`}>
           Roam together

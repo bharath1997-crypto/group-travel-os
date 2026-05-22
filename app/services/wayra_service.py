@@ -27,6 +27,57 @@ _GEMINI_URL = (
 class WayraService:
     """Group-travel explorer helper; Explorer suggestions use minimal contextual payloads."""
 
+    def chat(self, message: str, city: str, trip_context: str = "") -> str:
+        key = _gemini_key()
+        if not key:
+            return "Wayra is temporarily unavailable."
+        
+        try:
+            instruction = (
+                "You are Wayra, Rovvy's group travel AI assistant. Based on the user's message "
+                f"and context (city: {city}, trip context: {trip_context}), write a helpful, "
+                "friendly, and concise response (max 2-3 sentences). "
+                "Do not mention third-party AI models or providers like Google or Gemini."
+            )
+            body = {
+                "contents": [{"role": "user", "parts": [{"text": f"{instruction}\n\nUser: {message}"}]}],
+                "generationConfig": {
+                    "temperature": 0.4,
+                    "maxOutputTokens": 256,
+                },
+            }
+            with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
+                r = client.post(_GEMINI_URL, params={"key": key}, json=body)
+            if r.status_code != 200:
+                logger.debug("Wayra Gemini HTTP %s: %s", r.status_code, r.text[:300])
+                return "Wayra is temporarily offline. Please try again."
+            
+            data = r.json()
+            candidates = data.get("candidates")
+            if not isinstance(candidates, list) or not candidates:
+                return "I couldn't process that right now. Please try again."
+            
+            first = candidates[0]
+            if not isinstance(first, dict):
+                return "I couldn't process that right now. Please try again."
+            
+            content = first.get("content")
+            if not isinstance(content, dict):
+                return "I couldn't process that right now. Please try again."
+            
+            parts = content.get("parts")
+            if not isinstance(parts, list):
+                return "I couldn't process that right now. Please try again."
+            
+            chunks = []
+            for p in parts:
+                if isinstance(p, dict) and isinstance(p.get("text"), str):
+                    chunks.append(p["text"])
+            return "".join(chunks).strip()
+        except Exception as exc:
+            logger.debug("Wayra Gemini chat failed: %s", exc)
+            return "Wayra is temporarily offline. Please try again."
+
     def generate_explorer_suggestion(
         self,
         query: str,

@@ -9,7 +9,7 @@ import json
 from functools import lru_cache
 from typing import Any
 
-from pydantic import Field, computed_field, field_validator
+from pydantic import Field, computed_field, field_validator, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -57,16 +57,20 @@ class Settings(BaseSettings):
     )
 
     # ── Gemini (primary Rovvy AI engine) ────────────────────────────────────────
-    # https://aistudio.google.com/app/apikey — set GEMINI_API_KEY in .env
-    gemini_api_key: str | None = Field(
-        default=None,
+    # https://aistudio.google.com/app/apikey — Cloud Run injects GEMINI_API_KEY from Secret Manager
+    gemini_api_key: str = Field(
+        default="",
         validation_alias="GEMINI_API_KEY",
     )
 
-    # ── OpenWeatherMap (Phase 3) ────────────────────────────────────────────────
+    # ── OpenWeatherMap (Phase 3 / travel intel) ────────────────────────────────
     openweather_api_key: str | None = Field(
         default=None,
         validation_alias="OPENWEATHER_API_KEY",
+    )
+    openweathermap_api_key: str = Field(
+        default="",
+        validation_alias="OPENWEATHERMAP_API_KEY",
     )
     serpapi_key: str | None = Field(
         default=None,
@@ -92,7 +96,7 @@ class Settings(BaseSettings):
     )
     google_places_api_key: str | None = Field(
         default=None,
-        validation_alias="GOOGLE_PLACES_API_KEY",
+        validation_alias=AliasChoices("GOOGLE_PLACES_API_KEY", "GOOGLE_PLACES_KEY"),
     )
     unsplash_access_key: str | None = Field(
         default=None,
@@ -112,6 +116,14 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="KIWI_API_KEY",
     )
+
+    # ── Duffel & Amadeus (Flight Search API) ─────────────────────────────────────
+    duffel_api_key: str | None = Field(
+        default=None,
+        validation_alias="DUFFEL_API_KEY",
+    )
+
+
 
     # ── Travelpayouts (tp.media affiliate marker / trs) ──────────────────────────
     travelpayouts_marker: str = Field(
@@ -263,6 +275,16 @@ class Settings(BaseSettings):
         default="",
         validation_alias="MAIL_PASSWORD",
     )
+
+    @field_validator("gemini_api_key", mode="before")
+    @classmethod
+    def _strip_gemini_api_key(cls, v: Any) -> Any:
+        """Normalize Secret Manager / CI values so the Gemini client gets a bare key."""
+        if v is None:
+            return ""
+        if isinstance(v, str):
+            return v.strip()
+        return v
 
     @field_validator(
         "GOOGLE_CLIENT_ID",
