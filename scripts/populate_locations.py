@@ -60,7 +60,7 @@ def generate_hashtags_batch(city_names: list[str]) -> dict[str, list[str]]:
         return result
 
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-2.5-flash")
     prompt = f"""Generate 5 popular travel hashtags for each city in this list: {json.dumps(city_names)}.
     Return ONLY a JSON object where keys are the city names from the list and values are arrays of strings (the hashtags).
     Example: {{"Chicago": ["#chicago", "#chitown"], "Paris": ["#paris"]}}

@@ -38,23 +38,14 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v2
 
-      - name: Create env vars file
-        run: |
-          cat > /tmp/env-vars.yaml << 'EOF'
-          ENVIRONMENT: production
-          DEBUG: "False"
-          ALLOWED_ORIGINS: "https://group-travel-os.vercel.app,http://localhost:3000,https://rovvy.app,https://www.rovvy.app"
-          API_PUBLIC_URL: "https://group-travel-os-api-704551807369.asia-south1.run.app"
-          EOF
-
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy group-travel-os-api \
             --source . \
-            --platform managed \
             --region asia-south1 \
+            --min-instances=1 \
             --allow-unauthenticated \
             --port 8080 \
             --memory 512Mi \
-            --set-secrets="DATABASE_URL=DATABASE_URL:latest,SECRET_KEY=SECRET_KEY:latest" \
-            --env-vars-file=/tmp/env-vars.yaml
+            --update-secrets="DATABASE_URL=DATABASE_URL:latest,SECRET_KEY=SECRET_KEY:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,GOOGLE_REDIRECT_URI=GOOGLE_REDIRECT_URI:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,GOOGLE_PLACES_KEY=GOOGLE_PLACES_KEY:latest,DUFFEL_API_KEY=DUFFEL_API_KEY:latest" \
+            --set-env-vars="ENVIRONMENT=production,DEBUG=False,FRONTEND_URL=https://rovvy.app,ALLOWED_ORIGINS=https://rovvy.app,https://www.rovvy.app,https://group-travel-os.vercel.app,http://localhost:3000,API_PUBLIC_URL=https://group-travel-os-api-704551807369.asia-south1.run.app"

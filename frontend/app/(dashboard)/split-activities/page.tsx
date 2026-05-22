@@ -1147,14 +1147,13 @@ export default function SplitActivitiesPage() {
         <p className="mt-1 max-w-sm text-center text-sm text-[#6C757D]">
           Create a group to start splitting
         </p>
-        <button
-          type="button"
-          onClick={() => router.push("/travel-hub")}
-          className="mt-6 rounded-lg px-6 py-3 text-sm font-bold text-white"
+        <Link
+          href="/groups/new"
+          className="mt-6 inline-flex rounded-lg px-6 py-3 text-sm font-bold text-white"
           style={{ background: CORAL }}
         >
           Create Group →
-        </button>
+        </Link>
         {toast ? <Toast toast={toast} /> : null}
       </div>
     );

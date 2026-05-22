@@ -193,42 +193,33 @@ export function WayraPanel({ open, city, onClose, onOpen, seedMessage, onSeedCon
       [...prevMsgs, userRow, ...(systemRow ? [systemRow] : [])],
     );
 
-    if (mode === "flying") {
-      try {
-        const res = await apiFetch<{ response?: string; reply?: string; message?: string }>(
-          "/wayra/chat",
-          {
-            method: "POST",
-            body: JSON.stringify({
-              message,
-              city,
-              trip_context: "",
-            }),
-          },
-        );
-        const reply =
-          res.response ??
-          res.reply ??
-          res.message ??
-          TRAVEL_FALLBACK_RESPONSES[fallbackIndex % TRAVEL_FALLBACK_RESPONSES.length]!;
-        setFallbackIndex((i) => i + 1);
-        setMessages((prev) => [...prev, { id: `a-${Date.now()}`, role: "assistant", text: reply }]);
-      } catch {
-        const reply =
-          TRAVEL_FALLBACK_RESPONSES[fallbackIndex % TRAVEL_FALLBACK_RESPONSES.length]!;
-        setFallbackIndex((i) => i + 1);
-        setMessages((prev) => [...prev, { id: `d-${Date.now()}`, role: "assistant", text: reply }]);
-      } finally {
-        setBusy(false);
-      }
-      return;
-    }
-
-    window.setTimeout(() => {
-      const reply = appGuideReply(message);
-      setMessages((prev) => [...prev, { id: `g-${Date.now()}`, role: "assistant", text: reply }]);
+    try {
+      const res = await apiFetch<{ response?: string; reply?: string; message?: string }>(
+        "/wayra/chat",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            message,
+            city,
+            trip_context: "",
+          }),
+        },
+      );
+      const reply =
+        res.response ??
+        res.reply ??
+        res.message ??
+        TRAVEL_FALLBACK_RESPONSES[fallbackIndex % TRAVEL_FALLBACK_RESPONSES.length]!;
+      setFallbackIndex((i) => i + 1);
+      setMessages((prev) => [...prev, { id: `a-${Date.now()}`, role: "assistant", text: reply }]);
+    } catch {
+      const reply =
+        TRAVEL_FALLBACK_RESPONSES[fallbackIndex % TRAVEL_FALLBACK_RESPONSES.length]!;
+      setFallbackIndex((i) => i + 1);
+      setMessages((prev) => [...prev, { id: `d-${Date.now()}`, role: "assistant", text: reply }]);
+    } finally {
       setBusy(false);
-    }, 240);
+    }
   };
 
   const headerStatus =

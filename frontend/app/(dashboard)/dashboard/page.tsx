@@ -7,7 +7,9 @@ import {
   AlertTriangle,
   Building2,
   Camera,
+  Compass,
   Check,
+  CheckCircle,
   Clapperboard,
   Cloud,
   CloudFog,
@@ -23,7 +25,6 @@ import {
   Palmtree,
   Plane,
   ShoppingBag,
-  Sparkles,
   Sun,
   Trees,
   Users,
@@ -33,13 +34,509 @@ import {
 
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
+import { emitOpenWayra } from "@/lib/open-wayra";
+import WayraIcon from "@/components/ui/WayraIcon";
 
+/** Dashboard color roles — navy structure, teal primary, neutrals surfaces. */
 const NAVY = "#0F3460";
-const CORAL = "#E94560";
+const BRAND = "#0F766E";
+const BRAND_DARK = "#0D5C56";
+const BRAND_SUBTLE = "#F0FDFA";
+const BRAND_MUTED = "rgba(15, 118, 110, 0.12)";
 const CARD = "#FFFFFF";
+const SURFACE = "#F8F9FA";
+const SURFACE_ALT = "#FAFBFC";
 const BORDER = "#E9ECEF";
 const MUTED = "#6C757D";
+/** Text links — navy, quieter than filled primary buttons */
+const LINK = "#0F3460";
 const SUCCESS = "#22C55E";
+const SUCCESS_SUBTLE = "#F0FDF4";
+const SUCCESS_BORDER = "#BBF7D0";
+const ATTENTION = "#B45309";
+const ATTENTION_SUBTLE = "#FFFBEB";
+/** Warm accent — negative balances / owes only (tiny dose) */
+const WARM = "#DC2626";
+const WARM_SUBTLE = "#FEF2F2";
+const WARM_BORDER = "#FECACA";
+
+/** Dashboard CTA destinations — keep button labels aligned with these paths. */
+const DASHBOARD_ROUTES = {
+  tripsPlan: "/trips/plan",
+  tripsList: "/trips",
+  /** Travel Hub is the live group-chat workspace (browse groups, messages, calls). */
+  travelHub: "/travel-hub",
+  /** Dedicated group-creation entry; redirects into Travel Hub create modal. */
+  groupsNew: "/groups/new",
+  plan: "/plan",
+  map: "/map",
+  buddy: "/buddy",
+  splitActivities: "/split-activities",
+  notifications: "/notifications",
+} as const;
+
+/** Polls are authored and voted on inside a trip workspace. */
+type TripWorkspaceTab =
+  | "overview"
+  | "itinerary"
+  | "expenses"
+  | "polls"
+  | "members"
+  | "map";
+
+function tripWorkspaceHref(tripId: string, tab?: TripWorkspaceTab): string {
+  const base = `/trips/${tripId}`;
+  if (!tab || tab === "overview") return base;
+  return `${base}?tab=${tab}`;
+}
+
+const ROVVY_UNLOCKS = [
+  {
+    Icon: Plane,
+    title: "Trip workspace",
+    detail: "Dates, routes, and plans in one place",
+  },
+  {
+    Icon: Users,
+    title: "Group chat",
+    detail: "Invite people in Travel Hub",
+  },
+  {
+    Icon: Vote,
+    title: "Polls",
+    detail: "Vote on dates, stays, and activities",
+  },
+  {
+    Icon: Building2,
+    title: "Shared costs",
+    detail: "Split expenses and track balances",
+  },
+  {
+    Icon: MapPin,
+    title: "Map pins",
+    detail: "Save stays and meet-up spots",
+  },
+  {
+    Icon: CloudSun,
+    title: "Trip weather",
+    detail: "Forecasts for your next trip",
+  },
+] as const;
+
+function RovvyUnlockGrid({ compact = false }: { compact?: boolean }) {
+  return (
+    <ul
+      className={
+        compact
+          ? "mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3"
+          : "mt-5 grid gap-3 sm:grid-cols-2"
+      }
+    >
+      {ROVVY_UNLOCKS.map(({ Icon, title, detail }) => (
+        <li
+          key={title}
+          className={
+            compact
+              ? "rounded-lg border px-2.5 py-2"
+              : "flex gap-3 rounded-xl border px-3 py-3"
+          }
+          style={{ borderColor: BORDER, backgroundColor: SURFACE_ALT }}
+        >
+          <span
+            className={
+              compact
+                ? "inline-flex shrink-0 rounded-md p-1"
+                : "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+            }
+            style={{ backgroundColor: "#F4F7FB", color: NAVY }}
+            aria-hidden
+          >
+            <Icon className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} strokeWidth={1.75} />
+          </span>
+          <div className={compact ? "mt-1.5" : "min-w-0"}>
+            <p
+              className={
+                compact
+                  ? "text-[11px] font-semibold leading-tight"
+                  : "text-sm font-semibold"
+              }
+              style={{ color: NAVY }}
+            >
+              {title}
+            </p>
+            {!compact ? (
+              <p className="mt-0.5 text-xs leading-snug" style={{ color: MUTED }}>
+                {detail}
+              </p>
+            ) : null}
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Single primary empty experience when the user has no trips yet. */
+function TripsPrimaryEmptyState() {
+  return (
+    <section
+      className="rounded-2xl border p-6 shadow-sm"
+      style={{ borderColor: `${BRAND}33`, backgroundColor: CARD }}
+    >
+      <div className="flex items-start gap-3">
+        <span
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+          style={{ backgroundColor: BRAND_SUBTLE, color: BRAND }}
+          aria-hidden
+        >
+          <Plane className="h-5 w-5" strokeWidth={1.75} />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-lg font-bold tracking-tight" style={{ color: NAVY }}>
+            Create your first trip
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed" style={{ color: MUTED }}>
+            A trip brings together dates, polls, shared costs, and map pins for your
+            group—no separate chats or spreadsheets.
+          </p>
+        </div>
+      </div>
+
+      <RovvyUnlockGrid />
+
+      <div className="mt-6 flex flex-wrap gap-2">
+        <Link
+          href={DASHBOARD_ROUTES.tripsPlan}
+          className="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-95"
+          style={{ backgroundColor: BRAND }}
+        >
+          Plan your first trip
+        </Link>
+        <Link
+          href={DASHBOARD_ROUTES.groupsNew}
+          className="inline-flex items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-semibold transition hover:bg-[#F8F9FA]"
+          style={{ borderColor: BORDER, color: NAVY }}
+        >
+          Create a group
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+/** Compact calendar empty when trips exist but none are upcoming-dated. */
+function UpcomingTripsCompactEmpty({ activeTripCount }: { activeTripCount: number }) {
+  return (
+    <div
+      className="mt-4 rounded-xl border border-dashed px-4 py-3"
+      style={{ borderColor: BORDER, backgroundColor: SURFACE_ALT }}
+    >
+      <p className="text-sm font-semibold" style={{ color: NAVY }}>
+        No trip dates yet
+      </p>
+      <p className="mt-1 text-xs leading-relaxed" style={{ color: MUTED }}>
+        You have {activeTripCount} active {activeTripCount === 1 ? "trip" : "trips"}.
+        Add start dates to show weather and checklists here.
+      </p>
+      <Link
+        href={DASHBOARD_ROUTES.tripsList}
+        className="mt-2 inline-block text-xs font-semibold hover:underline"
+        style={{ color: LINK }}
+      >
+        View all trips →
+      </Link>
+    </div>
+  );
+}
+
+function PollsEmptyState({
+  hasTrips,
+  firstTripId,
+}: {
+  hasTrips: boolean;
+  firstTripId?: string;
+}) {
+  return (
+    <div className="mt-4">
+      <span className="inline-flex rounded-lg p-2" style={{ backgroundColor: BRAND_SUBTLE, color: BRAND }} aria-hidden>
+        <Vote className="h-6 w-6" strokeWidth={1.5} />
+      </span>
+      <p className="mt-3 text-sm font-semibold" style={{ color: NAVY }}>
+        No open polls
+      </p>
+      <p className="mt-1 text-xs leading-relaxed" style={{ color: MUTED }}>
+        Start a poll in a trip to choose dates, stays, or activities together.
+      </p>
+      <Link
+        href={
+          hasTrips && firstTripId
+            ? tripWorkspaceHref(firstTripId, "polls")
+            : DASHBOARD_ROUTES.tripsPlan
+        }
+        className="mt-3 inline-block text-sm font-semibold hover:underline"
+        style={{ color: LINK }}
+      >
+        {hasTrips ? "Start a poll →" : "Create a trip first →"}
+      </Link>
+    </div>
+  );
+}
+
+function CompanionsEmptyState({ variant }: { variant: "onboarding" | "active" }) {
+  if (variant === "onboarding") {
+    return (
+      <div className="mt-4 rounded-lg px-1 py-2 text-center">
+        <p className="text-xs leading-relaxed" style={{ color: MUTED }}>
+          Create a trip and invite people in Travel Hub to see them here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4">
+      <span className="inline-flex rounded-lg p-2" style={{ backgroundColor: "#F4F7FB", color: NAVY }} aria-hidden>
+        <Users className="h-6 w-6" strokeWidth={1.5} />
+      </span>
+      <p className="mt-3 text-sm font-semibold" style={{ color: NAVY }}>
+        No companions yet
+      </p>
+      <p className="mt-1 text-xs leading-relaxed" style={{ color: MUTED }}>
+        Create a group in Travel Hub and invite people to plan trips together.
+      </p>
+      <Link
+        href={DASHBOARD_ROUTES.groupsNew}
+        className="mt-3 inline-block text-sm font-semibold hover:underline"
+        style={{ color: LINK }}
+      >
+        Create a group →
+      </Link>
+    </div>
+  );
+}
+
+function ExpensesEmptyState({ hasTrips }: { hasTrips: boolean }) {
+  return (
+    <div className="mt-4">
+      <span className="inline-flex rounded-lg p-2" style={{ backgroundColor: "#F0FDF4", color: SUCCESS }} aria-hidden>
+        <Building2 className="h-6 w-6" strokeWidth={1.5} />
+      </span>
+      <p className="mt-3 text-sm font-semibold" style={{ color: NAVY }}>
+        {hasTrips ? "Nothing owed" : "No shared expenses yet"}
+      </p>
+      <p className="mt-1 text-xs leading-relaxed" style={{ color: MUTED }}>
+        {hasTrips
+          ? "Add trip expenses and Rovvy will split them and show who owes what."
+          : "Create a trip with your group to start tracking shared costs."}
+      </p>
+      <Link
+        href={hasTrips ? DASHBOARD_ROUTES.splitActivities : DASHBOARD_ROUTES.tripsPlan}
+        className="mt-3 inline-block text-sm font-semibold hover:underline"
+        style={{ color: LINK }}
+      >
+        {hasTrips ? "View shared expenses →" : "Create a trip first →"}
+      </Link>
+    </div>
+  );
+}
+
+function BuddyTripsIntro() {
+  return (
+    <p className="mt-1 text-xs leading-relaxed" style={{ color: MUTED }}>
+      Find trips with open spots—or post your own on Buddy.
+    </p>
+  );
+}
+
+function BuddySampleNote() {
+  return (
+    <p className="mt-2 text-[10px] leading-snug" style={{ color: MUTED }}>
+      Examples below—not live listings. Browse Buddy for real trips near you.
+    </p>
+  );
+}
+
+const DASHBOARD_WAYRA_PROMPTS = [
+  {
+    label: "Getting started",
+    prompt: "What should I do first on my Rovvy dashboard?",
+  },
+  {
+    label: "Create a group",
+    prompt: "How do I create a group and invite people on Rovvy?",
+  },
+] as const;
+
+function DashboardSectionLabel({ children }: { children: string }) {
+  return (
+    <p
+      className="mb-3 text-[11px] font-semibold uppercase tracking-wide"
+      style={{ color: MUTED }}
+    >
+      {children}
+    </p>
+  );
+}
+
+function BuddyTripsCard({ compact = false }: { compact?: boolean }) {
+  const itemPad = compact ? "px-3 py-2" : "px-3 py-3";
+  const titleClass = compact ? "text-xs" : "text-sm";
+  const metaClass = compact ? "text-[9px]" : "text-[10px]";
+
+  const [trips, setTrips] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const data = await apiFetch<any[]>("/buddy/trips?status=open");
+        if (active) {
+          setTrips(Array.isArray(data) ? data : []);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return (
+    <div
+      className="rounded-xl border p-4 shadow-sm"
+      style={{ borderColor: BORDER, backgroundColor: CARD }}
+    >
+      <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+        Open trips on Buddy
+      </h2>
+      <BuddyTripsIntro />
+      {loading ? (
+        <div className="mt-4 space-y-2 animate-pulse">
+          <div className="h-10 bg-slate-100 rounded-lg" />
+          <div className="h-10 bg-slate-100 rounded-lg" />
+        </div>
+      ) : trips.length === 0 ? (
+        <div className="mt-4 text-center py-6 px-4 rounded-xl border border-dashed border-[#E9ECEF] bg-[#F8F9FA]">
+          <p className="text-xs font-medium" style={{ color: MUTED }}>
+            No buddy trips nearby yet. Be the first to create one!
+          </p>
+          <Link
+            href={DASHBOARD_ROUTES.buddy}
+            className="mt-3 inline-flex items-center justify-center rounded-xl bg-[#0F766E] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:opacity-95"
+          >
+            Create Buddy Trip →
+          </Link>
+        </div>
+      ) : (
+        <>
+          <ul className="mt-3 space-y-3">
+            {trips.slice(0, 3).map((t) => {
+              const spots = Math.max(0, t.max_size - t.current_size);
+              return (
+                <li key={t.id}>
+                  <Link
+                    href={DASHBOARD_ROUTES.buddy}
+                    className={`block rounded-lg border transition hover:border-[#0F766E]/25 hover:bg-[#F0FDFA] ${itemPad}`}
+                    style={{ borderColor: BORDER }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className={`font-bold ${titleClass}`} style={{ color: NAVY }}>
+                          {t.destination}
+                        </p>
+                        <p className={`mt-0.5 ${metaClass}`} style={{ color: MUTED }}>
+                          {t.date_from} · {t.current_size} members · {compact ? `${spots} spots` : `${spots} spots left`}
+                        </p>
+                      </div>
+                      <span
+                        className="shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-semibold"
+                        style={{ borderColor: BRAND, color: BRAND, backgroundColor: CARD }}
+                      >
+                        Join →
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <Link
+            href={DASHBOARD_ROUTES.buddy}
+            className="mt-4 inline-block text-xs font-semibold hover:underline"
+            style={{ color: LINK }}
+          >
+            Browse Buddy trips →
+          </Link>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Secondary helper — sits below core dashboard work, not beside it. */
+function DashboardWayraHelper() {
+  return (
+    <section
+      className="border-t pt-5"
+      style={{ borderColor: BORDER }}
+      aria-label="Wayra helper"
+    >
+      <div
+        className="flex flex-col gap-3 rounded-xl border border-dashed px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+        style={{ borderColor: BORDER, backgroundColor: SURFACE_ALT }}
+      >
+        <div className="flex min-w-0 items-start gap-2.5">
+          <div className="mt-0.5 shrink-0 opacity-75" aria-hidden>
+            <WayraIcon state="perched" size={0.28} variant="navy" animate={false} />
+          </div>
+          <div className="min-w-0">
+            <p
+              className="text-[10px] font-semibold uppercase tracking-wide"
+              style={{ color: MUTED }}
+            >
+              Questions about Rovvy?
+            </p>
+            <p className="mt-0.5 text-xs leading-snug" style={{ color: NAVY }}>
+              Ask Wayra how the app works or for destination ideas. Use the sections
+              above for trips, groups, polls, and expenses.
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0 sm:justify-end">
+          {DASHBOARD_WAYRA_PROMPTS.map(({ label, prompt }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => emitOpenWayra({ prompt })}
+              className="rounded-full border bg-white px-2.5 py-1 text-[10px] font-medium transition hover:border-[#0F766E]/20 hover:bg-[#F0FDFA]"
+              style={{ borderColor: BORDER, color: NAVY }}
+            >
+              {label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => emitOpenWayra()}
+            className="rounded-md px-1.5 py-1 text-[10px] font-medium underline-offset-2 transition hover:underline"
+            style={{ color: MUTED }}
+          >
+            Open Wayra
+          </button>
+        </div>
+      </div>
+      <p className="mt-1.5 text-[10px] leading-relaxed" style={{ color: MUTED }}>
+        App help works offline. Destination tips need the assistant when it&apos;s
+        available.
+      </p>
+    </section>
+  );
+}
 
 type UserMe = {
   id: string;
@@ -426,13 +923,13 @@ function tripBannerBadge(trip: TripWithMeta): {
     return { text: "Live now", bg: SUCCESS };
   }
   const sd = parseYmd(trip.start_date);
-  if (!sd) return { text: "—", bg: CORAL };
+  if (!sd) return { text: "—", bg: MUTED };
   const d = Math.ceil(
     (sd.getTime() - startOfToday().getTime()) / (24 * 60 * 60 * 1000),
   );
   if (d === 0) return { text: "Today!", bg: SUCCESS };
-  if (d < 0) return { text: "Started", bg: CORAL };
-  return { text: `${d} day${d === 1 ? "" : "s"} away`, bg: CORAL };
+  if (d < 0) return { text: "Started", bg: BRAND_DARK };
+  return { text: `${d} day${d === 1 ? "" : "s"} away`, bg: BRAND };
 }
 
 function destinationLine(
@@ -518,8 +1015,24 @@ export default function DashboardPage() {
   const router = useRouter();
   const pageAbortRef = useRef<AbortController | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+  const [openPollsCount, setOpenPollsCount] = useState(0);
+  const [postComingSoonOpen, setPostComingSoonOpen] = useState(false);
 
   const [me, setMe] = useState<UserMe | null>(null);
+  const [userName, setUserName] = useState("there");
+
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem("gt_token");
+      if (token) {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        const name = payload.full_name || payload.username || "there";
+        setUserName(firstToken(name));
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
   const [stats, setStats] = useState<TravelStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -670,6 +1183,34 @@ export default function DashboardPage() {
     return n;
   }, [checklist]);
 
+  const smartChecklist = useMemo(() => {
+    return [
+      { key: "hotel", done: checklist.hotel, label: "Pin stays on the map" },
+      { key: "trans", done: checklist.transport, label: "Add transport bookings" },
+      { key: "group", done: checklist.membersOk, label: "Invite 2+ group members" },
+      { key: "settle", done: checklist.settled, label: "Settle shared costs" },
+      { key: "offline", done: checklist.offlineMap, label: "Save a map pin" },
+    ];
+  }, [checklist]);
+
+  const activeJourneysCount = useMemo(
+    () =>
+      tripsList.filter(
+        (t) => t.status !== "completed" && t.status !== "cancelled",
+      ).length,
+    [tripsList],
+  );
+
+  const pollSectionFooter = useMemo(() => {
+    if (pollItems.length === 0) return null;
+    return {
+      href: tripWorkspaceHref(pollItems[0].tripId, "polls"),
+      label: "View open polls →",
+    };
+  }, [pollItems]);
+
+  const firstTripId = tripsList[0]?.id;
+
   const upcomingTripsDisplay = useMemo(() => {
     const today = startOfToday();
     const ongoing = tripsList.filter((t) => t.status === "ongoing");
@@ -694,6 +1235,11 @@ export default function DashboardPage() {
     });
     return rest.slice(0, 3);
   }, [tripsList]);
+
+  const otherUpcomingTrips = useMemo(() => {
+    if (!smartTrip) return upcomingTripsDisplay;
+    return upcomingTripsDisplay.filter((t) => t.id !== smartTrip.id);
+  }, [upcomingTripsDisplay, smartTrip]);
 
   useEffect(() => {
     pageAbortRef.current?.abort();
@@ -802,6 +1348,7 @@ export default function DashboardPage() {
         return;
       }
       setMe(meRes.data);
+      setUserName(firstToken(meRes.data.full_name ?? meRes.data.email ?? "there"));
 
       const settled = await Promise.allSettled([
         apiFetchWithDeadline<TravelStats>("/users/me/travel-stats", pageSignal),
@@ -815,7 +1362,7 @@ export default function DashboardPage() {
       } else {
         const err = settled[0]!.reason as Error | undefined;
         if (err?.name === "AbortError" || pageSignal.aborted) return;
-        setStatsError("Could not load data. Tap to retry.");
+        setStatsError("Couldn't load this section.");
       }
 
       let grpList: GroupOut[] = [];
@@ -824,7 +1371,7 @@ export default function DashboardPage() {
       } else {
         const err = settled[1]!.reason as Error | undefined;
         if (err?.name === "AbortError" || pageSignal.aborted) return;
-        setGroupsError("Could not load data. Tap to retry.");
+        setGroupsError("Couldn't load this section.");
       }
 
       setStats(
@@ -845,7 +1392,7 @@ export default function DashboardPage() {
         );
       } catch (e) {
         if ((e as Error)?.name === "AbortError" || pageSignal.aborted) return;
-        setTripsError("Could not load data. Tap to retry.");
+        setTripsError("Couldn't load this section.");
         tripLists = grpList.map(() => []);
       }
       if (cancelled || pageSignal.aborted) return;
@@ -899,7 +1446,7 @@ export default function DashboardPage() {
           );
         } catch (e) {
           if ((e as Error)?.name === "AbortError" || pageSignal.aborted) return;
-          setPollsError("Could not load data. Tap to retry.");
+          setPollsError("Couldn't load this section.");
           setPollsLoading(false);
           return;
         }
@@ -911,6 +1458,7 @@ export default function DashboardPage() {
             pollsAccum.push({ poll: pol, tripId: trip.id });
           }
         });
+        setOpenPollsCount(pollsAccum.length);
         setPollItems(pollsAccum.slice(0, 2));
         setPollsLoading(false);
       })();
@@ -929,7 +1477,7 @@ export default function DashboardPage() {
           );
         } catch (e) {
           if ((e as Error)?.name === "AbortError" || pageSignal.aborted) return;
-          setExpensesError("Could not load data. Tap to retry.");
+          setExpensesError("Couldn't load this section.");
           setExpensesLoading(false);
           return;
         }
@@ -956,10 +1504,6 @@ export default function DashboardPage() {
     };
   }, [router, reloadTick]);
 
-  const fn = me
-    ? firstToken(me.full_name ?? me.email ?? "")
-    : "there";
-  const tripCount = stats?.trips_created ?? 0;
   const groupCount = stats?.groups_joined ?? groups.length;
 
   const showSmartSkeleton =
@@ -972,23 +1516,50 @@ export default function DashboardPage() {
   const smartFirstPinName = tripPins[0]?.name ?? null;
 
   return (
-    <div className="space-y-6" style={{ color: NAVY }}>
-      {/* TOP BAR */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="space-y-8 pb-6" style={{ color: NAVY }}>
+      {/* ——— Identity & next actions ——— */}
+      {/* HERO */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-bold leading-snug tracking-tight md:text-2xl">
-            Hey <span style={{ color: CORAL }}>{fn}</span>! Ready for your next
-            adventure?
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: MUTED }}>
-            Today is {subtextDayDate()} ·{" "}
-            {statsLoading ? "—" : tripCount} trips ·{" "}
-            {groupsLoading ? "—" : groupCount} groups
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: MUTED }}>
+            Rovvy · Roam together
           </p>
+          <h1 className="mt-2 text-xl font-bold leading-snug tracking-tight md:text-2xl">
+            <span style={{ color: BRAND }}>{userName}</span>, your group travel dashboard.
+          </h1>
+          <p className="mt-2 text-sm font-medium" style={{ color: NAVY }}>
+            Active trips, open polls, shared costs, and your group—all on one page.
+          </p>
+          <p className="mt-1 text-xs" style={{ color: MUTED }}>
+            {subtextDayDate()}
+            {!statsLoading && !groupsLoading
+              ? ` · ${activeJourneysCount} active ${activeJourneysCount === 1 ? "trip" : "trips"} · ${groupCount} ${groupCount === 1 ? "group" : "groups"}`
+              : null}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href={
+                smartTrip
+                  ? tripWorkspaceHref(smartTrip.id)
+                  : DASHBOARD_ROUTES.tripsPlan
+              }
+              className="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-95"
+              style={{ backgroundColor: BRAND }}
+            >
+              {smartTrip ? "Open current trip" : "Plan a trip"}
+            </Link>
+            <Link
+              href={DASHBOARD_ROUTES.travelHub}
+              className="inline-flex items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-semibold transition hover:bg-[#F8F9FA]"
+              style={{ borderColor: BORDER, color: NAVY }}
+            >
+              Open Travel Hub
+            </Link>
+          </div>
         </div>
         <Link
-          href="/notifications"
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border shadow-sm transition hover:opacity-90"
+          href={DASHBOARD_ROUTES.notifications}
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border shadow-sm transition hover:border-[#0F766E]/30 hover:bg-[#F0FDFA]"
           style={{ borderColor: BORDER, backgroundColor: CARD, color: NAVY }}
           aria-label="Notifications"
         >
@@ -1009,76 +1580,126 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* ROW 1 — 6 STAT CARDS */}
-      <section>
+      {/* COMMAND METRICS — active now, needs attention, people, travel value */}
+      <section aria-label="Dashboard metrics">
+        <p
+          className="mb-2 text-[11px] font-semibold uppercase tracking-wide"
+          style={{ color: MUTED }}
+        >
+          At a glance
+        </p>
         {statsError && !statsLoading ? (
           <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            <p>Could not load data. Tap to retry.</p>
+            <p>Couldn&apos;t load dashboard stats.</p>
             <button
               type="button"
               onClick={() => setReloadTick((x) => x + 1)}
-              className="mt-1 font-semibold text-[#0F3460] underline"
+              className="mt-1 font-semibold underline"
+              style={{ color: NAVY }}
             >
               Retry
             </button>
           </div>
         ) : null}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
           {(
             [
               {
                 Icon: Plane,
-                n: stats?.trips_created ?? 0,
-                label: "Trips created",
-                dash: statsLoading,
+                n: activeJourneysCount,
+                label: "Active trips",
+                hint: "Trips you're planning or on now",
+                dash: tripsLoading,
+                tone: "primary" as const,
               },
               {
                 Icon: Users,
-                n: stats?.groups_joined ?? 0,
-                label: "Groups joined",
+                n: groupCount,
+                label: "Your groups",
+                hint: "Groups you belong to",
+                dash: groupsLoading,
+                tone: "default" as const,
+              },
+              {
+                Icon: Vote,
+                n: openPollsCount,
+                label: "Open polls",
+                hint: "Still waiting on votes",
+                dash: pollsLoading,
+                tone:
+                  !pollsLoading && openPollsCount > 0
+                    ? ("attention" as const)
+                    : ("default" as const),
+              },
+              {
+                Icon: MapPin,
+                n: stats?.locations_saved ?? 0,
+                label: "Saved places",
+                hint: "Pinned on your map",
                 dash: statsLoading,
+                tone: "default" as const,
               },
               {
                 Icon: Globe,
                 n: stats?.countries_from_trips?.length ?? 0,
                 label: "Countries visited",
+                hint: "From completed trips",
                 dash: statsLoading,
-              },
-              { Icon: Camera, n: 0, label: "Posts", dash: false },
-              { Icon: Clapperboard, n: 0, label: "Memories", dash: false },
-              {
-                Icon: MapPin,
-                n: stats?.locations_saved ?? 0,
-                label: "Pins saved",
-                dash: statsLoading,
+                tone: "default" as const,
               },
             ] as const
           ).map((c) => {
             const SIcon = c.Icon;
             const show = c.dash ? "—" : c.n;
+            const isPrimary = c.tone === "primary";
+            const isAttention = c.tone === "attention";
             return (
               <div
                 key={c.label}
-                className="flex flex-col items-center rounded-xl border px-2 py-4 text-center shadow-sm"
-                style={{ borderColor: BORDER, backgroundColor: CARD }}
+                className="flex flex-col rounded-xl border px-3 py-3.5 shadow-sm sm:px-4 sm:py-4"
+                style={{
+                  borderColor: isPrimary
+                    ? `${BRAND}40`
+                    : isAttention
+                      ? "#F59E0B55"
+                      : BORDER,
+                  backgroundColor: isPrimary
+                    ? BRAND_SUBTLE
+                    : isAttention
+                      ? ATTENTION_SUBTLE
+                      : CARD,
+                }}
               >
-                <span
-                  className="inline-flex text-[#0F3460] leading-none"
-                  aria-hidden
-                >
-                  <SIcon className="h-[18px] w-[18px]" strokeWidth={1.5} />
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="inline-flex rounded-lg p-1.5"
+                    style={{
+                      backgroundColor: isPrimary
+                        ? BRAND_MUTED
+                        : isAttention
+                          ? "#FEF3C7"
+                          : "#F4F7FB",
+                      color: isPrimary ? BRAND : isAttention ? ATTENTION : NAVY,
+                    }}
+                    aria-hidden
+                  >
+                    <SIcon className="h-4 w-4" strokeWidth={1.75} />
+                  </span>
+                  <p
+                    className="text-[10px] font-semibold uppercase tracking-wide leading-tight"
+                    style={{ color: MUTED }}
+                  >
+                    {c.label}
+                  </p>
+                </div>
                 <p
-                  className="mt-2 text-[22px] font-bold tabular-nums"
+                  className="mt-2 text-2xl font-bold tabular-nums"
                   style={{ color: NAVY }}
                 >
                   {show}
                 </p>
-                <p
-                  className="mt-1 text-[10px] font-medium uppercase tracking-wide"
-                  style={{ color: MUTED }}
-                >
-                  {c.label}
+                <p className="mt-1 text-[11px] leading-snug" style={{ color: MUTED }}>
+                  {c.hint}
                 </p>
               </div>
             );
@@ -1086,447 +1707,84 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* ROW 2 — QUICK ACTIONS */}
+      {/* PRIMARY QUICK ACTIONS */}
       <section>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: MUTED }}>
+          Quick actions
+        </p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {(
             [
-              { Icon: Plane, label: "+ New Trip", href: "/trips" },
-              { Icon: Users, label: "+ New Group", href: "/travel-hub" },
-              { Icon: Camera, label: "+ New Post", href: "/profile" },
-              { Icon: MapIcon, label: "Open Map", href: "/map" },
+              { Icon: Plane, label: "+New Trip", href: DASHBOARD_ROUTES.tripsPlan, primary: true },
+              {
+                Icon: Users,
+                label: "+New Group",
+                href: DASHBOARD_ROUTES.groupsNew,
+                primary: false,
+              },
+              { Icon: MapIcon, label: "View map", href: DASHBOARD_ROUTES.map, primary: false },
             ] as const
           ).map((a) => {
             const QIcon = a.Icon;
             return (
-            <Link
-              key={a.label}
-              href={a.href}
-              className="group rounded-xl border border-[#ffd6de] bg-[#fff0f3] px-3 py-4 text-center text-[11px] font-bold text-[#E94560] transition-colors duration-150 hover:border-[#E94560] hover:bg-[#E94560] hover:text-white"
-            >
-              <span
-                className="flex justify-center text-current leading-none"
-                aria-hidden
+              <Link
+                key={a.label}
+                href={a.href}
+                className={
+                  a.primary
+                    ? "group rounded-xl px-3 py-4 text-center text-[11px] font-bold text-white shadow-sm transition hover:opacity-95"
+                    : "group rounded-xl border bg-white px-3 py-4 text-center text-[11px] font-bold transition hover:border-[#0F3460]/25 hover:bg-[#F8F9FA]"
+                }
+                style={
+                  a.primary
+                    ? { backgroundColor: BRAND }
+                    : { borderColor: BORDER, color: NAVY }
+                }
               >
-                <QIcon
-                  className="h-[18px] w-[18px]"
-                  strokeWidth={1.5}
-                />
-              </span>
-              <span className="mt-2 block">{a.label}</span>
-            </Link>
+                <span className="flex justify-center text-current leading-none" aria-hidden>
+                  <QIcon className="h-[18px] w-[18px]" strokeWidth={1.5} />
+                </span>
+                <span className="mt-2 block">{a.label}</span>
+              </Link>
             );
           })}
         </div>
       </section>
 
-      {/* ROW 3 — Upcoming Trips | Active Polls */}
-      <section className="grid gap-4 md:grid-cols-2">
-        <div>
-          {tripsError && !showUpcomingSkeleton ? (
-            <div
-              className="rounded-xl border p-4 shadow-sm"
-              style={{ borderColor: BORDER, backgroundColor: CARD }}
-            >
-              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                Upcoming trips
-              </h2>
-              <p className="mt-3 text-sm" style={{ color: MUTED }}>
-                Could not load data. Tap to retry.
-              </p>
-              <button
-                type="button"
-                onClick={() => setReloadTick((x) => x + 1)}
-                className="mt-2 text-sm font-semibold"
-                style={{ color: CORAL }}
-              >
-                Retry
-              </button>
-            </div>
-          ) : showUpcomingSkeleton ? (
-            <div
-              className="rounded-xl border p-4 shadow-sm"
-              style={{ borderColor: BORDER, backgroundColor: CARD }}
-            >
-              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                Upcoming trips
-              </h2>
-              <ul className="mt-3 space-y-3">
-                <li className="flex gap-2">
-                  <Shimmer width={20} height={20} />
-                  <div className="min-w-0 flex-1 space-y-1.5">
-                    <Shimmer height={16} width="80%" />
-                    <Shimmer height={12} width="50%" />
-                  </div>
-                </li>
-                <li className="flex gap-2">
-                  <Shimmer width={20} height={20} />
-                  <div className="min-w-0 flex-1 space-y-1.5">
-                    <Shimmer height={16} width="70%" />
-                    <Shimmer height={12} width="45%" />
-                  </div>
-                </li>
-              </ul>
-            </div>
-          ) : (
-            <div
-              className="rounded-xl border p-4 shadow-sm"
-              style={{ borderColor: BORDER, backgroundColor: CARD }}
-            >
-              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                Upcoming trips
-              </h2>
-              {upcomingTripsDisplay.length === 0 ? (
-                <p className="mt-4 text-sm" style={{ color: MUTED }}>
-                  No upcoming trips scheduled.
-                </p>
-              ) : (
-                <ul className="mt-3 space-y-3">
-                  {upcomingTripsDisplay.map((t) => {
-                    const badge = tripBannerBadge(t);
-                    return (
-                      <li
-                        key={t.id}
-                        className="flex gap-2 border-b border-[#E9ECEF] pb-3 last:border-0 last:pb-0"
-                      >
-                        <span className="inline-flex text-lg leading-none text-[#0F3460]" aria-hidden>
-                          <DestinationGlyph title={t.title} />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className="truncate text-sm font-bold"
-                            style={{ color: NAVY }}
-                          >
-                            {t.title}
-                          </p>
-                          <p className="text-[10px]" style={{ color: MUTED }}>
-                            {formatDateRangeReadable(t.start_date, t.end_date)} ·{" "}
-                            {t.member_count} members
-                          </p>
-                        </div>
-                        <span
-                          className="shrink-0 self-start rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
-                          style={{ backgroundColor: badge.bg }}
-                        >
-                          {badge.text}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              <Link
-                href="/trips"
-                className="mt-4 inline-block text-sm font-semibold"
-                style={{ color: CORAL }}
-              >
-                View all trips →
-              </Link>
-            </div>
-          )}
-        </div>
+      {/* WORKSPACE — active now → waiting → people → explore */}
+      {!tripsLoading && tripsList.length === 0 ? (
+        <div className="space-y-8">
+          <section aria-label="Active now">
+            <DashboardSectionLabel>Active now</DashboardSectionLabel>
+            <TripsPrimaryEmptyState />
+          </section>
 
-        <div>
-          {pollsError && !showPollsSkeleton ? (
-            <div
-              className="rounded-xl border p-4 shadow-sm"
-              style={{ borderColor: BORDER, backgroundColor: CARD }}
-            >
-              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                Active polls
-              </h2>
-              <p className="mt-3 text-sm" style={{ color: MUTED }}>
-                Could not load data. Tap to retry.
-              </p>
-              <button
-                type="button"
-                onClick={() => setReloadTick((x) => x + 1)}
-                className="mt-2 text-sm font-semibold"
-                style={{ color: CORAL }}
+          <section aria-label="Needs your attention">
+            <DashboardSectionLabel>Needs your attention</DashboardSectionLabel>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div
+                className="rounded-xl border p-4 shadow-sm"
+                style={{ borderColor: BORDER, backgroundColor: CARD }}
               >
-                Retry
-              </button>
-            </div>
-          ) : showPollsSkeleton ? (
-            <div
-              className="rounded-xl border p-4 shadow-sm"
-              style={{ borderColor: BORDER, backgroundColor: CARD }}
-            >
-              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                Active polls
-              </h2>
-              <div className="mt-3 space-y-1.5">
-                <Shimmer height={14} width="85%" />
-                <Shimmer height={8} width="100%" />
+                <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                  Active polls
+                </h2>
+                <PollsEmptyState hasTrips={false} />
+              </div>
+              <div
+                className="rounded-xl border p-4 shadow-sm"
+                style={{ borderColor: BORDER, backgroundColor: CARD }}
+              >
+                <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                  Shared expenses
+                </h2>
+                <ExpensesEmptyState hasTrips={false} />
               </div>
             </div>
-          ) : (
-            <div
-              className="rounded-xl border p-4 shadow-sm"
-              style={{ borderColor: BORDER, backgroundColor: CARD }}
-            >
-              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                Active polls
-              </h2>
-              {pollItems.length === 0 ? (
-                <div className="mt-4">
-                  <span className="inline-flex text-[#0F3460]" aria-hidden>
-                    <Vote className="h-8 w-8" strokeWidth={1.5} />
-                  </span>
-                  <p className="mt-3 text-sm" style={{ color: MUTED }}>
-                    No active polls right now
-                  </p>
-                  <p className="mt-1 text-xs" style={{ color: MUTED }}>
-                    Create a trip and start polling your group
-                  </p>
-                  <Link
-                    href="/trips"
-                    className="mt-4 inline-block text-sm font-semibold"
-                    style={{ color: CORAL }}
-                  >
-                    View Trips →
-                  </Link>
-                </div>
-              ) : (
-                <ul className="mt-3 space-y-5">
-                  {pollItems.map(({ poll: p, tripId }) => {
-                    const totals = p.options.reduce(
-                      (s, o) => s + o.vote_count,
-                      0,
-                    );
-                    const maxV = Math.max(0, ...p.options.map((o) => o.vote_count));
-                    const showVoteNow = totals === 0;
-                    return (
-                      <li key={p.id}>
-                        <p className="text-xs font-bold leading-snug" style={{ color: NAVY }}>
-                          {p.question}
-                        </p>
-                        <div className="mt-2 space-y-1.5">
-                          {p.options.map((o) => {
-                            const pct =
-                              totals > 0
-                                ? Math.round((o.vote_count / totals) * 100)
-                                : 0;
-                            const lead = o.vote_count === maxV && maxV > 0;
-                            return (
-                              <div key={o.id}>
-                                <div className="flex justify-between text-[10px]" style={{ color: MUTED }}>
-                                  <span className="truncate pr-1">{o.label}</span>
-                                  <span>{o.vote_count}</span>
-                                </div>
-                                <div className="mt-0.5 h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                                  <div
-                                    className="h-full rounded-full"
-                                    style={{
-                                      width: `${pct}%`,
-                                      backgroundColor: lead ? CORAL : NAVY,
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          {showVoteNow ? (
-                            <Link
-                              href={`/trips/${tripId}`}
-                              className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
-                              style={{ backgroundColor: CORAL }}
-                            >
-                              Vote now
-                            </Link>
-                          ) : null}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              <Link
-                href={pollItems[0] ? `/trips/${pollItems[0].tripId}` : "/trips"}
-                className="mt-4 inline-block text-sm font-semibold"
-                style={{ color: CORAL }}
-              >
-                View all polls →
-              </Link>
-            </div>
-          )}
-        </div>
-      </section>
+          </section>
 
-      {/* ROW 4 — Pending Expenses | Group Companions */}
-      <section className="grid gap-4 md:grid-cols-2">
-        <div>
-          {expensesError && !showExpensesSkeleton ? (
-            <div
-              className="rounded-xl border p-4 shadow-sm"
-              style={{ borderColor: BORDER, backgroundColor: CARD }}
-            >
-              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                Split activity
-              </h2>
-              <p className="mt-3 text-sm" style={{ color: MUTED }}>
-                Could not load data. Tap to retry.
-              </p>
-              <button
-                type="button"
-                onClick={() => setReloadTick((x) => x + 1)}
-                className="mt-2 text-sm font-semibold"
-                style={{ color: CORAL }}
-              >
-                Retry
-              </button>
-            </div>
-          ) : showExpensesSkeleton ? (
-            <div
-              className="rounded-xl border p-4 shadow-sm"
-              style={{ borderColor: BORDER, backgroundColor: CARD }}
-            >
-              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                Split activity
-              </h2>
-              <div className="mt-3 space-y-1.5">
-                <Shimmer height={14} width="90%" />
-                <Shimmer height={8} width="100%" />
-              </div>
-            </div>
-          ) : (
-            <div
-              className="rounded-xl border p-4 shadow-sm"
-              style={{ borderColor: BORDER, backgroundColor: CARD }}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                    Split activity
-                  </h2>
-                  <p className="mt-1 text-xs" style={{ color: MUTED }}>
-                    Your top balances across active trips
-                  </p>
-                </div>
-                {myPendingExpenses.length > 0 ? (
-                  <Link
-                    href="/split-activities"
-                    className="shrink-0 text-xs font-semibold"
-                    style={{ color: CORAL }}
-                  >
-                    View all
-                  </Link>
-                ) : null}
-              </div>
-              {myPendingExpenses.length === 0 ? (
-                <div className="mt-4">
-                  <span className="inline-flex text-[#22C55E]" aria-hidden>
-                    <Sparkles className="h-8 w-8" strokeWidth={1.5} />
-                  </span>
-                  <p className="mt-3 text-sm font-bold" style={{ color: NAVY }}>
-                    All settled up!
-                  </p>
-                  <p className="mt-1 text-sm" style={{ color: MUTED }}>
-                    No pending expenses
-                  </p>
-                  <Link
-                    href="/split-activities"
-                    className="mt-4 inline-block text-sm font-semibold"
-                    style={{ color: CORAL }}
-                  >
-                    Open split activity →
-                  </Link>
-                </div>
-              ) : (
-                <>
-                  <div className="mt-4 grid grid-cols-3 gap-2">
-                    <div className="rounded-xl border border-green-100 bg-green-50 px-3 py-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-green-700">
-                        Positive
-                      </p>
-                      <p className="mt-1 text-sm font-bold tabular-nums text-green-700">
-                        {formatRupee(splitSummary.incomingTotal)}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-rose-700">
-                        Negative
-                      </p>
-                      <p className="mt-1 text-sm font-bold tabular-nums text-rose-700">
-                        {formatRupee(splitSummary.outgoingTotal)}
-                      </p>
-                    </div>
-                    <div
-                      className="rounded-xl border px-3 py-2"
-                      style={{
-                        borderColor:
-                          splitSummary.netTotal >= 0 ? "#BBF7D0" : "#FFE4E6",
-                        backgroundColor:
-                          splitSummary.netTotal >= 0 ? "#F0FDF4" : "#FFF1F2",
-                        color: splitSummary.netTotal >= 0 ? SUCCESS : CORAL,
-                      }}
-                    >
-                      <p className="text-[10px] font-semibold uppercase tracking-wide">
-                        Net
-                      </p>
-                      <p className="mt-1 text-sm font-bold tabular-nums">
-                        {splitSummary.netTotal >= 0 ? "+" : "-"}
-                        {formatRupee(Math.abs(splitSummary.netTotal))}
-                      </p>
-                    </div>
-                  </div>
-
-                  <ul className="mt-3 divide-y divide-[#E9ECEF]">
-                    {splitSummary.visiblePeople.map((person) => {
-                      const positive = person.net > 0;
-                      const color = positive ? SUCCESS : CORAL;
-                      const initial = (person.name.trim()[0] ?? "?").toUpperCase();
-                      return (
-                        <li key={person.userId}>
-                          <Link
-                            href="/split-activities"
-                            className="flex items-center gap-2 py-2.5"
-                            aria-label={`Open split activity for ${person.name}`}
-                          >
-                            <div
-                              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                              style={{ backgroundColor: stringHue(person.name) }}
-                            >
-                              {initial}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-xs font-bold" style={{ color: NAVY }}>
-                                {person.name}
-                              </p>
-                              <p className="text-[10px]" style={{ color: MUTED }}>
-                                {positive ? "They owe you" : "You owe them"}
-                              </p>
-                            </div>
-                            <p className="text-sm font-bold tabular-nums" style={{ color }}>
-                              {positive ? "+" : "-"}
-                              {formatRupee(Math.abs(person.net))}
-                            </p>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-
-                  <Link
-                    href="/split-activities"
-                    className="mt-3 inline-flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold text-white"
-                    style={{ backgroundColor: CORAL }}
-                  >
-                    Open split activity
-                    {splitSummary.people.length > 3
-                      ? ` · ${splitSummary.people.length - 3} more`
-                      : ""}
-                  </Link>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div>
-          {groupsError && !showCompanionsSkeleton ? (
+          <section aria-label="Your people">
+            <DashboardSectionLabel>Your people</DashboardSectionLabel>
             <div
               className="rounded-xl border p-4 shadow-sm"
               style={{ borderColor: BORDER, backgroundColor: CARD }}
@@ -1534,83 +1792,37 @@ export default function DashboardPage() {
               <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
                 Group companions
               </h2>
-              <p className="mt-3 text-sm" style={{ color: MUTED }}>
-                Could not load data. Tap to retry.
+              <p className="mt-1 text-xs" style={{ color: MUTED }}>
+                People you travel with across trips
               </p>
-              <button
-                type="button"
-                onClick={() => setReloadTick((x) => x + 1)}
-                className="mt-2 text-sm font-semibold"
-                style={{ color: CORAL }}
-              >
-                Retry
-              </button>
-            </div>
-          ) : showCompanionsSkeleton ? (
-            <div
-              className="rounded-xl border p-4 shadow-sm"
-              style={{ borderColor: BORDER, backgroundColor: CARD }}
-            >
-              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                Group companions
-              </h2>
-              <div className="mt-3 space-y-2">
-                <Shimmer height={40} width="100%" />
-              </div>
-            </div>
-          ) : (
-            <div
-              className="rounded-xl border p-4 shadow-sm"
-              style={{ borderColor: BORDER, backgroundColor: CARD }}
-            >
-              <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-                Group companions
-              </h2>
               {companions.length === 0 ? (
-                <div className="mt-4">
-                  <span className="inline-flex text-[#6C757D]" aria-hidden>
-                    <Users className="h-8 w-8" strokeWidth={1.5} />
-                  </span>
-                  <p className="mt-3 text-sm" style={{ color: MUTED }}>
-                    No companions yet
-                  </p>
-                  <p className="mt-1 text-xs" style={{ color: MUTED }}>
-                    Create a group and invite friends
-                  </p>
-                  <Link
-                    href="/travel-hub"
-                    className="mt-4 inline-block text-sm font-semibold"
-                    style={{ color: CORAL }}
-                  >
-                    Create Group →
-                  </Link>
-                </div>
+                <CompanionsEmptyState variant="onboarding" />
               ) : (
-                <ul className="mt-3 space-y-3">
-                  {companions.map((c) => {
+                <ul className="mt-4 space-y-3">
+                  {companions.slice(0, 3).map((c) => {
                     const online = isOnlineSeen(c.last_seen_at, 5);
                     return (
                       <li key={c.user_id} className="flex items-center gap-2">
                         <img
                           src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(c.user_id)}`}
                           alt=""
-                          width={32}
-                          height={32}
-                          className="h-8 w-8 shrink-0 rounded-full ring-1 ring-[#E9ECEF]"
+                          width={28}
+                          height={28}
+                          className="h-7 w-7 shrink-0 rounded-full ring-1 ring-[#E9ECEF]"
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold" style={{ color: NAVY }}>
+                          <p className="truncate text-xs font-semibold" style={{ color: NAVY }}>
                             {c.full_name}
                           </p>
                           <div className="flex items-center gap-1.5">
                             <span
-                              className="inline-block h-2 w-2 shrink-0 rounded-full"
+                              className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
                               style={{
                                 backgroundColor: online ? SUCCESS : "#CED4DA",
                               }}
                             />
                             <span
-                              className="text-[10px] font-semibold"
+                              className="text-[9px] font-semibold"
                               style={{ color: online ? SUCCESS : MUTED }}
                             >
                               {online ? "Online" : agoLabel(c.last_seen_at)}
@@ -1623,360 +1835,694 @@ export default function DashboardPage() {
                 </ul>
               )}
               <Link
-                href="/travel-hub"
-                className="mt-4 inline-block text-sm font-semibold"
-                style={{ color: CORAL }}
+                href={DASHBOARD_ROUTES.travelHub}
+                className="mt-4 inline-block text-xs font-semibold hover:underline"
+                style={{ color: LINK }}
               >
-                See all →
+                Open Travel Hub →
               </Link>
             </div>
-          )}
+          </section>
+
+          <section aria-label="Explore">
+            <DashboardSectionLabel>Explore</DashboardSectionLabel>
+            <BuddyTripsCard compact />
+          </section>
         </div>
-      </section>
-
-      {/* ROW 5 — Smart Trip | Buddy Trips */}
-      <section className="grid gap-4 md:grid-cols-2">
-        <div>
-          {showSmartSkeleton ? (
-            <div
-              className="overflow-hidden rounded-xl border shadow-sm"
-              style={{ borderColor: BORDER, backgroundColor: CARD }}
-            >
-              <div className="space-y-3 p-4" style={{ backgroundColor: NAVY }}>
-                <Shimmer height={24} width="60%" />
-                <Shimmer height={14} width="90%" />
-                <div className="mt-4 flex gap-2">
-                  <Shimmer height={64} width={64} />
-                  <div className="flex-1 space-y-2">
-                    <Shimmer height={16} width="40%" />
-                    <Shimmer height={12} width="70%" />
+      ) : (
+        <div className="space-y-8">
+          {/* ——— Active now ——— */}
+          <section aria-label="Active now">
+            <DashboardSectionLabel>Active now</DashboardSectionLabel>
+            <div className="space-y-4">
+              {showSmartSkeleton ? (
+                <div
+                  className="overflow-hidden rounded-xl border shadow-sm"
+                  style={{ borderColor: BORDER, backgroundColor: CARD }}
+                >
+                  <div className="space-y-3 p-4" style={{ backgroundColor: NAVY }}>
+                    <Shimmer height={24} width="60%" />
+                    <Shimmer height={14} width="90%" />
+                    <div className="mt-4 flex gap-2">
+                      <Shimmer height={64} width={64} />
+                      <div className="flex-1 space-y-2">
+                        <Shimmer height={20} />
+                        <Shimmer height={12} width="70%" />
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="space-y-3 p-4">
-                <Shimmer height={14} width="100%" />
-                <Shimmer height={14} width="85%" />
-              </div>
-            </div>
-          ) : !smartTrip ? (
-            <div
-              className="rounded-xl border bg-white p-8 text-center shadow-sm"
-              style={{ borderColor: BORDER }}
-            >
-              <span className="inline-flex justify-center text-[#0F3460]" aria-hidden>
-                <Plane className="h-14 w-14" strokeWidth={1.5} />
-              </span>
-              <p className="mt-4 text-[15px] font-bold" style={{ color: NAVY }}>
-                No upcoming trips
-              </p>
-              <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed" style={{ color: MUTED }}>
-                Create a trip to see weather, pins and travel updates here
-              </p>
-              <button
-                type="button"
-                onClick={() => router.push("/trips")}
-                className="mt-6 inline-flex items-center justify-center rounded-xl px-6 py-2.5 text-sm font-semibold text-white"
-                style={{ backgroundColor: CORAL }}
-              >
-                + Create Trip
-              </button>
-            </div>
-          ) : (
-            <div
-              className="overflow-hidden rounded-xl border shadow-sm"
-              style={{ borderColor: BORDER, backgroundColor: CARD }}
-            >
-              {/* A + B — navy banner + weather */}
-              <div className="px-4 pb-4 pt-4 sm:px-5" style={{ backgroundColor: NAVY }}>
-                <div className="relative flex flex-wrap items-start gap-3">
-                  <span className="inline-flex text-white" aria-hidden>
-                    <DestinationGlyph
-                      title={smartTrip.title}
-                      className="h-7 w-7"
-                    />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[15px] font-bold leading-tight text-white">
-                      {smartTrip.title}
-                    </p>
-                    <p className="mt-1 text-[11px] leading-snug text-[rgba(255,255,255,0.7)]">
-                      {destinationLine(smartTrip, smartFirstPinName)} ·{" "}
-                      {formatDateStripForBanner(
-                        smartTrip.start_date,
-                        smartTrip.end_date,
-                      )}{" "}
-                      · {smartTrip.member_count} members
-                    </p>
-                  </div>
-                  {(() => {
-                    const b = tripBannerBadge(smartTrip);
-                    return (
-                      <span
-                        className="ml-auto inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold text-white sm:absolute sm:right-0 sm:top-0"
-                        style={{ backgroundColor: b.bg }}
+              ) : smartTrip ? (
+                <div
+                  className="overflow-hidden rounded-xl border shadow-sm"
+                  style={{ borderColor: BORDER, backgroundColor: CARD }}
+                >
+                  <div className="p-4 text-white" style={{ backgroundColor: NAVY }}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#A5C9FF]">
+                          Current trip
+                        </p>
+                        <h2 className="mt-1 truncate text-lg font-bold">{smartTrip.title}</h2>
+                        <p className="mt-0.5 text-xs text-[#A5C9FF]">
+                          {formatDateStripForBanner(smartTrip.start_date, smartTrip.end_date)} ·{" "}
+                          {smartTrip.group_name}
+                        </p>
+                      </div>
+                      <Link
+                        href={tripWorkspaceHref(smartTrip.id)}
+                        className="shrink-0 rounded-full bg-[#1E293B] px-3 py-1.5 text-xs font-bold text-white transition hover:opacity-90"
                       >
-                        {b.text}
-                      </span>
-                    );
-                  })()}
-                </div>
-
-                <div className="mt-4 border-t border-[rgba(255,255,255,0.15)] pt-4">
-                  {weather ? (
-                    <>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex text-white" aria-hidden>
-                          <WeatherGlyph
-                            code={weather.current.weathercode ?? 0}
-                            className="h-7 w-7"
-                          />
+                        Open trip →
+                      </Link>
+                    </div>
+                    <div className="mt-4 flex items-center justify-between border-t border-[#A5C9FF]/20 pt-4">
+                      {smartTripDetailsLoading ? (
+                        <Shimmer height={40} width={120} />
+                      ) : weather ? (
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex text-white" aria-hidden>
+                            <WeatherGlyph
+                              code={weather.current.weathercode ?? 0}
+                              className="h-7 w-7"
+                            />
+                          </span>
+                          <div>
+                            <p className="text-sm font-bold">
+                              {weather.current.temperature_2m != null
+                                ? `${Math.round(weather.current.temperature_2m)}°C`
+                                : "—"}
+                            </p>
+                            <p className="text-[10px] text-[#A5C9FF]">
+                              {destinationLine(smartTrip, smartFirstPinName)}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-[#A5C9FF]">Weather unavailable</p>
+                      )}
+                      {rainDayLabel ? (
+                        <span className="rounded bg-sky-900/50 px-2 py-0.5 text-[9px] font-semibold text-sky-200">
+                          ☔ Rain expected {rainDayLabel}
                         </span>
-                        <span className="text-2xl font-bold tabular-nums text-white">
-                          {weather.current.temperature_2m != null
-                            ? `${Math.round(weather.current.temperature_2m)}°`
-                            : "—"}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[11px] text-[rgba(255,255,255,0.75)]">
-                        Feels like{" "}
-                        {weather.current.apparent_temperature != null
-                          ? `${Math.round(weather.current.apparent_temperature)}°`
-                          : "—"}{" "}
-                        · Humidity{" "}
-                        {weather.current.relative_humidity_2m != null
-                          ? `${Math.round(weather.current.relative_humidity_2m)}%`
-                          : "—"}
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2 overflow-x-auto pb-1">
-                        {weather.daily.time.slice(0, 5).map((day, i) => {
-                          const code = weather.daily.weathercode[i] ?? 0;
-                          const max = weather.daily.temperature_2m_max[i];
-                          const d = parseYmd(day);
-                          const label = d
-                            ? d.toLocaleDateString("en-IN", { weekday: "short" })
-                            : day;
-                          return (
-                            <div
-                              key={day}
-                              className="flex min-w-[3.25rem] flex-col items-center rounded-lg border border-[rgba(255,255,255,0.25)] px-1.5 py-1.5 text-center"
-                            >
-                              <span className="text-[9px] font-semibold uppercase text-[rgba(255,255,255,0.85)]">
-                                {label}
-                              </span>
-                              <span className="inline-flex justify-center text-white">
-                                <WeatherGlyph
-                                  code={code}
-                                  className="h-4 w-4"
-                                />
-                              </span>
-                              <span className="text-[10px] font-bold tabular-nums text-white">
-                                {max != null ? `${Math.round(max)}°` : "—"}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  ) : smartTripDetailsLoading ? (
-                    <p className="flex items-center gap-1.5 text-[11px] text-[rgba(255,255,255,0.75)]">
-                      <CloudSun className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
-                      Weather loading...
-                    </p>
-                  ) : (
-                    <p className="flex items-center gap-1.5 text-[11px] text-[rgba(255,255,255,0.75)]">
-                      <CloudSun className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
-                      Weather loading...
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-5 p-4 sm:p-5">
-                {/* C — Rain */}
-                {rainDayLabel ? (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
-                    <p className="flex items-center gap-1.5 font-medium">
-                      <AlertTriangle
-                        className="h-4 w-4 shrink-0"
-                        strokeWidth={1.5}
-                        aria-hidden
-                      />
-                      Rain expected on {rainDayLabel}
-                    </p>
-                    <p className="mt-1 text-xs text-amber-800">
-                      Plan indoor activities for that day
-                    </p>
+                      ) : null}
+                    </div>
                   </div>
-                ) : null}
-
-                {/* D — Pins */}
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wide" style={{ color: MUTED }}>
-                    Saved pins
-                  </p>
-                  {tripPins.length === 0 ? (
-                    <p className="mt-2 text-sm" style={{ color: MUTED }}>
-                      No pins saved yet. Add locations to your trip →
-                    </p>
-                  ) : (
-                    <>
-                      <ul className="mt-3 space-y-2">
-                        {tripPins.slice(0, 4).map((loc) => (
-                          <li
-                            key={loc.id}
-                            className="flex items-start justify-between gap-2 rounded-lg border px-3 py-2"
-                            style={{ borderColor: BORDER }}
-                          >
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold" style={{ color: NAVY }}>
-                                <CategoryGlyph category={loc.category} />
-                                {loc.name}
-                              </p>
-                            </div>
-                            {loc.category ? (
-                              <span
-                                className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize text-white"
-                                style={{ backgroundColor: NAVY }}
-                              >
-                                {loc.category}
-                              </span>
-                            ) : null}
+                  <div className="p-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p
+                          className="text-[10px] font-bold uppercase tracking-wider"
+                          style={{ color: MUTED }}
+                        >
+                          Saved pins
+                        </p>
+                        <p className="mt-1 text-base font-bold" style={{ color: NAVY }}>
+                          {tripPins.length}
+                        </p>
+                        <p className="mt-0.5 truncate text-[10px]" style={{ color: MUTED }}>
+                          {smartFirstPinName ? `📍 ${smartFirstPinName}` : "No map pins saved"}
+                        </p>
+                      </div>
+                      <div>
+                        <p
+                          className="text-[10px] font-bold uppercase tracking-wider"
+                          style={{ color: MUTED }}
+                        >
+                          Total budget
+                        </p>
+                        <p className="mt-1 text-base font-bold" style={{ color: SUCCESS }}>
+                          {formatRupee(
+                            tripExpensesList.reduce((sum, e) => sum + e.amount, 0),
+                          )}
+                        </p>
+                        <p className="mt-0.5 truncate text-[10px]" style={{ color: MUTED }}>
+                          Split between {smartTrip.member_count} members
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-4 border-t pt-4">
+                      <p
+                        className="text-[10px] font-bold uppercase tracking-wider"
+                        style={{ color: MUTED }}
+                      >
+                        Checklist ({checklistDone}/5)
+                      </p>
+                      <ul className="mt-2 space-y-1">
+                        {smartChecklist.map((row) => (
+                          <li key={row.key} className="flex items-center gap-1.5 text-[11px]">
+                            {row.done ? (
+                              <CheckCircle className="h-3.5 w-3.5 shrink-0" style={{ color: SUCCESS }} />
+                            ) : (
+                              <span className="h-3.5 w-3.5 shrink-0 rounded-full border" />
+                            )}
+                            <span
+                              style={{
+                                color: row.done ? MUTED : NAVY,
+                                textDecoration: row.done ? "line-through" : "none",
+                              }}
+                            >
+                              {row.label}
+                            </span>
                           </li>
                         ))}
                       </ul>
+                      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${(checklistDone / 5) * 100}%`,
+                            backgroundColor: BRAND,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : showUpcomingSkeleton ? (
+                <div
+                  className="rounded-xl border p-4 shadow-sm"
+                  style={{ borderColor: BORDER, backgroundColor: CARD }}
+                >
+                  <Shimmer height={18} width="40%" />
+                  <div className="mt-4 space-y-3">
+                    <Shimmer height={40} width="100%" />
+                    <Shimmer height={40} width="100%" />
+                  </div>
+                </div>
+              ) : (
+                <UpcomingTripsCompactEmpty activeTripCount={activeJourneysCount} />
+              )}
+
+              {otherUpcomingTrips.length > 0 ? (
+                <div
+                  className="rounded-xl border p-4 shadow-sm"
+                  style={{ borderColor: BORDER, backgroundColor: CARD }}
+                >
+                  <h3 className="text-sm font-semibold" style={{ color: NAVY }}>
+                    More upcoming trips
+                  </h3>
+                  <ul className="mt-3 space-y-3">
+                    {otherUpcomingTrips.map((t) => {
+                      const badge = tripBannerBadge(t);
+                      return (
+                        <li
+                          key={t.id}
+                          className="flex gap-2 border-b border-[#E9ECEF] pb-3 last:border-0 last:pb-0"
+                        >
+                          <span
+                            className="inline-flex text-lg leading-none text-[#0F3460]"
+                            aria-hidden
+                          >
+                            <DestinationGlyph title={t.title} />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-bold" style={{ color: NAVY }}>
+                              {t.title}
+                            </p>
+                            <p className="text-[10px]" style={{ color: MUTED }}>
+                              {badge ? `${badge} · ` : ""}
+                              {t.group_name}
+                            </p>
+                          </div>
+                          <Link
+                            href={tripWorkspaceHref(t.id)}
+                            className="shrink-0 self-center text-xs font-semibold"
+                            style={{ color: LINK }}
+                          >
+                            Open trip →
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <Link
+                    href={DASHBOARD_ROUTES.tripsList}
+                    className="mt-4 inline-block text-sm font-semibold"
+                    style={{ color: LINK }}
+                  >
+                    View all trips →
+                  </Link>
+                </div>
+              ) : smartTrip ? (
+                <Link
+                  href={DASHBOARD_ROUTES.tripsList}
+                  className="inline-block text-sm font-semibold"
+                  style={{ color: LINK }}
+                >
+                  View all trips →
+                </Link>
+              ) : null}
+            </div>
+          </section>
+
+          {/* ——— Needs your attention ——— */}
+          <section aria-label="Needs your attention">
+            <DashboardSectionLabel>Needs your attention</DashboardSectionLabel>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+              {pollsError && !showPollsSkeleton ? (
+                <div
+                  className="rounded-xl border p-4 shadow-sm"
+                  style={{ borderColor: BORDER, backgroundColor: CARD }}
+                >
+                  <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                    Active polls
+                  </h2>
+                  <p className="mt-3 text-sm" style={{ color: MUTED }}>
+                    Couldn&apos;t load this section.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setReloadTick((x) => x + 1)}
+                    className="mt-2 text-sm font-semibold"
+                    style={{ color: LINK }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : showPollsSkeleton ? (
+                <div
+                  className="rounded-xl border p-4 shadow-sm"
+                  style={{ borderColor: BORDER, backgroundColor: CARD }}
+                >
+                  <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                    Active polls
+                  </h2>
+                  <ul className="mt-3 space-y-3">
+                    <li className="flex gap-2">
+                      <Shimmer width={20} height={20} />
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <Shimmer height={16} width="80%" />
+                        <Shimmer height={12} width="50%" />
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              ) : (
+                <div
+                  className="rounded-xl border p-4 shadow-sm"
+                  style={{ borderColor: BORDER, backgroundColor: CARD }}
+                >
+                  <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                    Active polls
+                  </h2>
+                  {pollItems.length === 0 ? (
+                    <PollsEmptyState
+                      hasTrips={tripsList.length > 0}
+                      firstTripId={firstTripId}
+                    />
+                  ) : (
+                    <ul className="mt-3 space-y-5">
+                      {pollItems.map(({ poll: p, tripId }) => {
+                        const totals = p.options.reduce(
+                          (s, o) => s + o.vote_count,
+                          0,
+                        );
+                        const maxV = Math.max(0, ...p.options.map((o) => o.vote_count));
+                        const showVoteNow = totals === 0;
+                        return (
+                          <li key={p.id}>
+                            <p className="text-xs font-bold leading-snug" style={{ color: NAVY }}>
+                              {p.question}
+                            </p>
+                            <div className="mt-2 space-y-1.5">
+                              {p.options.map((o) => {
+                                const pct =
+                                  totals > 0
+                                    ? Math.round((o.vote_count / totals) * 100)
+                                    : 0;
+                                const lead = o.vote_count === maxV && maxV > 0;
+                                return (
+                                  <div key={o.id}>
+                                    <div className="flex justify-between text-[10px]" style={{ color: MUTED }}>
+                                      <span className="truncate pr-1">{o.label}</span>
+                                      <span>{o.vote_count}</span>
+                                    </div>
+                                    <div className="mt-0.5 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                                      <div
+                                        className="h-full rounded-full"
+                                        style={{
+                                          width: `${pct}%`,
+                                          backgroundColor: lead ? BRAND : NAVY,
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              {showVoteNow ? (
+                                <Link
+                                  href={tripWorkspaceHref(tripId, "polls")}
+                                  className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
+                                  style={{ backgroundColor: BRAND }}
+                                >
+                                  Vote now →
+                                </Link>
+                              ) : null}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  {pollSectionFooter ? (
+                    <Link
+                      href={pollSectionFooter.href}
+                      className="mt-4 inline-block text-sm font-semibold"
+                      style={{ color: LINK }}
+                    >
+                      {pollSectionFooter.label}
+                    </Link>
+                  ) : null}
+                </div>
+              )}
+            </div>
+
+            <div>
+              {expensesError && !showExpensesSkeleton ? (
+                <div
+                  className="rounded-xl border p-4 shadow-sm"
+                  style={{ borderColor: BORDER, backgroundColor: CARD }}
+                >
+                  <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                    Shared expenses
+                  </h2>
+                  <p className="mt-3 text-sm" style={{ color: MUTED }}>
+                    Couldn&apos;t load this section.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setReloadTick((x) => x + 1)}
+                    className="mt-2 text-sm font-semibold"
+                    style={{ color: LINK }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : showExpensesSkeleton ? (
+                <div
+                  className="rounded-xl border p-4 shadow-sm"
+                  style={{ borderColor: BORDER, backgroundColor: CARD }}
+                >
+                  <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                    Shared expenses
+                  </h2>
+                  <div className="mt-3 space-y-1.5">
+                    <Shimmer height={14} width="90%" />
+                    <Shimmer height={8} width="100%" />
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="rounded-xl border p-4 shadow-sm"
+                  style={{ borderColor: BORDER, backgroundColor: CARD }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                        Shared expenses
+                      </h2>
+                      <p className="mt-1 text-xs" style={{ color: MUTED }}>
+                        What you owe and are owed across trips
+                      </p>
+                    </div>
+                    {myPendingExpenses.length > 0 ? (
                       <Link
-                        href="/map"
-                        className="mt-3 inline-block text-sm font-semibold"
-                        style={{ color: CORAL }}
+                        href={DASHBOARD_ROUTES.splitActivities}
+                        className="shrink-0 text-xs font-semibold"
+                        style={{ color: LINK }}
                       >
-                        {tripPins.length > 4
-                          ? `+ ${tripPins.length - 4} more · Open map →`
-                          : "Open map →"}
+                        View all balances →
+                      </Link>
+                    ) : null}
+                  </div>
+                  {myPendingExpenses.length === 0 ? (
+                    <ExpensesEmptyState hasTrips={tripsList.length > 0} />
+                  ) : (
+                    <>
+                      <div className="mt-4 grid grid-cols-3 gap-2">
+                        <div
+                          className="rounded-xl border px-3 py-2"
+                          style={{
+                            borderColor: SUCCESS_BORDER,
+                            backgroundColor: SUCCESS_SUBTLE,
+                          }}
+                        >
+                          <p
+                            className="text-[10px] font-semibold uppercase tracking-wide"
+                            style={{ color: SUCCESS }}
+                          >
+                            Owed to you
+                          </p>
+                          <p
+                            className="mt-1 text-sm font-bold tabular-nums"
+                            style={{ color: SUCCESS }}
+                          >
+                            {formatRupee(splitSummary.incomingTotal)}
+                          </p>
+                        </div>
+                        <div
+                          className="rounded-xl border px-3 py-2"
+                          style={{
+                            borderColor: WARM_BORDER,
+                            backgroundColor: WARM_SUBTLE,
+                          }}
+                        >
+                          <p
+                            className="text-[10px] font-semibold uppercase tracking-wide"
+                            style={{ color: WARM }}
+                          >
+                            You owe
+                          </p>
+                          <p
+                            className="mt-1 text-sm font-bold tabular-nums"
+                            style={{ color: WARM }}
+                          >
+                            {formatRupee(splitSummary.outgoingTotal)}
+                          </p>
+                        </div>
+                        <div
+                          className="rounded-xl border px-3 py-2"
+                          style={{
+                            borderColor:
+                              splitSummary.netTotal >= 0 ? SUCCESS_BORDER : WARM_BORDER,
+                            backgroundColor:
+                              splitSummary.netTotal >= 0 ? SUCCESS_SUBTLE : WARM_SUBTLE,
+                            color: splitSummary.netTotal >= 0 ? SUCCESS : WARM,
+                          }}
+                        >
+                          <p className="text-[10px] font-semibold uppercase tracking-wide">
+                            Net balance
+                          </p>
+                          <p className="mt-1 text-sm font-bold tabular-nums">
+                            {splitSummary.netTotal >= 0 ? "+" : "-"}
+                            {formatRupee(Math.abs(splitSummary.netTotal))}
+                          </p>
+                        </div>
+                      </div>
+
+                      <ul className="mt-3 divide-y divide-[#E9ECEF]">
+                        {splitSummary.visiblePeople.map((person) => {
+                          const positive = person.net > 0;
+                          const color = positive ? SUCCESS : WARM;
+                          const initial = (person.name.trim()[0] ?? "?").toUpperCase();
+                          return (
+                            <li key={person.userId}>
+                              <Link
+                                href={DASHBOARD_ROUTES.splitActivities}
+                                className="flex items-center gap-2 py-2.5"
+                                aria-label={`Open split activity for ${person.name}`}
+                              >
+                                <div
+                                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                                  style={{ backgroundColor: stringHue(person.name) }}
+                                >
+                                  {initial}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-xs font-bold" style={{ color: NAVY }}>
+                                    {person.name}
+                                  </p>
+                                  <p className="text-[10px]" style={{ color: MUTED }}>
+                                    {positive ? "They owe you" : "You owe them"}
+                                  </p>
+                                </div>
+                                <p className="text-sm font-bold tabular-nums" style={{ color }}>
+                                  {positive ? "+" : "-"}
+                                  {formatRupee(Math.abs(person.net))}
+                                </p>
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+
+                      <Link
+                        href={DASHBOARD_ROUTES.splitActivities}
+                        className="mt-3 inline-flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold text-white"
+                        style={{ backgroundColor: BRAND }}
+                      >
+                        View all expenses
+                        {splitSummary.people.length > 3
+                          ? ` · ${splitSummary.people.length - 3} more`
+                          : ""}
                       </Link>
                     </>
                   )}
                 </div>
-
-                {/* E — Checklist */}
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-xs font-bold uppercase tracking-wide" style={{ color: MUTED }}>
-                      Trip checklist
-                    </p>
-                    <span className="text-xs font-semibold" style={{ color: CORAL }}>
-                      {checklistDone}/5 done
-                    </span>
-                  </div>
-                  <ul className="mt-3 space-y-2.5">
-                    {(
-                      [
-                        { done: checklist.hotel, label: "Hotel booked" },
-                        { done: checklist.transport, label: "Transport booked" },
-                        { done: checklist.membersOk, label: "Members ready" },
-                        { done: checklist.settled, label: "Expenses settled" },
-                        { done: checklist.offlineMap, label: "Offline map ready" },
-                      ] as const
-                    ).map((row) => (
-                      <li key={row.label} className="flex items-center gap-2.5">
-                        <span
-                          className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded border-2"
-                          style={{
-                            borderColor: row.done ? CORAL : BORDER,
-                            backgroundColor: row.done ? CORAL : "transparent",
-                          }}
-                          aria-hidden
-                        >
-                          {row.done ? (
-                            <Check
-                              className="h-3 w-3 text-white"
-                              strokeWidth={2.5}
-                              aria-hidden
-                            />
-                          ) : null}
-                        </span>
-                        <span
-                          className={`text-sm ${row.done ? "text-[#6C757D] line-through" : ""}`}
-                          style={{ color: row.done ? undefined : NAVY }}
-                        >
-                          {row.label}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${(checklistDone / 5) * 100}%`,
-                        backgroundColor: CORAL,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
-          )}
-        </div>
+            </div>
+          </section>
 
-        <div>
+          <section aria-label="Your people">
+            <DashboardSectionLabel>Your people</DashboardSectionLabel>
+            <div>
+              {groupsError && !showCompanionsSkeleton ? (
+                <div
+                  className="rounded-xl border p-4 shadow-sm"
+                  style={{ borderColor: BORDER, backgroundColor: CARD }}
+                >
+                  <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                    Group companions
+                  </h2>
+                  <p className="mt-3 text-sm" style={{ color: MUTED }}>
+                    Couldn&apos;t load this section.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setReloadTick((x) => x + 1)}
+                    className="mt-2 text-sm font-semibold"
+                    style={{ color: LINK }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : showCompanionsSkeleton ? (
+                <div
+                  className="rounded-xl border p-4 shadow-sm"
+                  style={{ borderColor: BORDER, backgroundColor: CARD }}
+                >
+                  <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                    Group companions
+                  </h2>
+                  <div className="mt-3 space-y-2">
+                    <Shimmer height={40} width="100%" />
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="rounded-xl border p-4 shadow-sm"
+                  style={{ borderColor: BORDER, backgroundColor: CARD }}
+                >
+                  <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
+                    Group companions
+                  </h2>
+                  <p className="mt-1 text-xs" style={{ color: MUTED }}>
+                    People you travel with across trips
+                  </p>
+                  {companions.length === 0 ? (
+                    <CompanionsEmptyState variant="active" />
+                  ) : (
+                    <ul className="mt-3 space-y-3">
+                      {companions.map((c) => {
+                        const online = isOnlineSeen(c.last_seen_at, 5);
+                        return (
+                          <li key={c.user_id} className="flex items-center gap-2">
+                            <img
+                              src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(c.user_id)}`}
+                              alt=""
+                              width={32}
+                              height={32}
+                              className="h-8 w-8 shrink-0 rounded-full ring-1 ring-[#E9ECEF]"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold" style={{ color: NAVY }}>
+                                {c.full_name}
+                              </p>
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className="inline-block h-2 w-2 shrink-0 rounded-full"
+                                  style={{
+                                    backgroundColor: online ? SUCCESS : "#CED4DA",
+                                  }}
+                                />
+                                <span
+                                  className="text-[10px] font-semibold"
+                                  style={{ color: online ? SUCCESS : MUTED }}
+                                >
+                                  {online ? "Online" : agoLabel(c.last_seen_at)}
+                                </span>
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  <Link
+                    href={DASHBOARD_ROUTES.travelHub}
+                    className="mt-4 inline-block text-sm font-semibold"
+                    style={{ color: LINK }}
+                  >
+                    Open Travel Hub →
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section aria-label="Explore">
+            <DashboardSectionLabel>Explore</DashboardSectionLabel>
+            <BuddyTripsCard />
+          </section>
+        </div>
+      )}
+
+      <DashboardWayraHelper />
+
+      {postComingSoonOpen ? (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="new-post-soon-title"
+        >
           <div
-            className="rounded-xl border p-4 shadow-sm"
-            style={{ borderColor: BORDER, backgroundColor: CARD }}
+            className="w-full max-w-sm rounded-2xl border bg-white p-6 shadow-xl"
+            style={{ borderColor: BORDER }}
           >
-            <h2 className="text-sm font-semibold" style={{ color: NAVY }}>
-              Buddy trips nearby
+            <h2 id="new-post-soon-title" className="text-lg font-semibold" style={{ color: NAVY }}>
+              Posts are coming soon
             </h2>
-            <p className="mt-1 text-xs" style={{ color: MUTED }}>
-              Discover travelers heading your way
+            <p className="mt-2 text-sm" style={{ color: MUTED }}>
+              Share trip photos and updates from your profile once posts launch. For now, plan a trip or
+              open Travel Hub with your group.
             </p>
-            <ul className="mt-4 space-y-3">
-              <li className="rounded-lg border px-3 py-3" style={{ borderColor: BORDER }}>
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-bold" style={{ color: NAVY }}>
-                      Goa weekend
-                    </p>
-                    <p className="mt-1 text-[10px]" style={{ color: MUTED }}>
-                      Apr 18–20 · 5 members · 2 spots left
-                    </p>
-                  </div>
-                  <span
-                    className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
-                    style={{ backgroundColor: CORAL }}
-                  >
-                    Join →
-                  </span>
-                </div>
-              </li>
-              <li className="rounded-lg border px-3 py-3" style={{ borderColor: BORDER }}>
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-bold" style={{ color: NAVY }}>
-                      Manali trek
-                    </p>
-                    <p className="mt-1 text-[10px]" style={{ color: MUTED }}>
-                      May 2–6 · 8 members · 4 spots left
-                    </p>
-                  </div>
-                  <span
-                    className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
-                    style={{ backgroundColor: CORAL }}
-                  >
-                    Join →
-                  </span>
-                </div>
-              </li>
-            </ul>
-            <Link
-              href="/explore"
-              className="mt-4 inline-block text-sm font-semibold"
-              style={{ color: CORAL }}
-            >
-              Explore buddy trips →
-            </Link>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPostComingSoonOpen(false)}
+                className="rounded-lg border px-4 py-2 text-sm font-semibold"
+                style={{ borderColor: BORDER, color: NAVY }}
+              >
+                Close
+              </button>
+              <Link
+                href={DASHBOARD_ROUTES.tripsPlan}
+                onClick={() => setPostComingSoonOpen(false)}
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-white"
+                style={{ backgroundColor: BRAND }}
+              >
+                Plan a trip
+              </Link>
+            </div>
           </div>
         </div>
-      </section>
+      ) : null}
     </div>
   );
 }

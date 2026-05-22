@@ -127,3 +127,40 @@ def test_wayra_chat_returns_response():
 
     assert response.status_code == 200
     assert "response" in response.json()
+
+
+def test_travel_info_endpoint_returns_data(monkeypatch):
+    response = client.get(
+        "/api/v1/explore/travel-info",
+        params={"city": "Tokyo", "country_code": "JP"}
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["city"] == "Tokyo"
+    assert body["country_code"] == "JP"
+    assert "safety" in body
+    assert "city_crime" in body
+    assert "seasonal_activities" in body
+    assert "currency" in body
+
+
+def test_travel_info_endpoint_graceful_fallback(monkeypatch):
+    def failing_get_safety(*args, **kwargs):
+        raise ValueError("Simulated DB error")
+        
+    monkeypatch.setattr(
+        "app.services.travel_info_service.get_safety_cached",
+        failing_get_safety
+    )
+    
+    response = client.get(
+        "/api/v1/explore/travel-info",
+        params={"city": "Tokyo", "country_code": "JP"}
+    )
+    
+    assert response.status_code == 200
+    body = response.json()
+    assert body["city"] == "Tokyo"
+    assert body["country_code"] == "JP"
+    assert body["safety"] is None
+    assert body["city_crime"]["rating"] == "Moderate"

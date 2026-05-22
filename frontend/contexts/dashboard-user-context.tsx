@@ -12,7 +12,7 @@ import {
 } from "react";
 
 import { apiFetch } from "@/lib/api";
-import { isLoggedIn } from "@/lib/auth";
+import { clearToken, isLoggedIn } from "@/lib/auth";
 import { syncLocalProfileCache } from "@/lib/profileCache";
 
 export type DashboardUser = {
@@ -45,7 +45,9 @@ export function DashboardUserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoggedIn()) {
-      router.replace("/login");
+      const next = typeof window !== "undefined" ? window.location.pathname + window.location.search : "";
+      const path = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
+      router.replace(path);
       return;
     }
     let c = false;
@@ -58,13 +60,14 @@ export function DashboardUserProvider({ children }: { children: ReactNode }) {
         }
       } catch {
         if (!c) {
-          setUser({
-            full_name: "Traveler",
-            email: "",
-            is_verified: true,
-            profile_completion_filled: 0,
-            profile_completion_total: 6,
-          });
+          clearToken();
+          const next =
+            typeof window !== "undefined"
+              ? window.location.pathname + window.location.search
+              : "";
+          const path = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
+          router.replace(path);
+          return;
         }
       } finally {
         if (!c) setLoading(false);

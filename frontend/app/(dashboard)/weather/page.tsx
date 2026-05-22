@@ -84,7 +84,7 @@ export default function WeatherPage() {
     <div className="p-6 md:p-8">
       <h1 className="text-2xl font-semibold text-[#0F3460]">Weather</h1>
       <p className="mt-1 text-sm text-[#6C757D]">
-        Forecast for coordinates and date (requires pass_3day on your account).
+        This feature requires a Pro plan. Upgrade to access weather forecasts.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2">
@@ -168,8 +168,7 @@ export default function WeatherPage() {
         <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           <p className="font-medium">Upgrade required</p>
           <p className="mt-1">
-            Weather forecasts need at least the <strong>pass_3day</strong> plan.
-            Upgrade your subscription to unlock this feature.
+            This feature requires a Pro plan. Upgrade to access weather forecasts.
           </p>
         </div>
       ) : null}
