@@ -4,7 +4,7 @@ import { AIAssistantSidecar } from "@/components/ai/AIAssistantSidecar";
 import { LoungeDock } from "@/components/LoungeDock";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, MoreVertical, X as LucideX, Calendar, Users as LucideUsers, Bot, MessageSquare } from "lucide-react";
+import { Search, MoreVertical, X as LucideX, Calendar, Users as LucideUsers, Bot, MessageSquare, DollarSign } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -592,7 +592,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             : "flex min-h-screen min-h-[100dvh] flex-col pb-[calc(56px+env(safe-area-inset-bottom,0px))] transition-all duration-300 ease-in-out max-md:ml-0 max-md:pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:ml-[200px] xl:ml-[240px] md:pb-0"
         }
       >
-        <header className="relative sticky top-0 z-30 flex h-[52px] shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white px-3 md:px-6 shadow-sm select-none">
+        <header className="fixed top-0 left-0 right-0 z-30 md:left-[200px] xl:left-[240px] flex h-[52px] shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white px-3 md:px-6 shadow-sm select-none">
           {searchOpen ? (
             <div className="flex items-center w-full gap-2 px-1">
               <input
@@ -698,7 +698,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                           className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
                         >
                           <Calendar size={14} className="text-[#0F766E]" />
-                          <span>🗓️ Plan a Trip</span>
+                          <span>Plan a Trip</span>
                         </button>
                         <button
                           type="button"
@@ -709,7 +709,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                           className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
                         >
                           <LucideUsers size={14} className="text-[#0F766E]" />
-                          <span>👥 Create Group</span>
+                          <span>Create Group</span>
                         </button>
                         <button
                           type="button"
@@ -720,7 +720,18 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                           className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
                         >
                           <MessageSquare size={14} className="text-[#0F766E]" />
-                          <span>🛋️ Rovvy Lounge</span>
+                          <span>Rovvy Lounge</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            router.push("/split-activities");
+                            setMenuOpen(false);
+                          }}
+                          className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                        >
+                          <DollarSign size={14} className="text-[#0F766E]" />
+                          <span>Split Activities</span>
                         </button>
                         <button
                           type="button"
@@ -732,7 +743,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                           className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
                         >
                           <Bot size={14} className="text-teal-600" />
-                          <span>🤖 Ask AI Assistant</span>
+                          <span>Ask AI Assistant</span>
                         </button>
                       </div>
                     </>
@@ -746,8 +757,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         <main
           className={
             needsZeroOuterPadding
-              ? "flex min-h-0 flex-1 flex-col overflow-hidden p-0"
-              : "min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-4 xl:p-5"
+              ? "flex min-h-0 flex-1 flex-col overflow-hidden p-0 pt-[52px]"
+              : "min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-4 xl:p-5 pt-[64px] md:pt-[68px] xl:pt-[72px]"
           }
         >
           {isMapPage ? (
