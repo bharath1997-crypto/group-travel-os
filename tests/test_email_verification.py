@@ -85,6 +85,7 @@ def test_registration_triggers_verification_email(override_deps, db, mock_svc):
     mock_user.instagram_handle = None
     mock_user.avatar_url = None
     mock_user.profile_picture = None
+    mock_user.cover_url = None
     mock_user.google_sub = None
     mock_user.is_active = True
     mock_user.is_verified = False

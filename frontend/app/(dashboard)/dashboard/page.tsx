@@ -1553,7 +1553,7 @@ export default function DashboardPage() {
               className="inline-flex items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-semibold transition hover:bg-[#F8F9FA]"
               style={{ borderColor: BORDER, color: NAVY }}
             >
-              Open Travel Hub
+              Open Rovvy Lounge
             </Link>
           </div>
         </div>
@@ -1839,7 +1839,7 @@ export default function DashboardPage() {
                 className="mt-4 inline-block text-xs font-semibold hover:underline"
                 style={{ color: LINK }}
               >
-                Open Travel Hub →
+                Open Rovvy Lounge →
               </Link>
             </div>
           </section>
@@ -2468,7 +2468,7 @@ export default function DashboardPage() {
                     className="mt-4 inline-block text-sm font-semibold"
                     style={{ color: LINK }}
                   >
-                    Open Travel Hub →
+                    Open Rovvy Lounge →
                   </Link>
                 </div>
               )}

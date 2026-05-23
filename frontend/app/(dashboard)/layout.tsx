@@ -1,8 +1,10 @@
 "use client";
 
 import { AIAssistantSidecar } from "@/components/ai/AIAssistantSidecar";
+import { LoungeDock } from "@/components/LoungeDock";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { Search, MoreVertical, X as LucideX, Calendar, Users as LucideUsers, Bot, MessageSquare } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -70,7 +72,7 @@ const NAV_SECTIONS: NavSectionDef[] = [
     emoji: "👥",
     subs: [
       { href: "/buddy", label: "Buddy Trips" },
-      { href: "/travel-hub", label: "Travel Hub" },
+      { href: "/travel-hub", label: "Rovvy Lounge" },
       { href: "/live", label: "Live" },
     ],
   },
@@ -386,6 +388,9 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const [sidebarMe, setSidebarMe] = useState<SidebarAuthMe | null>(null);
   const [sidebarProfileLoading, setSidebarProfileLoading] = useState(true);
   const [notifCount, setNotifCount] = useState(0);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     let c = false;
@@ -604,29 +609,130 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         }
       >
         {!isMdUp ? (
-          <header className="relative sticky top-0 z-30 grid h-[52px] shrink-0 grid-cols-[40px_1fr_40px] items-center border-b border-[#E9ECEF] bg-white px-3">
-            <span className="w-10 shrink-0" aria-hidden />
-            <div className="flex min-w-0 justify-center justify-self-center px-2">
-              {!isMapPage ? (
-                <RovvyIcon size={28} />
-              ) : (
-                <span className="text-[15px] font-semibold text-[#0F3460]">
-                  Map
-                </span>
-              )}
-            </div>
-            <Link
-              href="/notifications"
-              className="relative inline-flex h-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center justify-self-end rounded-xl text-[#64748B] transition-colors hover:bg-[#F8F9FA] hover:text-[#0F172A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/40"
-              aria-label="Notifications"
-            >
-              <IconBell size={24} />
-              {notifCount > 0 ? (
-                <span className="absolute right-1 top-1 flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white">
-                  {notifCount > 99 ? "99+" : notifCount}
-                </span>
-              ) : null}
-            </Link>
+          <header className="relative sticky top-0 z-30 flex h-[52px] shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white px-3 shadow-sm select-none">
+            {searchOpen ? (
+              <div className="flex items-center w-full gap-2 px-1">
+                <input
+                  type="text"
+                  placeholder="I'm looking for..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && searchQuery.trim()) {
+                      router.push(`/explore?q=${encodeURIComponent(searchQuery)}`);
+                      setSearchOpen(false);
+                    }
+                  }}
+                  className="flex-1 text-sm border border-stone-200 px-3 py-1.5 rounded-full outline-none focus:border-[#0F766E] text-stone-850"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => setSearchOpen(false)}
+                  className="p-1 text-stone-500 hover:text-stone-800"
+                >
+                  <LucideX size={18} />
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link href="/dashboard" className="flex items-center gap-1.5 min-w-0">
+                  <RovvyIcon size={26} />
+                  <span className="text-[15px] font-bold text-[#0F766E] tracking-tight">Rovvy</span>
+                </Link>
+                
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setSearchOpen(true)}
+                    className="p-2 text-stone-600 hover:text-stone-800 rounded-lg hover:bg-stone-50 transition-colors"
+                    aria-label="Search"
+                  >
+                    <Search size={20} />
+                  </button>
+
+                  <Link
+                    href="/notifications"
+                    className="relative p-2 text-stone-600 hover:text-stone-800 rounded-lg hover:bg-stone-50 transition-colors"
+                    aria-label="Notifications"
+                  >
+                    <IconBell size={20} />
+                    {notifCount > 0 ? (
+                      <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold text-white ring-2 ring-white">
+                        {notifCount > 99 ? "99" : notifCount}
+                      </span>
+                    ) : null}
+                  </Link>
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setMenuOpen(!menuOpen)}
+                      className="p-2 text-stone-600 hover:text-stone-800 rounded-lg hover:bg-stone-50 transition-colors"
+                      aria-label="Menu"
+                    >
+                      <MoreVertical size={20} />
+                    </button>
+
+                    {menuOpen && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-40 bg-transparent"
+                          onClick={() => setMenuOpen(false)}
+                        />
+                        <div className="absolute right-0 mt-1.5 w-44 rounded-xl bg-white border border-stone-200 shadow-xl py-1.5 z-50 animate-fade-in text-[12px] font-medium text-stone-700">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              router.push("/trips/plan");
+                              setMenuOpen(false);
+                            }}
+                            className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                          >
+                            <Calendar size={14} className="text-[#0F766E]" />
+                            <span>🗓️ Plan a Trip</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              router.push("/groups/new");
+                              setMenuOpen(false);
+                            }}
+                            className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                          >
+                            <LucideUsers size={14} className="text-[#0F766E]" />
+                            <span>👥 Create Group</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              router.push("/travel-hub");
+                              setMenuOpen(false);
+                            }}
+                            className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                          >
+                            <MessageSquare size={14} className="text-[#0F766E]" />
+                            <span>🛋️ Rovvy Lounge</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const e = new CustomEvent("open-ai-sidecar");
+                              window.dispatchEvent(e);
+                              setMenuOpen(false);
+                            }}
+                            className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                          >
+                            <Bot size={14} className="text-teal-600" />
+                            <span>🤖 Ask AI Assistant</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </header>
         ) : null}
 
@@ -731,6 +837,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           className="!z-[40] max-md:!bottom-[72px] max-md:!left-0 max-md:!p-0 [&>div]:max-md:!pb-0 [&>div]:max-md:!pl-4"
         />
       ) : null}
+      {user && <LoungeDock />}
     </div>
   );
 }

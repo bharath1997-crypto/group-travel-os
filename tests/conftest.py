@@ -94,4 +94,5 @@ def mock_user():
     user.otp_attempt_count = 0
     user.verification_otp_hash = None
     user.otp_expires_at = None
+    user.cover_url = None
     return user
