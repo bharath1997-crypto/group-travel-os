@@ -1548,36 +1548,8 @@ export default function DashboardPage() {
             >
               {smartTrip ? "Open current trip" : "Plan a trip"}
             </Link>
-            <Link
-              href={DASHBOARD_ROUTES.travelHub}
-              className="inline-flex items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-semibold transition hover:bg-[#F8F9FA]"
-              style={{ borderColor: BORDER, color: NAVY }}
-            >
-              Open Rovvy Lounge
-            </Link>
           </div>
         </div>
-        <Link
-          href={DASHBOARD_ROUTES.notifications}
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border shadow-sm transition hover:border-[#0F766E]/30 hover:bg-[#F0FDFA]"
-          style={{ borderColor: BORDER, backgroundColor: CARD, color: NAVY }}
-          aria-label="Notifications"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-        </Link>
       </div>
 
       {/* COMMAND METRICS — active now, needs attention, people, travel value */}
