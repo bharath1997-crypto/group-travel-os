@@ -68,7 +68,7 @@ export default function Home() {
             // eslint-disable-next-line @next/next/no-img-element -- DiceBear remote avatars
             <img
               key={seed}
-              src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`}
+              src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(seed)}`}
               alt=""
               width={40}
               height={40}
