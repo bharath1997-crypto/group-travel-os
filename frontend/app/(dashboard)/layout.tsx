@@ -540,22 +540,6 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="shrink-0 space-y-1.5 xl:space-y-2 border-t border-[rgba(248,250,252,0.08)] p-2.5 xl:p-3">
-          <Link
-            href="/notifications"
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] transition-colors hover:bg-[rgba(248,250,252,0.06)]"
-            style={{ color: MUTED }}
-          >
-            <IconBell size={18} darkBg className="shrink-0 opacity-90" />
-            <span className="flex-1 truncate text-[#F8FAFC]/90">
-              Notifications
-            </span>
-            {notifCount > 0 ? (
-              <span className="inline-flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white">
-                {notifCount > 99 ? "99+" : notifCount}
-              </span>
-            ) : null}
-          </Link>
-
           <div className="flex items-center gap-1.5 xl:gap-2 rounded-lg p-0.5 xl:p-1">
             <div
               role="button"
@@ -608,133 +592,156 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             : "flex min-h-screen min-h-[100dvh] flex-col pb-[calc(56px+env(safe-area-inset-bottom,0px))] transition-all duration-300 ease-in-out max-md:ml-0 max-md:pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:ml-[200px] xl:ml-[240px] md:pb-0"
         }
       >
-        {!isMdUp ? (
-          <header className="relative sticky top-0 z-30 flex h-[52px] shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white px-3 shadow-sm select-none">
-            {searchOpen ? (
-              <div className="flex items-center w-full gap-2 px-1">
-                <input
-                  type="text"
-                  placeholder="I'm looking for..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && searchQuery.trim()) {
-                      router.push(`/explore?q=${encodeURIComponent(searchQuery)}`);
-                      setSearchOpen(false);
-                    }
-                  }}
-                  className="flex-1 text-sm border border-stone-200 px-3 py-1.5 rounded-full outline-none focus:border-[#0F766E] text-stone-850"
-                  autoFocus
-                />
+        <header className="relative sticky top-0 z-30 flex h-[52px] shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white px-3 md:px-6 shadow-sm select-none">
+          {searchOpen ? (
+            <div className="flex items-center w-full gap-2 px-1">
+              <input
+                type="text"
+                placeholder="I'm looking for..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && searchQuery.trim()) {
+                    router.push(`/explore?q=${encodeURIComponent(searchQuery)}`);
+                    setSearchOpen(false);
+                  }
+                }}
+                className="flex-1 text-sm border border-stone-200 px-3 py-1.5 rounded-full outline-none focus:border-[#0F766E] text-stone-850"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => setSearchOpen(false)}
+                className="p-1 text-stone-500 hover:text-stone-800"
+              >
+                <LucideX size={18} />
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-1.5 min-w-0">
+                {!isMdUp ? (
+                  <Link href="/dashboard" className="flex items-center gap-1.5 min-w-0">
+                    <RovvyIcon size={26} />
+                    <span className="text-[15px] font-bold text-[#0F766E] tracking-tight">Rovvy</span>
+                  </Link>
+                ) : (
+                  <span className="text-[14px] font-bold text-stone-700 capitalize tracking-tight">
+                    {pathname === "/dashboard" ? "Dashboard" : pathname.replace(/^\//, "").split("/")[0]}
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => setSearchOpen(false)}
-                  className="p-1 text-stone-500 hover:text-stone-800"
+                  onClick={() => setSearchOpen(true)}
+                  className="p-2 text-stone-600 hover:text-stone-800 rounded-lg hover:bg-stone-50 transition-colors"
+                  aria-label="Search"
                 >
-                  <LucideX size={18} />
+                  <Search size={20} />
                 </button>
-              </div>
-            ) : (
-              <>
-                <Link href="/dashboard" className="flex items-center gap-1.5 min-w-0">
-                  <RovvyIcon size={26} />
-                  <span className="text-[15px] font-bold text-[#0F766E] tracking-tight">Rovvy</span>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const event = new CustomEvent("toggle-rovvy-lounge");
+                    window.dispatchEvent(event);
+                  }}
+                  className="relative p-2 text-stone-600 hover:text-[#0F766E] rounded-lg hover:bg-stone-50 transition-colors flex items-center justify-center"
+                  aria-label="Rovvy Lounge"
+                  title="Open Rovvy Lounge"
+                >
+                  <MessageSquare size={20} />
+                  <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                </button>
+
+                <Link
+                  href="/notifications"
+                  className="relative p-2 text-stone-600 hover:text-stone-800 rounded-lg hover:bg-stone-50 transition-colors"
+                  aria-label="Notifications"
+                >
+                  <IconBell size={20} />
+                  {notifCount > 0 ? (
+                    <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold text-white ring-2 ring-white">
+                      {notifCount > 99 ? "99" : notifCount}
+                    </span>
+                  ) : null}
                 </Link>
-                
-                <div className="flex items-center gap-1">
+
+                <div className="relative">
                   <button
                     type="button"
-                    onClick={() => setSearchOpen(true)}
+                    onClick={() => setMenuOpen(!menuOpen)}
                     className="p-2 text-stone-600 hover:text-stone-800 rounded-lg hover:bg-stone-50 transition-colors"
-                    aria-label="Search"
+                    aria-label="Menu"
                   >
-                    <Search size={20} />
+                    <MoreVertical size={20} />
                   </button>
 
-                  <Link
-                    href="/notifications"
-                    className="relative p-2 text-stone-600 hover:text-stone-800 rounded-lg hover:bg-stone-50 transition-colors"
-                    aria-label="Notifications"
-                  >
-                    <IconBell size={20} />
-                    {notifCount > 0 ? (
-                      <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold text-white ring-2 ring-white">
-                        {notifCount > 99 ? "99" : notifCount}
-                      </span>
-                    ) : null}
-                  </Link>
-
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setMenuOpen(!menuOpen)}
-                      className="p-2 text-stone-600 hover:text-stone-800 rounded-lg hover:bg-stone-50 transition-colors"
-                      aria-label="Menu"
-                    >
-                      <MoreVertical size={20} />
-                    </button>
-
-                    {menuOpen && (
-                      <>
-                        <div 
-                          className="fixed inset-0 z-40 bg-transparent"
-                          onClick={() => setMenuOpen(false)}
-                        />
-                        <div className="absolute right-0 mt-1.5 w-44 rounded-xl bg-white border border-stone-200 shadow-xl py-1.5 z-50 animate-fade-in text-[12px] font-medium text-stone-700">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              router.push("/trips/plan");
-                              setMenuOpen(false);
-                            }}
-                            className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
-                          >
-                            <Calendar size={14} className="text-[#0F766E]" />
-                            <span>🗓️ Plan a Trip</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              router.push("/groups/new");
-                              setMenuOpen(false);
-                            }}
-                            className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
-                          >
-                            <LucideUsers size={14} className="text-[#0F766E]" />
-                            <span>👥 Create Group</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              router.push("/travel-hub");
-                              setMenuOpen(false);
-                            }}
-                            className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
-                          >
-                            <MessageSquare size={14} className="text-[#0F766E]" />
-                            <span>🛋️ Rovvy Lounge</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const e = new CustomEvent("open-ai-sidecar");
-                              window.dispatchEvent(e);
-                              setMenuOpen(false);
-                            }}
-                            className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
-                          >
-                            <Bot size={14} className="text-teal-600" />
-                            <span>🤖 Ask AI Assistant</span>
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  {menuOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40 bg-transparent"
+                        onClick={() => setMenuOpen(false)}
+                      />
+                      <div className="absolute right-0 mt-1.5 w-44 rounded-xl bg-white border border-stone-200 shadow-xl py-1.5 z-50 animate-fade-in text-[12px] font-medium text-stone-700">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            router.push("/trips/plan");
+                            setMenuOpen(false);
+                          }}
+                          className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                        >
+                          <Calendar size={14} className="text-[#0F766E]" />
+                          <span>🗓️ Plan a Trip</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            router.push("/groups/new");
+                            setMenuOpen(false);
+                          }}
+                          className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                        >
+                          <LucideUsers size={14} className="text-[#0F766E]" />
+                          <span>👥 Create Group</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            router.push("/travel-hub");
+                            setMenuOpen(false);
+                          }}
+                          className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                        >
+                          <MessageSquare size={14} className="text-[#0F766E]" />
+                          <span>🛋️ Rovvy Lounge</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const e = new CustomEvent("open-ai-sidecar");
+                            window.dispatchEvent(e);
+                            setMenuOpen(false);
+                          }}
+                          className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                        >
+                          <Bot size={14} className="text-teal-600" />
+                          <span>🤖 Ask AI Assistant</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
-              </>
-            )}
-          </header>
-        ) : null}
+              </div>
+            </>
+          )}
+        </header>
 
         <main
           className={

@@ -37,6 +37,29 @@ export function LoungeDock() {
 
   const [inputTexts, setInputTexts] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    const handleToggle = () => {
+      setIsOpen(prev => !prev);
+    };
+    const handleOpenAi = () => {
+      setIsOpen(true);
+      if (!openChatBoxes.includes("ai")) {
+        setOpenChatBoxes(prev => {
+          if (prev.length >= 3) {
+            return [...prev.slice(1), "ai"];
+          }
+          return [...prev, "ai"];
+        });
+      }
+    };
+    window.addEventListener("toggle-rovvy-lounge", handleToggle);
+    window.addEventListener("open-ai-sidecar", handleOpenAi);
+    return () => {
+      window.removeEventListener("toggle-rovvy-lounge", handleToggle);
+      window.removeEventListener("open-ai-sidecar", handleOpenAi);
+    };
+  }, [openChatBoxes]);
+
   const threads: ChatThread[] = [
     { id: "ai", title: "Rovvy AI Companion", subtitle: "Ask travel planning questions", avatar: "🤖", isAi: true },
     { id: "jane", title: "Jane Doe (Buddy)", subtitle: "Active dm thread", avatar: "👩" },
