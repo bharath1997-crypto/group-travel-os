@@ -296,6 +296,46 @@ export default function SplitActivitiesPage() {
     null,
   );
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [showAddGroupModal, setShowAddGroupModal] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupType, setNewGroupType] = useState("Apartment");
+
+  function handleCreateGroup() {
+    if (!newGroupName.trim()) {
+      showToast("Please enter a group name", "error");
+      return;
+    }
+    const newGId = `group_custom_${Date.now()}`;
+    const newGroup: GroupOut = {
+      id: newGId,
+      name: newGroupName.trim(),
+      members: [
+        { user_id: user?.id || "me_id", full_name: user?.full_name || "You" },
+        { user_id: "user_jane", full_name: "Jane Doe" },
+        { user_id: "user_john", full_name: "John Smith" },
+        { user_id: "user_emily", full_name: "Emily Watson" }
+      ]
+    };
+    setGroups(prev => [...prev, newGroup]);
+
+    const newTrip: TripWithGroup = {
+      id: `trip_custom_${Date.now()}`,
+      group_id: newGId,
+      title: newGroupName.trim(),
+      description: `${newGroupType} splitting group`,
+      status: "active",
+      start_date: null,
+      end_date: null,
+      created_at: new Date().toISOString(),
+      group_name: newGroupName.trim()
+    };
+    setTrips(prev => [...prev, newTrip]);
+    setFormTripId(newTrip.id);
+
+    showToast(`Group "${newGroupName.trim()}" created successfully!`, "success");
+    setNewGroupName("");
+    setShowAddGroupModal(false);
+  }
   const [mobileTab, setMobileTab] = useState<
     "overview" | "activity" | "groups" | "friends"
   >("overview");
@@ -382,6 +422,18 @@ export default function SplitActivitiesPage() {
 
         const mockGroups: GroupOut[] = [
           {
+            id: "group_nongroup",
+            name: "Non-group expenses",
+            members: [
+              { user_id: mockMe.id, full_name: mockMe.full_name || "You" },
+              { user_id: "user_jane", full_name: "Jane Doe" },
+              { user_id: "user_john", full_name: "John Smith" },
+              { user_id: "user_emily", full_name: "Emily Watson" },
+              { user_id: "user_alex", full_name: "Alex Rivera" },
+              { user_id: "user_sarah", full_name: "Sarah Jenkins" }
+            ]
+          },
+          {
             id: "group_euro",
             name: "EuroTrip Crew",
             members: [
@@ -424,6 +476,17 @@ export default function SplitActivitiesPage() {
         setAllMembers([...memberMap.values()]);
 
         const mockTrips: TripWithGroup[] = [
+          {
+            id: "trip_nongroup",
+            group_id: "group_nongroup",
+            title: "Non-group expenses",
+            description: "Splits for everyday non-travel bills",
+            status: "active",
+            start_date: null,
+            end_date: null,
+            created_at: new Date().toISOString(),
+            group_name: "Non-group expenses"
+          },
           {
             id: "trip_euro",
             group_id: "group_euro",
@@ -833,18 +896,19 @@ export default function SplitActivitiesPage() {
     description = description.slice(0, 300);
 
     setSaving(true);
-    if (formTripId.startsWith("trip_euro") || formTripId.startsWith("trip_cabin")) {
+    if (!formTripId || formTripId.startsWith("trip_")) {
+      const activeTripId = formTripId || "trip_nongroup";
       setTimeout(() => {
         const mockNewExpense: ExpenseWithTrip = {
           id: `mock_exp_${Date.now()}`,
-          trip_id: formTripId,
+          trip_id: activeTripId,
           paid_by: formPaidBy,
           description,
           amount: amt,
           currency: formCurrency.trim().toUpperCase() || "USD",
           created_at: new Date().toISOString(),
-          trip_title: trips.find(t => t.id === formTripId)?.title || "Trip",
-          group_name: trips.find(t => t.id === formTripId)?.group_name || "Group",
+          trip_title: trips.find(t => t.id === activeTripId)?.title || "Non-group expenses",
+          group_name: trips.find(t => t.id === activeTripId)?.group_name || "Non-group expenses",
           splits: formSplitUserIds.map((uid, idx) => ({
             id: `mock_sp_${Date.now()}_${idx}`,
             user_id: uid,
@@ -861,12 +925,12 @@ export default function SplitActivitiesPage() {
           const next = [...prev];
           for (const uid of formSplitUserIds) {
             if (uid === payerId) continue;
-            const existingIndex = next.findIndex(b => b.from_user_id === uid && b.to_user_id === payerId && b.trip_id === formTripId);
+            const existingIndex = next.findIndex(b => b.from_user_id === uid && b.to_user_id === payerId && b.trip_id === activeTripId);
             if (existingIndex >= 0) {
               const b = next[existingIndex]!;
               next[existingIndex] = { ...b, amount: parseFloat((b.amount + share).toFixed(2)) };
             } else {
-              const reverseIndex = next.findIndex(b => b.from_user_id === payerId && b.to_user_id === uid && b.trip_id === formTripId);
+              const reverseIndex = next.findIndex(b => b.from_user_id === payerId && b.to_user_id === uid && b.trip_id === activeTripId);
               if (reverseIndex >= 0) {
                 const b = next[reverseIndex]!;
                 if (b.amount > share) {
@@ -879,9 +943,9 @@ export default function SplitActivitiesPage() {
                       from_user_id: uid,
                       to_user_id: payerId,
                       amount: parseFloat(diff.toFixed(2)),
-                      trip_id: formTripId,
-                      trip_title: trips.find(t => t.id === formTripId)?.title || "Trip",
-                      group_name: trips.find(t => t.id === formTripId)?.group_name || "Group"
+                      trip_id: activeTripId,
+                      trip_title: trips.find(t => t.id === activeTripId)?.title || "Non-group expenses",
+                      group_name: trips.find(t => t.id === activeTripId)?.group_name || "Non-group expenses"
                     });
                   }
                 }
@@ -890,9 +954,9 @@ export default function SplitActivitiesPage() {
                   from_user_id: uid,
                   to_user_id: payerId,
                   amount: share,
-                  trip_id: formTripId,
-                  trip_title: trips.find(t => t.id === formTripId)?.title || "Trip",
-                  group_name: trips.find(t => t.id === formTripId)?.group_name || "Group"
+                  trip_id: activeTripId,
+                  trip_title: trips.find(t => t.id === activeTripId)?.title || "Non-group expenses",
+                  group_name: trips.find(t => t.id === activeTripId)?.group_name || "Non-group expenses"
                 });
               }
             }
@@ -1185,17 +1249,20 @@ export default function SplitActivitiesPage() {
           <span className="text-[10px] font-bold uppercase tracking-wide text-[#6C757D]">
             Groups
           </span>
-          <Link
-            href="/travel-hub"
+          <button
+            type="button"
             className="text-[10px] font-bold"
             style={{ color: CORAL }}
-            onClick={() => setShowMobileSidebar(false)}
+            onClick={() => {
+              setShowAddGroupModal(true);
+              setShowMobileSidebar(false);
+            }}
           >
             + add
-          </Link>
+          </button>
         </div>
         <div className="mt-1 max-h-[28vh] space-y-0.5 overflow-y-auto lg:max-h-none">
-          {groups.map((g, idx) => {
+          {groups.filter(g => g.id !== "group_nongroup").map((g, idx) => {
             const net = groupNetForUser(g.id, user?.id);
             const active = view.type === "group" && view.id === g.id;
             const color =
@@ -1653,6 +1720,68 @@ export default function SplitActivitiesPage() {
       ) : null}
 
       {toast ? <Toast toast={toast} /> : null}
+
+      {showAddGroupModal ? (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-[120] bg-black/50"
+            onClick={() => setShowAddGroupModal(false)}
+          />
+          <div className="fixed bottom-0 left-0 right-0 z-[130] rounded-t-3xl bg-white p-6 shadow-2xl lg:left-1/2 lg:max-w-md lg:-translate-x-1/2 lg:rounded-3xl lg:bottom-1/2 lg:translate-y-1/2">
+            <div className="flex items-center justify-between border-b pb-3 mb-4">
+              <h3 className="text-base font-bold text-[#0F3460]">Create a Group</h3>
+              <button type="button" onClick={() => setShowAddGroupModal(false)} className="text-xl text-[#6C757D]">✕</button>
+            </div>
+            
+            <label className="block mb-3">
+              <span className="text-xs font-bold text-[#6C757D]">Group Name</span>
+              <input
+                type="text"
+                placeholder="e.g. Roommates, Casual Outings"
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+                className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-[#E94560]"
+                style={{ borderColor: BORDER }}
+              />
+            </label>
+
+            <label className="block mb-5">
+              <span className="text-xs font-bold text-[#6C757D]">Group Type</span>
+              <select
+                value={newGroupType}
+                onChange={(e) => setNewGroupType(e.target.value)}
+                className="mt-1 w-full rounded-lg border px-3 py-2 text-sm font-semibold"
+                style={{ borderColor: BORDER }}
+              >
+                <option value="Apartment">Apartment / Roommates</option>
+                <option value="Couple">Couple</option>
+                <option value="Trips">Trip / Vacation</option>
+                <option value="General">General / Casual</option>
+              </select>
+            </label>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className="flex-1 rounded-lg border py-2.5 text-sm font-bold text-[#6C757D]"
+                style={{ borderColor: BORDER }}
+                onClick={() => setShowAddGroupModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="flex-1 rounded-lg py-2.5 text-sm font-bold text-white"
+                style={{ background: CORAL }}
+                onClick={handleCreateGroup}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }
@@ -1783,72 +1912,108 @@ function OverviewSection({
         </div>
       </div>
 
-      <h2 className="mb-3 text-sm font-bold text-[#2C3E50]">Who owes who</h2>
-      <div
-        className="mb-8 overflow-hidden rounded-xl border bg-white shadow-sm"
-        style={{ borderColor: BORDER }}
-      >
-        {allBalances.length === 0 ? (
-          <p className="p-6 text-sm text-[#6C757D]">No balances yet.</p>
-        ) : (
-          allBalances.map((b, idx) => {
-            const youOwe = uid === b.from_user_id;
-            const otherId = youOwe ? b.to_user_id : b.from_user_id;
-            const otherName = nameByUserId.get(otherId) || "Someone";
-            return (
-              <div
-                key={`${b.trip_id}-${idx}`}
-                className="flex flex-wrap items-center gap-3 border-b border-[#f5f5f5] px-4 py-3 last:border-b-0"
-                style={{
-                  borderLeftWidth: 3,
-                  borderLeftColor: youOwe ? CORAL : GREEN,
-                  borderLeftStyle: "solid",
-                }}
-              >
-                <img
-                  src={dicebearSrc(otherId)}
-                  alt=""
-                  className="h-10 w-10 rounded-full border border-[#E9ECEF]"
-                  width={40}
-                  height={40}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-[#2C3E50]">
-                    {youOwe ? `You owe ${otherName}` : `${otherName} owes you`}
-                  </p>
-                  <p className="text-[11px] text-[#6C757D]">
-                    {b.trip_title} · {b.group_name}
-                  </p>
-                </div>
-                <p
-                  className="text-base font-extrabold"
-                  style={{ color: youOwe ? CORAL : GREEN }}
-                >
-                  {formatCurrency(b.amount)}
-                </p>
-                {youOwe ? (
-                  <button
-                    type="button"
-                    onClick={() => onSettleRow(b)}
-                    className="rounded-lg px-3 py-1.5 text-[11px] font-bold text-white"
-                    style={{ background: CORAL }}
-                  >
-                    Settle up
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={onRemind}
-                    className="rounded-lg px-3 py-1.5 text-[11px] font-bold text-white"
-                    style={{ background: GREEN }}
-                  >
-                    Remind
-                  </button>
-                )}
-              </div>
-            );
-          })
-        )}
+      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+        {/* Left Column: YOU OWE */}
+        <div className="rounded-xl border bg-white p-4 shadow-sm" style={{ borderColor: BORDER }}>
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#6C757D] border-b pb-2">
+            You Owe
+          </h3>
+          {allBalances.filter(b => uid === b.from_user_id).length === 0 ? (
+            <p className="py-6 text-center text-sm text-[#6C757D]">You do not owe anything</p>
+          ) : (
+            <div className="divide-y divide-[#f5f5f5]">
+              {allBalances
+                .filter(b => uid === b.from_user_id)
+                .map((b, idx) => {
+                  const otherId = b.to_user_id;
+                  const otherName = nameByUserId.get(otherId) || "Someone";
+                  return (
+                    <div key={`${b.trip_id}-${idx}`} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                      <img
+                        src={dicebearSrc(otherId)}
+                        alt=""
+                        className="h-9 w-9 rounded-full border border-[#E9ECEF]"
+                        width={36}
+                        height={36}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-[#2C3E50]">
+                          You owe {otherName}
+                        </p>
+                        <p className="text-[10px] text-[#6C757D] truncate">
+                          {b.trip_title === "Non-group expenses" ? "Non-group expenses" : `${b.trip_title} · ${b.group_name}`}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-extrabold text-[#E94560]">
+                          {formatCurrency(b.amount)}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => onSettleRow(b)}
+                          className="mt-1 rounded px-2.5 py-1 text-[10px] font-bold text-white transition hover:brightness-95"
+                          style={{ background: CORAL }}
+                        >
+                          Settle up
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: YOU ARE OWED */}
+        <div className="rounded-xl border bg-white p-4 shadow-sm" style={{ borderColor: BORDER }}>
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#6C757D] border-b pb-2">
+            You Are Owed
+          </h3>
+          {allBalances.filter(b => uid !== b.from_user_id).length === 0 ? (
+            <p className="py-6 text-center text-sm text-[#6C757D]">No one owes you anything</p>
+          ) : (
+            <div className="divide-y divide-[#f5f5f5]">
+              {allBalances
+                .filter(b => uid !== b.from_user_id)
+                .map((b, idx) => {
+                  const otherId = b.from_user_id;
+                  const otherName = nameByUserId.get(otherId) || "Someone";
+                  return (
+                    <div key={`${b.trip_id}-${idx}`} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                      <img
+                        src={dicebearSrc(otherId)}
+                        alt=""
+                        className="h-9 w-9 rounded-full border border-[#E9ECEF]"
+                        width={36}
+                        height={36}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-[#2C3E50]">
+                          {otherName} owes you
+                        </p>
+                        <p className="text-[10px] text-[#6C757D] truncate">
+                          {b.trip_title === "Non-group expenses" ? "Non-group expenses" : `${b.trip_title} · ${b.group_name}`}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-extrabold text-[#2ECC71]">
+                          {formatCurrency(b.amount)}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={onRemind}
+                          className="mt-1 rounded px-2.5 py-1 text-[10px] font-bold text-white transition hover:brightness-95"
+                          style={{ background: GREEN }}
+                        >
+                          Remind
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </div>
       </div>
 
       <h2 className="mb-3 text-[15px] font-bold" style={{ color: NAVY }}>
@@ -2665,15 +2830,15 @@ function AddExpenseSheet(props: {
         </label>
 
         <label className="mt-4 block">
-          <span className="text-xs font-bold text-[#6C757D]">Trip</span>
+          <span className="text-xs font-bold text-[#6C757D]">Group / Trip</span>
           <select
             value={formTripId}
             onChange={(e) => setFormTripId(e.target.value)}
             className="mt-1 w-full rounded-lg border px-3 py-2 text-sm font-semibold"
             style={{ borderColor: BORDER }}
           >
-            <option value="">No group</option>
-            {trips.map((t) => (
+            <option value="">No Group (Non-group expense)</option>
+            {trips.filter(t => t.id !== "trip_nongroup").map((t) => (
               <option key={t.id} value={t.id}>
                 {t.title} — {t.group_name}
               </option>
