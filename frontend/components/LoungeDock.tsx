@@ -61,9 +61,9 @@ export function LoungeDock() {
   }, [openChatBoxes]);
 
   const threads: ChatThread[] = [
-    { id: "ai", title: "Rovvy AI Companion", subtitle: "Ask travel planning questions", avatar: "🤖", isAi: true },
-    { id: "jane", title: "Jane Doe (Buddy)", subtitle: "Active dm thread", avatar: "👩" },
-    { id: "group", title: "Summer Trip 🏝️", subtitle: "Group discussion", avatar: "👥" }
+    { id: "ai", title: "Rovvy AI Companion", subtitle: "Ask travel planning questions", avatar: "R", isAi: true },
+    { id: "jane", title: "Jane Doe (Buddy)", subtitle: "Active dm thread", avatar: "J" },
+    { id: "group", title: "Summer Trip", subtitle: "Group discussion", avatar: "S" }
   ];
 
   const handleThreadClick = (threadId: string) => {
@@ -168,7 +168,9 @@ export function LoungeDock() {
             <div className="h-10 shrink-0 bg-slate-800 text-white px-3 flex items-center justify-between cursor-pointer rounded-t-xl"
                  onClick={(e) => handleCloseChatBox(chatId, e)}>
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-base shrink-0">{thread.avatar}</span>
+                <div className="h-5 w-5 rounded-full bg-slate-700 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                  {thread.avatar}
+                </div>
                 <span className="text-xs font-bold truncate">{thread.title}</span>
               </div>
               <button
@@ -256,7 +258,6 @@ export function LoungeDock() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
             <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-              <span>🛋️</span>
               <span>Rovvy Lounge</span>
             </span>
           </div>
@@ -274,7 +275,7 @@ export function LoungeDock() {
                 onClick={() => handleThreadClick(t.id)}
                 className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
               >
-                <div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-lg shadow-sm border border-stone-200/50">
+                <div className="h-8 w-8 rounded-full bg-[#0F766E] text-white flex items-center justify-center text-xs font-bold shadow-sm shrink-0">
                   {t.avatar}
                 </div>
                 <div className="flex-1 min-w-0">
