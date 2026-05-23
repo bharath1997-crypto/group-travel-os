@@ -68,8 +68,10 @@ function SkeletonCard() {
   );
 }
 
+import { useEffect } from "react";
+
 export default function ActivitiesPage() {
-  const [location, setLocation] = useState("NYC");
+  const [location, setLocation] = useState("Hyderabad");
   const [day, setDay] = useState(todayPlus(14));
   const [adults, setAdults] = useState(1);
   const [categoryPick, setCategoryPick] = useState<string>("");
@@ -84,6 +86,79 @@ export default function ActivitiesPage() {
   const [priceHi, setPriceHi] = useState(800);
   const [ratingMin, setRatingMin] = useState(0);
   const [catFilter, setCatFilter] = useState<string>("");
+
+  const handlePresetClick = useCallback((city: string) => {
+    setLocation(city);
+    setSearched(true);
+    setLoading(true);
+    setErrorBanner(null);
+    setRows([]);
+    const qs = new URLSearchParams({
+      location: city.trim(),
+      date: day,
+      adults: String(adults),
+    });
+    apiFetch<ActivityRow[]>(`/activities/search?${qs.toString()}`)
+      .then((data) => {
+        setRows(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setLoading(false);
+        setErrorBanner(err instanceof Error ? err.message : String(err));
+      });
+  }, [day, adults]);
+
+  useEffect(() => {
+    // Detect surroundings location on load
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
+            );
+            if (res.ok) {
+              const data = await res.json();
+              const city =
+                data.address?.city ||
+                data.address?.town ||
+                data.address?.village ||
+                data.address?.state ||
+                "Hyderabad";
+              handlePresetClick(city);
+            } else {
+              fallbackIP();
+            }
+          } catch {
+            fallbackIP();
+          }
+        },
+        () => {
+          fallbackIP();
+        }
+      );
+    } else {
+      fallbackIP();
+    }
+
+    async function fallbackIP() {
+      try {
+        const res = await fetch("https://ipapi.co/json/");
+        if (res.ok) {
+          const j = await res.json();
+          const city = j.city || "Hyderabad";
+          handlePresetClick(city);
+        } else {
+          handlePresetClick("Hyderabad");
+        }
+      } catch {
+        handlePresetClick("Hyderabad");
+      }
+    }
+  }, []);
 
   const runSearch = useCallback(async () => {
     setErrorBanner(null);
@@ -162,10 +237,61 @@ export default function ActivitiesPage() {
     <div className="min-h-[calc(100dvh-80px)] text-[#0F3460]">
       <div className="sticky top-0 z-20 -mx-3 border-b border-slate-200/80 bg-[#0F3460] px-3 py-4 text-white shadow-md md:-mx-5 md:px-5">
         <div className="mx-auto max-w-6xl">
-          <h1 className="text-lg font-bold tracking-tight md:text-xl">Activities</h1>
-          <p className="mt-1 text-xs leading-relaxed text-teal-100/95 md:text-sm">
-            Curated tours via GetYourGuide (Travelpayouts affiliate links).
-          </p>
+          <div className="flex flex-col justify-between gap-3 border-b border-white/10 pb-3 sm:flex-row sm:items-center">
+            <div>
+              <h1 className="text-lg font-bold tracking-tight md:text-xl">Activities</h1>
+              <p className="text-xs leading-relaxed text-teal-100/95 md:text-sm">
+                Curated tours via GetYourGuide (Travelpayouts affiliate links).
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-teal-200">Asia:</span>
+              <button
+                type="button"
+                onClick={() => handlePresetClick("Hyderabad")}
+                className={`rounded-full px-2 py-0.5 text-[11px] font-medium transition ${
+                  location.toLowerCase() === "hyderabad"
+                    ? "bg-teal-500 text-white"
+                    : "bg-white/10 text-white hover:bg-white/20"
+                }`}
+              >
+                🇮🇳 Hyderabad
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePresetClick("Tokyo")}
+                className={`rounded-full px-2 py-0.5 text-[11px] font-medium transition ${
+                  location.toLowerCase() === "tokyo"
+                    ? "bg-teal-500 text-white"
+                    : "bg-white/10 text-white hover:bg-white/20"
+                }`}
+              >
+                🇯🇵 Tokyo
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePresetClick("Singapore")}
+                className={`rounded-full px-2 py-0.5 text-[11px] font-medium transition ${
+                  location.toLowerCase() === "singapore"
+                    ? "bg-teal-500 text-white"
+                    : "bg-white/10 text-white hover:bg-white/20"
+                }`}
+              >
+                🇸🇬 Singapore
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePresetClick("Bali")}
+                className={`rounded-full px-2 py-0.5 text-[11px] font-medium transition ${
+                  location.toLowerCase() === "bali"
+                    ? "bg-teal-500 text-white"
+                    : "bg-white/10 text-white hover:bg-white/20"
+                }`}
+              >
+                🇮🇩 Bali
+              </button>
+            </div>
+          </div>
           <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
             <label className="flex flex-col gap-2 lg:col-span-3">
               <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
@@ -327,8 +453,7 @@ export default function ActivitiesPage() {
 
             {!loading && !searched ? (
               <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-8 text-center text-sm text-slate-600 shadow-sm">
-                Pick a supported city (e.g. NYC, Chicago, LA, Miami, Las Vegas, Toronto,
-                Vancouver) and tap Search.
+                Search any city (e.g. Hyderabad, Tokyo, Singapore, Bali, NYC) or wait for your surroundings to load!
               </div>
             ) : null}
 
@@ -344,7 +469,7 @@ export default function ActivitiesPage() {
             !errorBanner &&
             rows.length === 0 ? (
               <div className="rounded-xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-600 shadow-sm">
-                No activities for that location yet — try another supported city.
+                No activities found — try entering another city name.
               </div>
             ) : null}
 

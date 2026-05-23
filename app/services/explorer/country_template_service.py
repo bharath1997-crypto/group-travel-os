@@ -6,13 +6,15 @@ class CountryTemplateService:
 
     def get_template(self, country_code: str) -> Dict[str, Any]:
         """Get the template configuration for a country."""
-        # Force US for MVP as requested: "Do not include India, UK, or Canada in the first implementation."
-        # We use the US template for everything to prove the architecture first.
-        return self._get_us_template()
+        country = (country_code or "US").strip().upper()
+        if country in ("US", "GB", "UK", "FR", "DE", "ES", "IT", "NL", "BE", "CH", "AT"):
+            return self._get_country_template(country)
+        # Default fallback
+        return self._get_country_template("US")
 
-    def _get_us_template(self) -> Dict[str, Any]:
+    def _get_country_template(self, country_code: str) -> Dict[str, Any]:
         return {
-            "country_code": "US",
+            "country_code": country_code,
             "default_radius_meters": 10000,  # 10km
             "modules": [
                 {
@@ -24,7 +26,7 @@ class CountryTemplateService:
                 {
                     "id": "events",
                     "priority": 1,
-                    "providers": ["ticketmaster"],
+                    "providers": ["ticketmaster", "unipride"],
                     "cache_ttl_hours": 3.0,
                 },
                 {

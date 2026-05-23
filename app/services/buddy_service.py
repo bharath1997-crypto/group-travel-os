@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -17,6 +17,8 @@ from app.schemas.buddy import (
     BuddyTripCreate,
     BuddyTripRead,
     OrganizerBrief,
+    BuddyJoinRequestRead,
+    RequesterBrief,
 )
 from app.utils.exceptions import AppException
 
@@ -73,6 +75,43 @@ class BuddyService:
         return BuddyService._to_trip_read(db, trip)
 
     @staticmethod
+    def _ensure_mock_buddy_trips(db: Session, user: User):
+        # Only seed if there are absolutely 0 buddy trips in the database
+        total = db.execute(select(BuddyTrip)).scalars().all()
+        if len(total) > 0:
+            return
+
+        # Find some other users to be the organizers
+        other_users = db.execute(select(User).where(User.id != user.id)).scalars().all()
+        if not other_users:
+            return
+
+        import random
+        from datetime import timedelta
+
+        mock_destinations = [
+            ("Tokyo, Japan", ["Adventure", "Culture"], "Hey guys! Planning a 10-day trip to Tokyo and Kyoto. Looking for buddies to explore local food spots, temples, and maybe hit a few karaoke bars. Let's hang out!"),
+            ("Lisbon, Portugal", ["Chill", "Culture"], "Heading to Lisbon for a week. Plan is mostly walking around, drinking good wine, eating Pastel de Nata, and catching sunsets at the miradouros. Very chill vibes."),
+            ("Reykjavik, Iceland", ["Nature", "Adventure"], "Road-tripping around Iceland's Ring Road! Looking for 2-3 adventurous buddies to split the cost of a 4x4 camper van. Will be hiking, visiting hot springs, and chasing the Northern Lights!"),
+        ]
+
+        for i, (dest, vibes, desc) in enumerate(mock_destinations):
+            organizer = other_users[i % len(other_users)]
+            trip = BuddyTrip(
+                organizer_id=organizer.id,
+                destination=dest,
+                date_from=date.today() + timedelta(days=30 + i * 15),
+                date_to=date.today() + timedelta(days=37 + i * 15),
+                max_size=random.choice([4, 6, 8]),
+                current_size=1,
+                vibe_tags=vibes,
+                description=desc,
+                status="open",
+            )
+            db.add(trip)
+        db.commit()
+
+    @staticmethod
     def list_buddy_trips(
         db: Session,
         user: User,
@@ -81,6 +120,7 @@ class BuddyService:
         status: str | None = None,
         mine: bool = False,
     ) -> list[BuddyTripRead]:
+        BuddyService._ensure_mock_buddy_trips(db, user)
         stmt = select(BuddyTrip)
         if mine:
             approved_ids = select(BuddyJoinRequest.buddy_trip_id).where(
@@ -189,3 +229,40 @@ class BuddyService:
         db.refresh(req_row)
         db.refresh(trip)
         return BuddyJoinRead.model_validate(req_row)
+
+    @staticmethod
+    def get_join_requests(db: Session, current_user: User, trip_id: uuid.UUID) -> list[BuddyJoinRequestRead]:
+        trip = db.execute(select(BuddyTrip).where(BuddyTrip.id == trip_id)).scalar_one_or_none()
+        if trip is None:
+            AppException.not_found("Buddy trip not found")
+        if trip.organizer_id != current_user.id:
+            AppException.forbidden()
+
+        reqs = db.execute(
+            select(BuddyJoinRequest).where(BuddyJoinRequest.buddy_trip_id == trip_id)
+        ).scalars().all()
+
+        out = []
+        for r in reqs:
+            user = db.execute(select(User).where(User.id == r.requester_id)).scalar_one_or_none()
+            user_brief = None
+            if user:
+                user_brief = RequesterBrief(
+                    id=user.id,
+                    full_name=user.full_name,
+                    avatar_url=user.avatar_url,
+                )
+            out.append(
+                BuddyJoinRequestRead(
+                    id=r.id,
+                    buddy_trip_id=r.buddy_trip_id,
+                    requester_id=r.requester_id,
+                    user_id=r.requester_id,
+                    user=user_brief,
+                    status=r.status,
+                    message=r.message,
+                    created_at=r.created_at,
+                )
+            )
+        return out
+

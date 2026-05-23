@@ -64,3 +64,25 @@ class BuddyRespondWrite(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     approve: bool
+
+
+class RequesterBrief(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    full_name: str
+    avatar_url: str | None = None
+
+
+class BuddyJoinRequestRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    buddy_trip_id: UUID
+    requester_id: UUID
+    user_id: UUID
+    user: RequesterBrief | None = None
+    status: str
+    message: str | None
+    created_at: datetime
+

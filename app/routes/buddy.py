@@ -12,6 +12,7 @@ from app.schemas.buddy import (
     BuddyRespondWrite,
     BuddyTripCreate,
     BuddyTripRead,
+    BuddyJoinRequestRead,
 )
 from app.services.buddy_service import BuddyService
 from app.utils.auth import get_current_user
@@ -83,3 +84,13 @@ def respond_buddy_join_request(
         request_id,
         body,
     )
+
+
+@router.get("/trips/{trip_id}/requests", response_model=list[BuddyJoinRequestRead])
+def list_buddy_join_requests(
+    trip_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[BuddyJoinRequestRead]:
+    return BuddyService.get_join_requests(db, current_user, trip_id)
+

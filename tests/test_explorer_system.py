@@ -51,14 +51,26 @@ async def test_explorer_service_flow():
     mock_foursquare = AsyncMock()
     mock_foursquare.fetch_cards.return_value = []
     service.providers["foursquare"] = mock_foursquare
-    
     # Mock AI ranker to avoid real API calls and check what was passed
+    mock_template = {
+        "country_code": "US",
+        "default_radius_meters": 10000,
+        "modules": [
+            {
+                "id": "events",
+                "priority": 1,
+                "providers": ["ticketmaster", "geoapify", "foursquare"],
+                "cache_ttl_hours": 3.0,
+            }
+        ]
+    }
     with patch('app.services.explorer.explorer_service.gemini_ranker.rank_cards', new_callable=AsyncMock) as mock_rank:
         # Just return the cards as they are to test the flow
         mock_rank.side_effect = lambda cards, context: cards
         
-        # 4. Call get_feed
-        results = await service.get_feed(lat=41.88, lon=-87.63, radius=10000, db=mock_db)
+        with patch('app.services.explorer.explorer_service.country_template_service.get_template', return_value=mock_template):
+            # 4. Call get_feed
+            results = await service.get_feed(lat=41.88, lon=-87.63, radius=10000, db=mock_db)
         
         # 5. Assertions
         
