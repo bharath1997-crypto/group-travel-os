@@ -164,3 +164,37 @@ def test_travel_info_endpoint_graceful_fallback(monkeypatch):
     assert body["country_code"] == "JP"
     assert body["safety"] is None
     assert body["city_crime"]["rating"] == "Moderate"
+
+
+def test_generate_infinite_events():
+    """Verify that _generate_infinite_events scaffolds 300+ events day-by-day and cleans up properly."""
+    from app.utils.database import SessionLocal
+    from app.services.explore_service import _generate_infinite_events
+    from app.models.explore_event import ExploreEvent
+    from sqlalchemy import select
+
+    db = SessionLocal()
+    try:
+        # Clear any test events if they exist
+        db.query(ExploreEvent).filter(ExploreEvent.city == "test_infinite_city").delete()
+        db.commit()
+
+        # Generate events
+        _generate_infinite_events(db, "test_infinite_city")
+
+        # Query counts
+        stmt = select(ExploreEvent).where(ExploreEvent.city == "test_infinite_city")
+        events = db.scalars(stmt).all()
+
+        assert len(events) >= 300
+        # Check that it generated music, food, sports, etc.
+        categories = set(e.category for e in events)
+        assert "Music" in categories
+        assert "Food" in categories
+        assert "Sports" in categories
+
+        # Clean up
+        db.query(ExploreEvent).filter(ExploreEvent.city == "test_infinite_city").delete()
+        db.commit()
+    finally:
+        db.close()

@@ -26,6 +26,12 @@ export default function ExploreHubPage() {
       title: "Weather",
       desc: "Forecasts for your trip",
     },
+    {
+      href: "/map",
+      emoji: "🗺️",
+      title: "Interactive Map",
+      desc: "Pins, routes, weather & local events",
+    },
   ];
 
   return (
@@ -38,7 +44,7 @@ export default function ExploreHubPage() {
           Activities, events, and weather — pick where to dive in.
         </p>
 
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-10 grid gap-4 sm:grid-cols-2">
           {cards.map((c) => (
             <li key={c.href}>
               <Link

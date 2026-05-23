@@ -66,3 +66,20 @@ def test_activity_search_missing_location_422(auth_header):
         },
     )
     assert res.status_code == 422
+
+
+def test_activity_search_dynamic_location(auth_header):
+    res = client.get(
+        "/api/v1/activities/search",
+        params={
+            "location": "Hyderabad",
+            "date": "2026-07-01",
+            "adults": "1",
+        },
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert isinstance(body, list)
+    assert len(body) == 5
+    assert any("Hyderabad" in a["title"] for a in body)
+    assert body[0]["booking_url"].startswith("https://tp.media/r")

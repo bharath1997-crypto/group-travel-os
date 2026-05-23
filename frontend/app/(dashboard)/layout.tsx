@@ -63,6 +63,7 @@ const NAV_SECTIONS: NavSectionDef[] = [
       { href: "/activities", label: "Activities" },
       { href: "/explore/events", label: "Events" },
       { href: "/weather", label: "Weather" },
+      { href: "/map", label: "Interactive Map" },
     ],
   },
   {
@@ -317,7 +318,7 @@ function SidebarNavSection({
   pathname: string;
 }) {
   const active = sectionActive(pathname, section);
-  const showSubs = section.subs.length > 0 && active;
+  const showSubs = section.subs.length > 0;
 
   return (
     <div className="flex flex-col gap-0.5">

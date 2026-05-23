@@ -29,6 +29,9 @@ import {
   ShoppingBag,
   Sparkles,
   Utensils,
+  UploadCloud,
+  FileCheck,
+  Trash2,
 } from "lucide-react";
 
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
@@ -2561,6 +2564,8 @@ function AddExpenseSheet(props: {
     onSave,
   } = props;
 
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+
   const amountSymbol =
     currencies.find((c) => c.code === formCurrency)?.symbol ?? formCurrency;
 
@@ -2864,22 +2869,67 @@ function AddExpenseSheet(props: {
               className="w-full rounded-lg border px-2 py-2 text-sm"
               style={{ borderColor: BORDER }}
             />
-            <input
-              type="file"
-              accept="image/*,application/pdf"
-              className="mt-2 w-full text-xs"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (!f) return;
-                const r = new FileReader();
-                r.onload = () =>
-                  setFormReceiptPreview(String(r.result ?? "").slice(0, 2000));
-                r.readAsDataURL(f);
-              }}
-            />
-            {formReceiptPreview ? (
-              <p className="mt-2 text-[10px] text-[#6C757D]">Preview stored</p>
-            ) : null}
+            <div className="relative mt-2">
+              <input
+                id="receipt-upload"
+                type="file"
+                accept="image/*,application/pdf"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  setSelectedFileName(f.name);
+                  const r = new FileReader();
+                  r.onload = () =>
+                    setFormReceiptPreview(String(r.result ?? "").slice(0, 2000));
+                  r.readAsDataURL(f);
+                }}
+              />
+              {!formReceiptPreview ? (
+                <label
+                  htmlFor="receipt-upload"
+                  className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed bg-[#F8F9FA] px-4 py-6 text-center transition hover:bg-[#F1F3F5]"
+                  style={{ borderColor: BORDER }}
+                >
+                  <UploadCloud className="h-6 w-6 text-[#6C757D] mb-1.5" strokeWidth={1.5} />
+                  <span className="text-[12px] font-bold text-[#2C3E50]">
+                    Upload receipt image or PDF
+                  </span>
+                  <span className="mt-0.5 text-[10px] text-[#6C757D]">
+                    Click to browse files
+                  </span>
+                </label>
+              ) : (
+                <div className="flex items-center justify-between rounded-xl border p-3 bg-green-50/50" style={{ borderColor: "#2ECC7130" }}>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-600">
+                      <FileCheck className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-bold text-[#2C3E50]">
+                        {selectedFileName || "receipt_attached.png"}
+                      </p>
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-green-600">
+                        File attached
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="rounded-lg p-1.5 text-[#6C757D] hover:bg-[#E9ECEF] hover:text-[#E94560] transition"
+                    onClick={() => {
+                      setFormReceiptPreview(null);
+                      setSelectedFileName(null);
+                      const fileInput = document.getElementById("receipt-upload") as HTMLInputElement;
+                      if (fileInput) fileInput.value = "";
+                    }}
+                    title="Remove receipt"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         ) : null}
 
