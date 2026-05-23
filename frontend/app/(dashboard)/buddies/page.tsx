@@ -10,7 +10,7 @@ const MUTED = "#94A3B8";
 const PANEL = "#0F172A";
 const CARD = "#1E293B";
 const BORDER = "rgba(148, 163, 184, 0.25)";
-const DICEBEAR_LORELEI = "https://api.dicebear.com/7.x/lorelei/svg";
+const DICEBEAR_INITIALS = "https://api.dicebear.com/7.x/initials/svg";
 
 type SocialUserOut = {
   id: string;
@@ -41,7 +41,7 @@ function socialAvatarUrl(u: {
   if (p && (p.startsWith("data:") || p.startsWith("http"))) return p;
   const a = u.avatar_url?.trim();
   if (a && (a.startsWith("data:") || a.startsWith("http"))) return a;
-  return `${DICEBEAR_LORELEI}/svg?seed=${encodeURIComponent(u.id)}`;
+  return `${DICEBEAR_INITIALS}/svg?seed=${encodeURIComponent(u.id)}`;
 }
 
 function formatDisplayName(full: string | null | undefined): string {

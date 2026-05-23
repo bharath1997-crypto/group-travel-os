@@ -80,6 +80,11 @@ class User(Base):
         Text,
         nullable=True,
     )
+    # URL for user's profile cover image (can be http(s) URL or base64 data URL)
+    cover_url: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
     phone: Mapped[str | None] = mapped_column(
         String(32),
         nullable=True,

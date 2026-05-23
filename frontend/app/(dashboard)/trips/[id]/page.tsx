@@ -194,7 +194,7 @@ function parseTripTab(raw: string | null): TabId {
 }
 
 function diceBear(id: string) {
-  return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(id)}`;
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(id)}`;
 }
 
 function parseDesc(desc: string | null): ParsedTripDesc {

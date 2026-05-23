@@ -59,7 +59,7 @@ type TripOut = {
 type SharedTab = "media" | "links" | "docs" | "trips" | "activities";
 
 function getDiceBearUrl(seed: string): string {
-  return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(seed)}`;
 }
 
 function firstLetter(name: string): string {

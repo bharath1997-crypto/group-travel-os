@@ -11,111 +11,103 @@ interface WayraIconProps {
 
 function FlyingSVG() {
   return (
-    <svg width="48" height="32" viewBox="0 0 220 140" fill="none">
-      {/* Upper wing — long swept back */}
-      <path
-        d="M95 72 Q102 52 114 36 Q124 22 136 16 Q144 12 148 16 Q138 22 128 32 Q116 44 106 58 Q100 66 96 72"
-        fill="white" stroke="#333" strokeWidth="1.4" strokeLinejoin="round"
-      />
-      {/* Wing feather detail lines */}
-      <line x1="114" y1="36" x2="110" y2="26" stroke="#555" strokeWidth="0.7" strokeLinecap="round"/>
-      <line x1="122" y1="30" x2="119" y2="20" stroke="#555" strokeWidth="0.7" strokeLinecap="round"/>
-      <line x1="130" y1="24" x2="128" y2="14" stroke="#555" strokeWidth="0.6" strokeLinecap="round"/>
-      <line x1="138" y1="18" x2="137" y2="10" stroke="#555" strokeWidth="0.6" strokeLinecap="round"/>
-      {/* Wing tips — individual feathers */}
-      <path d="M136 16 Q144 8 150 10 Q145 16 138 20" fill="white" stroke="#333" strokeWidth="0.9"/>
-      <path d="M142 13 Q150 5 155 8 Q150 13 144 17" fill="white" stroke="#333" strokeWidth="0.8"/>
-      <path d="M148 11 Q155 4 159 7 Q154 12 149 15" fill="white" stroke="#333" strokeWidth="0.7"/>
-      {/* Lower wing drooping */}
-      <path
-        d="M98 78 Q104 90 118 95 Q130 98 138 95 Q128 89 116 84 Q106 80 100 76"
-        fill="white" stroke="#333" strokeWidth="1.1" strokeLinejoin="round"
-      />
-      <line x1="104" y1="90" x2="100" y2="96" stroke="#888" strokeWidth="0.5" strokeLinecap="round"/>
-      <line x1="112" y1="94" x2="109" y2="100" stroke="#888" strokeWidth="0.5" strokeLinecap="round"/>
-      <line x1="120" y1="96" x2="119" y2="102" stroke="#888" strokeWidth="0.5" strokeLinecap="round"/>
-      {/* Body — slim torpedo */}
-      <path
-        d="M68 80 Q80 68 96 70 Q112 72 124 76 Q118 86 104 88 Q86 90 74 86 Q66 84 68 80"
-        fill="white" stroke="#333" strokeWidth="1.2" strokeLinejoin="round"
-      />
-      {/* Neck to head */}
-      <path
-        d="M118 74 Q126 70 134 68 Q142 68 144 74 Q140 78 132 78 Q122 78 118 74"
-        fill="white" stroke="#333" strokeWidth="1.1"
-      />
-      {/* Head circle */}
-      <circle cx="148" cy="70" r="14" fill="white" stroke="#333" strokeWidth="1.2"/>
-      {/* Black cap — top of head */}
-      <path
-        d="M136 62 Q148 54 160 58 Q162 66 156 72 Q148 74 140 68 Q134 64 136 62"
-        fill="#1a1a1a"
-      />
-      {/* Coral beak — long sharp pointing right */}
-      <path
-        d="M160 70 Q176 67 192 68 Q176 70 160 72"
-        fill="#E94560" stroke="#c73050" strokeWidth="0.6"
-      />
-      {/* Forked tail — left side */}
-      <path d="M68 80 Q52 74 38 64 Q46 74 58 82" fill="white" stroke="#333" strokeWidth="1.1"/>
-      <path d="M70 86 Q52 84 36 78 Q44 82 58 88" fill="white" stroke="#333" strokeWidth="1.1"/>
-      {/* Eye */}
-      <circle cx="154" cy="66" r="3.5" fill="#1a1a1a"/>
-      <circle cx="155" cy="65" r="1.1" fill="white"/>
-      {/* Body center line detail */}
-      <path d="M80 78 Q96 76 112 78" stroke="#bbb" strokeWidth="0.6" fill="none"/>
+    <svg width="56" height="56" viewBox="0 0 100 100" fill="none">
+      {/* Outer compass ring */}
+      <circle cx="50" cy="50" r="42" stroke="url(#compass-gradient)" strokeWidth="2.5" strokeDasharray="6 3" />
+      <circle cx="50" cy="50" r="35" stroke="url(#ring-gradient)" strokeWidth="1" opacity="0.6" />
+      
+      {/* Compass pointer lines */}
+      <line x1="50" y1="8" x2="50" y2="15" stroke="#E94560" strokeWidth="2" strokeLinecap="round" />
+      <line x1="50" y1="85" x2="50" y2="92" stroke="#0F3460" strokeWidth="2" strokeLinecap="round" />
+      <line x1="8" y1="50" x2="15" y2="50" stroke="#0F3460" strokeWidth="2" strokeLinecap="round" />
+      <line x1="85" y1="50" x2="92" y2="50" stroke="#0F3460" strokeWidth="2" strokeLinecap="round" />
+
+      {/* Soaring travel bird / paper plane fusion */}
+      <g transform="translate(18, 22)">
+        {/* Back wing */}
+        <path d="M12 28 L40 10 L28 32 Z" fill="url(#wing-back-grad)" />
+        {/* Front wing */}
+        <path d="M28 32 L56 5 L42 36 Z" fill="url(#wing-front-grad)" />
+        {/* Main fuselage / bird body */}
+        <path d="M8 40 L50 20 L28 32 Z" fill="url(#body-grad)" />
+        {/* Beak / compass needle point */}
+        <path d="M50 20 L58 17 L46 25 Z" fill="#E94560" />
+      </g>
+
+      {/* Sparkles / stars (smart AI touch) */}
+      <path d="M72 24 L74 29 L79 31 L74 33 L72 38 L70 33 L65 31 L70 29 Z" fill="#FFD700" />
+      <path d="M25 68 L26 71 L29 72 L26 73 L25 76 L24 73 L21 72 L24 71 Z" fill="#FFD700" opacity="0.8" />
+
+      {/* Gradients definitions */}
+      <defs>
+        <radialGradient id="compass-gradient" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#E94560" />
+          <stop offset="100%" stopColor="#0F766E" />
+        </radialGradient>
+        <linearGradient id="ring-gradient" x1="0" y1="0" x2="100" y2="100">
+          <stop offset="0%" stopColor="#0F766E" />
+          <stop offset="100%" stopColor="#0F3460" />
+        </linearGradient>
+        <linearGradient id="body-grad" x1="8" y1="40" x2="50" y2="20">
+          <stop offset="0%" stopColor="#0F3460" />
+          <stop offset="100%" stopColor="#E94560" />
+        </linearGradient>
+        <linearGradient id="wing-front-grad" x1="28" y1="32" x2="56" y2="5">
+          <stop offset="0%" stopColor="#E94560" />
+          <stop offset="100%" stopColor="#FF7597" />
+        </linearGradient>
+        <linearGradient id="wing-back-grad" x1="12" y1="28" x2="40" y2="10">
+          <stop offset="0%" stopColor="#0F766E" />
+          <stop offset="100%" stopColor="#0D9488" />
+        </linearGradient>
+      </defs>
     </svg>
-  )
+  );
 }
 
 function PerchedSVG() {
   return (
-    <svg width="38" height="52" viewBox="0 0 110 148" fill="none">
-      {/* Tail pointing up — perched posture */}
-      <path d="M30 54 Q16 46 10 36 Q16 46 22 56" fill="white" stroke="#333" strokeWidth="1.1"/>
-      <path d="M30 58 Q14 54 8 46 Q14 54 22 60" fill="white" stroke="#333" strokeWidth="1.1"/>
-      {/* Wing folded neatly along body */}
-      <path
-        d="M32 50 Q40 36 58 30 Q70 26 74 32 Q64 38 52 46 Q42 52 34 58"
-        fill="white" stroke="#333" strokeWidth="1.1" strokeLinejoin="round"
-      />
-      {/* Folded feather lines */}
-      <path d="M44 38 Q56 34 66 32" stroke="#aaa" strokeWidth="0.7" fill="none" strokeLinecap="round"/>
-      <path d="M40 44 Q52 40 62 38" stroke="#aaa" strokeWidth="0.6" fill="none" strokeLinecap="round"/>
-      <path d="M36 50 Q48 46 58 44" stroke="#aaa" strokeWidth="0.5" fill="none" strokeLinecap="round"/>
-      {/* Body compact round */}
-      <ellipse cx="46" cy="64" rx="18" ry="13" fill="white" stroke="#333" strokeWidth="1.2"/>
-      {/* Neck */}
-      <path
-        d="M56 54 Q64 48 74 50 Q76 56 72 60 Q66 62 60 58"
-        fill="white" stroke="#333" strokeWidth="1.1"
-      />
-      {/* Head */}
-      <circle cx="74" cy="48" r="13" fill="white" stroke="#333" strokeWidth="1.2"/>
-      {/* Black cap */}
-      <path
-        d="M64 40 Q74 34 84 38 Q86 44 82 50 Q74 52 66 46 Q62 42 64 40"
-        fill="#1a1a1a"
-      />
-      {/* Eye */}
-      <circle cx="80" cy="46" r="2.8" fill="#1a1a1a"/>
-      <circle cx="81" cy="45" r="0.9" fill="white"/>
-      {/* Coral beak pointing straight DOWN */}
-      <path
-        d="M72 58 Q70 74 70 90 Q72 74 74 58"
-        fill="#E94560" stroke="#c73050" strokeWidth="0.6"
-      />
-      {/* Coral feet gripping stick */}
-      <path d="M36 76 Q32 84 28 90" stroke="#E94560" strokeWidth="2" strokeLinecap="round" fill="none"/>
-      <path d="M38 78 Q36 86 34 92" stroke="#E94560" strokeWidth="2" strokeLinecap="round" fill="none"/>
-      <path d="M56 76 Q60 84 62 90" stroke="#E94560" strokeWidth="2" strokeLinecap="round" fill="none"/>
-      <path d="M54 78 Q56 86 58 92" stroke="#E94560" strokeWidth="2" strokeLinecap="round" fill="none"/>
-      {/* The stick — perch line */}
-      <line x1="18" y1="92" x2="72" y2="92" stroke="#E94560" strokeWidth="2" strokeLinecap="round" opacity="0.55"/>
-      {/* Beak tip touches earth */}
-      <circle cx="71" cy="92" r="2" fill="#E94560" opacity="0.45"/>
+    <svg width="56" height="56" viewBox="0 0 100 100" fill="none">
+      {/* Glowing circular background */}
+      <circle cx="50" cy="50" r="40" stroke="url(#ring-gradient)" strokeWidth="2" />
+      <circle cx="50" cy="50" r="32" stroke="url(#ring-gradient)" strokeWidth="1" strokeDasharray="4 2" opacity="0.7" />
+      
+      {/* Stylized geometric perched bird / travel guide */}
+      <g transform="translate(25, 22)">
+        {/* Folded wing */}
+        <path d="M12 35 Q22 15 36 24 Q24 28 12 35" fill="url(#wing-folded-grad)" stroke="#0F3460" strokeWidth="0.8" />
+        {/* Compact body */}
+        <ellipse cx="22" cy="38" rx="14" ry="10" fill="url(#body-perched-grad)" stroke="#0F3460" strokeWidth="0.8" />
+        {/* Head */}
+        <circle cx="34" cy="26" r="9" fill="white" stroke="#0F3460" strokeWidth="1" />
+        {/* Smart crown cap */}
+        <path d="M26 21 Q34 14 42 19 C40 26 30 26 26 21" fill="#0F3460" />
+        {/* Eye (smart dot) */}
+        <circle cx="37" cy="24" r="2.2" fill="#E94560" />
+        <circle cx="38" cy="23.2" r="0.8" fill="white" />
+        {/* Downward beak / pointer */}
+        <path d="M34 33 L32 48 L36 33 Z" fill="#E94560" />
+        {/* Perch branch */}
+        <line x1="4" y1="48" x2="40" y2="48" stroke="#0F766E" strokeWidth="2" strokeLinecap="round" />
+      </g>
+
+      {/* Gradients definitions */}
+      <defs>
+        <linearGradient id="ring-gradient" x1="0" y1="0" x2="100" y2="100">
+          <stop offset="0%" stopColor="#0F766E" />
+          <stop offset="100%" stopColor="#E94560" />
+        </linearGradient>
+        <linearGradient id="body-perched-grad" x1="8" y1="48" x2="36" y2="28">
+          <stop offset="0%" stopColor="#0F3460" />
+          <stop offset="100%" stopColor="#E94560" />
+        </linearGradient>
+        <linearGradient id="wing-folded-grad" x1="12" y1="35" x2="36" y2="24">
+          <stop offset="0%" stopColor="#0F766E" />
+          <stop offset="100%" stopColor="#0D9488" />
+        </linearGradient>
+      </defs>
     </svg>
-  )
+  );
 }
 
 export default function WayraIcon({

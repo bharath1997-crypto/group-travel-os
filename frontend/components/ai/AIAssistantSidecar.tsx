@@ -103,6 +103,126 @@ export function AIAssistantSidecar({
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // DRAGGABLE POSITION FOR THE FLOATING LOGO (remembered in localStorage)
+  const [position, setPosition] = useState<{ x: number; y: number }>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("rovvy_ai_btn_pos");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          // fallback to default
+        }
+      }
+    }
+    return { x: -1, y: -1 };
+  });
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const dragStartCoords = useRef({ x: 0, y: 0 });
+  const touchStartCoords = useRef({ x: 0, y: 0 });
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return; // Only drag on left-click
+    setIsDragging(true);
+    dragStartCoords.current = { x: e.clientX, y: e.clientY };
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDragStart({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLButtonElement>) => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    setIsDragging(true);
+    touchStartCoords.current = { x: touch.clientX, y: touch.clientY };
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDragStart({
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+    });
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      let newX = e.clientX - dragStart.x;
+      let newY = e.clientY - dragStart.y;
+
+      const btnSize = 56; // size of the button
+      newX = Math.max(16, Math.min(newX, window.innerWidth - btnSize - 16));
+      newY = Math.max(16, Math.min(newY, window.innerHeight - btnSize - 16));
+
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      setIsDragging(false);
+      const dist = Math.sqrt(
+        Math.pow(e.clientX - dragStartCoords.current.x, 2) +
+        Math.pow(e.clientY - dragStartCoords.current.y, 2)
+      );
+      if (dist < 6) {
+        setIsOpen((prev) => !prev);
+      }
+      if (position.x !== -1) {
+        localStorage.setItem("rovvy_ai_btn_pos", JSON.stringify(position));
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, dragStart, position]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (!touch) return;
+      let newX = touch.clientX - dragStart.x;
+      let newY = touch.clientY - dragStart.y;
+
+      const btnSize = 56;
+      newX = Math.max(16, Math.min(newX, window.innerWidth - btnSize - 16));
+      newY = Math.max(16, Math.min(newY, window.innerHeight - btnSize - 16));
+
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      setIsDragging(false);
+      const touch = e.changedTouches[0];
+      if (touch) {
+        const dist = Math.sqrt(
+          Math.pow(touch.clientX - touchStartCoords.current.x, 2) +
+          Math.pow(touch.clientY - touchStartCoords.current.y, 2)
+        );
+        if (dist < 6) {
+          setIsOpen((prev) => !prev);
+        }
+      }
+      if (position.x !== -1) {
+        localStorage.setItem("rovvy_ai_btn_pos", JSON.stringify(position));
+      }
+    };
+
+    window.addEventListener("touchmove", handleTouchMove);
+    window.addEventListener("touchend", handleTouchEnd);
+    return () => {
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [isDragging, dragStart, position]);
+
   const scrollToEnd = useCallback(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
@@ -317,194 +437,216 @@ export function AIAssistantSidecar({
   }
 
   return (
-    <div className={`pointer-events-none fixed bottom-0 left-0 md:left-[200px] xl:left-[240px] z-40 p-0 ${className}`.trim()}>
-      <div className="pointer-events-auto flex max-w-full flex-col items-start gap-3 pl-4 pb-4 pr-2 sm:pl-5 sm:pb-5">
-        {isOpen ? (
-          <div
-            id={panelId}
-            className="relative flex h-[min(520px,85vh)] w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-[#E9ECEF] bg-[#F8F9FA] shadow-xl sm:w-[380px] sm:max-w-[380px]"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={`${panelId}-title`}
-          >
-            <div className="flex items-start justify-between gap-2 border-b border-[#E9ECEF] bg-white px-4 py-3">
-              <div className="flex min-w-0 shrink-0 items-center gap-2">
-                <WayraIcon
-                  state={birdState}
-                  size={0.42}
-                  variant={birdState === "flying" ? "fog" : "navy"}
-                  animate={true}
-                />
-                <div className="min-w-0">
-                  <h2
-                    id={`${panelId}-title`}
-                    className="text-sm font-bold text-[#0F3460] sm:text-base"
-                  >
-                    Wayra
-                  </h2>
-                  <p
-                    className={
-                      birdState === "flying"
-                        ? "text-[10px] text-[#E94560]"
-                        : "text-[10px] text-[#0F3460]"
-                    }
-                  >
-                    {headerStatus}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="shrink-0 rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
-                aria-label="Close Wayra"
-              >
-                <span className="text-lg leading-none" aria-hidden>
-                  ×
-                </span>
-              </button>
-            </div>
+    <>
+      {/* ALWAYS VISIBLE DRAGGABLE LOGO BUTTON (keeps standard bottom-right position in mind by default) */}
+      <div
+        style={
+          position.x === -1 || position.y === -1
+            ? {
+                position: "fixed",
+                bottom: "96px",
+                right: "24px",
+                zIndex: 50,
+              }
+            : {
+                position: "fixed",
+                left: `${position.x}px`,
+                top: `${position.y}px`,
+                zIndex: 50,
+              }
+        }
+        className={`pointer-events-auto flex items-center justify-center select-none ${
+          isDragging ? "cursor-grabbing" : "cursor-grab"
+        }`}
+      >
+        <button
+          type="button"
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          className="group flex h-14 w-14 items-center justify-center rounded-full border border-[#E9ECEF] bg-white shadow-xl transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
+          aria-label={isOpen ? "Close Wayra" : "Open Wayra"}
+          aria-expanded={isOpen}
+          aria-controls={panelId}
+        >
+          <WayraIcon state={birdState} size={0.9} variant="raw" animate={true} />
+        </button>
+      </div>
 
-            <div className="shrink-0 space-y-2 border-b border-[#E9ECEF] bg-white px-3 py-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6C757D]">
-                Quick prompts
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {quickPrompts.map((q) => (
-                  <button
-                    key={q}
-                    type="button"
-                    onClick={() => void sendMessage(q)}
-                    disabled={loading}
-                    className="max-w-full rounded-full border border-[#E9ECEF] bg-[#F8F9FA] px-2.5 py-1 text-left text-[11px] text-[#2C3E50] hover:border-[#E94560]/40 focus:outline-none focus:ring-2 focus:ring-[#E94560]/30 disabled:opacity-50"
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div
-              className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-[#F8F9FA] px-3 py-3"
-              role="log"
-            >
-              {messages.length === 0 ? (
-                <p className="rounded-xl border border-[#E9ECEF] bg-white p-3 text-sm leading-relaxed text-[#2C3E50]">
-                  Hi — I&apos;m <strong>Wayra</strong>. Ask how{" "}
-                  <strong>{pageLabel}</strong> works, or get destination ideas. App
-                  how-tos work offline; travel tips need the assistant when it&apos;s up.
+      {/* FLOATABLE ASSISTANT PANEL */}
+      {isOpen ? (
+        <div
+          id={panelId}
+          className="pointer-events-auto fixed bottom-[96px] right-6 z-[2999] flex h-[min(520px,85vh)] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-[#E9ECEF] bg-[#F8F9FA] shadow-2xl sm:w-[380px] sm:max-w-[380px]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={`${panelId}-title`}
+        >
+          <div className="flex items-start justify-between gap-2 border-b border-[#E9ECEF] bg-white px-4 py-3">
+            <div className="flex min-w-0 shrink-0 items-center gap-2">
+              <WayraIcon
+                state={birdState}
+                size={0.42}
+                variant={birdState === "flying" ? "fog" : "navy"}
+                animate={true}
+              />
+              <div className="min-w-0">
+                <h2
+                  id={`${panelId}-title`}
+                  className="text-sm font-bold text-[#0F3460] sm:text-base"
+                >
+                  Wayra
+                </h2>
+                <p
+                  className={
+                    birdState === "flying"
+                      ? "text-[10px] text-[#E94560]"
+                      : "text-[10px] text-[#0F3460]"
+                  }
+                >
+                  {headerStatus}
                 </p>
-              ) : null}
-
-              {messages.map((m) => {
-                if (m.role === "system") {
-                  return (
-                    <p
-                      key={m.id}
-                      className="py-1 text-center text-[10px] text-[#6C757D]"
-                    >
-                      {m.text}
-                    </p>
-                  );
-                }
-                return (
-                  <div key={m.id} className="flex w-full">
-                    {m.role === "user" ? (
-                      <div className="ml-auto max-w-[90%]">
-                        <div className="rounded-2xl rounded-br-md bg-[#E94560]/12 px-3 py-2 text-sm text-[#2C3E50]">
-                          {m.text}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="mr-auto max-w-[90%]">
-                        <div className="rounded-2xl rounded-bl-md border border-[#E9ECEF] bg-white px-3 py-2 text-sm whitespace-pre-wrap text-[#2C3E50]">
-                          {m.text}
-                        </div>
-                        {m.suggestedActions && m.suggestedActions.length > 0 ? (
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {m.suggestedActions.map((a, i) => (
-                              <button
-                                key={`${a.type}-${a.label}-${i}`}
-                                type="button"
-                                onClick={() =>
-                                  onActionPill(a.type, a.label, a.target)
-                                }
-                                className="rounded-full border border-[#0F3460]/20 bg-white px-2.5 py-1 text-[11px] text-[#0F3460] hover:bg-[#0F3460] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
-                              >
-                                {a.label}
-                              </button>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              {loading ? (
-                <div
-                  className="flex items-center gap-2 text-xs text-[#6C757D]"
-                  aria-live="polite"
-                >
-                  <span
-                    className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
-                    aria-hidden
-                  />
-                  Wayra is thinking…
-                </div>
-              ) : null}
-              <div ref={endRef} />
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="shrink-0 rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
+              aria-label="Close Wayra"
+            >
+              <span className="text-lg leading-none" aria-hidden>
+                ×
+              </span>
+            </button>
+          </div>
 
-            {actionHint ? (
-              <div className="shrink-0 border-t border-[#E9ECEF] bg-[#F0F4F8] px-3 py-2 text-center text-xs text-[#2C3E50]">
-                {actionHint}
-              </div>
-            ) : null}
-
-            <div className="shrink-0 border-t border-[#E9ECEF] bg-white p-3">
-              <div className="flex gap-2">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      void sendMessage();
-                    }
-                  }}
-                  rows={2}
-                  placeholder="Ask Wayra…"
-                  className="min-h-[40px] flex-1 resize-y rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] px-3 py-2 text-sm text-[#2C3E50] placeholder:text-[#6C757D] focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
-                  disabled={loading}
-                />
+          <div className="shrink-0 space-y-2 border-b border-[#E9ECEF] bg-white px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6C757D]">
+              Quick prompts
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {quickPrompts.map((q) => (
                 <button
+                  key={q}
                   type="button"
-                  onClick={() => void sendMessage()}
-                  disabled={loading || !input.trim()}
-                  className="h-fit shrink-0 self-end rounded-xl bg-[#E94560] px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[#E94560]/50 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => void sendMessage(q)}
+                  disabled={loading}
+                  className="max-w-full rounded-full border border-[#E9ECEF] bg-[#F8F9FA] px-2.5 py-1 text-left text-[11px] text-[#2C3E50] hover:border-[#E94560]/40 focus:outline-none focus:ring-2 focus:ring-[#E94560]/30 disabled:opacity-50"
                 >
-                  Send
+                  {q}
                 </button>
-              </div>
+              ))}
             </div>
           </div>
-        ) : null}
 
-        {!isOpen ? (
-          <button
-            type="button"
-            onClick={() => setIsOpen(true)}
-            className="pointer-events-auto cursor-pointer border-0 bg-transparent p-0"
-            aria-label="Open Wayra"
-            aria-expanded={false}
-            aria-controls={panelId}
+          <div
+            className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-[#F8F9FA] px-3 py-3"
+            role="log"
           >
-            <WayraIcon state={birdState} size={1} variant="fog" animate={true} />
-          </button>
-        ) : null}
-      </div>
-    </div>
+            {messages.length === 0 ? (
+              <p className="rounded-xl border border-[#E9ECEF] bg-white p-3 text-sm leading-relaxed text-[#2C3E50]">
+                Hi — I&apos;m <strong>Wayra</strong>. Ask how{" "}
+                <strong>{pageLabel}</strong> works, or get destination ideas. App
+                how-tos work offline; travel tips need the assistant when it&apos;s up.
+              </p>
+            ) : null}
+
+            {messages.map((m) => {
+              if (m.role === "system") {
+                return (
+                  <p
+                    key={m.id}
+                    className="py-1 text-center text-[10px] text-[#6C757D]"
+                  >
+                    {m.text}
+                  </p>
+                );
+              }
+              return (
+                <div key={m.id} className="flex w-full">
+                  {m.role === "user" ? (
+                    <div className="ml-auto max-w-[90%]">
+                      <div className="rounded-2xl rounded-br-md bg-[#E94560]/12 px-3 py-2 text-sm text-[#2C3E50]">
+                        {m.text}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mr-auto max-w-[90%]">
+                      <div className="rounded-2xl rounded-bl-md border border-[#E9ECEF] bg-white px-3 py-2 text-sm whitespace-pre-wrap text-[#2C3E50]">
+                        {m.text}
+                      </div>
+                      {m.suggestedActions && m.suggestedActions.length > 0 ? (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {m.suggestedActions.map((a, i) => (
+                            <button
+                              key={`${a.type}-${a.label}-${i}`}
+                              type="button"
+                              onClick={() =>
+                                onActionPill(a.type, a.label, a.target)
+                              }
+                              className="rounded-full border border-[#0F3460]/20 bg-white px-2.5 py-1 text-[11px] text-[#0F3460] hover:bg-[#0F3460] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
+                            >
+                              {a.label}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {loading ? (
+              <div
+                className="flex items-center gap-2 text-xs text-[#6C757D]"
+                aria-live="polite"
+              >
+                <span
+                  className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
+                  aria-hidden
+                />
+                Wayra is thinking…
+              </div>
+            ) : null}
+            <div ref={endRef} />
+          </div>
+
+          {actionHint ? (
+            <div className="shrink-0 border-t border-[#E9ECEF] bg-[#F0F4F8] px-3 py-2 text-center text-xs text-[#2C3E50]">
+              {actionHint}
+            </div>
+          ) : null}
+
+          <div className="shrink-0 border-t border-[#E9ECEF] bg-white p-3">
+            <div className="flex gap-2">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void sendMessage();
+                  }
+                }}
+                rows={2}
+                placeholder="Ask Wayra…"
+                className="min-h-[40px] flex-1 resize-y rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] px-3 py-2 text-sm text-[#2C3E50] placeholder:text-[#6C757D] focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => void sendMessage()}
+                disabled={loading || !input.trim()}
+                className="h-fit shrink-0 self-end rounded-xl bg-[#E94560] px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[#E94560]/50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
+
+
 }
