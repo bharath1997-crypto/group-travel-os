@@ -1776,7 +1776,7 @@ export default function DashboardPage() {
                     return (
                       <li key={c.user_id} className="flex items-center gap-2">
                         <img
-                          src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(c.user_id)}`}
+                          src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(c.user_id)}`}
                           alt=""
                           width={28}
                           height={28}
@@ -2405,7 +2405,7 @@ export default function DashboardPage() {
                         return (
                           <li key={c.user_id} className="flex items-center gap-2">
                             <img
-                              src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(c.user_id)}`}
+                              src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(c.user_id)}`}
                               alt=""
                               width={32}
                               height={32}

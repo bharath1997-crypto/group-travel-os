@@ -168,7 +168,7 @@ function initFirebase(): { app: FirebaseApp | null; db: Database | null; ok: boo
 }
 
 function getDiceBearUrl(seed: string): string {
-  return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(seed)}`;
 }
 
 function firstLetter(name: string): string {
