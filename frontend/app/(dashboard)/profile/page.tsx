@@ -135,6 +135,7 @@ type UserMe = {
   profile_public?: boolean;
   avatar_url?: string | null;
   profile_picture?: string | null;
+  cover_url?: string | null;
   home_city?: string | null;
   country?: string | null;
   created_at?: string;
@@ -553,6 +554,7 @@ function SkeletonBar({ h = 18, className = "" }: { h?: number; className?: strin
 
 export default function ProfilePage() {
   const router = useRouter();
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [mounted, setMounted] = useState(false);
   const [bootLoading, setBootLoading] = useState(true);
   const [me, setMe] = useState<UserMe | null>(null);
@@ -914,6 +916,9 @@ export default function ProfilePage() {
   const photoUrl =
     me?.profile_picture?.trim() ||
     (isHttpPhoto(me?.avatar_url) ? me?.avatar_url : null);
+  const coverUrl =
+    me?.cover_url?.trim() ||
+    "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&h=400&fit=crop";
 
   const pts = globePoints(stats, streakDays);
   const level = globeLevelFromPoints(pts);
@@ -1109,6 +1114,37 @@ export default function ProfilePage() {
     } finally {
       setSaveBusy(false);
     }
+  };
+
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Data = reader.result as string;
+      try {
+        const updated = await apiFetch<UserMe>("/auth/me", {
+          method: "PATCH",
+          body: JSON.stringify({
+            cover_url: base64Data,
+          }),
+        });
+        setMe(updated);
+        showToast("Cover image updated!");
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Failed to update cover");
+      }
+    };
+    reader.onerror = () => {
+      showToast("Error reading file");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const triggerCoverUpload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    coverInputRef.current?.click();
   };
 
   const isPro = plan?.plan === "pro" || plan?.plan === "enterprise";
@@ -1435,27 +1471,35 @@ export default function ProfilePage() {
         {/* Cover Image - Full Bleed */}
         <div 
           className={`relative h-56 w-full overflow-hidden bg-stone-200 md:h-72 ${isOwner ? "cursor-pointer" : ""}`}
-          onClick={isOwner ? () => showToast("Change cover feature coming soon!") : undefined}
+          onClick={isOwner ? triggerCoverUpload : undefined}
         >
+          <input
+            type="file"
+            ref={coverInputRef}
+            onChange={handleCoverChange}
+            accept="image/*"
+            className="hidden"
+          />
           <img 
-            src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&h=400&fit=crop" 
+            src={coverUrl} 
             alt="Cover" 
             className="h-full w-full object-cover" 
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
           
           {isOwner && (
-            <div className="absolute bottom-4 right-4 rounded-full bg-black/50 p-2 text-white text-xs font-semibold backdrop-blur-sm flex items-center gap-1">
+            <button
+              type="button"
+              onClick={triggerCoverUpload}
+              className="absolute bottom-4 right-4 rounded-full bg-black/50 p-2.5 text-white text-xs font-semibold backdrop-blur-sm flex items-center gap-1.5 hover:bg-black/70 transition-all border border-white/10"
+            >
               <span>📷</span>
               <span>Change Cover</span>
-            </div>
+            </button>
           )}
           
           {/* Floating Action Buttons - Styled elegantly */}
-          <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/40 to-transparent">
-            <div className="flex items-center gap-2">
-              <RovvyLogo variant="dark" size="md" />
-            </div>
+          <div className="absolute inset-x-0 top-0 flex items-center justify-end p-4 bg-gradient-to-b from-black/40 to-transparent">
             <div className="flex gap-3">
               <button
                 type="button"

@@ -43,7 +43,7 @@ export default function GroupsPage() {
             href="/travel-hub"
             className="inline-flex items-center justify-center rounded-xl border border-[#334155] bg-[#1E293B]/40 px-5 py-3 text-sm font-semibold text-[#94A3B8] transition-all hover:bg-[#1E293B] hover:text-[#F8FAFC]"
           >
-            Open Travel Hub
+            Open Rovvy Lounge
           </Link>
         </div>
 
