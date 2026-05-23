@@ -66,6 +66,7 @@ class UserUpdate(BaseModel):
     recovery_email: EmailStr | None = None
     instagram_handle: str | None = Field(None, max_length=100)
     profile_public: bool | None = None
+    cover_url: str | None = None
 
 
 class ChangePasswordRequest(BaseModel):
@@ -99,6 +100,7 @@ class UserOut(BaseModel):
     instagram_handle: str | None = None
     avatar_url: str | None
     profile_picture: str | None = None
+    cover_url: str | None = None
     google_sub: str | None = None
     is_active: bool
     is_verified: bool
@@ -157,6 +159,7 @@ def build_user_out(user: User) -> UserOut:
         instagram_handle=user.instagram_handle,
         avatar_url=user.avatar_url,
         profile_picture=user.profile_picture,
+        cover_url=user.cover_url,
         google_sub=user.google_sub,
         is_active=user.is_active,
         is_verified=user.is_verified,

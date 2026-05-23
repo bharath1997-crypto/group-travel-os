@@ -36,7 +36,7 @@ const VIBE_FILTERS = [
 ] as const;
 
 function dicebear(seed: string): string {
-  return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(seed)}`;
 }
 
 function avatarForTrip(t: BuddyTripRow): string {
