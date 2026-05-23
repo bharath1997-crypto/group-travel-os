@@ -374,7 +374,200 @@ export default function SplitActivitiesPage() {
         return;
       }
       setUser(meRes.data);
-      const gList = groupsRes.data;
+      let gList = groupsRes.data || [];
+
+      if (gList.length === 0) {
+        const mockMe = meRes.data || { id: "me_id", full_name: "NIDUMOLU", email: "user@rovvy.com", username: "nidumolu" };
+        setUser(mockMe);
+
+        const mockGroups: GroupOut[] = [
+          {
+            id: "group_euro",
+            name: "EuroTrip Crew",
+            members: [
+              { user_id: mockMe.id, full_name: mockMe.full_name || "You" },
+              { user_id: "user_jane", full_name: "Jane Doe" },
+              { user_id: "user_john", full_name: "John Smith" },
+              { user_id: "user_emily", full_name: "Emily Watson" }
+            ]
+          },
+          {
+            id: "group_weekend",
+            name: "Weekend Cabin Getaway",
+            members: [
+              { user_id: mockMe.id, full_name: mockMe.full_name || "You" },
+              { user_id: "user_alex", full_name: "Alex Rivera" },
+              { user_id: "user_sarah", full_name: "Sarah Jenkins" }
+            ]
+          }
+        ];
+        setGroups(mockGroups);
+
+        const mockCurrencies: CurrencyRow[] = [
+          { code: "USD", name: "US Dollar", symbol: "$" },
+          { code: "EUR", name: "Euro", symbol: "€" },
+          { code: "INR", name: "Indian Rupee", symbol: "₹" }
+        ];
+        setCurrencies(mockCurrencies);
+
+        const memberMap = new Map<string, MemberRow>();
+        for (const g of mockGroups) {
+          for (const m of g.members) {
+            if (!memberMap.has(m.user_id)) {
+              memberMap.set(m.user_id, {
+                user_id: m.user_id,
+                full_name: m.full_name,
+              });
+            }
+          }
+        }
+        setAllMembers([...memberMap.values()]);
+
+        const mockTrips: TripWithGroup[] = [
+          {
+            id: "trip_euro",
+            group_id: "group_euro",
+            title: "Paris & Rome Explorer",
+            description: "European summer adventure",
+            status: "active",
+            start_date: "2026-06-01",
+            end_date: "2026-06-15",
+            created_at: new Date().toISOString(),
+            group_name: "EuroTrip Crew"
+          },
+          {
+            id: "trip_cabin",
+            group_id: "group_weekend",
+            title: "Mountain Cabin Escape",
+            description: "Cozy weekend in the woods",
+            status: "active",
+            start_date: "2026-07-10",
+            end_date: "2026-07-12",
+            created_at: new Date().toISOString(),
+            group_name: "Weekend Cabin Getaway"
+          }
+        ];
+        setTrips(mockTrips);
+
+        const mockExpenses: ExpenseWithTrip[] = [
+          {
+            id: "exp_1",
+            trip_id: "trip_euro",
+            paid_by: "user_jane",
+            description: "[Flight] Paris Airfare Tickets",
+            amount: 800,
+            currency: "USD",
+            created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
+            trip_title: "Paris & Rome Explorer",
+            group_name: "EuroTrip Crew",
+            splits: [
+              { id: "sp_1_1", user_id: mockMe.id, amount: 200, is_settled: false },
+              { id: "sp_1_2", user_id: "user_jane", amount: 200, is_settled: false },
+              { id: "sp_1_3", user_id: "user_john", amount: 200, is_settled: false },
+              { id: "sp_1_4", user_id: "user_emily", amount: 200, is_settled: false }
+            ]
+          },
+          {
+            id: "exp_2",
+            trip_id: "trip_euro",
+            paid_by: mockMe.id,
+            description: "[Accommodation] Colosseum Hotel Stay",
+            amount: 1200,
+            currency: "USD",
+            created_at: new Date(Date.now() - 3600000 * 12).toISOString(),
+            trip_title: "Paris & Rome Explorer",
+            group_name: "EuroTrip Crew",
+            splits: [
+              { id: "sp_2_1", user_id: mockMe.id, amount: 300, is_settled: false },
+              { id: "sp_2_2", user_id: "user_jane", amount: 300, is_settled: false },
+              { id: "sp_2_3", user_id: "user_john", amount: 300, is_settled: false },
+              { id: "sp_2_4", user_id: "user_emily", amount: 300, is_settled: false }
+            ]
+          },
+          {
+            id: "exp_3",
+            trip_id: "trip_euro",
+            paid_by: "user_john",
+            description: "[Food] Authentic Pizza & Pasta Rome",
+            amount: 180,
+            currency: "USD",
+            created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
+            trip_title: "Paris & Rome Explorer",
+            group_name: "EuroTrip Crew",
+            splits: [
+              { id: "sp_3_1", user_id: mockMe.id, amount: 45, is_settled: false },
+              { id: "sp_3_2", user_id: "user_jane", amount: 45, is_settled: false },
+              { id: "sp_3_3", user_id: "user_john", amount: 45, is_settled: false },
+              { id: "sp_3_4", user_id: "user_emily", amount: 45, is_settled: false }
+            ]
+          },
+          {
+            id: "exp_4",
+            trip_id: "trip_cabin",
+            paid_by: mockMe.id,
+            description: "[Transport] SUV Rental & Gas",
+            amount: 360,
+            currency: "USD",
+            created_at: new Date(Date.now() - 3600000 * 48).toISOString(),
+            trip_title: "Mountain Cabin Escape",
+            group_name: "Weekend Cabin Getaway",
+            splits: [
+              { id: "sp_4_1", user_id: mockMe.id, amount: 120, is_settled: false },
+              { id: "sp_4_2", user_id: "user_alex", amount: 120, is_settled: false },
+              { id: "sp_4_3", user_id: "user_sarah", amount: 120, is_settled: false }
+            ]
+          }
+        ];
+        setAllExpenses(mockExpenses);
+
+        const cleanMockBalances: BalanceWithTrip[] = [
+          {
+            from_user_id: "user_jane",
+            to_user_id: mockMe.id,
+            amount: 100,
+            trip_id: "trip_euro",
+            trip_title: "Paris & Rome Explorer",
+            group_name: "EuroTrip Crew"
+          },
+          {
+            from_user_id: "user_john",
+            to_user_id: mockMe.id,
+            amount: 255,
+            trip_id: "trip_euro",
+            trip_title: "Paris & Rome Explorer",
+            group_name: "EuroTrip Crew"
+          },
+          {
+            from_user_id: "user_emily",
+            to_user_id: mockMe.id,
+            amount: 300,
+            trip_id: "trip_euro",
+            trip_title: "Paris & Rome Explorer",
+            group_name: "EuroTrip Crew"
+          },
+          {
+            from_user_id: "user_alex",
+            to_user_id: mockMe.id,
+            amount: 120,
+            trip_id: "trip_cabin",
+            trip_title: "Mountain Cabin Escape",
+            group_name: "Weekend Cabin Getaway"
+          },
+          {
+            from_user_id: "user_sarah",
+            to_user_id: mockMe.id,
+            amount: 120,
+            trip_id: "trip_cabin",
+            trip_title: "Mountain Cabin Escape",
+            group_name: "Weekend Cabin Getaway"
+          }
+        ];
+        setAllBalances(cleanMockBalances);
+
+        setLoading(false);
+        return;
+      }
+
       setGroups(gList);
 
       const curRes = await withStatusDeadline<CurrencyRow[]>(
@@ -640,6 +833,86 @@ export default function SplitActivitiesPage() {
     description = description.slice(0, 300);
 
     setSaving(true);
+    if (formTripId.startsWith("trip_euro") || formTripId.startsWith("trip_cabin")) {
+      setTimeout(() => {
+        const mockNewExpense: ExpenseWithTrip = {
+          id: `mock_exp_${Date.now()}`,
+          trip_id: formTripId,
+          paid_by: formPaidBy,
+          description,
+          amount: amt,
+          currency: formCurrency.trim().toUpperCase() || "USD",
+          created_at: new Date().toISOString(),
+          trip_title: trips.find(t => t.id === formTripId)?.title || "Trip",
+          group_name: trips.find(t => t.id === formTripId)?.group_name || "Group",
+          splits: formSplitUserIds.map((uid, idx) => ({
+            id: `mock_sp_${Date.now()}_${idx}`,
+            user_id: uid,
+            amount: parseFloat((amt / formSplitUserIds.length).toFixed(2)),
+            is_settled: false
+          }))
+        };
+        
+        setAllExpenses(prev => [mockNewExpense, ...prev]);
+
+        const payerId = formPaidBy;
+        const share = parseFloat((amt / formSplitUserIds.length).toFixed(2));
+        setAllBalances(prev => {
+          const next = [...prev];
+          for (const uid of formSplitUserIds) {
+            if (uid === payerId) continue;
+            const existingIndex = next.findIndex(b => b.from_user_id === uid && b.to_user_id === payerId && b.trip_id === formTripId);
+            if (existingIndex >= 0) {
+              const b = next[existingIndex]!;
+              next[existingIndex] = { ...b, amount: parseFloat((b.amount + share).toFixed(2)) };
+            } else {
+              const reverseIndex = next.findIndex(b => b.from_user_id === payerId && b.to_user_id === uid && b.trip_id === formTripId);
+              if (reverseIndex >= 0) {
+                const b = next[reverseIndex]!;
+                if (b.amount > share) {
+                  next[reverseIndex] = { ...b, amount: parseFloat((b.amount - share).toFixed(2)) };
+                } else {
+                  const diff = share - b.amount;
+                  next.splice(reverseIndex, 1);
+                  if (diff > 0.01) {
+                    next.push({
+                      from_user_id: uid,
+                      to_user_id: payerId,
+                      amount: parseFloat(diff.toFixed(2)),
+                      trip_id: formTripId,
+                      trip_title: trips.find(t => t.id === formTripId)?.title || "Trip",
+                      group_name: trips.find(t => t.id === formTripId)?.group_name || "Group"
+                    });
+                  }
+                }
+              } else {
+                next.push({
+                  from_user_id: uid,
+                  to_user_id: payerId,
+                  amount: share,
+                  trip_id: formTripId,
+                  trip_title: trips.find(t => t.id === formTripId)?.title || "Trip",
+                  group_name: trips.find(t => t.id === formTripId)?.group_name || "Group"
+                });
+              }
+            }
+          }
+          return next;
+        });
+
+        setShowAddForm(false);
+        setFormDesc("");
+        setFormAmount("");
+        setFormNotes("");
+        setFormReceiptPreview(null);
+        setShowNotesPanel(false);
+        setFormCategory("Food");
+        showToast("Expense added! (Mock Mode)", "success");
+        setSaving(false);
+      }, 500);
+      return;
+    }
+
     try {
       await apiFetch(`/trips/${formTripId}/expenses`, {
         method: "POST",
@@ -671,6 +944,31 @@ export default function SplitActivitiesPage() {
 
   async function runSettle(b: BalanceWithTrip) {
     setSettling(true);
+    if (b.trip_id.startsWith("trip_euro") || b.trip_id.startsWith("trip_cabin")) {
+      setTimeout(() => {
+        setAllBalances(prev => prev.filter(x => !(x.from_user_id === b.from_user_id && x.to_user_id === b.to_user_id && x.trip_id === b.trip_id)));
+        setAllExpenses(prev => {
+          return prev.map(e => {
+            if (e.trip_id !== b.trip_id) return e;
+            return {
+              ...e,
+              splits: e.splits.map(s => {
+                if (s.user_id === b.from_user_id) {
+                  return { ...s, is_settled: true };
+                }
+                return s;
+              })
+            };
+          });
+        });
+        showToast("Settled up successfully! (Mock Mode)", "success");
+        setShowSettleForm(false);
+        setSettleTarget(null);
+        setSettling(false);
+      }, 500);
+      return;
+    }
+
     try {
       const exps = allExpenses.filter((e) => e.trip_id === b.trip_id);
       const fromId = b.from_user_id;
