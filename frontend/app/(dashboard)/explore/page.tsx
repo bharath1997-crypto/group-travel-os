@@ -100,15 +100,25 @@ export default function ExploreHubPage() {
     },
   ];
 
+  const [searchType, setSearchType] = useState<"events" | "activities">("events");
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/events?city=${encodeURIComponent(searchQuery.trim())}`);
+      if (searchType === "activities") {
+        router.push(`/activities?city=${encodeURIComponent(searchQuery.trim())}`);
+      } else {
+        router.push(`/events?city=${encodeURIComponent(searchQuery.trim())}`);
+      }
     }
   };
 
   const handleChipClick = (city: string) => {
-    router.push(`/events?city=${encodeURIComponent(city)}`);
+    if (searchType === "activities") {
+      router.push(`/activities?city=${encodeURIComponent(city)}`);
+    } else {
+      router.push(`/events?city=${encodeURIComponent(city)}`);
+    }
   };
 
   return (
@@ -129,6 +139,14 @@ export default function ExploreHubPage() {
           {/* Hero Search Bar */}
           <form onSubmit={handleSearchSubmit} className="mx-auto mt-8 max-w-xl">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:rounded-2xl sm:border sm:border-[#334155] sm:bg-[#0F172A] sm:p-1.5 focus-within:ring-2 focus-within:ring-[#0F766E]/50">
+              <select
+                value={searchType}
+                onChange={(e) => setSearchType(e.target.value as "events" | "activities")}
+                className="bg-[#0F172A] sm:bg-transparent text-xs font-semibold text-teal-400 border border-[#334155] sm:border-0 rounded-xl px-3 py-2.5 outline-none cursor-pointer focus:ring-0 shrink-0 border-r sm:border-r-[#334155]/60 hover:text-white transition"
+              >
+                <option value="events" className="bg-[#1E293B]">📅 Events</option>
+                <option value="activities" className="bg-[#1E293B]">🎯 Activities</option>
+              </select>
               <input
                 type="text"
                 placeholder="Where do you want to go?"

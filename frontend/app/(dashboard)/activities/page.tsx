@@ -136,6 +136,14 @@ export default function ActivitiesPage() {
   }, [day, adults]);
 
   useEffect(() => {
+    // Check if there is a city in URL search params
+    const params = new URLSearchParams(window.location.search);
+    const urlCity = params.get("city") || params.get("location");
+    if (urlCity) {
+      handlePresetClick(urlCity);
+      return;
+    }
+
     // Detect surroundings location on load
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
