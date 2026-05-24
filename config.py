@@ -82,9 +82,13 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="TICKETMASTER_API_KEY",
     )
-    eventbrite_token: str | None = Field(
-        default=None,
+    eventbrite_token: str = Field(
+        default="JESCKMJVTJJ3XPMHCQET",
         validation_alias="EVENTBRITE_TOKEN",
+    )
+    bandsintown_app_id: str = Field(
+        default="rovvy_app",
+        validation_alias="BANDSINTOWN_APP_ID",
     )
     yelp_api_key: str | None = Field(
         default=None,
