@@ -156,6 +156,24 @@ def explore_ticketmaster(
     return {"city": city_strip, "events": events}
 
 
+@router.get("/events", status_code=status.HTTP_200_OK)
+def explore_events(
+    city: str = Query("Chicago", max_length=120),
+    start_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    end_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    lat: Optional[float] = Query(None),
+    lon: Optional[float] = Query(None),
+    radius: int = Query(50),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """
+    Fetches events near the city or coordinates using Ticketmaster.
+    """
+    city_strip = city.strip()
+    events = get_ticketmaster_cached(db, city_strip, start_date, end_date, lat, lon, radius)
+    return {"city": city_strip, "events": events}
+
+
 @router.get("/places", status_code=status.HTTP_200_OK)
 def explore_places(
     city: str = Query("Chicago", max_length=120),

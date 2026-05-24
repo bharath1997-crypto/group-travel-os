@@ -331,6 +331,13 @@ def _fetch_ticketmaster_events(
             if ven_emb and isinstance(ven_emb[0], dict):
                 venue_raw = str(ven_emb[0].get("name") or "")
 
+            category_raw = "Other"
+            classifications = raw.get("classifications")
+            if isinstance(classifications, list) and classifications and isinstance(classifications[0], dict):
+                seg = classifications[0].get("segment")
+                if isinstance(seg, dict) and seg.get("name"):
+                    category_raw = str(seg.get("name"))
+
             out.append(
                 {
                     "id": eid,
@@ -339,6 +346,7 @@ def _fetch_ticketmaster_events(
                     "url": url,
                     "start_date": dt_raw,
                     "venue": venue_raw,
+                    "category": category_raw,
                     "sourceType": "ticketmaster",
                 }
             )
