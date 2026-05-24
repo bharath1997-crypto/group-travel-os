@@ -157,7 +157,7 @@ def explore_ticketmaster(
 
 
 @router.get("/events", status_code=status.HTTP_200_OK)
-def explore_events(
+async def explore_events(
     city: str = Query("Chicago", max_length=120),
     start_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
     end_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
@@ -167,10 +167,44 @@ def explore_events(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """
-    Fetches events near the city or coordinates using Ticketmaster.
+    Fetches events near the city or coordinates using Ticketmaster,
+    with an AI-generated seasonal events fallback if live results are empty.
     """
     city_strip = city.strip()
     events = get_ticketmaster_cached(db, city_strip, start_date, end_date, lat, lon, radius)
+    
+    if not events:
+        try:
+            from app.services.explore_city_extended_service import get_ai_seasonal_events
+            from datetime import datetime
+            import urllib.parse
+            
+            ai_events = await get_ai_seasonal_events(city_strip)
+            if ai_events:
+                # Map to standard event dict format
+                for idx, ev in enumerate(ai_events):
+                    title = ev.get("title", "Local Festival")
+                    emoji = ev.get("emoji", "🎉")
+                    desc = ev.get("description", "A vibrant seasonal event.")
+                    location_name = ev.get("location", f"Various locations, {city_strip}")
+                    time_info = ev.get("time", "This month")
+                    
+                    # Generate search query URL for user convenience
+                    search_url = f"https://www.google.com/search?q={urllib.parse.quote_plus(f'{city_strip} {title} event')}"
+                    
+                    events.append({
+                        "id": f"ai-ev-{idx}",
+                        "title": f"{emoji} {title}",
+                        "imageUrl": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400",
+                        "url": search_url,
+                        "start_date": start_date or datetime.now().strftime("%Y-%m-%d"),
+                        "venue": f"{location_name} ({time_info}) - {desc}",
+                        "category": "Festival",
+                        "sourceType": "ai_fallback",
+                    })
+        except Exception as exc:
+            logger.warning("AI fallback events generation failed: %s", exc)
+            
     return {"city": city_strip, "events": events}
 
 

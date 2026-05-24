@@ -132,6 +132,15 @@ function EventsSearchContent() {
 
   return (
     <div className="w-full max-w-4xl mt-4">
+      {/* Back Button */}
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="mb-6 inline-flex items-center gap-2 rounded-xl bg-[#1E293B] border border-[#334155]/60 px-4 py-2.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-[#263548] transition active:scale-95 shadow-md"
+      >
+        &larr; Back
+      </button>
+
       {/* Header with Rovvy Logo */}
       <div className="mb-8 flex flex-col items-center text-center">
         <RovvyLogo variant="dark" size="lg" showTagline={false} />
