@@ -1190,13 +1190,13 @@ async def get_ai_seasonal_events(city: str) -> list[dict[str, Any]]:
     try:
         # We reuse the AI logic in travel_info_service but extract just the events
         # Or we can do a targeted prompt
-        from app.services.gemini_service import chat_with_gemini
+        from app.services.ai_assistant_service import generate_gemini_content
         from datetime import datetime
         
         month = datetime.now().strftime("%B")
         prompt = f"List 10 popular local festivals, recurring events, or seasonal activities in {city} during {month}. For each, provide a title, emoji, a short description of the vibe, and typical location. Format as JSON list: [{{'title': '...', 'emoji': '...', 'description': '...', 'location': '...', 'time': '...'}}]"
         
-        res = await chat_with_gemini(prompt)
+        res = await generate_gemini_content(prompt)
         import json
         import re
         
