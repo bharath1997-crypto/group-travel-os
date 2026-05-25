@@ -12,8 +12,10 @@ from typing import Any
 import concurrent.futures
 
 import httpx
+from sqlalchemy.orm import Session
 
 from app.core.api_limits import API_TIMEOUT_SECONDS
+from app.services.explore_city_extended_service import _get_cached_list
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -26,6 +28,8 @@ BROWSER_HEADERS = {
 
 TICKETMASTER_URL = "https://app.ticketmaster.com/discovery/v2/events.json"
 TTL_SECONDS = 21_600  # 6 hours
+CONTENT_EVENTS_AGGREGATED = "events_aggregated"
+TTL_EVENTS_AGGREGATED_HOURS = 6
 
 _cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 
@@ -624,7 +628,68 @@ def _fetch_skiddle_events(city: str, category: str = "all", limit: int = 100) ->
     return events
 
 
+def _events_cache_key(
+    city: str,
+    category: str,
+    date_from: str | None,
+    date_to: str | None,
+) -> str:
+    key = city.strip().lower()
+    key += f"_{category.strip().lower()}"
+    if date_from:
+        key += f"_{date_from}"
+    if date_to:
+        key += f"_{date_to}"
+    return key
+
+
+def _fetch_aggregated_events(
+    city: str,
+    category: str,
+    date_from: str | None,
+    date_to: str | None,
+) -> list[dict[str, Any]]:
+    """Fetch from all providers, deduplicate, and sort chronologically."""
+    target_limit = 100
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = {
+            executor.submit(_fetch_ticketmaster_events, city, category, date_from, date_to, target_limit): "ticketmaster",
+            executor.submit(_fetch_yelp_events, city, category, target_limit): "yelp",
+            executor.submit(_fetch_eventbrite_events, city, category, target_limit): "eventbrite",
+            executor.submit(_fetch_bandsintown_events, city, category, target_limit): "bandsintown",
+            executor.submit(_fetch_skiddle_events, city, category, target_limit): "skiddle",
+        }
+
+        all_events: list[dict[str, Any]] = []
+        for future in concurrent.futures.as_completed(futures):
+            source_name = futures[future]
+            try:
+                res = future.result()
+                if isinstance(res, list):
+                    all_events.extend(res)
+            except Exception as e:
+                logger.warning("Parallel fetch for source %s failed: %s", source_name, e)
+
+    seen: set[tuple[str, str]] = set()
+    deduped_events: list[dict[str, Any]] = []
+    for ev in all_events:
+        dedupe_key = (ev["name"].strip().lower(), ev["date"])
+        if dedupe_key not in seen:
+            seen.add(dedupe_key)
+            deduped_events.append(ev)
+
+    def sort_key(x: dict[str, Any]) -> tuple[str, str]:
+        d = x.get("date") or ""
+        t = x.get("time") or ""
+        return (d if d else "9999-12-31", t if t else "23:59")
+
+    deduped_events.sort(key=sort_key)
+    return deduped_events
+
+
 def search_events_extended(
+    db: Session,
     city: str,
     category: str | None = None,
     date_from: str | None = None,
@@ -635,50 +700,20 @@ def search_events_extended(
     """
     Enhanced multi-source search query targeting Ticketmaster, Yelp, Eventbrite, Bandsintown, and Skiddle.
     Queries up to 100 events per provider for a deeply rich, unrestricted aggregate pool.
+    Results are cached in explore_contents (content_type=events_aggregated) for 6 hours.
     """
     city = (city or "Chicago").strip()
     cat = category or "all"
-    
-    # Query up to 100 events per provider in parallel to compile an abundant list
-    target_limit = 100
+    cache_key = _events_cache_key(city, cat, date_from, date_to)
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = {
-            executor.submit(_fetch_ticketmaster_events, city, cat, date_from, date_to, target_limit): "ticketmaster",
-            executor.submit(_fetch_yelp_events, city, cat, target_limit): "yelp",
-            executor.submit(_fetch_eventbrite_events, city, cat, target_limit): "eventbrite",
-            executor.submit(_fetch_bandsintown_events, city, cat, target_limit): "bandsintown",
-            executor.submit(_fetch_skiddle_events, city, cat, target_limit): "skiddle",
-        }
-        
-        all_events = []
-        for future in concurrent.futures.as_completed(futures):
-            source_name = futures[future]
-            try:
-                res = future.result()
-                if isinstance(res, list):
-                    all_events.extend(res)
-            except Exception as e:
-                logger.warning("Parallel fetch for source %s failed: %s", source_name, e)
+    deduped_events = _get_cached_list(
+        db,
+        city=cache_key,
+        content_type=CONTENT_EVENTS_AGGREGATED,
+        ttl_hours=TTL_EVENTS_AGGREGATED_HOURS,
+        fetch_fn=lambda: _fetch_aggregated_events(city, cat, date_from, date_to),
+    )
 
-    # Deduplicate by lower case name and date
-    seen = set()
-    deduped_events = []
-    for ev in all_events:
-        key = (ev["name"].strip().lower(), ev["date"])
-        if key not in seen:
-            seen.add(key)
-            deduped_events.append(ev)
-
-    # Sort chronologically by date and then time
-    def sort_key(x):
-        d = x.get("date") or ""
-        t = x.get("time") or ""
-        return (d if d else "9999-12-31", t if t else "23:59")
-
-    deduped_events.sort(key=sort_key)
-
-    # Apply pagination on our deeply resolved complete pool
     total = len(deduped_events)
     start_idx = max(0, (page - 1) * per_page)
     end_idx = start_idx + per_page
@@ -689,5 +724,5 @@ def search_events_extended(
         "total": total,
         "page": page,
         "per_page": per_page,
-        "events": paginated_events
+        "events": paginated_events,
     }
