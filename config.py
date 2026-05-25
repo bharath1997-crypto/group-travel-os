@@ -94,6 +94,10 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="YELP_API_KEY",
     )
+    skiddle_api_key: str | None = Field(
+        default=None,
+        validation_alias="SKIDDLE_API_KEY",
+    )
     youtube_api_key: str | None = Field(
         default=None,
         validation_alias="YOUTUBE_API_KEY",
