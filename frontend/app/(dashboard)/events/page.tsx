@@ -478,7 +478,15 @@ function EventsSearchContent() {
                           {ev.category || "General"}
                         </span>
                         <span className="text-[9px] font-semibold text-[#64748B] uppercase tracking-wider">
-                          {ev.source === "ai_fallback" ? "Seasonal Guide" : "Ticketmaster"}
+                          {ev.source === "ai_fallback"
+                            ? "Seasonal Guide"
+                            : ev.source === "yelp"
+                            ? "Yelp"
+                            : ev.source === "eventbrite"
+                            ? "Eventbrite"
+                            : ev.source === "bandsintown"
+                            ? "Bandsintown"
+                            : "Ticketmaster"}
                         </span>
                       </div>
 
