@@ -1695,6 +1695,12 @@ export default function DashboardPage() {
             [
               { Icon: Plane, label: "+New Trip", href: DASHBOARD_ROUTES.tripsPlan, primary: true },
               {
+                Icon: MapIcon,
+                label: "Plan Weekend Trip",
+                href: "/trip-space",
+                primary: false,
+              },
+              {
                 Icon: Users,
                 label: "+New Group",
                 href: DASHBOARD_ROUTES.groupsNew,
