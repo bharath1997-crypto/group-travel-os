@@ -29,6 +29,31 @@ type EventsAPIResponse = {
   events: GlobalEvent[];
 };
 
+function getParsedDate(dateStr: string) {
+  if (!dateStr) return { month: "TBA", day: "--" };
+  try {
+    const parts = dateStr.split("-");
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const d = new Date(year, month, day);
+      return {
+        month: d.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
+        day: d.toLocaleDateString("en-US", { day: "numeric" }),
+      };
+    }
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return { month: "TBA", day: "--" };
+    return {
+      month: d.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
+      day: d.toLocaleDateString("en-US", { day: "numeric" }),
+    };
+  } catch {
+    return { month: "TBA", day: "--" };
+  }
+}
+
 function formatDate(dateStr: string) {
   if (!dateStr) return "Date TBA";
   try {
@@ -109,14 +134,14 @@ function getCategoryStyles(category: string) {
 
 function EventSkeletonCard() {
   return (
-    <div className="animate-pulse rounded-2xl border border-[#1E293B] bg-[#1E293B]/40 p-4 shadow-sm h-[380px] flex flex-col justify-between">
-      <div className="space-y-4">
-        <div className="h-44 w-full rounded-xl bg-slate-800" />
-        <div className="h-4 w-1/4 rounded bg-slate-800" />
-        <div className="h-6 w-3/4 rounded bg-slate-800" />
-        <div className="h-4 w-1/2 rounded bg-slate-800" />
+    <div className="animate-pulse flex items-center gap-4 p-4 rounded-xl border border-[#334155]/20 bg-[#1E293B]/10">
+      <div className="w-16 h-16 rounded-xl bg-slate-800 shrink-0" />
+      <div className="flex-1 space-y-2">
+        <div className="h-3 w-1/4 rounded bg-slate-800" />
+        <div className="h-5 w-2/3 rounded bg-slate-800" />
+        <div className="h-3.5 w-1/2 rounded bg-slate-800" />
       </div>
-      <div className="h-10 w-full rounded-xl bg-slate-800 mt-4" />
+      <div className="h-10 w-28 rounded-xl bg-slate-800 shrink-0" />
     </div>
   );
 }
@@ -420,7 +445,7 @@ function EventsSearchContent() {
 
         {/* Skeleton Grid */}
         {loading && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-col gap-3">
             <EventSkeletonCard />
             <EventSkeletonCard />
             <EventSkeletonCard />
@@ -442,42 +467,29 @@ function EventsSearchContent() {
 
         {/* Event Cards Grid */}
         {!loading && events.length > 0 && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-col gap-3">
             {sortedEvents.map((ev) => {
               const styles = getCategoryStyles(ev.category);
+              const { month, day } = getParsedDate(ev.date);
               return (
                 <div
                   key={ev.id}
-                  className="group flex flex-col justify-between rounded-2xl border border-[#1E293B]/80 bg-[#1E293B]/50 p-4 shadow-xl hover:border-[#0F766E]/50 hover:bg-[#1E293B]/80 transition-all duration-300 hover:-translate-y-1"
+                  className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-[#334155]/20 bg-[#1E293B]/20 p-4 hover:bg-[#1E293B]/40 hover:border-[#0F766E]/40 transition duration-200"
                 >
-                  <div className="space-y-4">
-                    {/* Event Image */}
-                    <div className="relative h-48 w-full overflow-hidden rounded-xl border border-[#334155]/20">
-                      {ev.image_url ? (
-                        <img
-                          src={ev.image_url}
-                          alt={ev.name}
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${styles.gradient} text-5xl`}>
-                          {styles.icon}
-                        </div>
-                      )}
-                      {/* Price Tag Overlay */}
-                      {ev.price_min !== null && (
-                        <div className="absolute bottom-3 right-3 rounded-lg bg-[#0F172A]/90 border border-[#334155]/40 px-2.5 py-1.5 text-xs font-black text-[#2DD4BF] shadow-md backdrop-blur-sm">
-                          From ${ev.price_min.toFixed(2)}
-                        </div>
-                      )}
+                  <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
+                    {/* Date Block */}
+                    <div className="flex flex-col items-center justify-center bg-[#1E293B]/80 border border-[#334155]/60 rounded-xl w-16 h-16 shrink-0 shadow-md">
+                      <span className="text-[10px] font-black tracking-widest text-teal-400 uppercase">{month}</span>
+                      <span className="text-xl font-black text-white leading-none mt-1">{day}</span>
                     </div>
 
-                    <div className="space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className={`rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest ${styles.badge}`}>
+                    {/* Middle Info Block */}
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`rounded-full px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-widest ${styles.badge}`}>
                           {ev.category || "General"}
                         </span>
-                        <span className="text-[9px] font-semibold text-[#64748B] uppercase tracking-wider">
+                        <span className="text-[9px] font-extrabold text-[#64748B] uppercase tracking-wider bg-slate-900/60 border border-[#334155]/40 px-2 py-0.5 rounded-md">
                           {ev.source === "ai_fallback"
                             ? "Seasonal Guide"
                             : ev.source === "yelp"
@@ -490,34 +502,29 @@ function EventsSearchContent() {
                             ? "Bandsintown"
                             : "Ticketmaster"}
                         </span>
+                        {ev.price_min !== null && (
+                          <span className="text-[10px] font-black text-[#2DD4BF] bg-[#0F766E]/10 border border-[#0F766E]/20 px-2 py-0.5 rounded-md">
+                            From ${ev.price_min.toFixed(2)}
+                          </span>
+                        )}
                       </div>
-
-                      <h2 className="text-base font-bold text-white group-hover:text-teal-300 transition duration-300 line-clamp-2 leading-snug">
+                      <h2 className="text-sm sm:text-base font-bold text-white group-hover:text-teal-300 transition duration-200 line-clamp-1 leading-snug">
                         {ev.name}
                       </h2>
-
-                      <div className="space-y-1.5 text-xs text-[#94A3B8]">
-                        <p className="font-semibold text-teal-200/90 flex items-center gap-1.5">
-                          <span>📅</span> {formatDate(ev.date)} {ev.time && `at ${ev.time}`}
-                        </p>
-                        <p className="flex items-center gap-1.5 truncate">
-                          <span>📍</span> {ev.venue}
-                        </p>
-                        <p className="flex items-center gap-1.5">
-                          <span>🌐</span> {ev.city}, {ev.country}
-                        </p>
-                      </div>
+                      <p className="text-xs text-[#94A3B8] flex items-center gap-1.5 truncate">
+                        <span>📍</span> <span className="font-semibold text-slate-300">{ev.venue}</span> &bull; {ev.city}, {ev.country} {ev.time && `• ${ev.time}`}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="mt-5">
+                  <div className="w-full sm:w-auto shrink-0 flex items-center justify-end">
                     <a
                       href={ev.ticket_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex w-full items-center justify-center rounded-xl bg-[#0F766E] py-3 text-xs font-black text-white shadow-lg transition duration-300 hover:bg-[#115E59] active:scale-[0.98]"
+                      className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl bg-[#0F766E] hover:bg-[#115E59] active:scale-95 px-5 py-2.5 text-xs font-black text-white shadow-md transition duration-200 shrink-0"
                     >
-                      Get Tickets &rarr;
+                      Get Tickets <span>&rarr;</span>
                     </a>
                   </div>
                 </div>
