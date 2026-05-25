@@ -9,7 +9,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from app.jobs.deal_scan_job import run_weekly_scan_job
-
 from app.jobs.feed_refresh import auto_close_expired_polls, recalculate_trending_scores
 
 logger = logging.getLogger(__name__)

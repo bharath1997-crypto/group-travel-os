@@ -82,13 +82,21 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="TICKETMASTER_API_KEY",
     )
-    eventbrite_token: str | None = Field(
-        default=None,
+    eventbrite_token: str = Field(
+        default="JESCKMJVTJJ3XPMHCQET",
         validation_alias="EVENTBRITE_TOKEN",
+    )
+    bandsintown_app_id: str = Field(
+        default="rovvy_app",
+        validation_alias="BANDSINTOWN_APP_ID",
     )
     yelp_api_key: str | None = Field(
         default=None,
         validation_alias="YELP_API_KEY",
+    )
+    skiddle_api_key: str | None = Field(
+        default=None,
+        validation_alias="SKIDDLE_API_KEY",
     )
     youtube_api_key: str | None = Field(
         default=None,
@@ -140,10 +148,7 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="GNEWS_API_KEY",
     )
-    apify_token: str | None = Field(
-        default=None,
-        validation_alias="APIFY_TOKEN",
-    )
+    apify_token: str = Field(default="", validation_alias="APIFY_TOKEN")
     apify_explorer_actor_id: str | None = Field(
         default=None,
         validation_alias="APIFY_EXPLORER_ACTOR_ID",
