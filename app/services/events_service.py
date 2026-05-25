@@ -706,6 +706,269 @@ def _fetch_apify_google_events(city: str, category: str = "all", limit: int = 20
         return []
 
 
+def _fetch_apify_eventbrite_events(city: str, limit: int = 50) -> list[dict[str, Any]]:
+    """Scrape Eventbrite events via Apify actor"""
+    try:
+        if not settings.apify_token:
+            return []
+        
+        import httpx
+        with httpx.Client(timeout=120) as client:
+            r = client.post(
+                "https://api.apify.com/v2/acts/apify~eventbrite-scraper/runs?waitForFinish=120",
+                headers={"Authorization": f"Bearer {settings.apify_token}"},
+                json={
+                    "location": city,
+                    "maxItems": limit
+                }
+            )
+            if r.status_code not in (200, 201):
+                return []
+            
+            run_data = r.json().get("data", {})
+            dataset_id = run_data.get("defaultDatasetId", "")
+            if not dataset_id:
+                return []
+            
+            items_r = client.get(
+                f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                headers={"Authorization": f"Bearer {settings.apify_token}"}
+            )
+            
+            events = []
+            for item in items_r.json()[:limit]:
+                events.append({
+                    "id": f"eb_apify_{hash(item.get('name', '') + item.get('startDate', ''))}",
+                    "name": item.get("name", "Unknown Event"),
+                    "category": item.get("category", "Event"),
+                    "date": item.get("startDate", "")[:10] if item.get("startDate") else "",
+                    "time": item.get("startDate", "")[11:16] if item.get("startDate") else "",
+                    "venue": item.get("venue", {}).get("name", city) if isinstance(item.get("venue"), dict) else city,
+                    "city": city,
+                    "country": "US",
+                    "image_url": item.get("image", None),
+                    "ticket_url": item.get("url", ""),
+                    "price_min": None,
+                    "price_max": None,
+                    "source": "eventbrite"
+                })
+            return events
+    except Exception as exc:
+        logger.warning("Apify Eventbrite scraper failed: %s", exc)
+        return []
+
+
+def _fetch_apify_facebook_events(city: str, limit: int = 50) -> list[dict[str, Any]]:
+    """Scrape Facebook Events via Apify actor"""
+    try:
+        if not settings.apify_token:
+            return []
+        
+        import httpx
+        with httpx.Client(timeout=120) as client:
+            r = client.post(
+                "https://api.apify.com/v2/acts/vdrmota~facebook-events-scraper/runs?waitForFinish=120",
+                headers={"Authorization": f"Bearer {settings.apify_token}"},
+                json={
+                    "searchQuery": f"events in {city}",
+                    "maxItems": limit
+                }
+            )
+            if r.status_code not in (200, 201):
+                return []
+            
+            run_data = r.json().get("data", {})
+            dataset_id = run_data.get("defaultDatasetId", "")
+            if not dataset_id:
+                return []
+            
+            items_r = client.get(
+                f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                headers={"Authorization": f"Bearer {settings.apify_token}"}
+            )
+            
+            events = []
+            for item in items_r.json()[:limit]:
+                events.append({
+                    "id": f"fb_{hash(item.get('name', '') + str(item.get('startTime', '')))}",
+                    "name": item.get("name", "Unknown Event"),
+                    "category": "Event",
+                    "date": str(item.get("startTime", ""))[:10],
+                    "time": str(item.get("startTime", ""))[11:16],
+                    "venue": item.get("location", {}).get("name", city) if isinstance(item.get("location"), dict) else city,
+                    "city": city,
+                    "country": "US",
+                    "image_url": item.get("coverPhoto", {}).get("url") if isinstance(item.get("coverPhoto"), dict) else None,
+                    "ticket_url": item.get("url", ""),
+                    "price_min": None,
+                    "price_max": None,
+                    "source": "facebook_events"
+                })
+            return events
+    except Exception as exc:
+        logger.warning("Apify Facebook Events scraper failed: %s", exc)
+        return []
+
+
+def _fetch_apify_meetup_events(city: str, limit: int = 50) -> list[dict[str, Any]]:
+    """Scrape Meetup.com events via Apify actor"""
+    try:
+        if not settings.apify_token:
+            return []
+        
+        import httpx
+        with httpx.Client(timeout=120) as client:
+            r = client.post(
+                "https://api.apify.com/v2/acts/bebity~meetup-scraper/runs?waitForFinish=120",
+                headers={"Authorization": f"Bearer {settings.apify_token}"},
+                json={
+                    "location": city,
+                    "maxItems": limit
+                }
+            )
+            if r.status_code not in (200, 201):
+                return []
+            
+            run_data = r.json().get("data", {})
+            dataset_id = run_data.get("defaultDatasetId", "")
+            if not dataset_id:
+                return []
+            
+            items_r = client.get(
+                f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                headers={"Authorization": f"Bearer {settings.apify_token}"}
+            )
+            
+            events = []
+            for item in items_r.json()[:limit]:
+                events.append({
+                    "id": f"meetup_{hash(item.get('title', '') + item.get('dateTime', ''))}",
+                    "name": item.get("title", "Unknown Event"),
+                    "category": item.get("eventType", "Meetup"),
+                    "date": item.get("dateTime", "")[:10] if item.get("dateTime") else "",
+                    "time": item.get("dateTime", "")[11:16] if item.get("dateTime") else "",
+                    "venue": item.get("venue", {}).get("name", city) if isinstance(item.get("venue"), dict) else city,
+                    "city": city,
+                    "country": "US",
+                    "image_url": item.get("imageUrl", None),
+                    "ticket_url": item.get("eventUrl", ""),
+                    "price_min": None,
+                    "price_max": None,
+                    "source": "meetup"
+                })
+            return events
+    except Exception as exc:
+        logger.warning("Apify Meetup scraper failed: %s", exc)
+        return []
+
+
+def _fetch_apify_tripadvisor_events(city: str, limit: int = 50) -> list[dict[str, Any]]:
+    """Scrape TripAdvisor activities via Apify actor"""
+    try:
+        if not settings.apify_token:
+            return []
+        
+        import httpx
+        with httpx.Client(timeout=120) as client:
+            r = client.post(
+                "https://api.apify.com/v2/acts/maxcopell~tripadvisor/runs?waitForFinish=120",
+                headers={"Authorization": f"Bearer {settings.apify_token}"},
+                json={
+                    "locationFullName": city,
+                    "includeAttractions": True,
+                    "maxItems": limit
+                }
+            )
+            if r.status_code not in (200, 201):
+                return []
+            
+            run_data = r.json().get("data", {})
+            dataset_id = run_data.get("defaultDatasetId", "")
+            if not dataset_id:
+                return []
+            
+            items_r = client.get(
+                f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                headers={"Authorization": f"Bearer {settings.apify_token}"}
+            )
+            
+            events = []
+            for item in items_r.json()[:limit]:
+                events.append({
+                    "id": f"ta_{hash(item.get('name', ''))}",
+                    "name": item.get("name", "Unknown Activity"),
+                    "category": "Activity",
+                    "date": "",
+                    "time": "",
+                    "venue": item.get("address", city),
+                    "city": city,
+                    "country": "US",
+                    "image_url": item.get("photo", {}).get("images", {}).get("medium", {}).get("url") if item.get("photo") else None,
+                    "ticket_url": item.get("webUrl", ""),
+                    "price_min": None,
+                    "price_max": None,
+                    "source": "tripadvisor"
+                })
+            return events
+    except Exception as exc:
+        logger.warning("Apify TripAdvisor scraper failed: %s", exc)
+        return []
+
+
+def _fetch_apify_instagram_events(city: str, limit: int = 30) -> list[dict[str, Any]]:
+    """Scrape Instagram event posts via Apify actor"""
+    try:
+        if not settings.apify_token:
+            return []
+        
+        import httpx
+        with httpx.Client(timeout=120) as client:
+            r = client.post(
+                "https://api.apify.com/v2/acts/apify~instagram-hashtag-scraper/runs?waitForFinish=120",
+                headers={"Authorization": f"Bearer {settings.apify_token}"},
+                json={
+                    "hashtags": [f"{city.replace(' ', '')}events", f"{city.replace(' ', '')}nightlife"],
+                    "resultsLimit": limit
+                }
+            )
+            if r.status_code not in (200, 201):
+                return []
+            
+            run_data = r.json().get("data", {})
+            dataset_id = run_data.get("defaultDatasetId", "")
+            if not dataset_id:
+                return []
+            
+            items_r = client.get(
+                f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                headers={"Authorization": f"Bearer {settings.apify_token}"}
+            )
+            
+            events = []
+            for item in items_r.json()[:limit]:
+                caption = item.get("caption", "")[:100] if item.get("caption") else "Instagram Event"
+                events.append({
+                    "id": f"ig_{hash(item.get('id', '') + city)}",
+                    "name": caption,
+                    "category": "Social",
+                    "date": item.get("timestamp", "")[:10] if item.get("timestamp") else "",
+                    "time": "",
+                    "venue": city,
+                    "city": city,
+                    "country": "US",
+                    "image_url": item.get("displayUrl", None),
+                    "ticket_url": item.get("url", ""),
+                    "price_min": None,
+                    "price_max": None,
+                    "source": "instagram"
+                })
+            return events
+    except Exception as exc:
+        logger.warning("Apify Instagram scraper failed: %s", exc)
+        return []
+
+
+
 def _dedupe_and_sort_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     seen: set[tuple[str, str]] = set()
     deduped_events: list[dict[str, Any]] = []
@@ -725,33 +988,59 @@ def _dedupe_and_sort_events(events: list[dict[str, Any]]) -> list[dict[str, Any]
 
 
 def prefetch_apify_events(city: str) -> None:
-    """Run Apify separately and merge Google Events into the aggregated cache."""
+    """Run all Apify scrapers in parallel and merge into cache"""
     city = (city or "").strip()
     if not city:
         return
-
-    apify_events = _fetch_apify_google_events(city, "all")
-    if not apify_events:
-        logger.info("No Apify events to merge for city=%s", city)
-        return
-
-    cache_key = _events_cache_key(city, "all", None, None)
-    db = SessionLocal()
+    
     try:
-        row = _get_row(db, cache_key, CONTENT_EVENTS_AGGREGATED)
-        existing = list(row.data) if row and row.data else []
-        merged = _dedupe_and_sort_events(existing + apify_events)
-        _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=merged)
-        logger.info(
-            "Merged %s Apify events into cache for %s (total=%s)",
-            len(apify_events),
-            city,
-            len(merged),
-        )
-    except Exception:
-        logger.exception("Apify prefetch failed for city=%s", city)
-    finally:
-        db.close()
+        import concurrent.futures
+        
+        logger.info("Starting Apify prefetch for %s", city)
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+            futures = {
+                executor.submit(_fetch_apify_google_events, city, "all", 50): "google",
+                executor.submit(_fetch_apify_eventbrite_events, city, 50): "eventbrite",
+                executor.submit(_fetch_apify_facebook_events, city, 50): "facebook",
+                executor.submit(_fetch_apify_meetup_events, city, 50): "meetup",
+                executor.submit(_fetch_apify_tripadvisor_events, city, 50): "tripadvisor",
+                executor.submit(_fetch_apify_instagram_events, city, 30): "instagram",
+            }
+            
+            all_new_events = []
+            for future in concurrent.futures.as_completed(futures):
+                source = futures[future]
+                try:
+                    events = future.result()
+                    all_new_events.extend(events)
+                    logger.info("Apify %s returned %d events for %s", source, len(events), city)
+                except Exception as exc:
+                    logger.warning("Apify %s failed for %s: %s", source, city, exc)
+        
+        if not all_new_events:
+            logger.info("No new Apify events for %s", city)
+            return
+        
+        # Merge into existing cache
+        cache_key = _events_cache_key(city, "all", None, None)
+        db = SessionLocal()
+        try:
+            row = _get_row(db, cache_key, CONTENT_EVENTS_AGGREGATED)
+            existing = list(row.data) if row and row.data else []
+            merged = _dedupe_and_sort_events(existing + all_new_events)
+            _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=merged)
+            logger.info(
+                "Merged %d new Apify events into cache for %s (total=%d)",
+                len(all_new_events),
+                city,
+                len(merged),
+            )
+        finally:
+            db.close()
+            
+    except Exception as exc:
+        logger.warning("prefetch_apify_events failed for %s: %s", city, exc)
 
 def _events_cache_key(
     city: str,
