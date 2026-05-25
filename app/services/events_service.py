@@ -1,8 +1,8 @@
 """
 Multi-source Event Discovery Aggregator (Ticketmaster, Yelp, Eventbrite, Bandsintown, Skiddle).
 
-Combines results in parallel, deduplicates, sorts chronologically, and returns standard schema.
-Includes high-fidelity fallback generators for Yelp, Eventbrite, Bandsintown, and Skiddle.
+Combines fast sources in parallel for live requests; Apify Google Events runs in a
+background job and merges into the DB cache without blocking users.
 """
 from __future__ import annotations
 
@@ -15,7 +15,8 @@ import httpx
 from sqlalchemy.orm import Session
 
 from app.core.api_limits import API_TIMEOUT_SECONDS
-from app.services.explore_city_extended_service import _get_cached_list
+from app.services.explore_city_extended_service import _get_cached_list, _get_row, _upsert_list
+from app.utils.database import SessionLocal
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -633,11 +634,9 @@ def _fetch_apify_google_events(city: str, category: str = "all", limit: int = 20
     if not apify_token:
         return []
     try:
-        import httpx
         keyword = f"{category} events in {city}" if category != "all" else f"events in {city}"
-        
+
         with httpx.Client(timeout=60) as client:
-            # Start Apify actor run
             r = client.post(
                 "https://api.apify.com/v2/acts/apify~google-search-scraper/runs",
                 headers={"Authorization": f"Bearer {apify_token}"},
@@ -646,34 +645,35 @@ def _fetch_apify_google_events(city: str, category: str = "all", limit: int = 20
                     "resultsPerPage": limit,
                     "maxPagesPerQuery": 1,
                     "languageCode": "en",
-                    "countryCode": "us"
-                }
+                    "countryCode": "us",
+                },
             )
-            
+
             if r.status_code != 201:
                 logger.warning("Apify run failed: %s", r.status_code)
                 return []
-            
+
             run_id = r.json()["data"]["id"]
-            
-            # Wait for results
-            import time
+
+            status_r = None
             for _ in range(30):
                 time.sleep(2)
                 status_r = client.get(
                     f"https://api.apify.com/v2/acts/apify~google-search-scraper/runs/{run_id}",
-                    headers={"Authorization": f"Bearer {apify_token}"}
+                    headers={"Authorization": f"Bearer {apify_token}"},
                 )
                 if status_r.json()["data"]["status"] == "SUCCEEDED":
                     break
-            
-            # Get results
+
+            if status_r is None:
+                return []
+
             dataset_id = status_r.json()["data"]["defaultDatasetId"]
             results_r = client.get(
                 f"https://api.apify.com/v2/datasets/{dataset_id}/items",
-                headers={"Authorization": f"Bearer {apify_token}"}
+                headers={"Authorization": f"Bearer {apify_token}"},
             )
-            
+
             events = []
             for item in results_r.json()[:limit]:
                 for result in item.get("organicResults", []):
@@ -690,15 +690,61 @@ def _fetch_apify_google_events(city: str, category: str = "all", limit: int = 20
                         "ticket_url": result.get("url", ""),
                         "price_min": None,
                         "price_max": None,
-                        "source": "google_events"
+                        "source": "google_events",
                     })
-            
+
             return events
     except Exception as exc:
         logger.warning("Apify Google Events failed: %s", exc)
         return []
 
 
+def _dedupe_and_sort_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    seen: set[tuple[str, str]] = set()
+    deduped_events: list[dict[str, Any]] = []
+    for ev in events:
+        dedupe_key = (ev["name"].strip().lower(), ev.get("date") or "")
+        if dedupe_key not in seen:
+            seen.add(dedupe_key)
+            deduped_events.append(ev)
+
+    def sort_key(x: dict[str, Any]) -> tuple[str, str]:
+        d = x.get("date") or ""
+        t = x.get("time") or ""
+        return (d if d else "9999-12-31", t if t else "23:59")
+
+    deduped_events.sort(key=sort_key)
+    return deduped_events
+
+
+def prefetch_apify_events(city: str) -> None:
+    """Run Apify separately and merge Google Events into the aggregated cache."""
+    city = (city or "").strip()
+    if not city:
+        return
+
+    apify_events = _fetch_apify_google_events(city, "all")
+    if not apify_events:
+        logger.info("No Apify events to merge for city=%s", city)
+        return
+
+    cache_key = _events_cache_key(city, "all", None, None)
+    db = SessionLocal()
+    try:
+        row = _get_row(db, cache_key, CONTENT_EVENTS_AGGREGATED)
+        existing = list(row.data) if row and row.data else []
+        merged = _dedupe_and_sort_events(existing + apify_events)
+        _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=merged)
+        logger.info(
+            "Merged %s Apify events into cache for %s (total=%s)",
+            len(apify_events),
+            city,
+            len(merged),
+        )
+    except Exception:
+        logger.exception("Apify prefetch failed for city=%s", city)
+    finally:
+        db.close()
 
 def _events_cache_key(
     city: str,
@@ -721,7 +767,7 @@ def _fetch_aggregated_events(
     date_from: str | None,
     date_to: str | None,
 ) -> list[dict[str, Any]]:
-    """Fetch from all providers, deduplicate, and sort chronologically."""
+    """Fetch from fast providers only, deduplicate, and sort chronologically."""
     target_limit = 100
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -730,8 +776,6 @@ def _fetch_aggregated_events(
             executor.submit(_fetch_yelp_events, city, category, target_limit): "yelp",
             executor.submit(_fetch_eventbrite_events, city, category, target_limit): "eventbrite",
             executor.submit(_fetch_bandsintown_events, city, category, target_limit): "bandsintown",
-            executor.submit(_fetch_skiddle_events, city, category, target_limit): "skiddle",
-            executor.submit(_fetch_apify_google_events, city, category, target_limit): "google_events",
         }
 
         all_events: list[dict[str, Any]] = []
@@ -744,21 +788,7 @@ def _fetch_aggregated_events(
             except Exception as e:
                 logger.warning("Parallel fetch for source %s failed: %s", source_name, e)
 
-    seen: set[tuple[str, str]] = set()
-    deduped_events: list[dict[str, Any]] = []
-    for ev in all_events:
-        dedupe_key = (ev["name"].strip().lower(), ev["date"])
-        if dedupe_key not in seen:
-            seen.add(dedupe_key)
-            deduped_events.append(ev)
-
-    def sort_key(x: dict[str, Any]) -> tuple[str, str]:
-        d = x.get("date") or ""
-        t = x.get("time") or ""
-        return (d if d else "9999-12-31", t if t else "23:59")
-
-    deduped_events.sort(key=sort_key)
-    return deduped_events
+    return _dedupe_and_sort_events(all_events)
 
 
 def search_events_extended(
@@ -771,8 +801,8 @@ def search_events_extended(
     per_page: int = 20,
 ) -> dict[str, Any]:
     """
-    Enhanced multi-source search query targeting Ticketmaster, Yelp, Eventbrite, Bandsintown, and Skiddle.
-    Queries up to 100 events per provider for a deeply rich, unrestricted aggregate pool.
+    Enhanced multi-source search query using fast providers (Ticketmaster, Yelp, Eventbrite, Bandsintown).
+    Apify Google Events are merged into cache via background prefetch without blocking live requests.
     Results are cached in explore_contents (content_type=events_aggregated) for 6 hours.
     """
     city = (city or "Chicago").strip()
