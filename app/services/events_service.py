@@ -1,8 +1,8 @@
 """
 Multi-source Event Discovery Aggregator (Ticketmaster, Yelp, Eventbrite, Bandsintown, Skiddle).
 
-Combines results in parallel, deduplicates, sorts chronologically, and returns standard schema.
-Includes high-fidelity fallback generators for Yelp, Eventbrite, Bandsintown, and Skiddle.
+Combines fast sources in parallel for live requests; Apify Google Events runs in a
+background job and merges into the DB cache without blocking users.
 """
 from __future__ import annotations
 
@@ -15,7 +15,8 @@ import httpx
 from sqlalchemy.orm import Session
 
 from app.core.api_limits import API_TIMEOUT_SECONDS
-from app.services.explore_city_extended_service import _get_cached_list
+from app.services.explore_city_extended_service import _get_cached_list, _get_row, _upsert_list
+from app.utils.database import SessionLocal
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,10 @@ TICKETMASTER_URL = "https://app.ticketmaster.com/discovery/v2/events.json"
 TTL_SECONDS = 21_600  # 6 hours
 CONTENT_EVENTS_AGGREGATED = "events_aggregated"
 TTL_EVENTS_AGGREGATED_HOURS = 6
+
+YELP_EVENTS_LIMIT = 50
+EVENTBRITE_EVENTS_LIMIT = 50
+BANDSINTOWN_EVENTS_PER_PAGE = 50
 
 _cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 
@@ -133,7 +138,6 @@ def _fetch_ticketmaster_events(
     category: str = "all",
     date_from: str | None = None,
     date_to: str | None = None,
-    limit: int = 100
 ) -> list[dict[str, Any]]:
     api_key = (settings.ticketmaster_api_key or "").strip()
     if not api_key:
@@ -157,10 +161,11 @@ def _fetch_ticketmaster_events(
             keyword = "festival"
 
     params: dict[str, Any] = {
-        "city": city,
         "apikey": api_key,
-        "size": limit,
+        "city": city,
+        "size": 100,
         "sort": "date,asc",
+        "locale": "*",
     }
 
     if classification_name:
@@ -173,116 +178,118 @@ def _fetch_ticketmaster_events(
     if date_to:
         params["endDateTime"] = f"{date_to}T23:59:59Z"
 
+    events: list[dict[str, Any]] = []
     try:
         with httpx.Client(timeout=API_TIMEOUT_SECONDS, headers=BROWSER_HEADERS) as client:
-            resp = client.get(TICKETMASTER_URL, params=params)
-        if resp.status_code != 200:
-            return []
+            for page_num in range(2):
+                params["page"] = page_num
+                resp = client.get(TICKETMASTER_URL, params=params)
+                if resp.status_code != 200:
+                    continue
 
-        data = resp.json()
-        emb = data.get("_embedded")
-        if not isinstance(emb, dict):
-            return []
-        raw_events = emb.get("events")
-        if not isinstance(raw_events, list):
-            return []
+                data = resp.json()
+                emb = data.get("_embedded")
+                if not isinstance(emb, dict):
+                    continue
+                raw_events = emb.get("events")
+                if not isinstance(raw_events, list):
+                    continue
 
-        events = []
-        for raw in raw_events:
-            if not isinstance(raw, dict):
-                continue
-            
-            eid = str(raw.get("id") or "")
-            name = str(raw.get("name") or "Event")
-            url = str(raw.get("url") or "")
-            
-            img_url = None
-            images = raw.get("images", [])
-            if isinstance(images, list) and images:
-                best = None
-                for im in images:
-                    if not isinstance(im, dict):
+                for raw in raw_events:
+                    if not isinstance(raw, dict):
                         continue
-                    w = int(im.get("width") or 0)
-                    u = im.get("url")
-                    if isinstance(u, str) and (best is None or w > best[0]):
-                        best = (w, u)
-                if best:
-                    img_url = best[1]
 
-            category_val = "All"
-            classifications = raw.get("classifications", [])
-            if classifications and isinstance(classifications, list) and isinstance(classifications[0], dict):
-                segment = classifications[0].get("segment", {})
-                if isinstance(segment, dict) and segment.get("name"):
-                    category_val = str(segment.get("name"))
+                    eid = str(raw.get("id") or "")
+                    name = str(raw.get("name") or "Event")
+                    url = str(raw.get("url") or "")
 
-            date_str = ""
-            time_str = "19:00"
-            dates = raw.get("dates", {})
-            if isinstance(dates, dict):
-                start = dates.get("start", {})
-                if isinstance(start, dict):
-                    date_str = str(start.get("localDate") or "")
-                    local_time = start.get("localTime")
-                    if local_time:
-                        time_str = str(local_time)[:5]
+                    img_url = None
+                    images = raw.get("images", [])
+                    if isinstance(images, list) and images:
+                        best = None
+                        for im in images:
+                            if not isinstance(im, dict):
+                                continue
+                            w = int(im.get("width") or 0)
+                            u = im.get("url")
+                            if isinstance(u, str) and (best is None or w > best[0]):
+                                best = (w, u)
+                        if best:
+                            img_url = best[1]
 
-            venue_name = "Various Venues"
-            country_code = "US"
-            city_name = city
-            
-            ven_emb = raw.get("_embedded", {})
-            if isinstance(ven_emb, dict):
-                venues = ven_emb.get("venues")
-                if isinstance(venues, list) and venues and isinstance(venues[0], dict):
-                    v0 = venues[0]
-                    venue_name = str(v0.get("name") or "Venue")
-                    if v0.get("country") and isinstance(v0.get("country"), dict):
-                        country_code = str(v0.get("country").get("countryCode") or "US")
-                    if v0.get("city") and isinstance(v0.get("city"), dict):
-                        city_name = str(v0.get("city").get("name") or city)
+                    category_val = "All"
+                    classifications = raw.get("classifications", [])
+                    if classifications and isinstance(classifications, list) and isinstance(classifications[0], dict):
+                        segment = classifications[0].get("segment", {})
+                        if isinstance(segment, dict) and segment.get("name"):
+                            category_val = str(segment.get("name"))
 
-            price_min = None
-            price_max = None
-            price_ranges = raw.get("priceRanges", [])
-            if price_ranges and isinstance(price_ranges, list) and isinstance(price_ranges[0], dict):
-                p0 = price_ranges[0]
-                try:
-                    price_min = float(p0.get("min")) if p0.get("min") is not None else None
-                    price_max = float(p0.get("max")) if p0.get("max") is not None else None
-                except (TypeError, ValueError):
-                    pass
+                    date_str = ""
+                    time_str = "19:00"
+                    dates = raw.get("dates", {})
+                    if isinstance(dates, dict):
+                        start = dates.get("start", {})
+                        if isinstance(start, dict):
+                            date_str = str(start.get("localDate") or "")
+                            local_time = start.get("localTime")
+                            if local_time:
+                                time_str = str(local_time)[:5]
 
-            events.append({
-                "id": eid,
-                "name": name,
-                "category": category_val,
-                "date": date_str,
-                "time": time_str,
-                "venue": venue_name,
-                "city": city_name,
-                "country": country_code,
-                "image_url": img_url,
-                "ticket_url": url,
-                "price_min": price_min,
-                "price_max": price_max,
-                "source": "ticketmaster"
-            })
+                    venue_name = "Various Venues"
+                    country_code = "US"
+                    city_name = city
+
+                    ven_emb = raw.get("_embedded", {})
+                    if isinstance(ven_emb, dict):
+                        venues = ven_emb.get("venues")
+                        if isinstance(venues, list) and venues and isinstance(venues[0], dict):
+                            v0 = venues[0]
+                            venue_name = str(v0.get("name") or "Venue")
+                            if v0.get("country") and isinstance(v0.get("country"), dict):
+                                country_code = str(v0.get("country").get("countryCode") or "US")
+                            if v0.get("city") and isinstance(v0.get("city"), dict):
+                                city_name = str(v0.get("city").get("name") or city)
+
+                    price_min = None
+                    price_max = None
+                    price_ranges = raw.get("priceRanges", [])
+                    if price_ranges and isinstance(price_ranges, list) and isinstance(price_ranges[0], dict):
+                        p0 = price_ranges[0]
+                        try:
+                            price_min = float(p0.get("min")) if p0.get("min") is not None else None
+                            price_max = float(p0.get("max")) if p0.get("max") is not None else None
+                        except (TypeError, ValueError):
+                            pass
+
+                    events.append({
+                        "id": eid,
+                        "name": name,
+                        "category": category_val,
+                        "date": date_str,
+                        "time": time_str,
+                        "venue": venue_name,
+                        "city": city_name,
+                        "country": country_code,
+                        "image_url": img_url,
+                        "ticket_url": url,
+                        "price_min": price_min,
+                        "price_max": price_max,
+                        "source": "ticketmaster",
+                    })
         return events
     except Exception as exc:
         logger.warning("Ticketmaster _fetch_ticketmaster_events failed: %s", exc)
         return []
 
 
-def _fetch_yelp_events(city: str, category: str = "all", limit: int = 100) -> list[dict[str, Any]]:
+def _fetch_yelp_events(city: str, category: str = "all", limit: int = YELP_EVENTS_LIMIT) -> list[dict[str, Any]]:
     api_key = (settings.yelp_api_key or "").strip()
     events = []
 
     if api_key:
         url = "https://api.yelp.com/v3/events"
         headers = {**BROWSER_HEADERS, "Authorization": f"Bearer {api_key}"}
-        params = {"location": city, "limit": limit}
+        params = {"location": city, "limit": 50}
 
         try:
             with httpx.Client(timeout=API_TIMEOUT_SECONDS, headers=headers) as client:
@@ -402,7 +409,7 @@ def _fetch_yelp_events(city: str, category: str = "all", limit: int = 100) -> li
     return events
 
 
-def _fetch_eventbrite_events(city: str, category: str = "all", limit: int = 100) -> list[dict[str, Any]]:
+def _fetch_eventbrite_events(city: str, category: str = "all", limit: int = EVENTBRITE_EVENTS_LIMIT) -> list[dict[str, Any]]:
     events = []
 
     eventbrite_fallbacks = [
@@ -446,10 +453,14 @@ def _fetch_eventbrite_events(city: str, category: str = "all", limit: int = 100)
             "source": "eventbrite"
         })
 
-    return events
+    return events[:50]
 
 
-def _fetch_bandsintown_events(city: str, category: str = "all", limit: int = 100) -> list[dict[str, Any]]:
+def _fetch_bandsintown_events(
+    city: str,
+    category: str = "all",
+    per_page: int = BANDSINTOWN_EVENTS_PER_PAGE,
+) -> list[dict[str, Any]]:
     if category and category.lower() != "all" and category.lower() != "music":
         return []
 
@@ -490,10 +501,7 @@ def _fetch_bandsintown_events(city: str, category: str = "all", limit: int = 100
             "source": "bandsintown"
         })
 
-    return events
-
-
-def _fetch_skiddle_events(city: str, category: str = "all", limit: int = 100) -> list[dict[str, Any]]:
+    return events[:per_page]
     """
     Query Skiddle API for British/European events or serve high-fidelity local fallbacks for UK hubs.
     """
@@ -633,11 +641,9 @@ def _fetch_apify_google_events(city: str, category: str = "all", limit: int = 20
     if not apify_token:
         return []
     try:
-        import httpx
         keyword = f"{category} events in {city}" if category != "all" else f"events in {city}"
-        
+
         with httpx.Client(timeout=60) as client:
-            # Start Apify actor run
             r = client.post(
                 "https://api.apify.com/v2/acts/apify~google-search-scraper/runs",
                 headers={"Authorization": f"Bearer {apify_token}"},
@@ -646,34 +652,35 @@ def _fetch_apify_google_events(city: str, category: str = "all", limit: int = 20
                     "resultsPerPage": limit,
                     "maxPagesPerQuery": 1,
                     "languageCode": "en",
-                    "countryCode": "us"
-                }
+                    "countryCode": "us",
+                },
             )
-            
+
             if r.status_code != 201:
                 logger.warning("Apify run failed: %s", r.status_code)
                 return []
-            
+
             run_id = r.json()["data"]["id"]
-            
-            # Wait for results
-            import time
+
+            status_r = None
             for _ in range(30):
                 time.sleep(2)
                 status_r = client.get(
                     f"https://api.apify.com/v2/acts/apify~google-search-scraper/runs/{run_id}",
-                    headers={"Authorization": f"Bearer {apify_token}"}
+                    headers={"Authorization": f"Bearer {apify_token}"},
                 )
                 if status_r.json()["data"]["status"] == "SUCCEEDED":
                     break
-            
-            # Get results
+
+            if status_r is None:
+                return []
+
             dataset_id = status_r.json()["data"]["defaultDatasetId"]
             results_r = client.get(
                 f"https://api.apify.com/v2/datasets/{dataset_id}/items",
-                headers={"Authorization": f"Bearer {apify_token}"}
+                headers={"Authorization": f"Bearer {apify_token}"},
             )
-            
+
             events = []
             for item in results_r.json()[:limit]:
                 for result in item.get("organicResults", []):
@@ -690,15 +697,350 @@ def _fetch_apify_google_events(city: str, category: str = "all", limit: int = 20
                         "ticket_url": result.get("url", ""),
                         "price_min": None,
                         "price_max": None,
-                        "source": "google_events"
+                        "source": "google_events",
                     })
-            
+
             return events
     except Exception as exc:
         logger.warning("Apify Google Events failed: %s", exc)
         return []
 
 
+def _fetch_apify_eventbrite_events(city: str, limit: int = 50) -> list[dict[str, Any]]:
+    """Scrape Eventbrite events via Apify actor"""
+    try:
+        if not settings.apify_token:
+            return []
+        
+        import httpx
+        with httpx.Client(timeout=120) as client:
+            r = client.post(
+                "https://api.apify.com/v2/acts/apify~eventbrite-scraper/runs?waitForFinish=120",
+                headers={"Authorization": f"Bearer {settings.apify_token}"},
+                json={
+                    "location": city,
+                    "maxItems": limit
+                }
+            )
+            if r.status_code not in (200, 201):
+                return []
+            
+            run_data = r.json().get("data", {})
+            dataset_id = run_data.get("defaultDatasetId", "")
+            if not dataset_id:
+                return []
+            
+            items_r = client.get(
+                f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                headers={"Authorization": f"Bearer {settings.apify_token}"}
+            )
+            
+            events = []
+            for item in items_r.json()[:limit]:
+                events.append({
+                    "id": f"eb_apify_{hash(item.get('name', '') + item.get('startDate', ''))}",
+                    "name": item.get("name", "Unknown Event"),
+                    "category": item.get("category", "Event"),
+                    "date": item.get("startDate", "")[:10] if item.get("startDate") else "",
+                    "time": item.get("startDate", "")[11:16] if item.get("startDate") else "",
+                    "venue": item.get("venue", {}).get("name", city) if isinstance(item.get("venue"), dict) else city,
+                    "city": city,
+                    "country": "US",
+                    "image_url": item.get("image", None),
+                    "ticket_url": item.get("url", ""),
+                    "price_min": None,
+                    "price_max": None,
+                    "source": "eventbrite"
+                })
+            return events
+    except Exception as exc:
+        logger.warning("Apify Eventbrite scraper failed: %s", exc)
+        return []
+
+
+def _fetch_apify_facebook_events(city: str, limit: int = 50) -> list[dict[str, Any]]:
+    """Scrape Facebook Events via Apify actor"""
+    try:
+        if not settings.apify_token:
+            return []
+        
+        import httpx
+        with httpx.Client(timeout=120) as client:
+            r = client.post(
+                "https://api.apify.com/v2/acts/vdrmota~facebook-events-scraper/runs?waitForFinish=120",
+                headers={"Authorization": f"Bearer {settings.apify_token}"},
+                json={
+                    "searchQuery": f"events in {city}",
+                    "maxItems": limit
+                }
+            )
+            if r.status_code not in (200, 201):
+                return []
+            
+            run_data = r.json().get("data", {})
+            dataset_id = run_data.get("defaultDatasetId", "")
+            if not dataset_id:
+                return []
+            
+            items_r = client.get(
+                f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                headers={"Authorization": f"Bearer {settings.apify_token}"}
+            )
+            
+            events = []
+            for item in items_r.json()[:limit]:
+                events.append({
+                    "id": f"fb_{hash(item.get('name', '') + str(item.get('startTime', '')))}",
+                    "name": item.get("name", "Unknown Event"),
+                    "category": "Event",
+                    "date": str(item.get("startTime", ""))[:10],
+                    "time": str(item.get("startTime", ""))[11:16],
+                    "venue": item.get("location", {}).get("name", city) if isinstance(item.get("location"), dict) else city,
+                    "city": city,
+                    "country": "US",
+                    "image_url": item.get("coverPhoto", {}).get("url") if isinstance(item.get("coverPhoto"), dict) else None,
+                    "ticket_url": item.get("url", ""),
+                    "price_min": None,
+                    "price_max": None,
+                    "source": "facebook_events"
+                })
+            return events
+    except Exception as exc:
+        logger.warning("Apify Facebook Events scraper failed: %s", exc)
+        return []
+
+
+def _fetch_apify_meetup_events(city: str, limit: int = 50) -> list[dict[str, Any]]:
+    """Scrape Meetup.com events via Apify actor"""
+    try:
+        if not settings.apify_token:
+            return []
+        
+        import httpx
+        with httpx.Client(timeout=120) as client:
+            r = client.post(
+                "https://api.apify.com/v2/acts/bebity~meetup-scraper/runs?waitForFinish=120",
+                headers={"Authorization": f"Bearer {settings.apify_token}"},
+                json={
+                    "location": city,
+                    "maxItems": limit
+                }
+            )
+            if r.status_code not in (200, 201):
+                return []
+            
+            run_data = r.json().get("data", {})
+            dataset_id = run_data.get("defaultDatasetId", "")
+            if not dataset_id:
+                return []
+            
+            items_r = client.get(
+                f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                headers={"Authorization": f"Bearer {settings.apify_token}"}
+            )
+            
+            events = []
+            for item in items_r.json()[:limit]:
+                events.append({
+                    "id": f"meetup_{hash(item.get('title', '') + item.get('dateTime', ''))}",
+                    "name": item.get("title", "Unknown Event"),
+                    "category": item.get("eventType", "Meetup"),
+                    "date": item.get("dateTime", "")[:10] if item.get("dateTime") else "",
+                    "time": item.get("dateTime", "")[11:16] if item.get("dateTime") else "",
+                    "venue": item.get("venue", {}).get("name", city) if isinstance(item.get("venue"), dict) else city,
+                    "city": city,
+                    "country": "US",
+                    "image_url": item.get("imageUrl", None),
+                    "ticket_url": item.get("eventUrl", ""),
+                    "price_min": None,
+                    "price_max": None,
+                    "source": "meetup"
+                })
+            return events
+    except Exception as exc:
+        logger.warning("Apify Meetup scraper failed: %s", exc)
+        return []
+
+
+def _fetch_apify_tripadvisor_events(city: str, limit: int = 50) -> list[dict[str, Any]]:
+    """Scrape TripAdvisor activities via Apify actor"""
+    try:
+        if not settings.apify_token:
+            return []
+        
+        import httpx
+        with httpx.Client(timeout=120) as client:
+            r = client.post(
+                "https://api.apify.com/v2/acts/maxcopell~tripadvisor/runs?waitForFinish=120",
+                headers={"Authorization": f"Bearer {settings.apify_token}"},
+                json={
+                    "locationFullName": city,
+                    "includeAttractions": True,
+                    "maxItems": limit
+                }
+            )
+            if r.status_code not in (200, 201):
+                return []
+            
+            run_data = r.json().get("data", {})
+            dataset_id = run_data.get("defaultDatasetId", "")
+            if not dataset_id:
+                return []
+            
+            items_r = client.get(
+                f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                headers={"Authorization": f"Bearer {settings.apify_token}"}
+            )
+            
+            events = []
+            for item in items_r.json()[:limit]:
+                events.append({
+                    "id": f"ta_{hash(item.get('name', ''))}",
+                    "name": item.get("name", "Unknown Activity"),
+                    "category": "Activity",
+                    "date": "",
+                    "time": "",
+                    "venue": item.get("address", city),
+                    "city": city,
+                    "country": "US",
+                    "image_url": item.get("photo", {}).get("images", {}).get("medium", {}).get("url") if item.get("photo") else None,
+                    "ticket_url": item.get("webUrl", ""),
+                    "price_min": None,
+                    "price_max": None,
+                    "source": "tripadvisor"
+                })
+            return events
+    except Exception as exc:
+        logger.warning("Apify TripAdvisor scraper failed: %s", exc)
+        return []
+
+
+def _fetch_apify_instagram_events(city: str, limit: int = 30) -> list[dict[str, Any]]:
+    """Scrape Instagram event posts via Apify actor"""
+    try:
+        if not settings.apify_token:
+            return []
+        
+        import httpx
+        with httpx.Client(timeout=120) as client:
+            r = client.post(
+                "https://api.apify.com/v2/acts/apify~instagram-hashtag-scraper/runs?waitForFinish=120",
+                headers={"Authorization": f"Bearer {settings.apify_token}"},
+                json={
+                    "hashtags": [f"{city.replace(' ', '')}events", f"{city.replace(' ', '')}nightlife"],
+                    "resultsLimit": limit
+                }
+            )
+            if r.status_code not in (200, 201):
+                return []
+            
+            run_data = r.json().get("data", {})
+            dataset_id = run_data.get("defaultDatasetId", "")
+            if not dataset_id:
+                return []
+            
+            items_r = client.get(
+                f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                headers={"Authorization": f"Bearer {settings.apify_token}"}
+            )
+            
+            events = []
+            for item in items_r.json()[:limit]:
+                caption = item.get("caption", "")[:100] if item.get("caption") else "Instagram Event"
+                events.append({
+                    "id": f"ig_{hash(item.get('id', '') + city)}",
+                    "name": caption,
+                    "category": "Social",
+                    "date": item.get("timestamp", "")[:10] if item.get("timestamp") else "",
+                    "time": "",
+                    "venue": city,
+                    "city": city,
+                    "country": "US",
+                    "image_url": item.get("displayUrl", None),
+                    "ticket_url": item.get("url", ""),
+                    "price_min": None,
+                    "price_max": None,
+                    "source": "instagram"
+                })
+            return events
+    except Exception as exc:
+        logger.warning("Apify Instagram scraper failed: %s", exc)
+        return []
+
+
+
+def _dedupe_and_sort_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    seen: set[tuple[str, str]] = set()
+    deduped_events: list[dict[str, Any]] = []
+    for ev in events:
+        dedupe_key = (ev["name"].strip().lower(), ev.get("date") or "")
+        if dedupe_key not in seen:
+            seen.add(dedupe_key)
+            deduped_events.append(ev)
+
+    def sort_key(x: dict[str, Any]) -> tuple[str, str]:
+        d = x.get("date") or ""
+        t = x.get("time") or ""
+        return (d if d else "9999-12-31", t if t else "23:59")
+
+    deduped_events.sort(key=sort_key)
+    return deduped_events
+
+
+def prefetch_apify_events(city: str) -> None:
+    """Run all Apify scrapers in parallel and merge into cache"""
+    city = (city or "").strip()
+    if not city:
+        return
+    
+    try:
+        import concurrent.futures
+        
+        logger.info("Starting Apify prefetch for %s", city)
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+            futures = {
+                executor.submit(_fetch_apify_google_events, city, "all", 50): "google",
+                executor.submit(_fetch_apify_eventbrite_events, city, 50): "eventbrite",
+                executor.submit(_fetch_apify_facebook_events, city, 50): "facebook",
+                executor.submit(_fetch_apify_meetup_events, city, 50): "meetup",
+                executor.submit(_fetch_apify_tripadvisor_events, city, 50): "tripadvisor",
+                executor.submit(_fetch_apify_instagram_events, city, 30): "instagram",
+            }
+            
+            all_new_events = []
+            for future in concurrent.futures.as_completed(futures):
+                source = futures[future]
+                try:
+                    events = future.result()
+                    all_new_events.extend(events)
+                    logger.info("Apify %s returned %d events for %s", source, len(events), city)
+                except Exception as exc:
+                    logger.warning("Apify %s failed for %s: %s", source, city, exc)
+        
+        if not all_new_events:
+            logger.info("No new Apify events for %s", city)
+            return
+        
+        # Merge into existing cache
+        cache_key = _events_cache_key(city, "all", None, None)
+        db = SessionLocal()
+        try:
+            row = _get_row(db, cache_key, CONTENT_EVENTS_AGGREGATED)
+            existing = list(row.data) if row and row.data else []
+            merged = _dedupe_and_sort_events(existing + all_new_events)
+            _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=merged)
+            logger.info(
+                "Merged %d new Apify events into cache for %s (total=%d)",
+                len(all_new_events),
+                city,
+                len(merged),
+            )
+        finally:
+            db.close()
+            
+    except Exception as exc:
+        logger.warning("prefetch_apify_events failed for %s: %s", city, exc)
 
 def _events_cache_key(
     city: str,
@@ -721,17 +1063,24 @@ def _fetch_aggregated_events(
     date_from: str | None,
     date_to: str | None,
 ) -> list[dict[str, Any]]:
-    """Fetch from all providers, deduplicate, and sort chronologically."""
-    target_limit = 100
-
+    """Fetch from fast providers only, deduplicate, and sort chronologically."""
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = {
-            executor.submit(_fetch_ticketmaster_events, city, category, date_from, date_to, target_limit): "ticketmaster",
-            executor.submit(_fetch_yelp_events, city, category, target_limit): "yelp",
-            executor.submit(_fetch_eventbrite_events, city, category, target_limit): "eventbrite",
-            executor.submit(_fetch_bandsintown_events, city, category, target_limit): "bandsintown",
-            executor.submit(_fetch_skiddle_events, city, category, target_limit): "skiddle",
-            executor.submit(_fetch_apify_google_events, city, category, target_limit): "google_events",
+            executor.submit(
+                _fetch_ticketmaster_events,
+                city,
+                category,
+                date_from,
+                date_to,
+            ): "ticketmaster",
+            executor.submit(_fetch_yelp_events, city, category, YELP_EVENTS_LIMIT): "yelp",
+            executor.submit(_fetch_eventbrite_events, city, category, EVENTBRITE_EVENTS_LIMIT): "eventbrite",
+            executor.submit(
+                _fetch_bandsintown_events,
+                city,
+                category,
+                BANDSINTOWN_EVENTS_PER_PAGE,
+            ): "bandsintown",
         }
 
         all_events: list[dict[str, Any]] = []
@@ -744,21 +1093,7 @@ def _fetch_aggregated_events(
             except Exception as e:
                 logger.warning("Parallel fetch for source %s failed: %s", source_name, e)
 
-    seen: set[tuple[str, str]] = set()
-    deduped_events: list[dict[str, Any]] = []
-    for ev in all_events:
-        dedupe_key = (ev["name"].strip().lower(), ev["date"])
-        if dedupe_key not in seen:
-            seen.add(dedupe_key)
-            deduped_events.append(ev)
-
-    def sort_key(x: dict[str, Any]) -> tuple[str, str]:
-        d = x.get("date") or ""
-        t = x.get("time") or ""
-        return (d if d else "9999-12-31", t if t else "23:59")
-
-    deduped_events.sort(key=sort_key)
-    return deduped_events
+    return _dedupe_and_sort_events(all_events)
 
 
 def search_events_extended(
@@ -771,8 +1106,8 @@ def search_events_extended(
     per_page: int = 20,
 ) -> dict[str, Any]:
     """
-    Enhanced multi-source search query targeting Ticketmaster, Yelp, Eventbrite, Bandsintown, and Skiddle.
-    Queries up to 100 events per provider for a deeply rich, unrestricted aggregate pool.
+    Enhanced multi-source search query using fast providers (Ticketmaster, Yelp, Eventbrite, Bandsintown).
+    Apify Google Events are merged into cache via background prefetch without blocking live requests.
     Results are cached in explore_contents (content_type=events_aggregated) for 6 hours.
     """
     city = (city or "Chicago").strip()
