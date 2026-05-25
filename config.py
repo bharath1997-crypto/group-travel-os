@@ -148,10 +148,7 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="GNEWS_API_KEY",
     )
-    apify_token: str | None = Field(
-        default=None,
-        validation_alias="APIFY_TOKEN",
-    )
+    apify_token: str = Field(default="", validation_alias="APIFY_TOKEN")
     apify_explorer_actor_id: str | None = Field(
         default=None,
         validation_alias="APIFY_EXPLORER_ACTOR_ID",
