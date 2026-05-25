@@ -1,9 +1,8 @@
 """
-Multi-source Event Discovery Aggregator (Ticketmaster, Yelp, Eventbrite, Bandsintown).
+Multi-source Event Discovery Aggregator (Ticketmaster, Yelp, Eventbrite, Bandsintown, Skiddle).
 
 Combines results in parallel, deduplicates, sorts chronologically, and returns standard schema.
-Includes high-fidelity fallback generators for Yelp, Eventbrite, and Bandsintown when live APIs 
-are restricted or deprecated.
+Includes high-fidelity fallback generators for Yelp, Eventbrite, Bandsintown, and Skiddle.
 """
 from __future__ import annotations
 
@@ -23,6 +22,18 @@ TICKETMASTER_URL = "https://app.ticketmaster.com/discovery/v2/events.json"
 TTL_SECONDS = 21_600  # 6 hours
 
 _cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
+
+# Geographical coordinate mappings for Skiddle geosearch
+CITY_COORD_MAP = {
+    "london": (51.5074, -0.1278, "GB"),
+    "manchester": (53.4808, -2.2426, "GB"),
+    "edinburgh": (55.9533, -3.1883, "GB"),
+    "chicago": (41.8781, -87.6298, "US"),
+    "new york": (40.7128, -74.0060, "US"),
+    "tokyo": (35.6762, 139.6503, "JP"),
+    "paris": (48.8566, 2.3522, "FR"),
+    "sydney": (-33.8688, 151.2093, "AU"),
+}
 
 
 def _cache_key(city: str) -> str:
@@ -258,7 +269,6 @@ def _fetch_yelp_events(city: str, category: str = "all", limit: int = 20) -> lis
     api_key = (settings.yelp_api_key or "").strip()
     events = []
 
-    # Try live query first
     if api_key:
         url = "https://api.yelp.com/v3/events"
         headers = {"Authorization": f"Bearer {api_key}"}
@@ -332,9 +342,8 @@ def _fetch_yelp_events(city: str, category: str = "all", limit: int = 20) -> lis
                         })
                     return events
         except Exception as exc:
-            logger.warning("Yelp live fetch failed, using high-fidelity fallback: %s", exc)
+            logger.warning("Yelp live fetch failed, using fallback: %s", exc)
 
-    # High-fidelity city-specific fallback generator for Yelp
     if not events:
         yelp_fallbacks = [
             {
@@ -360,7 +369,6 @@ def _fetch_yelp_events(city: str, category: str = "all", limit: int = 20) -> lis
             }
         ]
         
-        # Filter based on requested category
         for raw in yelp_fallbacks:
             if category and category.lower() != "all" and raw["category"].lower() != category.lower():
                 continue
@@ -387,7 +395,6 @@ def _fetch_yelp_events(city: str, category: str = "all", limit: int = 20) -> lis
 def _fetch_eventbrite_events(city: str, category: str = "all", limit: int = 20) -> list[dict[str, Any]]:
     events = []
 
-    # High-fidelity fallback generator for Eventbrite
     eventbrite_fallbacks = [
         {
             "name": f"{city} Global Tech & Startup Summit",
@@ -433,13 +440,11 @@ def _fetch_eventbrite_events(city: str, category: str = "all", limit: int = 20) 
 
 
 def _fetch_bandsintown_events(city: str, category: str = "all", limit: int = 20) -> list[dict[str, Any]]:
-    # Bandsintown is strictly music. If a different specific category was requested, skip.
     if category and category.lower() != "all" and category.lower() != "music":
         return []
 
     events = []
 
-    # High-fidelity music-specific fallback generator for Bandsintown
     bit_fallbacks = [
         {
             "name": f"The Indie Rock Showcase Live in {city}",
@@ -478,6 +483,144 @@ def _fetch_bandsintown_events(city: str, category: str = "all", limit: int = 20)
     return events
 
 
+def _fetch_skiddle_events(city: str, category: str = "all", limit: int = 20) -> list[dict[str, Any]]:
+    """
+    Query Skiddle API for British/European events or serve high-fidelity local fallbacks for UK hubs.
+    """
+    skiddle_key = (getattr(settings, "skiddle_api_key", None) or "").strip()
+    events = []
+
+    # Map search city to coordinate lookup for Skiddle geosearch
+    city_lower = city.strip().lower()
+    coord_data = CITY_COORD_MAP.get(city_lower)
+
+    if skiddle_key and coord_data:
+        lat, lon, country_code = coord_data
+        url = "https://www.skiddle.com/api/v1/events/search/"
+        params = {
+            "api_key": skiddle_key,
+            "latitude": lat,
+            "longitude": lon,
+            "radius": 15,
+            "limit": limit,
+            "order": "distance",
+            "country": country_code
+        }
+
+        try:
+            with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
+                resp = client.get(url, params=params)
+            if resp.status_code == 200:
+                data = resp.json()
+                results = data.get("results")
+                if isinstance(results, list):
+                    for raw in results:
+                        if not isinstance(raw, dict):
+                            continue
+
+                        # Map Skiddle category structure
+                        sk_cat = str(raw.get("eventcode") or "").lower()
+                        normalized_cat = "All"
+                        if "live" in sk_cat or "club" in sk_cat or "music" in sk_cat:
+                            normalized_cat = "Music"
+                        elif "sport" in sk_cat:
+                            normalized_cat = "Sports"
+                        elif "art" in sk_cat or "comedy" in sk_cat or "theatre" in sk_cat:
+                            normalized_cat = "Arts"
+                        elif "kids" in sk_cat or "family" in sk_cat:
+                            normalized_cat = "Family"
+                        elif "food" in sk_cat or "drink" in sk_cat:
+                            normalized_cat = "Food"
+                        elif "fest" in sk_cat:
+                            normalized_cat = "Festival"
+
+                        if category and category.lower() != "all" and normalized_cat.lower() != category.lower():
+                            continue
+
+                        date_str = raw.get("date") or ""
+                        time_str = raw.get("openinghours", {}).get("dooropen") or "19:00"
+
+                        venue_dict = raw.get("venue") or {}
+                        venue_name = venue_dict.get("name") or "Various Venues"
+
+                        price_min = None
+                        try:
+                            entry_price = raw.get("entryprice")
+                            if entry_price:
+                                price_min = float(entry_price.replace("£", "").replace("$", "").strip())
+                        except Exception:
+                            pass
+
+                        events.append({
+                            "id": str(raw.get("id") or ""),
+                            "name": str(raw.get("eventname") or "Skiddle Event"),
+                            "category": normalized_cat,
+                            "date": date_str,
+                            "time": time_str[:5],
+                            "venue": venue_name,
+                            "city": city,
+                            "country": country_code,
+                            "image_url": raw.get("largeimageurl") or raw.get("imageurl"),
+                            "ticket_url": raw.get("link") or "https://www.skiddle.com",
+                            "price_min": price_min,
+                            "price_max": price_min,
+                            "source": "skiddle"
+                        })
+                    return events
+        except Exception as exc:
+            logger.warning("Skiddle live fetch failed, using fallback: %s", exc)
+
+    # High-fidelity UK and European events fallback generator for Skiddle
+    is_uk_hub = city_lower in ["london", "manchester", "edinburgh"] or (coord_data and coord_data[2] == "GB")
+    
+    if not events and is_uk_hub:
+        skiddle_fallbacks = [
+            {
+                "name": f"{city} Warehouse Project DJ Night",
+                "category": "Music",
+                "venue": "Printworks Hall" if city_lower == "london" else "Albert Warehouse",
+                "image_url": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=60",
+                "price_min": 32.50,
+            },
+            {
+                "name": f"Ministry of Sound Summer Anthem Fest ({city} Session)",
+                "category": "Music",
+                "venue": "Ministry Club" if city_lower == "london" else "Metropolitan Club",
+                "image_url": "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&auto=format&fit=crop&q=60",
+                "price_min": 25.00,
+            },
+            {
+                "name": f"{city} Fringe & Stand-up Comedy Showcase",
+                "category": "Arts",
+                "venue": "Assembly Gardens Lounge",
+                "image_url": "https://images.unsplash.com/photo-1516280440614-37939bbacd6a?w=600&auto=format&fit=crop&q=60",
+                "price_min": 18.00,
+            }
+        ]
+
+        for raw in skiddle_fallbacks:
+            if category and category.lower() != "all" and raw["category"].lower() != category.lower():
+                continue
+
+            events.append({
+                "id": f"skiddle-fallback-{raw['name'][:5].lower()}",
+                "name": raw["name"],
+                "category": raw["category"],
+                "date": "2026-06-18",
+                "time": "21:00",
+                "venue": raw["venue"],
+                "city": city,
+                "country": "GB",
+                "image_url": raw["image_url"],
+                "ticket_url": "https://www.skiddle.com",
+                "price_min": raw["price_min"],
+                "price_max": raw["price_min"] + 10.0,
+                "source": "skiddle"
+            })
+
+    return events
+
+
 def search_events_extended(
     city: str,
     category: str | None = None,
@@ -487,7 +630,7 @@ def search_events_extended(
     per_page: int = 20,
 ) -> dict[str, Any]:
     """
-    Enhanced multi-source search query targeting Ticketmaster, Yelp, Eventbrite, and Bandsintown in parallel.
+    Enhanced multi-source search query targeting Ticketmaster, Yelp, Eventbrite, Bandsintown, and Skiddle.
     """
     city = (city or "Chicago").strip()
     cat = category or "all"
@@ -501,6 +644,7 @@ def search_events_extended(
             executor.submit(_fetch_yelp_events, city, cat, target_limit): "yelp",
             executor.submit(_fetch_eventbrite_events, city, cat, target_limit): "eventbrite",
             executor.submit(_fetch_bandsintown_events, city, cat, target_limit): "bandsintown",
+            executor.submit(_fetch_skiddle_events, city, cat, target_limit): "skiddle",
         }
         
         all_events = []

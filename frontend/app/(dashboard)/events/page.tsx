@@ -484,6 +484,8 @@ function EventsSearchContent() {
                             ? "Yelp"
                             : ev.source === "eventbrite"
                             ? "Eventbrite"
+                            : ev.source === "skiddle"
+                            ? "Skiddle"
                             : ev.source === "bandsintown"
                             ? "Bandsintown"
                             : "Ticketmaster"}
