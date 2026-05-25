@@ -32,7 +32,6 @@ TTL_SECONDS = 21_600  # 6 hours
 CONTENT_EVENTS_AGGREGATED = "events_aggregated"
 TTL_EVENTS_AGGREGATED_HOURS = 6
 
-TICKETMASTER_EVENTS_LIMIT = 100
 YELP_EVENTS_LIMIT = 50
 EVENTBRITE_EVENTS_LIMIT = 50
 BANDSINTOWN_EVENTS_PER_PAGE = 50
@@ -139,7 +138,6 @@ def _fetch_ticketmaster_events(
     category: str = "all",
     date_from: str | None = None,
     date_to: str | None = None,
-    limit: int = TICKETMASTER_EVENTS_LIMIT
 ) -> list[dict[str, Any]]:
     api_key = (settings.ticketmaster_api_key or "").strip()
     if not api_key:
@@ -163,10 +161,11 @@ def _fetch_ticketmaster_events(
             keyword = "festival"
 
     params: dict[str, Any] = {
-        "city": city,
         "apikey": api_key,
+        "city": city,
         "size": 100,
         "sort": "date,asc",
+        "locale": "*",
     }
 
     if classification_name:
@@ -179,102 +178,104 @@ def _fetch_ticketmaster_events(
     if date_to:
         params["endDateTime"] = f"{date_to}T23:59:59Z"
 
+    events: list[dict[str, Any]] = []
     try:
         with httpx.Client(timeout=API_TIMEOUT_SECONDS, headers=BROWSER_HEADERS) as client:
-            resp = client.get(TICKETMASTER_URL, params=params)
-        if resp.status_code != 200:
-            return []
+            for page_num in range(2):
+                params["page"] = page_num
+                resp = client.get(TICKETMASTER_URL, params=params)
+                if resp.status_code != 200:
+                    continue
 
-        data = resp.json()
-        emb = data.get("_embedded")
-        if not isinstance(emb, dict):
-            return []
-        raw_events = emb.get("events")
-        if not isinstance(raw_events, list):
-            return []
+                data = resp.json()
+                emb = data.get("_embedded")
+                if not isinstance(emb, dict):
+                    continue
+                raw_events = emb.get("events")
+                if not isinstance(raw_events, list):
+                    continue
 
-        events = []
-        for raw in raw_events:
-            if not isinstance(raw, dict):
-                continue
-            
-            eid = str(raw.get("id") or "")
-            name = str(raw.get("name") or "Event")
-            url = str(raw.get("url") or "")
-            
-            img_url = None
-            images = raw.get("images", [])
-            if isinstance(images, list) and images:
-                best = None
-                for im in images:
-                    if not isinstance(im, dict):
+                for raw in raw_events:
+                    if not isinstance(raw, dict):
                         continue
-                    w = int(im.get("width") or 0)
-                    u = im.get("url")
-                    if isinstance(u, str) and (best is None or w > best[0]):
-                        best = (w, u)
-                if best:
-                    img_url = best[1]
 
-            category_val = "All"
-            classifications = raw.get("classifications", [])
-            if classifications and isinstance(classifications, list) and isinstance(classifications[0], dict):
-                segment = classifications[0].get("segment", {})
-                if isinstance(segment, dict) and segment.get("name"):
-                    category_val = str(segment.get("name"))
+                    eid = str(raw.get("id") or "")
+                    name = str(raw.get("name") or "Event")
+                    url = str(raw.get("url") or "")
 
-            date_str = ""
-            time_str = "19:00"
-            dates = raw.get("dates", {})
-            if isinstance(dates, dict):
-                start = dates.get("start", {})
-                if isinstance(start, dict):
-                    date_str = str(start.get("localDate") or "")
-                    local_time = start.get("localTime")
-                    if local_time:
-                        time_str = str(local_time)[:5]
+                    img_url = None
+                    images = raw.get("images", [])
+                    if isinstance(images, list) and images:
+                        best = None
+                        for im in images:
+                            if not isinstance(im, dict):
+                                continue
+                            w = int(im.get("width") or 0)
+                            u = im.get("url")
+                            if isinstance(u, str) and (best is None or w > best[0]):
+                                best = (w, u)
+                        if best:
+                            img_url = best[1]
 
-            venue_name = "Various Venues"
-            country_code = "US"
-            city_name = city
-            
-            ven_emb = raw.get("_embedded", {})
-            if isinstance(ven_emb, dict):
-                venues = ven_emb.get("venues")
-                if isinstance(venues, list) and venues and isinstance(venues[0], dict):
-                    v0 = venues[0]
-                    venue_name = str(v0.get("name") or "Venue")
-                    if v0.get("country") and isinstance(v0.get("country"), dict):
-                        country_code = str(v0.get("country").get("countryCode") or "US")
-                    if v0.get("city") and isinstance(v0.get("city"), dict):
-                        city_name = str(v0.get("city").get("name") or city)
+                    category_val = "All"
+                    classifications = raw.get("classifications", [])
+                    if classifications and isinstance(classifications, list) and isinstance(classifications[0], dict):
+                        segment = classifications[0].get("segment", {})
+                        if isinstance(segment, dict) and segment.get("name"):
+                            category_val = str(segment.get("name"))
 
-            price_min = None
-            price_max = None
-            price_ranges = raw.get("priceRanges", [])
-            if price_ranges and isinstance(price_ranges, list) and isinstance(price_ranges[0], dict):
-                p0 = price_ranges[0]
-                try:
-                    price_min = float(p0.get("min")) if p0.get("min") is not None else None
-                    price_max = float(p0.get("max")) if p0.get("max") is not None else None
-                except (TypeError, ValueError):
-                    pass
+                    date_str = ""
+                    time_str = "19:00"
+                    dates = raw.get("dates", {})
+                    if isinstance(dates, dict):
+                        start = dates.get("start", {})
+                        if isinstance(start, dict):
+                            date_str = str(start.get("localDate") or "")
+                            local_time = start.get("localTime")
+                            if local_time:
+                                time_str = str(local_time)[:5]
 
-            events.append({
-                "id": eid,
-                "name": name,
-                "category": category_val,
-                "date": date_str,
-                "time": time_str,
-                "venue": venue_name,
-                "city": city_name,
-                "country": country_code,
-                "image_url": img_url,
-                "ticket_url": url,
-                "price_min": price_min,
-                "price_max": price_max,
-                "source": "ticketmaster"
-            })
+                    venue_name = "Various Venues"
+                    country_code = "US"
+                    city_name = city
+
+                    ven_emb = raw.get("_embedded", {})
+                    if isinstance(ven_emb, dict):
+                        venues = ven_emb.get("venues")
+                        if isinstance(venues, list) and venues and isinstance(venues[0], dict):
+                            v0 = venues[0]
+                            venue_name = str(v0.get("name") or "Venue")
+                            if v0.get("country") and isinstance(v0.get("country"), dict):
+                                country_code = str(v0.get("country").get("countryCode") or "US")
+                            if v0.get("city") and isinstance(v0.get("city"), dict):
+                                city_name = str(v0.get("city").get("name") or city)
+
+                    price_min = None
+                    price_max = None
+                    price_ranges = raw.get("priceRanges", [])
+                    if price_ranges and isinstance(price_ranges, list) and isinstance(price_ranges[0], dict):
+                        p0 = price_ranges[0]
+                        try:
+                            price_min = float(p0.get("min")) if p0.get("min") is not None else None
+                            price_max = float(p0.get("max")) if p0.get("max") is not None else None
+                        except (TypeError, ValueError):
+                            pass
+
+                    events.append({
+                        "id": eid,
+                        "name": name,
+                        "category": category_val,
+                        "date": date_str,
+                        "time": time_str,
+                        "venue": venue_name,
+                        "city": city_name,
+                        "country": country_code,
+                        "image_url": img_url,
+                        "ticket_url": url,
+                        "price_min": price_min,
+                        "price_max": price_max,
+                        "source": "ticketmaster",
+                    })
         return events
     except Exception as exc:
         logger.warning("Ticketmaster _fetch_ticketmaster_events failed: %s", exc)
@@ -782,7 +783,6 @@ def _fetch_aggregated_events(
                 category,
                 date_from,
                 date_to,
-                TICKETMASTER_EVENTS_LIMIT,
             ): "ticketmaster",
             executor.submit(_fetch_yelp_events, city, category, YELP_EVENTS_LIMIT): "yelp",
             executor.submit(_fetch_eventbrite_events, city, category, EVENTBRITE_EVENTS_LIMIT): "eventbrite",
