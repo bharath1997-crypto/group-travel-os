@@ -18,6 +18,12 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
+BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
 TICKETMASTER_URL = "https://app.ticketmaster.com/discovery/v2/events.json"
 TTL_SECONDS = 21_600  # 6 hours
 
@@ -64,7 +70,7 @@ def get_events(city: str) -> list[dict[str, Any]]:
     }
 
     try:
-        with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
+        with httpx.Client(timeout=API_TIMEOUT_SECONDS, headers=BROWSER_HEADERS) as client:
             resp = client.get(TICKETMASTER_URL, params=params)
         if resp.status_code != 200:
             logger.warning("Ticketmaster HTTP %s for city=%s", resp.status_code, city)
@@ -164,7 +170,7 @@ def _fetch_ticketmaster_events(
         params["endDateTime"] = f"{date_to}T23:59:59Z"
 
     try:
-        with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
+        with httpx.Client(timeout=API_TIMEOUT_SECONDS, headers=BROWSER_HEADERS) as client:
             resp = client.get(TICKETMASTER_URL, params=params)
         if resp.status_code != 200:
             return []
@@ -271,11 +277,11 @@ def _fetch_yelp_events(city: str, category: str = "all", limit: int = 100) -> li
 
     if api_key:
         url = "https://api.yelp.com/v3/events"
-        headers = {"Authorization": f"Bearer {api_key}"}
+        headers = {**BROWSER_HEADERS, "Authorization": f"Bearer {api_key}"}
         params = {"location": city, "limit": limit}
 
         try:
-            with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
+            with httpx.Client(timeout=API_TIMEOUT_SECONDS, headers=headers) as client:
                 resp = client.get(url, headers=headers, params=params)
             if resp.status_code == 200:
                 data = resp.json()
@@ -507,7 +513,7 @@ def _fetch_skiddle_events(city: str, category: str = "all", limit: int = 100) ->
         }
 
         try:
-            with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
+            with httpx.Client(timeout=API_TIMEOUT_SECONDS, headers=BROWSER_HEADERS) as client:
                 resp = client.get(url, params=params)
             if resp.status_code == 200:
                 data = resp.json()
