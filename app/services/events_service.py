@@ -32,6 +32,11 @@ TTL_SECONDS = 21_600  # 6 hours
 CONTENT_EVENTS_AGGREGATED = "events_aggregated"
 TTL_EVENTS_AGGREGATED_HOURS = 6
 
+TICKETMASTER_EVENTS_LIMIT = 100
+YELP_EVENTS_LIMIT = 50
+EVENTBRITE_EVENTS_LIMIT = 50
+BANDSINTOWN_EVENTS_PER_PAGE = 50
+
 _cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 
 # Geographical coordinate mappings for Skiddle geosearch
@@ -134,7 +139,7 @@ def _fetch_ticketmaster_events(
     category: str = "all",
     date_from: str | None = None,
     date_to: str | None = None,
-    limit: int = 100
+    limit: int = TICKETMASTER_EVENTS_LIMIT
 ) -> list[dict[str, Any]]:
     api_key = (settings.ticketmaster_api_key or "").strip()
     if not api_key:
@@ -276,7 +281,7 @@ def _fetch_ticketmaster_events(
         return []
 
 
-def _fetch_yelp_events(city: str, category: str = "all", limit: int = 100) -> list[dict[str, Any]]:
+def _fetch_yelp_events(city: str, category: str = "all", limit: int = YELP_EVENTS_LIMIT) -> list[dict[str, Any]]:
     api_key = (settings.yelp_api_key or "").strip()
     events = []
 
@@ -403,7 +408,7 @@ def _fetch_yelp_events(city: str, category: str = "all", limit: int = 100) -> li
     return events
 
 
-def _fetch_eventbrite_events(city: str, category: str = "all", limit: int = 100) -> list[dict[str, Any]]:
+def _fetch_eventbrite_events(city: str, category: str = "all", limit: int = EVENTBRITE_EVENTS_LIMIT) -> list[dict[str, Any]]:
     events = []
 
     eventbrite_fallbacks = [
@@ -450,7 +455,11 @@ def _fetch_eventbrite_events(city: str, category: str = "all", limit: int = 100)
     return events
 
 
-def _fetch_bandsintown_events(city: str, category: str = "all", limit: int = 100) -> list[dict[str, Any]]:
+def _fetch_bandsintown_events(
+    city: str,
+    category: str = "all",
+    per_page: int = BANDSINTOWN_EVENTS_PER_PAGE,
+) -> list[dict[str, Any]]:
     if category and category.lower() != "all" and category.lower() != "music":
         return []
 
@@ -768,14 +777,24 @@ def _fetch_aggregated_events(
     date_to: str | None,
 ) -> list[dict[str, Any]]:
     """Fetch from fast providers only, deduplicate, and sort chronologically."""
-    target_limit = 100
-
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = {
-            executor.submit(_fetch_ticketmaster_events, city, category, date_from, date_to, target_limit): "ticketmaster",
-            executor.submit(_fetch_yelp_events, city, category, target_limit): "yelp",
-            executor.submit(_fetch_eventbrite_events, city, category, target_limit): "eventbrite",
-            executor.submit(_fetch_bandsintown_events, city, category, target_limit): "bandsintown",
+            executor.submit(
+                _fetch_ticketmaster_events,
+                city,
+                category,
+                date_from,
+                date_to,
+                TICKETMASTER_EVENTS_LIMIT,
+            ): "ticketmaster",
+            executor.submit(_fetch_yelp_events, city, category, YELP_EVENTS_LIMIT): "yelp",
+            executor.submit(_fetch_eventbrite_events, city, category, EVENTBRITE_EVENTS_LIMIT): "eventbrite",
+            executor.submit(
+                _fetch_bandsintown_events,
+                city,
+                category,
+                BANDSINTOWN_EVENTS_PER_PAGE,
+            ): "bandsintown",
         }
 
         all_events: list[dict[str, Any]] = []
