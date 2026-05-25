@@ -165,7 +165,7 @@ def _fetch_ticketmaster_events(
     params: dict[str, Any] = {
         "city": city,
         "apikey": api_key,
-        "size": limit,
+        "size": 100,
         "sort": "date,asc",
     }
 
@@ -288,7 +288,7 @@ def _fetch_yelp_events(city: str, category: str = "all", limit: int = YELP_EVENT
     if api_key:
         url = "https://api.yelp.com/v3/events"
         headers = {**BROWSER_HEADERS, "Authorization": f"Bearer {api_key}"}
-        params = {"location": city, "limit": limit}
+        params = {"location": city, "limit": 50}
 
         try:
             with httpx.Client(timeout=API_TIMEOUT_SECONDS, headers=headers) as client:
@@ -452,7 +452,7 @@ def _fetch_eventbrite_events(city: str, category: str = "all", limit: int = EVEN
             "source": "eventbrite"
         })
 
-    return events
+    return events[:50]
 
 
 def _fetch_bandsintown_events(
@@ -500,10 +500,7 @@ def _fetch_bandsintown_events(
             "source": "bandsintown"
         })
 
-    return events
-
-
-def _fetch_skiddle_events(city: str, category: str = "all", limit: int = 100) -> list[dict[str, Any]]:
+    return events[:per_page]
     """
     Query Skiddle API for British/European events or serve high-fidelity local fallbacks for UK hubs.
     """
