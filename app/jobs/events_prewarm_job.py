@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from app.services.events_service import search_events_extended
+from app.services.events_service import prefetch_apify_events, search_events_extended
 from app.utils.database import SessionLocal
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,7 @@ def prewarm_events_cache() -> None:
                     city,
                     result.get("total", 0),
                 )
+                prefetch_apify_events(city)
             except Exception:
                 logger.exception("Events pre-warm failed for city=%s", city)
     finally:
