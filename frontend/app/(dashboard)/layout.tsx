@@ -52,6 +52,7 @@ const NAV_SECTIONS: NavSectionDef[] = [
       { href: "/hotels", label: "Hotels" },
       { href: "/routes", label: "Routes" },
       { href: "/buses", label: "Buses" },
+      { href: "/trip-space", label: "Trip Space" },
     ],
   },
   {
@@ -172,7 +173,8 @@ function sectionActive(pathname: string, section: NavSectionDef): boolean {
       pathname.startsWith("/flights") ||
       pathname.startsWith("/hotels") ||
       pathname.startsWith("/routes") ||
-      pathname.startsWith("/buses")
+      pathname.startsWith("/buses") ||
+      pathname.startsWith("/trip-space")
     );
   }
   if (section.id === "explore") {
@@ -379,11 +381,13 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const isActivitiesPage = pathname.startsWith("/activities");
   const isHotelsPage = pathname.startsWith("/hotels");
   const isBuddyPage = pathname.startsWith("/buddy");
+  const isTripSpacePage = pathname.startsWith("/trip-space");
   const isDarkHub =
     pathname === "/plan" ||
     pathname === "/group" ||
     pathname === "/explore" ||
-    pathname === "/buses";
+    pathname === "/buses" ||
+    isTripSpacePage;
 
   const [isMdUp, setIsMdUp] = useState(false);
   const [sidebarMe, setSidebarMe] = useState<SidebarAuthMe | null>(null);
