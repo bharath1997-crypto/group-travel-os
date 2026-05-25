@@ -388,6 +388,12 @@ function BuddyTripsCard({ compact = false }: { compact?: boolean }) {
 
   useEffect(() => {
     let active = true;
+    const token = typeof window !== "undefined" ? localStorage.getItem("gt_token") : null;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     (async () => {
       try {
         const data = await apiFetch<any[]>("/buddy/trips?status=open");
