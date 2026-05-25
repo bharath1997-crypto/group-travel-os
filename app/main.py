@@ -298,6 +298,9 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(live_router, prefix="/api/v1")
 
+    from app.routes.trip_space import router as trip_space_router
+    app.include_router(trip_space_router, prefix="/api/v1")
+
     from app.routers.explorer import router as explorer_router
     from app.routers.explorer import wayra_router
     from app.routes.explore import router as explore_content_router

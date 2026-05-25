@@ -13,6 +13,12 @@ export default function PlanHubPage() {
       title: "Buses",
       desc: "Bus routes & fares",
     },
+    {
+      href: "/trip-space",
+      emoji: "🏕️",
+      title: "Trip Space",
+      desc: "Plan weekend trips",
+    },
   ];
 
   return (
