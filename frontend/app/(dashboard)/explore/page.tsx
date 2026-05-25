@@ -298,6 +298,18 @@ export default function ExploreHubPage() {
               </button>
             ))}
           </div>
+
+          {/* Events Count Section */}
+          <div className="mt-8 flex justify-center animate-bounce">
+            <Link 
+              href="/events"
+              className="inline-flex items-center gap-2 bg-teal-950/40 hover:bg-teal-900/40 border border-[#0F766E]/40 rounded-full px-5 py-2.5 text-xs font-bold text-teal-300 transition shadow-lg shadow-teal-950/20"
+            >
+              <span>🎉</span>
+              <span>160+ events in Chicago this weekend</span>
+              <span className="text-[#CCFBF1] font-bold">Browse All &rarr;</span>
+            </Link>
+          </div>
         </div>
       </section>
 

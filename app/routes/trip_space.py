@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
 from app.models.user import User
 from app.utils.auth import get_current_user
+from app.utils.database import get_db
 
 router = APIRouter(prefix="/trip-space", tags=["Trip Space"])
 
@@ -79,3 +81,34 @@ def get_destinations(
     results = [d for d in results if d["drive_hours"] <= max_hours]
     
     return {"origin": origin, "destinations": results}
+
+
+@router.get("/events")
+def get_trip_events(
+    city: str,
+    date_from: str,  # YYYY-MM-DD
+    date_to: str,    # YYYY-MM-DD
+    category: str = "all",
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user)
+):
+    """Get events happening at destination during trip dates"""
+    from app.services.events_service import search_events_extended
+    
+    result = search_events_extended(
+        db=db,
+        city=city,
+        category=category,
+        date_from=date_from,
+        date_to=date_to,
+        page=1,
+        per_page=20
+    )
+    
+    return {
+        "city": city,
+        "date_from": date_from,
+        "date_to": date_to,
+        "total": result["total"],
+        "events": result["events"]
+    }
