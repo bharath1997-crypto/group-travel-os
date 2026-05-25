@@ -628,6 +628,78 @@ def _fetch_skiddle_events(city: str, category: str = "all", limit: int = 100) ->
     return events
 
 
+def _fetch_apify_google_events(city: str, category: str = "all", limit: int = 20) -> list[dict[str, Any]]:
+    apify_token = (settings.apify_token or "").strip()
+    if not apify_token:
+        return []
+    try:
+        import httpx
+        keyword = f"{category} events in {city}" if category != "all" else f"events in {city}"
+        
+        with httpx.Client(timeout=60) as client:
+            # Start Apify actor run
+            r = client.post(
+                "https://api.apify.com/v2/acts/apify~google-search-scraper/runs",
+                headers={"Authorization": f"Bearer {apify_token}"},
+                json={
+                    "queries": keyword,
+                    "resultsPerPage": limit,
+                    "maxPagesPerQuery": 1,
+                    "languageCode": "en",
+                    "countryCode": "us"
+                }
+            )
+            
+            if r.status_code != 201:
+                logger.warning("Apify run failed: %s", r.status_code)
+                return []
+            
+            run_id = r.json()["data"]["id"]
+            
+            # Wait for results
+            import time
+            for _ in range(30):
+                time.sleep(2)
+                status_r = client.get(
+                    f"https://api.apify.com/v2/acts/apify~google-search-scraper/runs/{run_id}",
+                    headers={"Authorization": f"Bearer {apify_token}"}
+                )
+                if status_r.json()["data"]["status"] == "SUCCEEDED":
+                    break
+            
+            # Get results
+            dataset_id = status_r.json()["data"]["defaultDatasetId"]
+            results_r = client.get(
+                f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                headers={"Authorization": f"Bearer {apify_token}"}
+            )
+            
+            events = []
+            for item in results_r.json()[:limit]:
+                for result in item.get("organicResults", []):
+                    events.append({
+                        "id": f"apify_{hash(result.get('title', ''))}",
+                        "name": result.get("title", "Unknown Event"),
+                        "category": category if category != "all" else "Event",
+                        "date": "",
+                        "time": "",
+                        "venue": city,
+                        "city": city,
+                        "country": "US",
+                        "image_url": None,
+                        "ticket_url": result.get("url", ""),
+                        "price_min": None,
+                        "price_max": None,
+                        "source": "google_events"
+                    })
+            
+            return events
+    except Exception as exc:
+        logger.warning("Apify Google Events failed: %s", exc)
+        return []
+
+
+
 def _events_cache_key(
     city: str,
     category: str,
@@ -659,6 +731,7 @@ def _fetch_aggregated_events(
             executor.submit(_fetch_eventbrite_events, city, category, target_limit): "eventbrite",
             executor.submit(_fetch_bandsintown_events, city, category, target_limit): "bandsintown",
             executor.submit(_fetch_skiddle_events, city, category, target_limit): "skiddle",
+            executor.submit(_fetch_apify_google_events, city, category, target_limit): "google_events",
         }
 
         all_events: list[dict[str, Any]] = []
