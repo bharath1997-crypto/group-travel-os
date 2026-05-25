@@ -123,7 +123,7 @@ def _fetch_ticketmaster_events(
     category: str = "all",
     date_from: str | None = None,
     date_to: str | None = None,
-    limit: int = 20
+    limit: int = 100
 ) -> list[dict[str, Any]]:
     api_key = (settings.ticketmaster_api_key or "").strip()
     if not api_key:
@@ -265,7 +265,7 @@ def _fetch_ticketmaster_events(
         return []
 
 
-def _fetch_yelp_events(city: str, category: str = "all", limit: int = 20) -> list[dict[str, Any]]:
+def _fetch_yelp_events(city: str, category: str = "all", limit: int = 100) -> list[dict[str, Any]]:
     api_key = (settings.yelp_api_key or "").strip()
     events = []
 
@@ -392,7 +392,7 @@ def _fetch_yelp_events(city: str, category: str = "all", limit: int = 20) -> lis
     return events
 
 
-def _fetch_eventbrite_events(city: str, category: str = "all", limit: int = 20) -> list[dict[str, Any]]:
+def _fetch_eventbrite_events(city: str, category: str = "all", limit: int = 100) -> list[dict[str, Any]]:
     events = []
 
     eventbrite_fallbacks = [
@@ -439,7 +439,7 @@ def _fetch_eventbrite_events(city: str, category: str = "all", limit: int = 20) 
     return events
 
 
-def _fetch_bandsintown_events(city: str, category: str = "all", limit: int = 20) -> list[dict[str, Any]]:
+def _fetch_bandsintown_events(city: str, category: str = "all", limit: int = 100) -> list[dict[str, Any]]:
     if category and category.lower() != "all" and category.lower() != "music":
         return []
 
@@ -483,14 +483,13 @@ def _fetch_bandsintown_events(city: str, category: str = "all", limit: int = 20)
     return events
 
 
-def _fetch_skiddle_events(city: str, category: str = "all", limit: int = 20) -> list[dict[str, Any]]:
+def _fetch_skiddle_events(city: str, category: str = "all", limit: int = 100) -> list[dict[str, Any]]:
     """
     Query Skiddle API for British/European events or serve high-fidelity local fallbacks for UK hubs.
     """
     skiddle_key = (getattr(settings, "skiddle_api_key", None) or "").strip()
     events = []
 
-    # Map search city to coordinate lookup for Skiddle geosearch
     city_lower = city.strip().lower()
     coord_data = CITY_COORD_MAP.get(city_lower)
 
@@ -518,7 +517,6 @@ def _fetch_skiddle_events(city: str, category: str = "all", limit: int = 20) -> 
                         if not isinstance(raw, dict):
                             continue
 
-                        # Map Skiddle category structure
                         sk_cat = str(raw.get("eventcode") or "").lower()
                         normalized_cat = "All"
                         if "live" in sk_cat or "club" in sk_cat or "music" in sk_cat:
@@ -570,7 +568,6 @@ def _fetch_skiddle_events(city: str, category: str = "all", limit: int = 20) -> 
         except Exception as exc:
             logger.warning("Skiddle live fetch failed, using fallback: %s", exc)
 
-    # High-fidelity UK and European events fallback generator for Skiddle
     is_uk_hub = city_lower in ["london", "manchester", "edinburgh"] or (coord_data and coord_data[2] == "GB")
     
     if not events and is_uk_hub:
@@ -631,12 +628,13 @@ def search_events_extended(
 ) -> dict[str, Any]:
     """
     Enhanced multi-source search query targeting Ticketmaster, Yelp, Eventbrite, Bandsintown, and Skiddle.
+    Queries up to 100 events per provider for a deeply rich, unrestricted aggregate pool.
     """
     city = (city or "Chicago").strip()
     cat = category or "all"
     
-    # We fetch enough items to cover the paginated page size
-    target_limit = per_page * page
+    # Query up to 100 events per provider in parallel to compile an abundant list
+    target_limit = 100
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = {
@@ -674,7 +672,7 @@ def search_events_extended(
 
     deduped_events.sort(key=sort_key)
 
-    # Apply pagination
+    # Apply pagination on our deeply resolved complete pool
     total = len(deduped_events)
     start_idx = max(0, (page - 1) * per_page)
     end_idx = start_idx + per_page
