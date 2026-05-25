@@ -513,14 +513,42 @@ function EventsSearchContent() {
                   </div>
 
                   <div className="w-full sm:w-auto shrink-0 flex items-center justify-end">
-                    <a
-                      href={ev.ticket_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl bg-[#0F766E] hover:bg-[#115E59] active:scale-95 px-5 py-2.5 text-xs font-black text-white shadow-md transition duration-200 shrink-0"
-                    >
-                      Get Tickets <span>&rarr;</span>
-                    </a>
+                    <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const dates = (() => {
+                            if (!ev.date) return { from: "2026-05-24", to: "2026-05-27" };
+                            try {
+                              const d = new Date(ev.date);
+                              const fromDate = new Date(d);
+                              fromDate.setDate(d.getDate() - 1);
+                              const toDate = new Date(d);
+                              toDate.setDate(d.getDate() + 1);
+                              const pad = (n: number) => n.toString().padStart(2, "0");
+                              const f = (dt: Date) => `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+                              return { from: f(fromDate), to: f(toDate) };
+                            } catch {
+                              return { from: ev.date, to: ev.date };
+                            }
+                          })();
+                          router.push(
+                            `/trip-space?destination=${encodeURIComponent(ev.city)}&date_from=${dates.from}&date_to=${dates.to}`
+                          );
+                        }}
+                        className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl bg-slate-900 hover:bg-[#0F766E]/20 active:scale-95 px-5 py-2.5 text-xs font-black text-teal-400 border border-teal-500/20 hover:border-teal-500/50 shadow-md transition duration-200 shrink-0"
+                      >
+                        Plan a Trip Around This Event <span>&rarr;</span>
+                      </button>
+                      <a
+                        href={ev.ticket_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl bg-[#0F766E] hover:bg-[#115E59] active:scale-95 px-5 py-2.5 text-xs font-black text-white shadow-md transition duration-200 shrink-0"
+                      >
+                        Get Tickets <span>&rarr;</span>
+                      </a>
+                    </div>
                   </div>
                 </div>
               );

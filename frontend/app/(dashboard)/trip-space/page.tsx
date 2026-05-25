@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   MapPin,
@@ -123,6 +124,7 @@ const CHICAGO_DESTINATIONS = [
 
 export default function TripSpacePage() {
   const { user } = useDashboardUser();
+  const router = useRouter();
   
   // Setup form states
   const [origin, setOrigin] = useState("Chicago");
@@ -147,6 +149,10 @@ export default function TripSpacePage() {
   const [routeLoading, setRouteLoading] = useState(false);
   const [aiSummary, setAiSummary] = useState<string>("");
   const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
+
+  // Events integration states
+  const [tripEvents, setTripEvents] = useState<any[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
 
   // Vibe options
   const vibes = ["Adventure", "Nature", "Relaxing", "Cultural", "Food & Drink", "Party"];
@@ -302,6 +308,77 @@ export default function TripSpacePage() {
     fetchAiSummary();
     setSelectedTab("overview");
   }, [selectedDestination]);
+
+  // Fetch events for the selected destination during trip dates
+  const fetchTripEvents = async (city: string, dateFrom: string, dateTo: string) => {
+    setEventsLoading(true);
+    try {
+      const citySearch = selectedDestination?.city_search || city;
+      const data = await apiFetch<any>(
+        `/trip-space/events?city=${encodeURIComponent(citySearch)}&date_from=${dateFrom}&date_to=${dateTo}`
+      );
+      setTripEvents(data.events || []);
+    } catch (e) {
+      console.error("Failed to fetch trip events:", e);
+      setTripEvents([]);
+    } finally {
+      setEventsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedDestination && dateFrom && dateTo) {
+      fetchTripEvents(selectedDestination.name, dateFrom, dateTo);
+    }
+  }, [selectedDestination, dateFrom, dateTo]);
+
+  // Create event poll option
+  const createEventPoll = () => {
+    const pollEvents = tripEvents.slice(0, 4).map(e => ({
+      label: e.name,
+      description: `${e.date} at ${e.venue}`,
+      url: e.ticket_url
+    }));
+    localStorage.setItem("pending_poll_options", JSON.stringify(pollEvents));
+    router.push("/trips/plan");
+  };
+
+  // Pre-fill query parameters on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const destParam = params.get("destination");
+      const fromParam = params.get("date_from");
+      const toParam = params.get("date_to");
+      
+      if (fromParam) setDateFrom(fromParam);
+      if (toParam) setDateTo(toParam);
+      
+      if (destParam) {
+        const match = CHICAGO_DESTINATIONS.find(
+          d => d.name.toLowerCase().includes(destParam.toLowerCase()) || 
+               d.city_search.toLowerCase().includes(destParam.toLowerCase())
+        );
+        if (match) {
+          setSelectedDestination(match);
+        } else {
+          const customDest = {
+            name: destParam,
+            state: "IL",
+            drive: "2.0 hrs",
+            vibe: "Events Match",
+            image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800",
+            city_search: destParam,
+            why: `Dynamic destination curated around events happening in ${destParam}.`,
+            activities: [],
+            parking: "Check local parking guidelines.",
+            fuel_miles: 100
+          };
+          setSelectedDestination(customDest);
+        }
+      }
+    }
+  }, []);
 
   // Load Travelpayouts script when tab changes to stay
   useEffect(() => {
@@ -758,6 +835,87 @@ export default function TripSpacePage() {
               {/* TAB 3: DO */}
               {selectedTab === "do" && (
                 <div className="space-y-6">
+                  {/* Events During Your Trip */}
+                  <div className="mb-8">
+                    <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
+                      <span>🎉</span> Events During Your Trip
+                    </h3>
+                    
+                    {eventsLoading ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[1, 2, 3, 4].map(i => (
+                          <div key={i} className="bg-[#0F172A] border border-[#334155] rounded-xl h-32 animate-pulse" />
+                        ))}
+                      </div>
+                    ) : tripEvents.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {tripEvents.slice(0, 6).map((event, i) => (
+                          <div key={i} className="bg-[#0F172A] rounded-xl p-4 border border-[#334155] hover:border-teal-500 transition-colors flex flex-col justify-between gap-3 shadow-md">
+                            <div>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold mb-2 inline-block ${
+                                event.category === 'Music' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
+                                event.category === 'Sports' ? 'bg-green-500/20 text-green-300 border border-green-500/30' :
+                                event.category === 'Arts' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' :
+                                'bg-teal-500/20 text-teal-300 border border-teal-500/30'
+                              }`}>
+                                {event.category}
+                              </span>
+                              
+                              <h4 className="text-white font-bold text-sm mb-1 line-clamp-2">{event.name}</h4>
+                              
+                              <p className="text-slate-400 text-[11px] mb-1">
+                                📅 {event.date} {event.time && `at ${event.time}`}
+                              </p>
+                              <p className="text-slate-400 text-[11px]">
+                                📍 {event.venue}
+                              </p>
+                            </div>
+                            
+                            <div className="flex items-center justify-between border-t border-[#334155] pt-3 mt-1">
+                              <span className="text-teal-400 text-xs font-semibold">
+                                {event.price_min ? `From $${event.price_min}` : 'See prices'}
+                              </span>
+                              {event.ticket_url && (
+                                <a 
+                                  href={event.ticket_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="bg-teal-600 hover:bg-teal-500 text-white text-[11px] px-3 py-1.5 rounded-lg transition font-bold"
+                                >
+                                  Get Tickets →
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-[#0F172A] rounded-xl p-6 text-center border border-[#334155]">
+                        <p className="text-slate-400 text-sm">No events found for these dates.</p>
+                        <p className="text-slate-500 text-xs mt-1">Try browsing the full Events Directory for more options.</p>
+                        <Link href="/explore/events" className="text-teal-400 text-sm mt-3 inline-block hover:underline font-bold">
+                          Browse All Events →
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Add to Trip Poll Button */}
+                  {tripEvents.length > 0 && (
+                    <div className="mb-6 p-4 bg-teal-950/20 border border-[#0F766E]/40 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                      <p className="text-[#CCFBF1] text-xs font-semibold">
+                        🗳️ Want your group to vote on which events to attend?
+                      </p>
+                      <button 
+                        type="button"
+                        onClick={createEventPoll}
+                        className="bg-teal-600 hover:bg-teal-500 text-white text-xs px-4 py-2.5 rounded-xl transition font-bold"
+                      >
+                        Create Event Poll for Group →
+                      </button>
+                    </div>
+                  )}
+
                   {/* GetYourGuide Widget */}
                   <div className="rounded-xl border border-[#334155] bg-[#0F172A] p-5">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-4">
