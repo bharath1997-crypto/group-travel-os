@@ -1313,7 +1313,7 @@ export default function ExplorerPage() {
                     <div key={i} className="h-[280px] min-w-[240px] animate-pulse rounded-xl border border-[#1e4976] bg-[#0d1f33]/80" />
                   ))
                 ) : perfectForGroupsList.length ? (
-                  perfectForGroupsList.map((item) => (
+                  perfectForGroupsList.slice(0, 30).map((item) => (
                     <div key={item.id} className="min-w-[260px] max-w-[260px]">
                       <EventCard
                         event={trendToEventCardItem(item, currentCity)}
@@ -1390,7 +1390,7 @@ export default function ExplorerPage() {
                   </button>
                 }
               >
-                {foodNightlifeList.map((item) => (
+                {foodNightlifeList.slice(0, 30).map((item) => (
                   <div key={item.id} className="w-[min(280px,78vw)] shrink-0">
                     <EventCard
                       event={trendToEventCardItem(item, currentCity)}
@@ -1429,7 +1429,7 @@ export default function ExplorerPage() {
                   </button>
                 }
               >
-                {eventsTeaserList.map((item) => (
+                {eventsTeaserList.slice(0, 30).map((item) => (
                   <div key={item.id} className="w-[min(280px,78vw)] shrink-0">
                     <EventCard
                       event={trendToEventCardItem(item, currentCity)}
@@ -1470,7 +1470,7 @@ export default function ExplorerPage() {
                   </button>
                 }
               >
-                {weekendIdeasList.map((item) => (
+                {weekendIdeasList.slice(0, 30).map((item) => (
                   <div key={item.id} className="w-[min(280px,78vw)] shrink-0">
                     <EventCard
                       event={trendToEventCardItem(item, currentCity)}
@@ -1509,7 +1509,7 @@ export default function ExplorerPage() {
                   </button>
                 }
               >
-                {attractionPicks.map((item) => (
+                {attractionPicks.slice(0, 30).map((item) => (
                   <div key={`attr-${item.id}`} className="w-[min(280px,78vw)] shrink-0">
                     <EventCard
                       event={trendToEventCardItem(item, currentCity)}

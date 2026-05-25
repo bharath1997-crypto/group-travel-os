@@ -22,6 +22,7 @@ from app.services.explorer.providers.geoapify_provider import GeoapifyProvider
 from app.services.explorer.providers.ticketmaster_provider import (
     TicketmasterProvider,
 )
+from app.services.explorer.providers.unipride_provider import UniprideProvider
 from app.services.explorer.providers.gnews_provider import GNewsProvider
 from app.services.explorer.providers.audio_provider import AudioProvider
 from app.services.explorer.providers.weather_provider import WeatherProvider
@@ -39,6 +40,7 @@ class ExplorerService:
         # Initialize providers
         self.providers = {
             "ticketmaster": TicketmasterProvider(),
+            "unipride": UniprideProvider(),
             "geoapify": GeoapifyProvider(),
             "foursquare": FoursquareProvider(),
             "gnews": GNewsProvider(),
@@ -46,12 +48,55 @@ class ExplorerService:
             "open_meteo": WeatherProvider(),
         }
 
+    async def _resolve_country_code(self, lat: float, lon: float) -> str:
+        """Resolve country code dynamically using fast boundary box checks or OpenStreetMap reverse geocoding."""
+        # A. Fast bounding box check to avoid network requests for common regions
+        # US
+        if 24.3963 <= lat <= 49.3844 and -125.0 <= lon <= -66.9346:
+            return "US"
+        # UK (GB)
+        if 49.8824 <= lat <= 60.8622 and -8.6497 <= lon <= 1.7629:
+            return "GB"
+        # France (FR)
+        if 41.3388 <= lat <= 51.0891 and -5.1412 <= lon <= 9.5601:
+            return "FR"
+        # Germany (DE)
+        if 47.2701 <= lat <= 55.0581 and 5.8663 <= lon <= 15.0419:
+            return "DE"
+        # Spain (ES)
+        if 35.1706 <= lat <= 43.7914 and -9.3015 <= lon <= 3.3222:
+            return "ES"
+        # Italy (IT)
+        if 35.4929 <= lat <= 47.0921 and 6.6266 <= lon <= 18.5204:
+            return "IT"
+
+        # B. Fallback to reverse geocoding (OpenStreetMap Nominatim API)
+        import httpx
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                r = await client.get(
+                    "https://nominatim.openstreetmap.org/reverse",
+                    params={"lat": lat, "lon": lon, "format": "json"},
+                    headers={"User-Agent": "Rovvy/1.0"}
+                )
+                if r.status_code == 200:
+                    data = r.json()
+                    address = data.get("address", {})
+                    cc = address.get("country_code", "")
+                    if cc:
+                        return cc.upper()
+        except Exception as e:
+            logger.warning(f"Reverse geocode for country resolution failed: {e}")
+
+        # Default fallback
+        return "US"
+
     async def get_feed(
         self, lat: float, lon: float, radius: int, db: Session
     ) -> List[Dict[str, Any]]:
         """Get the live destination feed for a location."""
-        # 1. Resolve country (Hardcoded to US for MVP as requested)
-        country_code = "US"
+        # 1. Resolve country dynamically (Supports US and European countries)
+        country_code = await self._resolve_country_code(lat, lon)
 
         # 2. Get template
         template = country_template_service.get_template(country_code)

@@ -23,5 +23,4 @@ def search_activities(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    _ = db
-    return ActivityService.search_activities(location, date, adults, category)
+    return ActivityService.search_activities(location, date, adults, category, db=db)
