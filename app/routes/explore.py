@@ -228,12 +228,13 @@ async def explore_events(
     else:
         from app.services.events_service import search_events_extended
         result = search_events_extended(
+            db,
             city=city_strip,
             category=category,
             date_from=d_from,
             date_to=d_to,
             page=page,
-            per_page=per_page
+            per_page=per_page,
         )
         
         events = result.get("events", [])

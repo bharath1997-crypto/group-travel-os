@@ -55,9 +55,17 @@ async def lifespan(app: FastAPI):
     # With a custom lifespan, Starlette does not run on_event handlers unless we call this.
     await app.router.startup()
 
-    from app.jobs.scheduler import start_scheduler
+    from app.jobs.scheduler import start_scheduler, scheduler
+    from app.jobs.events_prewarm_job import prewarm_events_cache
 
     start_scheduler()
+    scheduler.add_job(
+        prewarm_events_cache,
+        "interval",
+        hours=6,
+        id="events_prewarm",
+        replace_existing=True,
+    )
 
     yield
 
