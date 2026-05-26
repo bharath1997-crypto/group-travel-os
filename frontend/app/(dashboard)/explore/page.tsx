@@ -11,7 +11,7 @@ import {
   Search,
   Star,
 } from "lucide-react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 
 type GlobalEvent = {
   id: string;
@@ -46,6 +46,8 @@ type CitySuggestion = {
 type CityAutocompleteResponse = {
   suggestions: CitySuggestion[];
 };
+
+const EVENTS_FETCH_TIMEOUT_MS = 20_000;
 
 const CATEGORY_PILLS = [
   "All",
@@ -399,14 +401,19 @@ export default function ExploreHubPage() {
   const [loading, setLoading] = useState(true);
   const [cityEvents, setCityEvents] = useState<GlobalEvent[]>([]);
   const [nationalEvents, setNationalEvents] = useState<GlobalEvent[]>([]);
+  const [nationalLoading, setNationalLoading] = useState(false);
+  const nationalFetchStarted = useRef(false);
 
   const stateName = STATE_BY_CITY[cityLabel(currentCity)] || "Your Region";
 
   const fetchEvents = useCallback(async (city: string) => {
     setLoading(true);
+    const cityName = city.split(",")[0].trim();
     try {
       const data = await apiFetch<EventsAPIResponse>(
-        `/explore/events?city=${encodeURIComponent(cityLabel(city))}&per_page=20`,
+        `/explore/events?city=${encodeURIComponent(cityName)}&per_page=20`,
+        {},
+        EVENTS_FETCH_TIMEOUT_MS,
       );
       setCityEvents(data?.events || []);
     } catch (err) {
@@ -418,21 +425,37 @@ export default function ExploreHubPage() {
   }, []);
 
   const fetchNationalEvents = useCallback(async () => {
+    setNationalLoading(true);
     try {
-      const data = await apiFetch<EventsAPIResponse>(
-        "/explore/events?city=New%20York&per_page=12",
+      const { data, status } = await apiFetchWithStatus<EventsAPIResponse>(
+        "/explore/events?city=New%20York&per_page=8",
+        {},
+        EVENTS_FETCH_TIMEOUT_MS,
       );
-      setNationalEvents(data?.events || []);
-    } catch (err) {
-      console.error("Failed to load national events:", err);
+      if (status === 408 || status === 0 || !data) {
+        setNationalEvents([]);
+        return;
+      }
+      setNationalEvents(data.events || []);
+    } catch {
       setNationalEvents([]);
+    } finally {
+      setNationalLoading(false);
     }
   }, []);
+
+  const scheduleNationalEventsFetch = useCallback(() => {
+    if (nationalFetchStarted.current) return;
+    nationalFetchStarted.current = true;
+    window.setTimeout(() => {
+      void fetchNationalEvents();
+    }, 1500);
+  }, [fetchNationalEvents]);
 
   const detectGPSCity = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setCurrentCity("Chicago, IL");
-      fetchEvents("Chicago");
+      void fetchEvents("Chicago").then(() => scheduleNationalEventsFetch());
       return;
     }
 
@@ -450,22 +473,20 @@ export default function ExploreHubPage() {
           const state = data.address?.state_code || data.address?.state || "";
           const label = state ? `${city}, ${state}` : city;
           setCurrentCity(label);
-          fetchEvents(city);
+          await fetchEvents(city);
+          scheduleNationalEventsFetch();
         } catch {
           setCurrentCity("Chicago, IL");
-          fetchEvents("Chicago");
+          await fetchEvents("Chicago");
+          scheduleNationalEventsFetch();
         }
       },
       () => {
         setCurrentCity("Chicago, IL");
-        fetchEvents("Chicago");
+        void fetchEvents("Chicago").then(() => scheduleNationalEventsFetch());
       },
     );
-  }, [fetchEvents]);
-
-  useEffect(() => {
-    fetchNationalEvents();
-  }, [fetchNationalEvents]);
+  }, [fetchEvents, scheduleNationalEventsFetch]);
 
   useEffect(() => {
     detectGPSCity();
@@ -697,7 +718,7 @@ export default function ExploreHubPage() {
           title="National Picks"
           events={filteredNational}
           userCity={currentCity}
-          loading={loading && filteredNational.length === 0}
+          loading={nationalLoading}
           onSeeAll={() => handleSeeAll("national")}
           onOpen={handleOpenEvent}
           limit={4}
