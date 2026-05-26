@@ -1,7 +1,8 @@
 """
 Multi-source Event Discovery Aggregator.
 
-Live requests use Ticketmaster only; Instagram events via Apify are merged in background prefetch.
+GPS city → PostgreSQL cache (24hr) → on miss: Ticketmaster + Gemini hashtags →
+Apify Instagram → Gemini caption parse → store → return.
 """
 from __future__ import annotations
 
@@ -28,16 +29,13 @@ BROWSER_HEADERS = {
 }
 
 TICKETMASTER_URL = "https://app.ticketmaster.com/discovery/v2/events.json"
-TTL_SECONDS = 21_600  # 6 hours
+TTL_SECONDS = 86_400  # 24 hours
 CONTENT_EVENTS_AGGREGATED = "events_aggregated"
-TTL_EVENTS_AGGREGATED_HOURS = 6
+TTL_EVENTS_AGGREGATED_HOURS = 24
 
 YELP_EVENTS_LIMIT = 50
 EVENTBRITE_EVENTS_LIMIT = 50
 BANDSINTOWN_EVENTS_PER_PAGE = 50
-INSTAGRAM_RESULTS_PER_QUERY = 200
-INSTAGRAM_GEMINI_PARSE_WORKERS = 8
-APIFY_INSTAGRAM_SEARCH_ACTOR = "apify~instagram-search-scraper"
 
 _cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 
@@ -511,83 +509,78 @@ def _fetch_bandsintown_events(
     return events[:per_page]
 
 
-def _build_instagram_search_queries(city: str) -> list[str]:
+def _generate_instagram_hashtags_with_gemini(city: str) -> list[str]:
+    """Use Gemini to generate city-specific Instagram search queries."""
+    api_key = (settings.gemini_api_key or "").strip()
+    if not api_key:
+        city_clean = city.lower().strip()
+        return _instagram_hashtag_fallback(city_clean)
+
+    try:
+        import google.generativeai as genai
+
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel("gemini-2.5-flash")
+
+        prompt = f"""Generate 32 Instagram search queries to find events, 
+food, nightlife, sports, festivals, and activities in {city}.
+
+Rules:
+- Mix of "{city} events", "{city} food", "{city} nightlife" style
+- Include city-specific cultural terms if relevant
+- Include food types popular in that city
+- Include local sports teams if known
+- Return ONLY a JSON array of strings, no explanation
+
+Example for Chicago:
+["chicago events", "chicago food", "chitown nightlife", 
+"chicago bulls", "chicago deep dish pizza", ...]
+
+City: {city}
+Return JSON array only."""
+
+        response = model.generate_content(prompt)
+        text = (response.text or "").strip()
+        text = text.replace("```json", "").replace("```", "").strip()
+        queries = json.loads(text)
+        if isinstance(queries, list):
+            return [str(q) for q in queries[:32] if q]
+    except Exception as exc:
+        logger.warning("Gemini hashtag generation failed: %s", exc)
+
+    city_clean = city.lower().strip()
+    return _instagram_hashtag_fallback(city_clean)
+
+
+def _instagram_hashtag_fallback(city_clean: str) -> list[str]:
     return [
-        f"{city} events",
-        f"{city} festivals",
-        f"{city} nightlife",
-        f"{city} food festival",
-        f"{city} concerts",
-        f"{city} things to do",
-        f"{city} weekend",
+        f"{city_clean} events",
+        f"{city_clean} festivals",
+        f"{city_clean} nightlife",
+        f"{city_clean} food",
+        f"{city_clean} restaurants",
+        f"{city_clean} concerts",
+        f"{city_clean} sports",
+        f"{city_clean} things to do",
+        f"{city_clean} weekend",
+        f"{city_clean} food festival",
+        f"{city_clean} indian food",
+        f"{city_clean} korean food",
+        f"{city_clean} brunch",
+        f"{city_clean} rooftop",
+        f"{city_clean} bars",
+        f"{city_clean} art",
+        f"{city_clean} music",
+        f"{city_clean} comedy",
+        f"{city_clean} outdoor",
+        f"{city_clean} parks",
     ]
 
 
-def _is_valid_parsed_instagram_event(parsed: dict[str, Any] | None) -> bool:
-    if not parsed:
-        return False
-    name = parsed.get("name")
-    return bool(name and str(name).strip())
-
-
-def _instagram_item_caption(item: dict[str, Any]) -> str:
-    for key in ("caption", "text", "description"):
-        value = item.get(key)
-        if isinstance(value, str) and value.strip():
-            return value.strip()
-    return ""
-
-
-def _instagram_item_to_event(
-    item: dict[str, Any],
-    idx: int,
-    city: str,
-    parsed: dict[str, Any],
-) -> dict[str, Any]:
-    name = str(parsed["name"]).strip()
-    category_val = str(parsed["category"]).strip() if parsed.get("category") else "Social"
-    date_str = str(parsed["date"]).strip() if parsed.get("date") else ""
-    time_str = str(parsed["time"]).strip()[:5] if parsed.get("time") else ""
-    venue_name = str(parsed["venue"]).strip() if parsed.get("venue") else city
-
-    price_min = None
-    price_max = None
-    raw_price = parsed.get("price_min")
-    if raw_price is not None:
-        try:
-            price_min = float(raw_price)
-            price_max = price_min
-        except (TypeError, ValueError):
-            pass
-
-    if not date_str:
-        date_str = str(item.get("timestamp") or item.get("takenAt") or "")[:10]
-
-    post_id = str(item.get("id") or item.get("shortCode") or idx)
-    image_url = item.get("displayUrl") or item.get("thumbnailUrl") or item.get("imageUrl")
-    ticket_url = item.get("url") or item.get("postUrl") or ""
-
-    return {
-        "id": f"ig_{post_id}_{idx}",
-        "name": name,
-        "category": category_val,
-        "date": date_str,
-        "time": time_str,
-        "venue": venue_name,
-        "city": city,
-        "country": "US",
-        "image_url": image_url,
-        "ticket_url": ticket_url,
-        "price_min": price_min,
-        "price_max": price_max,
-        "source": "instagram",
-    }
-
-
 def _parse_instagram_caption_with_gemini(caption: str, city: str) -> dict[str, Any] | None:
-    """Use Gemini to extract event details from Instagram caption."""
+    """Use Gemini to extract structured event data from Instagram caption."""
     api_key = (settings.gemini_api_key or "").strip()
-    if not api_key or not caption.strip():
+    if not api_key or not caption or len(caption) < 20:
         return None
     try:
         import google.generativeai as genai
@@ -595,122 +588,120 @@ def _parse_instagram_caption_with_gemini(caption: str, city: str) -> dict[str, A
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel("gemini-2.5-flash")
 
-        prompt = f"""Extract event details from this Instagram caption.
-        Return ONLY valid JSON with these fields: name, date, time, venue, price_min, category.
-        If a field is not mentioned, use null.
-        City context: {city}
-        Caption: {caption}
+        prompt = f"""Extract event or place details from this Instagram caption.
+City context: {city}
+Caption: {caption[:500]}
 
-        Return only JSON, no explanation."""
+Return ONLY valid JSON:
+{{
+  "name": "event or place name",
+  "category": "Music/Sports/Food/Nightlife/Arts/Outdoor/Festival/Restaurant/Other",
+  "date": "YYYY-MM-DD or null",
+  "time": "HH:MM or null",
+  "venue": "venue name or null",
+  "price_min": number or null,
+  "description": "one sentence summary",
+  "is_event": true or false
+}}
+
+If caption has no useful event/place info return: {{"is_event": false}}"""
 
         response = model.generate_content(prompt)
         text = (response.text or "").strip()
         text = text.replace("```json", "").replace("```", "").strip()
         data = json.loads(text)
-        return data if isinstance(data, dict) else None
+        if not isinstance(data, dict) or not data.get("is_event"):
+            return None
+        return data
     except Exception:
         return None
 
 
-def _fetch_apify_instagram_events(city: str) -> list[dict[str, Any]]:
-    """Scrape up to 1,400 Instagram posts per city and extract structured events via Gemini."""
+def _fetch_apify_instagram_events(city: str, limit: int = 100) -> list[dict[str, Any]]:
+    """Scrape Instagram posts via Apify with Gemini-generated search queries."""
     apify_token = (settings.apify_token or "").strip()
     if not apify_token:
         return []
 
-    search_queries = _build_instagram_search_queries(city)
-
     try:
-        with httpx.Client(timeout=300) as client:
+        search_queries = _generate_instagram_hashtags_with_gemini(city)
+        logger.info("Instagram scraping %d queries for %s", len(search_queries), city)
+
+        with httpx.Client(timeout=180) as client:
             r = client.post(
-                f"https://api.apify.com/v2/acts/{APIFY_INSTAGRAM_SEARCH_ACTOR}/runs",
+                "https://api.apify.com/v2/acts/apify~instagram-search-scraper/runs?waitForFinish=120",
                 headers={"Authorization": f"Bearer {apify_token}"},
                 json={
                     "searchQueries": search_queries,
-                    "resultsLimit": INSTAGRAM_RESULTS_PER_QUERY,
+                    "resultsLimit": limit,
                     "searchType": "posts",
                 },
             )
             if r.status_code not in (200, 201):
-                logger.warning("Apify Instagram search run failed: %s", r.status_code)
+                logger.warning("Apify Instagram failed: %s", r.status_code)
                 return []
 
-            run_id = r.json().get("data", {}).get("id")
-            if not run_id:
-                return []
-
-            status = ""
-            for _ in range(120):
-                status_r = client.get(
-                    f"https://api.apify.com/v2/acts/{APIFY_INSTAGRAM_SEARCH_ACTOR}/runs/{run_id}",
-                    headers={"Authorization": f"Bearer {apify_token}"},
-                )
-                status = status_r.json().get("data", {}).get("status", "")
-                if status in ("SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"):
-                    break
-                time.sleep(5)
-
-            if status != "SUCCEEDED":
-                logger.warning("Apify Instagram search run ended with status=%s", status)
-                return []
-
-            dataset_id = status_r.json().get("data", {}).get("defaultDatasetId", "")
+            run_data = r.json().get("data", {})
+            dataset_id = run_data.get("defaultDatasetId", "")
             if not dataset_id:
                 return []
 
             items_r = client.get(
-                f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                f"https://api.apify.com/v2/datasets/{dataset_id}/items?limit=3200",
                 headers={"Authorization": f"Bearer {apify_token}"},
             )
-            raw_items = items_r.json()
-            if not isinstance(raw_items, list):
+            posts = items_r.json()
+            if not isinstance(posts, list):
                 return []
 
-            logger.info(
-                "Apify Instagram search returned %d posts for %s (%d queries × %d limit)",
-                len(raw_items),
-                city,
-                len(search_queries),
-                INSTAGRAM_RESULTS_PER_QUERY,
-            )
+        logger.info("Instagram returned %d posts for %s", len(posts), city)
 
-            posts: list[tuple[dict[str, Any], int]] = []
-            seen_post_ids: set[str] = set()
-            for idx, item in enumerate(raw_items):
-                if not isinstance(item, dict):
-                    continue
-                post_id = str(item.get("id") or item.get("shortCode") or "")
-                dedupe_key = post_id or f"idx_{idx}"
-                if dedupe_key in seen_post_ids:
-                    continue
-                seen_post_ids.add(dedupe_key)
-                posts.append((item, idx))
+        def parse_post(post: dict[str, Any]) -> dict[str, Any] | None:
+            if not isinstance(post, dict):
+                return None
+            caption = post.get("caption", "") or post.get("text", "")
+            if not caption or len(caption) < 20:
+                return None
+            parsed = _parse_instagram_caption_with_gemini(caption, city)
+            if not parsed:
+                return None
+            name = parsed.get("name", "")
+            if not name:
+                return None
+            return {
+                "id": f"ig_{hash(name + city)}",
+                "name": name,
+                "category": parsed.get("category", "Event"),
+                "date": parsed.get("date") or "",
+                "time": parsed.get("time") or "",
+                "venue": parsed.get("venue") or city,
+                "city": city,
+                "country": "US",
+                "image_url": post.get("displayUrl") or post.get("imageUrl"),
+                "ticket_url": post.get("url", ""),
+                "price_min": parsed.get("price_min"),
+                "description": parsed.get("description", ""),
+                "source": "instagram",
+            }
 
-            def _parse_post(args: tuple[dict[str, Any], int]) -> dict[str, Any] | None:
-                item, idx = args
-                caption = _instagram_item_caption(item)
-                if not caption:
-                    return None
-                parsed = _parse_instagram_caption_with_gemini(caption, city)
-                if not _is_valid_parsed_instagram_event(parsed):
-                    return None
-                return _instagram_item_to_event(item, idx, city, parsed)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            results = list(executor.map(parse_post, posts[:500]))
 
-            events: list[dict[str, Any]] = []
-            with concurrent.futures.ThreadPoolExecutor(max_workers=INSTAGRAM_GEMINI_PARSE_WORKERS) as executor:
-                for event in executor.map(_parse_post, posts):
-                    if event:
-                        events.append(event)
+        seen_names: set[str] = set()
+        events: list[dict[str, Any]] = []
+        for event in results:
+            if not event:
+                continue
+            name = event.get("name", "")
+            if name in seen_names:
+                continue
+            seen_names.add(name)
+            events.append(event)
 
-            logger.info(
-                "Gemini parsed %d structured Instagram events from %d posts for %s",
-                len(events),
-                len(posts),
-                city,
-            )
-            return events
+        logger.info("Instagram parsed %d events for %s", len(events), city)
+        return events
     except Exception as exc:
-        logger.warning("Apify Instagram scraper failed: %s", exc)
+        logger.warning("Instagram scraper failed for %s: %s", city, exc)
         return []
 
 
@@ -733,32 +724,36 @@ def _dedupe_and_sort_events(events: list[dict[str, Any]]) -> list[dict[str, Any]
 
 
 def prefetch_apify_events(city: str) -> None:
-    """Run Instagram Apify scraper and merge results into cache."""
+    """Run Instagram scraper and merge into cache."""
     city = (city or "").strip()
     if not city:
         return
 
     try:
-        logger.info("Starting Instagram Apify prefetch for %s", city)
-        instagram_events = _fetch_apify_instagram_events(city)
+        logger.info("Starting Instagram prefetch for %s", city)
+        events = _fetch_apify_instagram_events(city, limit=100)
 
-        if not instagram_events:
-            logger.info("No Instagram Apify events for %s", city)
+        if not events:
+            logger.info("No Instagram events for %s", city)
             return
 
         cache_key = _events_cache_key(city, "all", None, None)
         db = SessionLocal()
         try:
             row = _get_row(db, cache_key, CONTENT_EVENTS_AGGREGATED)
-            existing = list(row.data) if row and row.data else []
-            merged = _dedupe_and_sort_events(existing + instagram_events)
-            _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=merged)
-            logger.info(
-                "Merged %d Instagram Apify events into cache for %s (total=%d)",
-                len(instagram_events),
-                city,
-                len(merged),
-            )
+            if row and row.data:
+                existing_ids = {e.get("id") for e in row.data}
+                new_unique = [e for e in events if e.get("id") not in existing_ids]
+                merged = _dedupe_and_sort_events(list(row.data) + new_unique)
+                _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=merged)
+                logger.info("Merged %d Instagram events for %s", len(new_unique), city)
+            else:
+                _upsert_list(
+                    db,
+                    city=cache_key,
+                    content_type=CONTENT_EVENTS_AGGREGATED,
+                    data=_dedupe_and_sort_events(events),
+                )
         finally:
             db.close()
 
@@ -786,9 +781,10 @@ def _fetch_aggregated_events(
     date_from: str | None,
     date_to: str | None,
 ) -> list[dict[str, Any]]:
-    """Fetch live events from Ticketmaster only."""
-    events = _fetch_ticketmaster_events(city, category, date_from, date_to)
-    return _dedupe_and_sort_events(events)
+    """Fetch Ticketmaster live + Instagram via Gemini/Apify on cache miss."""
+    ticketmaster_events = _fetch_ticketmaster_events(city, category, date_from, date_to)
+    instagram_events = _fetch_apify_instagram_events(city, limit=100)
+    return _dedupe_and_sort_events(ticketmaster_events + instagram_events)
 
 
 def search_events_extended(
@@ -801,8 +797,8 @@ def search_events_extended(
     per_page: int = 20,
 ) -> dict[str, Any]:
     """
-    Live Ticketmaster search with DB cache; Instagram events merged via background prefetch.
-    Results are cached in explore_contents (content_type=events_aggregated) for 6 hours.
+    Ticketmaster + Instagram pipeline with 24-hour PostgreSQL cache.
+    On cache miss: Gemini hashtags → Apify Instagram → Gemini caption parse → store.
     """
     city = (city or "Chicago").strip()
     cat = category or "all"
