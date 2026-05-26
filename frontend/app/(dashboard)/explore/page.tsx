@@ -37,23 +37,15 @@ type EventsAPIResponse = {
   events: GlobalEvent[];
 };
 
-const US_CITIES = [
-  "Chicago, IL",
-  "New York, NY",
-  "Los Angeles, CA",
-  "Houston, TX",
-  "Phoenix, AZ",
-  "Philadelphia, PA",
-  "San Antonio, TX",
-  "San Diego, CA",
-  "Dallas, TX",
-  "San Jose, CA",
-  "Austin, TX",
-  "Miami, FL",
-  "Milwaukee, WI",
-  "Indianapolis, IN",
-  "Detroit, MI",
-];
+type CitySuggestion = {
+  label: string;
+  city: string;
+  place_id: string;
+};
+
+type CityAutocompleteResponse = {
+  suggestions: CitySuggestion[];
+};
 
 const CATEGORY_PILLS = [
   "All",
@@ -397,8 +389,11 @@ export default function ExploreHubPage() {
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [currentCity, setCurrentCity] = useState("Chicago");
+  const [currentCity, setCurrentCity] = useState("Chicago, IL");
   const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [citySearch, setCitySearch] = useState("");
+  const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
+  const [cityLoading, setCityLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CategoryPill>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -434,38 +429,70 @@ export default function ExploreHubPage() {
     }
   }, []);
 
+  const detectGPSCity = useCallback(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setCurrentCity("Chicago, IL");
+      fetchEvents("Chicago");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const r = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+            { headers: { Accept: "application/json" } },
+          );
+          const data = await r.json();
+          const city =
+            data.address?.city || data.address?.town || data.address?.village || "Chicago";
+          const state = data.address?.state_code || data.address?.state || "";
+          const label = state ? `${city}, ${state}` : city;
+          setCurrentCity(label);
+          fetchEvents(city);
+        } catch {
+          setCurrentCity("Chicago, IL");
+          fetchEvents("Chicago");
+        }
+      },
+      () => {
+        setCurrentCity("Chicago, IL");
+        fetchEvents("Chicago");
+      },
+    );
+  }, [fetchEvents]);
+
   useEffect(() => {
     fetchNationalEvents();
   }, [fetchNationalEvents]);
 
   useEffect(() => {
-    if (typeof navigator !== "undefined" && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          try {
-            const { latitude, longitude } = pos.coords;
-            const r = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-              { headers: { Accept: "application/json" } },
-            );
-            const data = await r.json();
-            const city =
-              data.address?.city ||
-              data.address?.town ||
-              data.address?.village ||
-              "Chicago";
-            setCurrentCity(city);
-            fetchEvents(city);
-          } catch {
-            fetchEvents("Chicago");
-          }
-        },
-        () => fetchEvents("Chicago"),
-      );
-    } else {
-      fetchEvents("Chicago");
+    detectGPSCity();
+  }, [detectGPSCity]);
+
+  useEffect(() => {
+    if (citySearch.length < 2) {
+      setCitySuggestions([]);
+      return;
     }
-  }, [fetchEvents]);
+
+    const timer = setTimeout(async () => {
+      setCityLoading(true);
+      try {
+        const data = await apiFetch<CityAutocompleteResponse>(
+          `/explore/city-autocomplete?q=${encodeURIComponent(citySearch)}`,
+        );
+        setCitySuggestions(data.suggestions || []);
+      } catch {
+        setCitySuggestions([]);
+      } finally {
+        setCityLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [citySearch]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -502,11 +529,12 @@ export default function ExploreHubPage() {
     [nationalEvents, activeCategory, searchQuery],
   );
 
-  const handleCitySelect = (city: string) => {
-    const label = cityLabel(city);
-    setCurrentCity(label);
+  const selectCity = (suggestion: CitySuggestion) => {
+    setCurrentCity(suggestion.label);
     setShowCityDropdown(false);
-    fetchEvents(label);
+    setCitySearch("");
+    setCitySuggestions([]);
+    fetchEvents(suggestion.city);
   };
 
   const handleOpenEvent = (event: GlobalEvent) => {
@@ -583,17 +611,53 @@ export default function ExploreHubPage() {
             </button>
 
             {showCityDropdown && (
-              <div className="absolute right-0 z-20 mt-2 max-h-64 w-56 overflow-y-auto rounded-xl border border-[#E2E8F0] bg-white py-1 shadow-lg">
-                {US_CITIES.map((city) => (
+              <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-[#E2E8F0] bg-white p-3 shadow-lg">
+                <div className="relative mb-2">
+                  <Search
+                    size={14}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]"
+                  />
+                  <input
+                    autoFocus
+                    type="text"
+                    placeholder="Search city..."
+                    value={citySearch}
+                    onChange={(e) => setCitySearch(e.target.value)}
+                    className="w-full rounded-lg border border-[#E2E8F0] py-2 pl-9 pr-4 text-sm text-[#1E293B] placeholder-[#94A3B8] focus:border-teal-500 focus:outline-none"
+                  />
+                </div>
+
+                {cityLoading && (
+                  <p className="py-3 text-center text-sm text-[#94A3B8]">Searching...</p>
+                )}
+
+                {citySuggestions.map((s) => (
                   <button
-                    key={city}
+                    key={s.place_id || s.label}
                     type="button"
-                    onClick={() => handleCitySelect(city)}
-                    className="block w-full px-4 py-2 text-left text-sm text-[#475569] hover:bg-slate-50 hover:text-teal-600"
+                    onClick={() => selectCity(s)}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[#475569] hover:bg-slate-50"
                   >
-                    {city}
+                    <MapPin size={12} className="shrink-0 text-[#94A3B8]" />
+                    {s.label}
                   </button>
                 ))}
+
+                {!cityLoading && citySearch.length >= 2 && citySuggestions.length === 0 && (
+                  <p className="py-3 text-center text-sm text-[#94A3B8]">No cities found</p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCityDropdown(false);
+                    detectGPSCity();
+                  }}
+                  className="mt-1 flex w-full items-center gap-2 rounded-lg border-t border-[#E2E8F0] px-3 py-2 text-sm font-medium text-teal-600 hover:bg-slate-50"
+                >
+                  <Navigation size={12} />
+                  Use my current location
+                </button>
               </div>
             )}
           </div>

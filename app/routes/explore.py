@@ -156,6 +156,45 @@ def explore_ticketmaster(
     return {"city": city_strip, "events": events}
 
 
+@router.get("/city-autocomplete", status_code=status.HTTP_200_OK)
+async def city_autocomplete(
+    q: str = Query("", max_length=120),
+    _: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Return city suggestions using Google Places Autocomplete."""
+    import httpx
+    from config import settings
+
+    query = q.strip()
+    api_key = (settings.google_places_api_key or "").strip()
+    if not api_key or len(query) < 2:
+        return {"suggestions": []}
+
+    try:
+        with httpx.Client(timeout=5) as client:
+            r = client.get(
+                "https://maps.googleapis.com/maps/api/place/autocomplete/json",
+                params={
+                    "input": query,
+                    "types": "(cities)",
+                    "key": api_key,
+                    "language": "en",
+                },
+            )
+        data = r.json()
+        suggestions = []
+        for p in data.get("predictions", [])[:8]:
+            desc = p.get("description", "")
+            suggestions.append({
+                "label": desc,
+                "city": p.get("structured_formatting", {}).get("main_text", desc),
+                "place_id": p.get("place_id", ""),
+            })
+        return {"suggestions": suggestions}
+    except Exception:
+        return {"suggestions": []}
+
+
 @router.get("/events", status_code=status.HTTP_200_OK)
 async def explore_events(
     city: str = Query("Chicago", max_length=120),
