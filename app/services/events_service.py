@@ -684,7 +684,9 @@ def _fetch_apify_instagram_events(city: str, limit: int = 100) -> list[dict[str,
 
     try:
         search_queries = _generate_instagram_hashtags_with_gemini(city)
-        hashtag_queries = [q.replace(" ", "").lstrip("#") for q in search_queries]
+        import re
+        hashtag_queries = [re.sub(r"[^a-zA-Z0-9]", "", q) for q in search_queries]
+        hashtag_queries = [h for h in hashtag_queries if h]
         logger.info(
             "Instagram scraping %d hashtags (posts + reels) for %s",
             len(hashtag_queries),
