@@ -36,6 +36,7 @@ TTL_EVENTS_AGGREGATED_HOURS = 24
 YELP_EVENTS_LIMIT = 50
 EVENTBRITE_EVENTS_LIMIT = 50
 BANDSINTOWN_EVENTS_PER_PAGE = 50
+APIFY_INSTAGRAM_HASHTAG_ACTOR = "apify~instagram-hashtag-scraper"
 
 _cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 
@@ -617,45 +618,97 @@ If caption has no useful event/place info return: {{"is_event": false}}"""
         return None
 
 
+def _apify_fetch_hashtag_media(
+    apify_token: str,
+    hashtags: list[str],
+    results_type: str,
+    limit: int,
+) -> list[dict[str, Any]]:
+    """Run Apify instagram-hashtag-scraper for posts or reels."""
+    with httpx.Client(timeout=180) as client:
+        r = client.post(
+            f"https://api.apify.com/v2/acts/{APIFY_INSTAGRAM_HASHTAG_ACTOR}/runs?waitForFinish=120",
+            headers={"Authorization": f"Bearer {apify_token}"},
+            json={
+                "hashtags": hashtags,
+                "resultsType": results_type,
+                "resultsLimit": limit,
+            },
+        )
+        if r.status_code not in (200, 201):
+            logger.warning("Apify Instagram %s failed: %s", results_type, r.status_code)
+            return []
+
+        dataset_id = r.json().get("data", {}).get("defaultDatasetId", "")
+        if not dataset_id:
+            return []
+
+        items_r = client.get(
+            f"https://api.apify.com/v2/datasets/{dataset_id}/items?limit=3200",
+            headers={"Authorization": f"Bearer {apify_token}"},
+        )
+        items = items_r.json()
+        return items if isinstance(items, list) else []
+
+
+def _merge_instagram_posts_and_reels(
+    post_items: list[dict[str, Any]],
+    reel_items: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Dedupe posts and reels by Instagram id/shortCode."""
+    merged: list[dict[str, Any]] = []
+    seen_keys: set[str] = set()
+    for item in post_items + reel_items:
+        if not isinstance(item, dict):
+            continue
+        key = str(item.get("id") or item.get("shortCode") or "")
+        if key:
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+        merged.append(item)
+    return merged
+
+
+def _instagram_media_type(item: dict[str, Any]) -> str:
+    if item.get("productType") == "clips" or str(item.get("type", "")).lower() == "video":
+        return "reel"
+    return "post"
+
+
 def _fetch_apify_instagram_events(city: str, limit: int = 100) -> list[dict[str, Any]]:
-    """Scrape Instagram posts via Apify with Gemini-generated search queries."""
+    """Scrape Instagram posts and reels via Apify with Gemini-generated hashtags."""
     apify_token = (settings.apify_token or "").strip()
     if not apify_token:
         return []
 
     try:
         search_queries = _generate_instagram_hashtags_with_gemini(city)
-        hashtag_queries = [q.replace(" ", "") for q in search_queries]
-        logger.info("Instagram scraping %d hashtags for %s", len(hashtag_queries), city)
+        hashtag_queries = [q.replace(" ", "").lstrip("#") for q in search_queries]
+        logger.info(
+            "Instagram scraping %d hashtags (posts + reels) for %s",
+            len(hashtag_queries),
+            city,
+        )
 
-        with httpx.Client(timeout=180) as client:
-            r = client.post(
-                "https://api.apify.com/v2/acts/apify~instagram-search-scraper/runs?waitForFinish=120",
-                headers={"Authorization": f"Bearer {apify_token}"},
-                json={
-                    "searchQueries": hashtag_queries,
-                    "resultsLimit": limit,
-                    "searchType": "hashtag",
-                },
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as scrape_pool:
+            posts_future = scrape_pool.submit(
+                _apify_fetch_hashtag_media, apify_token, hashtag_queries, "posts", limit
             )
-            if r.status_code not in (200, 201):
-                logger.warning("Apify Instagram failed: %s", r.status_code)
-                return []
-
-            run_data = r.json().get("data", {})
-            dataset_id = run_data.get("defaultDatasetId", "")
-            if not dataset_id:
-                return []
-
-            items_r = client.get(
-                f"https://api.apify.com/v2/datasets/{dataset_id}/items?limit=3200",
-                headers={"Authorization": f"Bearer {apify_token}"},
+            reels_future = scrape_pool.submit(
+                _apify_fetch_hashtag_media, apify_token, hashtag_queries, "reels", limit
             )
-            posts = items_r.json()
-            if not isinstance(posts, list):
-                return []
+            post_items = posts_future.result()
+            reel_items = reels_future.result()
 
-        logger.info("Instagram returned %d posts for %s", len(posts), city)
+        posts = _merge_instagram_posts_and_reels(post_items, reel_items)
+        logger.info(
+            "Instagram returned %d items for %s (%d posts, %d reels)",
+            len(posts),
+            city,
+            len(post_items),
+            len(reel_items),
+        )
 
         def parse_post(post: dict[str, Any]) -> dict[str, Any] | None:
             if not isinstance(post, dict):
@@ -669,8 +722,10 @@ def _fetch_apify_instagram_events(city: str, limit: int = 100) -> list[dict[str,
             name = parsed.get("name", "")
             if not name:
                 return None
+            media_type = _instagram_media_type(post)
+            post_key = str(post.get("shortCode") or post.get("id") or hash(name + city))
             return {
-                "id": f"ig_{hash(name + city)}",
+                "id": f"ig_{media_type}_{post_key}",
                 "name": name,
                 "category": parsed.get("category", "Event"),
                 "date": parsed.get("date") or "",
@@ -678,10 +733,11 @@ def _fetch_apify_instagram_events(city: str, limit: int = 100) -> list[dict[str,
                 "venue": parsed.get("venue") or city,
                 "city": city,
                 "country": "US",
-                "image_url": post.get("displayUrl") or post.get("imageUrl"),
+                "image_url": post.get("displayUrl") or post.get("imageUrl") or post.get("thumbnailUrl"),
                 "ticket_url": post.get("url", ""),
                 "price_min": parsed.get("price_min"),
                 "description": parsed.get("description", ""),
+                "media_type": media_type,
                 "source": "instagram",
             }
 
