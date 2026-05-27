@@ -625,16 +625,17 @@ def _fetch_apify_instagram_events(city: str, limit: int = 100) -> list[dict[str,
 
     try:
         search_queries = _generate_instagram_hashtags_with_gemini(city)
-        logger.info("Instagram scraping %d queries for %s", len(search_queries), city)
+        hashtag_queries = [q.replace(" ", "") for q in search_queries]
+        logger.info("Instagram scraping %d hashtags for %s", len(hashtag_queries), city)
 
         with httpx.Client(timeout=180) as client:
             r = client.post(
                 "https://api.apify.com/v2/acts/apify~instagram-search-scraper/runs?waitForFinish=120",
                 headers={"Authorization": f"Bearer {apify_token}"},
                 json={
-                    "searchQueries": search_queries,
+                    "searchQueries": hashtag_queries,
                     "resultsLimit": limit,
-                    "searchType": "posts",
+                    "searchType": "hashtag",
                 },
             )
             if r.status_code not in (200, 201):
