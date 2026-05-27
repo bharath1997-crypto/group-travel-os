@@ -56,6 +56,7 @@ async function errorMessageFromResponse(res: Response): Promise<string> {
 export async function apiFetch<T = unknown>(
   path: string,
   options: RequestInit = {},
+  timeoutMs = 8000,
 ): Promise<T> {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const url = `${API_BASE}${normalized}`;
@@ -80,7 +81,7 @@ export async function apiFetch<T = unknown>(
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seconds timeout
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   let res: Response;
   try {
@@ -107,6 +108,7 @@ export async function apiFetch<T = unknown>(
 export async function apiFetchWithStatus<T>(
   path: string,
   options?: RequestInit,
+  timeoutMs = 8000,
 ): Promise<{ data: T | null; status: number }> {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const url = `${API_BASE}${normalized}`;
@@ -128,7 +130,7 @@ export async function apiFetchWithStatus<T>(
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seconds timeout
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const res = await fetch(url, { ...options, headers, signal: controller.signal });
