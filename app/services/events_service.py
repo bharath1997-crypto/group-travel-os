@@ -1,13 +1,15 @@
 """
 Multi-source Event Discovery Aggregator.
 
-GPS city → PostgreSQL cache (24hr) → on miss: Ticketmaster + Gemini hashtags →
-Apify Instagram → Gemini caption parse → store → return.
+GPS city → PostgreSQL cache (24hr) → Ticketmaster returned immediately;
+Instagram/Apify runs in a production-only background thread and merges into cache.
 """
 from __future__ import annotations
 
 import json
 import logging
+import os
+import threading
 import time
 from typing import Any
 import concurrent.futures
@@ -39,6 +41,9 @@ BANDSINTOWN_EVENTS_PER_PAGE = 50
 APIFY_INSTAGRAM_HASHTAG_ACTOR = "apify~instagram-hashtag-scraper"
 
 _cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
+
+_background_instagram_lock = threading.Lock()
+_background_instagram_cities: set[str] = set()
 
 # Geographical coordinate mappings for Skiddle geosearch
 CITY_COORD_MAP = {
@@ -782,8 +787,38 @@ def _dedupe_and_sort_events(events: list[dict[str, Any]]) -> list[dict[str, Any]
     return deduped_events
 
 
+def _background_instagram(city: str) -> None:
+    """Background worker: scrape Instagram and merge into PostgreSQL cache."""
+    try:
+        prefetch_apify_events(city)
+    except Exception as exc:
+        logger.warning("Background Instagram scrape failed for %s: %s", city, exc)
+    finally:
+        with _background_instagram_lock:
+            _background_instagram_cities.discard(city.strip().lower())
+
+
+def _maybe_start_background_instagram(city: str) -> None:
+    """Start Apify Instagram scrape in a daemon thread (production only)."""
+    if os.getenv("ENVIRONMENT") != "production":
+        return
+
+    city_key = city.strip().lower()
+    if not city_key:
+        return
+
+    with _background_instagram_lock:
+        if city_key in _background_instagram_cities:
+            return
+        _background_instagram_cities.add(city_key)
+
+    thread = threading.Thread(target=_background_instagram, args=(city,), daemon=True)
+    thread.start()
+    logger.info("Started background Instagram scrape for %s", city)
+
+
 def prefetch_apify_events(city: str) -> None:
-    """Run Instagram scraper and merge into cache."""
+    """Run Instagram scraper and merge into cache (background thread only)."""
     city = (city or "").strip()
     if not city:
         return
@@ -834,16 +869,16 @@ def _events_cache_key(
     return key
 
 
-def _fetch_aggregated_events(
+def _fetch_ticketmaster_only(
     city: str,
     category: str,
     date_from: str | None,
     date_to: str | None,
 ) -> list[dict[str, Any]]:
-    """Fetch Ticketmaster live + Instagram via Gemini/Apify on cache miss."""
-    ticketmaster_events = _fetch_ticketmaster_events(city, category, date_from, date_to)
-    instagram_events = _fetch_apify_instagram_events(city, limit=100)
-    return _dedupe_and_sort_events(ticketmaster_events + instagram_events)
+    """Fetch Ticketmaster only — used for synchronous cache fill."""
+    return _dedupe_and_sort_events(
+        _fetch_ticketmaster_events(city, category, date_from, date_to)
+    )
 
 
 def search_events_extended(
@@ -856,8 +891,8 @@ def search_events_extended(
     per_page: int = 20,
 ) -> dict[str, Any]:
     """
-    Ticketmaster + Instagram pipeline with 24-hour PostgreSQL cache.
-    On cache miss: Gemini hashtags → Apify Instagram → Gemini caption parse → store.
+    Return Ticketmaster events immediately (24-hour PostgreSQL cache).
+    Instagram/Apify runs in a production-only background thread and merges later.
     """
     city = (city or "Chicago").strip()
     cat = category or "all"
@@ -868,8 +903,10 @@ def search_events_extended(
         city=cache_key,
         content_type=CONTENT_EVENTS_AGGREGATED,
         ttl_hours=TTL_EVENTS_AGGREGATED_HOURS,
-        fetch_fn=lambda: _fetch_aggregated_events(city, cat, date_from, date_to),
+        fetch_fn=lambda: _fetch_ticketmaster_only(city, cat, date_from, date_to),
     )
+
+    _maybe_start_background_instagram(city)
 
     total = len(deduped_events)
     start_idx = max(0, (page - 1) * per_page)
