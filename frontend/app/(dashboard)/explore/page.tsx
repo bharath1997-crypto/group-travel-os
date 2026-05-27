@@ -11,7 +11,7 @@ import {
   Search,
   Star,
 } from "lucide-react";
-import { apiFetch, apiFetchWithStatus } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 type GlobalEvent = {
   id: string;
@@ -133,27 +133,6 @@ function pseudoDistanceMiles(event: GlobalEvent, userCity: string): string {
     return `${(seed % 18) + 2} mi away`;
   }
   return event.city;
-}
-
-function isThisWeekend(dateStr: string): boolean {
-  if (!dateStr) return false;
-  const parts = dateStr.split("-");
-  if (parts.length !== 3) return false;
-  const eventDate = new Date(
-    parseInt(parts[0], 10),
-    parseInt(parts[1], 10) - 1,
-    parseInt(parts[2], 10),
-  );
-  const now = new Date();
-  const day = now.getDay();
-  const daysUntilSaturday = (6 - day + 7) % 7;
-  const saturday = new Date(now);
-  saturday.setDate(now.getDate() + daysUntilSaturday);
-  saturday.setHours(0, 0, 0, 0);
-  const sunday = new Date(saturday);
-  sunday.setDate(saturday.getDate() + 1);
-  sunday.setHours(23, 59, 59, 999);
-  return eventDate >= saturday && eventDate <= sunday;
 }
 
 function matchesCategory(event: GlobalEvent, category: CategoryPill): boolean {
@@ -345,9 +324,10 @@ function EventSection({
   loading,
   onSeeAll,
   onOpen,
-  limit = 4,
+  limit,
 }: SectionProps) {
-  const visible = events.slice(0, limit);
+  const visible = limit != null ? events.slice(0, limit) : events;
+  const skeletonCount = limit ?? 4;
 
   return (
     <section className="mb-10">
@@ -363,7 +343,7 @@ function EventSection({
       </div>
       {loading ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: limit }).map((_, i) => (
+          {Array.from({ length: skeletonCount }).map((_, i) => (
             <CardSkeleton key={i} />
           ))}
         </div>
@@ -373,9 +353,9 @@ function EventSection({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {visible.map((event) => (
+          {visible.map((event, index) => (
             <ExploreCard
-              key={`${title}-${event.id}`}
+              key={`${event.id}-${index}`}
               event={event}
               userCity={userCity}
               onOpen={onOpen}
@@ -399,63 +379,42 @@ export default function ExploreHubPage() {
   const [activeCategory, setActiveCategory] = useState<CategoryPill>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [cityEvents, setCityEvents] = useState<GlobalEvent[]>([]);
+  const [trendingEvents, setTrendingEvents] = useState<GlobalEvent[]>([]);
+  const [weekendEvents, setWeekendEvents] = useState<GlobalEvent[]>([]);
+  const [popularEvents, setPopularEvents] = useState<GlobalEvent[]>([]);
   const [nationalEvents, setNationalEvents] = useState<GlobalEvent[]>([]);
-  const [nationalLoading, setNationalLoading] = useState(false);
-  const nationalFetchStarted = useRef(false);
 
   const stateName = STATE_BY_CITY[cityLabel(currentCity)] || "Your Region";
+
+  const splitEvents = useCallback((events: GlobalEvent[]) => {
+    setTrendingEvents(events.slice(0, 40));
+    setWeekendEvents(events.slice(40, 60));
+    setPopularEvents(events.slice(60, 80));
+    setNationalEvents(events.slice(80, 100));
+  }, []);
 
   const fetchEvents = useCallback(async (city: string) => {
     setLoading(true);
     const cityName = city.split(",")[0].trim();
     try {
       const data = await apiFetch<EventsAPIResponse>(
-        `/explore/events?city=${encodeURIComponent(cityName)}&per_page=20`,
+        `/explore/events?city=${encodeURIComponent(cityName)}&per_page=100`,
         {},
         EVENTS_FETCH_TIMEOUT_MS,
       );
-      setCityEvents(data?.events || []);
+      splitEvents(data?.events || []);
     } catch (err) {
       console.error("Failed to load explore events:", err);
-      setCityEvents([]);
+      splitEvents([]);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const fetchNationalEvents = useCallback(async () => {
-    setNationalLoading(true);
-    try {
-      const { data, status } = await apiFetchWithStatus<EventsAPIResponse>(
-        "/explore/events?city=New%20York&per_page=8",
-        {},
-        EVENTS_FETCH_TIMEOUT_MS,
-      );
-      if (status === 408 || status === 0 || !data) {
-        setNationalEvents([]);
-        return;
-      }
-      setNationalEvents(data.events || []);
-    } catch {
-      setNationalEvents([]);
-    } finally {
-      setNationalLoading(false);
-    }
-  }, []);
-
-  const scheduleNationalEventsFetch = useCallback(() => {
-    if (nationalFetchStarted.current) return;
-    nationalFetchStarted.current = true;
-    window.setTimeout(() => {
-      void fetchNationalEvents();
-    }, 1500);
-  }, [fetchNationalEvents]);
+  }, [splitEvents]);
 
   const detectGPSCity = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setCurrentCity("Chicago, IL");
-      void fetchEvents("Chicago").then(() => scheduleNationalEventsFetch());
+      void fetchEvents("Chicago");
       return;
     }
 
@@ -474,19 +433,17 @@ export default function ExploreHubPage() {
           const label = state ? `${city}, ${state}` : city;
           setCurrentCity(label);
           await fetchEvents(city);
-          scheduleNationalEventsFetch();
         } catch {
           setCurrentCity("Chicago, IL");
           await fetchEvents("Chicago");
-          scheduleNationalEventsFetch();
         }
       },
       () => {
         setCurrentCity("Chicago, IL");
-        void fetchEvents("Chicago").then(() => scheduleNationalEventsFetch());
+        void fetchEvents("Chicago");
       },
     );
-  }, [fetchEvents, scheduleNationalEventsFetch]);
+  }, [fetchEvents]);
 
   useEffect(() => {
     detectGPSCity();
@@ -528,26 +485,29 @@ export default function ExploreHubPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredCityEvents = useMemo(
-    () =>
-      cityEvents.filter(
+  const filterEvents = useCallback(
+    (events: GlobalEvent[]) =>
+      events.filter(
         (ev) => matchesCategory(ev, activeCategory) && matchesSearch(ev, searchQuery),
       ),
-    [cityEvents, activeCategory, searchQuery],
+    [activeCategory, searchQuery],
   );
 
-  const trendingEvents = filteredCityEvents;
-  const weekendEvents = useMemo(
-    () => filteredCityEvents.filter((ev) => isThisWeekend(ev.date)),
-    [filteredCityEvents],
+  const filteredTrending = useMemo(
+    () => filterEvents(trendingEvents),
+    [filterEvents, trendingEvents],
   );
-  const stateEvents = useMemo(() => filteredCityEvents.slice(4, 12), [filteredCityEvents]);
+  const filteredWeekend = useMemo(
+    () => filterEvents(weekendEvents),
+    [filterEvents, weekendEvents],
+  );
+  const filteredPopular = useMemo(
+    () => filterEvents(popularEvents),
+    [filterEvents, popularEvents],
+  );
   const filteredNational = useMemo(
-    () =>
-      nationalEvents.filter(
-        (ev) => matchesCategory(ev, activeCategory) && matchesSearch(ev, searchQuery),
-      ),
-    [nationalEvents, activeCategory, searchQuery],
+    () => filterEvents(nationalEvents),
+    [filterEvents, nationalEvents],
   );
 
   const selectCity = (suggestion: CitySuggestion) => {
@@ -686,42 +646,38 @@ export default function ExploreHubPage() {
 
         <EventSection
           title={`Trending in ${currentCity}`}
-          events={trendingEvents}
+          events={filteredTrending}
           userCity={currentCity}
           loading={loading}
           onSeeAll={() => handleSeeAll("trending")}
           onOpen={handleOpenEvent}
-          limit={8}
         />
 
         <EventSection
           title="Happening This Weekend"
-          events={weekendEvents.length > 0 ? weekendEvents : trendingEvents}
+          events={filteredWeekend}
           userCity={currentCity}
           loading={loading}
           onSeeAll={() => handleSeeAll("weekend")}
           onOpen={handleOpenEvent}
-          limit={4}
         />
 
         <EventSection
           title={`Popular in ${stateName}`}
-          events={stateEvents.length > 0 ? stateEvents : trendingEvents}
+          events={filteredPopular}
           userCity={currentCity}
           loading={loading}
           onSeeAll={() => handleSeeAll("state")}
           onOpen={handleOpenEvent}
-          limit={4}
         />
 
         <EventSection
           title="National Picks"
           events={filteredNational}
           userCity={currentCity}
-          loading={nationalLoading}
+          loading={loading}
           onSeeAll={() => handleSeeAll("national")}
           onOpen={handleOpenEvent}
-          limit={4}
         />
       </div>
     </div>
