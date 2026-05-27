@@ -11,6 +11,7 @@ import logging
 import os
 import threading
 import time
+from datetime import timedelta
 from typing import Any
 import concurrent.futures
 
@@ -18,7 +19,7 @@ import httpx
 from sqlalchemy.orm import Session
 
 from app.core.api_limits import API_TIMEOUT_SECONDS
-from app.services.explore_city_extended_service import _get_cached_list, _get_row, _upsert_list
+from app.services.explore_city_extended_service import _aware, _get_row, _now, _upsert_list
 from app.utils.database import SessionLocal
 from config import settings
 
@@ -881,6 +882,36 @@ def _fetch_ticketmaster_only(
     )
 
 
+def _get_fresh_cached_events(db: Session, cache_key: str) -> list[dict[str, Any]] | None:
+    """Return cached events if still within TTL, else None."""
+    row = _get_row(db, cache_key, CONTENT_EVENTS_AGGREGATED)
+    if not row or row.data is None:
+        return None
+    now = _now()
+    fetched = _aware(row.fetched_at)
+    if now - fetched <= timedelta(hours=TTL_EVENTS_AGGREGATED_HOURS):
+        return list(row.data)
+    return None
+
+
+def _paginate_events(
+    events: list[dict[str, Any]],
+    city: str,
+    page: int,
+    per_page: int,
+) -> dict[str, Any]:
+    total = len(events)
+    start_idx = max(0, (page - 1) * per_page)
+    end_idx = start_idx + per_page
+    return {
+        "city": city,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "events": events[start_idx:end_idx],
+    }
+
+
 def search_events_extended(
     db: Session,
     city: str,
@@ -891,32 +922,20 @@ def search_events_extended(
     per_page: int = 20,
 ) -> dict[str, Any]:
     """
-    Return Ticketmaster events immediately (24-hour PostgreSQL cache).
-    Instagram/Apify runs in a production-only background thread and merges later.
+    Serve Ticketmaster immediately; never block on Instagram/Apify.
+    Instagram runs in a production-only background thread after cache fill.
     """
     city = (city or "Chicago").strip()
     cat = category or "all"
     cache_key = _events_cache_key(city, cat, date_from, date_to)
 
-    deduped_events = _get_cached_list(
-        db,
-        city=cache_key,
-        content_type=CONTENT_EVENTS_AGGREGATED,
-        ttl_hours=TTL_EVENTS_AGGREGATED_HOURS,
-        fetch_fn=lambda: _fetch_ticketmaster_only(city, cat, date_from, date_to),
-    )
+    cached = _get_fresh_cached_events(db, cache_key)
+    if cached is not None:
+        return _paginate_events(cached, city, page, per_page)
+
+    events = _fetch_ticketmaster_only(city, cat, date_from, date_to)
+    _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=events)
 
     _maybe_start_background_instagram(city)
 
-    total = len(deduped_events)
-    start_idx = max(0, (page - 1) * per_page)
-    end_idx = start_idx + per_page
-    paginated_events = deduped_events[start_idx:end_idx]
-
-    return {
-        "city": city,
-        "total": total,
-        "page": page,
-        "per_page": per_page,
-        "events": paginated_events,
-    }
+    return _paginate_events(events, city, page, per_page)
