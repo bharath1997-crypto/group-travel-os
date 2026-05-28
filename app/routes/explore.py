@@ -331,13 +331,91 @@ async def explore_events(
                 total = len(events)
         except Exception as exc:
             logger.warning("AI fallback events generation failed: %s", exc)
-            
+
+    # Section-splitting logic
+    import hashlib
+    from datetime import datetime, date, timedelta
+
+    def get_score(ev: dict[str, Any]) -> float:
+        if "popularity_score" in ev and ev["popularity_score"] is not None:
+            return float(ev["popularity_score"])
+        h = int(hashlib.md5(ev.get("name", "").encode("utf-8")).hexdigest(), 16)
+        return float(h % 100) / 10.0
+
+    sorted_events = sorted(events, key=get_score, reverse=True)
+
+    # 1. Trending
+    trending = [ev for ev in sorted_events if get_score(ev) >= 5.0][:10]
+    if not trending:
+        trending = sorted_events[:10]
+
+    # 2. This Weekend (next 3 days)
+    today = date.today()
+    three_days = today + timedelta(days=3)
+
+    def is_weekend(ev: dict[str, Any]) -> bool:
+        dt_str = ev.get("date")
+        if not dt_str:
+            return False
+        try:
+            ev_date = datetime.strptime(dt_str, "%Y-%m-%d").date()
+            return today <= ev_date <= three_days
+        except Exception:
+            return False
+
+    weekend = [ev for ev in sorted_events if is_weekend(ev)][:10]
+    if not weekend:
+        weekend = sorted_events[:10]
+
+    # 3. Popular in State
+    CITY_STATE_MAP = {
+        "chicago": "illinois",
+        "milwaukee": "wisconsin",
+        "indianapolis": "indiana",
+        "detroit": "michigan",
+        "new york": "new york",
+        "los angeles": "california",
+        "houston": "texas",
+        "phoenix": "arizona",
+        "philadelphia": "pennsylvania",
+        "san antonio": "texas",
+        "san diego": "california",
+        "dallas": "texas",
+        "san jose": "california",
+        "austin": "texas",
+        "miami": "florida",
+    }
+
+    query_city = city_strip.lower().split(",")[0].strip()
+    query_state = CITY_STATE_MAP.get(query_city, "")
+
+    def matches_state(ev: dict[str, Any]) -> bool:
+        ev_city = ev.get("city", "").strip().lower()
+        return CITY_STATE_MAP.get(ev_city, "") == query_state if query_state else False
+
+    state_events = [ev for ev in sorted_events if matches_state(ev)][:10]
+    if not state_events:
+        state_events = sorted_events[:10]
+
+    # 4. National
+    used_ids = {ev["id"] for ev in trending + weekend + state_events if "id" in ev}
+    national = [ev for ev in sorted_events if ev.get("id") not in used_ids][:20]
+    if len(national) < 20:
+        rem = [ev for ev in sorted_events if ev.get("id") not in {n.get("id") for n in national}]
+        national.extend(rem[:20 - len(national)])
+    if not national:
+        national = sorted_events[:20]
+
     return {
         "city": city_strip,
         "total": total,
         "page": page,
         "per_page": per_page,
-        "events": events
+        "events": events,
+        "trending": trending,
+        "weekend": weekend,
+        "popular": state_events,
+        "national": national
     }
 
 

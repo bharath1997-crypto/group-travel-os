@@ -35,6 +35,10 @@ type EventsAPIResponse = {
   page: number;
   per_page: number;
   events: GlobalEvent[];
+  trending?: GlobalEvent[];
+  weekend?: GlobalEvent[];
+  popular?: GlobalEvent[];
+  national?: GlobalEvent[];
 };
 
 type CitySuggestion = {
@@ -326,7 +330,8 @@ function EventSection({
   onOpen,
   limit,
 }: SectionProps) {
-  const visible = limit != null ? events.slice(0, limit) : events;
+  const safeEvents = Array.isArray(events) ? events : [];
+  const visible = limit != null ? safeEvents.slice(0, limit) : safeEvents;
   const skeletonCount = limit ?? 4;
 
   return (
@@ -386,11 +391,18 @@ export default function ExploreHubPage() {
 
   const stateName = STATE_BY_CITY[cityLabel(currentCity)] || "Your Region";
 
-  const splitEvents = useCallback((events: GlobalEvent[]) => {
-    setTrendingEvents(events.slice(0, 40));
-    setWeekendEvents(events.slice(40, 60));
-    setPopularEvents(events.slice(60, 80));
-    setNationalEvents(events.slice(80, 100));
+  const splitEvents = useCallback((data: EventsAPIResponse | null) => {
+    if (!data) {
+      setTrendingEvents([]);
+      setWeekendEvents([]);
+      setPopularEvents([]);
+      setNationalEvents([]);
+      return;
+    }
+    setTrendingEvents(data.trending || data.events.slice(0, 40) || []);
+    setWeekendEvents(data.weekend || data.events.slice(40, 60) || []);
+    setPopularEvents(data.popular || data.events.slice(60, 80) || []);
+    setNationalEvents(data.national || data.events.slice(80, 100) || []);
   }, []);
 
   const fetchEvents = useCallback(async (city: string) => {
@@ -402,10 +414,10 @@ export default function ExploreHubPage() {
         {},
         EVENTS_FETCH_TIMEOUT_MS,
       );
-      splitEvents(data?.events || []);
+      splitEvents(data);
     } catch (err) {
       console.error("Failed to load explore events:", err);
-      splitEvents([]);
+      splitEvents(null);
     } finally {
       setLoading(false);
     }
