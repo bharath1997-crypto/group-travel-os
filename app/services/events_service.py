@@ -320,12 +320,13 @@ def _fetch_ticketmaster_events(
                         if best:
                             img_url = best[1]
 
-                    category_val = "All"
+                    raw_segment = ""
                     classifications = raw.get("classifications", [])
                     if classifications and isinstance(classifications, list) and isinstance(classifications[0], dict):
                         segment = classifications[0].get("segment", {})
                         if isinstance(segment, dict) and segment.get("name"):
-                            category_val = str(segment.get("name"))
+                            raw_segment = str(segment.get("name"))
+                    category_val = _normalize_event_category(raw_segment, name)
 
                     date_str = ""
                     time_str = "19:00"
@@ -878,19 +879,81 @@ def _fetch_apify_instagram_events(city: str, limit: int = 100) -> list[dict[str,
         return []
 
 
+def _normalize_event_category(raw: str, name: str) -> str:
+    """Map Ticketmaster segments and weak labels to consumer-friendly tags."""
+    key = (raw or "").strip().lower()
+    weak = {"", "undefined", "miscellaneous", "misc", "all", "other", "general"}
+    segment_map = {
+        "music": "Music",
+        "sports": "Sports",
+        "arts & theatre": "Arts",
+        "arts": "Arts",
+        "theatre": "Arts",
+        "film": "Festival",
+        "family": "Family",
+        "food & drink": "Food",
+        "food": "Food",
+    }
+    if key not in weak:
+        return segment_map.get(key, raw.strip().title())
+
+    name_l = (name or "").lower()
+    if any(x in name_l for x in (" vs ", " vs. ", "game", "sox", "cubs", "bulls", "bears", "twins", "mlb", "nba", "nfl")):
+        return "Sports"
+    if any(x in name_l for x in ("concert", " tour", "live ", "dj ", "festival", "symphony", "orchestra")):
+        return "Music"
+    if any(x in name_l for x in ("comedy", "theatre", "theater", "broadway", "play")):
+        return "Arts"
+    if any(x in name_l for x in ("food", "wine", "dinner", "brunch", "tasting")):
+        return "Food"
+    if any(x in name_l for x in ("cruise", "tour", "museum", "architecture", "walking")):
+        return "Experience"
+    if any(x in name_l for x in ("club", "night", "18+", "21+")):
+        return "Nightlife"
+    return "Experience"
+
+
+def _series_dedupe_key(name: str, venue: str) -> tuple[str, str]:
+    """Collapse recurring series (same show, many dates) to one card per venue."""
+    import re
+
+    n = (name or "").strip().lower()
+    n = re.sub(r"\s*\([^)]*\)\s*", " ", n)
+    n = re.sub(
+        r"\s*[-–—]\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday).*$",
+        "",
+        n,
+        flags=re.I,
+    )
+    n = re.sub(r"\s*[-–—]\s*\d{1,2}/\d{1,2}.*$", "", n)
+    n = re.sub(r"\s+", " ", n).strip()
+    v = (venue or "").strip().lower()
+    return (n, v)
+
+
 def _dedupe_and_sort_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    seen: set[tuple[str, str]] = set()
+    seen_ids: set[str] = set()
+    seen_series: set[tuple[str, str]] = set()
     deduped_events: list[dict[str, Any]] = []
     for ev in events:
-        dedupe_key = (ev["name"].strip().lower(), ev.get("date") or "")
-        if dedupe_key not in seen:
-            seen.add(dedupe_key)
-            deduped_events.append(ev)
+        eid = str(ev.get("id") or "").strip()
+        if eid and eid in seen_ids:
+            continue
+        series_key = _series_dedupe_key(str(ev.get("name") or ""), str(ev.get("venue") or ""))
+        if series_key[0] and series_key in seen_series:
+            continue
+        if eid:
+            seen_ids.add(eid)
+        if series_key[0]:
+            seen_series.add(series_key)
+        deduped_events.append(ev)
 
-    def sort_key(x: dict[str, Any]) -> tuple[str, str]:
+    def sort_key(x: dict[str, Any]) -> tuple[float, str, str]:
+        dist = x.get("distance_miles")
+        dist_val = float(dist) if dist is not None else 9999.0
         d = x.get("date") or ""
         t = x.get("time") or ""
-        return (d if d else "9999-12-31", t if t else "23:59")
+        return (dist_val, d if d else "9999-12-31", t if t else "23:59")
 
     deduped_events.sort(key=sort_key)
     return deduped_events
@@ -1078,10 +1141,12 @@ def search_events_extended(
     lat: float | None = None,
     lon: float | None = None,
     radius_miles: int = EXPLORE_RADIUS_MILES,
+    return_all: bool = False,
 ) -> dict[str, Any]:
     """
     Serve Ticketmaster immediately; never block on Instagram/Apify.
     When lat/lon provided, fetch events within radius_miles (default 200) of user GPS.
+    Set return_all=True to get the full cached list (for section splitting on Explore hub).
     """
     city = (city or "Chicago").strip()
     cat = category or "all"
@@ -1089,14 +1154,24 @@ def search_events_extended(
 
     cached = _get_fresh_cached_events(db, cache_key)
     if cached:
-        result = _paginate_events(cached, city, page, per_page)
+        all_events = cached
     else:
-        events = _fetch_ticketmaster_only(
+        all_events = _fetch_ticketmaster_only(
             city, cat, date_from, date_to, lat, lon, radius_miles
         )
-        _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=events)
+        _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=all_events)
         _maybe_start_background_instagram(city)
-        result = _paginate_events(events, city, page, per_page)
+
+    if return_all:
+        result: dict[str, Any] = {
+            "city": city,
+            "total": len(all_events),
+            "page": 1,
+            "per_page": len(all_events),
+            "events": all_events,
+        }
+    else:
+        result = _paginate_events(all_events, city, page, per_page)
 
     if lat is not None and lon is not None:
         result["radius_miles"] = radius_miles

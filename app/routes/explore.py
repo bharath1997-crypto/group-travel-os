@@ -206,6 +206,7 @@ async def explore_events(
     lat: Optional[float] = Query(None, description="User GPS latitude"),
     lon: Optional[float] = Query(None, description="User GPS longitude"),
     radius: int = Query(200, ge=1, le=500, description="Search radius in miles"),
+    view: Optional[str] = Query(None, description="hub (sections) or list (paginated)"),
     page: int = Query(1),
     per_page: int = Query(20),
     db: Session = Depends(get_db),
@@ -264,17 +265,51 @@ async def explore_events(
             total = 0
     else:
         from app.services.events_service import search_events_extended
+
+        list_mode = (view or "").strip().lower() == "list"
+
+        if list_mode:
+            result = search_events_extended(
+                db,
+                city=city_strip,
+                category=category,
+                date_from=d_from,
+                date_to=d_to,
+                page=page,
+                per_page=per_page,
+                lat=lat,
+                lon=lon,
+                radius_miles=radius,
+            )
+            events = result.get("events", [])
+            total = result.get("total", 0)
+            nearby_cities = result.get("nearby_cities", [])
+            for ev in events:
+                ev["title"] = ev["name"]
+                ev["imageUrl"] = ev["image_url"]
+                ev["url"] = ev["ticket_url"]
+                ev["start_date"] = ev["date"]
+                ev["sourceType"] = ev["source"]
+            return {
+                "city": city_strip,
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "events": events,
+                "radius_miles": radius if lat is not None and lon is not None else None,
+                "nearby_cities": nearby_cities,
+            }
+
         result = search_events_extended(
             db,
             city=city_strip,
             category=category,
             date_from=d_from,
             date_to=d_to,
-            page=1,
-            per_page=500,
             lat=lat,
             lon=lon,
             radius_miles=radius,
+            return_all=True,
         )
         
         events = result.get("events", [])
@@ -348,14 +383,19 @@ async def explore_events(
     used_ids: set[str] = set()
 
     def event_id(ev: dict[str, Any]) -> str:
-        return str(ev.get("id") or ev.get("name") or "")
+        eid = str(ev.get("id") or "").strip()
+        if eid:
+            return eid
+        return f"{ev.get('name', '')}|{ev.get('date', '')}|{ev.get('venue', '')}"
 
     def assign_section(
         pool: list[dict[str, Any]],
         limit: int,
         predicate: Callable[[dict[str, Any]], bool] | None = None,
+        *,
+        strict: bool = False,
     ) -> list[dict[str, Any]]:
-        """Pick up to `limit` unique events; backfill only from unused pool items."""
+        """Pick up to `limit` unique events; backfill unless strict=True."""
         chosen: list[dict[str, Any]] = []
 
         if predicate is not None:
@@ -369,7 +409,7 @@ async def explore_events(
                     chosen.append(ev)
                     used_ids.add(eid)
 
-        if len(chosen) < limit:
+        if not strict and len(chosen) < limit:
             for ev in pool:
                 if len(chosen) >= limit:
                     break
@@ -381,11 +421,26 @@ async def explore_events(
 
         return chosen
 
+    query_city_key = city_strip.lower().split(",")[0].strip()
+    local_radius_miles = 35.0
+
+    def is_local(ev: dict[str, Any]) -> bool:
+        ev_city = str(ev.get("city") or "").strip().lower()
+        if ev_city == query_city_key:
+            return True
+        dist = ev.get("distance_miles")
+        return dist is not None and float(dist) <= local_radius_miles
+
     trending = assign_section(
         sorted_events,
         40,
-        lambda ev: get_score(ev) >= 5.0,
+        is_local,
+        strict=True,
     )
+    if len(trending) < 8:
+        trending.extend(
+            assign_section(sorted_events, 8 - len(trending), lambda ev: get_score(ev) >= 4.0)
+        )
 
     # 2. This Weekend (next 3 days)
     today = date.today()
@@ -447,6 +502,100 @@ async def explore_events(
         "radius_miles": radius if lat is not None and lon is not None else None,
         "nearby_cities": nearby_cities if lat is not None and lon is not None else [],
     }
+
+
+@router.get("/events/{event_id}", status_code=status.HTTP_200_OK)
+def get_explore_event(
+    event_id: str,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Fetch a single event detail by event_id across cached aggregated events."""
+    from app.models.explore_content import ExploreContent
+
+    # Fetch all events aggregated cache entries
+    rows = db.query(ExploreContent).filter(ExploreContent.content_type == "events_aggregated").all()
+    for row in rows:
+        if row.data:
+            for ev in row.data:
+                # Deduplicate or identify matching ID
+                eid = str(ev.get("id") or "").strip()
+                if not eid:
+                    # Fallback key generation matching assignment logic
+                    eid = f"{ev.get('name', '')}|{ev.get('date', '')}|{ev.get('venue', '')}"
+                
+                if eid == event_id:
+                    name = ev.get("name") or ev.get("title") or "Event"
+                    img_url = ev.get("image_url") or ev.get("imageUrl")
+                    url = ev.get("ticket_url") or ev.get("url")
+                    date_str = ev.get("date") or ev.get("start_date")
+                    source = ev.get("source") or ev.get("sourceType") or "ticketmaster"
+
+                    # Deterministic rating/distance calculation
+                    import hashlib
+                    h = int(hashlib.md5(name.encode("utf-8")).hexdigest(), 16)
+                    rating = round(3.5 + (h % 15) / 10.0, 1)
+                    distance = round(2.0 + (h % 18), 1)
+
+                    CITY_STATE_MAP = {
+                        "chicago": "Illinois",
+                        "milwaukee": "Wisconsin",
+                        "indianapolis": "Indiana",
+                        "detroit": "Michigan",
+                        "new york": "New York",
+                        "los angeles": "California",
+                        "houston": "Texas",
+                        "phoenix": "Arizona",
+                        "philadelphia": "Pennsylvania",
+                        "san antonio": "Texas",
+                        "san diego": "California",
+                        "dallas": "Texas",
+                        "san jose": "California",
+                        "austin": "Texas",
+                        "miami": "Florida",
+                    }
+                    ev_city = ev.get("city", "")
+                    state = CITY_STATE_MAP.get(ev_city.lower(), "Your Region")
+
+                    return {
+                        "id": event_id,
+                        "title": name,
+                        "category": ev.get("category", "Event"),
+                        "venue": ev.get("venue", "Various Venues"),
+                        "city": ev_city,
+                        "state": state,
+                        "start_date": date_str,
+                        "start_time": ev.get("time", "19:00"),
+                        "price_min": ev.get("price_min"),
+                        "price_max": ev.get("price_max"),
+                        "image_url": img_url,
+                        "ticket_url": url,
+                        "source": source,
+                        "distance_miles": distance,
+                        "rating": rating
+                    }
+
+    # If not found in cache, let's check if it starts with mock- or ai-ev- and generate dynamically
+    if event_id.startswith("mock-") or event_id.startswith("ai-ev-"):
+        # Synthesize a plausible event so page doesn't crash on fallbacks
+        return {
+            "id": event_id,
+            "title": "Local Experience",
+            "category": "Festival",
+            "venue": "Downtown Park Venue",
+            "city": "Chicago",
+            "state": "Illinois",
+            "start_date": "2026-06-15",
+            "start_time": "19:00",
+            "price_min": 10.0,
+            "price_max": 50.0,
+            "image_url": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400",
+            "ticket_url": "https://www.google.com",
+            "source": "ai_fallback",
+            "distance_miles": 4.5,
+            "rating": 4.8
+        }
+
+    AppException.not_found("Event not found")
 
 
 @router.get("/places", status_code=status.HTTP_200_OK)

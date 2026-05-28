@@ -2,43 +2,42 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Calendar,
   ChevronDown,
-  Clock,
+  ChevronRight,
   MapPin,
   Navigation,
   Search,
   Star,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-
-type GlobalEvent = {
-  id: string;
-  name: string;
-  category: string;
-  date: string;
-  time: string;
-  venue: string;
-  city: string;
-  country: string;
-  image_url: string | null;
-  ticket_url: string;
-  price_min: number | null;
-  price_max: number | null;
-  source: string;
-};
+import {
+  type ExploreEvent,
+  type ExploreFeedDebug,
+  SECTION_CARD_LIMIT,
+  cityLabel,
+  hydrateSectionsFromResponse,
+  loadExploreFeedCache,
+  saveExploreFeedCache,
+  saveEventSnapshot,
+  formatDateTime,
+  formatLocation,
+  formatPrice,
+  pseudoRating,
+} from "@/lib/explore-events";
 
 type EventsAPIResponse = {
   city: string;
   total: number;
   page: number;
   per_page: number;
-  events: GlobalEvent[];
-  trending?: GlobalEvent[];
-  weekend?: GlobalEvent[];
-  popular?: GlobalEvent[];
-  national?: GlobalEvent[];
+  events: ExploreEvent[];
+  trending?: ExploreEvent[];
+  weekend?: ExploreEvent[];
+  popular?: ExploreEvent[];
+  national?: ExploreEvent[];
   radius_miles?: number | null;
   nearby_cities?: { name: string; state: string; distance_miles: number }[];
 };
@@ -55,53 +54,10 @@ type CityAutocompleteResponse = {
   suggestions: CitySuggestion[];
 };
 
-const EVENTS_FETCH_TIMEOUT_MS = 20_000;
+const EVENTS_FETCH_TIMEOUT_MS = 60_000;
 const LS_EXPLORE_CITY = "rovvy_explore_city";
 const LS_EXPLORE_COORDS = "rovvy_explore_coords";
 const EXPLORE_RADIUS_MILES = 200;
-
-const MAJOR_CITIES: { name: string; state: string; lat: number; lon: number }[] = [
-  { name: "Chicago", state: "IL", lat: 41.8781, lon: -87.6298 },
-  { name: "New York", state: "NY", lat: 40.7128, lon: -74.006 },
-  { name: "Los Angeles", state: "CA", lat: 34.0522, lon: -118.2437 },
-  { name: "San Francisco", state: "CA", lat: 37.7749, lon: -122.4194 },
-  { name: "San Jose", state: "CA", lat: 37.3382, lon: -121.8863 },
-  { name: "Oakland", state: "CA", lat: 37.8044, lon: -122.2712 },
-  { name: "Houston", state: "TX", lat: 29.7604, lon: -95.3698 },
-  { name: "Phoenix", state: "AZ", lat: 33.4484, lon: -112.074 },
-  { name: "Philadelphia", state: "PA", lat: 39.9526, lon: -75.1652 },
-  { name: "San Antonio", state: "TX", lat: 29.4241, lon: -98.4936 },
-  { name: "San Diego", state: "CA", lat: 32.7157, lon: -117.1611 },
-  { name: "Dallas", state: "TX", lat: 32.7767, lon: -96.797 },
-  { name: "Austin", state: "TX", lat: 30.2672, lon: -97.7431 },
-  { name: "Miami", state: "FL", lat: 25.7617, lon: -80.1918 },
-  { name: "Milwaukee", state: "WI", lat: 43.0389, lon: -87.9065 },
-  { name: "Indianapolis", state: "IN", lat: 39.7684, lon: -86.1581 },
-  { name: "Detroit", state: "MI", lat: 42.3314, lon: -83.0458 },
-];
-
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function nearestMajorCity(lat: number, lon: number): { city: string; label: string } {
-  let best = MAJOR_CITIES[0];
-  let bestDist = Infinity;
-  for (const major of MAJOR_CITIES) {
-    const dist = haversineKm(lat, lon, major.lat, major.lon);
-    if (dist < bestDist) {
-      bestDist = dist;
-      best = major;
-    }
-  }
-  return { city: best.name, label: `${best.name}, ${best.state}` };
-}
 
 function saveExploreCity(label: string, coords?: UserCoords | null) {
   if (typeof window === "undefined") return;
@@ -113,7 +69,7 @@ function saveExploreCity(label: string, coords?: UserCoords | null) {
       localStorage.removeItem(LS_EXPLORE_COORDS);
     }
   } catch {
-    /* ignore quota / private mode */
+    /* ignore */
   }
 }
 
@@ -171,74 +127,18 @@ const STATE_BY_CITY: Record<string, string> = {
   Miami: "Florida",
 };
 
-function cityLabel(value: string): string {
-  return value.split(",")[0]?.trim() || value;
-}
-
-function formatDate(dateStr: string): string {
-  if (!dateStr) return "";
-  try {
-    const parts = dateStr.split("-");
-    if (parts.length === 3) {
-      const d = new Date(
-        parseInt(parts[0], 10),
-        parseInt(parts[1], 10) - 1,
-        parseInt(parts[2], 10),
-      );
-      return d.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-    }
-    const d = new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
-}
-
-function hashSeed(value: string): number {
-  let hash = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
-
-function pseudoRating(event: GlobalEvent): { score: number; reviews: number } {
-  const seed = hashSeed(event.id || event.name);
-  const score = 3.5 + (seed % 15) / 10;
-  const reviews = 40 + (seed % 480);
-  return { score: Math.round(score * 10) / 10, reviews };
-}
-
-function pseudoDistanceMiles(event: GlobalEvent, userCity: string): string {
-  if (cityLabel(event.city).toLowerCase() === cityLabel(userCity).toLowerCase()) {
-    const seed = hashSeed(event.id);
-    return `${(seed % 18) + 2} mi away`;
-  }
-  return event.city;
-}
-
-function matchesCategory(event: GlobalEvent, category: CategoryPill): boolean {
+function matchesCategory(event: ExploreEvent, category: CategoryPill): boolean {
   if (category === "All" || category === "Events") return true;
   const cat = (event.category || "").toLowerCase();
   const name = (event.name || "").toLowerCase();
   switch (category) {
     case "Activities":
       return (
-        cat.includes("misc") ||
+        cat.includes("experience") ||
         cat.includes("family") ||
         cat.includes("art") ||
         name.includes("tour") ||
-        name.includes("showcase")
+        name.includes("cruise")
       );
     case "Sports":
       return cat.includes("sport");
@@ -247,9 +147,9 @@ function matchesCategory(event: GlobalEvent, category: CategoryPill): boolean {
     case "Nightlife":
       return (
         cat.includes("music") ||
-        cat.includes("club") ||
+        cat.includes("night") ||
         name.includes("dj") ||
-        name.includes("night")
+        name.includes("club")
       );
     case "Parks":
       return (
@@ -263,7 +163,7 @@ function matchesCategory(event: GlobalEvent, category: CategoryPill): boolean {
   }
 }
 
-function matchesSearch(event: GlobalEvent, query: string): boolean {
+function matchesSearch(event: ExploreEvent, query: string): boolean {
   if (!query.trim()) return true;
   const q = query.trim().toLowerCase();
   return [event.name, event.venue, event.city, event.category]
@@ -272,65 +172,54 @@ function matchesSearch(event: GlobalEvent, query: string): boolean {
     .includes(q);
 }
 
-function availabilityLabel(event: GlobalEvent): string {
-  if (!event.date) return "Dates TBA";
-  const formatted = formatDate(event.date);
-  if (event.time) return `${formatted} · ${event.time}`;
-  return formatted;
-}
-
 type ExploreCardProps = {
-  event: GlobalEvent;
+  event: ExploreEvent;
   userCity: string;
-  onOpen: (event: GlobalEvent) => void;
+  onOpen: (event: ExploreEvent) => void;
 };
 
 function ExploreCard({ event, userCity, onOpen }: ExploreCardProps) {
   const { score, reviews } = pseudoRating(event);
   const fullStars = Math.floor(score);
-  const distanceLabel =
-    cityLabel(event.city).toLowerCase() === cityLabel(userCity).toLowerCase()
-      ? pseudoDistanceMiles(event, userCity)
-      : event.city;
+  const location = formatLocation(event, userCity);
+  const price = formatPrice(event);
 
   return (
-    <div
+    <article
       role="button"
       tabIndex={0}
       onClick={() => onOpen(event)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") onOpen(event);
       }}
-      className="cursor-pointer overflow-hidden rounded-xl border border-[#E2E8F0] bg-white shadow-sm transition-all hover:border-teal-500 hover:shadow-md"
+      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-teal-400 hover:shadow-md"
     >
-      <div className="relative h-40 overflow-hidden bg-slate-100">
+      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
         {event.image_url ? (
           <img
             src={event.image_url}
             alt={event.name}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-slate-200">
-            <span className="text-sm text-slate-400">No image</span>
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-teal-50 to-slate-100">
+            <Calendar size={32} className="text-slate-300" />
           </div>
         )}
-        <span className="absolute left-2 top-2 rounded-md bg-teal-600 px-2 py-1 text-xs font-medium text-white">
-          {event.category || "Event"}
+        <span className="absolute left-3 top-3 rounded-lg bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-teal-700 shadow-sm backdrop-blur">
+          {event.category}
         </span>
-        {event.price_min != null && (
-          <span className="absolute right-2 top-2 rounded-md border border-[#E2E8F0] bg-white px-2 py-1 text-xs font-semibold text-slate-800">
-            From ${Math.round(event.price_min)}
-          </span>
-        )}
+        <span className="absolute right-3 top-3 rounded-lg bg-[#1E293B]/85 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+          {price}
+        </span>
       </div>
 
-      <div className="p-3">
-        <h3 className="mb-2 line-clamp-2 text-sm font-semibold leading-snug text-[#1E293B]">
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="mb-2 line-clamp-2 text-[15px] font-semibold leading-snug text-[#1E293B] group-hover:text-teal-700">
           {event.name}
         </h3>
 
-        <div className="mb-2 flex items-center gap-1">
+        <div className="mb-3 flex items-center gap-1">
           <div className="flex">
             {[1, 2, 3, 4, 5].map((i) => (
               <Star
@@ -338,59 +227,46 @@ function ExploreCard({ event, userCity, onOpen }: ExploreCardProps) {
                 size={12}
                 className={
                   i <= fullStars
-                    ? "fill-yellow-400 text-yellow-400"
-                    : "text-slate-300"
+                    ? "fill-amber-400 text-amber-400"
+                    : "text-slate-200"
                 }
               />
             ))}
           </div>
-          <span className="ml-1 text-xs text-[#475569]">
+          <span className="ml-1 text-xs text-[#64748B]">
             {score.toFixed(1)} ({reviews})
           </span>
         </div>
 
-        <div className="mb-1 flex items-center gap-1">
-          <MapPin size={12} className="shrink-0 text-[#94A3B8]" />
-          <span className="truncate text-xs text-[#475569]">
-            {event.venue || event.city}
-            {event.city ? ` · ${event.city}` : ""}
-          </span>
-        </div>
-
-        {event.date && (
-          <div className="mb-1 flex items-center gap-1">
-            <Calendar size={12} className="shrink-0 text-[#94A3B8]" />
-            <span className="text-xs text-[#475569]">
-              {formatDate(event.date)}
-              {event.time ? ` · ${event.time}` : ""}
+        <div className="mt-auto space-y-1.5">
+          <div className="flex items-start gap-1.5">
+            <MapPin size={13} className="mt-0.5 shrink-0 text-[#94A3B8]" />
+            <div className="min-w-0">
+              <p className="truncate text-xs font-medium text-[#475569]">
+                {location.primary}
+              </p>
+              <p className="truncate text-[11px] text-[#94A3B8]">
+                {location.secondary}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Calendar size={13} className="shrink-0 text-[#94A3B8]" />
+            <span className="truncate text-xs text-[#64748B]">
+              {formatDateTime(event)}
             </span>
           </div>
-        )}
-
-        <div className="mb-1 flex items-center gap-1">
-          <Navigation size={12} className="shrink-0 text-[#94A3B8]" />
-          <span className="text-xs text-[#475569]">
-            {cityLabel(event.city).toLowerCase() ===
-            cityLabel(userCity).toLowerCase()
-              ? distanceLabel
-              : event.city}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <Clock size={12} className="shrink-0 text-[#94A3B8]" />
-          <span className="text-xs text-[#94A3B8]">{availabilityLabel(event)}</span>
         </div>
       </div>
-    </div>
+    </article>
   );
 }
 
 function CardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
-      <div className="h-40 animate-pulse bg-slate-200" />
-      <div className="space-y-2 p-3">
+    <div className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-sm">
+      <div className="aspect-[4/3] animate-pulse bg-slate-200" />
+      <div className="space-y-2 p-4">
         <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200" />
         <div className="h-3 w-1/2 animate-pulse rounded bg-slate-200" />
         <div className="h-3 w-2/3 animate-pulse rounded bg-slate-200" />
@@ -401,58 +277,97 @@ function CardSkeleton() {
 
 type SectionProps = {
   title: string;
-  events: GlobalEvent[];
+  subtitle?: string;
+  events: ExploreEvent[];
+  rawCount: number;
   userCity: string;
   loading: boolean;
+  fetchError: string | null;
+  filtersActive: boolean;
   onSeeAll: () => void;
-  onOpen: (event: GlobalEvent) => void;
-  limit?: number;
+  onOpen: (event: ExploreEvent) => void;
+  onClearFilters?: () => void;
 };
 
 function EventSection({
   title,
+  subtitle,
   events,
+  rawCount,
   userCity,
   loading,
+  fetchError,
+  filtersActive,
   onSeeAll,
   onOpen,
-  limit,
+  onClearFilters,
 }: SectionProps) {
-  const safeEvents = Array.isArray(events) ? events : [];
-  const visible = limit != null ? safeEvents.slice(0, limit) : safeEvents;
-  const skeletonCount = limit ?? 4;
+  const visible = events.slice(0, SECTION_CARD_LIMIT);
+  const hasMore = events.length > SECTION_CARD_LIMIT;
+
+  let emptyMessage = "No events available right now.";
+  if (fetchError) {
+    emptyMessage = "Could not refresh events. Showing cached results if available.";
+  } else if (filtersActive && rawCount > 0) {
+    emptyMessage = "No experiences match your current filters.";
+  } else if (rawCount === 0) {
+    emptyMessage = "No live events found for this area yet.";
+  }
 
   return (
-    <section className="mb-10">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-[#1E293B]">{title}</h2>
-        <button
-          type="button"
-          onClick={onSeeAll}
-          className="text-sm font-medium text-teal-600 hover:underline"
-        >
-          See all
-        </button>
+    <section className="mb-12">
+      <div className="mb-5 flex items-end justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-[#1E293B]">{title}</h2>
+          {subtitle && (
+            <p className="mt-0.5 text-sm text-[#64748B]">{subtitle}</p>
+          )}
+        </div>
+        {hasMore && (
+          <button
+            type="button"
+            onClick={onSeeAll}
+            className="inline-flex shrink-0 items-center gap-0.5 text-sm font-semibold text-teal-600 transition hover:text-teal-700"
+          >
+            See all
+            <ChevronRight size={16} />
+          </button>
+        )}
       </div>
-      {loading ? (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: skeletonCount }).map((_, i) => (
+
+      {loading && visible.length === 0 ? (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: SECTION_CARD_LIMIT }).map((_, i) => (
             <CardSkeleton key={i} />
           ))}
         </div>
       ) : visible.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[#E2E8F0] bg-white p-8 text-center text-sm text-[#94A3B8]">
-          No experiences found for this section.
+        <div className="rounded-2xl border border-dashed border-[#E2E8F0] bg-white p-10 text-center">
+          <p className="text-sm text-[#64748B]">{emptyMessage}</p>
+          {filtersActive && rawCount > 0 && onClearFilters && (
+            <button
+              type="button"
+              onClick={onClearFilters}
+              className="mt-4 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {visible.map((event, index) => (
-            <ExploreCard
-              key={`${event.id}-${index}`}
-              event={event}
-              userCity={userCity}
-              onOpen={onOpen}
-            />
+            <Link
+              key={`${event.id || event.name}-${index}`}
+              href={`/explore/event/${event.id}`}
+              className="block h-full"
+            >
+              <ExploreCard
+                event={event}
+                userCity={userCity}
+                onOpen={onOpen}
+              />
+            </Link>
           ))}
         </div>
       )}
@@ -463,6 +378,8 @@ function EventSection({
 export default function ExploreHubPage() {
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const fetchGenerationRef = useRef(0);
+  const mountedRef = useRef(false);
 
   const [currentCity, setCurrentCity] = useState("Chicago, IL");
   const [showCityDropdown, setShowCityDropdown] = useState(false);
@@ -472,53 +389,106 @@ export default function ExploreHubPage() {
   const [activeCategory, setActiveCategory] = useState<CategoryPill>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [trendingEvents, setTrendingEvents] = useState<GlobalEvent[]>([]);
-  const [weekendEvents, setWeekendEvents] = useState<GlobalEvent[]>([]);
-  const [popularEvents, setPopularEvents] = useState<GlobalEvent[]>([]);
-  const [nationalEvents, setNationalEvents] = useState<GlobalEvent[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [feedDebug, setFeedDebug] = useState<ExploreFeedDebug | null>(null);
+  const [trendingEvents, setTrendingEvents] = useState<ExploreEvent[]>([]);
+  const [weekendEvents, setWeekendEvents] = useState<ExploreEvent[]>([]);
+  const [popularEvents, setPopularEvents] = useState<ExploreEvent[]>([]);
+  const [nationalEvents, setNationalEvents] = useState<ExploreEvent[]>([]);
   const [userCoords, setUserCoords] = useState<UserCoords | null>(null);
   const [radiusMiles, setRadiusMiles] = useState(EXPLORE_RADIUS_MILES);
 
   const stateName = STATE_BY_CITY[cityLabel(currentCity)] || "Your Region";
+  const filtersActive =
+    activeCategory !== "All" || searchQuery.trim().length > 0;
 
-  const splitEvents = useCallback((data: EventsAPIResponse | null) => {
-    if (!data) {
-      setTrendingEvents([]);
-      setWeekendEvents([]);
-      setPopularEvents([]);
-      setNationalEvents([]);
-      return;
-    }
-    setTrendingEvents(data.trending || data.events.slice(0, 40) || []);
-    setWeekendEvents(data.weekend || data.events.slice(40, 60) || []);
-    setPopularEvents(data.popular || data.events.slice(60, 80) || []);
-    setNationalEvents(data.national || data.events.slice(80, 100) || []);
-  }, []);
+  const applySections = useCallback(
+    (
+      data: EventsAPIResponse,
+      source: ExploreFeedDebug["source"],
+      cityKey: string,
+    ) => {
+      const { sections, debug } = hydrateSectionsFromResponse(data);
+      setTrendingEvents(sections.trending);
+      setWeekendEvents(sections.weekend);
+      setPopularEvents(sections.popular);
+      setNationalEvents(sections.national);
 
-  const fetchEvents = useCallback(async (city: string, coords?: UserCoords | null) => {
-    setLoading(true);
-    const cityName = city.split(",")[0].trim();
-    try {
-      let url = `/explore/events?city=${encodeURIComponent(cityName)}&per_page=100`;
-      if (coords) {
-        url += `&lat=${coords.lat}&lon=${coords.lon}&radius=${EXPLORE_RADIUS_MILES}`;
+      const fullDebug: ExploreFeedDebug = {
+        ...debug,
+        source,
+        fetchedAt: new Date().toISOString(),
+      };
+      setFeedDebug(fullDebug);
+      saveExploreFeedCache(cityKey, sections, fullDebug);
+    },
+    [],
+  );
+
+  const fetchEvents = useCallback(
+    async (city: string, coords?: UserCoords | null) => {
+      const cityName = city.split(",")[0].trim();
+      const cityKey = `${cityName.toLowerCase()}|${coords ? `${coords.lat.toFixed(2)},${coords.lon.toFixed(2)}` : "city"}`;
+      const generation = ++fetchGenerationRef.current;
+
+      const cached = loadExploreFeedCache(cityKey);
+      if (cached) {
+        setTrendingEvents(cached.sections.trending);
+        setWeekendEvents(cached.sections.weekend);
+        setPopularEvents(cached.sections.popular);
+        setNationalEvents(cached.sections.national);
+        setFeedDebug({ ...cached.debug, source: "cache" });
+        setLoading(false);
+        setRefreshing(true);
+      } else {
+        setLoading(true);
       }
-      const data = await apiFetch<EventsAPIResponse>(
-        url,
-        {},
-        EVENTS_FETCH_TIMEOUT_MS,
-      );
-      if (data.radius_miles) {
-        setRadiusMiles(data.radius_miles);
+
+      setFetchError(null);
+
+      try {
+        let url = `/explore/events?city=${encodeURIComponent(cityName)}&per_page=100`;
+        if (coords) {
+          url += `&lat=${coords.lat}&lon=${coords.lon}&radius=${EXPLORE_RADIUS_MILES}`;
+        }
+        const data = await apiFetch<EventsAPIResponse>(
+          url,
+          {},
+          EVENTS_FETCH_TIMEOUT_MS,
+        );
+
+        if (generation !== fetchGenerationRef.current) return;
+
+        if (data.radius_miles) {
+          setRadiusMiles(data.radius_miles);
+        }
+        applySections(data, "live", cityKey);
+      } catch (err) {
+        if (generation !== fetchGenerationRef.current) return;
+        const message =
+          err instanceof Error ? err.message : "Failed to load events";
+        console.error("Failed to load explore events:", message);
+        setFetchError(message);
+
+        if (!cached) {
+          const fallback = loadExploreFeedCache(cityKey);
+          if (!fallback) {
+            setTrendingEvents([]);
+            setWeekendEvents([]);
+            setPopularEvents([]);
+            setNationalEvents([]);
+          }
+        }
+      } finally {
+        if (generation === fetchGenerationRef.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
-      splitEvents(data);
-    } catch (err) {
-      console.error("Failed to load explore events:", err);
-      splitEvents(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [splitEvents]);
+    },
+    [applySections],
+  );
 
   const detectGPSCity = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -570,16 +540,20 @@ export default function ExploreHubPage() {
   }, [fetchEvents]);
 
   useEffect(() => {
+    if (mountedRef.current) return;
+    mountedRef.current = true;
+
     const saved = loadExploreCity();
     const savedCoords = loadExploreCoords();
     if (saved) {
       setCurrentCity(saved);
       setUserCoords(savedCoords);
-      void fetchEvents(cityLabel(saved), savedCoords);
+      void fetchEvents(saved, savedCoords);
       return;
     }
     detectGPSCity();
-  }, [detectGPSCity, fetchEvents]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only bootstrap
+  }, []);
 
   useEffect(() => {
     if (citySearch.length < 2) {
@@ -618,9 +592,10 @@ export default function ExploreHubPage() {
   }, []);
 
   const filterEvents = useCallback(
-    (events: GlobalEvent[]) =>
+    (events: ExploreEvent[]) =>
       events.filter(
-        (ev) => matchesCategory(ev, activeCategory) && matchesSearch(ev, searchQuery),
+        (ev) =>
+          matchesCategory(ev, activeCategory) && matchesSearch(ev, searchQuery),
       ),
     [activeCategory, searchQuery],
   );
@@ -649,42 +624,82 @@ export default function ExploreHubPage() {
     setShowCityDropdown(false);
     setCitySearch("");
     setCitySuggestions([]);
-    fetchEvents(suggestion.city, null);
+    fetchEvents(suggestion.label, null);
   };
 
-  const handleOpenEvent = (event: GlobalEvent) => {
-    if (event.ticket_url) {
-      window.open(event.ticket_url, "_blank", "noopener,noreferrer");
-      return;
-    }
-    router.push(`/events?city=${encodeURIComponent(event.city || currentCity)}`);
+  const clearFilters = () => {
+    setActiveCategory("All");
+    setSearchQuery("");
   };
 
-  const handleSeeAll = (section: "trending" | "weekend" | "state" | "national") => {
-    const city =
-      section === "national" ? "New York" : cityLabel(currentCity);
+  const handleOpenEvent = (event: ExploreEvent) => {
+    saveEventSnapshot(event);
     router.push(
-      `/events?city=${encodeURIComponent(city)}${
-        activeCategory !== "All" ? `&category=${encodeURIComponent(activeCategory.toLowerCase())}` : ""
-      }`,
+      `/explore/event/${encodeURIComponent(event.id)}?city=${encodeURIComponent(cityLabel(currentCity))}`,
     );
   };
+
+  const handleSeeAll = (
+    section: "trending" | "weekend" | "state" | "national",
+  ) => {
+    const city =
+      section === "national" ? "New York" : cityLabel(currentCity);
+    const params = new URLSearchParams();
+    params.set("city", city);
+    params.set("page", "1");
+    params.set("per_page", "20");
+    if (activeCategory !== "All") {
+      params.set("category", activeCategory.toLowerCase());
+    }
+    if (userCoords && section !== "national") {
+      params.set("lat", userCoords.lat.toString());
+      params.set("lon", userCoords.lon.toString());
+      params.set("radius", radiusMiles.toString());
+    }
+    router.push(`/events?${params.toString()}`);
+  };
+
+  const hasLiveContent =
+    trendingEvents.length +
+      weekendEvents.length +
+      popularEvents.length +
+      nationalEvents.length >
+    0;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-6">
       <div className="mx-auto max-w-[1440px]">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#1E293B]">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] md:text-3xl">
             Discover experiences near you
           </h1>
-          <p className="mt-1 text-[#475569]">
-            {userCoords
-              ? `Ticketmaster events within ${radiusMiles} miles of ${currentCity}`
-              : `Events, activities and places — curated for ${cityLabel(currentCity)}`}
+          <p className="mt-2 max-w-2xl text-[#64748B]">
+            {hasLiveContent
+              ? userCoords
+                ? `Curated picks within ${radiusMiles} miles of ${currentCity} — plan, compare, and book with confidence.`
+                : `Hand-picked events and activities in ${cityLabel(currentCity)}.`
+              : loading
+                ? "Loading events near you…"
+                : `Finding events near ${cityLabel(currentCity)}.`}
           </p>
+          {fetchError && (
+            <p className="mt-2 text-sm text-amber-700">
+              Live refresh issue: {fetchError}
+              {refreshing ? " Retrying…" : ""}
+            </p>
+          )}
+          {process.env.NODE_ENV === "development" && feedDebug && (
+            <p className="mt-2 rounded-lg bg-slate-100 px-3 py-2 font-mono text-xs text-slate-600">
+              dev · source={feedDebug.source} · raw={feedDebug.rawTotal} · pool=
+              {feedDebug.poolSize} · sections={feedDebug.dedupedTrending}/
+              {feedDebug.dedupedWeekend}/{feedDebug.dedupedPopular}/
+              {feedDebug.dedupedNational} · filtered trending=
+              {filteredTrending.length}
+            </p>
+          )}
         </div>
 
-        <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+        <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
           {CATEGORY_PILLS.map((cat) => (
             <button
               key={cat}
@@ -692,8 +707,8 @@ export default function ExploreHubPage() {
               onClick={() => setActiveCategory(cat)}
               className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                 activeCategory === cat
-                  ? "border-teal-600 bg-teal-600 text-white"
-                  : "border-[#E2E8F0] bg-white text-[#475569] hover:border-teal-500"
+                  ? "border-teal-600 bg-teal-600 text-white shadow-sm"
+                  : "border-[#E2E8F0] bg-white text-[#475569] hover:border-teal-400"
               }`}
             >
               {cat}
@@ -701,7 +716,7 @@ export default function ExploreHubPage() {
           ))}
         </div>
 
-        <div className="mb-8 flex flex-col gap-3 sm:flex-row">
+        <div className="mb-10 flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search
               size={16}
@@ -711,8 +726,8 @@ export default function ExploreHubPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search events, activities, places..."
-              className="w-full rounded-xl border border-[#E2E8F0] bg-white py-3 pl-10 pr-4 text-[#1E293B] placeholder-[#94A3B8] focus:border-teal-500 focus:outline-none"
+              placeholder="Search events, venues, categories..."
+              className="w-full rounded-xl border border-[#E2E8F0] bg-white py-3 pl-10 pr-4 text-[#1E293B] shadow-sm placeholder-[#94A3B8] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
             />
           </div>
 
@@ -720,7 +735,7 @@ export default function ExploreHubPage() {
             <button
               type="button"
               onClick={() => setShowCityDropdown((v) => !v)}
-              className="flex w-full items-center gap-2 whitespace-nowrap rounded-xl border border-[#E2E8F0] bg-white px-4 py-3 text-[#475569] transition-colors hover:border-teal-500 sm:w-auto"
+              className="flex w-full items-center gap-2 whitespace-nowrap rounded-xl border border-[#E2E8F0] bg-white px-4 py-3 text-[#475569] shadow-sm transition-colors hover:border-teal-400 sm:w-auto"
             >
               <MapPin size={16} className="text-teal-600" />
               <span className="font-medium text-[#1E293B]">{currentCity}</span>
@@ -745,7 +760,9 @@ export default function ExploreHubPage() {
                 </div>
 
                 {cityLoading && (
-                  <p className="py-3 text-center text-sm text-[#94A3B8]">Searching...</p>
+                  <p className="py-3 text-center text-sm text-[#94A3B8]">
+                    Searching...
+                  </p>
                 )}
 
                 {citySuggestions.map((s) => (
@@ -760,9 +777,13 @@ export default function ExploreHubPage() {
                   </button>
                 ))}
 
-                {!cityLoading && citySearch.length >= 2 && citySuggestions.length === 0 && (
-                  <p className="py-3 text-center text-sm text-[#94A3B8]">No cities found</p>
-                )}
+                {!cityLoading &&
+                  citySearch.length >= 2 &&
+                  citySuggestions.length === 0 && (
+                    <p className="py-3 text-center text-sm text-[#94A3B8]">
+                      No cities found
+                    </p>
+                  )}
 
                 <button
                   type="button"
@@ -781,39 +802,59 @@ export default function ExploreHubPage() {
         </div>
 
         <EventSection
-          title={`Trending in ${currentCity}`}
+          title={`Trending in ${cityLabel(currentCity)}`}
+          subtitle="Local favorites near you"
           events={filteredTrending}
+          rawCount={trendingEvents.length}
           userCity={currentCity}
           loading={loading}
+          fetchError={fetchError}
+          filtersActive={filtersActive}
           onSeeAll={() => handleSeeAll("trending")}
           onOpen={handleOpenEvent}
+          onClearFilters={clearFilters}
         />
 
         <EventSection
           title="Happening This Weekend"
+          subtitle="Don't miss what's coming up"
           events={filteredWeekend}
+          rawCount={weekendEvents.length}
           userCity={currentCity}
           loading={loading}
+          fetchError={fetchError}
+          filtersActive={filtersActive}
           onSeeAll={() => handleSeeAll("weekend")}
           onOpen={handleOpenEvent}
+          onClearFilters={clearFilters}
         />
 
         <EventSection
           title={`Popular in ${stateName}`}
+          subtitle={`Top picks across ${stateName}`}
           events={filteredPopular}
+          rawCount={popularEvents.length}
           userCity={currentCity}
           loading={loading}
+          fetchError={fetchError}
+          filtersActive={filtersActive}
           onSeeAll={() => handleSeeAll("state")}
           onOpen={handleOpenEvent}
+          onClearFilters={clearFilters}
         />
 
         <EventSection
           title="National Picks"
+          subtitle="Standout events across the country"
           events={filteredNational}
+          rawCount={nationalEvents.length}
           userCity={currentCity}
           loading={loading}
+          fetchError={fetchError}
+          filtersActive={filtersActive}
           onSeeAll={() => handleSeeAll("national")}
           onOpen={handleOpenEvent}
+          onClearFilters={clearFilters}
         />
       </div>
     </div>

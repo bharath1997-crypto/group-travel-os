@@ -74,3 +74,19 @@ async def test_explore_events_endpoint_ai_fallback(monkeypatch):
     assert "🎨 Ubud Festival" in event["title"]
     assert "Ubud Art Center" in event["venue"]
     assert event["sourceType"] == "ai_fallback"
+
+
+def test_get_explore_event_detail():
+    """
+    Verify GET /api/v1/explore/events/{event_id} returns detail for mock events or 404 for unknown ones.
+    """
+    response = client.get("/api/v1/explore/events/mock-12345")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == "mock-12345"
+    assert data["title"] == "Local Experience"
+    assert data["category"] == "Festival"
+    
+    response_nf = client.get("/api/v1/explore/events/unknown-event-id")
+    assert response_nf.status_code == 404
+
