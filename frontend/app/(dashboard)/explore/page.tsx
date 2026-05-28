@@ -52,6 +52,65 @@ type CityAutocompleteResponse = {
 };
 
 const EVENTS_FETCH_TIMEOUT_MS = 20_000;
+const LS_EXPLORE_CITY = "rovvy_explore_city";
+
+const MAJOR_CITIES: { name: string; state: string; lat: number; lon: number }[] = [
+  { name: "Chicago", state: "IL", lat: 41.8781, lon: -87.6298 },
+  { name: "New York", state: "NY", lat: 40.7128, lon: -74.006 },
+  { name: "Los Angeles", state: "CA", lat: 34.0522, lon: -118.2437 },
+  { name: "Houston", state: "TX", lat: 29.7604, lon: -95.3698 },
+  { name: "Phoenix", state: "AZ", lat: 33.4484, lon: -112.074 },
+  { name: "Philadelphia", state: "PA", lat: 39.9526, lon: -75.1652 },
+  { name: "San Antonio", state: "TX", lat: 29.4241, lon: -98.4936 },
+  { name: "San Diego", state: "CA", lat: 32.7157, lon: -117.1611 },
+  { name: "Dallas", state: "TX", lat: 32.7767, lon: -96.797 },
+  { name: "Austin", state: "TX", lat: 30.2672, lon: -97.7431 },
+  { name: "Miami", state: "FL", lat: 25.7617, lon: -80.1918 },
+  { name: "Milwaukee", state: "WI", lat: 43.0389, lon: -87.9065 },
+  { name: "Indianapolis", state: "IN", lat: 39.7684, lon: -86.1581 },
+  { name: "Detroit", state: "MI", lat: 42.3314, lon: -83.0458 },
+];
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function nearestMajorCity(lat: number, lon: number): { city: string; label: string } {
+  let best = MAJOR_CITIES[0];
+  let bestDist = Infinity;
+  for (const major of MAJOR_CITIES) {
+    const dist = haversineKm(lat, lon, major.lat, major.lon);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = major;
+    }
+  }
+  return { city: best.name, label: `${best.name}, ${best.state}` };
+}
+
+function saveExploreCity(label: string) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(LS_EXPLORE_CITY, label);
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
+function loadExploreCity(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(LS_EXPLORE_CITY);
+  } catch {
+    return null;
+  }
+}
 
 const CATEGORY_PILLS = [
   "All",
@@ -425,8 +484,9 @@ export default function ExploreHubPage() {
 
   const detectGPSCity = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setCurrentCity("Chicago, IL");
-      void fetchEvents("Chicago");
+      const fallback = loadExploreCity() || "Chicago, IL";
+      setCurrentCity(fallback);
+      void fetchEvents(cityLabel(fallback));
       return;
     }
 
@@ -435,31 +495,48 @@ export default function ExploreHubPage() {
         const { latitude, longitude } = pos.coords;
         try {
           const r = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&extratags=1`,
             { headers: { Accept: "application/json" } },
           );
           const data = await r.json();
-          const city =
+          let city =
             data.address?.city || data.address?.town || data.address?.village || "Chicago";
-          const state = data.address?.state_code || data.address?.state || "";
+          let state = data.address?.state_code || data.address?.state || "";
+          const population = parseInt(String(data.extratags?.population || "0"), 10);
+          const isSmallCity = population > 0 && population < 100_000;
+
+          if (isSmallCity || !data.address?.city) {
+            const major = nearestMajorCity(latitude, longitude);
+            city = major.city;
+            state = major.label.split(", ")[1] || state;
+          }
+
           const label = state ? `${city}, ${state}` : city;
           setCurrentCity(label);
           await fetchEvents(city);
         } catch {
-          setCurrentCity("Chicago, IL");
-          await fetchEvents("Chicago");
+          const fallback = loadExploreCity() || "Chicago, IL";
+          setCurrentCity(fallback);
+          await fetchEvents(cityLabel(fallback));
         }
       },
       () => {
-        setCurrentCity("Chicago, IL");
-        void fetchEvents("Chicago");
+        const fallback = loadExploreCity() || "Chicago, IL";
+        setCurrentCity(fallback);
+        void fetchEvents(cityLabel(fallback));
       },
     );
   }, [fetchEvents]);
 
   useEffect(() => {
+    const saved = loadExploreCity();
+    if (saved) {
+      setCurrentCity(saved);
+      void fetchEvents(cityLabel(saved));
+      return;
+    }
     detectGPSCity();
-  }, [detectGPSCity]);
+  }, [detectGPSCity, fetchEvents]);
 
   useEffect(() => {
     if (citySearch.length < 2) {
@@ -524,6 +601,7 @@ export default function ExploreHubPage() {
 
   const selectCity = (suggestion: CitySuggestion) => {
     setCurrentCity(suggestion.label);
+    saveExploreCity(suggestion.label);
     setShowCityDropdown(false);
     setCitySearch("");
     setCitySuggestions([]);

@@ -4,7 +4,7 @@ app/routes/explore.py — Endpoints for generic explore content (News, Shorts)
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 from fastapi import APIRouter, Depends, Query, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
@@ -337,11 +337,47 @@ async def explore_events(
         return float(h % 100) / 10.0
 
     sorted_events = sorted(events, key=get_score, reverse=True)
+    used_ids: set[str] = set()
 
-    # 1. Trending
-    trending = [ev for ev in sorted_events if get_score(ev) >= 5.0][:40]
-    if not trending:
-        trending = sorted_events[:40]
+    def event_id(ev: dict[str, Any]) -> str:
+        return str(ev.get("id") or ev.get("name") or "")
+
+    def assign_section(
+        pool: list[dict[str, Any]],
+        limit: int,
+        predicate: Callable[[dict[str, Any]], bool] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Pick up to `limit` unique events; backfill only from unused pool items."""
+        chosen: list[dict[str, Any]] = []
+
+        if predicate is not None:
+            for ev in pool:
+                if len(chosen) >= limit:
+                    break
+                eid = event_id(ev)
+                if eid in used_ids:
+                    continue
+                if predicate(ev):
+                    chosen.append(ev)
+                    used_ids.add(eid)
+
+        if len(chosen) < limit:
+            for ev in pool:
+                if len(chosen) >= limit:
+                    break
+                eid = event_id(ev)
+                if eid in used_ids:
+                    continue
+                chosen.append(ev)
+                used_ids.add(eid)
+
+        return chosen
+
+    trending = assign_section(
+        sorted_events,
+        40,
+        lambda ev: get_score(ev) >= 5.0,
+    )
 
     # 2. This Weekend (next 3 days)
     today = date.today()
@@ -357,9 +393,7 @@ async def explore_events(
         except Exception:
             return False
 
-    weekend = [ev for ev in sorted_events if is_weekend(ev)][:20]
-    if not weekend:
-        weekend = sorted_events[40:60] if len(sorted_events) > 40 else sorted_events[:20]
+    weekend = assign_section(sorted_events, 20, is_weekend)
 
     # 3. Popular in State
     CITY_STATE_MAP = {
@@ -387,18 +421,10 @@ async def explore_events(
         ev_city = ev.get("city", "").strip().lower()
         return CITY_STATE_MAP.get(ev_city, "") == query_state if query_state else False
 
-    state_events = [ev for ev in sorted_events if matches_state(ev)][:20]
-    if not state_events:
-        state_events = sorted_events[60:80] if len(sorted_events) > 60 else sorted_events[:20]
+    state_events = assign_section(sorted_events, 20, matches_state)
 
     # 4. National
-    used_ids = {ev["id"] for ev in trending + weekend + state_events if "id" in ev}
-    national = [ev for ev in sorted_events if ev.get("id") not in used_ids][:20]
-    if len(national) < 20:
-        rem = [ev for ev in sorted_events if ev.get("id") not in {n.get("id") for n in national}]
-        national.extend(rem[:20 - len(national)])
-    if not national:
-        national = sorted_events[80:100] if len(sorted_events) > 80 else sorted_events[:20]
+    national = assign_section(sorted_events, 20)
 
     return {
         "city": city_strip,
