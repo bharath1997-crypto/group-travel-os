@@ -106,6 +106,42 @@ function loadExploreCoords(): UserCoords | null {
   return null;
 }
 
+/** Resolve coords for API: explicit null = manual city pick (no GPS). */
+function resolveFetchCoords(
+  explicit?: UserCoords | null,
+  refCoords?: UserCoords | null,
+): UserCoords | null {
+  if (explicit === null) return null;
+  if (
+    explicit &&
+    typeof explicit.lat === "number" &&
+    typeof explicit.lon === "number"
+  ) {
+    return explicit;
+  }
+  if (
+    refCoords &&
+    typeof refCoords.lat === "number" &&
+    typeof refCoords.lon === "number"
+  ) {
+    return refCoords;
+  }
+  return loadExploreCoords();
+}
+
+function buildExploreEventsUrl(cityName: string, coords: UserCoords | null): string {
+  const params = new URLSearchParams({
+    city: cityName,
+    per_page: "100",
+  });
+  if (coords) {
+    params.set("lat", String(coords.lat));
+    params.set("lon", String(coords.lon));
+    params.set("radius", String(EXPLORE_RADIUS_MILES));
+  }
+  return `/explore/events?${params.toString()}`;
+}
+
 const CATEGORY_PILLS = [
   "All",
   "Events",
@@ -389,6 +425,12 @@ export default function ExploreHubPage() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fetchGenerationRef = useRef(0);
   const mountedRef = useRef(false);
+  const userCoordsRef = useRef<UserCoords | null>(null);
+
+  const setCoords = useCallback((coords: UserCoords | null) => {
+    userCoordsRef.current = coords;
+    setUserCoords(coords);
+  }, []);
 
   const [currentCity, setCurrentCity] = useState("Chicago, IL");
   const [showCityDropdown, setShowCityDropdown] = useState(false);
@@ -454,7 +496,8 @@ export default function ExploreHubPage() {
   const fetchEvents = useCallback(
     async (city: string, coords?: UserCoords | null) => {
       const cityName = city.split(",")[0].trim();
-      const cityKey = `${cityName.toLowerCase()}|${coords ? `${coords.lat.toFixed(2)},${coords.lon.toFixed(2)}` : "city"}`;
+      const activeCoords = resolveFetchCoords(coords, userCoordsRef.current);
+      const cityKey = `${cityName.toLowerCase()}|${activeCoords ? `${activeCoords.lat.toFixed(2)},${activeCoords.lon.toFixed(2)}` : "city"}`;
       const generation = ++fetchGenerationRef.current;
 
       const cached = loadExploreFeedCache(cityKey);
@@ -473,9 +516,9 @@ export default function ExploreHubPage() {
       setFetchError(null);
 
       try {
-        let url = `/explore/events?city=${encodeURIComponent(cityName)}&per_page=100`;
-        if (coords) {
-          url += `&lat=${coords.lat}&lon=${coords.lon}&radius=${EXPLORE_RADIUS_MILES}`;
+        const url = buildExploreEventsUrl(cityName, activeCoords);
+        if (process.env.NODE_ENV === "development") {
+          console.info("[explore] GET", url);
         }
         const data = await apiFetch<EventsAPIResponse>(
           url,
@@ -520,8 +563,8 @@ export default function ExploreHubPage() {
       const fallback = loadExploreCity() || "Chicago, IL";
       const coords = loadExploreCoords();
       setCurrentCity(fallback);
-      setUserCoords(coords);
-      void fetchEvents(cityLabel(fallback), coords);
+      setCoords(coords);
+      void fetchEvents(fallback, coords);
       return;
     }
 
@@ -529,6 +572,7 @@ export default function ExploreHubPage() {
       async (pos) => {
         const { latitude, longitude } = pos.coords;
         const coords: UserCoords = { lat: latitude, lon: longitude };
+        setCoords(coords);
         try {
           const r = await fetch(
             `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
@@ -544,25 +588,24 @@ export default function ExploreHubPage() {
           const state = data.address?.state_code || data.address?.state || "";
           const label = state ? `${city}, ${state}` : city;
           setCurrentCity(label);
-          setUserCoords(coords);
           saveExploreCity(label, coords);
-          await fetchEvents(city, coords);
+          await fetchEvents(label, coords);
         } catch {
           const fallback = loadExploreCity() || "Chicago, IL";
           setCurrentCity(fallback);
-          setUserCoords(null);
-          await fetchEvents(cityLabel(fallback), null);
+          saveExploreCity(fallback, coords);
+          await fetchEvents(fallback, coords);
         }
       },
       () => {
         const fallback = loadExploreCity() || "Chicago, IL";
         const coords = loadExploreCoords();
         setCurrentCity(fallback);
-        setUserCoords(coords);
-        void fetchEvents(cityLabel(fallback), coords);
+        setCoords(coords);
+        void fetchEvents(fallback, coords);
       },
     );
-  }, [fetchEvents]);
+  }, [fetchEvents, setCoords]);
 
   useEffect(() => {
     if (mountedRef.current) return;
@@ -572,8 +615,12 @@ export default function ExploreHubPage() {
     const savedCoords = loadExploreCoords();
     if (saved) {
       setCurrentCity(saved);
-      setUserCoords(savedCoords);
-      void fetchEvents(saved, savedCoords);
+      setCoords(savedCoords);
+      if (savedCoords) {
+        void fetchEvents(saved, savedCoords);
+      } else {
+        detectGPSCity();
+      }
       return;
     }
     detectGPSCity();
@@ -644,7 +691,7 @@ export default function ExploreHubPage() {
 
   const selectCity = (suggestion: CitySuggestion) => {
     setCurrentCity(suggestion.label);
-    setUserCoords(null);
+    setCoords(null);
     saveExploreCity(suggestion.label, null);
     setShowCityDropdown(false);
     setCitySearch("");
@@ -720,6 +767,9 @@ export default function ExploreHubPage() {
               {feedDebug.dedupedWeekend}/{feedDebug.dedupedPopular}/
               {feedDebug.dedupedNational} · filtered trending=
               {filteredTrending.length}
+              {userCoords
+                ? ` · geo=${userCoords.lat.toFixed(4)},${userCoords.lon.toFixed(4)} r=${EXPLORE_RADIUS_MILES}`
+                : " · geo=none"}
             </p>
           )}
         </div>
