@@ -181,6 +181,18 @@ def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> floa
     return r * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
+def _nearest_major_metro(lat: float, lon: float) -> dict[str, Any]:
+    """Return the closest hardcoded major metro to a GPS point."""
+    best = MAJOR_METRO_CITIES[0]
+    best_dist = float("inf")
+    for metro in MAJOR_METRO_CITIES:
+        dist = _haversine_miles(lat, lon, float(metro["lat"]), float(metro["lon"]))
+        if dist < best_dist:
+            best_dist = dist
+            best = metro
+    return {**best, "distance_miles": round(best_dist, 1)}
+
+
 def _major_cities_within_radius(
     lat: float,
     lon: float,
@@ -265,11 +277,18 @@ def _fetch_ticketmaster_events(
     }
 
     if lat is not None and lon is not None:
+        # Geo search only — never mix city name with latlong (Ticketmaster rejects/conflicts).
         params["latlong"] = f"{lat},{lon}"
         params["radius"] = radius_miles
         params["unit"] = "miles"
+        params.pop("city", None)
+        params.pop("dmaId", None)
+        params.pop("geoPoint", None)
     else:
         params["city"] = city
+        params.pop("latlong", None)
+        params.pop("radius", None)
+        params.pop("unit", None)
 
     if classification_name:
         params["classificationName"] = classification_name
@@ -1056,48 +1075,65 @@ def _fetch_ticketmaster_only(
     lat: float | None = None,
     lon: float | None = None,
     radius_miles: int = EXPLORE_RADIUS_MILES,
-) -> list[dict[str, Any]]:
-    """Fetch Ticketmaster for a city or GPS radius (200 mi default)."""
-    all_events: list[dict[str, Any]] = []
+) -> dict[str, Any]:
+    """
+    Fetch Ticketmaster events.
+    With GPS: latlong + radius (miles) first; if empty, fallback to nearest major metro by city name.
+    """
+    display_city = (city or "Chicago").strip()
+    meta: dict[str, Any] = {
+        "display_city": display_city.split(",")[0].strip(),
+        "nearest_metro": None,
+        "fetch_mode": "city",
+    }
 
     if lat is not None and lon is not None:
-        all_events.extend(
-            _fetch_ticketmaster_events(
-                city, category, date_from, date_to, lat, lon, radius_miles
-            )
+        meta["fetch_mode"] = "geo"
+        nearest = _nearest_major_metro(lat, lon)
+        meta["nearest_metro"] = nearest["name"]
+
+        all_events = _fetch_ticketmaster_events(
+            display_city, category, date_from, date_to, lat, lon, radius_miles
         )
-        nearby_metros = _major_cities_within_radius(lat, lon, radius_miles)[:5]
-        if nearby_metros:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-                futures = [
-                    executor.submit(
-                        _fetch_ticketmaster_events,
-                        str(metro["name"]),
-                        category,
-                        date_from,
-                        date_to,
-                    )
-                    for metro in nearby_metros
-                ]
-                for future in futures:
-                    try:
-                        all_events.extend(future.result())
-                    except Exception as exc:
-                        logger.warning("Nearby metro Ticketmaster fetch failed: %s", exc)
+
+        if not all_events:
+            logger.info(
+                "Ticketmaster geo search returned 0 for (%s, %s) r=%smi; "
+                "falling back to nearest metro %s",
+                lat,
+                lon,
+                radius_miles,
+                nearest["name"],
+            )
+            meta["fetch_mode"] = "metro_fallback"
+            all_events = _fetch_ticketmaster_events(
+                str(nearest["name"]),
+                category,
+                date_from,
+                date_to,
+            )
 
         all_events = _annotate_event_distances(all_events, lat, lon)
-        all_events = [e for e in all_events if e.get("distance_miles", 999) <= radius_miles]
+        all_events = [
+            e for e in all_events if e.get("distance_miles", 999) <= radius_miles
+        ]
         all_events.sort(
             key=lambda e: (
                 e.get("distance_miles") if e.get("distance_miles") is not None else 9999,
                 e.get("date") or "9999-12-31",
             )
         )
-        return _dedupe_and_sort_events(all_events)
+        return {
+            **meta,
+            "events": _dedupe_and_sort_events(all_events),
+        }
 
-    return _dedupe_and_sort_events(
-        _fetch_ticketmaster_events(city, category, date_from, date_to)
-    )
+    return {
+        **meta,
+        "events": _dedupe_and_sort_events(
+            _fetch_ticketmaster_events(display_city, category, date_from, date_to)
+        ),
+    }
 
 
 def _get_fresh_cached_events(db: Session, cache_key: str) -> list[dict[str, Any]] | None:
@@ -1153,14 +1189,27 @@ def search_events_extended(
     cache_key = _events_cache_key(city, cat, date_from, date_to, lat, lon, radius_miles)
 
     cached = _get_fresh_cached_events(db, cache_key)
+    fetch_meta: dict[str, Any] = {
+        "display_city": city.split(",")[0].strip(),
+        "nearest_metro": None,
+        "fetch_mode": "cache" if cached else None,
+    }
+
     if cached:
         all_events = cached
     else:
-        all_events = _fetch_ticketmaster_only(
+        fetched = _fetch_ticketmaster_only(
             city, cat, date_from, date_to, lat, lon, radius_miles
         )
+        all_events = fetched["events"]
+        fetch_meta["display_city"] = fetched.get("display_city") or fetch_meta["display_city"]
+        fetch_meta["nearest_metro"] = fetched.get("nearest_metro")
+        fetch_meta["fetch_mode"] = fetched.get("fetch_mode")
         _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=all_events)
         _maybe_start_background_instagram(city)
+
+    if lat is not None and lon is not None and fetch_meta.get("nearest_metro") is None:
+        fetch_meta["nearest_metro"] = _nearest_major_metro(lat, lon)["name"]
 
     if return_all:
         result: dict[str, Any] = {
@@ -1178,5 +1227,10 @@ def search_events_extended(
         result["nearby_cities"] = _major_cities_within_radius(lat, lon, radius_miles)[:8]
         result["user_lat"] = lat
         result["user_lon"] = lon
+        result["display_city"] = fetch_meta["display_city"]
+        result["nearest_metro"] = fetch_meta.get("nearest_metro")
+        result["fetch_mode"] = fetch_meta.get("fetch_mode")
+    else:
+        result["display_city"] = fetch_meta["display_city"]
 
     return result

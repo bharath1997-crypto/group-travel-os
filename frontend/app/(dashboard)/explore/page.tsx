@@ -30,6 +30,15 @@ import {
 
 type EventsAPIResponse = {
   city: string;
+  display_city?: string;
+  nearest_metro?: string | null;
+  fetch_mode?: string | null;
+  section_titles?: {
+    trending?: string;
+    weekend?: string;
+    popular?: string;
+    national?: string;
+  };
   total: number;
   page: number;
   per_page: number;
@@ -396,6 +405,12 @@ export default function ExploreHubPage() {
   const [weekendEvents, setWeekendEvents] = useState<ExploreEvent[]>([]);
   const [popularEvents, setPopularEvents] = useState<ExploreEvent[]>([]);
   const [nationalEvents, setNationalEvents] = useState<ExploreEvent[]>([]);
+  const [sectionTitles, setSectionTitles] = useState({
+    trending: "",
+    weekend: "Happening This Weekend",
+    popular: "",
+    national: "National Picks",
+  });
   const [userCoords, setUserCoords] = useState<UserCoords | null>(null);
   const [radiusMiles, setRadiusMiles] = useState(EXPLORE_RADIUS_MILES);
 
@@ -415,6 +430,16 @@ export default function ExploreHubPage() {
       setPopularEvents(sections.popular);
       setNationalEvents(sections.national);
 
+      if (data.section_titles) {
+        const loc = cityLabel(data.display_city || data.city);
+        setSectionTitles({
+          trending: data.section_titles.trending || `Near ${loc}`,
+          weekend: data.section_titles.weekend || "Happening This Weekend",
+          popular: data.section_titles.popular || `Popular in ${stateName}`,
+          national: data.section_titles.national || "National Picks",
+        });
+      }
+
       const fullDebug: ExploreFeedDebug = {
         ...debug,
         source,
@@ -423,7 +448,7 @@ export default function ExploreHubPage() {
       setFeedDebug(fullDebug);
       saveExploreFeedCache(cityKey, sections, fullDebug);
     },
-    [],
+    [stateName],
   );
 
   const fetchEvents = useCallback(
@@ -802,7 +827,7 @@ export default function ExploreHubPage() {
         </div>
 
         <EventSection
-          title={`Trending in ${cityLabel(currentCity)}`}
+          title={sectionTitles.trending || `Near ${cityLabel(currentCity)}`}
           subtitle="Local favorites near you"
           events={filteredTrending}
           rawCount={trendingEvents.length}
@@ -816,7 +841,7 @@ export default function ExploreHubPage() {
         />
 
         <EventSection
-          title="Happening This Weekend"
+          title={sectionTitles.weekend || "Happening This Weekend"}
           subtitle="Don't miss what's coming up"
           events={filteredWeekend}
           rawCount={weekendEvents.length}
@@ -830,7 +855,7 @@ export default function ExploreHubPage() {
         />
 
         <EventSection
-          title={`Popular in ${stateName}`}
+          title={sectionTitles.popular || `Popular in ${stateName}`}
           subtitle={`Top picks across ${stateName}`}
           events={filteredPopular}
           rawCount={popularEvents.length}
@@ -844,7 +869,7 @@ export default function ExploreHubPage() {
         />
 
         <EventSection
-          title="National Picks"
+          title={sectionTitles.national || "National Picks"}
           subtitle="Standout events across the country"
           events={filteredNational}
           rawCount={nationalEvents.length}

@@ -39,6 +39,49 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/explore")
 
+_CITY_STATE_MAP: dict[str, str] = {
+    "chicago": "Illinois",
+    "milwaukee": "Wisconsin",
+    "indianapolis": "Indiana",
+    "detroit": "Michigan",
+    "new york": "New York",
+    "los angeles": "California",
+    "houston": "Texas",
+    "phoenix": "Arizona",
+    "philadelphia": "Pennsylvania",
+    "san antonio": "Texas",
+    "san diego": "California",
+    "dallas": "Texas",
+    "san jose": "California",
+    "austin": "Texas",
+    "miami": "Florida",
+    "seattle": "Washington",
+    "denver": "Colorado",
+    "boston": "Massachusetts",
+    "atlanta": "Georgia",
+    "las vegas": "Nevada",
+    "nashville": "Tennessee",
+    "portland": "Oregon",
+}
+
+
+def _state_label_for_city(city_name: str, nearest_metro: str | None = None) -> str:
+    for key in (city_name.split(",")[0].strip().lower(), (nearest_metro or "").lower()):
+        if key and key in _CITY_STATE_MAP:
+            return _CITY_STATE_MAP[key]
+    return "Your Region"
+
+
+def _explore_section_titles(display_city: str, nearest_metro: str | None = None) -> dict[str, str]:
+    loc = display_city.split(",")[0].strip()
+    state_name = _state_label_for_city(loc, nearest_metro)
+    return {
+        "trending": f"Near {loc}",
+        "weekend": "Happening This Weekend",
+        "popular": f"Popular in {state_name}",
+        "national": "National Picks",
+    }
+
 
 @router.get("/debug-shorts", status_code=status.HTTP_200_OK)
 def debug_shorts(city: str = "Chicago", tag: str | None = None):
@@ -219,6 +262,9 @@ async def explore_events(
     d_from = date_from or start_date
     d_to = date_to or end_date
     nearby_cities: list[dict[str, Any]] = []
+    display_city = city_strip.split(",")[0].strip()
+    nearest_metro: str | None = None
+    fetch_mode: str | None = None
 
     # Dynamic test mock detection
     from app.services.explore_city_extended_service import get_ticketmaster_cached as original_fn
@@ -292,6 +338,13 @@ async def explore_events(
                 ev["sourceType"] = ev["source"]
             return {
                 "city": city_strip,
+                "display_city": result.get("display_city") or city_strip.split(",")[0].strip(),
+                "nearest_metro": result.get("nearest_metro"),
+                "fetch_mode": result.get("fetch_mode"),
+                "section_titles": _explore_section_titles(
+                    result.get("display_city") or city_strip,
+                    result.get("nearest_metro"),
+                ),
                 "total": total,
                 "page": page,
                 "per_page": per_page,
@@ -315,6 +368,9 @@ async def explore_events(
         events = result.get("events", [])
         total = result.get("total", 0)
         nearby_cities = result.get("nearby_cities", [])
+        display_city = result.get("display_city") or city_strip.split(",")[0].strip()
+        nearest_metro = result.get("nearest_metro")
+        fetch_mode = result.get("fetch_mode")
         
         # Map compatibility fields in search_events_extended output
         for ev in events:
@@ -425,11 +481,12 @@ async def explore_events(
     local_radius_miles = 35.0
 
     def is_local(ev: dict[str, Any]) -> bool:
+        if lat is not None and lon is not None:
+            dist = ev.get("distance_miles")
+            if dist is not None:
+                return float(dist) <= local_radius_miles
         ev_city = str(ev.get("city") or "").strip().lower()
-        if ev_city == query_city_key:
-            return True
-        dist = ev.get("distance_miles")
-        return dist is not None and float(dist) <= local_radius_miles
+        return ev_city == query_city_key
 
     trending = assign_section(
         sorted_events,
@@ -459,38 +516,27 @@ async def explore_events(
     weekend = assign_section(sorted_events, 20, is_weekend)
 
     # 3. Popular in State
-    CITY_STATE_MAP = {
-        "chicago": "illinois",
-        "milwaukee": "wisconsin",
-        "indianapolis": "indiana",
-        "detroit": "michigan",
-        "new york": "new york",
-        "los angeles": "california",
-        "houston": "texas",
-        "phoenix": "arizona",
-        "philadelphia": "pennsylvania",
-        "san antonio": "texas",
-        "san diego": "california",
-        "dallas": "texas",
-        "san jose": "california",
-        "austin": "texas",
-        "miami": "florida",
-    }
-
     query_city = city_strip.lower().split(",")[0].strip()
-    query_state = CITY_STATE_MAP.get(query_city, "")
+    metro_key = (nearest_metro or "").lower() if nearest_metro else ""
+    query_state = _CITY_STATE_MAP.get(query_city) or _CITY_STATE_MAP.get(metro_key, "")
 
     def matches_state(ev: dict[str, Any]) -> bool:
         ev_city = ev.get("city", "").strip().lower()
-        return CITY_STATE_MAP.get(ev_city, "") == query_state if query_state else False
+        return _CITY_STATE_MAP.get(ev_city, "") == query_state if query_state else False
 
     state_events = assign_section(sorted_events, 20, matches_state)
 
     # 4. National
     national = assign_section(sorted_events, 20)
 
+    section_titles = _explore_section_titles(display_city, nearest_metro)
+
     return {
         "city": city_strip,
+        "display_city": display_city,
+        "nearest_metro": nearest_metro,
+        "fetch_mode": fetch_mode,
+        "section_titles": section_titles,
         "total": total,
         "trending": trending,
         "weekend": weekend,
