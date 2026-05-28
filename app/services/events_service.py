@@ -930,7 +930,7 @@ def search_events_extended(
     cache_key = _events_cache_key(city, cat, date_from, date_to)
 
     cached = _get_fresh_cached_events(db, cache_key)
-    if cached is not None:
+    if cached:
         return _paginate_events(cached, city, page, per_page)
 
     events = _fetch_ticketmaster_only(city, cat, date_from, date_to)
