@@ -254,13 +254,7 @@ async def explore_events(
                     "start_date": date_str,
                     "sourceType": source
                 })
-            return {
-                "city": city_strip,
-                "total": len(events),
-                "page": page,
-                "per_page": per_page,
-                "events": events
-            }
+            total = len(events)
         else:
             events = []
             total = 0
@@ -272,8 +266,8 @@ async def explore_events(
             category=category,
             date_from=d_from,
             date_to=d_to,
-            page=page,
-            per_page=per_page,
+            page=1,
+            per_page=100,
         )
         
         events = result.get("events", [])
@@ -345,9 +339,9 @@ async def explore_events(
     sorted_events = sorted(events, key=get_score, reverse=True)
 
     # 1. Trending
-    trending = [ev for ev in sorted_events if get_score(ev) >= 5.0][:10]
+    trending = [ev for ev in sorted_events if get_score(ev) >= 5.0][:40]
     if not trending:
-        trending = sorted_events[:10]
+        trending = sorted_events[:40]
 
     # 2. This Weekend (next 3 days)
     today = date.today()
@@ -363,9 +357,9 @@ async def explore_events(
         except Exception:
             return False
 
-    weekend = [ev for ev in sorted_events if is_weekend(ev)][:10]
+    weekend = [ev for ev in sorted_events if is_weekend(ev)][:20]
     if not weekend:
-        weekend = sorted_events[:10]
+        weekend = sorted_events[40:60] if len(sorted_events) > 40 else sorted_events[:20]
 
     # 3. Popular in State
     CITY_STATE_MAP = {
@@ -393,9 +387,9 @@ async def explore_events(
         ev_city = ev.get("city", "").strip().lower()
         return CITY_STATE_MAP.get(ev_city, "") == query_state if query_state else False
 
-    state_events = [ev for ev in sorted_events if matches_state(ev)][:10]
+    state_events = [ev for ev in sorted_events if matches_state(ev)][:20]
     if not state_events:
-        state_events = sorted_events[:10]
+        state_events = sorted_events[60:80] if len(sorted_events) > 60 else sorted_events[:20]
 
     # 4. National
     used_ids = {ev["id"] for ev in trending + weekend + state_events if "id" in ev}
@@ -404,18 +398,18 @@ async def explore_events(
         rem = [ev for ev in sorted_events if ev.get("id") not in {n.get("id") for n in national}]
         national.extend(rem[:20 - len(national)])
     if not national:
-        national = sorted_events[:20]
+        national = sorted_events[80:100] if len(sorted_events) > 80 else sorted_events[:20]
 
     return {
         "city": city_strip,
         "total": total,
-        "page": page,
-        "per_page": per_page,
-        "events": events,
         "trending": trending,
         "weekend": weekend,
         "popular": state_events,
-        "national": national
+        "national": national,
+        "events": events,
+        "page": page,
+        "per_page": per_page,
     }
 
 
