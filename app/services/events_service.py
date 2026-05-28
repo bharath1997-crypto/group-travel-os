@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import threading
 import time
@@ -40,6 +41,36 @@ YELP_EVENTS_LIMIT = 50
 EVENTBRITE_EVENTS_LIMIT = 50
 BANDSINTOWN_EVENTS_PER_PAGE = 50
 APIFY_INSTAGRAM_HASHTAG_ACTOR = "apify~instagram-hashtag-scraper"
+EXPLORE_RADIUS_MILES = 200
+
+# Major metros used to enrich GPS-based discovery within EXPLORE_RADIUS_MILES
+MAJOR_METRO_CITIES: list[dict[str, Any]] = [
+    {"name": "Chicago", "state": "IL", "lat": 41.8781, "lon": -87.6298},
+    {"name": "New York", "state": "NY", "lat": 40.7128, "lon": -74.006},
+    {"name": "Los Angeles", "state": "CA", "lat": 34.0522, "lon": -118.2437},
+    {"name": "San Francisco", "state": "CA", "lat": 37.7749, "lon": -122.4194},
+    {"name": "San Jose", "state": "CA", "lat": 37.3382, "lon": -121.8863},
+    {"name": "Oakland", "state": "CA", "lat": 37.8044, "lon": -122.2712},
+    {"name": "Sacramento", "state": "CA", "lat": 38.5816, "lon": -121.4944},
+    {"name": "Houston", "state": "TX", "lat": 29.7604, "lon": -95.3698},
+    {"name": "Phoenix", "state": "AZ", "lat": 33.4484, "lon": -112.074},
+    {"name": "Philadelphia", "state": "PA", "lat": 39.9526, "lon": -75.1652},
+    {"name": "San Antonio", "state": "TX", "lat": 29.4241, "lon": -98.4936},
+    {"name": "San Diego", "state": "CA", "lat": 32.7157, "lon": -117.1611},
+    {"name": "Dallas", "state": "TX", "lat": 32.7767, "lon": -96.797},
+    {"name": "Austin", "state": "TX", "lat": 30.2672, "lon": -97.7431},
+    {"name": "Miami", "state": "FL", "lat": 25.7617, "lon": -80.1918},
+    {"name": "Seattle", "state": "WA", "lat": 47.6062, "lon": -122.3321},
+    {"name": "Denver", "state": "CO", "lat": 39.7392, "lon": -104.9903},
+    {"name": "Boston", "state": "MA", "lat": 42.3601, "lon": -71.0589},
+    {"name": "Atlanta", "state": "GA", "lat": 33.749, "lon": -84.388},
+    {"name": "Las Vegas", "state": "NV", "lat": 36.1699, "lon": -115.1398},
+    {"name": "Milwaukee", "state": "WI", "lat": 43.0389, "lon": -87.9065},
+    {"name": "Indianapolis", "state": "IN", "lat": 39.7684, "lon": -86.1581},
+    {"name": "Detroit", "state": "MI", "lat": 42.3314, "lon": -83.0458},
+    {"name": "Portland", "state": "OR", "lat": 45.5152, "lon": -122.6784},
+    {"name": "Nashville", "state": "TN", "lat": 36.1627, "lon": -86.7816},
+]
 
 _cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 
@@ -141,11 +172,69 @@ def get_events(city: str) -> list[dict[str, Any]]:
         return []
 
 
+def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    r = 3958.8
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    d_lat = math.radians(lat2 - lat1)
+    d_lon = math.radians(lon2 - lon1)
+    a = math.sin(d_lat / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(d_lon / 2) ** 2
+    return r * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def _major_cities_within_radius(
+    lat: float,
+    lon: float,
+    radius_miles: int = EXPLORE_RADIUS_MILES,
+) -> list[dict[str, Any]]:
+    nearby: list[dict[str, Any]] = []
+    for metro in MAJOR_METRO_CITIES:
+        dist = _haversine_miles(lat, lon, float(metro["lat"]), float(metro["lon"]))
+        if dist <= radius_miles:
+            nearby.append({**metro, "distance_miles": round(dist, 1)})
+    nearby.sort(key=lambda m: m["distance_miles"])
+    return nearby
+
+
+def _city_center_coords(city_name: str) -> tuple[float, float] | None:
+    key = city_name.strip().lower()
+    for metro in MAJOR_METRO_CITIES:
+        if metro["name"].lower() == key:
+            return float(metro["lat"]), float(metro["lon"])
+    mapped = CITY_COORD_MAP.get(key)
+    if mapped:
+        return float(mapped[0]), float(mapped[1])
+    return None
+
+
+def _annotate_event_distances(
+    events: list[dict[str, Any]],
+    user_lat: float,
+    user_lon: float,
+) -> list[dict[str, Any]]:
+    for ev in events:
+        v_lat = ev.get("venue_lat")
+        v_lon = ev.get("venue_lon")
+        if v_lat is not None and v_lon is not None:
+            dist = _haversine_miles(user_lat, user_lon, float(v_lat), float(v_lon))
+        else:
+            center = _city_center_coords(str(ev.get("city") or ""))
+            if center:
+                dist = _haversine_miles(user_lat, user_lon, center[0], center[1])
+            else:
+                dist = None
+        if dist is not None:
+            ev["distance_miles"] = round(dist, 1)
+    return events
+
+
 def _fetch_ticketmaster_events(
     city: str,
     category: str = "all",
     date_from: str | None = None,
     date_to: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    radius_miles: int = EXPLORE_RADIUS_MILES,
 ) -> list[dict[str, Any]]:
     api_key = (settings.ticketmaster_api_key or "").strip()
     if not api_key:
@@ -170,11 +259,17 @@ def _fetch_ticketmaster_events(
 
     params: dict[str, Any] = {
         "apikey": api_key,
-        "city": city,
         "size": 100,
         "sort": "date,asc",
         "locale": "*",
     }
+
+    if lat is not None and lon is not None:
+        params["latlong"] = f"{lat},{lon}"
+        params["radius"] = radius_miles
+        params["unit"] = "miles"
+    else:
+        params["city"] = city
 
     if classification_name:
         params["classificationName"] = classification_name
@@ -246,6 +341,8 @@ def _fetch_ticketmaster_events(
                     venue_name = "Various Venues"
                     country_code = "US"
                     city_name = city
+                    venue_lat: float | None = None
+                    venue_lon: float | None = None
 
                     ven_emb = raw.get("_embedded", {})
                     if isinstance(ven_emb, dict):
@@ -257,6 +354,15 @@ def _fetch_ticketmaster_events(
                                 country_code = str(v0.get("country").get("countryCode") or "US")
                             if v0.get("city") and isinstance(v0.get("city"), dict):
                                 city_name = str(v0.get("city").get("name") or city)
+                            loc = v0.get("location")
+                            if isinstance(loc, dict):
+                                try:
+                                    if loc.get("latitude") is not None:
+                                        venue_lat = float(loc["latitude"])
+                                    if loc.get("longitude") is not None:
+                                        venue_lon = float(loc["longitude"])
+                                except (TypeError, ValueError):
+                                    pass
 
                     price_min = None
                     price_max = None
@@ -282,6 +388,8 @@ def _fetch_ticketmaster_events(
                         "ticket_url": url,
                         "price_min": price_min,
                         "price_max": price_max,
+                        "venue_lat": venue_lat,
+                        "venue_lon": venue_lon,
                         "source": "ticketmaster",
                     })
         return events
@@ -860,6 +968,9 @@ def _events_cache_key(
     category: str,
     date_from: str | None,
     date_to: str | None,
+    lat: float | None = None,
+    lon: float | None = None,
+    radius_miles: int | None = None,
 ) -> str:
     key = city.strip().lower()
     key += f"_{category.strip().lower()}"
@@ -867,6 +978,10 @@ def _events_cache_key(
         key += f"_{date_from}"
     if date_to:
         key += f"_{date_to}"
+    if lat is not None and lon is not None:
+        key += f"_{round(lat, 2)}_{round(lon, 2)}"
+        if radius_miles:
+            key += f"_{radius_miles}mi"
     return key
 
 
@@ -875,8 +990,48 @@ def _fetch_ticketmaster_only(
     category: str,
     date_from: str | None,
     date_to: str | None,
+    lat: float | None = None,
+    lon: float | None = None,
+    radius_miles: int = EXPLORE_RADIUS_MILES,
 ) -> list[dict[str, Any]]:
-    """Fetch Ticketmaster only — used for synchronous cache fill."""
+    """Fetch Ticketmaster for a city or GPS radius (200 mi default)."""
+    all_events: list[dict[str, Any]] = []
+
+    if lat is not None and lon is not None:
+        all_events.extend(
+            _fetch_ticketmaster_events(
+                city, category, date_from, date_to, lat, lon, radius_miles
+            )
+        )
+        nearby_metros = _major_cities_within_radius(lat, lon, radius_miles)[:5]
+        if nearby_metros:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+                futures = [
+                    executor.submit(
+                        _fetch_ticketmaster_events,
+                        str(metro["name"]),
+                        category,
+                        date_from,
+                        date_to,
+                    )
+                    for metro in nearby_metros
+                ]
+                for future in futures:
+                    try:
+                        all_events.extend(future.result())
+                    except Exception as exc:
+                        logger.warning("Nearby metro Ticketmaster fetch failed: %s", exc)
+
+        all_events = _annotate_event_distances(all_events, lat, lon)
+        all_events = [e for e in all_events if e.get("distance_miles", 999) <= radius_miles]
+        all_events.sort(
+            key=lambda e: (
+                e.get("distance_miles") if e.get("distance_miles") is not None else 9999,
+                e.get("date") or "9999-12-31",
+            )
+        )
+        return _dedupe_and_sort_events(all_events)
+
     return _dedupe_and_sort_events(
         _fetch_ticketmaster_events(city, category, date_from, date_to)
     )
@@ -920,22 +1075,33 @@ def search_events_extended(
     date_to: str | None = None,
     page: int = 1,
     per_page: int = 20,
+    lat: float | None = None,
+    lon: float | None = None,
+    radius_miles: int = EXPLORE_RADIUS_MILES,
 ) -> dict[str, Any]:
     """
     Serve Ticketmaster immediately; never block on Instagram/Apify.
-    Instagram runs in a production-only background thread after cache fill.
+    When lat/lon provided, fetch events within radius_miles (default 200) of user GPS.
     """
     city = (city or "Chicago").strip()
     cat = category or "all"
-    cache_key = _events_cache_key(city, cat, date_from, date_to)
+    cache_key = _events_cache_key(city, cat, date_from, date_to, lat, lon, radius_miles)
 
     cached = _get_fresh_cached_events(db, cache_key)
     if cached:
-        return _paginate_events(cached, city, page, per_page)
+        result = _paginate_events(cached, city, page, per_page)
+    else:
+        events = _fetch_ticketmaster_only(
+            city, cat, date_from, date_to, lat, lon, radius_miles
+        )
+        _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=events)
+        _maybe_start_background_instagram(city)
+        result = _paginate_events(events, city, page, per_page)
 
-    events = _fetch_ticketmaster_only(city, cat, date_from, date_to)
-    _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=events)
+    if lat is not None and lon is not None:
+        result["radius_miles"] = radius_miles
+        result["nearby_cities"] = _major_cities_within_radius(lat, lon, radius_miles)[:8]
+        result["user_lat"] = lat
+        result["user_lon"] = lon
 
-    _maybe_start_background_instagram(city)
-
-    return _paginate_events(events, city, page, per_page)
+    return result

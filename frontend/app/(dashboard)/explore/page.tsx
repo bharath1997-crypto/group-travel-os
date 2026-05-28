@@ -39,7 +39,11 @@ type EventsAPIResponse = {
   weekend?: GlobalEvent[];
   popular?: GlobalEvent[];
   national?: GlobalEvent[];
+  radius_miles?: number | null;
+  nearby_cities?: { name: string; state: string; distance_miles: number }[];
 };
+
+type UserCoords = { lat: number; lon: number };
 
 type CitySuggestion = {
   label: string;
@@ -53,11 +57,16 @@ type CityAutocompleteResponse = {
 
 const EVENTS_FETCH_TIMEOUT_MS = 20_000;
 const LS_EXPLORE_CITY = "rovvy_explore_city";
+const LS_EXPLORE_COORDS = "rovvy_explore_coords";
+const EXPLORE_RADIUS_MILES = 200;
 
 const MAJOR_CITIES: { name: string; state: string; lat: number; lon: number }[] = [
   { name: "Chicago", state: "IL", lat: 41.8781, lon: -87.6298 },
   { name: "New York", state: "NY", lat: 40.7128, lon: -74.006 },
   { name: "Los Angeles", state: "CA", lat: 34.0522, lon: -118.2437 },
+  { name: "San Francisco", state: "CA", lat: 37.7749, lon: -122.4194 },
+  { name: "San Jose", state: "CA", lat: 37.3382, lon: -121.8863 },
+  { name: "Oakland", state: "CA", lat: 37.8044, lon: -122.2712 },
   { name: "Houston", state: "TX", lat: 29.7604, lon: -95.3698 },
   { name: "Phoenix", state: "AZ", lat: 33.4484, lon: -112.074 },
   { name: "Philadelphia", state: "PA", lat: 39.9526, lon: -75.1652 },
@@ -94,10 +103,15 @@ function nearestMajorCity(lat: number, lon: number): { city: string; label: stri
   return { city: best.name, label: `${best.name}, ${best.state}` };
 }
 
-function saveExploreCity(label: string) {
+function saveExploreCity(label: string, coords?: UserCoords | null) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(LS_EXPLORE_CITY, label);
+    if (coords) {
+      localStorage.setItem(LS_EXPLORE_COORDS, JSON.stringify(coords));
+    } else {
+      localStorage.removeItem(LS_EXPLORE_COORDS);
+    }
   } catch {
     /* ignore quota / private mode */
   }
@@ -110,6 +124,21 @@ function loadExploreCity(): string | null {
   } catch {
     return null;
   }
+}
+
+function loadExploreCoords(): UserCoords | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(LS_EXPLORE_COORDS);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as UserCoords;
+    if (typeof parsed.lat === "number" && typeof parsed.lon === "number") {
+      return parsed;
+    }
+  } catch {
+    return null;
+  }
+  return null;
 }
 
 const CATEGORY_PILLS = [
@@ -447,6 +476,8 @@ export default function ExploreHubPage() {
   const [weekendEvents, setWeekendEvents] = useState<GlobalEvent[]>([]);
   const [popularEvents, setPopularEvents] = useState<GlobalEvent[]>([]);
   const [nationalEvents, setNationalEvents] = useState<GlobalEvent[]>([]);
+  const [userCoords, setUserCoords] = useState<UserCoords | null>(null);
+  const [radiusMiles, setRadiusMiles] = useState(EXPLORE_RADIUS_MILES);
 
   const stateName = STATE_BY_CITY[cityLabel(currentCity)] || "Your Region";
 
@@ -464,15 +495,22 @@ export default function ExploreHubPage() {
     setNationalEvents(data.national || data.events.slice(80, 100) || []);
   }, []);
 
-  const fetchEvents = useCallback(async (city: string) => {
+  const fetchEvents = useCallback(async (city: string, coords?: UserCoords | null) => {
     setLoading(true);
     const cityName = city.split(",")[0].trim();
     try {
+      let url = `/explore/events?city=${encodeURIComponent(cityName)}&per_page=100`;
+      if (coords) {
+        url += `&lat=${coords.lat}&lon=${coords.lon}&radius=${EXPLORE_RADIUS_MILES}`;
+      }
       const data = await apiFetch<EventsAPIResponse>(
-        `/explore/events?city=${encodeURIComponent(cityName)}&per_page=100`,
+        url,
         {},
         EVENTS_FETCH_TIMEOUT_MS,
       );
+      if (data.radius_miles) {
+        setRadiusMiles(data.radius_miles);
+      }
       splitEvents(data);
     } catch (err) {
       console.error("Failed to load explore events:", err);
@@ -485,54 +523,59 @@ export default function ExploreHubPage() {
   const detectGPSCity = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       const fallback = loadExploreCity() || "Chicago, IL";
+      const coords = loadExploreCoords();
       setCurrentCity(fallback);
-      void fetchEvents(cityLabel(fallback));
+      setUserCoords(coords);
+      void fetchEvents(cityLabel(fallback), coords);
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
+        const coords: UserCoords = { lat: latitude, lon: longitude };
         try {
           const r = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&extratags=1`,
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
             { headers: { Accept: "application/json" } },
           );
           const data = await r.json();
-          let city =
-            data.address?.city || data.address?.town || data.address?.village || "Chicago";
-          let state = data.address?.state_code || data.address?.state || "";
-          const population = parseInt(String(data.extratags?.population || "0"), 10);
-          const isSmallCity = population > 0 && population < 100_000;
-
-          if (isSmallCity || !data.address?.city) {
-            const major = nearestMajorCity(latitude, longitude);
-            city = major.city;
-            state = major.label.split(", ")[1] || state;
-          }
-
+          const city =
+            data.address?.city ||
+            data.address?.town ||
+            data.address?.village ||
+            data.address?.hamlet ||
+            "Chicago";
+          const state = data.address?.state_code || data.address?.state || "";
           const label = state ? `${city}, ${state}` : city;
           setCurrentCity(label);
-          await fetchEvents(city);
+          setUserCoords(coords);
+          saveExploreCity(label, coords);
+          await fetchEvents(city, coords);
         } catch {
           const fallback = loadExploreCity() || "Chicago, IL";
           setCurrentCity(fallback);
-          await fetchEvents(cityLabel(fallback));
+          setUserCoords(null);
+          await fetchEvents(cityLabel(fallback), null);
         }
       },
       () => {
         const fallback = loadExploreCity() || "Chicago, IL";
+        const coords = loadExploreCoords();
         setCurrentCity(fallback);
-        void fetchEvents(cityLabel(fallback));
+        setUserCoords(coords);
+        void fetchEvents(cityLabel(fallback), coords);
       },
     );
   }, [fetchEvents]);
 
   useEffect(() => {
     const saved = loadExploreCity();
+    const savedCoords = loadExploreCoords();
     if (saved) {
       setCurrentCity(saved);
-      void fetchEvents(cityLabel(saved));
+      setUserCoords(savedCoords);
+      void fetchEvents(cityLabel(saved), savedCoords);
       return;
     }
     detectGPSCity();
@@ -601,11 +644,12 @@ export default function ExploreHubPage() {
 
   const selectCity = (suggestion: CitySuggestion) => {
     setCurrentCity(suggestion.label);
-    saveExploreCity(suggestion.label);
+    setUserCoords(null);
+    saveExploreCity(suggestion.label, null);
     setShowCityDropdown(false);
     setCitySearch("");
     setCitySuggestions([]);
-    fetchEvents(suggestion.city);
+    fetchEvents(suggestion.city, null);
   };
 
   const handleOpenEvent = (event: GlobalEvent) => {
@@ -634,7 +678,9 @@ export default function ExploreHubPage() {
             Discover experiences near you
           </h1>
           <p className="mt-1 text-[#475569]">
-            Events, activities and places — curated for your group
+            {userCoords
+              ? `Ticketmaster events within ${radiusMiles} miles of ${currentCity}`
+              : `Events, activities and places — curated for ${cityLabel(currentCity)}`}
           </p>
         </div>
 

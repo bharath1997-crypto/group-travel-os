@@ -203,6 +203,9 @@ async def explore_events(
     date_to: Optional[str] = Query(None, description="YYYY-MM-DD"),
     start_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
     end_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    lat: Optional[float] = Query(None, description="User GPS latitude"),
+    lon: Optional[float] = Query(None, description="User GPS longitude"),
+    radius: int = Query(200, ge=1, le=500, description="Search radius in miles"),
     page: int = Query(1),
     per_page: int = Query(20),
     db: Session = Depends(get_db),
@@ -214,6 +217,7 @@ async def explore_events(
     city_strip = city.strip()
     d_from = date_from or start_date
     d_to = date_to or end_date
+    nearby_cities: list[dict[str, Any]] = []
 
     # Dynamic test mock detection
     from app.services.explore_city_extended_service import get_ticketmaster_cached as original_fn
@@ -267,11 +271,15 @@ async def explore_events(
             date_from=d_from,
             date_to=d_to,
             page=1,
-            per_page=100,
+            per_page=500,
+            lat=lat,
+            lon=lon,
+            radius_miles=radius,
         )
         
         events = result.get("events", [])
         total = result.get("total", 0)
+        nearby_cities = result.get("nearby_cities", [])
         
         # Map compatibility fields in search_events_extended output
         for ev in events:
@@ -436,6 +444,8 @@ async def explore_events(
         "events": events,
         "page": page,
         "per_page": per_page,
+        "radius_miles": radius if lat is not None and lon is not None else None,
+        "nearby_cities": nearby_cities if lat is not None and lon is not None else [],
     }
 
 
