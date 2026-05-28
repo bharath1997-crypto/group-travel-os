@@ -14,6 +14,7 @@ import threading
 import time
 from datetime import timedelta
 from typing import Any
+from urllib.parse import urlencode
 import concurrent.futures
 
 import httpx
@@ -239,6 +240,17 @@ def _annotate_event_distances(
     return events
 
 
+def _log_ticketmaster_url(params: dict[str, Any], *, context: str = "") -> None:
+    """Log the exact Ticketmaster request URL (apikey redacted)."""
+    safe_params = dict(params)
+    if "apikey" in safe_params:
+        safe_params["apikey"] = "XXX"
+    query = urlencode(safe_params)
+    url = f"{TICKETMASTER_URL}?{query}"
+    prefix = f"Ticketmaster [{context}] " if context else "Ticketmaster "
+    logger.info("%srequest URL: %s", prefix, url)
+
+
 def _fetch_ticketmaster_events(
     city: str,
     category: str = "all",
@@ -247,6 +259,8 @@ def _fetch_ticketmaster_events(
     lat: float | None = None,
     lon: float | None = None,
     radius_miles: int = EXPLORE_RADIUS_MILES,
+    *,
+    city_with_radius: bool = False,
 ) -> list[dict[str, Any]]:
     api_key = (settings.ticketmaster_api_key or "").strip()
     if not api_key:
@@ -284,6 +298,13 @@ def _fetch_ticketmaster_events(
         params.pop("city", None)
         params.pop("dmaId", None)
         params.pop("geoPoint", None)
+    elif city_with_radius:
+        params["city"] = city
+        params["radius"] = radius_miles
+        params["unit"] = "miles"
+        params.pop("latlong", None)
+        params.pop("dmaId", None)
+        params.pop("geoPoint", None)
     else:
         params["city"] = city
         params.pop("latlong", None)
@@ -305,8 +326,21 @@ def _fetch_ticketmaster_events(
         with httpx.Client(timeout=API_TIMEOUT_SECONDS, headers=BROWSER_HEADERS) as client:
             for page_num in range(2):
                 params["page"] = page_num
+                if page_num == 0:
+                    if lat is not None and lon is not None:
+                        _log_ticketmaster_url(params, context="geo")
+                    elif city_with_radius:
+                        _log_ticketmaster_url(params, context="metro-fallback")
                 resp = client.get(TICKETMASTER_URL, params=params)
                 if resp.status_code != 200:
+                    if page_num == 0:
+                        logger.warning(
+                            "Ticketmaster HTTP %s for page=%s city=%s latlong=%s",
+                            resp.status_code,
+                            page_num,
+                            params.get("city"),
+                            params.get("latlong"),
+                        )
                     continue
 
                 data = resp.json()
@@ -1095,11 +1129,16 @@ def _fetch_ticketmaster_only(
         all_events = _fetch_ticketmaster_events(
             display_city, category, date_from, date_to, lat, lon, radius_miles
         )
+        logger.info(
+            "Ticketmaster geo fetch for display_city=%s returned %d events",
+            meta["display_city"],
+            len(all_events),
+        )
 
         if not all_events:
             logger.info(
                 "Ticketmaster geo search returned 0 for (%s, %s) r=%smi; "
-                "falling back to nearest metro %s",
+                "falling back to nearest metro %s with city+radius",
                 lat,
                 lon,
                 radius_miles,
@@ -1111,6 +1150,13 @@ def _fetch_ticketmaster_only(
                 category,
                 date_from,
                 date_to,
+                radius_miles=radius_miles,
+                city_with_radius=True,
+            )
+            logger.info(
+                "Ticketmaster metro fallback city=%s returned %d events",
+                nearest["name"],
+                len(all_events),
             )
 
         all_events = _annotate_event_distances(all_events, lat, lon)
