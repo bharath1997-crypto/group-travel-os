@@ -33,6 +33,7 @@ from app.services.explore_city_extended_service import (
     get_wiki_summary_cached,
 )
 from app.services.external.universal_fallback_service import get_universal_fallback
+from app.services.events_service import get_national_picks
 from app.utils.database import get_db
 
 logger = logging.getLogger(__name__)
@@ -518,9 +519,9 @@ async def explore_events(
     by_score = sorted(upcoming_events, key=get_score, reverse=True)
     popular = pick_top(by_score, 20)
 
-    # 4. National Picks — events not already shown in trending/weekend/popular
-    shown_ids = {event_id(ev) for ev in (*trending, *weekend, *popular)}
-    national = [ev for ev in by_score if event_id(ev) not in shown_ids][:20]
+    # 4. National Picks — top-rated US-wide events (no radius filter)
+    shown_ids = [event_id(ev) for ev in (*trending, *weekend, *popular)]
+    national = get_national_picks(db, exclude_ids=shown_ids, limit=20)
 
     section_titles = result.get("section_titles") if geo_search and result else None
     if not section_titles:

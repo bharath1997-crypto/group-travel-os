@@ -6,6 +6,7 @@ Instagram/Apify runs in a production-only background thread and merges into cach
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import math
@@ -18,7 +19,10 @@ from urllib.parse import urlencode
 import concurrent.futures
 
 import httpx
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from app.models.explore_content import ExploreContent
 
 from app.core.api_limits import API_TIMEOUT_SECONDS
 from app.services.explore_city_extended_service import _aware, _get_row, _now, _upsert_list
@@ -44,6 +48,40 @@ BANDSINTOWN_EVENTS_PER_PAGE = 50
 APIFY_INSTAGRAM_HASHTAG_ACTOR = "apify~instagram-hashtag-scraper"
 EXPLORE_RADIUS_MILES = 200
 GEO_SEARCH_RADII = (200, 300, 500)
+
+_MAJOR_VENUE_KEYWORDS = (
+    "stadium",
+    "arena",
+    "amphitheatre",
+    "amphitheater",
+    "coliseum",
+    "garden",
+    "dome",
+    "field",
+    "center",
+    "centre",
+    "bowl",
+)
+_MAJOR_METRO_CITIES = frozenset({
+    "new york",
+    "los angeles",
+    "chicago",
+    "houston",
+    "phoenix",
+    "philadelphia",
+    "san antonio",
+    "san diego",
+    "dallas",
+    "austin",
+    "miami",
+    "atlanta",
+    "boston",
+    "seattle",
+    "denver",
+    "las vegas",
+    "nashville",
+    "san francisco",
+})
 
 _cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 
@@ -1219,6 +1257,157 @@ def _paginate_events(
     }
 
 
+def _explore_content_to_event_dict(
+    row: Any,
+    *,
+    distance_miles: float | None = None,
+    rating: float | None = None,
+    popularity_score: float | None = None,
+) -> dict[str, Any]:
+    start_date = getattr(row, "start_date", None)
+    if start_date and hasattr(start_date, "strftime"):
+        date_str = start_date.strftime("%Y-%m-%d")
+    else:
+        date_str = str(start_date or "")[:10]
+
+    ev: dict[str, Any] = {
+        "id": getattr(row, "event_id", None) or str(getattr(row, "id", "")),
+        "name": getattr(row, "title", None) or "Event",
+        "category": getattr(row, "category", None) or "Experience",
+        "date": date_str,
+        "time": getattr(row, "start_time", None) or "19:00",
+        "venue": getattr(row, "venue_name", None) or "Various Venues",
+        "city": getattr(row, "city", None) or "US",
+        "country": "US",
+        "image_url": getattr(row, "image_url", None),
+        "ticket_url": getattr(row, "ticket_url", None) or "",
+        "price_min": getattr(row, "price_min", None),
+        "price_max": getattr(row, "price_max", None),
+        "status": None,
+        "availability": None,
+        "venue_lat": getattr(row, "venue_lat", None),
+        "venue_lon": getattr(row, "venue_lon", None),
+        "source": getattr(row, "source", None) or "ticketmaster",
+    }
+    if distance_miles is not None:
+        ev["distance_miles"] = round(float(distance_miles), 1)
+    if rating is not None:
+        ev["rating"] = rating
+    if popularity_score is not None:
+        ev["popularity_score"] = popularity_score
+    return ev
+
+
+def _stored_rating(row: ExploreContent) -> float | None:
+    stored = getattr(row, "rating", None)
+    if stored is not None:
+        try:
+            return float(stored)
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def _stored_popularity_score(row: ExploreContent) -> float | None:
+    stored = getattr(row, "popularity_score", None)
+    if stored is not None:
+        try:
+            return float(stored)
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def _compute_national_rating(row: ExploreContent) -> float:
+    stored = _stored_rating(row)
+    if stored is not None:
+        return stored
+
+    title = (row.title or "").strip()
+    venue = (row.venue_name or "").lower()
+    category = (row.category or "").lower()
+    score = 3.5
+    h = int(hashlib.md5(title.encode("utf-8")).hexdigest(), 16)
+    score += (h % 15) / 10.0
+
+    if any(keyword in venue for keyword in _MAJOR_VENUE_KEYWORDS):
+        score += 0.25
+    if row.price_max is not None and row.price_max >= 75:
+        score += 0.15
+    if category in {"sports", "music"}:
+        score += 0.1
+    if any(token in title.lower() for token in ("championship", " finals", "world tour", "all-star")):
+        score += 0.1
+    return min(round(score, 2), 5.0)
+
+
+def _compute_national_popularity_score(row: ExploreContent) -> float:
+    stored = _stored_popularity_score(row)
+    if stored is not None:
+        return stored
+
+    score = 0.0
+    city = (row.city or "").lower()
+    venue = (row.venue_name or "").lower()
+    title = (row.title or "").lower()
+    category = (row.category or "").lower()
+
+    if city in _MAJOR_METRO_CITIES:
+        score += 30.0
+    if any(keyword in venue for keyword in _MAJOR_VENUE_KEYWORDS):
+        score += 25.0
+    if row.price_max is not None:
+        score += min(float(row.price_max) / 8.0, 25.0)
+    if category in {"sports", "music"}:
+        score += 10.0
+    if any(token in title for token in ("tour", "festival", " vs ", " vs. ")):
+        score += 8.0
+    if row.image_url:
+        score += 2.0
+    return round(score, 2)
+
+
+def get_national_picks(
+    db: Session,
+    exclude_ids: list[str],
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """
+    Top-rated upcoming US events from the full explore_contents table.
+    No distance filter — same national pool for all users.
+    """
+    from datetime import date
+
+    today = date.today()
+    exclude_set = {str(event_id).strip() for event_id in exclude_ids if str(event_id).strip()}
+
+    stmt = (
+        select(ExploreContent)
+        .where(
+            ExploreContent.content_type == "ticketmaster_event",
+            ExploreContent.start_date >= today,
+        )
+    )
+    rows = db.scalars(stmt).all()
+
+    ranked: list[tuple[float, float, dict[str, Any]]] = []
+    for row in rows:
+        eid = str(row.event_id or row.id).strip()
+        if not eid or eid in exclude_set:
+            continue
+        rating = _compute_national_rating(row)
+        popularity = _compute_national_popularity_score(row)
+        ev = _explore_content_to_event_dict(
+            row,
+            rating=rating,
+            popularity_score=popularity,
+        )
+        ranked.append((rating, popularity, ev))
+
+    ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    return [ev for _, _, ev in ranked[:limit]]
+
+
 def _query_db_events_haversine(
     db: Session,
     lat: float,
@@ -1275,26 +1464,12 @@ def _query_db_events_haversine(
     try:
         result_set = db.execute(text(full_sql), params).fetchall()
         for r in result_set:
-            db_events.append({
-                "id": r.event_id or str(r.id),
-                "name": r.title or "Event",
-                "category": r.category or "Experience",
-                "date": r.start_date.strftime("%Y-%m-%d") if r.start_date else "",
-                "time": r.start_time or "19:00",
-                "venue": r.venue_name or "Various Venues",
-                "city": r.city or "US",
-                "country": "US",
-                "image_url": r.image_url,
-                "ticket_url": r.ticket_url or "",
-                "price_min": r.price_min,
-                "price_max": r.price_max,
-                "status": None,
-                "availability": None,
-                "venue_lat": r.venue_lat,
-                "venue_lon": r.venue_lon,
-                "source": r.source or "ticketmaster",
-                "distance_miles": round(float(r.distance_miles), 1),
-            })
+            db_events.append(
+                _explore_content_to_event_dict(
+                    r,
+                    distance_miles=float(r.distance_miles),
+                )
+            )
     except Exception as exc:
         logger.exception("Failed to query explore_contents via haversine: %s", exc)
     return db_events

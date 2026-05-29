@@ -11,7 +11,7 @@ from app.main import app
 from app.models.explore_content import ExploreContent
 from app.utils.database import SessionLocal
 from app.jobs.daily_events_fetch import run_daily_events_fetch
-from app.services.events_service import search_events_extended
+from app.services.events_service import search_events_extended, get_national_picks
 
 client = TestClient(app)
 
@@ -244,6 +244,144 @@ def test_explore_sections_from_db_haversine_events(monkeypatch):
         assert len(data["trending"]) >= 1
         assert len(data["weekend"]) >= 1
         assert len(data["popular"]) >= 1
+        assert mock_live_fetch.call_count == 0
+    finally:
+        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
+        db.commit()
+        db.close()
+
+
+def test_get_national_picks_nationwide_ranking():
+    """National picks query the full US table, not the local radius pool."""
+    db = SessionLocal()
+    try:
+        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
+        db.commit()
+
+        now = datetime.now(timezone.utc)
+        today = date.today()
+        local_id = "db_austin_local"
+        national_id = "db_nyc_headliner"
+
+        db.add(
+            ExploreContent(
+                city="Austin",
+                content_type="ticketmaster_event",
+                data=[],
+                fetched_at=now,
+                event_id=local_id,
+                title="Neighborhood Open Mic",
+                category="Music",
+                venue_name="Small Club",
+                venue_lat=30.2672,
+                venue_lon=-97.7431,
+                state="Texas",
+                start_date=today,
+                start_time="20:00",
+                price_min=10.0,
+                price_max=20.0,
+                source="ticketmaster",
+            )
+        )
+        db.add(
+            ExploreContent(
+                city="New York",
+                content_type="ticketmaster_event",
+                data=[],
+                fetched_at=now,
+                event_id=national_id,
+                title="Championship Finals",
+                category="Sports",
+                venue_name="Madison Square Garden",
+                venue_lat=40.7505,
+                venue_lon=-73.9934,
+                state="New York",
+                start_date=today + timedelta(days=7),
+                start_time="19:30",
+                price_min=120.0,
+                price_max=450.0,
+                image_url="https://example.com/msg.jpg",
+                source="ticketmaster",
+            )
+        )
+        db.commit()
+
+        picks = get_national_picks(db, exclude_ids=[local_id], limit=20)
+        assert len(picks) == 1
+        assert picks[0]["id"] == national_id
+        assert picks[0]["city"] == "New York"
+        assert picks[0]["venue"] == "Madison Square Garden"
+    finally:
+        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
+        db.commit()
+        db.close()
+
+
+def test_explore_national_section_uses_us_wide_picks(monkeypatch):
+    """Explore hub national section surfaces nationwide picks outside the geo radius."""
+    db = SessionLocal()
+    try:
+        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
+        db.commit()
+
+        now = datetime.now(timezone.utc)
+        today = date.today()
+
+        db.add(
+            ExploreContent(
+                city="Austin",
+                content_type="ticketmaster_event",
+                data=[],
+                fetched_at=now,
+                event_id="db_near",
+                title="Near Show",
+                category="Music",
+                venue_name="Austin Venue",
+                venue_lat=30.2672,
+                venue_lon=-97.7431,
+                state="Texas",
+                start_date=today,
+                start_time="19:00",
+                price_min=20.0,
+                price_max=40.0,
+                source="ticketmaster",
+            )
+        )
+        db.add(
+            ExploreContent(
+                city="New York",
+                content_type="ticketmaster_event",
+                data=[],
+                fetched_at=now,
+                event_id="db_national",
+                title="All-Star World Tour",
+                category="Music",
+                venue_name="Madison Square Garden",
+                venue_lat=40.7505,
+                venue_lon=-73.9934,
+                state="New York",
+                start_date=today + timedelta(days=10),
+                start_time="20:00",
+                price_min=90.0,
+                price_max=350.0,
+                image_url="https://example.com/national.jpg",
+                source="ticketmaster",
+            )
+        )
+        db.commit()
+
+        monkeypatch.setattr("config.settings.ticketmaster_api_key", "test-api-key")
+        mock_live_fetch = MagicMock(return_value={"events": [], "display_city": "Austin"})
+        monkeypatch.setattr("app.services.events_service._fetch_ticketmaster_only", mock_live_fetch)
+
+        response = client.get(
+            "/api/v1/explore/events",
+            params={"lat": 30.267, "lon": -97.743, "radius": 200},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        national_ids = {ev["id"] for ev in data["national"]}
+        assert "db_national" in national_ids
         assert mock_live_fetch.call_count == 0
     finally:
         db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
