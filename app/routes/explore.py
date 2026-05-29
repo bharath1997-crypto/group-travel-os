@@ -465,58 +465,62 @@ async def explore_events(
         except (TypeError, ValueError):
             return 9999.0
 
+    def event_date_str(ev: dict[str, Any]) -> str:
+        raw = ev.get("date") or ev.get("start_date") or ""
+        if hasattr(raw, "strftime"):
+            return raw.strftime("%Y-%m-%d")
+        return str(raw).split("T")[0][:10]
+
+    def parse_event_date(ev: dict[str, Any]) -> date | None:
+        dt_str = event_date_str(ev)
+        if not dt_str:
+            return None
+        try:
+            return datetime.strptime(dt_str, "%Y-%m-%d").date()
+        except ValueError:
+            return None
+
     today_date = date.today()
-    today_str = today_date.strftime("%Y-%m-%d")
     three_days = today_date + timedelta(days=3)
-    upcoming_events = [ev for ev in events if ev.get("date") and ev["date"] >= today_str]
-    used_ids: set[str] = set()
+    upcoming_events = [
+        ev for ev in events
+        if (d := parse_event_date(ev)) is not None and d >= today_date
+    ]
 
     def event_id(ev: dict[str, Any]) -> str:
         eid = str(ev.get("id") or "").strip()
         if eid:
             return eid
-        return f"{ev.get('name', '')}|{ev.get('date', '')}|{ev.get('venue', '')}"
+        return f"{ev.get('name', '')}|{event_date_str(ev)}|{ev.get('venue', '')}"
 
-    def pick_section(pool: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
-        chosen: list[dict[str, Any]] = []
-        for ev in pool:
-            if len(chosen) >= limit:
-                break
-            eid = event_id(ev)
-            if eid in used_ids:
-                continue
-            chosen.append(ev)
-            used_ids.add(eid)
-        return chosen
+    def pick_top(pool: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
+        return pool[:limit]
 
     by_distance = sorted(upcoming_events, key=distance_key)
 
-    # 1. Near You — all events within radius, closest first (no city-name filter)
-    trending = pick_section(by_distance, 40)
+    # 1. Near You — closest events within radius (no city-name filter)
+    trending = pick_top(by_distance, 40)
 
-    # 2. This Weekend — next 3 days, closest first
+    # 2. This Weekend — next 3 days, closest first (independent of trending)
     def is_within_three_days(ev: dict[str, Any]) -> bool:
-        dt_str = ev.get("date")
-        if not dt_str:
+        ev_date = parse_event_date(ev)
+        if ev_date is None:
             return False
-        try:
-            ev_date = datetime.strptime(dt_str, "%Y-%m-%d").date()
-            return today_date <= ev_date <= three_days
-        except Exception:
-            return False
+        return today_date <= ev_date <= three_days
 
     weekend_pool = sorted(
         [ev for ev in upcoming_events if is_within_three_days(ev)],
         key=distance_key,
     )
-    weekend = pick_section(weekend_pool, 20)
+    weekend = pick_top(weekend_pool, 20)
 
     # 3. Popular Nearby — highest rated, any city within radius
     by_score = sorted(upcoming_events, key=get_score, reverse=True)
-    popular = pick_section(by_score, 20)
+    popular = pick_top(by_score, 20)
 
-    # 4. National Picks — remaining events
-    national = pick_section(by_score, 20)
+    # 4. National Picks — events not already shown in trending/weekend/popular
+    shown_ids = {event_id(ev) for ev in (*trending, *weekend, *popular)}
+    national = [ev for ev in by_score if event_id(ev) not in shown_ids][:20]
 
     section_titles = result.get("section_titles") if geo_search and result else None
     if not section_titles:

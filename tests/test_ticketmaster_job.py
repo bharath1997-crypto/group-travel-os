@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, date, timezone
+from datetime import datetime, date, timezone, timedelta
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
@@ -161,7 +161,9 @@ def test_haversine_db_query_and_live_fallback(monkeypatch):
         assert res["events"][0]["id"] == "db_ev_austin"
         assert res["events"][0]["name"] == "Keep Austin Weird Fest"
         assert res["fetch_mode"] == "local_db"
-        assert res["radius_miles"] == 50
+        # Fewer than 10 DB hits expands through 300 → 500 mi
+        assert res["radius_miles"] == 500
+        assert res["events"][0]["distance_miles"] is not None
         # The mock live fetch function was NEVER called
         assert mock_live_fetch.call_count == 0
 
@@ -179,6 +181,70 @@ def test_haversine_db_query_and_live_fallback(monkeypatch):
         # Since DB returned 0 matching rows for NYC, it fell back to live search!
         assert mock_live_fetch.call_count == 1
 
+    finally:
+        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
+        db.commit()
+        db.close()
+
+
+def test_explore_sections_from_db_haversine_events(monkeypatch):
+    """Explore hub sections populate from haversine DB events (small pool)."""
+    db = SessionLocal()
+    try:
+        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
+        db.commit()
+
+        now = datetime.now(timezone.utc)
+        today = date.today()
+        weekend_day = today + timedelta(days=2)
+        later_day = today + timedelta(days=14)
+
+        events_to_seed = [
+            ("db_near", "Near Show", today, 30.2672, -97.7431),
+            ("db_weekend", "Weekend Show", weekend_day, 30.30, -97.75),
+            ("db_popular", "Popular Show", later_day, 30.35, -97.80),
+        ]
+        for event_id, title, start, vlat, vlon in events_to_seed:
+            db.add(
+                ExploreContent(
+                    city="Austin",
+                    content_type="ticketmaster_event",
+                    data=[],
+                    fetched_at=now,
+                    event_id=event_id,
+                    title=title,
+                    category="Music",
+                    venue_name="Austin Venue",
+                    venue_lat=vlat,
+                    venue_lon=vlon,
+                    state="Texas",
+                    start_date=start,
+                    start_time="19:00",
+                    price_min=20.0,
+                    price_max=40.0,
+                    image_url="https://example.com/img.jpg",
+                    ticket_url="https://example.com/tix",
+                    source="ticketmaster",
+                )
+            )
+        db.commit()
+
+        monkeypatch.setattr("config.settings.ticketmaster_api_key", "test-api-key")
+        mock_live_fetch = MagicMock(return_value={"events": [], "display_city": "Austin"})
+        monkeypatch.setattr("app.services.events_service._fetch_ticketmaster_only", mock_live_fetch)
+
+        response = client.get(
+            "/api/v1/explore/events",
+            params={"lat": 30.267, "lon": -97.743, "radius": 200},
+        )
+        assert response.status_code == 200
+        data = response.json()
+
+        assert data["fetch_mode"] == "local_db"
+        assert len(data["trending"]) >= 1
+        assert len(data["weekend"]) >= 1
+        assert len(data["popular"]) >= 1
+        assert mock_live_fetch.call_count == 0
     finally:
         db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
         db.commit()

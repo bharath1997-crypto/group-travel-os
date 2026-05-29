@@ -1219,6 +1219,87 @@ def _paginate_events(
     }
 
 
+def _query_db_events_haversine(
+    db: Session,
+    lat: float,
+    lon: float,
+    radius_miles: float,
+    *,
+    category: str = "all",
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> list[dict[str, Any]]:
+    """Return ticketmaster_event rows from explore_contents within radius_miles."""
+    from sqlalchemy import text
+    from datetime import date
+
+    today_str = date.today().strftime("%Y-%m-%d")
+    query_str = """
+        SELECT *,
+          (3959 * acos(
+            cos(radians(:lat)) * cos(radians(venue_lat)) *
+            cos(radians(venue_lon) - radians(:lon)) +
+            sin(radians(:lat)) * sin(radians(venue_lat))
+          )) AS distance_miles
+        FROM explore_contents
+        WHERE content_type = 'ticketmaster_event'
+          AND start_date >= :today
+          AND venue_lat IS NOT NULL
+          AND venue_lon IS NOT NULL
+    """
+    params: dict[str, Any] = {
+        "lat": lat,
+        "lon": lon,
+        "today": today_str,
+        "radius": float(radius_miles),
+    }
+    cat = (category or "all").strip()
+    if cat.lower() != "all":
+        query_str += " AND LOWER(category) = LOWER(:category)"
+        params["category"] = cat
+    if date_from:
+        query_str += " AND start_date >= :date_from"
+        params["date_from"] = date_from
+    if date_to:
+        query_str += " AND start_date <= :date_to"
+        params["date_to"] = date_to
+
+    full_sql = f"""
+        SELECT * FROM (
+            {query_str}
+        ) AS subq
+        WHERE distance_miles <= :radius
+        ORDER BY distance_miles ASC
+    """
+    db_events: list[dict[str, Any]] = []
+    try:
+        result_set = db.execute(text(full_sql), params).fetchall()
+        for r in result_set:
+            db_events.append({
+                "id": r.event_id or str(r.id),
+                "name": r.title or "Event",
+                "category": r.category or "Experience",
+                "date": r.start_date.strftime("%Y-%m-%d") if r.start_date else "",
+                "time": r.start_time or "19:00",
+                "venue": r.venue_name or "Various Venues",
+                "city": r.city or "US",
+                "country": "US",
+                "image_url": r.image_url,
+                "ticket_url": r.ticket_url or "",
+                "price_min": r.price_min,
+                "price_max": r.price_max,
+                "status": None,
+                "availability": None,
+                "venue_lat": r.venue_lat,
+                "venue_lon": r.venue_lon,
+                "source": r.source or "ticketmaster",
+                "distance_miles": round(float(r.distance_miles), 1),
+            })
+    except Exception as exc:
+        logger.exception("Failed to query explore_contents via haversine: %s", exc)
+    return db_events
+
+
 def search_events_extended(
     db: Session,
     city: str,
@@ -1243,84 +1324,37 @@ def search_events_extended(
     geo_search = lat is not None and lon is not None
 
     if geo_search:
-        from sqlalchemy import text
-        from datetime import date
-        today_str = date.today().strftime("%Y-%m-%d")
+        expand_radii: list[int] = []
+        for r in (radius_miles, 300, 500):
+            ri = int(r)
+            if ri not in expand_radii:
+                expand_radii.append(ri)
 
-        # Query explore_contents using haversine distance
-        query_str = """
-            SELECT *,
-              (3959 * acos(
-                cos(radians(:lat)) * cos(radians(venue_lat)) *
-                cos(radians(venue_lon) - radians(:lon)) +
-                sin(radians(:lat)) * sin(radians(venue_lat))
-              )) AS distance_miles
-            FROM explore_contents
-            WHERE content_type = 'ticketmaster_event'
-              AND start_date >= :today
-              AND venue_lat IS NOT NULL
-              AND venue_lon IS NOT NULL
-        """
-        
-        params = {
-            "lat": lat,
-            "lon": lon,
-            "today": today_str,
-            "radius": float(radius_miles)
-        }
-        
-        if cat and cat.lower() != "all":
-            query_str += " AND LOWER(category) = LOWER(:category)"
-            params["category"] = cat
-            
-        if date_from:
-            query_str += " AND start_date >= :date_from"
-            params["date_from"] = date_from
-            
-        if date_to:
-            query_str += " AND start_date <= :date_to"
-            params["date_to"] = date_to
-
-        full_sql = f"""
-            SELECT * FROM (
-                {query_str}
-            ) AS subq
-            WHERE distance_miles <= :radius
-            ORDER BY distance_miles ASC
-        """
-        
-        db_events = []
-        try:
-            result_set = db.execute(text(full_sql), params).fetchall()
-            for r in result_set:
-                db_events.append({
-                    "id": r.event_id or str(r.id),
-                    "name": r.title or "Event",
-                    "category": r.category or "Experience",
-                    "date": r.start_date.strftime("%Y-%m-%d") if r.start_date else "",
-                    "time": r.start_time or "19:00",
-                    "venue": r.venue_name or "Various Venues",
-                    "city": r.city or "US",
-                    "country": "US",
-                    "image_url": r.image_url,
-                    "ticket_url": r.ticket_url or "",
-                    "price_min": r.price_min,
-                    "price_max": r.price_max,
-                    "status": None,
-                    "availability": None,
-                    "venue_lat": r.venue_lat,
-                    "venue_lon": r.venue_lon,
-                    "source": r.source or "ticketmaster",
-                    "distance_miles": round(float(r.distance_miles), 1),
-                })
-            logger.info("Local database event discovery returned %d events within %s miles.", len(db_events), radius_miles)
-        except Exception as exc:
-            logger.exception("Failed to query explore_contents via haversine: %s", exc)
+        db_events: list[dict[str, Any]] = []
+        radius_used_db = radius_miles
+        for try_radius in expand_radii:
+            db_events = _query_db_events_haversine(
+                db,
+                lat,
+                lon,
+                try_radius,
+                category=cat,
+                date_from=date_from,
+                date_to=date_to,
+            )
+            radius_used_db = try_radius
+            logger.info(
+                "Local database event discovery returned %d events within %s miles.",
+                len(db_events),
+                try_radius,
+            )
+            if len(db_events) >= 10:
+                break
 
         if db_events:
             # We got local events! Return them with zero Ticketmaster API calls.
             display_city = _resolve_geo_display_city(city, lat, lon, db_events)
-            
+
             if return_all:
                 res = {
                     "city": city,
@@ -1331,14 +1365,14 @@ def search_events_extended(
                 }
             else:
                 res = _paginate_events(db_events, city, page, per_page)
-                
-            res["radius_miles"] = radius_miles
-            res["radius_used"] = radius_miles
+
+            res["radius_miles"] = radius_used_db
+            res["radius_used"] = radius_used_db
             res["user_lat"] = lat
             res["user_lon"] = lon
             res["display_city"] = display_city
             res["fetch_mode"] = "local_db"
-            res["section_titles"] = geo_section_titles(display_city, radius_miles)
+            res["section_titles"] = geo_section_titles(display_city, radius_used_db)
             return res
 
     # Fallback to cache / live API search if not geo_search or if DB returned 0 results
