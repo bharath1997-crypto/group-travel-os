@@ -35,6 +35,7 @@ type EventsAPIResponse = {
   fetch_mode?: string | null;
   section_titles?: {
     trending?: string;
+    trending_subtitle?: string;
     weekend?: string;
     popular?: string;
     national?: string;
@@ -67,6 +68,9 @@ const EVENTS_FETCH_TIMEOUT_MS = 60_000;
 const LS_EXPLORE_CITY = "rovvy_explore_city";
 const LS_EXPLORE_COORDS = "rovvy_explore_coords";
 const EXPLORE_RADIUS_MILES = 200;
+
+/** Prevent duplicate bootstrap fetches (React Strict Mode remount). */
+let exploreBootstrapStarted = false;
 
 function saveExploreCity(label: string, coords?: UserCoords | null) {
   if (typeof window === "undefined") return;
@@ -139,6 +143,51 @@ function buildExploreEventsUrl(cityName: string, coords: UserCoords | null): str
     params.set("city", cityName.trim());
   }
   return `/explore/events?${params.toString()}`;
+}
+
+async function reverseGeocodeLabel(coords: UserCoords): Promise<string> {
+  try {
+    const r = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${coords.lat}&lon=${coords.lon}&format=json&addressdetails=1`,
+      {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "RovvyExplore/1.0 (group-travel-os)",
+        },
+      },
+    );
+    if (!r.ok) return "Your area";
+    const data = (await r.json()) as {
+      address?: {
+        city?: string;
+        town?: string;
+        village?: string;
+        hamlet?: string;
+        state?: string;
+        state_code?: string;
+      };
+    };
+    const city =
+      data.address?.city ||
+      data.address?.town ||
+      data.address?.village ||
+      data.address?.hamlet;
+    const state = data.address?.state_code || data.address?.state || "";
+    if (city) return state ? `${city}, ${state}` : city;
+  } catch {
+    /* ignore */
+  }
+  return "Your area";
+}
+
+async function applyGeoDisplayCity(
+  coords: UserCoords,
+  setCurrentCity: (value: string) => void,
+): Promise<string> {
+  const label = await reverseGeocodeLabel(coords);
+  setCurrentCity(label);
+  saveExploreCity(label, coords);
+  return label;
 }
 
 const CATEGORY_PILLS = [
@@ -448,6 +497,7 @@ export default function ExploreHubPage() {
   const [nationalEvents, setNationalEvents] = useState<ExploreEvent[]>([]);
   const [sectionTitles, setSectionTitles] = useState({
     trending: "",
+    trendingSubtitle: "",
     weekend: "Happening This Weekend",
     popular: "",
     national: "National Picks",
@@ -475,10 +525,16 @@ export default function ExploreHubPage() {
         const loc = cityLabel(data.display_city || data.city);
         setSectionTitles({
           trending: data.section_titles.trending || `Near ${loc}`,
+          trendingSubtitle: data.section_titles.trending_subtitle || "",
           weekend: data.section_titles.weekend || "Happening This Weekend",
           popular: data.section_titles.popular || `Popular in ${stateName}`,
           national: data.section_titles.national || "National Picks",
         });
+      }
+
+      if (data.display_city && userCoordsRef.current) {
+        const next = data.display_city.trim();
+        if (next) setCurrentCity(next);
       }
 
       const fullDebug: ExploreFeedDebug = {
@@ -492,14 +548,88 @@ export default function ExploreHubPage() {
     [stateName],
   );
 
+  const eventsFetchUrlRef = useRef<string | null>(null);
+
   const fetchEvents = useCallback(
     async (city: string, coords?: UserCoords | null) => {
       const activeCoords = resolveFetchCoords(coords, userCoordsRef.current);
+
+      if (activeCoords) {
+        const cityKey = `geo:${activeCoords.lat.toFixed(2)},${activeCoords.lon.toFixed(2)}`;
+        const url = buildExploreEventsUrl("", activeCoords);
+        const generation = ++fetchGenerationRef.current;
+
+        if (eventsFetchUrlRef.current === url) return;
+        eventsFetchUrlRef.current = url;
+
+        const cached = loadExploreFeedCache(cityKey);
+        if (cached) {
+          setTrendingEvents(cached.sections.trending);
+          setWeekendEvents(cached.sections.weekend);
+          setPopularEvents(cached.sections.popular);
+          setNationalEvents(cached.sections.national);
+          setFeedDebug({ ...cached.debug, source: "cache" });
+          setLoading(false);
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+
+        setFetchError(null);
+
+        try {
+          if (process.env.NODE_ENV === "development") {
+            console.info("[explore] GET", url);
+          }
+          const data = await apiFetch<EventsAPIResponse>(
+            url,
+            {},
+            EVENTS_FETCH_TIMEOUT_MS,
+          );
+
+          if (generation !== fetchGenerationRef.current) return;
+
+          if (data.radius_miles) {
+            setRadiusMiles(data.radius_miles);
+          }
+          applySections(data, "live", cityKey);
+        } catch (err) {
+          if (generation !== fetchGenerationRef.current) return;
+          const message =
+            err instanceof Error ? err.message : "Failed to load events";
+          console.error("Failed to load explore events:", message);
+          setFetchError(message);
+
+          if (!cached) {
+            const fallback = loadExploreFeedCache(cityKey);
+            if (!fallback) {
+              setTrendingEvents([]);
+              setWeekendEvents([]);
+              setPopularEvents([]);
+              setNationalEvents([]);
+            }
+          }
+        } finally {
+          if (eventsFetchUrlRef.current === url) {
+            eventsFetchUrlRef.current = null;
+          }
+          if (generation === fetchGenerationRef.current) {
+            setLoading(false);
+            setRefreshing(false);
+          }
+        }
+        return;
+      }
+
       const cityName = city.split(",")[0].trim();
-      const cityKey = activeCoords
-        ? `geo:${activeCoords.lat.toFixed(2)},${activeCoords.lon.toFixed(2)}`
-        : `city:${cityName.toLowerCase()}`;
+      if (!cityName) return;
+
+      const cityKey = `city:${cityName.toLowerCase()}`;
+      const url = buildExploreEventsUrl(cityName, null);
       const generation = ++fetchGenerationRef.current;
+
+      if (eventsFetchUrlRef.current === url) return;
+      eventsFetchUrlRef.current = url;
 
       const cached = loadExploreFeedCache(cityKey);
       if (cached) {
@@ -517,7 +647,6 @@ export default function ExploreHubPage() {
       setFetchError(null);
 
       try {
-        const url = buildExploreEventsUrl(activeCoords ? "" : cityName, activeCoords);
         if (process.env.NODE_ENV === "development") {
           console.info("[explore] GET", url);
         }
@@ -550,6 +679,9 @@ export default function ExploreHubPage() {
           }
         }
       } finally {
+        if (eventsFetchUrlRef.current === url) {
+          eventsFetchUrlRef.current = null;
+        }
         if (generation === fetchGenerationRef.current) {
           setLoading(false);
           setRefreshing(false);
@@ -565,8 +697,9 @@ export default function ExploreHubPage() {
       const coords = loadExploreCoords();
       if (coords) {
         setCoords(coords);
-        if (savedCity) setCurrentCity(savedCity);
-        void fetchEvents(savedCity || "", coords);
+        void applyGeoDisplayCity(coords, setCurrentCity).then(() => {
+          void fetchEvents("", coords);
+        });
       } else if (savedCity) {
         setCurrentCity(savedCity);
         setCoords(null);
@@ -580,37 +713,17 @@ export default function ExploreHubPage() {
         const { latitude, longitude } = pos.coords;
         const coords: UserCoords = { lat: latitude, lon: longitude };
         setCoords(coords);
-        try {
-          const r = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
-            { headers: { Accept: "application/json" } },
-          );
-          const data = await r.json();
-          const city =
-            data.address?.city ||
-            data.address?.town ||
-            data.address?.village ||
-            data.address?.hamlet ||
-            "Your area";
-          const state = data.address?.state_code || data.address?.state || "";
-          const label = state ? `${city}, ${state}` : city;
-          setCurrentCity(label);
-          saveExploreCity(label, coords);
-          await fetchEvents(label, coords);
-        } catch {
-          const savedCity = loadExploreCity();
-          if (savedCity) setCurrentCity(savedCity);
-          saveExploreCity(savedCity || "Your area", coords);
-          await fetchEvents(savedCity || "", coords);
-        }
+        await applyGeoDisplayCity(coords, setCurrentCity);
+        await fetchEvents("", coords);
       },
       () => {
         const savedCity = loadExploreCity();
         const coords = loadExploreCoords();
         if (coords) {
           setCoords(coords);
-          if (savedCity) setCurrentCity(savedCity);
-          void fetchEvents(savedCity || "", coords);
+          void applyGeoDisplayCity(coords, setCurrentCity).then(() => {
+            void fetchEvents("", coords);
+          });
           return;
         }
         if (savedCity) {
@@ -623,24 +736,30 @@ export default function ExploreHubPage() {
   }, [fetchEvents, setCoords]);
 
   useEffect(() => {
-    if (mountedRef.current) return;
+    if (mountedRef.current || exploreBootstrapStarted) return;
     mountedRef.current = true;
+    exploreBootstrapStarted = true;
 
-    const saved = loadExploreCity();
-    const savedCoords = loadExploreCoords();
-    if (savedCoords) {
-      if (saved) setCurrentCity(saved);
-      setCoords(savedCoords);
-      void fetchEvents(saved || "", savedCoords);
-      return;
-    }
-    if (saved) {
-      setCurrentCity(saved);
-      setCoords(null);
-      void fetchEvents(saved, null);
-      return;
-    }
-    detectGPSCity();
+    void (async () => {
+      const saved = loadExploreCity();
+      const savedCoords = loadExploreCoords();
+
+      if (savedCoords) {
+        setCoords(savedCoords);
+        await applyGeoDisplayCity(savedCoords, setCurrentCity);
+        await fetchEvents("", savedCoords);
+        return;
+      }
+
+      if (saved) {
+        setCurrentCity(saved);
+        setCoords(null);
+        await fetchEvents(saved, null);
+        return;
+      }
+
+      detectGPSCity();
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only bootstrap
   }, []);
 
@@ -709,6 +828,7 @@ export default function ExploreHubPage() {
   const selectCity = (suggestion: CitySuggestion) => {
     setCurrentCity(suggestion.label);
     setCoords(null);
+    userCoordsRef.current = null;
     saveExploreCity(suggestion.label, null);
     setShowCityDropdown(false);
     setCitySearch("");
@@ -882,8 +1002,11 @@ export default function ExploreHubPage() {
         </div>
 
         <EventSection
-          title={sectionTitles.trending || `Near ${cityLabel(currentCity)}`}
-          subtitle="Local favorites near you"
+          title={sectionTitles.trending || (userCoords ? "Near You" : `Near ${cityLabel(currentCity)}`)}
+          subtitle={
+            sectionTitles.trendingSubtitle ||
+            (userCoords ? `Events within ${radiusMiles} miles of ${cityLabel(currentCity)}` : "Local favorites near you")
+          }
           events={filteredTrending}
           rawCount={trendingEvents.length}
           userCity={currentCity}
