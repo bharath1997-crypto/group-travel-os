@@ -219,14 +219,24 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-800">
-                  {event.start_date
-                    ? new Date(event.start_date).toLocaleDateString("en-US", {
+                  {(() => {
+                    if (!event.start_date) return "Dates TBA";
+                    const parts = event.start_date.split("-");
+                    if (parts.length === 3) {
+                      const d = new Date(
+                        parseInt(parts[0], 10),
+                        parseInt(parts[1], 10) - 1,
+                        parseInt(parts[2], 10)
+                      );
+                      return d.toLocaleDateString("en-US", {
                         weekday: "long",
                         month: "long",
                         day: "numeric",
                         year: "numeric",
-                      })
-                    : "Dates TBA"}
+                      });
+                    }
+                    return event.start_date;
+                  })()}
                 </p>
                 <p className="text-xs text-slate-500 flex items-center gap-1">
                   <Clock size={12} />

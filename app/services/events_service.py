@@ -1235,11 +1235,113 @@ def search_events_extended(
     """
     Serve Ticketmaster immediately; never block on Instagram/Apify.
     When lat/lon provided, fetch events within radius_miles (default 200) of user GPS.
+    Prioritize querying local explore_contents via haversine distance.
     Set return_all=True to get the full cached list (for section splitting on Explore hub).
     """
     city = (city or "").strip()
     cat = category or "all"
     geo_search = lat is not None and lon is not None
+
+    if geo_search:
+        from sqlalchemy import text
+        from datetime import date
+        today_str = date.today().strftime("%Y-%m-%d")
+
+        # Query explore_contents using haversine distance
+        query_str = """
+            SELECT *,
+              (3959 * acos(
+                cos(radians(:lat)) * cos(radians(venue_lat)) *
+                cos(radians(venue_lon) - radians(:lon)) +
+                sin(radians(:lat)) * sin(radians(venue_lat))
+              )) AS distance_miles
+            FROM explore_contents
+            WHERE content_type = 'ticketmaster_event'
+              AND start_date >= :today
+              AND venue_lat IS NOT NULL
+              AND venue_lon IS NOT NULL
+        """
+        
+        params = {
+            "lat": lat,
+            "lon": lon,
+            "today": today_str,
+            "radius": float(radius_miles)
+        }
+        
+        if cat and cat.lower() != "all":
+            query_str += " AND LOWER(category) = LOWER(:category)"
+            params["category"] = cat
+            
+        if date_from:
+            query_str += " AND start_date >= :date_from"
+            params["date_from"] = date_from
+            
+        if date_to:
+            query_str += " AND start_date <= :date_to"
+            params["date_to"] = date_to
+
+        full_sql = f"""
+            SELECT * FROM (
+                {query_str}
+            ) AS subq
+            WHERE distance_miles <= :radius
+            ORDER BY distance_miles ASC
+        """
+        
+        db_events = []
+        try:
+            result_set = db.execute(text(full_sql), params).fetchall()
+            for r in result_set:
+                db_events.append({
+                    "id": r.event_id or str(r.id),
+                    "name": r.title or "Event",
+                    "category": r.category or "Experience",
+                    "date": r.start_date.strftime("%Y-%m-%d") if r.start_date else "",
+                    "time": r.start_time or "19:00",
+                    "venue": r.venue_name or "Various Venues",
+                    "city": r.city or "US",
+                    "country": "US",
+                    "image_url": r.image_url,
+                    "ticket_url": r.ticket_url or "",
+                    "price_min": r.price_min,
+                    "price_max": r.price_max,
+                    "status": None,
+                    "availability": None,
+                    "venue_lat": r.venue_lat,
+                    "venue_lon": r.venue_lon,
+                    "source": r.source or "ticketmaster",
+                    "distance_miles": round(float(r.distance_miles), 1),
+                })
+            logger.info("Local database event discovery returned %d events within %s miles.", len(db_events), radius_miles)
+        except Exception as exc:
+            logger.exception("Failed to query explore_contents via haversine: %s", exc)
+
+        if db_events:
+            # We got local events! Return them with zero Ticketmaster API calls.
+            display_city = _resolve_geo_display_city(city, lat, lon, db_events)
+            
+            if return_all:
+                res = {
+                    "city": city,
+                    "total": len(db_events),
+                    "page": 1,
+                    "per_page": len(db_events),
+                    "events": db_events,
+                }
+            else:
+                res = _paginate_events(db_events, city, page, per_page)
+                
+            res["radius_miles"] = radius_miles
+            res["radius_used"] = radius_miles
+            res["user_lat"] = lat
+            res["user_lon"] = lon
+            res["display_city"] = display_city
+            res["fetch_mode"] = "local_db"
+            res["section_titles"] = geo_section_titles(display_city, radius_miles)
+            return res
+
+    # Fallback to cache / live API search if not geo_search or if DB returned 0 results
     cache_key = _events_cache_key(
         city,
         cat,
@@ -1301,3 +1403,4 @@ def search_events_extended(
         result["display_city"] = fetch_meta["display_city"]
 
     return result
+
