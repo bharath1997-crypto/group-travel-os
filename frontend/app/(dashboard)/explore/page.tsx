@@ -460,10 +460,15 @@ export default function ExploreHubPage() {
   const fetchGenerationRef = useRef(0);
   const mountedRef = useRef(false);
   const userCoordsRef = useRef<UserCoords | null>(null);
+  /** When coords exist, only geo responses may update section state. */
+  const eventsDataSourceRef = useRef<"geo" | "city" | null>(null);
 
   const setCoords = useCallback((coords: UserCoords | null) => {
     userCoordsRef.current = coords;
     setUserCoords(coords);
+    if (coords) {
+      eventsDataSourceRef.current = "geo";
+    }
   }, []);
 
   const [currentCity, setCurrentCity] = useState("Locating…");
@@ -495,13 +500,30 @@ export default function ExploreHubPage() {
   const filtersActive =
     activeCategory !== "All" || searchQuery.trim().length > 0;
 
+  const shouldUseEventsResponse = useCallback((mode: "geo" | "city"): boolean => {
+    if (userCoordsRef.current || readStoredCoords()) {
+      return mode === "geo";
+    }
+    return true;
+  }, []);
+
   const applySections = useCallback(
     (
       data: EventsAPIResponse,
       source: ExploreFeedDebug["source"],
       cityKey: string,
+      mode: "geo" | "city",
     ) => {
+      if (!shouldUseEventsResponse(mode)) {
+        if (process.env.NODE_ENV === "development") {
+          console.info("[explore] ignored section update from city response — coords active");
+        }
+        return;
+      }
+
       const { sections, debug } = hydrateSectionsFromResponse(data);
+      eventsDataSourceRef.current = mode;
+
       setTrendingEvents(sections.trending);
       setWeekendEvents(sections.weekend);
       setPopularEvents(sections.popular);
@@ -530,8 +552,20 @@ export default function ExploreHubPage() {
       };
       setFeedDebug(fullDebug);
       saveExploreFeedCache(cityKey, sections, fullDebug);
+
+      console.log("[explore] fetchEvents resolved", {
+        mode,
+        cityKey,
+        source,
+        total: data.total ?? debug.poolSize,
+        trending: sections.trending.length,
+        weekend: sections.weekend.length,
+        popular: sections.popular.length,
+        national: sections.national.length,
+        pool: debug.poolSize,
+      });
     },
-    [stateName],
+    [shouldUseEventsResponse, stateName],
   );
 
   const eventsFetchUrlRef = useRef<string | null>(null);
@@ -553,7 +587,8 @@ export default function ExploreHubPage() {
       const generation = ++fetchGenerationRef.current;
 
       const cached = loadExploreFeedCache(cityKey);
-      if (cached) {
+      if (cached && shouldUseEventsResponse(mode)) {
+        eventsDataSourceRef.current = mode;
         setTrendingEvents(cached.sections.trending);
         setWeekendEvents(cached.sections.weekend);
         setPopularEvents(cached.sections.popular);
@@ -561,7 +596,7 @@ export default function ExploreHubPage() {
         setFeedDebug({ ...cached.debug, source: "cache" });
         setLoading(false);
         setRefreshing(true);
-      } else {
+      } else if (!cached || !shouldUseEventsResponse(mode)) {
         setLoading(true);
       }
 
@@ -582,7 +617,7 @@ export default function ExploreHubPage() {
         if (data.radius_miles) {
           setRadiusMiles(data.radius_miles);
         }
-        applySections(data, "live", cityKey);
+        applySections(data, "live", cityKey, mode);
       } catch (err) {
         if (generation !== fetchGenerationRef.current) return;
         const message =
@@ -611,7 +646,7 @@ export default function ExploreHubPage() {
         }
       }
     },
-    [applySections],
+    [applySections, shouldUseEventsResponse],
   );
 
   const fetchEventsByCoords = useCallback(
@@ -699,6 +734,7 @@ export default function ExploreHubPage() {
       setCurrentCity(saved);
       setCoords(null);
       userCoordsRef.current = null;
+      eventsDataSourceRef.current = "city";
       await fetchEventsByCity(saved);
       return;
     }
@@ -784,6 +820,7 @@ export default function ExploreHubPage() {
     setCurrentCity(suggestion.label);
     setCoords(null);
     userCoordsRef.current = null;
+    eventsDataSourceRef.current = "city";
     saveExploreCity(suggestion.label, null);
     setShowCityDropdown(false);
     setCitySearch("");
