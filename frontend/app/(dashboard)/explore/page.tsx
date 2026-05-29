@@ -130,14 +130,13 @@ function resolveFetchCoords(
 }
 
 function buildExploreEventsUrl(cityName: string, coords: UserCoords | null): string {
-  const params = new URLSearchParams({
-    city: cityName,
-    per_page: "100",
-  });
+  const params = new URLSearchParams({ per_page: "100" });
   if (coords) {
     params.set("lat", String(coords.lat));
     params.set("lon", String(coords.lon));
     params.set("radius", String(EXPLORE_RADIUS_MILES));
+  } else if (cityName.trim()) {
+    params.set("city", cityName.trim());
   }
   return `/explore/events?${params.toString()}`;
 }
@@ -495,9 +494,11 @@ export default function ExploreHubPage() {
 
   const fetchEvents = useCallback(
     async (city: string, coords?: UserCoords | null) => {
-      const cityName = city.split(",")[0].trim();
       const activeCoords = resolveFetchCoords(coords, userCoordsRef.current);
-      const cityKey = `${cityName.toLowerCase()}|${activeCoords ? `${activeCoords.lat.toFixed(2)},${activeCoords.lon.toFixed(2)}` : "city"}`;
+      const cityName = city.split(",")[0].trim();
+      const cityKey = activeCoords
+        ? `geo:${activeCoords.lat.toFixed(2)},${activeCoords.lon.toFixed(2)}`
+        : `city:${cityName.toLowerCase()}`;
       const generation = ++fetchGenerationRef.current;
 
       const cached = loadExploreFeedCache(cityKey);
@@ -516,7 +517,7 @@ export default function ExploreHubPage() {
       setFetchError(null);
 
       try {
-        const url = buildExploreEventsUrl(cityName, activeCoords);
+        const url = buildExploreEventsUrl(activeCoords ? "" : cityName, activeCoords);
         if (process.env.NODE_ENV === "development") {
           console.info("[explore] GET", url);
         }
@@ -560,11 +561,17 @@ export default function ExploreHubPage() {
 
   const detectGPSCity = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      const fallback = loadExploreCity() || "Chicago, IL";
+      const savedCity = loadExploreCity();
       const coords = loadExploreCoords();
-      setCurrentCity(fallback);
-      setCoords(coords);
-      void fetchEvents(fallback, coords);
+      if (coords) {
+        setCoords(coords);
+        if (savedCity) setCurrentCity(savedCity);
+        void fetchEvents(savedCity || "", coords);
+      } else if (savedCity) {
+        setCurrentCity(savedCity);
+        setCoords(null);
+        void fetchEvents(savedCity, null);
+      }
       return;
     }
 
@@ -584,25 +591,33 @@ export default function ExploreHubPage() {
             data.address?.town ||
             data.address?.village ||
             data.address?.hamlet ||
-            "Chicago";
+            "Your area";
           const state = data.address?.state_code || data.address?.state || "";
           const label = state ? `${city}, ${state}` : city;
           setCurrentCity(label);
           saveExploreCity(label, coords);
           await fetchEvents(label, coords);
         } catch {
-          const fallback = loadExploreCity() || "Chicago, IL";
-          setCurrentCity(fallback);
-          saveExploreCity(fallback, coords);
-          await fetchEvents(fallback, coords);
+          const savedCity = loadExploreCity();
+          if (savedCity) setCurrentCity(savedCity);
+          saveExploreCity(savedCity || "Your area", coords);
+          await fetchEvents(savedCity || "", coords);
         }
       },
       () => {
-        const fallback = loadExploreCity() || "Chicago, IL";
+        const savedCity = loadExploreCity();
         const coords = loadExploreCoords();
-        setCurrentCity(fallback);
-        setCoords(coords);
-        void fetchEvents(fallback, coords);
+        if (coords) {
+          setCoords(coords);
+          if (savedCity) setCurrentCity(savedCity);
+          void fetchEvents(savedCity || "", coords);
+          return;
+        }
+        if (savedCity) {
+          setCurrentCity(savedCity);
+          setCoords(null);
+          void fetchEvents(savedCity, null);
+        }
       },
     );
   }, [fetchEvents, setCoords]);
@@ -613,14 +628,16 @@ export default function ExploreHubPage() {
 
     const saved = loadExploreCity();
     const savedCoords = loadExploreCoords();
+    if (savedCoords) {
+      if (saved) setCurrentCity(saved);
+      setCoords(savedCoords);
+      void fetchEvents(saved || "", savedCoords);
+      return;
+    }
     if (saved) {
       setCurrentCity(saved);
-      setCoords(savedCoords);
-      if (savedCoords) {
-        void fetchEvents(saved, savedCoords);
-      } else {
-        detectGPSCity();
-      }
+      setCoords(null);
+      void fetchEvents(saved, null);
       return;
     }
     detectGPSCity();
