@@ -70,7 +70,10 @@ const LS_EXPLORE_COORDS = "rovvy_explore_coords";
 const EXPLORE_RADIUS_MILES = 200;
 
 /** Prevent duplicate bootstrap fetches (React Strict Mode remount). */
-let exploreBootstrapStarted = false;
+let exploreBootstrapPromise: Promise<void> | null = null;
+/** Block overlapping /explore/events requests (geo vs city race). */
+let exploreEventsInFlight = false;
+let exploreEventsInFlightMode: "geo" | "city" | null = null;
 
 function saveExploreCity(label: string, coords?: UserCoords | null) {
   if (typeof window === "undefined") return;
@@ -110,26 +113,7 @@ function loadExploreCoords(): UserCoords | null {
   return null;
 }
 
-/** Resolve coords for API: explicit null = manual city pick (no GPS). */
-function resolveFetchCoords(
-  explicit?: UserCoords | null,
-  refCoords?: UserCoords | null,
-): UserCoords | null {
-  if (explicit === null) return null;
-  if (
-    explicit &&
-    typeof explicit.lat === "number" &&
-    typeof explicit.lon === "number"
-  ) {
-    return explicit;
-  }
-  if (
-    refCoords &&
-    typeof refCoords.lat === "number" &&
-    typeof refCoords.lon === "number"
-  ) {
-    return refCoords;
-  }
+function readStoredCoords(): UserCoords | null {
   return loadExploreCoords();
 }
 
@@ -171,7 +155,9 @@ async function reverseGeocodeLabel(coords: UserCoords): Promise<string> {
       data.address?.city ||
       data.address?.town ||
       data.address?.village ||
-      data.address?.hamlet;
+      data.address?.hamlet ||
+      (data.address as { suburb?: string })?.suburb ||
+      (data.address as { neighbourhood?: string })?.neighbourhood;
     const state = data.address?.state_code || data.address?.state || "";
     if (city) return state ? `${city}, ${state}` : city;
   } catch {
@@ -480,7 +466,7 @@ export default function ExploreHubPage() {
     setUserCoords(coords);
   }, []);
 
-  const [currentCity, setCurrentCity] = useState("Chicago, IL");
+  const [currentCity, setCurrentCity] = useState("Locating…");
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [citySearch, setCitySearch] = useState("");
   const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
@@ -550,86 +536,21 @@ export default function ExploreHubPage() {
 
   const eventsFetchUrlRef = useRef<string | null>(null);
 
-  const fetchEvents = useCallback(
-    async (city: string, coords?: UserCoords | null) => {
-      const activeCoords = resolveFetchCoords(coords, userCoordsRef.current);
-
-      if (activeCoords) {
-        const cityKey = `geo:${activeCoords.lat.toFixed(2)},${activeCoords.lon.toFixed(2)}`;
-        const url = buildExploreEventsUrl("", activeCoords);
-        const generation = ++fetchGenerationRef.current;
-
+  const runEventsRequest = useCallback(
+    async (
+      url: string,
+      cityKey: string,
+      mode: "geo" | "city",
+    ) => {
+      if (exploreEventsInFlight) {
+        if (exploreEventsInFlightMode === "geo" && mode === "city") return;
         if (eventsFetchUrlRef.current === url) return;
-        eventsFetchUrlRef.current = url;
-
-        const cached = loadExploreFeedCache(cityKey);
-        if (cached) {
-          setTrendingEvents(cached.sections.trending);
-          setWeekendEvents(cached.sections.weekend);
-          setPopularEvents(cached.sections.popular);
-          setNationalEvents(cached.sections.national);
-          setFeedDebug({ ...cached.debug, source: "cache" });
-          setLoading(false);
-          setRefreshing(true);
-        } else {
-          setLoading(true);
-        }
-
-        setFetchError(null);
-
-        try {
-          if (process.env.NODE_ENV === "development") {
-            console.info("[explore] GET", url);
-          }
-          const data = await apiFetch<EventsAPIResponse>(
-            url,
-            {},
-            EVENTS_FETCH_TIMEOUT_MS,
-          );
-
-          if (generation !== fetchGenerationRef.current) return;
-
-          if (data.radius_miles) {
-            setRadiusMiles(data.radius_miles);
-          }
-          applySections(data, "live", cityKey);
-        } catch (err) {
-          if (generation !== fetchGenerationRef.current) return;
-          const message =
-            err instanceof Error ? err.message : "Failed to load events";
-          console.error("Failed to load explore events:", message);
-          setFetchError(message);
-
-          if (!cached) {
-            const fallback = loadExploreFeedCache(cityKey);
-            if (!fallback) {
-              setTrendingEvents([]);
-              setWeekendEvents([]);
-              setPopularEvents([]);
-              setNationalEvents([]);
-            }
-          }
-        } finally {
-          if (eventsFetchUrlRef.current === url) {
-            eventsFetchUrlRef.current = null;
-          }
-          if (generation === fetchGenerationRef.current) {
-            setLoading(false);
-            setRefreshing(false);
-          }
-        }
-        return;
       }
 
-      const cityName = city.split(",")[0].trim();
-      if (!cityName) return;
-
-      const cityKey = `city:${cityName.toLowerCase()}`;
-      const url = buildExploreEventsUrl(cityName, null);
-      const generation = ++fetchGenerationRef.current;
-
-      if (eventsFetchUrlRef.current === url) return;
+      exploreEventsInFlight = true;
+      exploreEventsInFlightMode = mode;
       eventsFetchUrlRef.current = url;
+      const generation = ++fetchGenerationRef.current;
 
       const cached = loadExploreFeedCache(cityKey);
       if (cached) {
@@ -682,6 +603,8 @@ export default function ExploreHubPage() {
         if (eventsFetchUrlRef.current === url) {
           eventsFetchUrlRef.current = null;
         }
+        exploreEventsInFlight = false;
+        exploreEventsInFlightMode = null;
         if (generation === fetchGenerationRef.current) {
           setLoading(false);
           setRefreshing(false);
@@ -691,19 +614,45 @@ export default function ExploreHubPage() {
     [applySections],
   );
 
+  const fetchEventsByCoords = useCallback(
+    async (coords: UserCoords) => {
+      const cityKey = `geo:${coords.lat.toFixed(2)},${coords.lon.toFixed(2)}`;
+      const url = buildExploreEventsUrl("", coords);
+      await runEventsRequest(url, cityKey, "geo");
+    },
+    [runEventsRequest],
+  );
+
+  const fetchEventsByCity = useCallback(
+    async (city: string) => {
+      if (userCoordsRef.current || readStoredCoords()) {
+        if (process.env.NODE_ENV === "development") {
+          console.info("[explore] blocked city fetch — coords available");
+        }
+        return;
+      }
+      const cityName = city.split(",")[0].trim();
+      if (!cityName) return;
+      const cityKey = `city:${cityName.toLowerCase()}`;
+      const url = buildExploreEventsUrl(cityName, null);
+      await runEventsRequest(url, cityKey, "city");
+    },
+    [runEventsRequest],
+  );
+
   const detectGPSCity = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       const savedCity = loadExploreCity();
-      const coords = loadExploreCoords();
+      const coords = readStoredCoords();
       if (coords) {
         setCoords(coords);
-        void applyGeoDisplayCity(coords, setCurrentCity).then(() => {
-          void fetchEvents("", coords);
-        });
+        void applyGeoDisplayCity(coords, setCurrentCity).then(() =>
+          fetchEventsByCoords(coords),
+        );
       } else if (savedCity) {
         setCurrentCity(savedCity);
         setCoords(null);
-        void fetchEvents(savedCity, null);
+        void fetchEventsByCity(savedCity);
       }
       return;
     }
@@ -714,52 +663,58 @@ export default function ExploreHubPage() {
         const coords: UserCoords = { lat: latitude, lon: longitude };
         setCoords(coords);
         await applyGeoDisplayCity(coords, setCurrentCity);
-        await fetchEvents("", coords);
+        await fetchEventsByCoords(coords);
       },
       () => {
         const savedCity = loadExploreCity();
-        const coords = loadExploreCoords();
+        const coords = readStoredCoords();
         if (coords) {
           setCoords(coords);
-          void applyGeoDisplayCity(coords, setCurrentCity).then(() => {
-            void fetchEvents("", coords);
-          });
+          void applyGeoDisplayCity(coords, setCurrentCity).then(() =>
+            fetchEventsByCoords(coords),
+          );
           return;
         }
         if (savedCity) {
           setCurrentCity(savedCity);
           setCoords(null);
-          void fetchEvents(savedCity, null);
+          void fetchEventsByCity(savedCity);
         }
       },
     );
-  }, [fetchEvents, setCoords]);
+  }, [fetchEventsByCity, fetchEventsByCoords, setCoords]);
+
+  const bootstrapExplore = useCallback(async () => {
+    const savedCoords = readStoredCoords();
+    const saved = loadExploreCity();
+
+    if (savedCoords) {
+      setCoords(savedCoords);
+      await applyGeoDisplayCity(savedCoords, setCurrentCity);
+      await fetchEventsByCoords(savedCoords);
+      return;
+    }
+
+    if (saved) {
+      setCurrentCity(saved);
+      setCoords(null);
+      userCoordsRef.current = null;
+      await fetchEventsByCity(saved);
+      return;
+    }
+
+    detectGPSCity();
+  }, [detectGPSCity, fetchEventsByCity, fetchEventsByCoords, setCoords]);
 
   useEffect(() => {
-    if (mountedRef.current || exploreBootstrapStarted) return;
+    if (mountedRef.current) return;
     mountedRef.current = true;
-    exploreBootstrapStarted = true;
 
-    void (async () => {
-      const saved = loadExploreCity();
-      const savedCoords = loadExploreCoords();
+    if (!exploreBootstrapPromise) {
+      exploreBootstrapPromise = bootstrapExplore();
+    }
 
-      if (savedCoords) {
-        setCoords(savedCoords);
-        await applyGeoDisplayCity(savedCoords, setCurrentCity);
-        await fetchEvents("", savedCoords);
-        return;
-      }
-
-      if (saved) {
-        setCurrentCity(saved);
-        setCoords(null);
-        await fetchEvents(saved, null);
-        return;
-      }
-
-      detectGPSCity();
-    })();
+    void exploreBootstrapPromise;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only bootstrap
   }, []);
 
@@ -833,7 +788,7 @@ export default function ExploreHubPage() {
     setShowCityDropdown(false);
     setCitySearch("");
     setCitySuggestions([]);
-    fetchEvents(suggestion.label, null);
+    void fetchEventsByCity(suggestion.label);
   };
 
   const clearFilters = () => {
