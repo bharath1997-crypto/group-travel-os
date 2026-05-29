@@ -575,10 +575,20 @@ export default function ExploreHubPage() {
       url: string,
       cityKey: string,
       mode: "geo" | "city",
+      options?: { force?: boolean },
     ) => {
-      if (exploreEventsInFlight) {
+      const force = options?.force === true;
+
+      if (exploreEventsInFlight && !force) {
         if (exploreEventsInFlightMode === "geo" && mode === "city") return;
         if (eventsFetchUrlRef.current === url) return;
+      }
+
+      if (mode === "city" && (userCoordsRef.current || readStoredCoords())) {
+        if (process.env.NODE_ENV === "development") {
+          console.info("[explore] blocked city fetch — coords available");
+        }
+        return;
       }
 
       exploreEventsInFlight = true;
@@ -650,10 +660,10 @@ export default function ExploreHubPage() {
   );
 
   const fetchEventsByCoords = useCallback(
-    async (coords: UserCoords) => {
+    async (coords: UserCoords, options?: { force?: boolean }) => {
       const cityKey = `geo:${coords.lat.toFixed(2)},${coords.lon.toFixed(2)}`;
       const url = buildExploreEventsUrl("", coords);
-      await runEventsRequest(url, cityKey, "geo");
+      await runEventsRequest(url, cityKey, "geo", options);
     },
     [runEventsRequest],
   );
@@ -682,7 +692,7 @@ export default function ExploreHubPage() {
       if (coords) {
         setCoords(coords);
         void applyGeoDisplayCity(coords, setCurrentCity).then(() =>
-          fetchEventsByCoords(coords),
+          fetchEventsByCoords(coords, { force: true }),
         );
       } else if (savedCity) {
         setCurrentCity(savedCity);
@@ -696,9 +706,9 @@ export default function ExploreHubPage() {
       async (pos) => {
         const { latitude, longitude } = pos.coords;
         const coords: UserCoords = { lat: latitude, lon: longitude };
-        setCoords(coords);
         await applyGeoDisplayCity(coords, setCurrentCity);
-        await fetchEventsByCoords(coords);
+        setCoords(coords);
+        await fetchEventsByCoords(coords, { force: true });
       },
       () => {
         const savedCity = loadExploreCity();
@@ -706,7 +716,7 @@ export default function ExploreHubPage() {
         if (coords) {
           setCoords(coords);
           void applyGeoDisplayCity(coords, setCurrentCity).then(() =>
-            fetchEventsByCoords(coords),
+            fetchEventsByCoords(coords, { force: true }),
           );
           return;
         }
@@ -735,8 +745,7 @@ export default function ExploreHubPage() {
       setCoords(null);
       userCoordsRef.current = null;
       eventsDataSourceRef.current = "city";
-      await fetchEventsByCity(saved);
-      return;
+      void fetchEventsByCity(saved);
     }
 
     detectGPSCity();
