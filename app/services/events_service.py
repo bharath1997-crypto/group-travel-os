@@ -429,6 +429,16 @@ def _fetch_ticketmaster_events(
                         except (TypeError, ValueError):
                             pass
 
+                    status_val: str | None = None
+                    availability_val: str | None = None
+                    if isinstance(dates, dict):
+                        status_obj = dates.get("status")
+                        if isinstance(status_obj, dict):
+                            code = str(status_obj.get("code") or "").lower()
+                            if status_obj.get("soldOut") is True or code in ("offsale", "sold_out", "soldout"):
+                                status_val = "sold_out"
+                                availability_val = "sold_out"
+
                     events.append({
                         "id": eid,
                         "name": name,
@@ -442,6 +452,8 @@ def _fetch_ticketmaster_events(
                         "ticket_url": url,
                         "price_min": price_min,
                         "price_max": price_max,
+                        "status": status_val,
+                        "availability": availability_val,
                         "venue_lat": venue_lat,
                         "venue_lon": venue_lon,
                         "source": "ticketmaster",
@@ -932,8 +944,41 @@ def _fetch_apify_instagram_events(city: str, limit: int = 100) -> list[dict[str,
         return []
 
 
+def _is_sold_out(event: dict[str, Any]) -> bool:
+    status = str(event.get("status") or "").lower()
+    availability = str(event.get("availability") or "").lower()
+    return status == "sold_out" or availability == "sold_out"
+
+
+def _format_event_price(event: dict[str, Any]) -> str:
+    """Priority: Sold Out > Free > price range > See pricing."""
+    if _is_sold_out(event):
+        return "Sold Out"
+    price_min = event.get("price_min")
+    price_max = event.get("price_max")
+    if price_min == 0 and price_max == 0:
+        return "Free"
+    if price_min is not None and price_max is not None and price_max > price_min:
+        return f"${round(price_min)} – ${round(price_max)}"
+    if price_min is not None:
+        return f"From ${round(price_min)}"
+    return "See pricing"
+
+
 def _normalize_event_category(raw: str, name: str) -> str:
     """Map Ticketmaster segments and weak labels to consumer-friendly tags."""
+    import re
+
+    name_l = (name or "").lower()
+    if re.search(r"\btour\b", name_l) and re.search(r"\b(stadium|arena)\b", name_l):
+        return "Experience"
+    if re.search(r"\bvs\.?\b", name_l):
+        return "Sports"
+    if "comedy" in name_l:
+        return "Comedy"
+    if any(kw in name_l for kw in ("ballet", "orchestra", "symphony", "theatre", "theater")):
+        return "Arts"
+
     key = (raw or "").strip().lower()
     weak = {"", "undefined", "miscellaneous", "misc", "all", "other", "general"}
     segment_map = {
@@ -950,16 +995,15 @@ def _normalize_event_category(raw: str, name: str) -> str:
     if key not in weak:
         return segment_map.get(key, raw.strip().title())
 
-    name_l = (name or "").lower()
     if any(x in name_l for x in (" vs ", " vs. ", "game", "sox", "cubs", "bulls", "bears", "twins", "mlb", "nba", "nfl")):
         return "Sports"
-    if any(x in name_l for x in ("concert", " tour", "live ", "dj ", "festival", "symphony", "orchestra")):
+    if any(x in name_l for x in ("concert", " tour", "live ", "dj ", "festival")):
         return "Music"
-    if any(x in name_l for x in ("comedy", "theatre", "theater", "broadway", "play")):
+    if any(x in name_l for x in ("theatre", "theater", "broadway", "play")):
         return "Arts"
     if any(x in name_l for x in ("food", "wine", "dinner", "brunch", "tasting")):
         return "Food"
-    if any(x in name_l for x in ("cruise", "tour", "museum", "architecture", "walking")):
+    if any(x in name_l for x in ("cruise", "museum", "architecture", "walking")):
         return "Experience"
     if any(x in name_l for x in ("club", "night", "18+", "21+")):
         return "Nightlife"

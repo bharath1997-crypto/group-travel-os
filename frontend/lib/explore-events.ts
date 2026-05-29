@@ -11,6 +11,8 @@ export type ExploreEvent = {
   ticket_url: string;
   price_min: number | null;
   price_max: number | null;
+  status?: string | null;
+  availability?: string | null;
   source: string;
   distance_miles?: number | null;
   venue_lat?: number | null;
@@ -34,15 +36,26 @@ export function cityLabel(value: string): string {
   return value.split(",")[0]?.trim() || value;
 }
 
+function isSoldOut(event: Pick<ExploreEvent, "status" | "availability">): boolean {
+  const status = (event.status || "").trim().toLowerCase();
+  const availability = (event.availability || "").trim().toLowerCase();
+  return status === "sold_out" || availability === "sold_out";
+}
+
 export function normalizeCategory(category: string, name: string): string {
+  const nameL = (name || "").toLowerCase();
+  if (/\btour\b/.test(nameL) && /\b(stadium|arena)\b/.test(nameL)) return "Experience";
+  if (/\bvs\.?\b/.test(nameL)) return "Sports";
+  if (/\bcomedy\b/.test(nameL)) return "Comedy";
+  if (/\b(ballet|orchestra|symphony|theatre|theater)\b/.test(nameL)) return "Arts";
+
   const key = (category || "").trim().toLowerCase();
   if (!WEAK_CATEGORIES.has(key)) {
     return category.trim();
   }
-  const nameL = (name || "").toLowerCase();
   if (/\b(vs\.?|sox|cubs|bulls|bears|twins|mlb|nba|nfl)\b/.test(nameL)) return "Sports";
-  if (/\b(concert|tour|live|dj|festival|symphony|orchestra)\b/.test(nameL)) return "Music";
-  if (/\b(comedy|theatre|theater|broadway|play)\b/.test(nameL)) return "Arts";
+  if (/\b(concert| tour|live |dj |festival)\b/.test(nameL)) return "Music";
+  if (/\b(theatre|theater|broadway|play)\b/.test(nameL)) return "Arts";
   if (/\b(food|wine|dinner|brunch|tasting)\b/.test(nameL)) return "Food";
   if (/\b(cruise|museum|architecture|walking tour)\b/.test(nameL)) return "Experience";
   if (/\b(club|night|18\+|21\+)\b/.test(nameL)) return "Nightlife";
@@ -123,7 +136,8 @@ export function formatDateTime(event: ExploreEvent): string {
 }
 
 export function formatPrice(event: ExploreEvent): string {
-  if (event.price_min != null && event.price_min <= 0) return "Free";
+  if (isSoldOut(event)) return "Sold Out";
+  if (event.price_min === 0 && event.price_max === 0) return "Free";
   if (event.price_min != null && event.price_max != null && event.price_max > event.price_min) {
     return `$${Math.round(event.price_min)} – $${Math.round(event.price_max)}`;
   }
