@@ -43,52 +43,12 @@ EVENTBRITE_EVENTS_LIMIT = 50
 BANDSINTOWN_EVENTS_PER_PAGE = 50
 APIFY_INSTAGRAM_HASHTAG_ACTOR = "apify~instagram-hashtag-scraper"
 EXPLORE_RADIUS_MILES = 200
-
-# Major metros used to enrich GPS-based discovery within EXPLORE_RADIUS_MILES
-MAJOR_METRO_CITIES: list[dict[str, Any]] = [
-    {"name": "Chicago", "state": "IL", "lat": 41.8781, "lon": -87.6298},
-    {"name": "New York", "state": "NY", "lat": 40.7128, "lon": -74.006},
-    {"name": "Los Angeles", "state": "CA", "lat": 34.0522, "lon": -118.2437},
-    {"name": "San Francisco", "state": "CA", "lat": 37.7749, "lon": -122.4194},
-    {"name": "San Jose", "state": "CA", "lat": 37.3382, "lon": -121.8863},
-    {"name": "Oakland", "state": "CA", "lat": 37.8044, "lon": -122.2712},
-    {"name": "Sacramento", "state": "CA", "lat": 38.5816, "lon": -121.4944},
-    {"name": "Houston", "state": "TX", "lat": 29.7604, "lon": -95.3698},
-    {"name": "Phoenix", "state": "AZ", "lat": 33.4484, "lon": -112.074},
-    {"name": "Philadelphia", "state": "PA", "lat": 39.9526, "lon": -75.1652},
-    {"name": "San Antonio", "state": "TX", "lat": 29.4241, "lon": -98.4936},
-    {"name": "San Diego", "state": "CA", "lat": 32.7157, "lon": -117.1611},
-    {"name": "Dallas", "state": "TX", "lat": 32.7767, "lon": -96.797},
-    {"name": "Austin", "state": "TX", "lat": 30.2672, "lon": -97.7431},
-    {"name": "Miami", "state": "FL", "lat": 25.7617, "lon": -80.1918},
-    {"name": "Seattle", "state": "WA", "lat": 47.6062, "lon": -122.3321},
-    {"name": "Denver", "state": "CO", "lat": 39.7392, "lon": -104.9903},
-    {"name": "Boston", "state": "MA", "lat": 42.3601, "lon": -71.0589},
-    {"name": "Atlanta", "state": "GA", "lat": 33.749, "lon": -84.388},
-    {"name": "Las Vegas", "state": "NV", "lat": 36.1699, "lon": -115.1398},
-    {"name": "Milwaukee", "state": "WI", "lat": 43.0389, "lon": -87.9065},
-    {"name": "Indianapolis", "state": "IN", "lat": 39.7684, "lon": -86.1581},
-    {"name": "Detroit", "state": "MI", "lat": 42.3314, "lon": -83.0458},
-    {"name": "Portland", "state": "OR", "lat": 45.5152, "lon": -122.6784},
-    {"name": "Nashville", "state": "TN", "lat": 36.1627, "lon": -86.7816},
-]
+GEO_SEARCH_RADII = (200, 300, 500)
 
 _cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 
 _background_instagram_lock = threading.Lock()
 _background_instagram_cities: set[str] = set()
-
-# Geographical coordinate mappings for Skiddle geosearch
-CITY_COORD_MAP = {
-    "london": (51.5074, -0.1278, "GB"),
-    "manchester": (53.4808, -2.2426, "GB"),
-    "edinburgh": (55.9533, -3.1883, "GB"),
-    "chicago": (41.8781, -87.6298, "US"),
-    "new york": (40.7128, -74.0060, "US"),
-    "tokyo": (35.6762, 139.6503, "JP"),
-    "paris": (48.8566, 2.3522, "FR"),
-    "sydney": (-33.8688, 151.2093, "AU"),
-}
 
 
 def _cache_key(city: str) -> str:
@@ -182,43 +142,6 @@ def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> floa
     return r * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-def _nearest_major_metro(lat: float, lon: float) -> dict[str, Any]:
-    """Return the closest hardcoded major metro to a GPS point."""
-    best = MAJOR_METRO_CITIES[0]
-    best_dist = float("inf")
-    for metro in MAJOR_METRO_CITIES:
-        dist = _haversine_miles(lat, lon, float(metro["lat"]), float(metro["lon"]))
-        if dist < best_dist:
-            best_dist = dist
-            best = metro
-    return {**best, "distance_miles": round(best_dist, 1)}
-
-
-def _major_cities_within_radius(
-    lat: float,
-    lon: float,
-    radius_miles: int = EXPLORE_RADIUS_MILES,
-) -> list[dict[str, Any]]:
-    nearby: list[dict[str, Any]] = []
-    for metro in MAJOR_METRO_CITIES:
-        dist = _haversine_miles(lat, lon, float(metro["lat"]), float(metro["lon"]))
-        if dist <= radius_miles:
-            nearby.append({**metro, "distance_miles": round(dist, 1)})
-    nearby.sort(key=lambda m: m["distance_miles"])
-    return nearby
-
-
-def _city_center_coords(city_name: str) -> tuple[float, float] | None:
-    key = city_name.strip().lower()
-    for metro in MAJOR_METRO_CITIES:
-        if metro["name"].lower() == key:
-            return float(metro["lat"]), float(metro["lon"])
-    mapped = CITY_COORD_MAP.get(key)
-    if mapped:
-        return float(mapped[0]), float(mapped[1])
-    return None
-
-
 def _annotate_event_distances(
     events: list[dict[str, Any]],
     user_lat: float,
@@ -229,13 +152,6 @@ def _annotate_event_distances(
         v_lon = ev.get("venue_lon")
         if v_lat is not None and v_lon is not None:
             dist = _haversine_miles(user_lat, user_lon, float(v_lat), float(v_lon))
-        else:
-            center = _city_center_coords(str(ev.get("city") or ""))
-            if center:
-                dist = _haversine_miles(user_lat, user_lon, center[0], center[1])
-            else:
-                dist = None
-        if dist is not None:
             ev["distance_miles"] = round(dist, 1)
     return events
 
@@ -259,8 +175,6 @@ def _fetch_ticketmaster_events(
     lat: float | None = None,
     lon: float | None = None,
     radius_miles: int = EXPLORE_RADIUS_MILES,
-    *,
-    city_with_radius: bool = False,
 ) -> list[dict[str, Any]]:
     api_key = (settings.ticketmaster_api_key or "").strip()
     if not api_key:
@@ -298,13 +212,6 @@ def _fetch_ticketmaster_events(
         params.pop("city", None)
         params.pop("dmaId", None)
         params.pop("geoPoint", None)
-    elif city_with_radius:
-        params["city"] = city
-        params["radius"] = radius_miles
-        params["unit"] = "miles"
-        params.pop("latlong", None)
-        params.pop("dmaId", None)
-        params.pop("geoPoint", None)
     else:
         params["city"] = city
         params.pop("latlong", None)
@@ -326,11 +233,8 @@ def _fetch_ticketmaster_events(
         with httpx.Client(timeout=API_TIMEOUT_SECONDS, headers=BROWSER_HEADERS) as client:
             for page_num in range(2):
                 params["page"] = page_num
-                if page_num == 0:
-                    if lat is not None and lon is not None:
-                        _log_ticketmaster_url(params, context="geo")
-                    elif city_with_radius:
-                        _log_ticketmaster_url(params, context="metro-fallback")
+                if page_num == 0 and lat is not None and lon is not None:
+                    _log_ticketmaster_url(params, context=f"geo-r{radius_miles}")
                 resp = client.get(TICKETMASTER_URL, params=params)
                 if resp.status_code != 200:
                     if page_num == 0:
@@ -1145,6 +1049,31 @@ def _events_cache_key(
     return key
 
 
+def _fetch_ticketmaster_geo_expanded(
+    city: str,
+    category: str,
+    date_from: str | None,
+    date_to: str | None,
+    lat: float,
+    lon: float,
+) -> tuple[list[dict[str, Any]], int]:
+    """Try geo search at 200 → 300 → 500 mi; return first non-empty result."""
+    for radius in GEO_SEARCH_RADII:
+        events = _fetch_ticketmaster_events(
+            city, category, date_from, date_to, lat, lon, radius
+        )
+        logger.info(
+            "Ticketmaster geo fetch for (%s, %s) r=%smi returned %d events",
+            lat,
+            lon,
+            radius,
+            len(events),
+        )
+        if events:
+            return events, radius
+    return [], GEO_SEARCH_RADII[-1]
+
+
 def _fetch_ticketmaster_only(
     city: str,
     category: str,
@@ -1156,56 +1085,26 @@ def _fetch_ticketmaster_only(
 ) -> dict[str, Any]:
     """
     Fetch Ticketmaster events.
-    With GPS: latlong + radius (miles) first; if empty, fallback to nearest major metro by city name.
+    With GPS: latlong + expanding radius (200 → 300 → 500 mi) until events are found.
     """
-    display_city = (city or "Chicago").strip()
+    display_city = (city or "").strip().split(",")[0].strip()
     meta: dict[str, Any] = {
-        "display_city": display_city.split(",")[0].strip(),
-        "nearest_metro": None,
+        "display_city": display_city,
         "fetch_mode": "city",
+        "radius_used": None,
     }
 
     if lat is not None and lon is not None:
         meta["fetch_mode"] = "geo"
-        nearest = _nearest_major_metro(lat, lon)
-        meta["nearest_metro"] = nearest["name"]
-
-        all_events = _fetch_ticketmaster_events(
-            display_city, category, date_from, date_to, lat, lon, radius_miles
+        all_events, radius_used = _fetch_ticketmaster_geo_expanded(
+            city, category, date_from, date_to, lat, lon
         )
-        logger.info(
-            "Ticketmaster geo fetch for display_city=%s returned %d events",
-            meta["display_city"],
-            len(all_events),
-        )
-
-        if not all_events:
-            logger.info(
-                "Ticketmaster geo search returned 0 for (%s, %s) r=%smi; "
-                "falling back to nearest metro %s with city+radius",
-                lat,
-                lon,
-                radius_miles,
-                nearest["name"],
-            )
-            meta["fetch_mode"] = "metro_fallback"
-            all_events = _fetch_ticketmaster_events(
-                str(nearest["name"]),
-                category,
-                date_from,
-                date_to,
-                radius_miles=radius_miles,
-                city_with_radius=True,
-            )
-            logger.info(
-                "Ticketmaster metro fallback city=%s returned %d events",
-                nearest["name"],
-                len(all_events),
-            )
+        meta["radius_used"] = radius_used
 
         all_events = _annotate_event_distances(all_events, lat, lon)
         all_events = [
-            e for e in all_events if e.get("distance_miles", 999) <= radius_miles
+            e for e in all_events
+            if e.get("distance_miles") is None or e.get("distance_miles", 999) <= radius_used
         ]
         all_events.sort(
             key=lambda e: (
@@ -1274,15 +1173,24 @@ def search_events_extended(
     When lat/lon provided, fetch events within radius_miles (default 200) of user GPS.
     Set return_all=True to get the full cached list (for section splitting on Explore hub).
     """
-    city = (city or "Chicago").strip()
+    city = (city or "").strip()
     cat = category or "all"
-    cache_key = _events_cache_key(city, cat, date_from, date_to, lat, lon, radius_miles)
+    geo_search = lat is not None and lon is not None
+    cache_key = _events_cache_key(
+        city,
+        cat,
+        date_from,
+        date_to,
+        lat,
+        lon,
+        None if geo_search else radius_miles,
+    )
 
     cached = _get_fresh_cached_events(db, cache_key)
     fetch_meta: dict[str, Any] = {
         "display_city": city.split(",")[0].strip(),
-        "nearest_metro": None,
         "fetch_mode": "cache" if cached else None,
+        "radius_used": None,
     }
 
     if cached:
@@ -1293,13 +1201,10 @@ def search_events_extended(
         )
         all_events = fetched["events"]
         fetch_meta["display_city"] = fetched.get("display_city") or fetch_meta["display_city"]
-        fetch_meta["nearest_metro"] = fetched.get("nearest_metro")
         fetch_meta["fetch_mode"] = fetched.get("fetch_mode")
+        fetch_meta["radius_used"] = fetched.get("radius_used")
         _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=all_events)
         _maybe_start_background_instagram(city)
-
-    if lat is not None and lon is not None and fetch_meta.get("nearest_metro") is None:
-        fetch_meta["nearest_metro"] = _nearest_major_metro(lat, lon)["name"]
 
     if return_all:
         result: dict[str, Any] = {
@@ -1312,13 +1217,13 @@ def search_events_extended(
     else:
         result = _paginate_events(all_events, city, page, per_page)
 
-    if lat is not None and lon is not None:
-        result["radius_miles"] = radius_miles
-        result["nearby_cities"] = _major_cities_within_radius(lat, lon, radius_miles)[:8]
+    if geo_search:
+        radius_used = fetch_meta.get("radius_used") or GEO_SEARCH_RADII[0]
+        result["radius_miles"] = radius_used
+        result["radius_used"] = radius_used
         result["user_lat"] = lat
         result["user_lon"] = lon
         result["display_city"] = fetch_meta["display_city"]
-        result["nearest_metro"] = fetch_meta.get("nearest_metro")
         result["fetch_mode"] = fetch_meta.get("fetch_mode")
     else:
         result["display_city"] = fetch_meta["display_city"]
