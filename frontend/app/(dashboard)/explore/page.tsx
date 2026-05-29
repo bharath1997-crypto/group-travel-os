@@ -66,9 +66,28 @@ type CityAutocompleteResponse = {
 const EVENTS_FETCH_TIMEOUT_MS = 60_000;
 const LS_EXPLORE_CITY = "rovvy_explore_city";
 const LS_EXPLORE_COORDS = "rovvy_explore_coords";
+const LS_EXPLORE_MANUAL_CITY = "rovvy_explore_manual_city";
 const EXPLORE_RADIUS_MILES = 200;
 
-function saveExploreCity(label: string, coords?: UserCoords | null) {
+/** Fallback coords when geocoder is unavailable (lat/lon for display + geo search anchor). */
+const CITY_COORD_FALLBACK: Record<string, UserCoords> = {
+  naperville: { lat: 41.7508, lon: -88.1535 },
+  chicago: { lat: 41.8781, lon: -87.6298 },
+  "new york": { lat: 40.7128, lon: -74.006 },
+  "los angeles": { lat: 34.0522, lon: -118.2437 },
+  houston: { lat: 29.7604, lon: -95.3698 },
+  phoenix: { lat: 33.4484, lon: -112.074 },
+  philadelphia: { lat: 39.9526, lon: -75.1652 },
+  austin: { lat: 30.2672, lon: -97.7431 },
+  miami: { lat: 25.7617, lon: -80.1918 },
+  seattle: { lat: 47.6062, lon: -122.3321 },
+};
+
+function saveExploreCity(
+  label: string,
+  coords?: UserCoords | null,
+  manualCity = false,
+) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(LS_EXPLORE_CITY, label);
@@ -77,9 +96,51 @@ function saveExploreCity(label: string, coords?: UserCoords | null) {
     } else {
       localStorage.removeItem(LS_EXPLORE_COORDS);
     }
+    if (manualCity) {
+      localStorage.setItem(LS_EXPLORE_MANUAL_CITY, "1");
+    } else {
+      localStorage.removeItem(LS_EXPLORE_MANUAL_CITY);
+    }
   } catch {
     /* ignore */
   }
+}
+
+function isManualExploreCity(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(LS_EXPLORE_MANUAL_CITY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+async function geocodeCityLabel(label: string): Promise<UserCoords | null> {
+  const key = cityLabel(label).toLowerCase();
+  const fallback = CITY_COORD_FALLBACK[key];
+  try {
+    const r = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(label)}&format=json&limit=1`,
+      {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "RovvyExplore/1.0 (group-travel-os)",
+        },
+      },
+    );
+    if (r.ok) {
+      const data = (await r.json()) as { lat?: string; lon?: string }[];
+      if (data?.[0]?.lat && data[0].lon) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lon: parseFloat(data[0].lon),
+        };
+      }
+    }
+  } catch {
+    /* fall through to static lookup */
+  }
+  return fallback ?? null;
 }
 
 function loadExploreCity(): string | null {
@@ -454,6 +515,7 @@ export default function ExploreHubPage() {
     national: "National Picks",
   });
   const [userCoords, setUserCoords] = useState<UserCoords | null>(null);
+  const [nearestMetro, setNearestMetro] = useState<string | null>(null);
   const [radiusMiles, setRadiusMiles] = useState(EXPLORE_RADIUS_MILES);
 
   const stateName = STATE_BY_CITY[cityLabel(currentCity)] || "Your Region";
@@ -480,6 +542,9 @@ export default function ExploreHubPage() {
           popular: data.section_titles.popular || `Popular in ${stateName}`,
           national: data.section_titles.national || "National Picks",
         });
+      }
+      if (data.nearest_metro) {
+        setNearestMetro(data.nearest_metro);
       }
 
       const fullDebug: ExploreFeedDebug = {
@@ -558,6 +623,17 @@ export default function ExploreHubPage() {
     [applySections],
   );
 
+  const geocodeAndFetch = useCallback(
+    async (label: string, manualCity: boolean) => {
+      setLoading(true);
+      const coords = await geocodeCityLabel(label);
+      setCoords(coords);
+      saveExploreCity(label, coords, manualCity);
+      await fetchEvents(label, coords);
+    },
+    [fetchEvents, setCoords],
+  );
+
   const detectGPSCity = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       const fallback = loadExploreCity() || "Chicago, IL";
@@ -588,12 +664,12 @@ export default function ExploreHubPage() {
           const state = data.address?.state_code || data.address?.state || "";
           const label = state ? `${city}, ${state}` : city;
           setCurrentCity(label);
-          saveExploreCity(label, coords);
+          saveExploreCity(label, coords, false);
           await fetchEvents(label, coords);
         } catch {
           const fallback = loadExploreCity() || "Chicago, IL";
           setCurrentCity(fallback);
-          saveExploreCity(fallback, coords);
+          saveExploreCity(fallback, coords, false);
           await fetchEvents(fallback, coords);
         }
       },
@@ -613,13 +689,16 @@ export default function ExploreHubPage() {
 
     const saved = loadExploreCity();
     const savedCoords = loadExploreCoords();
+    const manual = isManualExploreCity();
+
     if (saved) {
       setCurrentCity(saved);
       setCoords(savedCoords);
       if (savedCoords) {
         void fetchEvents(saved, savedCoords);
       } else {
-        detectGPSCity();
+        // User picked a city (e.g. Naperville) — geocode that city, don't replace with device GPS Chicago
+        void geocodeAndFetch(saved, manual);
       }
       return;
     }
@@ -691,12 +770,10 @@ export default function ExploreHubPage() {
 
   const selectCity = (suggestion: CitySuggestion) => {
     setCurrentCity(suggestion.label);
-    setCoords(null);
-    saveExploreCity(suggestion.label, null);
     setShowCityDropdown(false);
     setCitySearch("");
     setCitySuggestions([]);
-    fetchEvents(suggestion.label, null);
+    void geocodeAndFetch(suggestion.label, true);
   };
 
   const clearFilters = () => {
@@ -748,28 +825,16 @@ export default function ExploreHubPage() {
           <p className="mt-2 max-w-2xl text-[#64748B]">
             {hasLiveContent
               ? userCoords
-                ? `Curated picks within ${radiusMiles} miles of ${currentCity} — plan, compare, and book with confidence.`
+                ? `Curated picks within ${radiusMiles} miles of ${cityLabel(currentCity)} — distances shown from your location.${nearestMetro && cityLabel(nearestMetro).toLowerCase() !== cityLabel(currentCity).toLowerCase() ? ` Events include the greater ${nearestMetro} area.` : ""}`
                 : `Hand-picked events and activities in ${cityLabel(currentCity)}.`
               : loading
-                ? "Loading events near you…"
-                : `Finding events near ${cityLabel(currentCity)}.`}
+                ? `Loading events near ${cityLabel(currentCity)}…`
+                : `Finding events within ${EXPLORE_RADIUS_MILES} miles of ${cityLabel(currentCity)}.`}
           </p>
           {fetchError && (
             <p className="mt-2 text-sm text-amber-700">
               Live refresh issue: {fetchError}
               {refreshing ? " Retrying…" : ""}
-            </p>
-          )}
-          {process.env.NODE_ENV === "development" && feedDebug && (
-            <p className="mt-2 rounded-lg bg-slate-100 px-3 py-2 font-mono text-xs text-slate-600">
-              dev · source={feedDebug.source} · raw={feedDebug.rawTotal} · pool=
-              {feedDebug.poolSize} · sections={feedDebug.dedupedTrending}/
-              {feedDebug.dedupedWeekend}/{feedDebug.dedupedPopular}/
-              {feedDebug.dedupedNational} · filtered trending=
-              {filteredTrending.length}
-              {userCoords
-                ? ` · geo=${userCoords.lat.toFixed(4)},${userCoords.lon.toFixed(4)} r=${EXPLORE_RADIUS_MILES}`
-                : " · geo=none"}
             </p>
           )}
         </div>
