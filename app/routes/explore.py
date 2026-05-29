@@ -384,6 +384,7 @@ async def explore_events(
             lon=lon,
             radius_miles=radius,
             return_all=True,
+            pool_limit=per_page,
         )
         
         events = result.get("events", [])

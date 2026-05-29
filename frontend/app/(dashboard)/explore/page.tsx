@@ -68,6 +68,8 @@ const EVENTS_FETCH_TIMEOUT_MS = 60_000;
 const LS_EXPLORE_CITY = "rovvy_explore_city";
 const LS_EXPLORE_COORDS = "rovvy_explore_coords";
 const EXPLORE_RADIUS_MILES = 200;
+const EXPLORE_INITIAL_PER_PAGE = 40;
+const EXPLORE_FULL_PER_PAGE = 100;
 
 /** Prevent duplicate bootstrap fetches (React Strict Mode remount). */
 let exploreBootstrapPromise: Promise<void> | null = null;
@@ -117,8 +119,12 @@ function readStoredCoords(): UserCoords | null {
   return loadExploreCoords();
 }
 
-function buildExploreEventsUrl(cityName: string, coords: UserCoords | null): string {
-  const params = new URLSearchParams({ per_page: "100" });
+function buildExploreEventsUrl(
+  cityName: string,
+  coords: UserCoords | null,
+  perPage: number = EXPLORE_INITIAL_PER_PAGE,
+): string {
+  const params = new URLSearchParams({ per_page: String(perPage) });
   if (coords) {
     params.set("lat", String(coords.lat));
     params.set("lon", String(coords.lon));
@@ -346,6 +352,23 @@ function CardSkeleton() {
   );
 }
 
+function SectionSkeleton({ title }: { title: string }) {
+  return (
+    <section className="mb-12">
+      <div className="mb-5">
+        <div className="h-7 w-48 animate-pulse rounded bg-slate-200" />
+        <div className="mt-2 h-4 w-64 animate-pulse rounded bg-slate-100" />
+        <span className="sr-only">{title}</span>
+      </div>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: SECTION_CARD_LIMIT }).map((_, i) => (
+          <CardSkeleton key={i} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 type SectionProps = {
   title: string;
   subtitle?: string;
@@ -452,6 +475,8 @@ export default function ExploreHubPage() {
   const fetchGenerationRef = useRef(0);
   const mountedRef = useRef(false);
   const userCoordsRef = useRef<UserCoords | null>(null);
+  const hasLoadedFullRef = useRef(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   /** When coords exist, only geo responses may update section state. */
   const eventsDataSourceRef = useRef<"geo" | "city" | null>(null);
 
@@ -472,6 +497,7 @@ export default function ExploreHubPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [feedDebug, setFeedDebug] = useState<ExploreFeedDebug | null>(null);
   const [trendingEvents, setTrendingEvents] = useState<ExploreEvent[]>([]);
@@ -572,9 +598,10 @@ export default function ExploreHubPage() {
       url: string,
       cityKey: string,
       mode: "geo" | "city",
-      options?: { force?: boolean },
+      options?: { force?: boolean; perPage?: number },
     ) => {
       const force = options?.force === true;
+      const perPage = options?.perPage ?? EXPLORE_INITIAL_PER_PAGE;
 
       if (exploreEventsInFlight && !force) {
         if (exploreEventsInFlightMode === "geo" && mode === "city") return;
@@ -592,6 +619,12 @@ export default function ExploreHubPage() {
       exploreEventsInFlightMode = mode;
       eventsFetchUrlRef.current = url;
       const generation = ++fetchGenerationRef.current;
+
+      if (perPage >= EXPLORE_FULL_PER_PAGE) {
+        hasLoadedFullRef.current = true;
+      } else {
+        hasLoadedFullRef.current = false;
+      }
 
       const mayUseResponse =
         mode === "geo" || shouldUseEventsResponse(mode);
@@ -660,16 +693,21 @@ export default function ExploreHubPage() {
   );
 
   const fetchEventsByCoords = useCallback(
-    async (coords: UserCoords, options?: { force?: boolean }) => {
+    async (
+      coords: UserCoords,
+      options?: { force?: boolean; perPage?: number },
+    ) => {
+      const perPage = options?.perPage ?? EXPLORE_INITIAL_PER_PAGE;
       const cityKey = `geo:${coords.lat.toFixed(2)},${coords.lon.toFixed(2)}`;
-      const url = buildExploreEventsUrl("", coords);
-      await runEventsRequest(url, cityKey, "geo", options);
+      const url = buildExploreEventsUrl("", coords, perPage);
+      await runEventsRequest(url, cityKey, "geo", { ...options, perPage });
     },
     [runEventsRequest],
   );
 
   const fetchEventsByCity = useCallback(
-    async (city: string) => {
+    async (city: string, options?: { perPage?: number }) => {
+      const perPage = options?.perPage ?? EXPLORE_INITIAL_PER_PAGE;
       if (userCoordsRef.current || readStoredCoords()) {
         if (process.env.NODE_ENV === "development") {
           console.info("[explore] blocked city fetch — coords available");
@@ -679,11 +717,34 @@ export default function ExploreHubPage() {
       const cityName = city.split(",")[0].trim();
       if (!cityName) return;
       const cityKey = `city:${cityName.toLowerCase()}`;
-      const url = buildExploreEventsUrl(cityName, null);
-      await runEventsRequest(url, cityKey, "city");
+      const url = buildExploreEventsUrl(cityName, null, perPage);
+      await runEventsRequest(url, cityKey, "city", { perPage });
     },
     [runEventsRequest],
   );
+
+  const loadRemainingEvents = useCallback(async () => {
+    if (hasLoadedFullRef.current || loadingMore || loading) return;
+
+    setLoadingMore(true);
+    try {
+      const coords = userCoordsRef.current ?? readStoredCoords();
+      if (coords) {
+        await fetchEventsByCoords(coords, {
+          force: true,
+          perPage: EXPLORE_FULL_PER_PAGE,
+        });
+        return;
+      }
+
+      const savedCity = loadExploreCity();
+      if (savedCity) {
+        await fetchEventsByCity(savedCity, { perPage: EXPLORE_FULL_PER_PAGE });
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [fetchEventsByCity, fetchEventsByCoords, loading, loadingMore]);
 
   const applyLocationByCoords = useCallback(
     async (coords: UserCoords, placeholderLabel?: string) => {
@@ -797,6 +858,28 @@ export default function ExploreHubPage() {
   }, []);
 
   useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0]?.isIntersecting &&
+          !hasLoadedFullRef.current &&
+          !loading &&
+          !loadingMore
+        ) {
+          void loadRemainingEvents();
+        }
+      },
+      { rootMargin: "240px" },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [loadRemainingEvents, loading, loadingMore]);
+
+  useEffect(() => {
     if (citySearch.length < 2) {
       setCitySuggestions([]);
       return;
@@ -908,6 +991,8 @@ export default function ExploreHubPage() {
       nationalEvents.length >
     0;
 
+  const showInitialSkeleton = loading && !hasLiveContent;
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-6">
       <div className="mx-auto max-w-[1440px]">
@@ -920,7 +1005,7 @@ export default function ExploreHubPage() {
               ? userCoords
                 ? `Curated picks within ${radiusMiles} miles of ${currentCity} — plan, compare, and book with confidence.`
                 : `Hand-picked events and activities in ${cityLabel(currentCity)}.`
-              : loading
+              : showInitialSkeleton
                 ? "Loading events near you…"
                 : `Finding events near ${cityLabel(currentCity)}.`}
           </p>
@@ -1049,6 +1134,15 @@ export default function ExploreHubPage() {
           </div>
         </div>
 
+        {showInitialSkeleton ? (
+          <>
+            <SectionSkeleton title="Near You" />
+            <SectionSkeleton title="This Weekend" />
+            <SectionSkeleton title="Popular Nearby" />
+            <SectionSkeleton title="National Picks" />
+          </>
+        ) : (
+          <>
         <EventSection
           title={sectionTitles.trending || (userCoords ? "Near You" : `Near ${cityLabel(currentCity)}`)}
           subtitle={
@@ -1107,6 +1201,20 @@ export default function ExploreHubPage() {
           onOpen={handleOpenEvent}
           onClearFilters={clearFilters}
         />
+
+        <div ref={loadMoreRef} className="h-1" aria-hidden />
+        {loadingMore && (
+          <div className="pb-8 pt-2 text-center">
+            <p className="text-sm text-[#64748B]">Loading more events…</p>
+            <div className="mx-auto mt-4 grid max-w-[1440px] grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <CardSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+        )}
+          </>
+        )}
       </div>
     </div>
   );

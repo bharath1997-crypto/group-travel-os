@@ -1374,7 +1374,7 @@ def get_national_picks(
 ) -> list[dict[str, Any]]:
     """
     Top-rated upcoming US events from the full explore_contents table.
-    No distance filter — same national pool for all users.
+    No distance or content_type filter — same national pool for all users.
     """
     from datetime import date
 
@@ -1384,7 +1384,7 @@ def get_national_picks(
     stmt = (
         select(ExploreContent)
         .where(
-            ExploreContent.content_type == "ticketmaster_event",
+            ExploreContent.start_date.isnot(None),
             ExploreContent.start_date >= today,
         )
     )
@@ -1392,6 +1392,8 @@ def get_national_picks(
 
     ranked: list[tuple[float, float, dict[str, Any]]] = []
     for row in rows:
+        if not (row.event_id or row.title):
+            continue
         eid = str(row.event_id or row.id).strip()
         if not eid or eid in exclude_set:
             continue
@@ -1417,6 +1419,7 @@ def _query_db_events_haversine(
     category: str = "all",
     date_from: str | None = None,
     date_to: str | None = None,
+    limit: int | None = None,
 ) -> list[dict[str, Any]]:
     """Return ticketmaster_event rows from explore_contents within radius_miles."""
     from sqlalchemy import text
@@ -1460,6 +1463,9 @@ def _query_db_events_haversine(
         WHERE distance_miles <= :radius
         ORDER BY distance_miles ASC
     """
+    if limit is not None and limit > 0:
+        full_sql += "\n        LIMIT :row_limit"
+        params["row_limit"] = int(limit)
     db_events: list[dict[str, Any]] = []
     try:
         result_set = db.execute(text(full_sql), params).fetchall()
@@ -1487,6 +1493,7 @@ def search_events_extended(
     lon: float | None = None,
     radius_miles: int = EXPLORE_RADIUS_MILES,
     return_all: bool = False,
+    pool_limit: int | None = None,
 ) -> dict[str, Any]:
     """
     Serve Ticketmaster immediately; never block on Instagram/Apify.
@@ -1516,6 +1523,7 @@ def search_events_extended(
                 category=cat,
                 date_from=date_from,
                 date_to=date_to,
+                limit=pool_limit,
             )
             radius_used_db = try_radius
             logger.info(
@@ -1591,6 +1599,12 @@ def search_events_extended(
         }
     else:
         result = _paginate_events(all_events, city, page, per_page)
+
+    if pool_limit is not None and pool_limit > 0 and return_all:
+        capped = result["events"][:pool_limit]
+        result["events"] = capped
+        result["total"] = len(capped)
+        result["per_page"] = len(capped)
 
     if geo_search:
         radius_used = fetch_meta.get("radius_used") or GEO_SEARCH_RADII[0]
