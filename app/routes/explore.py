@@ -4,7 +4,7 @@ app/routes/explore.py — Endpoints for generic explore content (News, Shorts)
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 from fastapi import APIRouter, Depends, Query, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
@@ -89,7 +89,7 @@ def _explore_section_titles(
     return {
         "trending": f"Near {loc}",
         "weekend": "Happening This Weekend",
-        "popular": f"Popular in {state_name}",
+        "popular": "Popular Nearby",
         "national": "National Picks",
     }
 
@@ -456,10 +456,19 @@ async def explore_events(
         h = int(hashlib.md5(ev.get("name", "").encode("utf-8")).hexdigest(), 16)
         return float(h % 100) / 10.0
 
+    def distance_key(ev: dict[str, Any]) -> float:
+        dist = ev.get("distance_miles")
+        if dist is None:
+            return 9999.0
+        try:
+            return float(dist)
+        except (TypeError, ValueError):
+            return 9999.0
+
     today_date = date.today()
     today_str = today_date.strftime("%Y-%m-%d")
+    three_days = today_date + timedelta(days=3)
     upcoming_events = [ev for ev in events if ev.get("date") and ev["date"] >= today_str]
-    sorted_events = sorted(upcoming_events, key=get_score, reverse=True)
     used_ids: set[str] = set()
 
     def event_id(ev: dict[str, Any]) -> str:
@@ -468,108 +477,46 @@ async def explore_events(
             return eid
         return f"{ev.get('name', '')}|{ev.get('date', '')}|{ev.get('venue', '')}"
 
-    def assign_section(
-        pool: list[dict[str, Any]],
-        limit: int,
-        predicate: Callable[[dict[str, Any]], bool] | None = None,
-        *,
-        strict: bool = False,
-    ) -> list[dict[str, Any]]:
-        """Pick up to `limit` unique events; backfill unless strict=True."""
+    def pick_section(pool: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
         chosen: list[dict[str, Any]] = []
-
-        if predicate is not None:
-            for ev in pool:
-                if len(chosen) >= limit:
-                    break
-                eid = event_id(ev)
-                if eid in used_ids:
-                    continue
-                if predicate(ev):
-                    chosen.append(ev)
-                    used_ids.add(eid)
-
-        if not strict and len(chosen) < limit:
-            for ev in pool:
-                if len(chosen) >= limit:
-                    break
-                eid = event_id(ev)
-                if eid in used_ids:
-                    continue
-                chosen.append(ev)
-                used_ids.add(eid)
-
+        for ev in pool:
+            if len(chosen) >= limit:
+                break
+            eid = event_id(ev)
+            if eid in used_ids:
+                continue
+            chosen.append(ev)
+            used_ids.add(eid)
         return chosen
 
-    query_city_key = city_strip.lower().split(",")[0].strip()
-    local_radius_miles = 35.0
+    by_distance = sorted(upcoming_events, key=distance_key)
 
-    def is_local(ev: dict[str, Any]) -> bool:
-        if lat is not None and lon is not None:
-            dist = ev.get("distance_miles")
-            if dist is not None:
-                return float(dist) <= local_radius_miles
-        ev_city = str(ev.get("city") or "").strip().lower()
-        return ev_city == query_city_key
+    # 1. Near You — all events within radius, closest first (no city-name filter)
+    trending = pick_section(by_distance, 40)
 
-    trending = assign_section(
-        sorted_events,
-        40,
-        is_local,
-        strict=True,
-    )
-    if len(trending) < 8:
-        trending.extend(
-            assign_section(sorted_events, 8 - len(trending), lambda ev: get_score(ev) >= 4.0)
-        )
-
-    # 2. This Weekend (next 3 days)
-    three_days = today_date + timedelta(days=3)
-
-    def is_weekend_local(ev: dict[str, Any]) -> bool:
+    # 2. This Weekend — next 3 days, closest first
+    def is_within_three_days(ev: dict[str, Any]) -> bool:
         dt_str = ev.get("date")
         if not dt_str:
             return False
         try:
             ev_date = datetime.strptime(dt_str, "%Y-%m-%d").date()
-            if not (today_date <= ev_date <= three_days):
-                return False
-            # Check distance: keep weekend trips within 75 miles for local spontaneity
-            dist = ev.get("distance_miles")
-            if dist is not None:
-                return float(dist) <= 75.0
-            # If no coordinates are available, check if same city
-            ev_city = str(ev.get("city") or "").strip().lower()
-            return ev_city == query_city_key
+            return today_date <= ev_date <= three_days
         except Exception:
             return False
 
-    weekend = assign_section(sorted_events, 20, is_weekend_local, strict=True)
-    if not weekend:
-        def is_weekend_anywhere(ev: dict[str, Any]) -> bool:
-            dt_str = ev.get("date")
-            if not dt_str:
-                return False
-            try:
-                ev_date = datetime.strptime(dt_str, "%Y-%m-%d").date()
-                return today_date <= ev_date <= three_days
-            except Exception:
-                return False
-        weekend = assign_section(sorted_events, 20, is_weekend_anywhere, strict=True)
+    weekend_pool = sorted(
+        [ev for ev in upcoming_events if is_within_three_days(ev)],
+        key=distance_key,
+    )
+    weekend = pick_section(weekend_pool, 20)
 
-    # 3. Popular in State
-    query_city = city_strip.lower().split(",")[0].strip()
-    metro_key = (nearest_metro or "").lower() if nearest_metro else ""
-    query_state = _CITY_STATE_MAP.get(query_city) or _CITY_STATE_MAP.get(metro_key, "")
+    # 3. Popular Nearby — highest rated, any city within radius
+    by_score = sorted(upcoming_events, key=get_score, reverse=True)
+    popular = pick_section(by_score, 20)
 
-    def matches_state(ev: dict[str, Any]) -> bool:
-        ev_city = ev.get("city", "").strip().lower()
-        return _CITY_STATE_MAP.get(ev_city, "") == query_state if query_state else False
-
-    state_events = assign_section(sorted_events, 20, matches_state)
-
-    # 4. National
-    national = assign_section(sorted_events, 20)
+    # 4. National Picks — remaining events
+    national = pick_section(by_score, 20)
 
     section_titles = result.get("section_titles") if geo_search and result else None
     if not section_titles:
@@ -589,7 +536,7 @@ async def explore_events(
         "total": total,
         "trending": trending,
         "weekend": weekend,
-        "popular": state_events,
+        "popular": popular,
         "national": national,
         "events": events,
         "page": page,
