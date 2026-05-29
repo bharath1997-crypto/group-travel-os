@@ -142,6 +142,68 @@ def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> floa
     return r * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
+def _reverse_geocode_place(lat: float, lon: float) -> str:
+    """Resolve a human place label from GPS coordinates (global)."""
+    try:
+        with httpx.Client(timeout=API_TIMEOUT_SECONDS, headers=BROWSER_HEADERS) as client:
+            resp = client.get(
+                "https://nominatim.openstreetmap.org/reverse",
+                params={
+                    "lat": lat,
+                    "lon": lon,
+                    "format": "json",
+                    "addressdetails": 1,
+                },
+                headers={"User-Agent": "RovvyExplore/1.0 (group-travel-os)"},
+            )
+        if resp.status_code != 200:
+            return ""
+        data = resp.json()
+        if not isinstance(data, dict):
+            return ""
+        address = data.get("address")
+        if not isinstance(address, dict):
+            return ""
+        for key in ("city", "town", "village", "hamlet", "municipality", "county"):
+            value = address.get(key)
+            if value:
+                return str(value).strip()
+    except Exception as exc:
+        logger.warning("Reverse geocode failed for (%s, %s): %s", lat, lon, exc)
+    return ""
+
+
+def _resolve_geo_display_city(
+    city: str,
+    lat: float,
+    lon: float,
+    events: list[dict[str, Any]],
+) -> str:
+    named = (city or "").strip().split(",")[0].strip()
+    if named:
+        return named
+    geocoded = _reverse_geocode_place(lat, lon)
+    if geocoded:
+        return geocoded
+    for ev in events:
+        event_city = str(ev.get("city") or "").strip().split(",")[0].strip()
+        if event_city:
+            return event_city
+    return "your area"
+
+
+def geo_section_titles(display_city: str, radius_used: int) -> dict[str, str]:
+    """Section titles for GPS-based discovery — no city name in the trending title."""
+    place = (display_city or "your area").split(",")[0].strip() or "your area"
+    return {
+        "trending": "Near You",
+        "trending_subtitle": f"Events within {radius_used} miles of {place}",
+        "weekend": "Happening This Weekend",
+        "popular": "Popular Nearby",
+        "national": "National Picks",
+    }
+
+
 def _annotate_event_distances(
     events: list[dict[str, Any]],
     user_lat: float,
@@ -1112,8 +1174,10 @@ def _fetch_ticketmaster_only(
                 e.get("date") or "9999-12-31",
             )
         )
+        display_city = _resolve_geo_display_city(city, lat, lon, all_events)
         return {
             **meta,
+            "display_city": display_city,
             "events": _dedupe_and_sort_events(all_events),
         }
 
@@ -1219,12 +1283,20 @@ def search_events_extended(
 
     if geo_search:
         radius_used = fetch_meta.get("radius_used") or GEO_SEARCH_RADII[0]
+        if not (fetch_meta.get("display_city") or "").strip():
+            fetch_meta["display_city"] = _resolve_geo_display_city(
+                city, lat, lon, all_events
+            )
         result["radius_miles"] = radius_used
         result["radius_used"] = radius_used
         result["user_lat"] = lat
         result["user_lon"] = lon
         result["display_city"] = fetch_meta["display_city"]
         result["fetch_mode"] = fetch_meta.get("fetch_mode")
+        result["section_titles"] = geo_section_titles(
+            fetch_meta["display_city"],
+            radius_used,
+        )
     else:
         result["display_city"] = fetch_meta["display_city"]
 

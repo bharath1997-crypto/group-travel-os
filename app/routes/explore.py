@@ -72,7 +72,18 @@ def _state_label_for_city(city_name: str, nearest_metro: str | None = None) -> s
     return "Your Region"
 
 
-def _explore_section_titles(display_city: str, nearest_metro: str | None = None) -> dict[str, str]:
+def _explore_section_titles(
+    display_city: str,
+    nearest_metro: str | None = None,
+    *,
+    geo_search: bool = False,
+    radius_used: int | None = None,
+) -> dict[str, str]:
+    if geo_search:
+        from app.services.events_service import geo_section_titles
+
+        place = (display_city or "your area").split(",")[0].strip() or "your area"
+        return geo_section_titles(place, radius_used or 200)
     loc = display_city.split(",")[0].strip()
     state_name = _state_label_for_city(loc, nearest_metro)
     return {
@@ -240,7 +251,7 @@ async def city_autocomplete(
 
 @router.get("/events", status_code=status.HTTP_200_OK)
 async def explore_events(
-    city: str = Query("Chicago", max_length=120),
+    city: Optional[str] = Query(None, max_length=120),
     category: Optional[str] = Query(None),
     date_from: Optional[str] = Query(None, description="YYYY-MM-DD"),
     date_to: Optional[str] = Query(None, description="YYYY-MM-DD"),
@@ -258,13 +269,18 @@ async def explore_events(
     Fetches events near the city or coordinates using Ticketmaster,
     supporting pagination, filtering, and AI-generated seasonal fallback if empty.
     """
-    city_strip = city.strip()
+    city_strip = (city or "").strip()
+    if not city_strip and lat is None and lon is None:
+        city_strip = "Chicago"
     d_from = date_from or start_date
     d_to = date_to or end_date
+    geo_search = lat is not None and lon is not None
     nearby_cities: list[dict[str, Any]] = []
     display_city = city_strip.split(",")[0].strip()
     nearest_metro: str | None = None
     fetch_mode: str | None = None
+    radius_used: int | None = None
+    result: dict[str, Any] = {}
 
     # Dynamic test mock detection
     from app.services.explore_city_extended_service import get_ticketmaster_cached as original_fn
@@ -341,15 +357,19 @@ async def explore_events(
                 "display_city": result.get("display_city") or city_strip.split(",")[0].strip(),
                 "nearest_metro": result.get("nearest_metro"),
                 "fetch_mode": result.get("fetch_mode"),
-                "section_titles": _explore_section_titles(
+                "section_titles": result.get("section_titles")
+                or _explore_section_titles(
                     result.get("display_city") or city_strip,
                     result.get("nearest_metro"),
+                    geo_search=geo_search,
+                    radius_used=result.get("radius_used"),
                 ),
                 "total": total,
                 "page": page,
                 "per_page": per_page,
                 "events": events,
-                "radius_miles": radius if lat is not None and lon is not None else None,
+                "radius_miles": result.get("radius_used") if geo_search else None,
+                "radius_used": result.get("radius_used") if geo_search else None,
                 "nearby_cities": nearby_cities,
             }
 
@@ -371,6 +391,7 @@ async def explore_events(
         display_city = result.get("display_city") or city_strip.split(",")[0].strip()
         nearest_metro = result.get("nearest_metro")
         fetch_mode = result.get("fetch_mode")
+        radius_used = result.get("radius_used")
         
         # Map compatibility fields in search_events_extended output
         for ev in events:
@@ -435,7 +456,10 @@ async def explore_events(
         h = int(hashlib.md5(ev.get("name", "").encode("utf-8")).hexdigest(), 16)
         return float(h % 100) / 10.0
 
-    sorted_events = sorted(events, key=get_score, reverse=True)
+    today_date = date.today()
+    today_str = today_date.strftime("%Y-%m-%d")
+    upcoming_events = [ev for ev in events if ev.get("date") and ev["date"] >= today_str]
+    sorted_events = sorted(upcoming_events, key=get_score, reverse=True)
     used_ids: set[str] = set()
 
     def event_id(ev: dict[str, Any]) -> str:
@@ -500,20 +524,38 @@ async def explore_events(
         )
 
     # 2. This Weekend (next 3 days)
-    today = date.today()
-    three_days = today + timedelta(days=3)
+    three_days = today_date + timedelta(days=3)
 
-    def is_weekend(ev: dict[str, Any]) -> bool:
+    def is_weekend_local(ev: dict[str, Any]) -> bool:
         dt_str = ev.get("date")
         if not dt_str:
             return False
         try:
             ev_date = datetime.strptime(dt_str, "%Y-%m-%d").date()
-            return today <= ev_date <= three_days
+            if not (today_date <= ev_date <= three_days):
+                return False
+            # Check distance: keep weekend trips within 75 miles for local spontaneity
+            dist = ev.get("distance_miles")
+            if dist is not None:
+                return float(dist) <= 75.0
+            # If no coordinates are available, check if same city
+            ev_city = str(ev.get("city") or "").strip().lower()
+            return ev_city == query_city_key
         except Exception:
             return False
 
-    weekend = assign_section(sorted_events, 20, is_weekend)
+    weekend = assign_section(sorted_events, 20, is_weekend_local, strict=True)
+    if not weekend:
+        def is_weekend_anywhere(ev: dict[str, Any]) -> bool:
+            dt_str = ev.get("date")
+            if not dt_str:
+                return False
+            try:
+                ev_date = datetime.strptime(dt_str, "%Y-%m-%d").date()
+                return today_date <= ev_date <= three_days
+            except Exception:
+                return False
+        weekend = assign_section(sorted_events, 20, is_weekend_anywhere, strict=True)
 
     # 3. Popular in State
     query_city = city_strip.lower().split(",")[0].strip()
@@ -529,7 +571,14 @@ async def explore_events(
     # 4. National
     national = assign_section(sorted_events, 20)
 
-    section_titles = _explore_section_titles(display_city, nearest_metro)
+    section_titles = result.get("section_titles") if geo_search and result else None
+    if not section_titles:
+        section_titles = _explore_section_titles(
+            display_city,
+            nearest_metro,
+            geo_search=geo_search,
+            radius_used=radius_used,
+        )
 
     return {
         "city": city_strip,
@@ -545,8 +594,9 @@ async def explore_events(
         "events": events,
         "page": page,
         "per_page": per_page,
-        "radius_miles": radius if lat is not None and lon is not None else None,
-        "nearby_cities": nearby_cities if lat is not None and lon is not None else [],
+        "radius_miles": radius_used if geo_search else None,
+        "radius_used": radius_used if geo_search else None,
+        "nearby_cities": nearby_cities if geo_search else [],
     }
 
 
