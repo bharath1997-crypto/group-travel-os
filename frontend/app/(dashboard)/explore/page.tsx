@@ -981,7 +981,7 @@ export default function ExploreHubPage() {
     params.set("page", "1");
     params.set("per_page", "20");
     if (activeCategory !== "All") {
-      params.set("category", activeCategory.toLowerCase());
+      params.set("category", activeCategory);
     }
     if (userCoords && section !== "national") {
       params.set("lat", userCoords.lat.toString());

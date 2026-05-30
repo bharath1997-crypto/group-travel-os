@@ -319,7 +319,9 @@ function EventsSearchContent() {
 
         if (fromDate) params.set("date_from", fromDate);
         if (toDate) params.set("date_to", toDate);
-        if (searchCat && searchCat !== "All") params.set("category", searchCat);
+        if (searchCat && searchCat !== "All" && searchCat !== "Activities") {
+          params.set("category", searchCat);
+        }
         if (coords) {
           params.set("lat", coords.lat.toString());
           params.set("lon", coords.lon.toString());
@@ -330,9 +332,16 @@ function EventsSearchContent() {
           `/explore/events?${params.toString()}`,
         );
 
-        const unique = dedupeExploreEvents(res?.events || []);
+        let unique = dedupeExploreEvents(res?.events || []);
+        if (searchCat === "Activities") {
+          unique = unique.filter((ev) =>
+            ["experience", "entertainment", "cultural", "arts", "comedy"].includes(
+              (ev.category || "").trim().toLowerCase(),
+            ),
+          );
+        }
         setEvents(unique);
-        setTotalCount(res?.total || 0);
+        setTotalCount(searchCat === "Activities" ? unique.length : (res?.total || 0));
         setPage(targetPage);
         setPerPage(targetPerPage);
       } catch (e) {
@@ -454,7 +463,13 @@ function EventsSearchContent() {
           <ChevronLeft size={18} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-[#1E293B]">All Events</h1>
+          <h1 className="text-2xl font-bold text-[#1E293B]">
+            {category === "Activities"
+              ? `Activities near ${cityLabel(city)}`
+              : category === "Sports"
+                ? `Sports near ${cityLabel(city)}`
+                : "All Events"}
+          </h1>
           <p className="mt-0.5 text-sm text-[#475569]">
             {userCoords
               ? `Events within ${EXPLORE_RADIUS_MILES} miles of ${city}`
@@ -530,6 +545,7 @@ function EventsSearchContent() {
                 className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#1E293B] focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
               >
                 <option value="All">All Categories</option>
+                <option value="Activities">Activities</option>
                 <option value="Music">Music</option>
                 <option value="Sports">Sports</option>
                 <option value="Arts">Arts</option>
