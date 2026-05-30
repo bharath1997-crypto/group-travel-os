@@ -525,11 +525,13 @@ async def explore_events(
     by_score = sorted(upcoming_events, key=get_score, reverse=True)
     popular = pick_top(by_score, 20)
 
-    # 4. National Picks — US-wide; only exclude Near You (not weekend/popular)
+    # 4. National Picks — top-rated events outside the local radius
     national = get_national_picks(
         db,
-        exclude_ids=[event_id(ev) for ev in trending],
         limit=20,
+        lat=lat,
+        lon=lon,
+        radius_miles=float(radius_used or radius or 200),
     )
 
     section_titles = result.get("section_titles") if geo_search and result else None

@@ -1369,55 +1369,203 @@ def _compute_national_popularity_score(row: ExploreContent) -> float:
 
 def get_national_picks(
     db: Session,
-    exclude_ids: list[str],
     limit: int = 20,
+    *,
+    lat: float | None = None,
+    lon: float | None = None,
+    radius_miles: float = EXPLORE_RADIUS_MILES,
 ) -> list[dict[str, Any]]:
     """
-    Top-rated upcoming US events from the full explore_contents table.
-    No distance or content_type filter — same national pool for all users.
+    Top-rated upcoming US events outside the user's local radius.
+    Same national concept for all users: everything beyond radius_miles.
     """
-    from datetime import date
+    picks = _national_picks_from_db(
+        db,
+        limit=limit,
+        lat=lat,
+        lon=lon,
+        radius_miles=radius_miles,
+    )
+    if picks:
+        return picks
 
-    today = date.today()
-    exclude_set = {str(event_id).strip() for event_id in exclude_ids if str(event_id).strip()}
+    if lat is not None and lon is not None:
+        tm_picks = _national_picks_from_ticketmaster(
+            lat,
+            lon,
+            radius_miles=radius_miles,
+            limit=limit,
+        )
+        if tm_picks:
+            logger.info(
+                "[national_picks] DB returned 0; Ticketmaster fallback returned %d picks",
+                len(tm_picks),
+            )
+            return tm_picks
+
+    logger.warning("[national_picks] no events found outside %s miles", radius_miles)
+    return []
+
+
+def _rank_national_events(
+    rows: list[Any],
+    *,
+    lat: float | None = None,
+    lon: float | None = None,
+) -> list[dict[str, Any]]:
+    ranked: list[tuple[float, float, dict[str, Any]]] = []
+    for row in rows:
+        if isinstance(row, dict):
+            rating = float(
+                row.get("rating") or _compute_national_rating_from_dict(row)
+            )
+            popularity = float(
+                row.get("popularity_score") or _compute_national_popularity_from_dict(row)
+            )
+            ev = dict(row)
+            ev["rating"] = rating
+            ev["popularity_score"] = popularity
+        else:
+            if not (getattr(row, "event_id", None) or getattr(row, "title", None)):
+                continue
+            rating = _compute_national_rating(row)
+            popularity = _compute_national_popularity_score(row)
+            dist = getattr(row, "distance_miles", None)
+            ev = _explore_content_to_event_dict(
+                row,
+                distance_miles=float(dist) if dist is not None else None,
+                rating=rating,
+                popularity_score=popularity,
+            )
+
+        if lat is not None and lon is not None and ev.get("distance_miles") is None:
+            v_lat = ev.get("venue_lat")
+            v_lon = ev.get("venue_lon")
+            if v_lat is not None and v_lon is not None:
+                ev["distance_miles"] = round(
+                    _haversine_miles(lat, lon, float(v_lat), float(v_lon)),
+                    1,
+                )
+
+        ranked.append((rating, popularity, ev))
+
+    ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    return [ev for _, _, ev in ranked]
+
+
+def _compute_national_rating_from_dict(ev: dict[str, Any]) -> float:
+    class _Row:
+        title = ev.get("name") or ev.get("title")
+        venue_name = ev.get("venue")
+        category = ev.get("category")
+        price_max = ev.get("price_max")
+
+    return _compute_national_rating(_Row())  # type: ignore[arg-type]
+
+
+def _compute_national_popularity_from_dict(ev: dict[str, Any]) -> float:
+    class _Row:
+        city = ev.get("city")
+        venue_name = ev.get("venue")
+        title = ev.get("name") or ev.get("title")
+        category = ev.get("category")
+        price_max = ev.get("price_max")
+        image_url = ev.get("image_url")
+
+    return _compute_national_popularity_score(_Row())  # type: ignore[arg-type]
+
+
+def _national_picks_from_db(
+    db: Session,
+    *,
+    limit: int,
+    lat: float | None,
+    lon: float | None,
+    radius_miles: float,
+) -> list[dict[str, Any]]:
+    from datetime import date
+    from sqlalchemy import text
+
+    today_str = date.today().strftime("%Y-%m-%d")
+    params: dict[str, Any] = {"today": today_str}
+
+    if lat is not None and lon is not None:
+        params["lat"] = lat
+        params["lon"] = lon
+        params["radius"] = float(radius_miles)
+        query_str = """
+            SELECT *,
+              (3959 * acos(
+                cos(radians(:lat)) * cos(radians(venue_lat)) *
+                cos(radians(venue_lon) - radians(:lon)) +
+                sin(radians(:lat)) * sin(radians(venue_lat))
+              )) AS distance_miles
+            FROM explore_contents
+            WHERE start_date IS NOT NULL
+              AND start_date >= :today
+              AND venue_lat IS NOT NULL
+              AND venue_lon IS NOT NULL
+        """
+        full_sql = f"""
+            SELECT * FROM (
+                {query_str}
+            ) AS subq
+            WHERE distance_miles > :radius
+        """
+        try:
+            result_set = db.execute(text(full_sql), params).fetchall()
+            logger.info(
+                "[national_picks] found %d DB rows outside %.0f mi before ranking",
+                len(result_set),
+                radius_miles,
+            )
+            ranked = _rank_national_events(result_set, lat=lat, lon=lon)
+            return ranked[:limit]
+        except Exception as exc:
+            logger.exception("Failed to query national picks from DB: %s", exc)
+            return []
 
     stmt = (
         select(ExploreContent)
         .where(
             ExploreContent.start_date.isnot(None),
-            ExploreContent.start_date >= today,
+            ExploreContent.start_date >= date.today(),
         )
     )
     rows = db.scalars(stmt).all()
     eligible_rows = [row for row in rows if row.event_id or row.title]
     logger.info(
-        "[national_picks] found %d eligible rows before exclude_ids filter (excluding %d ids)",
+        "[national_picks] found %d eligible DB rows (no geo filter) before ranking",
         len(eligible_rows),
-        len(exclude_set),
     )
+    return _rank_national_events(eligible_rows)[:limit]
 
-    ranked: list[tuple[float, float, dict[str, Any]]] = []
-    for row in eligible_rows:
-        eid = str(row.event_id or row.id).strip()
-        if not eid or eid in exclude_set:
-            continue
-        rating = _compute_national_rating(row)
-        popularity = _compute_national_popularity_score(row)
-        ev = _explore_content_to_event_dict(
-            row,
-            rating=rating,
-            popularity_score=popularity,
-        )
-        ranked.append((rating, popularity, ev))
 
-    ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
-    picks = [ev for _, _, ev in ranked[:limit]]
-    if eligible_rows and not picks:
-        logger.warning(
-            "[national_picks] %d eligible rows but 0 returned — exclude_ids may be removing all candidates",
-            len(eligible_rows),
-        )
-    return picks
+def _national_picks_from_ticketmaster(
+    lat: float,
+    lon: float,
+    *,
+    radius_miles: float,
+    limit: int,
+) -> list[dict[str, Any]]:
+    """Fallback: fetch a wide TM radius and keep events outside the local zone."""
+    wide_radius = max(int(radius_miles), GEO_SEARCH_RADII[-1])
+    events = _fetch_ticketmaster_events("", "all", None, None, lat, lon, wide_radius)
+    if not events:
+        return []
+
+    events = _annotate_event_distances(events, lat, lon)
+    outside = [
+        ev for ev in events
+        if ev.get("distance_miles") is not None and float(ev["distance_miles"]) > radius_miles
+    ]
+    logger.info(
+        "[national_picks] Ticketmaster wide search r=%smi returned %d; %d outside local radius",
+        wide_radius,
+        len(events),
+        len(outside),
+    )
+    return _rank_national_events(outside, lat=lat, lon=lon)[:limit]
 
 
 def _query_db_events_haversine(

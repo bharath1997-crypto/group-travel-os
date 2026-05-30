@@ -381,7 +381,13 @@ def test_get_national_picks_nationwide_ranking():
         )
         db.commit()
 
-        picks = get_national_picks(db, exclude_ids=[local_id], limit=20)
+        picks = get_national_picks(
+            db,
+            limit=20,
+            lat=30.267,
+            lon=-97.743,
+            radius_miles=50,
+        )
         assert len(picks) == 1
         assert picks[0]["id"] == national_id
         assert picks[0]["city"] == "New York"
