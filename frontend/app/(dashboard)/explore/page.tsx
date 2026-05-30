@@ -77,7 +77,11 @@ const EXPLORE_RADIUS_MILES = 200;
 const EXPLORE_INITIAL_PER_PAGE = 20;
 const EXPLORE_FULL_PER_PAGE = 100;
 const DEFAULT_EXPLORE_CITY = "Chicago";
-const GEO_CATEGORY_PILLS = new Set<ExploreCategoryPill>(["Sports", "Activities"]);
+const GEO_CATEGORY_PILLS = new Set<ExploreCategoryPill>([
+  "Events",
+  "Sports",
+  "Activities",
+]);
 
 function categoryNeedsGeo(category: ExploreCategoryPill): boolean {
   return GEO_CATEGORY_PILLS.has(category);
