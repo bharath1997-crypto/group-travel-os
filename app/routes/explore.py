@@ -601,96 +601,153 @@ async def explore_events(
     }
 
 
+def _pseudo_rating_distance(name: str) -> tuple[float, float]:
+    import hashlib
+
+    h = int(hashlib.md5(name.encode("utf-8")).hexdigest(), 16)
+    rating = round(3.5 + (h % 15) / 10.0, 1)
+    distance = round(2.0 + (h % 18), 1)
+    return rating, distance
+
+
+def _state_for_city(city: str, explicit_state: str | None = None) -> str:
+    if explicit_state and explicit_state.strip():
+        return explicit_state.strip()
+    key = (city or "").split(",")[0].strip().lower()
+    return _CITY_STATE_MAP.get(key, "Your Region")
+
+
+def _event_detail_response(
+    *,
+    event_id: str,
+    title: str,
+    category: str,
+    venue: str,
+    city: str,
+    state: str | None,
+    start_date: str | None,
+    start_time: str | None,
+    price_min: float | None,
+    price_max: float | None,
+    image_url: str | None,
+    ticket_url: str | None,
+    source: str | None,
+) -> dict[str, Any]:
+    rating, distance = _pseudo_rating_distance(title)
+    return {
+        "id": event_id,
+        "title": title,
+        "category": category or "Event",
+        "venue": venue or "Various Venues",
+        "city": city or "US",
+        "state": _state_for_city(city, state),
+        "start_date": start_date or "",
+        "start_time": start_time or "19:00",
+        "price_min": price_min,
+        "price_max": price_max,
+        "image_url": image_url,
+        "ticket_url": ticket_url or "",
+        "source": source or "ticketmaster",
+        "distance_miles": distance,
+        "rating": rating,
+    }
+
+
 @router.get("/events/{event_id}", status_code=status.HTTP_200_OK)
 def get_explore_event(
     event_id: str,
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    """Fetch a single event detail by event_id across cached aggregated events."""
+    """Fetch a single event by id from ticketmaster cache or aggregated explore data."""
+    from urllib.parse import unquote
+
     from app.models.explore_content import ExploreContent
 
-    # Fetch all events aggregated cache entries
-    rows = db.query(ExploreContent).filter(ExploreContent.content_type == "events_aggregated").all()
+    lookup_id = unquote(event_id).strip()
+    if not lookup_id:
+        AppException.not_found("Event not found")
+
+    # Primary: bulk Ticketmaster rows saved by daily fetch job
+    tm_row = (
+        db.query(ExploreContent)
+        .filter(
+            ExploreContent.content_type == "ticketmaster_event",
+            ExploreContent.event_id == lookup_id,
+        )
+        .first()
+    )
+    if tm_row:
+        start_date = (
+            tm_row.start_date.isoformat()
+            if tm_row.start_date is not None
+            else None
+        )
+        return _event_detail_response(
+            event_id=lookup_id,
+            title=tm_row.title or "Event",
+            category=tm_row.category or "Event",
+            venue=tm_row.venue_name or "Various Venues",
+            city=tm_row.city or "US",
+            state=tm_row.state,
+            start_date=start_date,
+            start_time=tm_row.start_time,
+            price_min=tm_row.price_min,
+            price_max=tm_row.price_max,
+            image_url=tm_row.image_url,
+            ticket_url=tm_row.ticket_url,
+            source=tm_row.source,
+        )
+
+    # Legacy: JSON aggregated cache blobs
+    rows = (
+        db.query(ExploreContent)
+        .filter(ExploreContent.content_type == "events_aggregated")
+        .all()
+    )
     for row in rows:
-        if row.data:
-            for ev in row.data:
-                # Deduplicate or identify matching ID
-                eid = str(ev.get("id") or "").strip()
-                if not eid:
-                    # Fallback key generation matching assignment logic
-                    eid = f"{ev.get('name', '')}|{ev.get('date', '')}|{ev.get('venue', '')}"
-                
-                if eid == event_id:
-                    name = ev.get("name") or ev.get("title") or "Event"
-                    img_url = ev.get("image_url") or ev.get("imageUrl")
-                    url = ev.get("ticket_url") or ev.get("url")
-                    date_str = ev.get("date") or ev.get("start_date")
-                    source = ev.get("source") or ev.get("sourceType") or "ticketmaster"
+        if not row.data:
+            continue
+        for ev in row.data:
+            eid = str(ev.get("id") or "").strip()
+            if not eid:
+                eid = f"{ev.get('name', '')}|{ev.get('date', '')}|{ev.get('venue', '')}"
 
-                    # Deterministic rating/distance calculation
-                    import hashlib
-                    h = int(hashlib.md5(name.encode("utf-8")).hexdigest(), 16)
-                    rating = round(3.5 + (h % 15) / 10.0, 1)
-                    distance = round(2.0 + (h % 18), 1)
+            if eid != lookup_id:
+                continue
 
-                    CITY_STATE_MAP = {
-                        "chicago": "Illinois",
-                        "milwaukee": "Wisconsin",
-                        "indianapolis": "Indiana",
-                        "detroit": "Michigan",
-                        "new york": "New York",
-                        "los angeles": "California",
-                        "houston": "Texas",
-                        "phoenix": "Arizona",
-                        "philadelphia": "Pennsylvania",
-                        "san antonio": "Texas",
-                        "san diego": "California",
-                        "dallas": "Texas",
-                        "san jose": "California",
-                        "austin": "Texas",
-                        "miami": "Florida",
-                    }
-                    ev_city = ev.get("city", "")
-                    state = CITY_STATE_MAP.get(ev_city.lower(), "Your Region")
+            name = ev.get("name") or ev.get("title") or "Event"
+            return _event_detail_response(
+                event_id=lookup_id,
+                title=name,
+                category=ev.get("category", "Event"),
+                venue=ev.get("venue", "Various Venues"),
+                city=ev.get("city", ""),
+                state=ev.get("state"),
+                start_date=ev.get("date") or ev.get("start_date"),
+                start_time=ev.get("time", "19:00"),
+                price_min=ev.get("price_min"),
+                price_max=ev.get("price_max"),
+                image_url=ev.get("image_url") or ev.get("imageUrl"),
+                ticket_url=ev.get("ticket_url") or ev.get("url"),
+                source=ev.get("source") or ev.get("sourceType") or "ticketmaster",
+            )
 
-                    return {
-                        "id": event_id,
-                        "title": name,
-                        "category": ev.get("category", "Event"),
-                        "venue": ev.get("venue", "Various Venues"),
-                        "city": ev_city,
-                        "state": state,
-                        "start_date": date_str,
-                        "start_time": ev.get("time", "19:00"),
-                        "price_min": ev.get("price_min"),
-                        "price_max": ev.get("price_max"),
-                        "image_url": img_url,
-                        "ticket_url": url,
-                        "source": source,
-                        "distance_miles": distance,
-                        "rating": rating
-                    }
-
-    # If not found in cache, let's check if it starts with mock- or ai-ev- and generate dynamically
-    if event_id.startswith("mock-") or event_id.startswith("ai-ev-"):
-        # Synthesize a plausible event so page doesn't crash on fallbacks
-        return {
-            "id": event_id,
-            "title": "Local Experience",
-            "category": "Festival",
-            "venue": "Downtown Park Venue",
-            "city": "Chicago",
-            "state": "Illinois",
-            "start_date": "2026-06-15",
-            "start_time": "19:00",
-            "price_min": 10.0,
-            "price_max": 50.0,
-            "image_url": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400",
-            "ticket_url": "https://www.google.com",
-            "source": "ai_fallback",
-            "distance_miles": 4.5,
-            "rating": 4.8
-        }
+    if lookup_id.startswith("mock-") or lookup_id.startswith("ai-ev-"):
+        return _event_detail_response(
+            event_id=lookup_id,
+            title="Local Experience",
+            category="Festival",
+            venue="Downtown Park Venue",
+            city="Chicago",
+            state="Illinois",
+            start_date="2026-06-15",
+            start_time="19:00",
+            price_min=10.0,
+            price_max=50.0,
+            image_url="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400",
+            ticket_url="https://www.google.com",
+            source="ai_fallback",
+        )
 
     AppException.not_found("Event not found")
 

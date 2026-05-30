@@ -90,3 +90,53 @@ def test_get_explore_event_detail():
     response_nf = client.get("/api/v1/explore/events/unknown-event-id")
     assert response_nf.status_code == 404
 
+
+def test_get_explore_event_detail_ticketmaster_row():
+    """Detail lookup resolves ticketmaster_event rows by event_id."""
+    from datetime import date, datetime, timezone
+    from sqlalchemy import delete
+
+    from app.models.explore_content import ExploreContent
+    from app.utils.database import SessionLocal
+
+    db = SessionLocal()
+    try:
+        db.execute(delete(ExploreContent).where(ExploreContent.event_id == "tm_detail_test_1"))
+        db.commit()
+
+        row = ExploreContent(
+            city="Austin",
+            content_type="ticketmaster_event",
+            data=[],
+            fetched_at=datetime.now(timezone.utc),
+            event_id="tm_detail_test_1",
+            title="Detail Test Concert",
+            category="Music",
+            venue_name="Moody Theater",
+            venue_lat=30.2672,
+            venue_lon=-97.7431,
+            state="Texas",
+            start_date=date(2026, 6, 15),
+            start_time="20:00",
+            price_min=25.0,
+            price_max=75.0,
+            image_url="https://example.com/img.jpg",
+            ticket_url="https://ticketmaster.com/tm_detail_test_1",
+            source="ticketmaster",
+        )
+        db.add(row)
+        db.commit()
+
+        response = client.get("/api/v1/explore/events/tm_detail_test_1")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == "tm_detail_test_1"
+        assert data["title"] == "Detail Test Concert"
+        assert data["venue"] == "Moody Theater"
+        assert data["state"] == "Texas"
+        assert data["start_date"] == "2026-06-15"
+    finally:
+        db.execute(delete(ExploreContent).where(ExploreContent.event_id == "tm_detail_test_1"))
+        db.commit()
+        db.close()
+

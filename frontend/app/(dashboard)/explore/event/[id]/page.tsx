@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { loadEventSnapshot } from "@/lib/explore-events";
 
 type EventDetail = {
   id: string;
@@ -98,15 +99,41 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
     async function loadEvent() {
       try {
         setLoading(true);
-        const data = await apiFetch<EventDetail>(`/explore/events/${id}`);
+        setError(null);
+        const data = await apiFetch<EventDetail>(
+          `/explore/events/${encodeURIComponent(id)}`,
+        );
         if (data) {
           setEvent(data);
-        } else {
-          setError("Event detail not found.");
+          return;
         }
+        setError("Event detail not found.");
       } catch (err) {
+        const snapshot = loadEventSnapshot(id);
+        if (snapshot) {
+          setEvent({
+            id: snapshot.id,
+            title: snapshot.name,
+            category: snapshot.category,
+            venue: snapshot.venue,
+            city: snapshot.city,
+            state: "",
+            start_date: snapshot.date,
+            start_time: snapshot.time,
+            price_min: snapshot.price_min,
+            price_max: snapshot.price_max,
+            image_url: snapshot.image_url,
+            ticket_url: snapshot.ticket_url,
+            source: snapshot.source,
+            distance_miles: snapshot.distance_miles ?? 0,
+            rating: 4.5,
+          });
+          return;
+        }
         console.error("Failed to load explore event detail:", err);
-        setError("Failed to load event details. Please try again.");
+        setError(
+          err instanceof Error ? err.message : "Failed to load event details.",
+        );
       } finally {
         setLoading(false);
       }

@@ -438,7 +438,8 @@ function EventSection({
           {visible.map((event, index) => (
             <Link
               key={`${event.id || event.name}-${index}`}
-              href={`/explore/event/${event.id}`}
+              href={`/explore/event/${encodeURIComponent(event.id)}`}
+              onClick={() => saveEventSnapshot(event)}
               className="block h-full"
             >
               <ExploreCard
