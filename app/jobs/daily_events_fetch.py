@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime, date, timezone
+from datetime import datetime, date, timezone, timedelta
 import httpx
 from sqlalchemy import select, delete
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -18,6 +18,10 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 TICKETMASTER_URL = "https://app.ticketmaster.com/discovery/v2/events.json"
+MAX_PAGES = 50
+PAGE_SIZE = 200
+# Ticketmaster deep paging: (page * size) must be < 1,000 per query window.
+PAGES_PER_TM_WINDOW = 5
 
 def _normalize_category(segment_name: str, name: str) -> str:
     import re
@@ -61,6 +65,116 @@ def _normalize_category(segment_name: str, name: str) -> str:
         return "Nightlife"
     return "Experience"
 
+def _parse_ticketmaster_event(raw: dict, today: date) -> dict | None:
+    """Parse a raw Ticketmaster event dict; return None if invalid or already past."""
+    if not isinstance(raw, dict):
+        return None
+
+    event_id = str(raw.get("id") or "").strip()
+    if not event_id:
+        return None
+
+    title = str(raw.get("name") or "Event").strip()
+    ticket_url = str(raw.get("url") or "").strip()
+
+    image_url = ""
+    images = raw.get("images", [])
+    if isinstance(images, list) and images:
+        best = None
+        for im in images:
+            if not isinstance(im, dict):
+                continue
+            w = int(im.get("width") or 0)
+            u = im.get("url")
+            if isinstance(u, str) and (best is None or w > best[0]):
+                best = (w, u)
+        if best:
+            image_url = best[1]
+
+    raw_segment = ""
+    classifications = raw.get("classifications", [])
+    if classifications and isinstance(classifications, list) and isinstance(classifications[0], dict):
+        segment = classifications[0].get("segment", {})
+        if isinstance(segment, dict) and segment.get("name"):
+            raw_segment = str(segment.get("name"))
+    category = _normalize_category(raw_segment, title)
+
+    start_date_val = None
+    start_time_val = "19:00"
+    dates = raw.get("dates", {})
+    if isinstance(dates, dict):
+        start = dates.get("start", {})
+        if isinstance(start, dict):
+            dt_str = str(start.get("localDate") or "")
+            if dt_str:
+                try:
+                    start_date_val = datetime.strptime(dt_str, "%Y-%m-%d").date()
+                except (TypeError, ValueError):
+                    pass
+            local_time = start.get("localTime")
+            if local_time:
+                start_time_val = str(local_time)[:5]
+
+    if start_date_val and start_date_val < today:
+        return None
+
+    venue_name = "Various Venues"
+    city_name = "US"
+    state_name = "US"
+    venue_lat = None
+    venue_lon = None
+
+    ven_emb = raw.get("_embedded", {})
+    if isinstance(ven_emb, dict):
+        venues = ven_emb.get("venues")
+        if isinstance(venues, list) and venues and isinstance(venues[0], dict):
+            v0 = venues[0]
+            venue_name = str(v0.get("name") or "Venue").strip()
+            if v0.get("city") and isinstance(v0.get("city"), dict):
+                city_name = str(v0.get("city").get("name") or "US").strip()
+            if v0.get("state") and isinstance(v0.get("state"), dict):
+                state_name = str(
+                    v0.get("state").get("name") or v0.get("state").get("stateCode") or "US"
+                ).strip()
+            loc = v0.get("location")
+            if isinstance(loc, dict):
+                try:
+                    if loc.get("latitude") is not None:
+                        venue_lat = float(loc["latitude"])
+                    if loc.get("longitude") is not None:
+                        venue_lon = float(loc["longitude"])
+                except (TypeError, ValueError):
+                    pass
+
+    price_min = None
+    price_max = None
+    price_ranges = raw.get("priceRanges", [])
+    if price_ranges and isinstance(price_ranges, list) and isinstance(price_ranges[0], dict):
+        p0 = price_ranges[0]
+        try:
+            price_min = float(p0.get("min")) if p0.get("min") is not None else None
+            price_max = float(p0.get("max")) if p0.get("max") is not None else None
+        except (TypeError, ValueError):
+            pass
+
+    return {
+        "event_id": event_id,
+        "title": title,
+        "category": category,
+        "venue_name": venue_name,
+        "venue_lat": venue_lat,
+        "venue_lon": venue_lon,
+        "city": city_name,
+        "state": state_name,
+        "start_date": start_date_val,
+        "start_time": start_time_val,
+        "price_min": price_min,
+        "price_max": price_max,
+        "image_url": image_url,
+        "ticket_url": ticket_url,
+        "source": "ticketmaster",
+    }
+
 def run_daily_events_fetch() -> dict[str, int]:
     """
     Fetch US events from Ticketmaster in pages 0-49, size=200.
@@ -81,153 +195,83 @@ def run_daily_events_fetch() -> dict[str, int]:
     today = date.today()
     fetched_events = []
 
-    # 1. Fetch from Ticketmaster
+    # 1. Fetch from Ticketmaster — pages 0-49 (50 × 200 = 10,000 target).
+    # TM caps each query at 1,000 results via deep paging, so advance startDateTime
+    # after every PAGES_PER_TM_WINDOW pages.
+    cursor_date = today
+    global_page = 0
+
     with httpx.Client(timeout=30.0) as client:
-        for page in range(50):
-            params = {
-                "apikey": api_key,
-                "countryCode": "US",
-                "size": 200,
-                "page": page,
-                "sort": "date,asc",
-            }
-            try:
-                # Add rate-limiting delay to respect Ticketmaster's rate limits
-                time.sleep(0.25)
-                logger.info("Fetching US events page %d...", page)
-                response = client.get(TICKETMASTER_URL, params=params)
-                if response.status_code != 200:
-                    logger.warning("Ticketmaster bulk fetch page %d returned HTTP %s: %s", page, response.status_code, response.text[:200])
+        while global_page < MAX_PAGES:
+            latest_date_in_window: date | None = None
+            got_events_in_window = False
+
+            pages_this_window = min(PAGES_PER_TM_WINDOW, MAX_PAGES - global_page)
+            for tm_page in range(pages_this_window):
+                page = global_page
+                params = {
+                    "apikey": api_key,
+                    "countryCode": "US",
+                    "size": PAGE_SIZE,
+                    "page": tm_page,
+                    "sort": "date,asc",
+                    "startDateTime": f"{cursor_date.isoformat()}T00:00:00Z",
+                }
+                events: list = []
+                try:
+                    time.sleep(0.25)
+                    logger.info(
+                        "Fetching US events page %d (tm_page=%d, start=%s)...",
+                        page,
+                        tm_page,
+                        cursor_date.isoformat(),
+                    )
+                    response = client.get(TICKETMASTER_URL, params=params)
+                    if response.status_code == 200:
+                        embedded = response.json().get("_embedded")
+                        if isinstance(embedded, dict):
+                            raw_events = embedded.get("events")
+                            if isinstance(raw_events, list):
+                                events = raw_events
+                    else:
+                        logger.warning(
+                            "Ticketmaster bulk fetch page %d returned HTTP %s: %s",
+                            page,
+                            response.status_code,
+                            response.text[:200],
+                        )
+                except Exception as exc:
+                    logger.error("Error fetching page %d: %s", page, exc)
+
+                print(f"Page {page}: fetched {len(events)} events")
+                logger.info("Page %d: fetched %d events", page, len(events))
+                global_page += 1
+
+                if not events:
                     break
 
-                data = response.json()
-                embedded = data.get("_embedded")
-                if not isinstance(embedded, dict):
-                    logger.info("No more events found at page %d.", page)
-                    break
-
-                events_list = embedded.get("events")
-                if not isinstance(events_list, list) or not events_list:
-                    logger.info("No more events found at page %d.", page)
-                    break
-
-                for raw in events_list:
-                    if not isinstance(raw, dict):
+                got_events_in_window = True
+                for raw in events:
+                    parsed = _parse_ticketmaster_event(raw, today)
+                    if not parsed:
                         continue
-
-                    event_id = str(raw.get("id") or "").strip()
-                    if not event_id:
-                        continue
-
-                    title = str(raw.get("name") or "Event").strip()
-                    ticket_url = str(raw.get("url") or "").strip()
-
-                    # Find best image url
-                    image_url = ""
-                    images = raw.get("images", [])
-                    if isinstance(images, list) and images:
-                        best = None
-                        for im in images:
-                            if not isinstance(im, dict):
-                                continue
-                            w = int(im.get("width") or 0)
-                            u = im.get("url")
-                            if isinstance(u, str) and (best is None or w > best[0]):
-                                best = (w, u)
-                        if best:
-                            image_url = best[1]
-
-                    # Parse classifications / category
-                    raw_segment = ""
-                    classifications = raw.get("classifications", [])
-                    if classifications and isinstance(classifications, list) and isinstance(classifications[0], dict):
-                        segment = classifications[0].get("segment", {})
-                        if isinstance(segment, dict) and segment.get("name"):
-                            raw_segment = str(segment.get("name"))
-                    category = _normalize_category(raw_segment, title)
-
-                    # Parse dates
-                    start_date_val = None
-                    start_time_val = "19:00"
-                    dates = raw.get("dates", {})
-                    if isinstance(dates, dict):
-                        start = dates.get("start", {})
-                        if isinstance(start, dict):
-                            dt_str = str(start.get("localDate") or "")
-                            if dt_str:
-                                try:
-                                    start_date_val = datetime.strptime(dt_str, "%Y-%m-%d").date()
-                                except (TypeError, ValueError):
-                                    pass
-                            local_time = start.get("localTime")
-                            if local_time:
-                                start_time_val = str(local_time)[:5]
-
-                    # Skip events that have already passed
-                    if start_date_val and start_date_val < today:
-                        continue
-
-                    # Parse venue and location
-                    venue_name = "Various Venues"
-                    city_name = "US"
-                    state_name = "US"
-                    venue_lat = None
-                    venue_lon = None
-
-                    ven_emb = raw.get("_embedded", {})
-                    if isinstance(ven_emb, dict):
-                        venues = ven_emb.get("venues")
-                        if isinstance(venues, list) and venues and isinstance(venues[0], dict):
-                            v0 = venues[0]
-                            venue_name = str(v0.get("name") or "Venue").strip()
-                            if v0.get("city") and isinstance(v0.get("city"), dict):
-                                city_name = str(v0.get("city").get("name") or "US").strip()
-                            if v0.get("state") and isinstance(v0.get("state"), dict):
-                                state_name = str(v0.get("state").get("name") or v0.get("state").get("stateCode") or "US").strip()
-                            loc = v0.get("location")
-                            if isinstance(loc, dict):
-                                try:
-                                    if loc.get("latitude") is not None:
-                                        venue_lat = float(loc["latitude"])
-                                    if loc.get("longitude") is not None:
-                                        venue_lon = float(loc["longitude"])
-                                except (TypeError, ValueError):
-                                    pass
-
-                    # Parse pricing
-                    price_min = None
-                    price_max = None
-                    price_ranges = raw.get("priceRanges", [])
-                    if price_ranges and isinstance(price_ranges, list) and isinstance(price_ranges[0], dict):
-                        p0 = price_ranges[0]
-                        try:
-                            price_min = float(p0.get("min")) if p0.get("min") is not None else None
-                            price_max = float(p0.get("max")) if p0.get("max") is not None else None
-                        except (TypeError, ValueError):
-                            pass
-
-                    fetched_events.append({
-                        "event_id": event_id,
-                        "title": title,
-                        "category": category,
-                        "venue_name": venue_name,
-                        "venue_lat": venue_lat,
-                        "venue_lon": venue_lon,
-                        "city": city_name,
-                        "state": state_name,
-                        "start_date": start_date_val,
-                        "start_time": start_time_val,
-                        "price_min": price_min,
-                        "price_max": price_max,
-                        "image_url": image_url,
-                        "ticket_url": ticket_url,
-                        "source": "ticketmaster"
-                    })
+                    fetched_events.append(parsed)
                     fetched_count += 1
+                    ev_date = parsed.get("start_date")
+                    if isinstance(ev_date, date) and (
+                        latest_date_in_window is None or ev_date > latest_date_in_window
+                    ):
+                        latest_date_in_window = ev_date
 
-            except Exception as exc:
-                logger.error("Error fetching page %d: %s", page, exc)
+            if not got_events_in_window or latest_date_in_window is None:
+                logger.info(
+                    "No more upcoming events after page %d (cursor=%s).",
+                    global_page,
+                    cursor_date.isoformat(),
+                )
                 break
+
+            cursor_date = latest_date_in_window + timedelta(days=1)
 
     # Deduplicate fetched events by event_id before database operations
     seen_ids = set()

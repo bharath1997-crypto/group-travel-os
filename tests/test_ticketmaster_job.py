@@ -70,8 +70,12 @@ def test_run_daily_events_fetch_job(monkeypatch):
         }
 
         # Use patch to mock httpx.Client.get and speed up sleep
-        with patch("httpx.Client.get", return_value=mock_response), patch("time.sleep", return_value=None):
+        with patch("httpx.Client.get", return_value=mock_response) as mock_get, patch(
+            "time.sleep", return_value=None
+        ):
             result = run_daily_events_fetch()
+
+        assert mock_get.call_count == 50
 
         print("DEBUG RESULT:", result)
 
