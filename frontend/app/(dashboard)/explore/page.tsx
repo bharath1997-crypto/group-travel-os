@@ -65,14 +65,14 @@ type CityAutocompleteResponse = {
 };
 
 const EVENTS_FETCH_TIMEOUT_MS = 60_000;
+const GEOLOCATION_TIMEOUT_MS = 8_000;
 const LS_EXPLORE_CITY = "rovvy_explore_city";
 const LS_EXPLORE_COORDS = "rovvy_explore_coords";
 const EXPLORE_RADIUS_MILES = 200;
-const EXPLORE_INITIAL_PER_PAGE = 40;
+const EXPLORE_INITIAL_PER_PAGE = 20;
 const EXPLORE_FULL_PER_PAGE = 100;
+const DEFAULT_EXPLORE_CITY = "Chicago";
 
-/** Prevent duplicate bootstrap fetches (React Strict Mode remount). */
-let exploreBootstrapPromise: Promise<void> | null = null;
 /** Block overlapping /explore/events requests (geo vs city race). */
 let exploreEventsInFlight = false;
 let exploreEventsInFlightMode: "geo" | "city" | null = null;
@@ -149,6 +149,34 @@ function parseCoordinateInput(input: string): UserCoords | null {
   if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
   if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
   return { lat, lon };
+}
+
+/** Cursor's embedded browser often never resolves geolocation; always time out. */
+function requestGeolocationCoords(): Promise<UserCoords | null> {
+  return new Promise((resolve) => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    let settled = false;
+    const finish = (coords: UserCoords | null) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(coords);
+    };
+    const timer = setTimeout(() => finish(null), GEOLOCATION_TIMEOUT_MS);
+    navigator.geolocation.getCurrentPosition(
+      (pos) =>
+        finish({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      () => finish(null),
+      {
+        timeout: GEOLOCATION_TIMEOUT_MS,
+        maximumAge: 5 * 60_000,
+        enableHighAccuracy: false,
+      },
+    );
+  });
 }
 
 async function nominatimCityLatLon(
@@ -276,6 +304,8 @@ function ExploreCard({ event, userCity, onOpen }: ExploreCardProps) {
           <img
             src={event.image_url}
             alt={event.name}
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
           />
         ) : (
@@ -781,47 +811,49 @@ export default function ExploreHubPage() {
     }
   }, [applyLocationByCoords, citySearch]);
 
-  const detectGPSCity = useCallback(() => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      const savedCity = loadExploreCity();
-      const coords = readStoredCoords();
-      if (coords) {
-        setCoords(coords);
-        if (savedCity) setCurrentCity(savedCity);
-        void fetchEventsByCoords(coords, { force: true });
-      } else if (savedCity) {
-        setCurrentCity(savedCity);
-        setCoords(null);
-        void fetchEventsByCity(savedCity);
+  const fetchByCityOrGeocode = useCallback(
+    async (cityLabel: string) => {
+      const geo = await nominatimCityLatLon(cityLabel);
+      if (geo) {
+        setCoords(geo);
+        saveExploreCity(cityLabel, geo);
+        await fetchEventsByCoords(geo, { force: true });
+        return;
       }
+      setCoords(null);
+      userCoordsRef.current = null;
+      eventsDataSourceRef.current = "city";
+      setCurrentCity(cityLabel);
+      await fetchEventsByCity(cityLabel);
+    },
+    [fetchEventsByCity, fetchEventsByCoords, setCoords],
+  );
+
+  const detectGPSCity = useCallback(async () => {
+    const savedCity = loadExploreCity();
+    const storedCoords = readStoredCoords();
+    if (storedCoords) {
+      setCoords(storedCoords);
+      if (savedCity) setCurrentCity(savedCity);
+      await fetchEventsByCoords(storedCoords, { force: true });
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const coords: UserCoords = { lat: latitude, lon: longitude };
-        setCoords(coords);
-        saveExploreCity(loadExploreCity() || "Your area", coords);
-        await fetchEventsByCoords(coords, { force: true });
-      },
-      () => {
-        const savedCity = loadExploreCity();
-        const coords = readStoredCoords();
-        if (coords) {
-          setCoords(coords);
-          if (savedCity) setCurrentCity(savedCity);
-          void fetchEventsByCoords(coords, { force: true });
-          return;
-        }
-        if (savedCity) {
-          setCurrentCity(savedCity);
-          setCoords(null);
-          void fetchEventsByCity(savedCity);
-        }
-      },
-    );
-  }, [fetchEventsByCity, fetchEventsByCoords, setCoords]);
+    const gpsCoords = await requestGeolocationCoords();
+    if (gpsCoords) {
+      setCoords(gpsCoords);
+      saveExploreCity(savedCity || "Your area", gpsCoords);
+      await fetchEventsByCoords(gpsCoords, { force: true });
+      return;
+    }
+
+    if (savedCity) {
+      await fetchByCityOrGeocode(savedCity);
+      return;
+    }
+
+    await fetchByCityOrGeocode(DEFAULT_EXPLORE_CITY);
+  }, [fetchByCityOrGeocode, fetchEventsByCoords, setCoords]);
 
   const bootstrapExplore = useCallback(async () => {
     const savedCoords = readStoredCoords();
@@ -836,24 +868,22 @@ export default function ExploreHubPage() {
 
     if (saved) {
       setCurrentCity(saved);
-      setCoords(null);
-      userCoordsRef.current = null;
-      eventsDataSourceRef.current = "city";
-      void fetchEventsByCity(saved);
+      const geo = await nominatimCityLatLon(saved);
+      if (geo) {
+        setCoords(geo);
+        saveExploreCity(saved, geo);
+        await fetchEventsByCoords(geo, { force: true });
+        return;
+      }
     }
 
-    detectGPSCity();
-  }, [detectGPSCity, fetchEventsByCity, fetchEventsByCoords, setCoords]);
+    await detectGPSCity();
+  }, [detectGPSCity, fetchEventsByCoords, setCoords]);
 
   useEffect(() => {
     if (mountedRef.current) return;
     mountedRef.current = true;
-
-    if (!exploreBootstrapPromise) {
-      exploreBootstrapPromise = bootstrapExplore();
-    }
-
-    void exploreBootstrapPromise;
+    void bootstrapExplore();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only bootstrap
   }, []);
 
