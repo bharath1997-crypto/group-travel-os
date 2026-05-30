@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Calendar,
@@ -460,6 +460,19 @@ function EventSection({
 
 export default function ExploreHubPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const categoryParam = searchParams.get("category");
+  const initialCategory = useMemo(() => {
+    if (categoryParam) {
+      const normalized = categoryParam.trim();
+      const validPills: ExploreCategoryPill[] = ["All", "Events", "Activities", "Sports", "Food", "Nightlife", "Parks"];
+      const found = validPills.find(p => p.toLowerCase() === normalized.toLowerCase());
+      if (found) return found;
+    }
+    return "All";
+  }, [categoryParam]);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fetchGenerationRef = useRef(0);
   const mountedRef = useRef(false);
@@ -483,7 +496,18 @@ export default function ExploreHubPage() {
   const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
   const [cityLoading, setCityLoading] = useState(false);
   const [activeCategory, setActiveCategory] =
-    useState<ExploreCategoryPill>("All");
+    useState<ExploreCategoryPill>(initialCategory);
+
+  useEffect(() => {
+    if (categoryParam) {
+      const normalized = categoryParam.trim();
+      const validPills: ExploreCategoryPill[] = ["All", "Events", "Activities", "Sports", "Food", "Nightlife", "Parks"];
+      const found = validPills.find(p => p.toLowerCase() === normalized.toLowerCase());
+      if (found) {
+        setActiveCategory(found);
+      }
+    }
+  }, [categoryParam]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

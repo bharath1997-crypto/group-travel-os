@@ -101,7 +101,7 @@ function matchesSpecificExplorePill(
         name.includes("museum")
       );
     case "Sports":
-      return cat.includes("sport");
+      return normalizeCategory(event.category, event.name) === "Sports";
     case "Food":
       return (
         cat.includes("food") ||
@@ -139,6 +139,14 @@ export function matchesExploreCategoryPill(
     return !SPECIFIC_EXPLORE_PILLS.some((p) =>
       matchesSpecificExplorePill(event, p),
     );
+  }
+  if (pill === "Sports") {
+    const normalized = normalizeCategory(event.category, event.name);
+    const matched = normalized === "Sports";
+    console.log(
+      `[Explore Filter] Event: "${event.name}" | Raw Category: "${event.category}" | Normalized Category: "${normalized}" | Pill: Sports | Matched: ${matched}`
+    );
+    return matched;
   }
   return matchesSpecificExplorePill(event, pill);
 }
