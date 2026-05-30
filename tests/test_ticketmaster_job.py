@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime, date, timezone, timedelta
 from unittest.mock import MagicMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select, delete
 
@@ -19,6 +20,17 @@ client = TestClient(app)
 _ISOLATED_LAT = 64.8378
 _ISOLATED_LON = -147.7164
 _ISOLATED_CITY = "Fairbanks"
+
+
+@pytest.fixture(autouse=True)
+def _reset_db_session():
+    """Clear failed transaction state left by other tests or background tasks."""
+    db = SessionLocal()
+    try:
+        db.rollback()
+    finally:
+        db.close()
+    yield
 
 
 def _weekend_end(today: date) -> date:
@@ -94,8 +106,12 @@ def _seed_ticketmaster_row(
     )
 
 
-def test_admin_trigger_daily_fetch_returns_202():
+def test_admin_trigger_daily_fetch_returns_202(monkeypatch):
     """Verify that the admin trigger endpoint is registered and returns 202 Accepted."""
+    monkeypatch.setattr(
+        "app.routes.admin.run_daily_events_fetch",
+        lambda: {"fetched": 0, "inserted": 0, "updated": 0, "deleted": 0},
+    )
     response = client.post("/api/v1/admin/trigger-daily-fetch")
     assert response.status_code == 202
     assert response.json()["status"] == "success"
@@ -111,6 +127,10 @@ def test_run_daily_events_fetch_job(monkeypatch):
         db.commit()
 
         monkeypatch.setattr("config.settings.ticketmaster_api_key", "test-api-key")
+        monkeypatch.setattr(
+            "app.jobs.daily_events_fetch.settings.ticketmaster_api_key",
+            "test-api-key",
+        )
 
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -250,6 +270,7 @@ def test_explore_sections_from_db_haversine_events(monkeypatch):
     event_ids = ["db_near", "db_weekend", "db_popular"]
     db = _open_tm_db()
     try:
+        _purge_all_ticketmaster(db)
         db.execute(delete(ExploreContent).where(ExploreContent.event_id.in_(event_ids)))
         db.commit()
 
@@ -316,6 +337,7 @@ def test_explore_weekend_calendar_window(monkeypatch):
     event_ids = ["ev_today", "ev_weekend", "ev_later"]
     db = _open_tm_db()
     try:
+        _purge_all_ticketmaster(db)
         db.execute(delete(ExploreContent).where(ExploreContent.event_id.in_(event_ids)))
         db.commit()
 
