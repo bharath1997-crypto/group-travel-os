@@ -474,20 +474,45 @@ async def explore_events(
         return str(raw).split("T")[0][:10]
 
     def parse_event_date(ev: dict[str, Any]) -> date | None:
+        raw = ev.get("date") or ev.get("start_date") or ""
+        if isinstance(raw, date) and not isinstance(raw, datetime):
+            return raw
+        if isinstance(raw, datetime):
+            return raw.date()
+        if hasattr(raw, "strftime") and not isinstance(raw, str):
+            try:
+                return raw.date() if hasattr(raw, "date") else raw  # type: ignore[return-value]
+            except Exception:
+                pass
         dt_str = event_date_str(ev)
         if not dt_str:
             return None
-        try:
-            return datetime.strptime(dt_str, "%Y-%m-%d").date()
-        except ValueError:
-            return None
+        for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%m/%d/%Y"):
+            try:
+                return datetime.strptime(dt_str[:10], fmt).date()
+            except ValueError:
+                continue
+        return None
 
     today_date = date.today()
-    three_days = today_date + timedelta(days=3)
+    # Calendar weekend: today through upcoming Sunday (Fri May 30 → Sun Jun 1)
+    weekend_end = today_date + timedelta(days=(6 - today_date.weekday()) % 7)
     upcoming_events = [
         ev for ev in events
         if (d := parse_event_date(ev)) is not None and d >= today_date
     ]
+
+    weekend_in_window = [
+        ev for ev in upcoming_events
+        if (d := parse_event_date(ev)) is not None and today_date <= d <= weekend_end
+    ]
+    logger.info(
+        "[explore] weekend window %s..%s — %d/%d upcoming events in range",
+        today_date.isoformat(),
+        weekend_end.isoformat(),
+        len(weekend_in_window),
+        len(upcoming_events),
+    )
 
     def event_id(ev: dict[str, Any]) -> str:
         eid = str(ev.get("id") or "").strip()
@@ -504,34 +529,47 @@ async def explore_events(
     trending = pick_top(by_distance, 40)
     trending_ids = {event_id(ev) for ev in trending}
 
-    # 2. This Weekend — strict next 3 days only; never duplicate Near You events
-    def is_within_three_days(ev: dict[str, Any]) -> bool:
+    # 2. This Weekend — today through Sunday; prefer events not already in Near You
+    def is_this_weekend(ev: dict[str, Any]) -> bool:
         ev_date = parse_event_date(ev)
         if ev_date is None:
             return False
-        return today_date <= ev_date <= three_days
+        return today_date <= ev_date <= weekend_end
 
-    weekend_pool = sorted(
+    weekend_non_trending = sorted(
         [
             ev
             for ev in upcoming_events
-            if is_within_three_days(ev) and event_id(ev) not in trending_ids
+            if is_this_weekend(ev) and event_id(ev) not in trending_ids
         ],
         key=distance_key,
     )
+    weekend_pool = weekend_non_trending
+    if not weekend_pool:
+        weekend_pool = sorted(
+            [ev for ev in upcoming_events if is_this_weekend(ev)],
+            key=distance_key,
+        )
     weekend = pick_top(weekend_pool, 20)
+    logger.info(
+        "[explore] weekend section: %d events (pool=%d, non-trending=%d)",
+        len(weekend),
+        len(weekend_pool),
+        len(weekend_non_trending),
+    )
 
     # 3. Popular Nearby — highest rated, any city within radius
     by_score = sorted(upcoming_events, key=get_score, reverse=True)
     popular = pick_top(by_score, 20)
 
-    # 4. National Picks — top-rated events outside the local radius
+    # 4. National Picks — outside the user's 200mi zone (not expanded search radius)
+    local_radius = float(radius or 200)
     national = get_national_picks(
         db,
         limit=20,
         lat=lat,
         lon=lon,
-        radius_miles=float(radius_used or radius or 200),
+        radius_miles=local_radius,
     )
 
     section_titles = result.get("section_titles") if geo_search and result else None

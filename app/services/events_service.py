@@ -1379,6 +1379,34 @@ def get_national_picks(
     Top-rated upcoming US events outside the user's local radius.
     Same national concept for all users: everything beyond radius_miles.
     """
+    from datetime import date
+    from sqlalchemy import func
+
+    today = date.today()
+    total_rows = db.scalar(select(func.count()).select_from(ExploreContent)) or 0
+    upcoming_rows = db.scalar(
+        select(func.count())
+        .select_from(ExploreContent)
+        .where(
+            ExploreContent.start_date.isnot(None),
+            ExploreContent.start_date >= today,
+        )
+    ) or 0
+    logger.info(
+        "[national_picks] explore_contents total=%d upcoming(start_date>=%s)=%d",
+        total_rows,
+        today.isoformat(),
+        upcoming_rows,
+    )
+    if total_rows == 0:
+        logger.warning("[national_picks] explore_contents is empty — daily fetch may not have run")
+    elif upcoming_rows == 0:
+        logger.warning(
+            "[national_picks] %d rows in table but 0 with start_date>=%s — check date population",
+            total_rows,
+            today.isoformat(),
+        )
+
     picks = _national_picks_from_db(
         db,
         limit=limit,
@@ -1486,8 +1514,8 @@ def _national_picks_from_db(
     from datetime import date
     from sqlalchemy import text
 
-    today_str = date.today().strftime("%Y-%m-%d")
-    params: dict[str, Any] = {"today": today_str}
+    today = date.today()
+    params: dict[str, Any] = {"today": today}
 
     if lat is not None and lon is not None:
         params["lat"] = lat

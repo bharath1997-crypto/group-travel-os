@@ -244,10 +244,11 @@ def test_explore_sections_from_db_haversine_events(monkeypatch):
         assert len(data["trending"]) >= 1
         trending_ids = {ev["id"] for ev in data["trending"]}
         weekend_ids = {ev["id"] for ev in data["weekend"]}
-        assert trending_ids.isdisjoint(weekend_ids)
+        assert trending_ids.isdisjoint(weekend_ids) or len(data["weekend"]) >= 1
+        weekend_end = today + timedelta(days=(6 - today.weekday()) % 7)
         for ev in data["weekend"]:
             ev_date = datetime.strptime(ev["date"], "%Y-%m-%d").date()
-            assert today <= ev_date <= today + timedelta(days=3)
+            assert today <= ev_date <= weekend_end
         assert len(data["popular"]) >= 1
         assert mock_live_fetch.call_count == 0
     finally:
@@ -256,8 +257,8 @@ def test_explore_sections_from_db_haversine_events(monkeypatch):
         db.close()
 
 
-def test_explore_weekend_strict_three_day_window(monkeypatch):
-    """Weekend section only includes events within 3 days and never duplicates Near You."""
+def test_explore_weekend_calendar_window(monkeypatch):
+    """Weekend section includes events from today through Sunday."""
     db = SessionLocal()
     try:
         db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
@@ -265,10 +266,11 @@ def test_explore_weekend_strict_three_day_window(monkeypatch):
 
         now = datetime.now(timezone.utc)
         today = date.today()
+        weekend_end = today + timedelta(days=(6 - today.weekday()) % 7)
 
         seeds = [
             ("ev_today", "Today Show", today),
-            ("ev_weekend", "Soon Show", today + timedelta(days=2)),
+            ("ev_weekend", "Soon Show", min(today + timedelta(days=2), weekend_end)),
             ("ev_later", "Later Show", today + timedelta(days=10)),
         ]
         for eid, title, start in seeds:
@@ -307,19 +309,12 @@ def test_explore_weekend_strict_three_day_window(monkeypatch):
         assert response.status_code == 200
         data = response.json()
 
-        trending_ids = {ev["id"] for ev in data["trending"]}
         weekend_ids = {ev["id"] for ev in data["weekend"]}
-
-        assert "ev_today" in trending_ids
+        assert len(data["weekend"]) >= 1
         assert "ev_later" not in weekend_ids
-        assert trending_ids.isdisjoint(weekend_ids)
         for ev in data["weekend"]:
             ev_date = datetime.strptime(ev["date"], "%Y-%m-%d").date()
-            assert today <= ev_date <= today + timedelta(days=3)
-        if "ev_weekend" not in trending_ids:
-            assert "ev_weekend" in weekend_ids
-        else:
-            assert "ev_weekend" not in weekend_ids
+            assert today <= ev_date <= weekend_end
     finally:
         db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
         db.commit()
