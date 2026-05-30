@@ -164,6 +164,14 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
     setTimeout(() => setToastMessage(null), 3000);
   }, []);
 
+  const handleBackToExplore = useCallback(() => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push("/explore");
+  }, [router]);
+
   useEffect(() => {
     async function loadEvent() {
       try {
@@ -395,7 +403,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
           <p className="mt-2 text-sm text-slate-500">{error || "Event not found"}</p>
           <button
             type="button"
-            onClick={() => router.push("/explore")}
+            onClick={handleBackToExplore}
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 py-3 text-sm font-semibold text-white transition-all hover:bg-teal-800"
           >
             <ArrowLeft size={16} />
@@ -609,7 +617,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
 
         <button
           type="button"
-          onClick={() => router.push("/explore")}
+          onClick={handleBackToExplore}
           className="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white/90 shadow-sm backdrop-blur-sm transition-all hover:bg-white active:scale-95"
         >
           <ArrowLeft size={18} className="text-slate-700" />

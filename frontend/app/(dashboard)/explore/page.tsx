@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -120,6 +120,30 @@ function loadExploreCoords(): UserCoords | null {
 function readStoredCoords(): UserCoords | null {
   return loadExploreCoords();
 }
+
+function exploreCityKey(coords: UserCoords | null, city?: string | null): string | null {
+  if (coords) {
+    return `geo:${coords.lat.toFixed(2)},${coords.lon.toFixed(2)}`;
+  }
+  const cityName = (city || loadExploreCity() || "").split(",")[0].trim().toLowerCase();
+  return cityName ? `city:${cityName}` : null;
+}
+
+function hydrateExploreFromCache(
+  cityKey: string | null,
+): CachedExploreSections | null {
+  if (!cityKey) return null;
+  const cached = loadExploreFeedCache(cityKey);
+  if (!cached) return null;
+  return cached.sections;
+}
+
+type CachedExploreSections = {
+  trending: ExploreEvent[];
+  weekend: ExploreEvent[];
+  popular: ExploreEvent[];
+  national: ExploreEvent[];
+};
 
 function buildExploreEventsUrl(
   cityName: string,
@@ -846,7 +870,7 @@ export default function ExploreHubPage() {
     if (savedCoords) {
       setCoords(savedCoords);
       if (saved) setCurrentCity(saved);
-      await fetchEventsByCoords(savedCoords);
+      await fetchEventsByCoords(savedCoords, { force: true });
       return;
     }
 
@@ -863,6 +887,29 @@ export default function ExploreHubPage() {
 
     await detectGPSCity();
   }, [detectGPSCity, fetchEventsByCoords, setCoords]);
+
+  useEffect(() => {
+    exploreEventsInFlight = false;
+    exploreEventsInFlightMode = null;
+    return () => {
+      exploreEventsInFlight = false;
+      exploreEventsInFlightMode = null;
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const coords = readStoredCoords();
+    const cityKey = exploreCityKey(coords, loadExploreCity());
+    const sections = hydrateExploreFromCache(cityKey);
+    if (!sections) return;
+
+    eventsDataSourceRef.current = coords ? "geo" : "city";
+    setTrendingEvents(sections.trending);
+    setWeekendEvents(sections.weekend);
+    setPopularEvents(sections.popular);
+    setNationalEvents(sections.national);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     if (mountedRef.current) return;
@@ -929,9 +976,20 @@ export default function ExploreHubPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleCategoryPillClick = useCallback((pill: ExploreCategoryPill) => {
-    setActiveCategory(pill);
-  }, []);
+  const handleCategoryPillClick = useCallback(
+    (pill: ExploreCategoryPill) => {
+      setActiveCategory(pill);
+      const params = new URLSearchParams(searchParams.toString());
+      if (pill === "All") {
+        params.delete("category");
+      } else {
+        params.set("category", pill);
+      }
+      const qs = params.toString();
+      router.replace(qs ? `/explore?${qs}` : "/explore", { scroll: false });
+    },
+    [router, searchParams],
+  );
 
   // TODO: unhide when data source connected
   const visibleCategoryPills: ExploreCategoryPill[] = [
