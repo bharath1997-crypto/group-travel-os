@@ -242,9 +242,84 @@ def test_explore_sections_from_db_haversine_events(monkeypatch):
 
         assert data["fetch_mode"] == "local_db"
         assert len(data["trending"]) >= 1
-        assert len(data["weekend"]) >= 1
+        trending_ids = {ev["id"] for ev in data["trending"]}
+        weekend_ids = {ev["id"] for ev in data["weekend"]}
+        assert trending_ids.isdisjoint(weekend_ids)
+        for ev in data["weekend"]:
+            ev_date = datetime.strptime(ev["date"], "%Y-%m-%d").date()
+            assert today <= ev_date <= today + timedelta(days=3)
         assert len(data["popular"]) >= 1
         assert mock_live_fetch.call_count == 0
+    finally:
+        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
+        db.commit()
+        db.close()
+
+
+def test_explore_weekend_strict_three_day_window(monkeypatch):
+    """Weekend section only includes events within 3 days and never duplicates Near You."""
+    db = SessionLocal()
+    try:
+        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
+        db.commit()
+
+        now = datetime.now(timezone.utc)
+        today = date.today()
+
+        seeds = [
+            ("ev_today", "Today Show", today),
+            ("ev_weekend", "Soon Show", today + timedelta(days=2)),
+            ("ev_later", "Later Show", today + timedelta(days=10)),
+        ]
+        for eid, title, start in seeds:
+            db.add(
+                ExploreContent(
+                    city="Austin",
+                    content_type="ticketmaster_event",
+                    data=[],
+                    fetched_at=now,
+                    event_id=eid,
+                    title=title,
+                    category="Music",
+                    venue_name="Austin Venue",
+                    venue_lat=30.2672,
+                    venue_lon=-97.7431,
+                    state="Texas",
+                    start_date=start,
+                    start_time="19:00",
+                    price_min=20.0,
+                    price_max=40.0,
+                    source="ticketmaster",
+                )
+            )
+        db.commit()
+
+        monkeypatch.setattr("config.settings.ticketmaster_api_key", "test-api-key")
+        monkeypatch.setattr(
+            "app.services.events_service._fetch_ticketmaster_only",
+            MagicMock(return_value={"events": [], "display_city": "Austin"}),
+        )
+
+        response = client.get(
+            "/api/v1/explore/events",
+            params={"lat": 30.267, "lon": -97.743, "radius": 200, "per_page": 100},
+        )
+        assert response.status_code == 200
+        data = response.json()
+
+        trending_ids = {ev["id"] for ev in data["trending"]}
+        weekend_ids = {ev["id"] for ev in data["weekend"]}
+
+        assert "ev_today" in trending_ids
+        assert "ev_later" not in weekend_ids
+        assert trending_ids.isdisjoint(weekend_ids)
+        for ev in data["weekend"]:
+            ev_date = datetime.strptime(ev["date"], "%Y-%m-%d").date()
+            assert today <= ev_date <= today + timedelta(days=3)
+        if "ev_weekend" not in trending_ids:
+            assert "ev_weekend" in weekend_ids
+        else:
+            assert "ev_weekend" not in weekend_ids
     finally:
         db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
         db.commit()

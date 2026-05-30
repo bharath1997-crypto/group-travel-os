@@ -502,8 +502,9 @@ async def explore_events(
 
     # 1. Near You — closest events within radius (no city-name filter)
     trending = pick_top(by_distance, 40)
+    trending_ids = {event_id(ev) for ev in trending}
 
-    # 2. This Weekend — next 3 days, closest first (independent of trending)
+    # 2. This Weekend — strict next 3 days only; never duplicate Near You events
     def is_within_three_days(ev: dict[str, Any]) -> bool:
         ev_date = parse_event_date(ev)
         if ev_date is None:
@@ -511,7 +512,11 @@ async def explore_events(
         return today_date <= ev_date <= three_days
 
     weekend_pool = sorted(
-        [ev for ev in upcoming_events if is_within_three_days(ev)],
+        [
+            ev
+            for ev in upcoming_events
+            if is_within_three_days(ev) and event_id(ev) not in trending_ids
+        ],
         key=distance_key,
     )
     weekend = pick_top(weekend_pool, 20)
@@ -520,9 +525,12 @@ async def explore_events(
     by_score = sorted(upcoming_events, key=get_score, reverse=True)
     popular = pick_top(by_score, 20)
 
-    # 4. National Picks — top-rated US-wide events (no radius filter)
-    shown_ids = [event_id(ev) for ev in (*trending, *weekend, *popular)]
-    national = get_national_picks(db, exclude_ids=shown_ids, limit=20)
+    # 4. National Picks — US-wide; only exclude Near You (not weekend/popular)
+    national = get_national_picks(
+        db,
+        exclude_ids=[event_id(ev) for ev in trending],
+        limit=20,
+    )
 
     section_titles = result.get("section_titles") if geo_search and result else None
     if not section_titles:

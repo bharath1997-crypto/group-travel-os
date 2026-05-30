@@ -1389,11 +1389,15 @@ def get_national_picks(
         )
     )
     rows = db.scalars(stmt).all()
+    eligible_rows = [row for row in rows if row.event_id or row.title]
+    logger.info(
+        "[national_picks] found %d eligible rows before exclude_ids filter (excluding %d ids)",
+        len(eligible_rows),
+        len(exclude_set),
+    )
 
     ranked: list[tuple[float, float, dict[str, Any]]] = []
-    for row in rows:
-        if not (row.event_id or row.title):
-            continue
+    for row in eligible_rows:
         eid = str(row.event_id or row.id).strip()
         if not eid or eid in exclude_set:
             continue
@@ -1407,7 +1411,13 @@ def get_national_picks(
         ranked.append((rating, popularity, ev))
 
     ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
-    return [ev for _, _, ev in ranked[:limit]]
+    picks = [ev for _, _, ev in ranked[:limit]]
+    if eligible_rows and not picks:
+        logger.warning(
+            "[national_picks] %d eligible rows but 0 returned — exclude_ids may be removing all candidates",
+            len(eligible_rows),
+        )
+    return picks
 
 
 def _query_db_events_haversine(
