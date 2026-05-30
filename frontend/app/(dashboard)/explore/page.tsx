@@ -26,6 +26,9 @@ import {
   formatLocation,
   formatPrice,
   pseudoRating,
+  EXPLORE_CATEGORY_PILLS,
+  matchesExploreCategoryPill,
+  type ExploreCategoryPill,
 } from "@/lib/explore-events";
 
 type EventsAPIResponse = {
@@ -202,18 +205,6 @@ async function nominatimCityLatLon(
   }
 }
 
-const CATEGORY_PILLS = [
-  "All",
-  "Events",
-  "Activities",
-  "Sports",
-  "Food",
-  "Nightlife",
-  "Parks",
-] as const;
-
-type CategoryPill = (typeof CATEGORY_PILLS)[number];
-
 const STATE_BY_CITY: Record<string, string> = {
   Chicago: "Illinois",
   Milwaukee: "Wisconsin",
@@ -231,42 +222,6 @@ const STATE_BY_CITY: Record<string, string> = {
   Austin: "Texas",
   Miami: "Florida",
 };
-
-function matchesCategory(event: ExploreEvent, category: CategoryPill): boolean {
-  if (category === "All" || category === "Events") return true;
-  const cat = (event.category || "").toLowerCase();
-  const name = (event.name || "").toLowerCase();
-  switch (category) {
-    case "Activities":
-      return (
-        cat.includes("experience") ||
-        cat.includes("family") ||
-        cat.includes("art") ||
-        name.includes("tour") ||
-        name.includes("cruise")
-      );
-    case "Sports":
-      return cat.includes("sport");
-    case "Food":
-      return cat.includes("food") || name.includes("food") || name.includes("wine");
-    case "Nightlife":
-      return (
-        cat.includes("music") ||
-        cat.includes("night") ||
-        name.includes("dj") ||
-        name.includes("club")
-      );
-    case "Parks":
-      return (
-        cat.includes("fest") ||
-        cat.includes("family") ||
-        name.includes("park") ||
-        name.includes("garden")
-      );
-    default:
-      return true;
-  }
-}
 
 function matchesSearch(event: ExploreEvent, query: string): boolean {
   if (!query.trim()) return true;
@@ -523,7 +478,8 @@ export default function ExploreHubPage() {
   const [citySearch, setCitySearch] = useState("");
   const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
   const [cityLoading, setCityLoading] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<CategoryPill>("All");
+  const [activeCategory, setActiveCategory] =
+    useState<ExploreCategoryPill>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -945,11 +901,16 @@ export default function ExploreHubPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleCategoryPillClick = useCallback((pill: ExploreCategoryPill) => {
+    setActiveCategory(pill);
+  }, []);
+
   const filterEvents = useCallback(
     (events: ExploreEvent[]) =>
       events.filter(
         (ev) =>
-          matchesCategory(ev, activeCategory) && matchesSearch(ev, searchQuery),
+          matchesExploreCategoryPill(ev, activeCategory) &&
+          matchesSearch(ev, searchQuery),
       ),
     [activeCategory, searchQuery],
   );
@@ -1047,12 +1008,21 @@ export default function ExploreHubPage() {
           )}
         </div>
 
-        <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
-          {CATEGORY_PILLS.map((cat) => (
+        <div
+          className="mb-5 flex gap-2 overflow-x-auto pb-1"
+          role="tablist"
+          aria-label="Filter by category"
+        >
+          {EXPLORE_CATEGORY_PILLS.map((cat) => (
             <button
               key={cat}
               type="button"
-              onClick={() => setActiveCategory(cat)}
+              role="tab"
+              aria-selected={activeCategory === cat}
+              onClick={(e) => {
+                e.preventDefault();
+                handleCategoryPillClick(cat);
+              }}
               className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                 activeCategory === cat
                   ? "border-teal-600 bg-teal-600 text-white shadow-sm"

@@ -62,6 +62,87 @@ export function normalizeCategory(category: string, name: string): string {
   return "Experience";
 }
 
+export const EXPLORE_CATEGORY_PILLS = [
+  "All",
+  "Events",
+  "Activities",
+  "Sports",
+  "Food",
+  "Nightlife",
+  "Parks",
+] as const;
+
+export type ExploreCategoryPill = (typeof EXPLORE_CATEGORY_PILLS)[number];
+
+const SPECIFIC_EXPLORE_PILLS = [
+  "Activities",
+  "Sports",
+  "Food",
+  "Nightlife",
+  "Parks",
+] as const satisfies readonly ExploreCategoryPill[];
+
+type SpecificExplorePill = (typeof SPECIFIC_EXPLORE_PILLS)[number];
+
+function matchesSpecificExplorePill(
+  event: ExploreEvent,
+  pill: SpecificExplorePill,
+): boolean {
+  const cat = normalizeCategory(event.category, event.name).toLowerCase();
+  const name = (event.name || "").toLowerCase();
+  switch (pill) {
+    case "Activities":
+      return (
+        cat.includes("experience") ||
+        cat.includes("family") ||
+        cat.includes("art") ||
+        name.includes("tour") ||
+        name.includes("cruise") ||
+        name.includes("museum")
+      );
+    case "Sports":
+      return cat.includes("sport");
+    case "Food":
+      return (
+        cat.includes("food") ||
+        name.includes("food") ||
+        name.includes("wine") ||
+        name.includes("tasting")
+      );
+    case "Nightlife":
+      return (
+        cat.includes("music") ||
+        cat.includes("night") ||
+        cat.includes("comedy") ||
+        name.includes("dj") ||
+        name.includes("club")
+      );
+    case "Parks":
+      return (
+        cat.includes("fest") ||
+        name.includes("park") ||
+        name.includes("garden") ||
+        name.includes("outdoor")
+      );
+    default:
+      return false;
+  }
+}
+
+/** In-place Explore hub filter — never tied to routing. */
+export function matchesExploreCategoryPill(
+  event: ExploreEvent,
+  pill: ExploreCategoryPill,
+): boolean {
+  if (pill === "All") return true;
+  if (pill === "Events") {
+    return !SPECIFIC_EXPLORE_PILLS.some((p) =>
+      matchesSpecificExplorePill(event, p),
+    );
+  }
+  return matchesSpecificExplorePill(event, pill);
+}
+
 function seriesKey(name: string, venue: string): string {
   let n = (name || "").trim().toLowerCase();
   n = n.replace(/\s*\([^)]*\)\s*/g, " ");
@@ -337,7 +418,13 @@ export function loadExploreFeedCache(cityKey: string): CachedExploreFeed | null 
     const parsed = JSON.parse(raw) as CachedExploreFeed;
     if (parsed.cityKey !== cityKey) return null;
     if (Date.now() - parsed.savedAt > CACHE_TTL_MS) return null;
-    if (!parsed.sections?.trending?.length && !parsed.sections?.weekend?.length) {
+    const { trending, weekend, popular, national } = parsed.sections ?? {};
+    if (
+      !trending?.length &&
+      !weekend?.length &&
+      !popular?.length &&
+      !national?.length
+    ) {
       return null;
     }
     return parsed;
