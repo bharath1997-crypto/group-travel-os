@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.models.trip import TripStatus
 from app.models.user import User
 from app.schemas.trip import TripCreate, TripOut, TripStatusUpdate, TripUpdate
+from app.schemas.trip_item import TripItemCreate, TripItemOut, TripListOut
 from app.schemas.trip_public import (
     PendingTripJoinOut,
     TripJoinRequestCreate,
@@ -27,6 +28,53 @@ from app.utils.database import get_db
 group_trips_router = APIRouter(prefix="/groups/{group_id}/trips", tags=["Trips"])
 
 trips_router = APIRouter(prefix="/trips", tags=["Trips"])
+
+
+@trips_router.get(
+    "",
+    response_model=list[TripListOut],
+    status_code=status.HTTP_200_OK,
+    summary="List all trips for the current user",
+)
+def list_my_trips(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    rows = TripService.list_user_trips(db, current_user)
+    out: list[TripListOut] = []
+    for trip, group_name in rows:
+        out.append(
+            TripListOut(
+                id=trip.id,
+                group_id=trip.group_id,
+                group_name=group_name,
+                title=trip.title,
+                description=trip.description,
+                status=trip.status.value,
+                start_date=trip.start_date.isoformat() if trip.start_date else None,
+                end_date=trip.end_date.isoformat() if trip.end_date else None,
+                created_by=trip.created_by,
+                created_at=trip.created_at,
+                updated_at=trip.updated_at,
+            )
+        )
+    return out
+
+
+@trips_router.post(
+    "/{trip_id}/items",
+    response_model=TripItemOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Save an explore event to a trip",
+)
+def add_trip_item(
+    trip_id: uuid.UUID,
+    data: TripItemCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = TripService.add_trip_item(db, trip_id, data, current_user)
+    return TripItemOut.model_validate(result)
 
 
 @group_trips_router.post(

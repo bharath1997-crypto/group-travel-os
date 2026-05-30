@@ -22,6 +22,10 @@ class PollCreate(BaseModel):
     closes_at: datetime | None = None
 
 
+class PollCreateWithTrip(PollCreate):
+    trip_id: UUID
+
+
 class CastVoteRequest(BaseModel):
     option_id: UUID
 

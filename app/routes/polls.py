@@ -12,6 +12,7 @@ from app.models.user import User
 from app.schemas.poll import (
     CastVoteRequest,
     PollCreate,
+    PollCreateWithTrip,
     PollOut,
     PollResultsOut,
     poll_results_to_out,
@@ -24,6 +25,29 @@ from app.utils.database import get_db
 trip_polls_router = APIRouter(prefix="/trips", tags=["Polls"])
 
 polls_router = APIRouter(prefix="/polls", tags=["Polls"])
+
+
+@polls_router.post(
+    "",
+    response_model=PollOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a poll on a trip (includes trip_id in body)",
+)
+def create_poll_for_trip(
+    data: PollCreateWithTrip,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    poll = PollService.create_poll(
+        db,
+        data.trip_id,
+        data.question,
+        data.poll_type,
+        [o.model_dump() for o in data.options],
+        data.closes_at,
+        current_user,
+    )
+    return poll_to_out(poll)
 
 
 @trip_polls_router.post(
