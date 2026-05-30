@@ -105,6 +105,41 @@ function formatEventDate(startDate: string): string {
   return startDate;
 }
 
+function formatICSDate(startDate: string, startTime: string): string {
+  const datePart = (startDate || "").replace(/-/g, "");
+  if (datePart.length !== 8) {
+    return "20260101T090000";
+  }
+
+  const timeRaw = (startTime || "").trim();
+  const timeMatch = timeRaw.match(/(\d{1,2}):(\d{2})/);
+  if (timeMatch && timeRaw !== "Time TBA") {
+    const hours = timeMatch[1].padStart(2, "0");
+    const minutes = timeMatch[2];
+    return `${datePart}T${hours}${minutes}00`;
+  }
+
+  return `${datePart}T090000`;
+}
+
+function escapeICSText(value: string): string {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\n/g, "\\n");
+}
+
+function sanitizeICSFilename(title: string): string {
+  const base = title
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return base || "event";
+}
+
 export default function ExploreEventDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { id } = use(params);
@@ -220,6 +255,35 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
     } catch {
       triggerToast("Could not copy link");
     }
+  }, [event, triggerToast]);
+
+  const handleAddToCalendar = useCallback(() => {
+    if (!event) return;
+
+    const location = [event.venue, event.city].filter(Boolean).join(", ");
+    const icsContent = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Rovvy//Explore Event//EN",
+      "BEGIN:VEVENT",
+      `DTSTART:${formatICSDate(event.start_date, event.start_time)}`,
+      `SUMMARY:${escapeICSText(event.title)}`,
+      `LOCATION:${escapeICSText(location)}`,
+      `URL:${escapeICSText(event.ticket_url || buildShareUrl(event.id))}`,
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+
+    const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = `${sanitizeICSFilename(event.title)}.ics`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(objectUrl);
+    triggerToast("Added to calendar");
   }, [event, triggerToast]);
 
   const loadTrips = useCallback(async () => {
@@ -744,6 +808,15 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
               title="Open in Maps"
             >
               <MapPin size={18} />
+            </button>
+
+            <button
+              type="button"
+              onClick={handleAddToCalendar}
+              className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-95"
+              title="Add to Calendar"
+            >
+              <Calendar size={18} />
             </button>
 
             <button
