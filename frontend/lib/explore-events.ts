@@ -336,7 +336,9 @@ export type ExploreFeedDebug = {
 };
 
 const LS_EXPLORE_FEED_CACHE = "rovvy_explore_feed_cache";
+const LS_EXPLORE_HUB_STATE = "rovvy_explore_hub_state";
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const HUB_STATE_TTL_MS = 30 * 60 * 1000;
 
 type CachedExploreFeed = {
   cityKey: string;
@@ -435,6 +437,54 @@ export function loadExploreFeedCache(cityKey: string): CachedExploreFeed | null 
     ) {
       return null;
     }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function exploreSectionsTotal(sections: ExploreSections): number {
+  return (
+    sections.trending.length +
+    sections.weekend.length +
+    sections.popular.length +
+    sections.national.length
+  );
+}
+
+export type ExploreHubState = {
+  activeCategory: ExploreCategoryPill;
+  sections: ExploreSections;
+  sectionTitles: {
+    trending: string;
+    trendingSubtitle: string;
+    weekend: string;
+    popular: string;
+    national: string;
+  };
+  cityKey: string;
+  loadedFull: boolean;
+  savedAt: number;
+};
+
+export function saveExploreHubState(state: ExploreHubState): void {
+  if (typeof window === "undefined") return;
+  if (exploreSectionsTotal(state.sections) === 0) return;
+  try {
+    sessionStorage.setItem(LS_EXPLORE_HUB_STATE, JSON.stringify(state));
+  } catch {
+    /* ignore quota */
+  }
+}
+
+export function loadExploreHubState(): ExploreHubState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(LS_EXPLORE_HUB_STATE);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ExploreHubState;
+    if (Date.now() - parsed.savedAt > HUB_STATE_TTL_MS) return null;
+    if (!parsed.sections || exploreSectionsTotal(parsed.sections) === 0) return null;
     return parsed;
   } catch {
     return null;

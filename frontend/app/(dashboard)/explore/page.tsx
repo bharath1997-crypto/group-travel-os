@@ -21,6 +21,9 @@ import {
   hydrateSectionsFromResponse,
   loadExploreFeedCache,
   saveExploreFeedCache,
+  saveExploreHubState,
+  loadExploreHubState,
+  exploreSectionsTotal,
   saveEventSnapshot,
   formatDateTime,
   formatLocation,
@@ -389,6 +392,7 @@ type SectionProps = {
   onSeeAll: () => void;
   onOpen: (event: ExploreEvent) => void;
   onClearFilters?: () => void;
+  onPersistHub?: () => void;
   activeCategory?: ExploreCategoryPill;
 };
 
@@ -404,6 +408,7 @@ function EventSection({
   onSeeAll,
   onOpen,
   onClearFilters,
+  onPersistHub,
   activeCategory,
 }: SectionProps) {
   const visible = events.slice(0, SECTION_CARD_LIMIT);
@@ -466,7 +471,10 @@ function EventSection({
             <Link
               key={`${event.id || event.name}-${index}`}
               href={`/explore/event/${encodeURIComponent(event.id)}`}
-              onClick={() => saveEventSnapshot(event)}
+              onClick={() => {
+                onPersistHub?.();
+                saveEventSnapshot(event);
+              }}
               className="block h-full"
             >
               <ExploreCard
@@ -503,6 +511,27 @@ export default function ExploreHubPage() {
   const userCoordsRef = useRef<UserCoords | null>(null);
   const hasLoadedFullRef = useRef(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const hubRestoredRef = useRef(false);
+  const lastFetchPerPageRef = useRef(EXPLORE_INITIAL_PER_PAGE);
+  const sectionsRef = useRef<{
+    trending: ExploreEvent[];
+    weekend: ExploreEvent[];
+    popular: ExploreEvent[];
+    national: ExploreEvent[];
+  }>({ trending: [], weekend: [], popular: [], national: [] });
+  const hubPersistRef = useRef({
+    activeCategory: "All" as ExploreCategoryPill,
+    sections: sectionsRef.current,
+    sectionTitles: {
+      trending: "",
+      trendingSubtitle: "",
+      weekend: "Happening This Weekend",
+      popular: "",
+      national: "National Picks",
+    },
+    cityKey: "",
+    loadedFull: false,
+  });
   /** When coords exist, only geo responses may update section state. */
   const eventsDataSourceRef = useRef<"geo" | "city" | null>(null);
 
@@ -578,7 +607,27 @@ export default function ExploreHubPage() {
       }
 
       const { sections, debug } = hydrateSectionsFromResponse(data);
+      const incomingTotal = exploreSectionsTotal(sections);
+      const currentTotal = exploreSectionsTotal(sectionsRef.current);
+      if (
+        incomingTotal > 0 &&
+        currentTotal > 0 &&
+        incomingTotal < currentTotal &&
+        lastFetchPerPageRef.current < EXPLORE_FULL_PER_PAGE
+      ) {
+        if (process.env.NODE_ENV === "development") {
+          console.info(
+            "[explore] skipped smaller pool overwrite (%d → %d events)",
+            currentTotal,
+            incomingTotal,
+          );
+        }
+        setRefreshing(false);
+        return;
+      }
+
       eventsDataSourceRef.current = mode;
+      sectionsRef.current = sections;
 
       setTrendingEvents(sections.trending);
       setWeekendEvents(sections.weekend);
@@ -640,6 +689,7 @@ export default function ExploreHubPage() {
     ) => {
       const force = options?.force === true;
       const perPage = options?.perPage ?? EXPLORE_INITIAL_PER_PAGE;
+      lastFetchPerPageRef.current = perPage;
 
       if (exploreEventsInFlight && !force) {
         if (exploreEventsInFlightMode === "geo" && mode === "city") return;
@@ -670,6 +720,7 @@ export default function ExploreHubPage() {
       const cached = loadExploreFeedCache(cityKey);
       if (cached && mayUseResponse) {
         eventsDataSourceRef.current = mode;
+        sectionsRef.current = cached.sections;
         setTrendingEvents(cached.sections.trending);
         setWeekendEvents(cached.sections.weekend);
         setPopularEvents(cached.sections.popular);
@@ -864,13 +915,30 @@ export default function ExploreHubPage() {
   }, [fetchByCityOrGeocode, fetchEventsByCoords, setCoords]);
 
   const bootstrapExplore = useCallback(async () => {
+    if (hubRestoredRef.current) {
+      const coords = readStoredCoords();
+      if (coords && !hasLoadedFullRef.current) {
+        await fetchEventsByCoords(coords, {
+          force: true,
+          perPage: EXPLORE_FULL_PER_PAGE,
+        });
+      }
+      return;
+    }
+
     const savedCoords = readStoredCoords();
     const saved = loadExploreCity();
 
     if (savedCoords) {
       setCoords(savedCoords);
       if (saved) setCurrentCity(saved);
-      await fetchEventsByCoords(savedCoords, { force: true });
+      const cityKey = exploreCityKey(savedCoords, saved);
+      const cached = cityKey ? loadExploreFeedCache(cityKey) : null;
+      const perPage =
+        cached && exploreSectionsTotal(cached.sections) > EXPLORE_INITIAL_PER_PAGE
+          ? EXPLORE_FULL_PER_PAGE
+          : EXPLORE_INITIAL_PER_PAGE;
+      await fetchEventsByCoords(savedCoords, { force: true, perPage });
       return;
     }
 
@@ -898,17 +966,79 @@ export default function ExploreHubPage() {
   }, []);
 
   useLayoutEffect(() => {
+    const hub = loadExploreHubState();
+    if (hub) {
+      hubRestoredRef.current = true;
+      setActiveCategory(hub.activeCategory);
+      sectionsRef.current = hub.sections;
+      setTrendingEvents(hub.sections.trending);
+      setWeekendEvents(hub.sections.weekend);
+      setPopularEvents(hub.sections.popular);
+      setNationalEvents(hub.sections.national);
+      setSectionTitles(hub.sectionTitles);
+      hasLoadedFullRef.current = hub.loadedFull;
+      setLoading(false);
+      if (hub.activeCategory !== "All" && !categoryParam) {
+        router.replace(
+          `/explore?category=${encodeURIComponent(hub.activeCategory)}`,
+          { scroll: false },
+        );
+      }
+      return;
+    }
+
     const coords = readStoredCoords();
     const cityKey = exploreCityKey(coords, loadExploreCity());
     const sections = hydrateExploreFromCache(cityKey);
     if (!sections) return;
 
     eventsDataSourceRef.current = coords ? "geo" : "city";
+    sectionsRef.current = sections;
     setTrendingEvents(sections.trending);
     setWeekendEvents(sections.weekend);
     setPopularEvents(sections.popular);
     setNationalEvents(sections.national);
     setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    hubPersistRef.current = {
+      activeCategory,
+      sections: {
+        trending: trendingEvents,
+        weekend: weekendEvents,
+        popular: popularEvents,
+        national: nationalEvents,
+      },
+      sectionTitles,
+      cityKey:
+        exploreCityKey(userCoordsRef.current ?? readStoredCoords(), currentCity) ??
+        "",
+      loadedFull: hasLoadedFullRef.current,
+    };
+  }, [
+    activeCategory,
+    trendingEvents,
+    weekendEvents,
+    popularEvents,
+    nationalEvents,
+    sectionTitles,
+    currentCity,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      const snap = hubPersistRef.current;
+      if (exploreSectionsTotal(snap.sections) === 0) return;
+      saveExploreHubState({
+        activeCategory: snap.activeCategory,
+        sections: snap.sections,
+        sectionTitles: snap.sectionTitles,
+        cityKey: snap.cityKey,
+        loadedFull: snap.loadedFull,
+        savedAt: Date.now(),
+      });
+    };
   }, []);
 
   useEffect(() => {
@@ -1001,15 +1131,11 @@ export default function ExploreHubPage() {
 
   const filterEvents = useCallback(
     (events: ExploreEvent[]) =>
-      events.filter((ev) => {
-        const matchesCat =
-          activeCategory === "Activities"
-            ? ["experience", "entertainment", "cultural", "arts", "comedy"].includes(
-                (ev.category || "").trim().toLowerCase()
-              )
-            : matchesExploreCategoryPill(ev, activeCategory);
-        return matchesCat && matchesSearch(ev, searchQuery);
-      }),
+      events.filter(
+        (ev) =>
+          matchesExploreCategoryPill(ev, activeCategory) &&
+          matchesSearch(ev, searchQuery),
+      ),
     [activeCategory, searchQuery],
   );
 
@@ -1041,12 +1167,26 @@ export default function ExploreHubPage() {
       .finally(() => setCityLoading(false));
   };
 
+  const persistHubState = useCallback(() => {
+    const snap = hubPersistRef.current;
+    if (exploreSectionsTotal(snap.sections) === 0) return;
+    saveExploreHubState({
+      activeCategory: snap.activeCategory,
+      sections: snap.sections,
+      sectionTitles: snap.sectionTitles,
+      cityKey: snap.cityKey,
+      loadedFull: snap.loadedFull,
+      savedAt: Date.now(),
+    });
+  }, []);
+
   const clearFilters = () => {
     setActiveCategory("All");
     setSearchQuery("");
   };
 
   const handleOpenEvent = (event: ExploreEvent) => {
+    persistHubState();
     saveEventSnapshot(event);
     router.push(
       `/explore/event/${encodeURIComponent(event.id)}?city=${encodeURIComponent(cityLabel(currentCity))}`,
@@ -1255,6 +1395,7 @@ export default function ExploreHubPage() {
           filtersActive={filtersActive}
           onSeeAll={() => handleSeeAll("trending")}
           onOpen={handleOpenEvent}
+          onPersistHub={persistHubState}
           onClearFilters={clearFilters}
           activeCategory={activeCategory}
         />
@@ -1270,6 +1411,7 @@ export default function ExploreHubPage() {
           filtersActive={filtersActive}
           onSeeAll={() => handleSeeAll("weekend")}
           onOpen={handleOpenEvent}
+          onPersistHub={persistHubState}
           onClearFilters={clearFilters}
           activeCategory={activeCategory}
         />
@@ -1285,6 +1427,7 @@ export default function ExploreHubPage() {
           filtersActive={filtersActive}
           onSeeAll={() => handleSeeAll("state")}
           onOpen={handleOpenEvent}
+          onPersistHub={persistHubState}
           onClearFilters={clearFilters}
           activeCategory={activeCategory}
         />
@@ -1300,6 +1443,7 @@ export default function ExploreHubPage() {
           filtersActive={filtersActive}
           onSeeAll={() => handleSeeAll("national")}
           onOpen={handleOpenEvent}
+          onPersistHub={persistHubState}
           onClearFilters={clearFilters}
           activeCategory={activeCategory}
         />

@@ -19,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-import { loadEventSnapshot } from "@/lib/explore-events";
+import { loadEventSnapshot, loadExploreHubState } from "@/lib/explore-events";
 
 type EventDetail = {
   id: string;
@@ -169,7 +169,12 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
       router.back();
       return;
     }
-    router.push("/explore");
+    const hub = loadExploreHubState();
+    const qs =
+      hub?.activeCategory && hub.activeCategory !== "All"
+        ? `?category=${encodeURIComponent(hub.activeCategory)}`
+        : "";
+    router.push(`/explore${qs}`);
   }, [router]);
 
   useEffect(() => {
