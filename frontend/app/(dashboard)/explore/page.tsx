@@ -365,6 +365,7 @@ type SectionProps = {
   onSeeAll: () => void;
   onOpen: (event: ExploreEvent) => void;
   onClearFilters?: () => void;
+  activeCategory?: ExploreCategoryPill;
 };
 
 function EventSection({
@@ -379,12 +380,15 @@ function EventSection({
   onSeeAll,
   onOpen,
   onClearFilters,
+  activeCategory,
 }: SectionProps) {
   const visible = events.slice(0, SECTION_CARD_LIMIT);
   const hasMore = events.length > SECTION_CARD_LIMIT;
 
   let emptyMessage = "No events available right now.";
-  if (fetchError) {
+  if (activeCategory === "Activities") {
+    emptyMessage = "No activities found in this section";
+  } else if (fetchError) {
     emptyMessage = "Could not refresh events. Showing cached results if available.";
   } else if (filtersActive && rawCount > 0) {
     emptyMessage = "No experiences match your current filters.";
@@ -909,16 +913,21 @@ export default function ExploreHubPage() {
   const visibleCategoryPills: ExploreCategoryPill[] = [
     "All",
     "Events",
+    "Activities",
     "Sports",
   ];
 
   const filterEvents = useCallback(
     (events: ExploreEvent[]) =>
-      events.filter(
-        (ev) =>
-          matchesExploreCategoryPill(ev, activeCategory) &&
-          matchesSearch(ev, searchQuery),
-      ),
+      events.filter((ev) => {
+        const matchesCat =
+          activeCategory === "Activities"
+            ? ["experience", "entertainment", "cultural", "arts", "comedy"].includes(
+                (ev.category || "").trim().toLowerCase()
+              )
+            : matchesExploreCategoryPill(ev, activeCategory);
+        return matchesCat && matchesSearch(ev, searchQuery);
+      }),
     [activeCategory, searchQuery],
   );
 
@@ -1165,6 +1174,7 @@ export default function ExploreHubPage() {
           onSeeAll={() => handleSeeAll("trending")}
           onOpen={handleOpenEvent}
           onClearFilters={clearFilters}
+          activeCategory={activeCategory}
         />
 
         <EventSection
@@ -1179,6 +1189,7 @@ export default function ExploreHubPage() {
           onSeeAll={() => handleSeeAll("weekend")}
           onOpen={handleOpenEvent}
           onClearFilters={clearFilters}
+          activeCategory={activeCategory}
         />
 
         <EventSection
@@ -1193,6 +1204,7 @@ export default function ExploreHubPage() {
           onSeeAll={() => handleSeeAll("state")}
           onOpen={handleOpenEvent}
           onClearFilters={clearFilters}
+          activeCategory={activeCategory}
         />
 
         <EventSection
@@ -1207,6 +1219,7 @@ export default function ExploreHubPage() {
           onSeeAll={() => handleSeeAll("national")}
           onOpen={handleOpenEvent}
           onClearFilters={clearFilters}
+          activeCategory={activeCategory}
         />
 
         <div ref={loadMoreRef} className="h-1" aria-hidden />
