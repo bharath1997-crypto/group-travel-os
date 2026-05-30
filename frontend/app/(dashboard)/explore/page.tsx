@@ -77,6 +77,11 @@ const EXPLORE_RADIUS_MILES = 200;
 const EXPLORE_INITIAL_PER_PAGE = 20;
 const EXPLORE_FULL_PER_PAGE = 100;
 const DEFAULT_EXPLORE_CITY = "Chicago";
+const GEO_CATEGORY_PILLS = new Set<ExploreCategoryPill>(["Sports", "Activities"]);
+
+function categoryNeedsGeo(category: ExploreCategoryPill): boolean {
+  return GEO_CATEGORY_PILLS.has(category);
+}
 
 /** Block overlapping /explore/events requests (geo vs city race). */
 let exploreEventsInFlight = false;
@@ -540,6 +545,7 @@ export default function ExploreHubPage() {
     setUserCoords(coords);
     if (coords) {
       eventsDataSourceRef.current = "geo";
+      setLocationReady(true);
     }
   }, []);
 
@@ -562,6 +568,7 @@ export default function ExploreHubPage() {
     }
   }, [categoryParam]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [locationReady, setLocationReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -915,45 +922,51 @@ export default function ExploreHubPage() {
   }, [fetchByCityOrGeocode, fetchEventsByCoords, setCoords]);
 
   const bootstrapExplore = useCallback(async () => {
-    if (hubRestoredRef.current) {
-      const coords = readStoredCoords();
-      if (coords && !hasLoadedFullRef.current) {
-        await fetchEventsByCoords(coords, {
-          force: true,
-          perPage: EXPLORE_FULL_PER_PAGE,
-        });
-      }
-      return;
-    }
-
-    const savedCoords = readStoredCoords();
-    const saved = loadExploreCity();
-
-    if (savedCoords) {
-      setCoords(savedCoords);
-      if (saved) setCurrentCity(saved);
-      const cityKey = exploreCityKey(savedCoords, saved);
-      const cached = cityKey ? loadExploreFeedCache(cityKey) : null;
-      const perPage =
-        cached && exploreSectionsTotal(cached.sections) > EXPLORE_INITIAL_PER_PAGE
-          ? EXPLORE_FULL_PER_PAGE
-          : EXPLORE_INITIAL_PER_PAGE;
-      await fetchEventsByCoords(savedCoords, { force: true, perPage });
-      return;
-    }
-
-    if (saved) {
-      setCurrentCity(saved);
-      const geo = await nominatimCityLatLon(saved);
-      if (geo) {
-        setCoords(geo);
-        saveExploreCity(saved, geo);
-        await fetchEventsByCoords(geo, { force: true });
+    try {
+      if (hubRestoredRef.current) {
+        setLocationReady(true);
+        const coords = readStoredCoords();
+        if (coords && !hasLoadedFullRef.current) {
+          await fetchEventsByCoords(coords, {
+            force: true,
+            perPage: EXPLORE_FULL_PER_PAGE,
+          });
+        }
         return;
       }
-    }
 
-    await detectGPSCity();
+      const savedCoords = readStoredCoords();
+      const saved = loadExploreCity();
+
+      if (savedCoords) {
+        setLocationReady(true);
+        setCoords(savedCoords);
+        if (saved) setCurrentCity(saved);
+        const cityKey = exploreCityKey(savedCoords, saved);
+        const cached = cityKey ? loadExploreFeedCache(cityKey) : null;
+        const perPage =
+          cached && exploreSectionsTotal(cached.sections) > EXPLORE_INITIAL_PER_PAGE
+            ? EXPLORE_FULL_PER_PAGE
+            : EXPLORE_INITIAL_PER_PAGE;
+        await fetchEventsByCoords(savedCoords, { force: true, perPage });
+        return;
+      }
+
+      if (saved) {
+        setCurrentCity(saved);
+        const geo = await nominatimCityLatLon(saved);
+        if (geo) {
+          setCoords(geo);
+          saveExploreCity(saved, geo);
+          await fetchEventsByCoords(geo, { force: true });
+          return;
+        }
+      }
+
+      await detectGPSCity();
+    } finally {
+      setLocationReady(true);
+    }
   }, [detectGPSCity, fetchEventsByCoords, setCoords]);
 
   useEffect(() => {
@@ -969,6 +982,7 @@ export default function ExploreHubPage() {
     const hub = loadExploreHubState();
     if (hub) {
       hubRestoredRef.current = true;
+      setLocationReady(true);
       setActiveCategory(hub.activeCategory);
       sectionsRef.current = hub.sections;
       setTrendingEvents(hub.sections.trending);
@@ -988,6 +1002,11 @@ export default function ExploreHubPage() {
     }
 
     const coords = readStoredCoords();
+    if (coords) {
+      setLocationReady(true);
+    }
+
+    const urlCategory = (categoryParam?.trim() || "All") as ExploreCategoryPill;
     const cityKey = exploreCityKey(coords, loadExploreCity());
     const sections = hydrateExploreFromCache(cityKey);
     if (!sections) return;
@@ -998,7 +1017,9 @@ export default function ExploreHubPage() {
     setWeekendEvents(sections.weekend);
     setPopularEvents(sections.popular);
     setNationalEvents(sections.national);
-    setLoading(false);
+    if (coords || !categoryNeedsGeo(urlCategory)) {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -1220,7 +1241,11 @@ export default function ExploreHubPage() {
       nationalEvents.length >
     0;
 
-  const showInitialSkeleton = loading && !hasLiveContent;
+  const awaitingGeoForCategory =
+    categoryNeedsGeo(activeCategory) && !locationReady;
+
+  const showInitialSkeleton =
+    (loading && !hasLiveContent) || awaitingGeoForCategory;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-6">
@@ -1235,7 +1260,9 @@ export default function ExploreHubPage() {
                 ? `Curated picks within ${radiusMiles} miles of ${currentCity} — plan, compare, and book with confidence.`
                 : `Hand-picked events and activities in ${cityLabel(currentCity)}.`
               : showInitialSkeleton
-                ? "Loading events near you…"
+                ? awaitingGeoForCategory
+                  ? "Finding your location…"
+                  : "Loading events near you…"
                 : `Finding events near ${cityLabel(currentCity)}.`}
           </p>
           {fetchError && (
