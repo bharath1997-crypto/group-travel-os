@@ -26,7 +26,6 @@ import {
   formatLocation,
   formatPrice,
   pseudoRating,
-  EXPLORE_CATEGORY_PILLS,
   matchesExploreCategoryPill,
   type ExploreCategoryPill,
 } from "@/lib/explore-events";
@@ -906,6 +905,13 @@ export default function ExploreHubPage() {
     setActiveCategory(pill);
   }, []);
 
+  // TODO: unhide when data source connected
+  const visibleCategoryPills: ExploreCategoryPill[] = [
+    "All",
+    "Events",
+    "Sports",
+  ];
+
   const filterEvents = useCallback(
     (events: ExploreEvent[]) =>
       events.filter(
@@ -1014,7 +1020,7 @@ export default function ExploreHubPage() {
           role="tablist"
           aria-label="Filter by category"
         >
-          {EXPLORE_CATEGORY_PILLS.map((cat) => (
+          {visibleCategoryPills.map((cat) => (
             <button
               key={cat}
               type="button"
