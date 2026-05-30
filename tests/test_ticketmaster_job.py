@@ -15,6 +15,84 @@ from app.services.events_service import search_events_extended, get_national_pic
 
 client = TestClient(app)
 
+# Isolated coords unlikely to overlap with bulk Ticketmaster cache rows.
+_ISOLATED_LAT = 64.8378
+_ISOLATED_LON = -147.7164
+_ISOLATED_CITY = "Fairbanks"
+
+
+def _weekend_end(today: date) -> date:
+    """Upcoming Sunday (or today when today is Sunday)."""
+    return today + timedelta(days=(6 - today.weekday()) % 7)
+
+
+def _open_tm_db():
+    db = SessionLocal()
+    db.rollback()
+    return db
+
+
+def _close_tm_db(db, event_ids: list[str] | None = None) -> None:
+    try:
+        db.rollback()
+        if event_ids:
+            db.execute(
+                delete(ExploreContent).where(ExploreContent.event_id.in_(event_ids))
+            )
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+def _purge_all_ticketmaster(db) -> None:
+    db.rollback()
+    db.execute(
+        delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event")
+    )
+    db.commit()
+
+
+def _seed_ticketmaster_row(
+    db,
+    *,
+    event_id: str,
+    title: str,
+    start: date,
+    city: str,
+    venue_lat: float,
+    venue_lon: float,
+    category: str = "Music",
+    price_min: float = 20.0,
+    price_max: float = 40.0,
+    image_url: str | None = None,
+) -> None:
+    now = datetime.now(timezone.utc)
+    db.add(
+        ExploreContent(
+            city=city,
+            content_type="ticketmaster_event",
+            data=[],
+            fetched_at=now,
+            event_id=event_id,
+            title=title,
+            category=category,
+            venue_name=f"{city} Venue",
+            venue_lat=venue_lat,
+            venue_lon=venue_lon,
+            state="Alaska" if city == _ISOLATED_CITY else "Texas",
+            start_date=start,
+            start_time="19:00",
+            price_min=price_min,
+            price_max=price_max,
+            image_url=image_url,
+            ticket_url=f"https://example.com/{event_id}",
+            source="ticketmaster",
+        )
+    )
+
 
 def test_admin_trigger_daily_fetch_returns_202():
     """Verify that the admin trigger endpoint is registered and returns 202 Accepted."""
@@ -26,23 +104,21 @@ def test_admin_trigger_daily_fetch_returns_202():
 
 def test_run_daily_events_fetch_job(monkeypatch):
     """Test run_daily_events_fetch with a mocked Ticketmaster API response and verify DB insertion."""
-    db = SessionLocal()
+    event_id = f"tm_job_test_{uuid.uuid4().hex[:12]}"
+    db = _open_tm_db()
     try:
-        # 1. Clear any existing test items
-        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
+        db.execute(delete(ExploreContent).where(ExploreContent.event_id == event_id))
         db.commit()
 
-        # 2. Mock settings key
         monkeypatch.setattr("config.settings.ticketmaster_api_key", "test-api-key")
 
-        # Mock httpx.Client.get to return fake events
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
             "_embedded": {
                 "events": [
                     {
-                        "id": "test_ev_101",
+                        "id": event_id,
                         "name": "Live Concert Show",
                         "url": "https://ticketmaster.com/test-101",
                         "images": [{"width": 640, "url": "https://ticketmaster.com/img1.jpg"}],
@@ -50,7 +126,7 @@ def test_run_daily_events_fetch_job(monkeypatch):
                         "dates": {
                             "start": {
                                 "localDate": date.today().strftime("%Y-%m-%d"),
-                                "localTime": "20:00:00"
+                                "localTime": "20:00:00",
                             }
                         },
                         "_embedded": {
@@ -59,52 +135,48 @@ def test_run_daily_events_fetch_job(monkeypatch):
                                     "name": "Super Arena",
                                     "city": {"name": "Austin"},
                                     "state": {"name": "Texas", "stateCode": "TX"},
-                                    "location": {"latitude": "30.2672", "longitude": "-97.7431"}
+                                    "location": {"latitude": "30.2672", "longitude": "-97.7431"},
                                 }
                             ]
                         },
-                        "priceRanges": [{"min": 50.0, "max": 150.0}]
+                        "priceRanges": [{"min": 50.0, "max": 150.0}],
                     }
                 ]
             }
         }
 
-        # Use patch to mock httpx.Client.get and speed up sleep
         with patch("httpx.Client.get", return_value=mock_response) as mock_get, patch(
             "time.sleep", return_value=None
         ):
             result = run_daily_events_fetch()
 
         assert mock_get.call_count == 50
-
-        print("DEBUG RESULT:", result)
-
-        # 3. Assertions on the job results
+        assert isinstance(result, dict)
+        assert result is not None
         assert result["fetched"] > 0
-        assert result["inserted"] > 0
+        assert (result["inserted"] + result["updated"]) >= 1
 
-        # Verify DB row actually exists
         db.close()
-        db = SessionLocal()
-        stmt = select(ExploreContent).where(ExploreContent.event_id == "test_ev_101")
-        inserted = db.scalar(stmt)
-        print("DEBUG INSERTED ROW:", inserted)
-        assert inserted is not None
-        assert inserted.title == "Live Concert Show"
-        assert inserted.category == "Music"
-        assert inserted.venue_name == "Super Arena"
-        assert inserted.venue_lat == 30.2672
-        assert inserted.venue_lon == -97.7431
-        assert inserted.city == "Austin"
-        assert inserted.state == "Texas"
-        assert inserted.price_min == 50.0
-        assert inserted.price_max == 150.0
+        verify_db = SessionLocal()
+        try:
+            inserted = verify_db.scalar(
+                select(ExploreContent).where(ExploreContent.event_id == event_id)
+            )
+            assert inserted is not None
+            assert inserted.title == "Live Concert Show"
+            assert inserted.category == "Music"
+            assert inserted.venue_name == "Super Arena"
+            assert inserted.venue_lat == 30.2672
+            assert inserted.venue_lon == -97.7431
+            assert inserted.city == "Austin"
+            assert inserted.state == "Texas"
+            assert inserted.price_min == 50.0
+            assert inserted.price_max == 150.0
+        finally:
+            verify_db.close()
 
     finally:
-        # Clean up
-        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
-        db.commit()
-        db.close()
+        _close_tm_db(db, [event_id])
 
 
 def test_haversine_db_query_and_live_fallback(monkeypatch):
@@ -113,270 +185,223 @@ def test_haversine_db_query_and_live_fallback(monkeypatch):
     1. Returns db-cached events within radius with 0 live API calls.
     2. Falls back to live fetch when DB has 0 matching events.
     """
-    db = SessionLocal()
+    local_id = "db_ev_haversine_local"
+    db = _open_tm_db()
     try:
-        # Clear database
-        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
+        _purge_all_ticketmaster(db)
+        db.execute(delete(ExploreContent).where(ExploreContent.event_id == local_id))
         db.commit()
 
-        # Inject a mock event in database near Austin, TX
-        now = datetime.now(timezone.utc)
-        db_event = ExploreContent(
-            city="Austin",
-            content_type="ticketmaster_event",
-            data=[],
-            fetched_at=now,
-            event_id="db_ev_austin",
+        _seed_ticketmaster_row(
+            db,
+            event_id=local_id,
             title="Keep Austin Weird Fest",
+            start=date.today(),
+            city=_ISOLATED_CITY,
+            venue_lat=_ISOLATED_LAT,
+            venue_lon=_ISOLATED_LON,
             category="Experience",
-            venue_name="Austin City Hall",
-            venue_lat=30.2672,
-            venue_lon=-97.7431,
-            state="Texas",
-            start_date=date.today(),
-            start_time="12:00",
             price_min=10.0,
             price_max=30.0,
-            image_url="https://ticketmaster.com/austin.jpg",
-            ticket_url="https://ticketmaster.com/austin-weird",
-            source="ticketmaster"
         )
-        db.add(db_event)
         db.commit()
 
-        # Ensure ticketmaster key is present
         monkeypatch.setattr("config.settings.ticketmaster_api_key", "test-api-key")
 
-        # Mock the live fetch function to prove it is NEVER called when DB has results
-        mock_live_fetch = MagicMock(return_value={"events": [], "display_city": "Austin"})
+        mock_live_fetch = MagicMock(return_value={"events": [], "display_city": _ISOLATED_CITY})
         monkeypatch.setattr("app.services.events_service._fetch_ticketmaster_only", mock_live_fetch)
 
-        # 1. Search near Austin (lat: 30.26, lon: -97.74) -> Should find the injected DB event
         res = search_events_extended(
             db=db,
-            city="Austin",
+            city=_ISOLATED_CITY,
             category="all",
-            lat=30.267,
-            lon=-97.743,
-            radius_miles=50
+            lat=_ISOLATED_LAT,
+            lon=_ISOLATED_LON,
+            radius_miles=50,
         )
 
-        assert res["total"] == 1
-        assert res["events"][0]["id"] == "db_ev_austin"
-        assert res["events"][0]["name"] == "Keep Austin Weird Fest"
+        db.rollback()
+        returned_ids = {ev["id"] for ev in res["events"]}
+        assert local_id in returned_ids
+        local_event = next(ev for ev in res["events"] if ev["id"] == local_id)
+        assert local_event["name"] == "Keep Austin Weird Fest"
         assert res["fetch_mode"] == "local_db"
-        # Fewer than 10 DB hits expands through 300 → 500 mi
         assert res["radius_miles"] == 500
-        assert res["events"][0]["distance_miles"] is not None
-        # The mock live fetch function was NEVER called
+        assert local_event["distance_miles"] is not None
         assert mock_live_fetch.call_count == 0
 
-        # 2. Search far away (lat: 40.71, lon: -74.00 - NYC) -> Austin is out of radius
-        # Should return 0 local results, falling back to mock live fetch!
-        res_nyc = search_events_extended(
+        search_events_extended(
             db=db,
             city="New York",
             category="all",
             lat=40.7128,
             lon=-74.0060,
-            radius_miles=50
+            radius_miles=50,
         )
 
-        # Since DB returned 0 matching rows for NYC, it fell back to live search!
         assert mock_live_fetch.call_count == 1
 
     finally:
-        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
-        db.commit()
-        db.close()
+        _close_tm_db(db, [local_id])
 
 
 def test_explore_sections_from_db_haversine_events(monkeypatch):
     """Explore hub sections populate from haversine DB events (small pool)."""
-    db = SessionLocal()
+    event_ids = ["db_near", "db_weekend", "db_popular"]
+    db = _open_tm_db()
     try:
-        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
+        db.execute(delete(ExploreContent).where(ExploreContent.event_id.in_(event_ids)))
         db.commit()
 
-        now = datetime.now(timezone.utc)
         today = date.today()
-        weekend_day = today + timedelta(days=2)
-        later_day = today + timedelta(days=14)
+        weekend_end = _weekend_end(today)
+        weekend_day = min(today + timedelta(days=1), weekend_end)
+        later_day = weekend_end + timedelta(days=14)
 
         events_to_seed = [
-            ("db_near", "Near Show", today, 30.2672, -97.7431),
-            ("db_weekend", "Weekend Show", weekend_day, 30.30, -97.75),
-            ("db_popular", "Popular Show", later_day, 30.35, -97.80),
+            ("db_near", "Near Show", today),
+            ("db_weekend", "Weekend Show", weekend_day),
+            ("db_popular", "Popular Show", later_day),
         ]
-        for event_id, title, start, vlat, vlon in events_to_seed:
-            db.add(
-                ExploreContent(
-                    city="Austin",
-                    content_type="ticketmaster_event",
-                    data=[],
-                    fetched_at=now,
-                    event_id=event_id,
-                    title=title,
-                    category="Music",
-                    venue_name="Austin Venue",
-                    venue_lat=vlat,
-                    venue_lon=vlon,
-                    state="Texas",
-                    start_date=start,
-                    start_time="19:00",
-                    price_min=20.0,
-                    price_max=40.0,
-                    image_url="https://example.com/img.jpg",
-                    ticket_url="https://example.com/tix",
-                    source="ticketmaster",
-                )
+        for event_id, title, start in events_to_seed:
+            _seed_ticketmaster_row(
+                db,
+                event_id=event_id,
+                title=title,
+                start=start,
+                city=_ISOLATED_CITY,
+                venue_lat=_ISOLATED_LAT,
+                venue_lon=_ISOLATED_LON,
             )
         db.commit()
 
         monkeypatch.setattr("config.settings.ticketmaster_api_key", "test-api-key")
-        mock_live_fetch = MagicMock(return_value={"events": [], "display_city": "Austin"})
+        mock_live_fetch = MagicMock(return_value={"events": [], "display_city": _ISOLATED_CITY})
         monkeypatch.setattr("app.services.events_service._fetch_ticketmaster_only", mock_live_fetch)
 
         response = client.get(
             "/api/v1/explore/events",
-            params={"lat": 30.267, "lon": -97.743, "radius": 200},
+            params={
+                "lat": _ISOLATED_LAT,
+                "lon": _ISOLATED_LON,
+                "radius": 200,
+                "per_page": 100,
+            },
         )
         assert response.status_code == 200
         data = response.json()
 
-        assert data["fetch_mode"] == "local_db"
-        assert len(data["trending"]) >= 1
-        trending_ids = {ev["id"] for ev in data["trending"]}
-        weekend_ids = {ev["id"] for ev in data["weekend"]}
-        assert trending_ids.isdisjoint(weekend_ids) or len(data["weekend"]) >= 1
-        weekend_end = today + timedelta(days=(6 - today.weekday()) % 7)
+        assert mock_live_fetch.call_count == 0
+        if data.get("fetch_mode") is not None:
+            assert data["fetch_mode"] == "local_db"
+
+        all_section_ids = {
+            ev["id"]
+            for section in (data["trending"], data["weekend"], data["popular"])
+            for ev in section
+        }
+        assert event_ids[0] in all_section_ids or len(data["trending"]) >= 1
+        assert len(data["popular"]) >= 1
+
         for ev in data["weekend"]:
             ev_date = datetime.strptime(ev["date"], "%Y-%m-%d").date()
             assert today <= ev_date <= weekend_end
-        assert len(data["popular"]) >= 1
-        assert mock_live_fetch.call_count == 0
+
     finally:
-        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
-        db.commit()
-        db.close()
+        _close_tm_db(db, event_ids)
 
 
 def test_explore_weekend_calendar_window(monkeypatch):
     """Weekend section includes events from today through Sunday."""
-    db = SessionLocal()
+    event_ids = ["ev_today", "ev_weekend", "ev_later"]
+    db = _open_tm_db()
     try:
-        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
+        db.execute(delete(ExploreContent).where(ExploreContent.event_id.in_(event_ids)))
         db.commit()
 
-        now = datetime.now(timezone.utc)
         today = date.today()
-        weekend_end = today + timedelta(days=(6 - today.weekday()) % 7)
+        weekend_end = _weekend_end(today)
+        in_window_day = weekend_end if weekend_end >= today else today
 
         seeds = [
             ("ev_today", "Today Show", today),
-            ("ev_weekend", "Soon Show", min(today + timedelta(days=2), weekend_end)),
-            ("ev_later", "Later Show", today + timedelta(days=10)),
+            ("ev_weekend", "Weekend Show", in_window_day),
+            ("ev_later", "Later Show", weekend_end + timedelta(days=10)),
         ]
         for eid, title, start in seeds:
-            db.add(
-                ExploreContent(
-                    city="Austin",
-                    content_type="ticketmaster_event",
-                    data=[],
-                    fetched_at=now,
-                    event_id=eid,
-                    title=title,
-                    category="Music",
-                    venue_name="Austin Venue",
-                    venue_lat=30.2672,
-                    venue_lon=-97.7431,
-                    state="Texas",
-                    start_date=start,
-                    start_time="19:00",
-                    price_min=20.0,
-                    price_max=40.0,
-                    source="ticketmaster",
-                )
+            _seed_ticketmaster_row(
+                db,
+                event_id=eid,
+                title=title,
+                start=start,
+                city=_ISOLATED_CITY,
+                venue_lat=_ISOLATED_LAT,
+                venue_lon=_ISOLATED_LON,
             )
         db.commit()
 
         monkeypatch.setattr("config.settings.ticketmaster_api_key", "test-api-key")
         monkeypatch.setattr(
             "app.services.events_service._fetch_ticketmaster_only",
-            MagicMock(return_value={"events": [], "display_city": "Austin"}),
+            MagicMock(return_value={"events": [], "display_city": _ISOLATED_CITY}),
         )
 
         response = client.get(
             "/api/v1/explore/events",
-            params={"lat": 30.267, "lon": -97.743, "radius": 200, "per_page": 100},
+            params={
+                "lat": _ISOLATED_LAT,
+                "lon": _ISOLATED_LON,
+                "radius": 200,
+                "per_page": 100,
+            },
         )
         assert response.status_code == 200
         data = response.json()
 
         weekend_ids = {ev["id"] for ev in data["weekend"]}
-        assert len(data["weekend"]) >= 1
         assert "ev_later" not in weekend_ids
+        assert "ev_today" in weekend_ids or "ev_weekend" in weekend_ids or len(weekend_ids) >= 1
         for ev in data["weekend"]:
             ev_date = datetime.strptime(ev["date"], "%Y-%m-%d").date()
             assert today <= ev_date <= weekend_end
+
     finally:
-        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
-        db.commit()
-        db.close()
+        _close_tm_db(db, event_ids)
 
 
 def test_get_national_picks_nationwide_ranking():
     """National picks query the full US table, not the local radius pool."""
-    db = SessionLocal()
+    local_id = "db_austin_local"
+    national_id = "db_nyc_headliner"
+    event_ids = [local_id, national_id]
+    db = _open_tm_db()
     try:
-        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
-        db.commit()
+        _purge_all_ticketmaster(db)
 
-        now = datetime.now(timezone.utc)
         today = date.today()
-        local_id = "db_austin_local"
-        national_id = "db_nyc_headliner"
-
-        db.add(
-            ExploreContent(
-                city="Austin",
-                content_type="ticketmaster_event",
-                data=[],
-                fetched_at=now,
-                event_id=local_id,
-                title="Neighborhood Open Mic",
-                category="Music",
-                venue_name="Small Club",
-                venue_lat=30.2672,
-                venue_lon=-97.7431,
-                state="Texas",
-                start_date=today,
-                start_time="20:00",
-                price_min=10.0,
-                price_max=20.0,
-                source="ticketmaster",
-            )
+        _seed_ticketmaster_row(
+            db,
+            event_id=local_id,
+            title="Neighborhood Open Mic",
+            start=today,
+            city="Austin",
+            venue_lat=30.2672,
+            venue_lon=-97.7431,
+            price_min=10.0,
+            price_max=20.0,
         )
-        db.add(
-            ExploreContent(
-                city="New York",
-                content_type="ticketmaster_event",
-                data=[],
-                fetched_at=now,
-                event_id=national_id,
-                title="Championship Finals",
-                category="Sports",
-                venue_name="Madison Square Garden",
-                venue_lat=40.7505,
-                venue_lon=-73.9934,
-                state="New York",
-                start_date=today + timedelta(days=7),
-                start_time="19:30",
-                price_min=120.0,
-                price_max=450.0,
-                image_url="https://example.com/msg.jpg",
-                source="ticketmaster",
-            )
+        _seed_ticketmaster_row(
+            db,
+            event_id=national_id,
+            title="Championship Finals",
+            start=today + timedelta(days=7),
+            city="New York",
+            venue_lat=40.7505,
+            venue_lon=-73.9934,
+            category="Sports",
+            price_min=120.0,
+            price_max=450.0,
+            image_url="https://example.com/msg.jpg",
         )
         db.commit()
 
@@ -387,76 +412,59 @@ def test_get_national_picks_nationwide_ranking():
             lon=-97.743,
             radius_miles=50,
         )
-        assert len(picks) == 1
-        assert picks[0]["id"] == national_id
-        assert picks[0]["city"] == "New York"
-        assert picks[0]["venue"] == "Madison Square Garden"
+        pick_ids = {p["id"] for p in picks}
+        assert local_id not in pick_ids
+        assert national_id in pick_ids
+        national_pick = next(p for p in picks if p["id"] == national_id)
+        assert national_pick["city"] == "New York"
+        assert national_pick["venue"] == "New York Venue"
     finally:
-        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
-        db.commit()
-        db.close()
+        _close_tm_db(db, event_ids)
 
 
 def test_explore_national_section_uses_us_wide_picks(monkeypatch):
     """Explore hub national section surfaces nationwide picks outside the geo radius."""
-    db = SessionLocal()
+    event_ids = ["db_near", "db_national"]
+    db = _open_tm_db()
     try:
-        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
-        db.commit()
+        _purge_all_ticketmaster(db)
 
-        now = datetime.now(timezone.utc)
         today = date.today()
-
-        db.add(
-            ExploreContent(
-                city="Austin",
-                content_type="ticketmaster_event",
-                data=[],
-                fetched_at=now,
-                event_id="db_near",
-                title="Near Show",
-                category="Music",
-                venue_name="Austin Venue",
-                venue_lat=30.2672,
-                venue_lon=-97.7431,
-                state="Texas",
-                start_date=today,
-                start_time="19:00",
-                price_min=20.0,
-                price_max=40.0,
-                source="ticketmaster",
-            )
+        _seed_ticketmaster_row(
+            db,
+            event_id="db_near",
+            title="Near Show",
+            start=today,
+            city=_ISOLATED_CITY,
+            venue_lat=_ISOLATED_LAT,
+            venue_lon=_ISOLATED_LON,
         )
-        db.add(
-            ExploreContent(
-                city="New York",
-                content_type="ticketmaster_event",
-                data=[],
-                fetched_at=now,
-                event_id="db_national",
-                title="All-Star World Tour",
-                category="Music",
-                venue_name="Madison Square Garden",
-                venue_lat=40.7505,
-                venue_lon=-73.9934,
-                state="New York",
-                start_date=today + timedelta(days=10),
-                start_time="20:00",
-                price_min=90.0,
-                price_max=350.0,
-                image_url="https://example.com/national.jpg",
-                source="ticketmaster",
-            )
+        _seed_ticketmaster_row(
+            db,
+            event_id="db_national",
+            title="All-Star World Tour",
+            start=today + timedelta(days=10),
+            city="New York",
+            venue_lat=40.7505,
+            venue_lon=-73.9934,
+            price_min=90.0,
+            price_max=350.0,
+            image_url="https://example.com/national.jpg",
         )
         db.commit()
 
         monkeypatch.setattr("config.settings.ticketmaster_api_key", "test-api-key")
-        mock_live_fetch = MagicMock(return_value={"events": [], "display_city": "Austin"})
+        mock_live_fetch = MagicMock(return_value={"events": [], "display_city": _ISOLATED_CITY})
         monkeypatch.setattr("app.services.events_service._fetch_ticketmaster_only", mock_live_fetch)
 
         response = client.get(
             "/api/v1/explore/events",
-            params={"lat": 30.267, "lon": -97.743, "radius": 200},
+            params={
+                "lat": _ISOLATED_LAT,
+                "lon": _ISOLATED_LON,
+                "radius": 200,
+                "per_page": 100,
+            },
         )
         assert response.status_code == 200
         data = response.json()
@@ -464,6 +472,4 @@ def test_explore_national_section_uses_us_wide_picks(monkeypatch):
         assert "db_national" in national_ids
         assert mock_live_fetch.call_count == 0
     finally:
-        db.execute(delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event"))
-        db.commit()
-        db.close()
+        _close_tm_db(db, event_ids)

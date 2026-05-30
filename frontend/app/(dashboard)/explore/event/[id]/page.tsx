@@ -49,6 +49,39 @@ type TripListItem = {
   end_date: string | null;
 };
 
+function buildShareUrl(eventId: string): string {
+  return `https://rovvy.app/explore/event/${encodeURIComponent(eventId)}`;
+}
+
+function formatSimilarDate(startDate: string): string {
+  if (!startDate) return "Date TBA";
+  const parts = startDate.split("-");
+  if (parts.length !== 3) return startDate;
+  const d = new Date(
+    parseInt(parts[0], 10),
+    parseInt(parts[1], 10) - 1,
+    parseInt(parts[2], 10),
+  );
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+type SimilarEvent = {
+  id: string;
+  title: string;
+  category: string;
+  venue: string;
+  city: string;
+  start_date: string;
+  image_url: string | null;
+  rating: number;
+  price_min: number | null;
+  price_max: number | null;
+};
+
+type SimilarEventsResponse = {
+  events: SimilarEvent[];
+};
+
 type PageProps = {
   params: Promise<{ id: string }>;
 };
@@ -89,6 +122,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
   const [selectedTripId, setSelectedTripId] = useState<string>("");
   const [saveBusy, setSaveBusy] = useState(false);
   const [pollBusy, setPollBusy] = useState(false);
+  const [similarEvents, setSimilarEvents] = useState<SimilarEvent[]>([]);
 
   const triggerToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -140,6 +174,53 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
     }
     void loadEvent();
   }, [id]);
+
+  useEffect(() => {
+    if (!event?.id) {
+      setSimilarEvents([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const data = await apiFetch<SimilarEventsResponse>(
+          `/explore/events/similar/${encodeURIComponent(event.id)}?limit=4`,
+        );
+        if (!cancelled) {
+          setSimilarEvents(Array.isArray(data.events) ? data.events : []);
+        }
+      } catch {
+        if (!cancelled) setSimilarEvents([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id]);
+
+  const handleShare = useCallback(async () => {
+    if (!event) return;
+    const url = buildShareUrl(event.id);
+    const sharePayload = {
+      title: event.title,
+      text: "Check out this event on Rovvy",
+      url,
+    };
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share(sharePayload);
+        return;
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      triggerToast("Link copied!");
+    } catch {
+      triggerToast("Could not copy link");
+    }
+  }, [event, triggerToast]);
 
   const loadTrips = useCallback(async () => {
     setTripsLoading(true);
@@ -472,10 +553,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
 
         <button
           type="button"
-          onClick={() => {
-            navigator.clipboard.writeText(window.location.href);
-            triggerToast("Link copied to clipboard!");
-          }}
+          onClick={() => void handleShare()}
           className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white/90 shadow-sm backdrop-blur-sm transition-all hover:bg-white active:scale-95"
         >
           <Share2 size={18} className="text-slate-700" />
@@ -574,6 +652,66 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
             </span>
           </div>
         </div>
+
+        {similarEvents.length > 0 && (
+          <section className="mt-6">
+            <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-500">
+              You Might Also Like
+            </h2>
+            <div className="flex gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {similarEvents.map((item) => {
+                const price =
+                  item.price_min != null && item.price_max != null
+                    ? item.price_min === item.price_max
+                      ? `$${Math.round(item.price_min)}`
+                      : `$${Math.round(item.price_min)}+`
+                    : item.price_min != null
+                      ? `From $${Math.round(item.price_min)}`
+                      : "See pricing";
+                return (
+                  <Link
+                    key={item.id}
+                    href={`/explore/event/${encodeURIComponent(item.id)}`}
+                    className="w-56 shrink-0 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md"
+                  >
+                    <div className="relative aspect-[4/3] bg-slate-100">
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.title}
+                          loading="lazy"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-slate-300">
+                          <Calendar size={28} />
+                        </div>
+                      )}
+                      <span className="absolute left-2 top-2 rounded-md bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-teal-700">
+                        {item.category}
+                      </span>
+                    </div>
+                    <div className="p-3">
+                      <p className="line-clamp-2 text-sm font-semibold text-slate-800">
+                        {item.title}
+                      </p>
+                      <p className="mt-1 truncate text-xs text-slate-500">
+                        {formatSimilarDate(item.start_date)} · {item.city}
+                      </p>
+                      <div className="mt-2 flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-1 font-medium text-slate-700">
+                          <Star size={12} className="fill-yellow-400 text-yellow-400" />
+                          {item.rating}
+                        </span>
+                        <span className="font-semibold text-teal-700">{price}</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-100 bg-white/90 p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] backdrop-blur-md">

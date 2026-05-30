@@ -653,6 +653,112 @@ def _event_detail_response(
     }
 
 
+def _city_key(value: str | None) -> str:
+    return (value or "").split(",")[0].strip().lower()
+
+
+def _similar_event_card(row: ExploreContent, rating: float) -> dict[str, Any]:
+    start_date = (
+        row.start_date.isoformat() if row.start_date is not None else ""
+    )
+    return {
+        "id": row.event_id or str(row.id),
+        "title": row.title or "Event",
+        "category": row.category or "Event",
+        "venue": row.venue_name or "Various Venues",
+        "city": row.city or "US",
+        "state": row.state,
+        "start_date": start_date,
+        "start_time": row.start_time or "19:00",
+        "price_min": row.price_min,
+        "price_max": row.price_max,
+        "image_url": row.image_url,
+        "ticket_url": row.ticket_url or "",
+        "source": row.source or "ticketmaster",
+        "rating": rating,
+    }
+
+
+@router.get("/events/similar/{event_id}", status_code=status.HTTP_200_OK)
+def get_similar_explore_events(
+    event_id: str,
+    limit: int = Query(4, ge=1, le=12),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Return upcoming events similar to the anchor (category + city or within 50 mi)."""
+    from datetime import date
+    from urllib.parse import unquote
+
+    from sqlalchemy import func
+
+    from app.services.events_service import _compute_national_rating, _haversine_miles
+
+    lookup_id = unquote(event_id).strip()
+    if not lookup_id:
+        return {"events": []}
+
+    current = (
+        db.query(ExploreContent)
+        .filter(
+            ExploreContent.content_type == "ticketmaster_event",
+            ExploreContent.event_id == lookup_id,
+        )
+        .first()
+    )
+    if not current or not current.category:
+        return {"events": []}
+
+    today = date.today()
+    anchor_category = current.category.strip().lower()
+    anchor_city = _city_key(current.city)
+    anchor_lat = current.venue_lat
+    anchor_lon = current.venue_lon
+
+    candidates = (
+        db.query(ExploreContent)
+        .filter(
+            ExploreContent.content_type == "ticketmaster_event",
+            ExploreContent.event_id.isnot(None),
+            ExploreContent.event_id != lookup_id,
+            ExploreContent.start_date >= today,
+            func.lower(ExploreContent.category) == anchor_category,
+        )
+        .all()
+    )
+
+    scored: list[tuple[float, ExploreContent]] = []
+    for row in candidates:
+        same_city = _city_key(row.city) == anchor_city
+        within_radius = False
+        if (
+            anchor_lat is not None
+            and anchor_lon is not None
+            and row.venue_lat is not None
+            and row.venue_lon is not None
+        ):
+            try:
+                within_radius = (
+                    _haversine_miles(
+                        float(anchor_lat),
+                        float(anchor_lon),
+                        float(row.venue_lat),
+                        float(row.venue_lon),
+                    )
+                    <= 50.0
+                )
+            except (TypeError, ValueError):
+                within_radius = False
+
+        if not same_city and not within_radius:
+            continue
+
+        scored.append((_compute_national_rating(row), row))
+
+    scored.sort(key=lambda item: item[0], reverse=True)
+    events = [_similar_event_card(row, rating) for rating, row in scored[:limit]]
+    return {"events": events}
+
+
 @router.get("/events/{event_id}", status_code=status.HTTP_200_OK)
 def get_explore_event(
     event_id: str,
