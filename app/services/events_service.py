@@ -1612,6 +1612,10 @@ def _query_db_events_haversine(
     from datetime import date
 
     today_str = date.today().strftime("%Y-%m-%d")
+    lat_delta = float(radius_miles) / 69.0
+    lon_delta = float(radius_miles) / (
+        69.0 * max(abs(math.cos(math.radians(lat))), 1e-6)
+    )
     query_str = """
         SELECT *,
           (3959 * acos(
@@ -1624,12 +1628,18 @@ def _query_db_events_haversine(
           AND start_date >= :today
           AND venue_lat IS NOT NULL
           AND venue_lon IS NOT NULL
+          AND venue_lat BETWEEN :lat_min AND :lat_max
+          AND venue_lon BETWEEN :lon_min AND :lon_max
     """
     params: dict[str, Any] = {
         "lat": lat,
         "lon": lon,
         "today": today_str,
         "radius": float(radius_miles),
+        "lat_min": lat - lat_delta,
+        "lat_max": lat + lat_delta,
+        "lon_min": lon - lon_delta,
+        "lon_max": lon + lon_delta,
     }
     cat = (category or "all").strip()
     if cat.lower() != "all":
