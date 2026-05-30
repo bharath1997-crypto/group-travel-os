@@ -77,15 +77,6 @@ const EXPLORE_RADIUS_MILES = 200;
 const EXPLORE_INITIAL_PER_PAGE = 20;
 const EXPLORE_FULL_PER_PAGE = 100;
 const DEFAULT_EXPLORE_CITY = "Chicago";
-const GEO_CATEGORY_PILLS = new Set<ExploreCategoryPill>([
-  "Events",
-  "Sports",
-  "Activities",
-]);
-
-function categoryNeedsGeo(category: ExploreCategoryPill): boolean {
-  return GEO_CATEGORY_PILLS.has(category);
-}
 
 /** Block overlapping /explore/events requests (geo vs city race). */
 let exploreEventsInFlight = false;
@@ -112,6 +103,10 @@ function loadExploreCity(): string | null {
   } catch {
     return null;
   }
+}
+
+function resolveFallbackCity(): string {
+  return loadExploreCity() || DEFAULT_EXPLORE_CITY;
 }
 
 function loadExploreCoords(): UserCoords | null {
@@ -549,11 +544,11 @@ export default function ExploreHubPage() {
     setUserCoords(coords);
     if (coords) {
       eventsDataSourceRef.current = "geo";
-      setLocationReady(true);
     }
   }, []);
 
-  const [currentCity, setCurrentCity] = useState("Locating…");
+  const [displayCity, setDisplayCity] = useState(DEFAULT_EXPLORE_CITY);
+  const [gpsLocating, setGpsLocating] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [citySearch, setCitySearch] = useState("");
   const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
@@ -572,7 +567,6 @@ export default function ExploreHubPage() {
     }
   }, [categoryParam]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [locationReady, setLocationReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -592,7 +586,9 @@ export default function ExploreHubPage() {
   const [userCoords, setUserCoords] = useState<UserCoords | null>(null);
   const [radiusMiles, setRadiusMiles] = useState(EXPLORE_RADIUS_MILES);
 
-  const stateName = STATE_BY_CITY[cityLabel(currentCity)] || "Your Region";
+  const stateName = STATE_BY_CITY[cityLabel(displayCity)] || "Your Region";
+  const dropdownCityLabel =
+    gpsLocating && !userCoords ? "Locating…" : cityLabel(displayCity);
   const filtersActive =
     activeCategory !== "All" || searchQuery.trim().length > 0;
 
@@ -658,7 +654,7 @@ export default function ExploreHubPage() {
 
       if (data.display_city?.trim()) {
         const next = data.display_city.trim();
-        setCurrentCity(next);
+        setDisplayCity(next);
         const coords =
           mode === "geo"
             ? userCoordsRef.current ?? readStoredCoords()
@@ -850,7 +846,7 @@ export default function ExploreHubPage() {
     async (coords: UserCoords, placeholderLabel?: string) => {
       setCoords(coords);
       const label = placeholderLabel?.trim() || loadExploreCity() || "Your area";
-      setCurrentCity(label);
+      setDisplayCity(label);
       saveExploreCity(label, coords);
       setShowCityDropdown(false);
       setCitySearch("");
@@ -893,7 +889,7 @@ export default function ExploreHubPage() {
       setCoords(null);
       userCoordsRef.current = null;
       eventsDataSourceRef.current = "city";
-      setCurrentCity(cityLabel);
+      setDisplayCity(cityLabel);
       await fetchEventsByCity(cityLabel);
     },
     [fetchEventsByCity, fetchEventsByCoords, setCoords],
@@ -904,73 +900,72 @@ export default function ExploreHubPage() {
     const storedCoords = readStoredCoords();
     if (storedCoords) {
       setCoords(storedCoords);
-      if (savedCity) setCurrentCity(savedCity);
+      if (savedCity) setDisplayCity(savedCity);
       await fetchEventsByCoords(storedCoords, { force: true });
       return;
     }
 
-    const gpsCoords = await requestGeolocationCoords();
-    if (gpsCoords) {
-      setCoords(gpsCoords);
-      saveExploreCity(savedCity || "Your area", gpsCoords);
-      await fetchEventsByCoords(gpsCoords, { force: true });
-      return;
+    const fallbackCity = resolveFallbackCity();
+    setDisplayCity(fallbackCity);
+    setGpsLocating(true);
+
+    const cityFetchPromise = fetchByCityOrGeocode(fallbackCity);
+
+    try {
+      const gpsCoords = await requestGeolocationCoords();
+      if (gpsCoords) {
+        setCoords(gpsCoords);
+        saveExploreCity(savedCity || fallbackCity, gpsCoords);
+        await fetchEventsByCoords(gpsCoords, { force: true });
+        return;
+      }
+    } finally {
+      setGpsLocating(false);
     }
 
-    if (savedCity) {
-      await fetchByCityOrGeocode(savedCity);
-      return;
-    }
-
-    await fetchByCityOrGeocode(DEFAULT_EXPLORE_CITY);
+    await cityFetchPromise;
   }, [fetchByCityOrGeocode, fetchEventsByCoords, setCoords]);
 
   const bootstrapExplore = useCallback(async () => {
-    try {
-      if (hubRestoredRef.current) {
-        setLocationReady(true);
-        const coords = readStoredCoords();
-        if (coords && !hasLoadedFullRef.current) {
-          await fetchEventsByCoords(coords, {
-            force: true,
-            perPage: EXPLORE_FULL_PER_PAGE,
-          });
-        }
-        return;
+    if (hubRestoredRef.current) {
+      const coords = readStoredCoords();
+      if (coords && !hasLoadedFullRef.current) {
+        await fetchEventsByCoords(coords, {
+          force: true,
+          perPage: EXPLORE_FULL_PER_PAGE,
+        });
       }
-
-      const savedCoords = readStoredCoords();
-      const saved = loadExploreCity();
-
-      if (savedCoords) {
-        setLocationReady(true);
-        setCoords(savedCoords);
-        if (saved) setCurrentCity(saved);
-        const cityKey = exploreCityKey(savedCoords, saved);
-        const cached = cityKey ? loadExploreFeedCache(cityKey) : null;
-        const perPage =
-          cached && exploreSectionsTotal(cached.sections) > EXPLORE_INITIAL_PER_PAGE
-            ? EXPLORE_FULL_PER_PAGE
-            : EXPLORE_INITIAL_PER_PAGE;
-        await fetchEventsByCoords(savedCoords, { force: true, perPage });
-        return;
-      }
-
-      if (saved) {
-        setCurrentCity(saved);
-        const geo = await nominatimCityLatLon(saved);
-        if (geo) {
-          setCoords(geo);
-          saveExploreCity(saved, geo);
-          await fetchEventsByCoords(geo, { force: true });
-          return;
-        }
-      }
-
-      await detectGPSCity();
-    } finally {
-      setLocationReady(true);
+      return;
     }
+
+    const savedCoords = readStoredCoords();
+    const saved = loadExploreCity();
+    const fallbackCity = resolveFallbackCity();
+    setDisplayCity(saved || fallbackCity);
+
+    if (savedCoords) {
+      setCoords(savedCoords);
+      const cityKey = exploreCityKey(savedCoords, saved);
+      const cached = cityKey ? loadExploreFeedCache(cityKey) : null;
+      const perPage =
+        cached && exploreSectionsTotal(cached.sections) > EXPLORE_INITIAL_PER_PAGE
+          ? EXPLORE_FULL_PER_PAGE
+          : EXPLORE_INITIAL_PER_PAGE;
+      await fetchEventsByCoords(savedCoords, { force: true, perPage });
+      return;
+    }
+
+    if (saved) {
+      const geo = await nominatimCityLatLon(saved);
+      if (geo) {
+        setCoords(geo);
+        saveExploreCity(saved, geo);
+        await fetchEventsByCoords(geo, { force: true });
+        return;
+      }
+    }
+
+    await detectGPSCity();
   }, [detectGPSCity, fetchEventsByCoords, setCoords]);
 
   useEffect(() => {
@@ -986,7 +981,6 @@ export default function ExploreHubPage() {
     const hub = loadExploreHubState();
     if (hub) {
       hubRestoredRef.current = true;
-      setLocationReady(true);
       setActiveCategory(hub.activeCategory);
       sectionsRef.current = hub.sections;
       setTrendingEvents(hub.sections.trending);
@@ -995,6 +989,7 @@ export default function ExploreHubPage() {
       setNationalEvents(hub.sections.national);
       setSectionTitles(hub.sectionTitles);
       hasLoadedFullRef.current = hub.loadedFull;
+      setDisplayCity(loadExploreCity() || DEFAULT_EXPLORE_CITY);
       setLoading(false);
       if (hub.activeCategory !== "All" && !categoryParam) {
         router.replace(
@@ -1006,12 +1001,11 @@ export default function ExploreHubPage() {
     }
 
     const coords = readStoredCoords();
-    if (coords) {
-      setLocationReady(true);
-    }
+    const fallbackCity = resolveFallbackCity();
+    setDisplayCity(fallbackCity);
 
-    const urlCategory = (categoryParam?.trim() || "All") as ExploreCategoryPill;
-    const cityKey = exploreCityKey(coords, loadExploreCity());
+    const cityKey =
+      exploreCityKey(coords, fallbackCity) ?? `city:${fallbackCity.split(",")[0].trim().toLowerCase()}`;
     const sections = hydrateExploreFromCache(cityKey);
     if (!sections) return;
 
@@ -1021,9 +1015,7 @@ export default function ExploreHubPage() {
     setWeekendEvents(sections.weekend);
     setPopularEvents(sections.popular);
     setNationalEvents(sections.national);
-    if (coords || !categoryNeedsGeo(urlCategory)) {
-      setLoading(false);
-    }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -1037,7 +1029,7 @@ export default function ExploreHubPage() {
       },
       sectionTitles,
       cityKey:
-        exploreCityKey(userCoordsRef.current ?? readStoredCoords(), currentCity) ??
+        exploreCityKey(userCoordsRef.current ?? readStoredCoords(), displayCity) ??
         "",
       loadedFull: hasLoadedFullRef.current,
     };
@@ -1048,7 +1040,7 @@ export default function ExploreHubPage() {
     popularEvents,
     nationalEvents,
     sectionTitles,
-    currentCity,
+    displayCity,
   ]);
 
   useEffect(() => {
@@ -1214,7 +1206,7 @@ export default function ExploreHubPage() {
     persistHubState();
     saveEventSnapshot(event);
     router.push(
-      `/explore/event/${encodeURIComponent(event.id)}?city=${encodeURIComponent(cityLabel(currentCity))}`,
+      `/explore/event/${encodeURIComponent(event.id)}?city=${encodeURIComponent(cityLabel(displayCity))}`,
     );
   };
 
@@ -1222,7 +1214,7 @@ export default function ExploreHubPage() {
     section: "trending" | "weekend" | "state" | "national",
   ) => {
     const city =
-      section === "national" ? "New York" : cityLabel(currentCity);
+      section === "national" ? "New York" : cityLabel(displayCity);
     const params = new URLSearchParams();
     params.set("city", city);
     params.set("page", "1");
@@ -1245,11 +1237,7 @@ export default function ExploreHubPage() {
       nationalEvents.length >
     0;
 
-  const awaitingGeoForCategory =
-    categoryNeedsGeo(activeCategory) && !locationReady;
-
-  const showInitialSkeleton =
-    (loading && !hasLiveContent) || awaitingGeoForCategory;
+  const showInitialSkeleton = loading && !hasLiveContent;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-6">
@@ -1261,13 +1249,13 @@ export default function ExploreHubPage() {
           <p className="mt-2 max-w-2xl text-[#64748B]">
             {hasLiveContent
               ? userCoords
-                ? `Curated picks within ${radiusMiles} miles of ${currentCity} — plan, compare, and book with confidence.`
-                : `Hand-picked events and activities in ${cityLabel(currentCity)}.`
+                ? `Curated picks within ${radiusMiles} miles of ${cityLabel(displayCity)} — plan, compare, and book with confidence.`
+                : `Hand-picked events and activities in ${cityLabel(displayCity)}.`
               : showInitialSkeleton
-                ? awaitingGeoForCategory
-                  ? "Finding your location…"
+                ? gpsLocating
+                  ? `Loading events near ${cityLabel(displayCity)} while we find your location…`
                   : "Loading events near you…"
-                : `Finding events near ${cityLabel(currentCity)}.`}
+                : `Finding events near ${cityLabel(displayCity)}.`}
           </p>
           {fetchError && (
             <p className="mt-2 text-sm text-amber-700">
@@ -1325,7 +1313,7 @@ export default function ExploreHubPage() {
               className="flex w-full items-center gap-2 whitespace-nowrap rounded-xl border border-[#E2E8F0] bg-white px-4 py-3 text-[#475569] shadow-sm transition-colors hover:border-teal-400 sm:w-auto"
             >
               <MapPin size={16} className="text-teal-600" />
-              <span className="font-medium text-[#1E293B]">{currentCity}</span>
+              <span className="font-medium text-[#1E293B]">{dropdownCityLabel}</span>
               <ChevronDown size={14} className="text-[#94A3B8]" />
             </button>
 
@@ -1413,14 +1401,16 @@ export default function ExploreHubPage() {
         ) : (
           <>
         <EventSection
-          title={sectionTitles.trending || (userCoords ? "Near You" : `Near ${cityLabel(currentCity)}`)}
+          title={sectionTitles.trending || (userCoords ? "Near You" : `Near ${cityLabel(displayCity)}`)}
           subtitle={
             sectionTitles.trendingSubtitle ||
-            (userCoords ? `Events within ${radiusMiles} miles of ${cityLabel(currentCity)}` : "Local favorites near you")
+            (userCoords
+              ? `Events within ${radiusMiles} miles of ${cityLabel(displayCity)}`
+              : "Local favorites near you")
           }
           events={filteredTrending}
           rawCount={trendingEvents.length}
-          userCity={currentCity}
+          userCity={displayCity}
           loading={loading}
           fetchError={fetchError}
           filtersActive={filtersActive}
@@ -1436,7 +1426,7 @@ export default function ExploreHubPage() {
           subtitle="Don't miss what's coming up"
           events={filteredWeekend}
           rawCount={weekendEvents.length}
-          userCity={currentCity}
+          userCity={displayCity}
           loading={loading}
           fetchError={fetchError}
           filtersActive={filtersActive}
@@ -1452,7 +1442,7 @@ export default function ExploreHubPage() {
           subtitle={`Top picks across ${stateName}`}
           events={filteredPopular}
           rawCount={popularEvents.length}
-          userCity={currentCity}
+          userCity={displayCity}
           loading={loading}
           fetchError={fetchError}
           filtersActive={filtersActive}
@@ -1468,7 +1458,7 @@ export default function ExploreHubPage() {
           subtitle="Standout events across the country"
           events={filteredNational}
           rawCount={nationalEvents.length}
-          userCity={currentCity}
+          userCity={displayCity}
           loading={loading}
           fetchError={fetchError}
           filtersActive={filtersActive}
