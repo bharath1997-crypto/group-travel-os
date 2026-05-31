@@ -23,7 +23,7 @@ type EventsAPIResponse = {
   national?: ExploreEvent[];
 };
 
-export default function SeeAllEventsPage() {
+export default function SeeAllActivitiesPage() {
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<ExploreEvent[]>([]);
   const [nationalPicks, setNationalPicks] = useState<ExploreEvent[]>([]);
@@ -57,16 +57,16 @@ export default function SeeAllEventsPage() {
       .then((data) => {
         if (!active) return;
         const allEvents = data.events || [];
-        // Filter for Events (Music, Sports, Festival)
+        // Filter for Activities
         const filtered = allEvents.filter((ev) =>
-          ["music", "sports", "festival"].some((c) =>
+          ["experience", "arts", "cultural", "entertainment", "comedy"].some((c) =>
             (ev.category || "").toLowerCase().includes(c)
           )
         );
         setEvents(filtered);
         if (data.national) {
           const natFiltered = data.national.filter((ev) =>
-            ["music", "sports", "festival"].some((c) =>
+            ["experience", "arts", "cultural", "entertainment", "comedy"].some((c) =>
               (ev.category || "").toLowerCase().includes(c)
             )
           );
@@ -74,7 +74,7 @@ export default function SeeAllEventsPage() {
         }
       })
       .catch((err) => {
-        console.error("Failed to load events see-all:", err);
+        console.error("Failed to load activities see-all:", err);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -159,7 +159,7 @@ export default function SeeAllEventsPage() {
                       className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-400 to-indigo-600 opacity-80">
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-teal-400 to-emerald-600 opacity-80">
                       <Calendar size={32} className="text-white opacity-40" />
                     </div>
                   )}
@@ -235,7 +235,7 @@ export default function SeeAllEventsPage() {
           <ArrowLeft size={16} />
         </Link>
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">Upcoming Events</h1>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">Trending Activities</h1>
           <p className="text-xs text-slate-500">Curated highlights in {city}</p>
         </div>
       </div>
@@ -243,11 +243,11 @@ export default function SeeAllEventsPage() {
       {loading ? (
         <div className="py-20 text-center">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
-          <p className="mt-4 text-sm text-slate-500">Loading live events...</p>
+          <p className="mt-4 text-sm text-slate-500">Loading live activities...</p>
         </div>
       ) : events.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-200 bg-white p-12 text-center">
-          <p className="text-sm text-slate-500">No events found for {city}. Try selecting a different location.</p>
+          <p className="text-sm text-slate-500">No activities found for {city}. Try selecting a different location.</p>
           <Link
             href="/explore"
             className="mt-4 inline-flex items-center justify-center rounded-xl bg-teal-600 px-4 py-2 text-xs font-bold text-white hover:bg-teal-700 shadow"
@@ -257,12 +257,12 @@ export default function SeeAllEventsPage() {
         </div>
       ) : (
         <div>
-          {renderGrid(sections.top100, "Top 100", "The absolute best events rated by fans")}
+          {renderGrid(sections.top100, "Top 100", "The absolute best activities rated by travelers")}
           {renderGrid(sections.trending, "Trending", "Currently rising in popularity this week")}
-          {renderGrid(sections.thisWeekend, "This Weekend", "Events happening Friday through Sunday")}
-          {renderGrid(sections.upcoming, "Upcoming", "Plan ahead for these scheduled performances")}
-          {renderGrid(sections.regional, "Regional Picks", `Events within your immediate area`)}
-          {renderGrid(sections.international, "International & National Picks", "Standout events across different travel hubs")}
+          {renderGrid(sections.thisWeekend, "This Weekend", "Experiences happening Friday through Sunday")}
+          {renderGrid(sections.upcoming, "Upcoming", "Plan ahead for these scheduled experiences")}
+          {renderGrid(sections.regional, "Regional Picks", `Activities within your immediate area`)}
+          {renderGrid(sections.international, "International & National Picks", "Standout tours across different travel hubs")}
         </div>
       )}
     </div>
