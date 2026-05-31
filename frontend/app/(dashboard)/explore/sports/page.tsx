@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Calendar, Star } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { CategoryScrollRow } from "@/components/explorer/CategoryScrollRow";
 import {
   type ExploreEvent,
   cityLabel,
@@ -252,34 +253,30 @@ export default function SeeAllSportsPage() {
   ) => {
     if (items.length === 0) return null;
     return (
-      <div className="mb-8">
-        <h2 className="text-base font-bold text-slate-900 leading-snug">{title}</h2>
-        <p className="mb-3.5 text-xs text-slate-500">{subtitle}</p>
-        <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
-          {items.map((item, index) => {
-            const cardEl = (
-              <ExploreCard
-                item={item}
-                userCity={city}
-                categoryColor="indigo"
-                isPlaceholder={isPlaceholder}
-              />
-            );
-            if (isPlaceholder) {
-              return <div key={`${item.id}-${index}`}>{cardEl}</div>;
-            }
-            return (
-              <Link
-                key={`${item.id}-${index}`}
-                href={`/explore/event/${encodeURIComponent(item.id)}?city=${encodeURIComponent(cityLabel(city))}`}
-                className="block shrink-0"
-              >
-                {cardEl}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+      <CategoryScrollRow title={title} subtitle={subtitle}>
+        {items.map((item, index) => {
+          const cardEl = (
+            <ExploreCard
+              item={item}
+              userCity={city}
+              categoryColor="indigo"
+              isPlaceholder={isPlaceholder}
+            />
+          );
+          if (isPlaceholder) {
+            return <div key={`${item.id}-${index}`}>{cardEl}</div>;
+          }
+          return (
+            <Link
+              key={`${item.id}-${index}`}
+              href={`/explore/event/${encodeURIComponent(item.id)}?city=${encodeURIComponent(cityLabel(city))}`}
+              className="block shrink-0"
+            >
+              {cardEl}
+            </Link>
+          );
+        })}
+      </CategoryScrollRow>
     );
   };
 

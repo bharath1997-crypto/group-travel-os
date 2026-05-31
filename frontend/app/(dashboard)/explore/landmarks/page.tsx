@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Calendar, Star, Info } from "lucide-react";
+import { CategoryScrollRow } from "@/components/explorer/CategoryScrollRow";
 import {
   type ExploreEvent,
   cityLabel,
@@ -126,22 +127,18 @@ export default function SeeAllLandmarksPage() {
     subtitle: string,
   ) => {
     return (
-      <div className="mb-8">
-        <h2 className="text-base font-bold text-slate-900 leading-snug">{title}</h2>
-        <p className="mb-3.5 text-xs text-slate-500">{subtitle}</p>
-        <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
-          {items.map((item, index) => (
-            <div key={`${item.id}-${index}`}>
-              <ExploreCard
-                item={item as any}
-                userCity={city}
-                categoryColor="rose"
-                isPlaceholder={true}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
+      <CategoryScrollRow title={title} subtitle={subtitle}>
+        {items.map((item, index) => (
+          <div key={`${item.id}-${index}`}>
+            <ExploreCard
+              item={item as any}
+              userCity={city}
+              categoryColor="rose"
+              isPlaceholder={true}
+            />
+          </div>
+        ))}
+      </CategoryScrollRow>
     );
   };
 
