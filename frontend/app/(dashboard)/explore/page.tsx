@@ -406,7 +406,7 @@ function ExploreCard({ item, userCity, categoryColor, isPlaceholder }: ExploreCa
 
   return (
     <article
-      className="group flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-400 hover:shadow-md"
+      className="group flex w-56 shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-400 hover:shadow-md"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
         {item.image_url ? (
