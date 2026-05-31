@@ -53,7 +53,7 @@ export default function SeeAllActivitiesPage() {
     }
 
     setLoading(true);
-    apiFetch<EventsAPIResponse>(`/explore/events?${params.toString()}`)
+    apiFetch<EventsAPIResponse>(`/explore/events?${params.toString()}`, {}, 60000)
       .then((data) => {
         if (!active) return;
         const allEvents = data.events || [];
