@@ -23,6 +23,8 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { CategoryScrollRow } from "@/components/explorer/CategoryScrollRow";
+import { MinimalCalendar } from "@/components/explorer/MinimalCalendar";
 import {
   type ExploreEvent,
   type ExploreFeedDebug,
@@ -496,7 +498,7 @@ function ExploreSection({
   userCity,
   isPlaceholder,
 }: ExploreSectionProps) {
-  const visibleItems = items.slice(0, 5); 
+  const visibleItems = items.slice(0, 15); 
   if (visibleItems.length === 0) return null;
 
   const cMeta = colorMap[color] || colorMap.teal;
@@ -519,7 +521,7 @@ function ExploreSection({
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+      <CategoryScrollRow title="" subtitle="">
         {visibleItems.map((item, index) => {
           const cardEl = (
             <ExploreCard
@@ -531,7 +533,7 @@ function ExploreSection({
           );
           if (isPlaceholder) {
             return (
-              <Link key={item.id} href={seeAllHref} className="block h-full">
+              <Link key={item.id} href={seeAllHref} className="block shrink-0">
                 {cardEl}
               </Link>
             );
@@ -540,13 +542,13 @@ function ExploreSection({
             <Link
               key={item.id || index}
               href={`/explore/event/${encodeURIComponent(item.id)}?city=${encodeURIComponent(cityLabel(userCity))}`}
-              className="block h-full"
+              className="block shrink-0"
             >
               {cardEl}
             </Link>
           );
         })}
-      </div>
+      </CategoryScrollRow>
     </section>
   );
 }
@@ -608,6 +610,7 @@ export default function ExploreHubPage() {
   const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
   const [cityLoading, setCityLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -1105,8 +1108,16 @@ export default function ExploreHubPage() {
         uniqueMap.set(ev.id, ev);
       }
     }
-    return Array.from(uniqueMap.values());
-  }, [trendingEvents, weekendEvents, popularEvents, nationalEvents]);
+    let result = Array.from(uniqueMap.values());
+    if (selectedDate) {
+      result = result.filter((ev) => {
+        if (!ev.date && !ev.start_date) return false;
+        const dStr = (ev.date || ev.start_date || "").split("T")[0];
+        return dStr === selectedDate;
+      });
+    }
+    return result;
+  }, [trendingEvents, weekendEvents, popularEvents, nationalEvents, selectedDate]);
 
   const trendingActivities = useMemo(() => {
     return allLiveEvents.filter((ev) =>
@@ -1166,16 +1177,24 @@ export default function ExploreHubPage() {
   }, [sportsAndFitness, searchQuery]);
 
   const filterPlaceholders = useCallback((items: Partial<ExploreEvent>[]) => {
-    if (!searchQuery.trim()) return items;
+    let result = items;
+    if (selectedDate) {
+      result = result.filter((ev) => {
+        if (!ev.date && !ev.start_date) return true;
+        const dStr = (ev.date || ev.start_date || "").split("T")[0];
+        return dStr === selectedDate;
+      });
+    }
+    if (!searchQuery.trim()) return result;
     const q = searchQuery.toLowerCase().trim();
-    return items.filter(
+    return result.filter(
       (item) =>
         item.name?.toLowerCase().includes(q) ||
         item.venue?.toLowerCase().includes(q) ||
         item.city?.toLowerCase().includes(q) ||
         item.category?.toLowerCase().includes(q)
     );
-  }, [searchQuery]);
+  }, [searchQuery, selectedDate]);
 
   const filteredLandmarks = useMemo(() => filterPlaceholders(PLACEHOLDERS.landmarks), [filterPlaceholders]);
   const filteredTrekking = useMemo(() => filterPlaceholders(PLACEHOLDERS.trekking), [filterPlaceholders]);
@@ -1293,6 +1312,11 @@ export default function ExploreHubPage() {
             </div>
           )}
         </div>
+
+        <MinimalCalendar
+          selectedDate={selectedDate}
+          onChange={setSelectedDate}
+        />
       </div>
 
       <div className="space-y-2">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, MapPin, Calendar, Star } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { CategoryScrollRow } from "@/components/explorer/CategoryScrollRow";
+import { ExploreHeaderFilters } from "@/components/explorer/ExploreHeaderFilters";
 import {
   type ExploreEvent,
   cityLabel,
@@ -132,12 +133,16 @@ export default function SeeAllActivitiesPage() {
   const [events, setEvents] = useState<ExploreEvent[]>([]);
   const [nationalPicks, setNationalPicks] = useState<ExploreEvent[]>([]);
   const [city, setCity] = useState("Chicago");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    const savedCity = localStorage.getItem("rovvy_explore_city") || "Chicago";
+    setCity(savedCity);
+  }, []);
 
   useEffect(() => {
     let active = true;
-    const savedCity = localStorage.getItem("rovvy_explore_city") || "Chicago";
-    setCity(savedCity);
-
     const coordsRaw = localStorage.getItem("rovvy_explore_coords");
     const params = new URLSearchParams({ per_page: "100" });
 
@@ -150,10 +155,10 @@ export default function SeeAllActivitiesPage() {
           params.set("radius", "200");
         }
       } catch (e) {
-        params.set("city", savedCity);
+        params.set("city", city);
       }
     } else {
-      params.set("city", savedCity);
+      params.set("city", city);
     }
 
     setLoading(true);
@@ -187,41 +192,80 @@ export default function SeeAllActivitiesPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [city]);
+
+  const filteredEvents = useMemo(() => {
+    let result = events;
+    if (selectedDate) {
+      result = result.filter((ev) => {
+        if (!ev.date && !ev.start_date) return false;
+        const dStr = (ev.date || ev.start_date || "").split("T")[0];
+        return dStr === selectedDate;
+      });
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (ev) =>
+          ev.name?.toLowerCase().includes(q) ||
+          ev.venue?.toLowerCase().includes(q) ||
+          ev.category?.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [events, selectedDate, searchQuery]);
 
   const sections = useMemo(() => {
     // 1. Trending Activities (Sorted by rating DESC, no limit)
-    const trending = [...events].sort((a, b) => pseudoRating(b).score - pseudoRating(a).score);
+    const trending = [...filteredEvents].sort((a, b) => pseudoRating(b).score - pseudoRating(a).score);
 
     // 2. This Weekend (Friday through Sunday)
     const today = new Date();
     const sunday = new Date(today);
     sunday.setDate(today.getDate() + (7 - today.getDay()) % 7);
-    const thisWeekend = events.filter((ev) => {
+    const thisWeekend = filteredEvents.filter((ev) => {
       if (!ev.date) return false;
       const d = new Date(ev.date);
       return d >= today && d <= sunday;
     });
 
     // 3. Distance bands
-    const nearYou = events
+    const nearYou = filteredEvents
       .filter((ev) => ev.distance_miles != null && ev.distance_miles <= 10)
       .sort((a, b) => (a.distance_miles ?? 0) - (b.distance_miles ?? 0));
 
-    const shortDrive = events
+    const shortDrive = filteredEvents
       .filter((ev) => ev.distance_miles != null && ev.distance_miles > 10 && ev.distance_miles <= 50)
       .sort((a, b) => (a.distance_miles ?? 0) - (b.distance_miles ?? 0));
 
-    const worthDrive = events
+    const worthDrive = filteredEvents
       .filter((ev) => ev.distance_miles != null && ev.distance_miles > 50 && ev.distance_miles <= 100)
       .sort((a, b) => (a.distance_miles ?? 0) - (b.distance_miles ?? 0));
 
-    const roadTrip = events
+    const roadTrip = filteredEvents
       .filter((ev) => ev.distance_miles != null && ev.distance_miles > 100 && ev.distance_miles <= 200)
       .sort((a, b) => (a.distance_miles ?? 0) - (b.distance_miles ?? 0));
 
     // 4. National Picks (Sorted by rating DESC, no distance filter)
-    const national = (nationalPicks.length > 0 ? nationalPicks : events)
+    const nationalBase = nationalPicks.length > 0 ? nationalPicks : events;
+    let nationalFiltered = nationalBase;
+    if (selectedDate) {
+      nationalFiltered = nationalFiltered.filter((ev) => {
+        if (!ev.date && !ev.start_date) return false;
+        const dStr = (ev.date || ev.start_date || "").split("T")[0];
+        return dStr === selectedDate;
+      });
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      nationalFiltered = nationalFiltered.filter(
+        (ev) =>
+          ev.name?.toLowerCase().includes(q) ||
+          ev.venue?.toLowerCase().includes(q) ||
+          ev.category?.toLowerCase().includes(q)
+      );
+    }
+    const national = nationalFiltered
       .slice()
       .sort((a, b) => pseudoRating(b).score - pseudoRating(a).score);
 
@@ -298,6 +342,16 @@ export default function SeeAllActivitiesPage() {
           <p className="text-xs text-slate-500">Curated activities in {city}</p>
         </div>
       </div>
+
+      <ExploreHeaderFilters
+        city={city}
+        onCityChange={setCity}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
+        placeholder="Search activities..."
+      />
 
       {loading ? (
         <div className="py-20 text-center">

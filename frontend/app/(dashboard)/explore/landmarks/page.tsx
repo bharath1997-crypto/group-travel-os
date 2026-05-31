@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Calendar, Star, Info } from "lucide-react";
 import { CategoryScrollRow } from "@/components/explorer/CategoryScrollRow";
+import { ExploreHeaderFilters } from "@/components/explorer/ExploreHeaderFilters";
 import {
   type ExploreEvent,
   cityLabel,
@@ -105,6 +106,8 @@ function ExploreCard({
 
 export default function SeeAllLandmarksPage() {
   const [city, setCity] = useState("Chicago");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   useEffect(() => {
     const savedCity = localStorage.getItem("rovvy_explore_city") || "Chicago";
@@ -122,13 +125,35 @@ export default function SeeAllLandmarksPage() {
     { id: "p-lm-8", name: "Shedd Aquarium Oceanarium", category: "Landmarks", venue: "Shedd Aquarium", city: "Chicago", price_min: 25, price_max: 40 },
   ];
 
+  const filteredItems = useMemo(() => {
+    let result = items;
+    if (selectedDate) {
+      result = result.filter((ev) => {
+        if (!ev.date && !ev.start_date) return true; // landmarks/parks are open daily
+        const dStr = (ev.date || ev.start_date || "").split("T")[0];
+        return dStr === selectedDate;
+      });
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (ev) =>
+          ev.name?.toLowerCase().includes(q) ||
+          ev.venue?.toLowerCase().includes(q) ||
+          ev.city?.toLowerCase().includes(q) ||
+          ev.category?.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [selectedDate, searchQuery]);
+
   const renderRow = (
     title: string,
     subtitle: string,
   ) => {
     return (
       <CategoryScrollRow title={title} subtitle={subtitle}>
-        {items.map((item, index) => (
+        {filteredItems.map((item, index) => (
           <div key={`${item.id}-${index}`}>
             <ExploreCard
               item={item as any}
@@ -157,6 +182,16 @@ export default function SeeAllLandmarksPage() {
           <p className="text-xs text-slate-500">Curated landmarks in {city}</p>
         </div>
       </div>
+
+      <ExploreHeaderFilters
+        city={city}
+        onCityChange={setCity}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
+        placeholder="Search landmarks..."
+      />
 
       {/* Info Alert */}
       <div className="mb-8 flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50/50 p-4 text-blue-800 shadow-sm">

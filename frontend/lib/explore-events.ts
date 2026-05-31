@@ -17,6 +17,7 @@ export type ExploreEvent = {
   distance_miles?: number | null;
   venue_lat?: number | null;
   venue_lon?: number | null;
+  start_date?: string | null;
 };
 
 export const SECTION_CARD_LIMIT = 8;
