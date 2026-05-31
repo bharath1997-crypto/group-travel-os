@@ -1317,6 +1317,16 @@ export default function ExploreHubPage() {
           selectedDate={selectedDate}
           onChange={setSelectedDate}
         />
+
+        <Link href="/explore/map" className="shrink-0">
+          <button
+            type="button"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-700 shadow-sm hover:bg-teal-100/80 hover:border-teal-300 transition-all sm:w-auto"
+          >
+            <Compass size={15} className="text-teal-600" />
+            <span>Map View</span>
+          </button>
+        </Link>
       </div>
 
       <div className="space-y-2">
