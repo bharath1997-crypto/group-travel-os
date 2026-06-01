@@ -10,7 +10,7 @@ from sqlalchemy import select, delete
 from app.main import app
 from app.models.explore_content import ExploreContent
 from app.utils.database import SessionLocal
-from app.jobs.foursquare_fetch import run_foursquare_fetch, generate_grid
+from app.jobs.foursquare_fetch import run_foursquare_fetch, generate_grid, fetch_with_retry
 from app.jobs.osm_fetch import run_osm_fetch
 
 client = TestClient(app)
@@ -124,6 +124,26 @@ def test_run_foursquare_fetch_job(monkeypatch):
         db.execute(delete(ExploreContent).where(ExploreContent.event_id == event_id))
         db.commit()
         db.close()
+
+def test_fetch_with_retry_handles_429(monkeypatch):
+    client = MagicMock()
+    rate_limited = MagicMock(status_code=429, text="rate limited")
+    success = MagicMock(status_code=200, text="ok")
+
+    client.get.side_effect = [rate_limited, rate_limited, success]
+    sleeps: list[float] = []
+    monkeypatch.setattr("app.jobs.foursquare_fetch.time.sleep", lambda s: sleeps.append(s))
+
+    response = fetch_with_retry(
+        client,
+        "https://example.com",
+        headers={"Authorization": "Bearer test"},
+        params={"ll": "1,2"},
+    )
+
+    assert response is success
+    assert client.get.call_count == 3
+    assert sleeps == [1, 2]
 
 def test_run_osm_fetch_job(monkeypatch):
     """Test run_osm_fetch with a mocked Overpass API response and verify DB insertion."""

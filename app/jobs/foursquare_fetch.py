@@ -24,6 +24,9 @@ FOURSQUARE_CATEGORIES = {
     'Shopping': '17000',
 }
 
+REQUEST_DELAY_SECONDS = 1.0
+PROGRESS_LOG_INTERVAL = 10
+
 def generate_grid(lat_min: float, lat_max: float, lon_min: float, lon_max: float, step: float = 2.0) -> list[dict[str, float]]:
     points = []
     lat = lat_min
@@ -67,6 +70,34 @@ def _foursquare_headers(api_key: str) -> dict[str, str]:
     }
 
 
+def fetch_with_retry(
+    client: httpx.Client,
+    url: str,
+    *,
+    headers: dict[str, str],
+    params: dict[str, str | int],
+    timeout: float = 30.0,
+    max_retries: int = 3,
+) -> httpx.Response | None:
+    for attempt in range(max_retries):
+        try:
+            response = client.get(url, headers=headers, params=params, timeout=timeout)
+        except Exception as exc:
+            logger.error("Foursquare request failed: %s", exc)
+            return None
+
+        if response.status_code == 429:
+            wait = 2 ** attempt
+            logger.warning("Rate limited. Waiting %ss...", wait)
+            time.sleep(wait)
+            continue
+
+        return response
+
+    logger.warning("Foursquare rate limit exceeded after %d retries", max_retries)
+    return None
+
+
 def fetch_foursquare_places(
     client: httpx.Client,
     lat: float,
@@ -80,17 +111,37 @@ def fetch_foursquare_places(
         "categories": category_id,
         "limit": 50,
         "radius": 80000,
-        "fields": "fsq_id,name,location,geocodes,categories,rating,stats,price,photos"
+        "fields": "fsq_id,name,location,geocodes,categories,rating,stats,price,photos",
     }
-    try:
-        response = client.get(FOURSQUARE_URL, headers=headers, params=params, timeout=20.0)
-        if response.status_code == 200:
-            return response.json().get("results") or []
-        else:
-            logger.warning("Foursquare API returned HTTP %s: %s", response.status_code, response.text[:200])
-    except Exception as e:
-        logger.error("Error fetching from Foursquare at (%s, %s): %s", lat, lon, e)
+    response = fetch_with_retry(
+        client,
+        FOURSQUARE_URL,
+        headers=headers,
+        params=params,
+        timeout=30.0,
+    )
+    if response is None:
+        return []
+    if response.status_code == 200:
+        return response.json().get("results") or []
+    logger.warning(
+        "Foursquare API returned HTTP %s: %s",
+        response.status_code,
+        response.text[:200],
+    )
     return []
+
+
+def _place_coordinates(place: dict) -> tuple[float | None, float | None]:
+    geocodes = place.get("geocodes", {})
+    main_geo = geocodes.get("main", {}) if isinstance(geocodes, dict) else {}
+    v_lat = main_geo.get("latitude") if isinstance(main_geo, dict) else None
+    v_lon = main_geo.get("longitude") if isinstance(main_geo, dict) else None
+    if v_lat is None:
+        v_lat = place.get("latitude")
+    if v_lon is None:
+        v_lon = place.get("longitude")
+    return v_lat, v_lon
 
 def run_foursquare_fetch() -> dict[str, int]:
     """
@@ -109,34 +160,44 @@ def run_foursquare_fetch() -> dict[str, int]:
     )
 
     fetched_places = []
-    
-    with httpx.Client(timeout=30.0) as client:
+    total_points = len(US_GRID)
+
+    limits = httpx.Limits(max_connections=1, max_keepalive_connections=0)
+    with httpx.Client(timeout=30.0, limits=limits) as client:
         for idx, pt in enumerate(US_GRID):
-            lat = pt['lat']
-            lon = pt['lon']
-            
+            lat = pt["lat"]
+            lon = pt["lon"]
+
+            if idx == 0 or (idx + 1) % PROGRESS_LOG_INTERVAL == 0:
+                logger.info(
+                    "Progress: %d/%d grid points processed",
+                    idx + 1,
+                    total_points,
+                )
+
             for cat_name, cat_id in FOURSQUARE_CATEGORIES.items():
-                # Respect rate limits and stay under monthly free quota (10,000 requests)
-                time.sleep(0.5)
                 logger.info(
                     "Foursquare fetching %s at (%s, %s) — point %d/%d",
-                    cat_name, lat, lon, idx + 1, len(US_GRID)
+                    cat_name,
+                    lat,
+                    lon,
+                    idx + 1,
+                    total_points,
                 )
-                
+
                 results = fetch_foursquare_places(client, lat, lon, cat_id, api_key)
+                time.sleep(REQUEST_DELAY_SECONDS)
+
                 for place in results:
                     if not isinstance(place, dict):
                         continue
-                    
+
                     fsq_id = place.get("fsq_place_id") or place.get("fsq_id")
                     if not fsq_id:
                         continue
-                    
-                    geocodes = place.get("geocodes", {})
-                    main_geo = geocodes.get("main", {}) if isinstance(geocodes, dict) else {}
-                    v_lat = main_geo.get("latitude") if isinstance(main_geo, dict) else None
-                    v_lon = main_geo.get("longitude") if isinstance(main_geo, dict) else None
-                    
+
+                    v_lat, v_lon = _place_coordinates(place)
+
                     if v_lat is None or v_lon is None:
                         continue
                         
