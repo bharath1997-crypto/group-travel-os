@@ -25,6 +25,7 @@ import {
   ChevronDown
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { ExploreCardImage } from "@/components/explorer/ExploreCardImage";
 import { cityLabel } from "@/lib/explore-events";
 
 // Custom pin colors per category
@@ -142,6 +143,7 @@ export default function ExploreMapViewPage() {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [votes, setVotes] = useState<Record<string, "go" | "skip" | "maybe">>({});
   const [events, setEvents] = useState<any[]>([]);
+  const [mapError, setMapError] = useState<"missing-key" | "auth-failure" | null>(null);
 
   // Open-Meteo Weather Integration
   useEffect(() => {
@@ -210,7 +212,7 @@ export default function ExploreMapViewPage() {
     setLoading(true);
     const apiPath = `/explore/events?lat=${userLocation.lat}&lon=${userLocation.lng}&radius=${radius}&per_page=200`;
 
-    apiFetch<any>(apiPath)
+    apiFetch<any>(apiPath, {}, 60000)
       .then((data) => {
         let list = data.events || [];
         if (list.length === 0) {
@@ -225,7 +227,7 @@ export default function ExploreMapViewPage() {
         }
       })
       .catch((err) => {
-        console.error("Map events API issue:", err);
+        console.warn("Map events API issue:", err);
         // Load offline cache
         try {
           const cached = localStorage.getItem("rovvy_map_cache");
@@ -277,8 +279,21 @@ export default function ExploreMapViewPage() {
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
+    // Define global Google Maps auth failure callback
+    if (typeof window !== "undefined") {
+      (window as any).gm_authFailure = () => {
+        setMapError("auth-failure");
+      };
+    }
+
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+    if (!apiKey) {
+      setMapError("missing-key");
+      return;
+    }
+
     const loader = new Loader({
-      apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+      apiKey,
       version: "weekly",
       libraries: ["places", "geometry"]
     });
@@ -312,7 +327,15 @@ export default function ExploreMapViewPage() {
           }
         });
       })
-      .catch((err: any) => console.error("Maps loader failed:", err));
+      .catch((err: any) => {
+        console.error("Maps loader failed:", err);
+      });
+
+    return () => {
+      if (typeof window !== "undefined") {
+        (window as any).gm_authFailure = null;
+      }
+    };
   }, []);
 
   // Update map markers when events or filters change
@@ -541,65 +564,150 @@ export default function ExploreMapViewPage() {
       <div className="flex flex-1 overflow-hidden relative">
         {/* Map view (left, full height minus bottom strip) */}
         <div className="flex-1 h-full relative flex flex-col">
-          <div ref={mapContainerRef} className="flex-1 w-full bg-slate-100 relative" />
+          {mapError ? (
+            <div className="flex-1 w-full bg-[#0F172A] flex flex-col items-center justify-center p-6 relative overflow-hidden select-text">
+              {/* Decorative background gradients */}
+              <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
+              <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
 
-          {/* Floating Premium Popup Card at Bottom Left of Map */}
-          {selectedItem && (
-            <div className="absolute bottom-4 left-4 z-10 w-80 rounded-2xl border border-white/20 bg-white/95 p-4 shadow-xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-300">
-              <div className="flex justify-between items-start mb-2">
-                <span className="rounded-lg px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur" style={{ backgroundColor: PIN_COLORS[selectedItem.category] || "#0F766E" }}>
-                  {PIN_EMOJI[selectedItem.category] || "🧭"} {selectedItem.category || "Place"}
-                </span>
-                <span className="text-[10px] font-semibold text-slate-500 flex items-center gap-1">
-                  🚗 {driveTime(selectedItem.distance_miles || 1.5)} drive
-                </span>
-              </div>
-              <h3 className="text-sm font-bold text-slate-900 line-clamp-1">{selectedItem.name}</h3>
-              <div className="flex items-center gap-1.5 my-1">
-                <div className="flex">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} size={10} className="fill-amber-400 text-amber-400" />
-                  ))}
+              <div className="relative z-10 max-w-md w-full bg-[#1E293B]/90 border border-slate-700/60 rounded-2xl p-6 shadow-2xl backdrop-blur-md text-white text-center">
+                <div className="mx-auto w-12 h-12 rounded-full bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400 mb-4 animate-pulse">
+                  <MapPin size={24} />
                 </div>
-                <span className="text-[9px] text-slate-500">4.5 (200+)</span>
-              </div>
-              <div className="flex items-start gap-1 text-[10px] text-slate-500 mt-1 min-w-0">
-                <MapPin size={11} className="mt-0.5 shrink-0 text-slate-400" />
-                <span className="truncate">{selectedItem.venue}</span>
-              </div>
-              
-              {/* Actions Grid */}
-              <div className="grid grid-cols-3 gap-1.5 mt-3 pt-3 border-t border-slate-100">
-                <button 
-                  onClick={() => triggerToast("Booking experience redirect...")}
-                  className="rounded-lg bg-teal-700 py-1.5 text-center text-[10px] font-bold text-white hover:bg-teal-800 transition"
-                >
-                  Book
-                </button>
-                <button 
-                  onClick={() => toggleSaveItem(selectedItem.id)}
-                  className={`rounded-lg py-1.5 text-center text-[10px] font-bold transition border ${
-                    savedIds.has(selectedItem.id)
-                      ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  {savedIds.has(selectedItem.id) ? "Saved!" : "Save to Trip"}
-                </button>
-                <button 
-                  onClick={() => triggerToast("Group Poll created!")}
-                  className="rounded-lg bg-slate-100 py-1.5 text-center text-[10px] font-bold text-slate-700 hover:bg-slate-200 transition"
-                >
-                  Poll
-                </button>
+                
+                <h3 className="text-lg font-bold text-white tracking-tight mb-2">
+                  {mapError === "missing-key" ? "Google Maps API Key Missing" : "Google Maps API Project Authorization Pending"}
+                </h3>
+                
+                <p className="text-xs text-slate-300 mb-4 leading-relaxed">
+                  {mapError === "missing-key" 
+                    ? "The Google Maps API key environment variable is not configured for the frontend. Follow these instructions to set it up:" 
+                    : "The Google Maps script was loaded, but the API returned a project configuration error (ApiProjectMapError). Follow these instructions to authorize your key:"}
+                </p>
+
+                <div className="bg-[#0F172A]/60 border border-slate-800 rounded-xl p-4 mb-5 text-left text-xs text-slate-300 space-y-2.5">
+                  <div className="flex gap-2.5">
+                    <span className="flex-shrink-0 text-[#0F766E] font-bold">1.</span>
+                    <p>
+                      Go to the <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-teal-400 hover:underline font-semibold inline-flex items-center gap-0.5 font-sans">Google Cloud Console <ExternalLink size={10} /></a>.
+                    </p>
+                  </div>
+                  <div className="flex gap-2.5">
+                    <span className="flex-shrink-0 text-[#0F766E] font-bold">2.</span>
+                    <p>
+                      Select your active project and ensure the <span className="font-semibold text-white">Maps JavaScript API</span> is fully enabled.
+                    </p>
+                  </div>
+                  <div className="flex gap-2.5">
+                    <span className="flex-shrink-0 text-[#0F766E] font-bold">3.</span>
+                    <p>
+                      Confirm a <span className="font-semibold text-white">Billing Account</span> is linked, as Google Maps Platform requires active billing to load.
+                    </p>
+                  </div>
+                  <div className="flex gap-2.5">
+                    <span className="flex-shrink-0 text-[#0F766E] font-bold">4.</span>
+                    <p>
+                      {mapError === "missing-key"
+                        ? "Configure NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in the Vercel dashboard (production) or your local environment."
+                        : "Verify your API Key restrictions. If restricted to HTTP referrers, make sure your current origin/domain is allowed."}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <a
+                    href="https://console.cloud.google.com/google/maps-apis/credentials"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 rounded-xl bg-teal-700 hover:bg-teal-800 py-2.5 text-xs font-bold text-white shadow-lg transition duration-200 text-center flex items-center justify-center gap-1.5"
+                  >
+                    Google Cloud Console <ExternalLink size={12} />
+                  </a>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="flex-1 rounded-xl bg-slate-700 hover:bg-slate-600 py-2.5 text-xs font-bold text-slate-200 hover:text-white transition duration-200 border border-slate-600/50"
+                  >
+                    Retry Connection
+                  </button>
+                </div>
               </div>
             </div>
+          ) : (
+            <>
+              <div ref={mapContainerRef} className="flex-1 w-full bg-slate-100 relative" />
+
+              {/* Floating Premium Popup Card at Bottom Left of Map */}
+              {selectedItem && (
+                <div className="absolute bottom-4 left-4 z-10 w-80 overflow-hidden rounded-2xl border border-white/20 bg-white/95 shadow-xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <ExploreCardImage
+                    imageUrl={selectedItem.image_url}
+                    alt={selectedItem.name || selectedItem.title || "Place"}
+                    category={selectedItem.category}
+                    className="relative overflow-hidden"
+                    style={{ height: "160px", borderRadius: "20px 20px 0 0" }}
+                    imgClassName="h-full w-full object-cover"
+                    overlay
+                  />
+                  <div className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="rounded-lg px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur" style={{ backgroundColor: PIN_COLORS[selectedItem.category] || "#0F766E" }}>
+                      {PIN_EMOJI[selectedItem.category] || "🧭"} {selectedItem.category || "Place"}
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-500 flex items-center gap-1">
+                      🚗 {driveTime(selectedItem.distance_miles || 1.5)} drive
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 line-clamp-1">{selectedItem.name}</h3>
+                  <div className="flex items-center gap-1.5 my-1">
+                    <div className="flex">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Star key={i} size={10} className="fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                    <span className="text-[9px] text-slate-500">4.5 (200+)</span>
+                  </div>
+                  <div className="flex items-start gap-1 text-[10px] text-slate-500 mt-1 min-w-0">
+                    <MapPin size={11} className="mt-0.5 shrink-0 text-slate-400" />
+                    <span className="truncate">{selectedItem.venue}</span>
+                  </div>
+                  
+                  {/* Actions Grid */}
+                  <div className="grid grid-cols-3 gap-1.5 mt-3 pt-3 border-t border-slate-100">
+                    <button 
+                      onClick={() => triggerToast("Booking experience redirect...")}
+                      className="rounded-lg bg-teal-700 py-1.5 text-center text-[10px] font-bold text-white hover:bg-teal-800 transition"
+                    >
+                      Book
+                    </button>
+                    <button 
+                      onClick={() => toggleSaveItem(selectedItem.id)}
+                      className={`rounded-lg py-1.5 text-center text-[10px] font-bold transition border ${
+                        savedIds.has(selectedItem.id)
+                          ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                          : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {savedIds.has(selectedItem.id) ? "Saved!" : "Save to Trip"}
+                    </button>
+                    <button 
+                      onClick={() => triggerToast("Group Poll created!")}
+                      className="rounded-lg bg-slate-100 py-1.5 text-center text-[10px] font-bold text-slate-700 hover:bg-slate-200 transition"
+                    >
+                      Poll
+                    </button>
+                  </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Street View thumbnail strip */}
           <div className="h-[60px] bg-slate-900 flex items-center px-4 gap-4 overflow-x-auto text-white text-xs border-t border-slate-800 shrink-0">
             <span className="font-semibold text-slate-400 uppercase tracking-wider text-[9px]">Street View:</span>
-            {selectedItem ? (
+            {mapError ? (
+              <span className="text-slate-500 italic text-[10px]">Street View unavailable while Google Maps connection is pending</span>
+            ) : selectedItem ? (
               <div className="flex items-center gap-3 w-full">
                 <div className="h-10 w-20 rounded bg-slate-800 overflow-hidden relative border border-slate-700 shrink-0">
                   <img

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, MapPin, Calendar, Star } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { CategoryScrollRow } from "@/components/explorer/CategoryScrollRow";
+import { ExploreCardImage } from "@/components/explorer/ExploreCardImage";
 import { ExploreHeaderFilters } from "@/components/explorer/ExploreHeaderFilters";
 import {
   type ExploreEvent,
@@ -42,43 +43,23 @@ function ExploreCard({
     ? { primary: item.venue || "", secondary: item.city || "" }
     : formatLocation(item as ExploreEvent, userCity);
   const price = isPlaceholder ? "Coming Soon" : formatPrice(item as ExploreEvent);
-  const gradientClass =
-    categoryColor === "teal" ? "from-teal-400 to-emerald-600" :
-    categoryColor === "blue" ? "from-blue-400 to-indigo-600" :
-    categoryColor === "rose" ? "from-rose-400 to-pink-600" :
-    categoryColor === "amber" ? "from-amber-400 to-orange-600" :
-    categoryColor === "purple" ? "from-purple-400 to-fuchsia-600" :
-    categoryColor === "sky" ? "from-sky-400 to-blue-600" :
-    categoryColor === "orange" ? "from-orange-400 to-red-600" :
-    categoryColor === "emerald" ? "from-emerald-400 to-teal-600" :
-    categoryColor === "fuchsia" ? "from-fuchsia-400 to-rose-600" :
-    categoryColor === "indigo" ? "from-indigo-400 to-violet-600" :
-    "from-violet-400 to-purple-600";
 
   return (
     <article
       className="group flex w-56 shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-teal-400 hover:shadow-md"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
-        {item.image_url ? (
-          <img
-            src={item.image_url}
-            alt={item.name}
-            loading="lazy"
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-          />
-        ) : (
-          <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${gradientClass} opacity-80`}>
-            <Calendar size={32} className="text-white opacity-40" />
-          </div>
-        )}
+      <ExploreCardImage
+        imageUrl={item.image_url}
+        alt={item.name}
+        category={item.category}
+      >
         <span className="absolute left-3 top-3 rounded-lg bg-white/95 px-2 py-0.5 text-[9px] font-semibold text-teal-700 shadow-sm backdrop-blur">
           {item.category || "Activities"}
         </span>
         <span className={`absolute right-3 top-3 rounded-lg px-2 py-0.5 text-[9px] font-semibold text-white backdrop-blur ${isPlaceholder ? 'bg-amber-600/90' : 'bg-[#1E293B]/85'}`}>
           {price}
         </span>
-      </div>
+      </ExploreCardImage>
 
       <div className="flex flex-1 flex-col p-3">
         <h3 className="mb-1 line-clamp-1 text-[13px] font-bold leading-snug text-[#1E293B] group-hover:text-teal-700">

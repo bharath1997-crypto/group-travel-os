@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { ExploreCardImage } from "@/components/explorer/ExploreCardImage";
 import { loadEventSnapshot, loadExploreHubState } from "@/lib/explore-events";
 
 type EventDetail = {
@@ -608,17 +609,14 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
       )}
 
       <div className="relative h-64 w-full md:h-80 lg:h-96">
-        {event.image_url ? (
-          <img
-            src={event.image_url}
-            alt={event.title}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-slate-200">
-            <span className="text-slate-400">No event image available</span>
-          </div>
-        )}
+        <ExploreCardImage
+          imageUrl={event.image_url}
+          alt={event.title}
+          category={event.category}
+          className="relative h-full w-full overflow-hidden"
+          imgClassName="h-full w-full object-cover"
+          overlay
+        />
 
         <button
           type="button"
@@ -752,18 +750,13 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
                     className="w-56 shrink-0 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md"
                   >
                     <div className="relative aspect-[4/3] bg-slate-100">
-                      {item.image_url ? (
-                        <img
-                          src={item.image_url}
-                          alt={item.title}
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-slate-300">
-                          <Calendar size={28} />
-                        </div>
-                      )}
+                      <ExploreCardImage
+                        imageUrl={item.image_url}
+                        alt={item.title}
+                        category={item.category}
+                        className="relative h-full w-full overflow-hidden"
+                        imgClassName="h-full w-full object-cover"
+                      />
                       <span className="absolute left-2 top-2 rounded-md bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-teal-700">
                         {item.category}
                       </span>
