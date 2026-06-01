@@ -15,7 +15,8 @@ from app.utils.database import SessionLocal
 
 logger = logging.getLogger(__name__)
 
-FOURSQUARE_URL = "https://api.foursquare.com/v3/places/search"
+FOURSQUARE_URL = "https://places-api.foursquare.com/places/search"
+FOURSQUARE_API_VERSION = "2025-06-17"
 
 FOURSQUARE_CATEGORIES = {
     'Food': '13000',
@@ -50,11 +51,30 @@ def map_fsq_price(price: int | None) -> float:
         return 0.0
     return float({1: 0, 2: 15, 3: 30, 4: 50}.get(price, 0))
 
-def fetch_foursquare_places(client: httpx.Client, lat: float, lon: float, category_id: str) -> list[dict]:
-    headers = {
-        "Authorization": os.environ.get("FOURSQUARE_API_KEY") or "",
-        "Accept": "application/json"
+def _foursquare_api_key() -> str:
+    raw = (os.environ.get("FOURSQUARE_API_KEY") or "").strip()
+    if raw.lower().startswith("bearer "):
+        raw = raw[7:].strip()
+    return raw
+
+
+def _foursquare_headers(api_key: str) -> dict[str, str]:
+    # Service keys on the Places API use Bearer auth (see Foursquare migration guide).
+    return {
+        "Authorization": f"Bearer {api_key}",
+        "Accept": "application/json",
+        "X-Places-Api-Version": FOURSQUARE_API_VERSION,
     }
+
+
+def fetch_foursquare_places(
+    client: httpx.Client,
+    lat: float,
+    lon: float,
+    category_id: str,
+    api_key: str,
+) -> list[dict]:
+    headers = _foursquare_headers(api_key)
     params = {
         "ll": f"{lat},{lon}",
         "categories": category_id,
@@ -78,10 +98,15 @@ def run_foursquare_fetch() -> dict[str, int]:
     Returns counts of fetched, inserted, and updated records.
     """
     logger.info("Starting Foursquare bulk fetch job...")
-    api_key = os.environ.get("FOURSQUARE_API_KEY")
+    api_key = _foursquare_api_key()
     if not api_key:
         logger.error("FOURSQUARE_API_KEY is not configured.")
         return {"fetched": 0, "inserted": 0, "updated": 0}
+
+    logger.info(
+        "FOURSQUARE_API_KEY loaded (first 10 chars): %s",
+        api_key[:10],
+    )
 
     fetched_places = []
     
@@ -98,12 +123,12 @@ def run_foursquare_fetch() -> dict[str, int]:
                     cat_name, lat, lon, idx + 1, len(US_GRID)
                 )
                 
-                results = fetch_foursquare_places(client, lat, lon, cat_id)
+                results = fetch_foursquare_places(client, lat, lon, cat_id, api_key)
                 for place in results:
                     if not isinstance(place, dict):
                         continue
                     
-                    fsq_id = place.get("fsq_id")
+                    fsq_id = place.get("fsq_place_id") or place.get("fsq_id")
                     if not fsq_id:
                         continue
                     

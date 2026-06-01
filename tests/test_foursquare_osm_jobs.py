@@ -95,6 +95,10 @@ def test_run_foursquare_fetch_job(monkeypatch):
             result = run_foursquare_fetch()
             
         assert mock_get.call_count == 3  # Food, Nightlife, Shopping
+        first_headers = mock_get.call_args_list[0].kwargs.get("headers", {})
+        assert first_headers.get("Authorization") == "Bearer test-fsq-key"
+        assert first_headers.get("Accept") == "application/json"
+        assert first_headers.get("X-Places-Api-Version") == "2025-06-17"
         assert result["fetched"] > 0
         assert result["inserted"] >= 1
         
@@ -153,12 +157,16 @@ def test_run_osm_fetch_job(monkeypatch):
             ]
         }
         
-        with patch("httpx.Client.post", return_value=mock_response) as mock_post, patch(
+        with patch("httpx.Client.get", return_value=mock_response) as mock_get, patch(
             "time.sleep", return_value=None
         ):
             result = run_osm_fetch()
             
-        assert mock_post.call_count == 1
+        assert mock_get.call_count == 1
+        get_kwargs = mock_get.call_args.kwargs
+        assert get_kwargs.get("params", {}).get("data", "").startswith("[out:json][timeout:25];")
+        assert get_kwargs.get("headers", {}).get("Accept") == "application/json"
+        assert "RovvyExplore" in get_kwargs.get("headers", {}).get("User-Agent", "")
         assert result["fetched"] > 0
         assert result["inserted"] >= 1
         

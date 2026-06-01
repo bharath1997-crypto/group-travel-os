@@ -15,6 +15,11 @@ from app.utils.database import SessionLocal
 logger = logging.getLogger(__name__)
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+OVERPASS_MIRROR_URL = "https://overpass.kumi.systems/api/interpreter"
+OVERPASS_HEADERS = {
+    "Accept": "application/json",
+    "User-Agent": "RovvyExplore/1.0 (group-travel-os; contact@rovvy.app)",
+}
 
 # Mapping of tags to category names
 TAG_TO_CATEGORY = {
@@ -84,57 +89,66 @@ def build_all_osm_query(lat: float, lon: float, radius_meters: int = 80000) -> s
         union_parts.append(f'way[{tag}](around:{radius_meters},{lat},{lon});')
         
     union_str = "\n".join(union_parts)
-    return f"""
-    [out:json][timeout:25];
-    (
-      {union_str}
-    );
-    out body center;
-    """
+    return (
+        "[out:json][timeout:25];\n"
+        "(\n"
+        f"{union_str}\n"
+        ");\n"
+        "out body center;"
+    )
 
 def fetch_osm_places(client: httpx.Client, lat: float, lon: float) -> list[dict]:
-    query = build_all_osm_query(lat, lon, 80000)
+    query = build_all_osm_query(lat, lon, 25000)
     try:
-        response = client.post(
-            OVERPASS_URL,
-            data={'data': query},
-            timeout=35.0
-        )
-        if response.status_code == 200:
-            elements = response.json().get('elements', [])
-            results = []
-            for el in elements:
-                tags_dict = el.get('tags', {})
-                name = tags_dict.get('name')
-                if not name:
-                    continue
-                
-                # Identify category based on tags
-                category_name = None
-                for (k, v), cat in TAG_TO_CATEGORY.items():
-                    if tags_dict.get(k) == v:
-                        category_name = cat
-                        break
-                        
-                if not category_name:
-                    continue
-                    
-                lat_val = el.get('lat') or el.get('center', {}).get('lat')
-                lon_val = el.get('lon') or el.get('center', {}).get('lon')
-                if not lat_val or not lon_val:
-                    continue
-                    
-                results.append({
-                    'name': name,
-                    'lat': float(lat_val),
-                    'lon': float(lon_val),
-                    'tags': tags_dict,
-                    'osm_id': el.get('id'),
-                    'category': category_name
-                })
-            return results
-        else:
-            logger.warning("OSM Overpass API returned HTTP %s", response.status_code)
+        response = None
+        for url in (OVERPASS_URL, OVERPASS_MIRROR_URL):
+            response = client.get(
+                url,
+                params={"data": query},
+                headers=OVERPASS_HEADERS,
+                timeout=60.0,
+            )
+            if response.status_code == 200:
+                break
+            logger.warning(
+                "OSM Overpass API %s returned HTTP %s: %s",
+                url,
+                response.status_code,
+                response.text[:200],
+            )
+        if response is None or response.status_code != 200:
+            return []
+        elements = response.json().get("elements", [])
+        results = []
+        for el in elements:
+            tags_dict = el.get("tags", {})
+            name = tags_dict.get("name")
+            if not name:
+                continue
+
+            category_name = None
+            for (k, v), cat in TAG_TO_CATEGORY.items():
+                if tags_dict.get(k) == v:
+                    category_name = cat
+                    break
+
+            if not category_name:
+                continue
+
+            lat_val = el.get("lat") or el.get("center", {}).get("lat")
+            lon_val = el.get("lon") or el.get("center", {}).get("lon")
+            if not lat_val or not lon_val:
+                continue
+
+            results.append({
+                "name": name,
+                "lat": float(lat_val),
+                "lon": float(lon_val),
+                "tags": tags_dict,
+                "osm_id": el.get("id"),
+                "category": category_name,
+            })
+        return results
     except Exception as e:
         logger.error("Error fetching from OSM at (%s, %s): %s", lat, lon, e)
     return []
