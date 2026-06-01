@@ -408,18 +408,20 @@ function ExploreCard({ item, userCity, categoryColor, isPlaceholder }: ExploreCa
     <article
       className="group flex w-56 shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-400 hover:shadow-md"
     >
-      <ExploreCardImage
-        imageUrl={item.image_url}
-        alt={item.name}
-        category={item.category}
-      >
+      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+        <ExploreCardImage
+          imageUrl={item.image_url}
+          alt={item.name}
+          category={item.category}
+          className="h-full w-full"
+        />
         <span className="absolute left-3 top-3 rounded-lg bg-white/95 px-2 py-0.5 text-[9px] font-semibold text-teal-700 shadow-sm backdrop-blur">
           {item.category}
         </span>
         <span className={`absolute right-3 top-3 rounded-lg px-2 py-0.5 text-[9px] font-semibold text-white backdrop-blur ${isPlaceholder ? 'bg-amber-600/90' : 'bg-[#1E293B]/85'}`}>
           {price}
         </span>
-      </ExploreCardImage>
+      </div>
 
       <div className="flex flex-1 flex-col p-3">
         <h3 className="mb-1 line-clamp-1 text-[13px] font-bold leading-snug text-[#1E293B] group-hover:text-teal-700">
