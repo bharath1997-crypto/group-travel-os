@@ -179,6 +179,7 @@ export default function SeeAllGamingPage() {
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
         placeholder="Search gaming..."
+        mapCategory="Gaming"
       />
 
       {/* Info Alert */}

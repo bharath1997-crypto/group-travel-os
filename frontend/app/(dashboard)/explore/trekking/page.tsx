@@ -179,6 +179,7 @@ export default function SeeAllTrekkingPage() {
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
         placeholder="Search trekking..."
+        mapCategory="Trekking"
       />
 
       {/* Info Alert */}

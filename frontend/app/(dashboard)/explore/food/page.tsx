@@ -179,6 +179,7 @@ export default function SeeAllFoodPage() {
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
         placeholder="Search dining..."
+        mapCategory="Food"
       />
 
       {/* Info Alert */}

@@ -14,6 +14,7 @@ import {
   formatLocation,
   formatPrice,
   pseudoRating,
+  saveEventSnapshot,
 } from "@/lib/explore-events";
 
 type EventsAPIResponse = {
@@ -300,6 +301,7 @@ export default function SeeAllActivitiesPage() {
               key={`${item.id}-${index}`}
               href={`/explore/event/${encodeURIComponent(item.id)}?city=${encodeURIComponent(cityLabel(city))}`}
               className="block shrink-0"
+              onClick={() => saveEventSnapshot(item)}
             >
               {cardEl}
             </Link>
@@ -332,6 +334,7 @@ export default function SeeAllActivitiesPage() {
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
         placeholder="Search activities..."
+        mapCategory="Activities"
       />
 
       {loading ? (

@@ -4,7 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import { Search, MapPin, Navigation, ChevronDown } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { cityLabel } from "@/lib/explore-events";
+import { type DateQuickPreset } from "@/lib/explore-date-utils";
 import { MinimalCalendar } from "./MinimalCalendar";
+import { ExploreMapLink } from "./ExploreMapLink";
 
 type ExploreHeaderFiltersProps = {
   city: string;
@@ -12,8 +14,11 @@ type ExploreHeaderFiltersProps = {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   selectedDate: string | null;
-  onDateChange: (date: string | null) => void;
+  datePreset?: DateQuickPreset;
+  onDateChange: (date: string | null, preset?: DateQuickPreset) => void;
   placeholder?: string;
+  compactCalendar?: boolean;
+  mapCategory?: string;
 };
 
 type CitySuggestion = {
@@ -27,8 +32,11 @@ export function ExploreHeaderFilters({
   searchQuery,
   onSearchChange,
   selectedDate,
+  datePreset,
   onDateChange,
   placeholder = "Search items...",
+  compactCalendar = false,
+  mapCategory,
 }: ExploreHeaderFiltersProps) {
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [citySearch, setCitySearch] = useState("");
@@ -243,8 +251,12 @@ export function ExploreHeaderFilters({
       {/* Stylish Minimal Calendar */}
       <MinimalCalendar
         selectedDate={selectedDate}
+        quickPreset={datePreset}
         onChange={onDateChange}
+        compact={compactCalendar}
       />
+
+      {mapCategory ? <ExploreMapLink category={mapCategory} /> : null}
     </div>
   );
 }

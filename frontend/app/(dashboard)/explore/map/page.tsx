@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader } from "@googlemaps/js-api-loader";
 import {
   ArrowLeft,
@@ -22,11 +23,28 @@ import {
   HelpCircle,
   TrendingUp,
   ExternalLink,
-  ChevronDown
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { ExploreCardImage } from "@/components/explorer/ExploreCardImage";
+import { MinimalCalendar } from "@/components/explorer/MinimalCalendar";
 import { cityLabel } from "@/lib/explore-events";
+import {
+  isExploreMapCategory,
+  matchesMapCategory,
+  MAIN_MAP_DEFAULT_RADIUS,
+  CATEGORY_MAP_DEFAULT_RADIUS,
+  isCategoryMapMode,
+} from "@/lib/explore-map-categories";
+import { useExploreDateFilter } from "@/hooks/useExploreDateFilter";
+import {
+  fetchLocationWeather,
+  formatWeatherChip,
+  resolveWeatherDate,
+} from "@/lib/explore-weather";
 
 // Custom pin colors per category
 const PIN_COLORS: Record<string, string> = {
@@ -121,18 +139,58 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 export default function ExploreMapViewPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
+  const categoryTapRef = useRef<{ category: string; timestamp: number } | null>(null);
+  const [mapContainerReady, setMapContainerReady] = useState(false);
+  const [canScrollCategoriesLeft, setCanScrollCategoriesLeft] = useState(false);
+  const [canScrollCategoriesRight, setCanScrollCategoriesRight] = useState(false);
+
+  const setMapContainerNode = useCallback((node: HTMLDivElement | null) => {
+    mapContainerRef.current = node;
+    setMapContainerReady(!!node);
+  }, []);
+
+  const categoryParam = searchParams.get("category");
+  const isCategoryMap = isCategoryMapMode(categoryParam);
+  const defaultRadius = isCategoryMap ? CATEGORY_MAP_DEFAULT_RADIUS : MAIN_MAP_DEFAULT_RADIUS;
 
   // Default to Chicago coordinates
   const [userLocation, setUserLocation] = useState({ lat: 41.8781, lng: -87.6298 });
   const [displayCity, setDisplayCity] = useState("Chicago");
-  const [radius, setRadius] = useState<number>(50);
+  const [radius, setRadius] = useState<number>(defaultRadius);
   const [activeCategory, setActiveCategory] = useState<string>("All");
-  const [dateFilter, setDateFilter] = useState<string>("This Weekend");
+  const { selectedDate, datePreset, onDateChange, matchesEvent } =
+    useExploreDateFilter();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
+
+  const triggerToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 4000);
+  }, []);
+
+  const checkCategoryScroll = useCallback(() => {
+    const el = categoryScrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollCategoriesLeft(scrollLeft > 2);
+    setCanScrollCategoriesRight(scrollLeft + clientWidth < scrollWidth - 2);
+  }, []);
+
+  const scrollCategories = useCallback((direction: "left" | "right") => {
+    const el = categoryScrollRef.current;
+    if (!el) return;
+    const amount = el.clientWidth * 0.75;
+    el.scrollTo({
+      left: direction === "left" ? el.scrollLeft - amount : el.scrollLeft + amount,
+      behavior: "smooth",
+    });
+  }, []);
 
   const [loading, setLoading] = useState(false);
   const [isCached, setIsCached] = useState(false);
@@ -145,49 +203,173 @@ export default function ExploreMapViewPage() {
   const [events, setEvents] = useState<any[]>([]);
   const [mapError, setMapError] = useState<"missing-key" | "auth-failure" | null>(null);
 
-  // Open-Meteo Weather Integration
   useEffect(() => {
-    const fetchWeather = async () => {
-      try {
-        const res = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${userLocation.lat}&longitude=${userLocation.lng}&current_weather=true`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          const tempC = data.current_weather.temperature;
-          const tempF = Math.round((tempC * 9) / 5 + 32);
-          const code = data.current_weather.weathercode;
+    checkCategoryScroll();
+    const timer = setTimeout(checkCategoryScroll, 150);
+    window.addEventListener("resize", checkCategoryScroll);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", checkCategoryScroll);
+    };
+  }, [checkCategoryScroll, events.length]);
 
-          let condition = "Clear";
-          let emoji = "☀️";
-          if (code >= 1 && code <= 3) {
-            condition = "Partly Cloudy";
-            emoji = "⛅";
-          } else if (code === 45 || code === 48) {
-            condition = "Foggy";
-            emoji = "🌫️";
-          } else if (code >= 51 && code <= 67) {
-            condition = "Rainy";
-            emoji = "🌧️";
-          } else if (code >= 71 && code <= 77) {
-            condition = "Snowy";
-            emoji = "❄️";
-          } else if (code >= 80 && code <= 82) {
-            condition = "Showers";
-            emoji = "🌧️";
-          } else if (code === 95 || code === 99) {
-            condition = "Thunderstorm";
-            emoji = "⛈️";
-          }
+  // Apply category + unlimited radius when opened from a feature (?category=Activities)
+  useEffect(() => {
+    const cat = categoryParam;
+    if (cat && isExploreMapCategory(cat)) {
+      setActiveCategory(cat);
+      setRadius(CATEGORY_MAP_DEFAULT_RADIUS);
+    } else {
+      setRadius(MAIN_MAP_DEFAULT_RADIUS);
+    }
+  }, [categoryParam]);
 
-          setWeather(`${emoji} ${tempF}°F · ${condition} · ${cityLabel(displayCity)}`);
+  const setCategoryFilter = useCallback(
+    (category: string) => {
+      setActiveCategory(category);
+      const enteringCategory = isCategoryMapMode(category);
+      if (enteringCategory) {
+        setRadius(CATEGORY_MAP_DEFAULT_RADIUS);
+      } else if (!categoryParam) {
+        setRadius(MAIN_MAP_DEFAULT_RADIUS);
+      }
+      const params = new URLSearchParams(searchParams.toString());
+      if (category === "All") params.delete("category");
+      else params.set("category", category);
+      const qs = params.toString();
+      router.replace(qs ? `/explore/map?${qs}` : "/explore/map", { scroll: false });
+    },
+    [router, searchParams, categoryParam],
+  );
+
+  const handleCategoryTap = useCallback(
+    (cat: string) => {
+      const now = Date.now();
+      const prev = categoryTapRef.current;
+
+      if (prev && prev.category === cat && now - prev.timestamp < 320) {
+        categoryTapRef.current = null;
+        if (cat !== "All" && activeCategory === cat) {
+          setCategoryFilter("All");
+        } else {
+          setCategoryFilter(cat);
         }
+        return;
+      }
+
+      categoryTapRef.current = { category: cat, timestamp: now };
+      window.setTimeout(() => {
+        if (
+          categoryTapRef.current?.category === cat &&
+          categoryTapRef.current.timestamp === now
+        ) {
+          categoryTapRef.current = null;
+          setCategoryFilter(cat);
+        }
+      }, 320);
+    },
+    [activeCategory, setCategoryFilter],
+  );
+
+  const clearAllFilters = useCallback(() => {
+    const keepCategory = isCategoryMapMode(activeCategory) ? activeCategory : "All";
+    setActiveCategory(keepCategory);
+    onDateChange(null, null);
+    setSearchQuery("");
+    setRadius(
+      isCategoryMapMode(keepCategory) ? CATEGORY_MAP_DEFAULT_RADIUS : MAIN_MAP_DEFAULT_RADIUS,
+    );
+    if (keepCategory === "All") router.replace("/explore/map", { scroll: false });
+    else router.replace(`/explore/map?category=${encodeURIComponent(keepCategory)}`, { scroll: false });
+  }, [activeCategory, onDateChange, router]);
+
+  const hasActiveFilters =
+    !!selectedDate ||
+    !!datePreset ||
+    !!searchQuery.trim() ||
+    radius !== defaultRadius ||
+    (!isCategoryMap && activeCategory !== "All");
+
+  const { filteredEventsList, dateFilterRelaxed } = useMemo(() => {
+    const applyFilters = (includeDate: boolean) => {
+      let result = events;
+      if (activeCategory !== "All") {
+        result = result.filter((ev) => matchesMapCategory(ev.category, activeCategory));
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        result = result.filter(
+          (ev) =>
+            ev.name?.toLowerCase().includes(q) ||
+            ev.venue?.toLowerCase().includes(q),
+        );
+      }
+      if (includeDate && (selectedDate || datePreset)) {
+        result = result.filter((ev) => matchesEvent(ev.date || ev.start_date));
+      }
+      return result;
+    };
+
+    const strict = applyFilters(true);
+    let relaxed = false;
+    let result = strict;
+    if (strict.length === 0 && (selectedDate || datePreset)) {
+      const withoutDate = applyFilters(false);
+      if (withoutDate.length > 0) {
+        result = withoutDate;
+        relaxed = true;
+      }
+    }
+    return {
+      filteredEventsList: [...result].sort(
+        (a, b) => (a.distance_miles || 0) - (b.distance_miles || 0),
+      ),
+      dateFilterRelaxed: relaxed,
+    };
+  }, [events, activeCategory, searchQuery, selectedDate, datePreset, matchesEvent]);
+
+  const relaxedToastShown = useRef(false);
+  useEffect(() => {
+    if (dateFilterRelaxed && !relaxedToastShown.current) {
+      triggerToast("Showing nearby pins outside selected date");
+      relaxedToastShown.current = true;
+    }
+    if (!dateFilterRelaxed) relaxedToastShown.current = false;
+  }, [dateFilterRelaxed, triggerToast]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const weatherDate = resolveWeatherDate(selectedDate, datePreset);
+
+    const loadWeather = async () => {
+      try {
+        const display = await fetchLocationWeather(
+          userLocation.lat,
+          userLocation.lng,
+          weatherDate,
+        );
+        if (cancelled || !display) return;
+
+        if (display.condition === "Forecast unavailable") {
+          setWeather(`📅 — · Forecast unavailable · ${cityLabel(displayCity)}`);
+          return;
+        }
+        if (display.condition === "Past date") {
+          setWeather(`📅 — · Past date · ${cityLabel(displayCity)}`);
+          return;
+        }
+
+        setWeather(formatWeatherChip(display, cityLabel(displayCity)));
       } catch {
-        setWeather("☀️ 71°F · Clear · Chicago");
+        if (!cancelled) setWeather(`☀️ — · Weather unavailable · ${cityLabel(displayCity)}`);
       }
     };
-    void fetchWeather();
-  }, [userLocation, displayCity]);
+
+    void loadWeather();
+    return () => {
+      cancelled = true;
+    };
+  }, [userLocation.lat, userLocation.lng, displayCity, selectedDate, datePreset]);
 
   // Geolocation tracking
   useEffect(() => {
@@ -214,6 +396,11 @@ export default function ExploreMapViewPage() {
 
     apiFetch<any>(apiPath, {}, 60000)
       .then((data) => {
+        if (data.display_city) {
+          setDisplayCity(String(data.display_city).split(",")[0].trim());
+        } else if (data.city) {
+          setDisplayCity(String(data.city).split(",")[0].trim());
+        }
         let list = data.events || [];
         if (list.length === 0) {
           list = getHydratedPlaceholders(userLocation.lat, userLocation.lng);
@@ -248,11 +435,6 @@ export default function ExploreMapViewPage() {
       });
   }, [userLocation.lat, userLocation.lng, radius]);
 
-  const triggerToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 4000);
-  };
-
   const getHydratedPlaceholders = (lat: number, lng: number) => {
     const list: any[] = [];
     Object.keys(PLACEHOLDERS).forEach((catKey) => {
@@ -277,12 +459,13 @@ export default function ExploreMapViewPage() {
 
   // Google Maps Loader
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    if (!mapContainerReady || !mapContainerRef.current || mapInstanceRef.current) return;
 
-    // Define global Google Maps auth failure callback
+    let cancelled = false;
+
     if (typeof window !== "undefined") {
       (window as any).gm_authFailure = () => {
-        setMapError("auth-failure");
+        if (!cancelled) setMapError("auth-failure");
       };
     }
 
@@ -295,24 +478,25 @@ export default function ExploreMapViewPage() {
     const loader = new Loader({
       apiKey,
       version: "weekly",
-      libraries: ["places", "geometry"]
+      libraries: ["places", "geometry"],
     });
 
-    (loader as any)
+    loader
       .load()
       .then((google: any) => {
-        const map = new google.maps.Map(mapContainerRef.current!, {
+        if (cancelled || !mapContainerRef.current || mapInstanceRef.current) return;
+
+        const map = new google.maps.Map(mapContainerRef.current, {
           center: userLocation,
           zoom: 13,
           mapTypeControl: false,
           streetViewControl: true,
           fullscreenControl: false,
-          styles: [] // Clean standard style
+          styles: [],
         });
 
         mapInstanceRef.current = map;
 
-        // User location marker
         new google.maps.Marker({
           position: userLocation,
           map,
@@ -323,43 +507,40 @@ export default function ExploreMapViewPage() {
             fillColor: "#0F766E",
             fillOpacity: 1,
             strokeColor: "#FFFFFF",
-            strokeWeight: 2
-          }
+            strokeWeight: 2,
+          },
         });
       })
-      .catch((err: any) => {
-        console.error("Maps loader failed:", err);
+      .catch((err: unknown) => {
+        if (!cancelled) console.error("Maps loader failed:", err);
       });
 
     return () => {
+      cancelled = true;
+      markersRef.current.forEach((m) => m.setMap(null));
+      markersRef.current = [];
+      mapInstanceRef.current = null;
       if (typeof window !== "undefined") {
         (window as any).gm_authFailure = null;
       }
     };
-  }, []);
+  }, [mapContainerReady]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    map.setCenter(userLocation);
+  }, [userLocation]);
 
   // Update map markers when events or filters change
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || typeof window === "undefined" || !(window as any).google) return;
 
-    // Clear old markers
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
 
-    // Filter events
-    const filtered = events.filter((ev) => {
-      const matchCat =
-        activeCategory === "All" ||
-        (ev.category || "").toLowerCase() === activeCategory.toLowerCase();
-      const matchSearch =
-        !searchQuery.trim() ||
-        ev.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        ev.venue?.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchCat && matchSearch;
-    });
-
-    filtered.forEach((ev) => {
+    filteredEventsList.forEach((ev) => {
       const lat = ev.venue_lat || ev.lat;
       const lng = ev.venue_lon || ev.lng;
       if (!lat || !lng) return;
@@ -378,7 +559,7 @@ export default function ExploreMapViewPage() {
 
       markersRef.current.push(marker);
     });
-  }, [events, activeCategory, searchQuery]);
+  }, [filteredEventsList]);
 
   // SVG customized category pin icon
   const getPinIcon = (category: string) => {
@@ -402,26 +583,6 @@ export default function ExploreMapViewPage() {
       anchor: new (window as any).google.maps.Point(18, 18)
     };
   };
-
-  // Memoized lists of filtered items
-  const filteredEventsList = useMemo(() => {
-    let result = events;
-    if (activeCategory !== "All") {
-      result = result.filter(
-        (ev) => (ev.category || "").toLowerCase() === activeCategory.toLowerCase()
-      );
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (ev) =>
-          ev.name?.toLowerCase().includes(q) ||
-          ev.venue?.toLowerCase().includes(q)
-      );
-    }
-    // Sort by distance
-    return [...result].sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0));
-  }, [events, activeCategory, searchQuery]);
 
   // Drive time estimator
   const driveTime = (miles: number) => {
@@ -487,18 +648,13 @@ export default function ExploreMapViewPage() {
             </button>
           </div>
 
-          {/* Date Selector */}
-          <div className="relative">
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none hover:border-slate-300"
-            >
-              <option>Today</option>
-              <option>This Weekend</option>
-              <option>This Week</option>
-            </select>
-          </div>
+          {/* Date picker */}
+          <MinimalCalendar
+            selectedDate={selectedDate}
+            quickPreset={datePreset}
+            onChange={onDateChange}
+            compact
+          />
 
           {/* Radius Selector */}
           <div className="relative">
@@ -511,6 +667,7 @@ export default function ExploreMapViewPage() {
               <option value={50}>50 miles</option>
               <option value={100}>100 miles</option>
               <option value={200}>200 miles</option>
+              <option value={CATEGORY_MAP_DEFAULT_RADIUS}>Unlimited</option>
             </select>
           </div>
 
@@ -525,47 +682,90 @@ export default function ExploreMapViewPage() {
               className="w-full rounded-lg border border-slate-200 py-1.5 pl-7 pr-3 text-xs outline-none focus:border-teal-500"
             />
           </div>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-teal-300 hover:text-teal-700"
+              title="Clear all filters"
+            >
+              <RotateCcw size={12} />
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
       {/* Category Pills Strip */}
-      <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50/50 px-4 py-2 shrink-0 overflow-x-auto select-none no-scrollbar">
-        {CATEGORIES.map((cat) => {
-          const isActive = activeCategory === cat;
-          const count = events.filter(
-            (ev) => cat === "All" || (ev.category || "").toLowerCase() === cat.toLowerCase()
-          ).length;
+      <div className="relative flex items-center border-b border-slate-100 bg-slate-50/50 shrink-0 select-none">
+        {canScrollCategoriesLeft ? (
+          <button
+            type="button"
+            onClick={() => scrollCategories("left")}
+            className="ml-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-teal-300 hover:text-teal-700"
+            aria-label="Scroll categories left"
+          >
+            <ChevronLeft size={14} />
+          </button>
+        ) : null}
 
-          return (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all shrink-0 ${
-                isActive
-                  ? "bg-teal-700 text-white shadow-sm"
-                  : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
-              }`}
-            >
-              <span>{PIN_EMOJI[cat] || "🧭"}</span>
-              <span>{cat}</span>
-              <span
-                className={`ml-1 rounded px-1 py-0.2 text-[9px] ${
-                  isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+        <div
+          ref={categoryScrollRef}
+          onScroll={checkCategoryScroll}
+          className="flex flex-1 items-center gap-2 overflow-x-auto px-3 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {CATEGORIES.map((cat) => {
+            const isActive = activeCategory === cat;
+            const count = events.filter(
+              (ev) => cat === "All" || matchesMapCategory(ev.category, cat)
+            ).length;
+
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => handleCategoryTap(cat)}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all shrink-0 ${
+                  isActive
+                    ? "bg-teal-700 text-white shadow-sm"
+                    : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
                 }`}
               >
-                {count}
-              </span>
-            </button>
-          );
-        })}
+                <span>{PIN_EMOJI[cat] || "🧭"}</span>
+                <span>{cat}</span>
+                <span
+                  className={`ml-1 rounded px-1 py-0.2 text-[9px] ${
+                    isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {canScrollCategoriesRight ? (
+          <button
+            type="button"
+            onClick={() => scrollCategories("right")}
+            className="mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-teal-300 hover:text-teal-700"
+            aria-label="Scroll categories right"
+          >
+            <ChevronRight size={14} />
+          </button>
+        ) : null}
       </div>
 
       {/* Main Map & Sidebar Workspace */}
       <div className="flex flex-1 overflow-hidden relative">
         {/* Map view (left, full height minus bottom strip) */}
         <div className="flex-1 h-full relative flex flex-col">
+          <div ref={setMapContainerNode} className="flex-1 w-full bg-slate-100 relative" />
+
           {mapError ? (
-            <div className="flex-1 w-full bg-[#0F172A] flex flex-col items-center justify-center p-6 relative overflow-hidden select-text">
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0F172A] p-6 overflow-hidden select-text">
               {/* Decorative background gradients */}
               <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
               <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
@@ -632,12 +832,10 @@ export default function ExploreMapViewPage() {
                 </div>
               </div>
             </div>
-          ) : (
-            <>
-              <div ref={mapContainerRef} className="flex-1 w-full bg-slate-100 relative" />
+          ) : null}
 
-              {/* Floating Premium Popup Card at Bottom Left of Map */}
-              {selectedItem && (
+          {/* Floating Premium Popup Card at Bottom Left of Map */}
+          {!mapError && selectedItem && (
                 <div className="absolute bottom-4 left-4 z-10 w-80 overflow-hidden rounded-2xl border border-white/20 bg-white/95 shadow-xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-300">
                   <ExploreCardImage
                     imageUrl={selectedItem.image_url}
@@ -698,8 +896,6 @@ export default function ExploreMapViewPage() {
                   </div>
                   </div>
                 </div>
-              )}
-            </>
           )}
 
           {/* Street View thumbnail strip */}

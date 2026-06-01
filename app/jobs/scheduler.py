@@ -11,6 +11,8 @@ from apscheduler.triggers.interval import IntervalTrigger
 from app.jobs.deal_scan_job import run_weekly_scan_job
 from app.jobs.feed_refresh import auto_close_expired_polls, recalculate_trending_scores
 from app.jobs.daily_events_fetch import run_daily_events_fetch
+from app.jobs.foursquare_fetch import run_foursquare_fetch
+from app.jobs.osm_fetch import run_osm_fetch
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +48,26 @@ def start_scheduler() -> None:
         id="daily_events_fetch",
         replace_existing=True,
     )
+    scheduler.add_job(
+        run_foursquare_fetch,
+        "cron",
+        day_of_week="sun",
+        hour=2,
+        minute=30,
+        id="foursquare_weekly_fetch",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        run_osm_fetch,
+        "cron",
+        day_of_week="sun",
+        hour=3,
+        minute=0,
+        id="osm_weekly_fetch",
+        replace_existing=True,
+    )
     scheduler.start()
-    logger.info("Scheduler started — 4 jobs registered")
+    logger.info("Scheduler started — 6 jobs registered")
 
 
 

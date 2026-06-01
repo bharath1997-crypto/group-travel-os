@@ -179,6 +179,7 @@ export default function SeeAllShoppingPage() {
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
         placeholder="Search shopping..."
+        mapCategory="Shopping"
       />
 
       {/* Info Alert */}

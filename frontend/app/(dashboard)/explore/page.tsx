@@ -25,7 +25,9 @@ import {
 import { apiFetch } from "@/lib/api";
 import { CategoryScrollRow } from "@/components/explorer/CategoryScrollRow";
 import { ExploreCardImage } from "@/components/explorer/ExploreCardImage";
+import { ExploreMapLink } from "@/components/explorer/ExploreMapLink";
 import { MinimalCalendar } from "@/components/explorer/MinimalCalendar";
+import { useExploreDateFilter } from "@/hooks/useExploreDateFilter";
 import {
   type ExploreEvent,
   type ExploreFeedDebug,
@@ -537,6 +539,7 @@ function ExploreSection({
               key={item.id || index}
               href={`/explore/event/${encodeURIComponent(item.id)}?city=${encodeURIComponent(cityLabel(userCity))}`}
               className="block shrink-0"
+              onClick={() => saveEventSnapshot(item)}
             >
               {cardEl}
             </Link>
@@ -604,7 +607,8 @@ export default function ExploreHubPage() {
   const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
   const [cityLoading, setCityLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const { selectedDate, datePreset, onDateChange, matchesEvent } =
+    useExploreDateFilter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -1103,15 +1107,13 @@ export default function ExploreHubPage() {
       }
     }
     let result = Array.from(uniqueMap.values());
-    if (selectedDate) {
-      result = result.filter((ev) => {
-        if (!ev.date && !ev.start_date) return false;
-        const dStr = (ev.date || ev.start_date || "").split("T")[0];
-        return dStr === selectedDate;
-      });
+    if (selectedDate || datePreset) {
+      result = result.filter((ev) =>
+        matchesEvent(ev.date || ev.start_date)
+      );
     }
     return result;
-  }, [trendingEvents, weekendEvents, popularEvents, nationalEvents, selectedDate]);
+  }, [trendingEvents, weekendEvents, popularEvents, nationalEvents, selectedDate, datePreset, matchesEvent]);
 
   const trendingActivities = useMemo(() => {
     return allLiveEvents.filter((ev) =>
@@ -1172,11 +1174,10 @@ export default function ExploreHubPage() {
 
   const filterPlaceholders = useCallback((items: Partial<ExploreEvent>[]) => {
     let result = items;
-    if (selectedDate) {
+    if (selectedDate || datePreset) {
       result = result.filter((ev) => {
         if (!ev.date && !ev.start_date) return true;
-        const dStr = (ev.date || ev.start_date || "").split("T")[0];
-        return dStr === selectedDate;
+        return matchesEvent(ev.date || ev.start_date);
       });
     }
     if (!searchQuery.trim()) return result;
@@ -1188,7 +1189,7 @@ export default function ExploreHubPage() {
         item.city?.toLowerCase().includes(q) ||
         item.category?.toLowerCase().includes(q)
     );
-  }, [searchQuery, selectedDate]);
+  }, [searchQuery, selectedDate, datePreset, matchesEvent]);
 
   const filteredLandmarks = useMemo(() => filterPlaceholders(PLACEHOLDERS.landmarks), [filterPlaceholders]);
   const filteredTrekking = useMemo(() => filterPlaceholders(PLACEHOLDERS.trekking), [filterPlaceholders]);
@@ -1309,18 +1310,11 @@ export default function ExploreHubPage() {
 
         <MinimalCalendar
           selectedDate={selectedDate}
-          onChange={setSelectedDate}
+          quickPreset={datePreset}
+          onChange={onDateChange}
         />
 
-        <Link href="/explore/map" className="shrink-0">
-          <button
-            type="button"
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-700 shadow-sm hover:bg-teal-100/80 hover:border-teal-300 transition-all sm:w-auto"
-          >
-            <Compass size={15} className="text-teal-600" />
-            <span>Map View</span>
-          </button>
-        </Link>
+        <ExploreMapLink />
       </div>
 
       <div className="space-y-2">

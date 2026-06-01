@@ -179,6 +179,7 @@ export default function SeeAllParksPage() {
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
         placeholder="Search parks..."
+        mapCategory="Parks"
       />
 
       {/* Info Alert */}

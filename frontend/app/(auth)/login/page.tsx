@@ -264,7 +264,7 @@ function LoginPageInner() {
           email: emailOrUser.trim(),
           password,
         }),
-      });
+      }, 30000);
       saveToken(data.token.access_token);
       if (typeof window !== "undefined") {
         localStorage.setItem("gt_user_name", data.user.full_name.trim() || "Traveler");

@@ -179,6 +179,7 @@ export default function SeeAllNightlifePage() {
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
         placeholder="Search nightlife..."
+        mapCategory="Nightlife"
       />
 
       {/* Info Alert */}

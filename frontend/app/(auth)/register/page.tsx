@@ -337,7 +337,7 @@ function RegisterPageInner() {
           password,
           date_of_birth: dob,
         }),
-      });
+      }, 30000);
       saveToken(data.token.access_token);
       if (typeof window !== "undefined") {
         const em = data.user.email.trim();

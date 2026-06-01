@@ -179,6 +179,7 @@ export default function SeeAllAmusementPage() {
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
         placeholder="Search amusement..."
+        mapCategory="Amusement"
       />
 
       {/* Info Alert */}

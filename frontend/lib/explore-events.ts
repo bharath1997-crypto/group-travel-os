@@ -22,6 +22,8 @@ export type ExploreEvent = {
 
 export const SECTION_CARD_LIMIT = 8;
 export const LS_EVENT_PREFIX = "rovvy_event_";
+/** Explore + Ticketmaster calls can exceed the default 8s apiFetch timeout. */
+export const EXPLORE_FETCH_TIMEOUT_MS = 60_000;
 
 const WEAK_CATEGORIES = new Set([
   "",
@@ -490,4 +492,33 @@ export function loadExploreHubState(): ExploreHubState | null {
   } catch {
     return null;
   }
+}
+
+/** Resolve an event from session snapshot or cached explore hub/feed data. */
+export function findCachedExploreEvent(id: string): ExploreEvent | null {
+  const snapshot = loadEventSnapshot(id);
+  if (snapshot) return snapshot;
+
+  const hub = loadExploreHubState();
+  if (hub) {
+    for (const list of Object.values(hub.sections)) {
+      const match = list.find((ev) => ev.id === id);
+      if (match) return match;
+    }
+  }
+
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(LS_EXPLORE_FEED_CACHE);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedExploreFeed;
+    for (const list of Object.values(parsed.sections ?? {})) {
+      const match = list?.find((ev) => ev.id === id);
+      if (match) return match;
+    }
+  } catch {
+    /* ignore */
+  }
+
+  return null;
 }

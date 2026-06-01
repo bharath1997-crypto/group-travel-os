@@ -20,7 +20,11 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { ExploreCardImage } from "@/components/explorer/ExploreCardImage";
-import { loadEventSnapshot, loadExploreHubState } from "@/lib/explore-events";
+import {
+  findCachedExploreEvent,
+  EXPLORE_FETCH_TIMEOUT_MS,
+  loadExploreHubState,
+} from "@/lib/explore-events";
 
 type EventDetail = {
   id: string;
@@ -185,6 +189,8 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
         setError(null);
         const data = await apiFetch<EventDetail>(
           `/explore/events/${encodeURIComponent(id)}`,
+          {},
+          EXPLORE_FETCH_TIMEOUT_MS,
         );
         if (data) {
           setEvent(data);
@@ -192,7 +198,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
         }
         setError("Event detail not found.");
       } catch (err) {
-        const snapshot = loadEventSnapshot(id);
+        const snapshot = findCachedExploreEvent(id);
         if (snapshot) {
           setEvent({
             id: snapshot.id,
@@ -213,7 +219,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
           });
           return;
         }
-        console.error("Failed to load explore event detail:", err);
+        console.warn("Failed to load explore event detail:", err);
         setError(
           err instanceof Error ? err.message : "Failed to load event details.",
         );
@@ -234,6 +240,8 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
       try {
         const data = await apiFetch<SimilarEventsResponse>(
           `/explore/events/similar/${encodeURIComponent(event.id)}?limit=4`,
+          {},
+          EXPLORE_FETCH_TIMEOUT_MS,
         );
         if (!cancelled) {
           setSimilarEvents(Array.isArray(data.events) ? data.events : []);

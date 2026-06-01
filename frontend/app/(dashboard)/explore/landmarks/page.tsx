@@ -183,6 +183,7 @@ export default function SeeAllLandmarksPage() {
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
         placeholder="Search landmarks..."
+        mapCategory="Landmarks"
       />
 
       {/* Info Alert */}
