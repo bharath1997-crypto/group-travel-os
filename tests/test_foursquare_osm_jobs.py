@@ -170,17 +170,40 @@ def test_build_osm_query_is_lightweight():
     assert "node[\"amenity\"=\"arcade\"](around:30000,41.8781,-87.6298);" in query
     assert query.endswith("out body 10;")
 
-def test_overpass_get_tries_next_server_on_failure():
+def test_overpass_get_tries_next_server_on_failure(monkeypatch):
     client = MagicMock()
     fail = MagicMock(status_code=504, text="Gateway Timeout")
     ok = MagicMock(status_code=200, text='{"elements":[]}')
     client.get.side_effect = [fail, ok]
+    sleeps: list[float] = []
+    monkeypatch.setattr(
+        "app.jobs.osm_fetch.osm_job.sleep",
+        lambda s: sleeps.append(s) or False,
+    )
 
     response = _overpass_get(client, "[out:json];node(1);out;")
     assert response is ok
     assert client.get.call_count == 2
     assert client.get.call_args_list[0].args[0] == OVERPASS_SERVERS[0]
     assert client.get.call_args_list[1].args[0] == OVERPASS_SERVERS[1]
+    assert sleeps == [30.0]
+
+
+def test_overpass_get_handles_429_with_exponential_backoff(monkeypatch):
+    client = MagicMock()
+    rate_limited = MagicMock(status_code=429, text="rate limited")
+    success = MagicMock(status_code=200, text='{"elements":[]}')
+    client.get.side_effect = [rate_limited, rate_limited, success]
+    sleeps: list[float] = []
+    monkeypatch.setattr(
+        "app.jobs.osm_fetch.osm_job.sleep",
+        lambda s: sleeps.append(s) or False,
+    )
+
+    response = _overpass_get(client, "[out:json];node(1);out;")
+    assert response is success
+    assert client.get.call_count == 3
+    assert sleeps == [60, 120]
 
 def test_run_osm_fetch_job(monkeypatch):
     """Test run_osm_fetch with a mocked Overpass API response and verify DB insertion."""

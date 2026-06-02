@@ -25,7 +25,9 @@ OVERPASS_HEADERS = {
     "User-Agent": "RovvyExplore/1.0 (group-travel-os; contact@rovvy.app)",
 }
 
-REQUEST_DELAY_SECONDS = 3.0
+REQUEST_DELAY_SECONDS = 10.0
+MAX_429_RETRIES = 3
+GATEWAY_TIMEOUT_WAIT_SECONDS = 30.0
 OVERPASS_RADIUS_METERS = 30000
 OVERPASS_RESULT_LIMIT = 10
 OVERPASS_QUERY_TIMEOUT = 20
@@ -55,18 +57,13 @@ OSM_TAG_FILTERS = [
     for key, value in TAG_TO_CATEGORY
 ]
 
-# Major US metro areas — start small to avoid Overpass overload
+# Major US metro areas — first test run (5 cities only)
 US_GRID = [
     {"lat": 41.8781, "lon": -87.6298},   # Chicago
     {"lat": 40.7128, "lon": -74.0060},   # New York
     {"lat": 34.0522, "lon": -118.2437},  # LA
     {"lat": 29.7604, "lon": -95.3698},   # Houston
-    {"lat": 33.4484, "lon": -112.0740},  # Phoenix
     {"lat": 47.6062, "lon": -122.3321},  # Seattle
-    {"lat": 37.7749, "lon": -122.4194},  # San Francisco
-    {"lat": 39.7392, "lon": -104.9903},  # Denver
-    {"lat": 25.7617, "lon": -80.1918},   # Miami
-    {"lat": 30.2672, "lon": -97.7431},   # Austin
 ]
 
 
@@ -100,23 +97,44 @@ def build_osm_query(tag_filter: str, lat: float, lon: float) -> str:
 def _overpass_get(client: httpx.Client, query: str) -> httpx.Response | None:
     """Try each Overpass mirror in order until one succeeds."""
     for url in OVERPASS_SERVERS:
-        try:
-            response = client.get(
-                url,
-                params={"data": query},
-                headers=OVERPASS_HEADERS,
-                timeout=35.0,
-            )
-            if response.status_code == 200:
-                return response
-            logger.warning(
-                "OSM Overpass %s returned HTTP %s: %s",
-                url,
-                response.status_code,
-                response.text[:200],
-            )
-        except Exception as exc:
-            logger.warning("OSM Overpass %s failed: %s", url, exc)
+        for attempt in range(MAX_429_RETRIES):
+            try:
+                response = client.get(
+                    url,
+                    params={"data": query},
+                    headers=OVERPASS_HEADERS,
+                    timeout=35.0,
+                )
+                if response.status_code == 200:
+                    return response
+                if response.status_code == 429:
+                    wait_time = 60 * (attempt + 1)
+                    logger.warning(
+                        "Rate limited. Waiting %ss...",
+                        wait_time,
+                    )
+                    if osm_job.sleep(wait_time):
+                        return None
+                    continue
+                if response.status_code == 504:
+                    logger.warning(
+                        "OSM Overpass %s returned HTTP 504: %s",
+                        url,
+                        response.text[:200],
+                    )
+                    if osm_job.sleep(GATEWAY_TIMEOUT_WAIT_SECONDS):
+                        return None
+                    break
+                logger.warning(
+                    "OSM Overpass %s returned HTTP %s: %s",
+                    url,
+                    response.status_code,
+                    response.text[:200],
+                )
+                break
+            except Exception as exc:
+                logger.warning("OSM Overpass %s failed: %s", url, exc)
+                break
     return None
 
 
