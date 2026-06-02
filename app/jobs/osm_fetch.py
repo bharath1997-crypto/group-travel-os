@@ -16,18 +16,20 @@ from app.utils.database import SessionLocal
 logger = logging.getLogger(__name__)
 
 OVERPASS_SERVERS = [
+    "https://overpass.private.coffee/api/interpreter",
+    "https://overpass.openstreetmap.ru/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
-    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
     "https://overpass-api.de/api/interpreter",
 ]
 OVERPASS_HEADERS = {
+    "User-Agent": "RovvyApp/1.0 (contact@rovvy.app)",
     "Accept": "application/json",
-    "User-Agent": "RovvyExplore/1.0 (group-travel-os; contact@rovvy.app)",
 }
 
 REQUEST_DELAY_SECONDS = 10.0
 MAX_429_RETRIES = 3
 GATEWAY_TIMEOUT_WAIT_SECONDS = 30.0
+OVERPASS_REQUEST_TIMEOUT = 30.0
 OVERPASS_RADIUS_METERS = 30000
 OVERPASS_RESULT_LIMIT = 10
 OVERPASS_QUERY_TIMEOUT = 20
@@ -103,7 +105,7 @@ def _overpass_get(client: httpx.Client, query: str) -> httpx.Response | None:
                     url,
                     params={"data": query},
                     headers=OVERPASS_HEADERS,
-                    timeout=35.0,
+                    timeout=OVERPASS_REQUEST_TIMEOUT,
                 )
                 if response.status_code == 200:
                     return response

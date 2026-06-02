@@ -250,7 +250,7 @@ def test_run_osm_fetch_job(monkeypatch):
         assert "node[" in query
         assert "out body 10;" in query
         assert get_kwargs.get("headers", {}).get("Accept") == "application/json"
-        assert "RovvyExplore" in get_kwargs.get("headers", {}).get("User-Agent", "")
+        assert "RovvyApp" in get_kwargs.get("headers", {}).get("User-Agent", "")
         assert mock_get.call_args.args[0] == OVERPASS_SERVERS[0]
         assert result["fetched"] > 0
         assert result["inserted"] >= 1
