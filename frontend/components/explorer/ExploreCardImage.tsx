@@ -2,6 +2,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { getCategoryGradient } from "@/lib/explore-category-gradient";
+import { getPlaceImage } from "@/lib/explore-place-images";
 
 type ExploreCardImageProps = {
   imageUrl?: string | null;
@@ -25,31 +26,22 @@ export function ExploreCardImage({
   children,
 }: ExploreCardImageProps) {
   const gradient = getCategoryGradient(category);
+  const resolvedUrl = getPlaceImage(imageUrl ?? null, category ?? "");
 
   return (
-    <div
-      className={className}
-      style={{
-        ...style,
-        ...(!imageUrl ? { background: gradient } : undefined),
-      }}
-    >
-      {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt={alt}
-          loading="lazy"
-          className={imgClassName}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-            const parent = e.currentTarget.parentElement;
-            if (parent) parent.style.background = gradient;
-          }}
-        />
-      ) : (
-        <div style={{ width: "100%", height: "100%", background: gradient }} />
-      )}
+    <div className={className} style={style}>
+      <img
+        src={resolvedUrl}
+        alt={alt}
+        loading="lazy"
+        className={imgClassName}
+        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        onError={(e) => {
+          e.currentTarget.style.display = "none";
+          const parent = e.currentTarget.parentElement;
+          if (parent) parent.style.background = gradient;
+        }}
+      />
       {overlay ? (
         <div
           className="pointer-events-none absolute inset-0"
