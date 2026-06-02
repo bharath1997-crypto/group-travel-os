@@ -4,7 +4,7 @@ from typing import Any, List, Optional
 
 from app.core.api_limits import API_TIMEOUT_SECONDS
 from app.schemas.explorer import ExplorerCard, create_explorer_card
-from config import settings
+from app.utils.foursquare_auth import FOURSQUARE_PLACES_URL, foursquare_headers
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +13,10 @@ class FoursquareProvider:
     """Provider for Foursquare Places."""
 
     def __init__(self):
-        self.api_key = (settings.foursquare_api_key or "").strip()
-        self.url = "https://api.foursquare.com/v3/places/search"
+        from app.utils.foursquare_auth import normalize_foursquare_api_key
+
+        self.api_key = normalize_foursquare_api_key()
+        self.url = FOURSQUARE_PLACES_URL
 
     async def fetch_cards(
         self, lat: float, lon: float, radius: int
@@ -33,10 +35,7 @@ class FoursquareProvider:
             "categories": "13000,10000,13032",
         }
 
-        headers = {
-            "Authorization": self.api_key, 
-            "Accept": "application/json"
-        }
+        headers = foursquare_headers(self.api_key)
 
         try:
             async with httpx.AsyncClient(

@@ -10,6 +10,7 @@ import httpx
 from sqlalchemy import select
 
 from app.models.explore_content import ExploreContent
+from app.jobs.job_control import osm_job
 from app.utils.database import SessionLocal
 
 logger = logging.getLogger(__name__)
@@ -153,115 +154,138 @@ def fetch_osm_places(client: httpx.Client, lat: float, lon: float) -> list[dict]
         logger.error("Error fetching from OSM at (%s, %s): %s", lat, lon, e)
     return []
 
+def request_osm_fetch_cancel() -> None:
+    osm_job.request_cancel()
+
+
 def run_osm_fetch() -> dict[str, int]:
     """
     Fetch OpenStreetMap places in bulk using Overpass API and cache in explore_contents.
     Returns counts of fetched, inserted, and updated records.
     """
     logger.info("Starting OpenStreetMap bulk fetch job...")
-    fetched_places = []
-    
-    with httpx.Client(timeout=40.0) as client:
-        for idx, pt in enumerate(US_GRID):
-            lat = pt['lat']
-            lon = pt['lon']
-            
-            # Stagger requests slightly to be extremely polite and follow Overpass usage policy
-            time.sleep(1.0)
-            logger.info("OSM Overpass fetching at (%s, %s) — point %d/%d", lat, lon, idx + 1, len(US_GRID))
-            
-            results = fetch_osm_places(client, lat, lon)
-            for place in results:
-                tags_dict = place['tags']
-                
-                extra_data = {
-                    "country": tags_dict.get('addr:country', 'US'),
-                    "rating": 0.0,
-                    "tags": tags_dict
-                }
-                
-                fetched_places.append({
-                    "event_id": f"osm_{place['osm_id']}",
-                    "title": place['name'],
-                    "category": place['category'],
-                    "content_type": "osm_place",
-                    "venue_name": place['name'],
-                    "venue_lat": place['lat'],
-                    "venue_lon": place['lon'],
-                    "city": tags_dict.get('addr:city', ''),
-                    "state": tags_dict.get('addr:state', ''),
-                    "source": "openstreetmap",
-                    "data": [extra_data]
-                })
-                
-    # Deduplicate before database operations
-    seen_ids = set()
-    unique_places = []
-    for p in fetched_places:
-        eid = p["event_id"]
-        if eid not in seen_ids:
-            seen_ids.add(eid)
-            unique_places.append(p)
-            
-    logger.info("Fetched %d unique OpenStreetMap places. Writing to database...", len(unique_places))
-    
-    inserted_count = 0
-    updated_count = 0
-    
-    db = SessionLocal()
+    if not osm_job.try_start():
+        logger.warning("OSM fetch already running — ignoring duplicate trigger")
+        return {"fetched": 0, "inserted": 0, "updated": 0}
+
     try:
-        now = datetime.now(timezone.utc)
-        event_ids = [p["event_id"] for p in unique_places]
-        existing_rows = {}
-        
-        # Batch select in chunks of 500
-        for i in range(0, len(event_ids), 500):
-            chunk = event_ids[i:i+500]
-            stmt = select(ExploreContent).where(ExploreContent.event_id.in_(chunk))
-            for row in db.scalars(stmt).all():
-                existing_rows[row.event_id] = row
-                
-        for p in unique_places:
-            row = existing_rows.get(p["event_id"])
-            if row:
-                row.title = p["title"]
-                row.category = p["category"]
-                row.venue_name = p["venue_name"]
-                row.venue_lat = p["venue_lat"]
-                row.venue_lon = p["venue_lon"]
-                row.city = p["city"]
-                row.state = p["state"]
-                row.data = p["data"]
-                row.fetched_at = now
-                updated_count += 1
-            else:
-                new_row = ExploreContent(
-                    event_id=p["event_id"],
-                    title=p["title"],
-                    category=p["category"],
-                    content_type=p["content_type"],
-                    venue_name=p["venue_name"],
-                    venue_lat=p["venue_lat"],
-                    venue_lon=p["venue_lon"],
-                    city=p["city"],
-                    state=p["state"],
-                    source=p["source"],
-                    data=p["data"],
-                    fetched_at=now
-                )
-                db.add(new_row)
-                inserted_count += 1
-                
-        db.commit()
-        logger.info("OpenStreetMap bulk fetch job completed! Inserted: %d | Updated: %d", inserted_count, updated_count)
-    except Exception as e:
-        logger.exception("OpenStreetMap DB operation failed: %s", e)
-        db.rollback()
+        fetched_places = []
+
+        with httpx.Client(timeout=40.0) as client:
+            for idx, pt in enumerate(US_GRID):
+                if osm_job.is_cancelled():
+                    logger.info(
+                        "OSM fetch cancelled at point %d/%d",
+                        idx + 1,
+                        len(US_GRID),
+                    )
+                    break
+
+                lat = pt['lat']
+                lon = pt['lon']
+
+                if osm_job.sleep(1.0):
+                    logger.info(
+                        "OSM fetch cancelled at point %d/%d",
+                        idx + 1,
+                        len(US_GRID),
+                    )
+                    break
+
+                logger.info("OSM Overpass fetching at (%s, %s) — point %d/%d", lat, lon, idx + 1, len(US_GRID))
+
+                results = fetch_osm_places(client, lat, lon)
+                for place in results:
+                    tags_dict = place['tags']
+
+                    extra_data = {
+                        "country": tags_dict.get('addr:country', 'US'),
+                        "rating": 0.0,
+                        "tags": tags_dict
+                    }
+
+                    fetched_places.append({
+                        "event_id": f"osm_{place['osm_id']}",
+                        "title": place['name'],
+                        "category": place['category'],
+                        "content_type": "osm_place",
+                        "venue_name": place['name'],
+                        "venue_lat": place['lat'],
+                        "venue_lon": place['lon'],
+                        "city": tags_dict.get('addr:city', ''),
+                        "state": tags_dict.get('addr:state', ''),
+                        "source": "openstreetmap",
+                        "data": [extra_data]
+                    })
+
+        seen_ids = set()
+        unique_places = []
+        for p in fetched_places:
+            eid = p["event_id"]
+            if eid not in seen_ids:
+                seen_ids.add(eid)
+                unique_places.append(p)
+
+        logger.info("Fetched %d unique OpenStreetMap places. Writing to database...", len(unique_places))
+
+        inserted_count = 0
+        updated_count = 0
+
+        db = SessionLocal()
+        try:
+            now = datetime.now(timezone.utc)
+            event_ids = [p["event_id"] for p in unique_places]
+            existing_rows = {}
+
+            for i in range(0, len(event_ids), 500):
+                chunk = event_ids[i:i+500]
+                stmt = select(ExploreContent).where(ExploreContent.event_id.in_(chunk))
+                for row in db.scalars(stmt).all():
+                    existing_rows[row.event_id] = row
+
+            for p in unique_places:
+                row = existing_rows.get(p["event_id"])
+                if row:
+                    row.title = p["title"]
+                    row.category = p["category"]
+                    row.venue_name = p["venue_name"]
+                    row.venue_lat = p["venue_lat"]
+                    row.venue_lon = p["venue_lon"]
+                    row.city = p["city"]
+                    row.state = p["state"]
+                    row.data = p["data"]
+                    row.fetched_at = now
+                    updated_count += 1
+                else:
+                    new_row = ExploreContent(
+                        event_id=p["event_id"],
+                        title=p["title"],
+                        category=p["category"],
+                        content_type=p["content_type"],
+                        venue_name=p["venue_name"],
+                        venue_lat=p["venue_lat"],
+                        venue_lon=p["venue_lon"],
+                        city=p["city"],
+                        state=p["state"],
+                        source=p["source"],
+                        data=p["data"],
+                        fetched_at=now
+                    )
+                    db.add(new_row)
+                    inserted_count += 1
+
+            db.commit()
+            logger.info("OpenStreetMap bulk fetch job completed! Inserted: %d | Updated: %d", inserted_count, updated_count)
+        except Exception as e:
+            logger.exception("OpenStreetMap DB operation failed: %s", e)
+            db.rollback()
+        finally:
+            db.close()
+
+        return {
+            "fetched": len(unique_places),
+            "inserted": inserted_count,
+            "updated": updated_count
+        }
     finally:
-        db.close()
-        
-    return {
-        "fetched": len(unique_places),
-        "inserted": inserted_count,
-        "updated": updated_count
-    }
+        osm_job.finish()

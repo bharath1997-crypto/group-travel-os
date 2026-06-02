@@ -12,6 +12,8 @@ from app.models.explore_content import ExploreContent
 from app.utils.database import SessionLocal
 from app.jobs.foursquare_fetch import run_foursquare_fetch, generate_grid, fetch_with_retry
 from app.jobs.osm_fetch import run_osm_fetch
+from app.jobs.job_control import foursquare_job, osm_job
+from app.utils.foursquare_auth import normalize_foursquare_api_key
 
 client = TestClient(app)
 
@@ -34,6 +36,12 @@ def test_generate_grid():
     # Total = 9 points
     assert len(grid) == 9
     assert grid[0] == {'lat': 20.0, 'lon': -100.0}
+
+def test_normalize_foursquare_api_key_repairs_plus_corruption():
+    corrupted = "fsq331maO2syLDq pD2YIsomW5sSJsxPd3ep0lrazwiCtHA="
+    assert normalize_foursquare_api_key(corrupted) == "fsq331maO2syLDq+pD2YIsomW5sSJsxPd3ep0lrazwiCtHA="
+    assert normalize_foursquare_api_key('"fsq331maO2syLDq+pD2Y"') == "fsq331maO2syLDq+pD2Y"
+    assert normalize_foursquare_api_key("Bearer fsq-key") == "fsq-key"
 
 def test_admin_trigger_foursquare_fetch_returns_202(monkeypatch):
     """Verify that the admin trigger Foursquare endpoint returns 202 Accepted."""
@@ -67,7 +75,10 @@ def test_run_foursquare_fetch_job(monkeypatch):
         db.execute(delete(ExploreContent).where(ExploreContent.event_id == event_id))
         db.commit()
         
-        monkeypatch.setattr("os.environ", {"FOURSQUARE_API_KEY": "test-fsq-key"})
+        monkeypatch.setattr(
+            "app.jobs.foursquare_fetch.normalize_foursquare_api_key",
+            lambda raw=None: "test-fsq-key",
+        )
         # Minimize grid for testing to execute immediately
         monkeypatch.setattr("app.jobs.foursquare_fetch.US_GRID", [{'lat': 30.2672, 'lon': -97.7431}])
         
@@ -89,12 +100,12 @@ def test_run_foursquare_fetch_job(monkeypatch):
             ]
         }
         
-        with patch("httpx.Client.get", return_value=mock_response) as mock_get, patch(
-            "time.sleep", return_value=None
+        with patch("httpx.Client.get", return_value=mock_response) as mock_get, patch.object(
+            foursquare_job, "sleep", return_value=False
         ):
             result = run_foursquare_fetch()
             
-        assert mock_get.call_count == 3  # Food, Nightlife, Shopping
+        assert mock_get.call_count == 4  # smoke test + Food, Nightlife, Shopping
         first_headers = mock_get.call_args_list[0].kwargs.get("headers", {})
         assert first_headers.get("Authorization") == "Bearer test-fsq-key"
         assert first_headers.get("Accept") == "application/json"
@@ -132,7 +143,10 @@ def test_fetch_with_retry_handles_429(monkeypatch):
 
     client.get.side_effect = [rate_limited, rate_limited, success]
     sleeps: list[float] = []
-    monkeypatch.setattr("app.jobs.foursquare_fetch.time.sleep", lambda s: sleeps.append(s))
+    monkeypatch.setattr(
+        "app.jobs.foursquare_fetch.foursquare_job.sleep",
+        lambda s: sleeps.append(s) or False,
+    )
 
     response = fetch_with_retry(
         client,
@@ -177,8 +191,8 @@ def test_run_osm_fetch_job(monkeypatch):
             ]
         }
         
-        with patch("httpx.Client.get", return_value=mock_response) as mock_get, patch(
-            "time.sleep", return_value=None
+        with patch("httpx.Client.get", return_value=mock_response) as mock_get, patch.object(
+            osm_job, "sleep", return_value=False
         ):
             result = run_osm_fetch()
             
