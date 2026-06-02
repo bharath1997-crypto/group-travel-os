@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader } from "@googlemaps/js-api-loader";
+import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import {
   ArrowLeft,
   Calendar,
@@ -138,12 +139,19 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 }
 
+function teardownClusterer(clusterer: MarkerClusterer | null) {
+  if (!clusterer) return;
+  clusterer.clearMarkers();
+  (clusterer as { setMap?: (map: null) => void }).setMap?.(null);
+}
+
 export default function ExploreMapViewPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const clustererRef = useRef<MarkerClusterer | null>(null);
   const categoryScrollRef = useRef<HTMLDivElement>(null);
   const categoryTapRef = useRef<{ category: string; timestamp: number } | null>(null);
   const [mapContainerReady, setMapContainerReady] = useState(false);
@@ -517,6 +525,10 @@ export default function ExploreMapViewPage() {
 
     return () => {
       cancelled = true;
+      if (clustererRef.current) {
+        teardownClusterer(clustererRef.current);
+        clustererRef.current = null;
+      }
       markersRef.current.forEach((m) => m.setMap(null));
       markersRef.current = [];
       mapInstanceRef.current = null;
@@ -531,35 +543,6 @@ export default function ExploreMapViewPage() {
     if (!map) return;
     map.setCenter(userLocation);
   }, [userLocation]);
-
-  // Update map markers when events or filters change
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map || typeof window === "undefined" || !(window as any).google) return;
-
-    markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = [];
-
-    filteredEventsList.forEach((ev) => {
-      const lat = ev.venue_lat || ev.lat;
-      const lng = ev.venue_lon || ev.lng;
-      if (!lat || !lng) return;
-
-      const marker = new (window as any).google.maps.Marker({
-        position: { lat, lng },
-        map,
-        title: ev.name,
-        icon: getPinIcon(ev.category || "Events")
-      });
-
-      marker.addListener("click", () => {
-        setSelectedItem(ev);
-        map.panTo({ lat, lng });
-      });
-
-      markersRef.current.push(marker);
-    });
-  }, [filteredEventsList]);
 
   // SVG customized category pin icon
   const getPinIcon = (category: string) => {
@@ -583,6 +566,80 @@ export default function ExploreMapViewPage() {
       anchor: new (window as any).google.maps.Point(18, 18)
     };
   };
+
+  // Update map markers when events or filters change
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const google = (window as any).google;
+    if (!map || typeof window === "undefined" || !google) return;
+
+    if (clustererRef.current) {
+      teardownClusterer(clustererRef.current);
+      clustererRef.current = null;
+    }
+
+    markersRef.current.forEach((m) => m.setMap(null));
+    markersRef.current = [];
+
+    const markers: any[] = [];
+
+    filteredEventsList.forEach((ev) => {
+      const lat = ev.venue_lat || ev.lat;
+      const lng = ev.venue_lon || ev.lng;
+      if (!lat || !lng) return;
+
+      const marker = new google.maps.Marker({
+        position: { lat, lng },
+        title: ev.name,
+        icon: getPinIcon(ev.category || "Events"),
+      });
+
+      marker.addListener("click", () => {
+        setSelectedItem(ev);
+        map.panTo({ lat, lng });
+      });
+
+      markers.push(marker);
+    });
+
+    markersRef.current = markers;
+
+    if (markers.length === 0) return;
+
+    clustererRef.current = new MarkerClusterer({
+      map,
+      markers,
+      algorithmOptions: {
+        maxZoom: 14,
+      },
+      renderer: {
+        render: ({ count, position }) =>
+          new google.maps.Marker({
+            position,
+            icon: {
+              url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+                  <circle cx="20" cy="20" r="18" fill="#0F766E" opacity="0.9"/>
+                  <text x="20" y="25" text-anchor="middle" fill="white"
+                    font-size="14" font-weight="bold">${count}</text>
+                </svg>
+              `)}`,
+              scaledSize: new google.maps.Size(40, 40),
+            },
+            zIndex: 1000,
+          }),
+      },
+    });
+
+    return () => {
+      if (clustererRef.current) {
+        teardownClusterer(clustererRef.current);
+        clustererRef.current = null;
+      }
+      markersRef.current.forEach((m) => m.setMap(null));
+      markersRef.current = [];
+    };
+  }, [filteredEventsList]);
 
   // Drive time estimator
   const driveTime = (miles: number) => {
