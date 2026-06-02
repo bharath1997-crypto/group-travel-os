@@ -2,7 +2,9 @@ name: Production CI/CD
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - Production-main
 
 jobs:
   test:
