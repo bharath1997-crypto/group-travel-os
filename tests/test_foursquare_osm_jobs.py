@@ -11,7 +11,12 @@ from app.main import app
 from app.models.explore_content import ExploreContent
 from app.utils.database import SessionLocal
 from app.jobs.foursquare_fetch import run_foursquare_fetch, generate_grid, fetch_with_retry
-from app.jobs.osm_fetch import run_osm_fetch
+from app.jobs.osm_fetch import (
+    build_osm_query,
+    run_osm_fetch,
+    _overpass_get,
+    OVERPASS_SERVERS,
+)
 from app.jobs.job_control import foursquare_job, osm_job
 from app.utils.foursquare_auth import normalize_foursquare_api_key
 
@@ -159,6 +164,24 @@ def test_fetch_with_retry_handles_429(monkeypatch):
     assert client.get.call_count == 3
     assert sleeps == [1, 2]
 
+def test_build_osm_query_is_lightweight():
+    query = build_osm_query('"amenity"="arcade"', 41.8781, -87.6298)
+    assert query.startswith("[out:json][timeout:20];")
+    assert "node[\"amenity\"=\"arcade\"](around:30000,41.8781,-87.6298);" in query
+    assert query.endswith("out body 10;")
+
+def test_overpass_get_tries_next_server_on_failure():
+    client = MagicMock()
+    fail = MagicMock(status_code=504, text="Gateway Timeout")
+    ok = MagicMock(status_code=200, text='{"elements":[]}')
+    client.get.side_effect = [fail, ok]
+
+    response = _overpass_get(client, "[out:json];node(1);out;")
+    assert response is ok
+    assert client.get.call_count == 2
+    assert client.get.call_args_list[0].args[0] == OVERPASS_SERVERS[0]
+    assert client.get.call_args_list[1].args[0] == OVERPASS_SERVERS[1]
+
 def test_run_osm_fetch_job(monkeypatch):
     """Test run_osm_fetch with a mocked Overpass API response and verify DB insertion."""
     osm_id = 123456789
@@ -196,11 +219,16 @@ def test_run_osm_fetch_job(monkeypatch):
         ):
             result = run_osm_fetch()
             
-        assert mock_get.call_count == 1
+        # smoke test + one tag query per metro point (grid patched to 1 point)
+        assert mock_get.call_count >= 2
         get_kwargs = mock_get.call_args.kwargs
-        assert get_kwargs.get("params", {}).get("data", "").startswith("[out:json][timeout:25];")
+        query = get_kwargs.get("params", {}).get("data", "")
+        assert query.startswith("[out:json][timeout:20];")
+        assert "node[" in query
+        assert "out body 10;" in query
         assert get_kwargs.get("headers", {}).get("Accept") == "application/json"
         assert "RovvyExplore" in get_kwargs.get("headers", {}).get("User-Agent", "")
+        assert mock_get.call_args.args[0] == OVERPASS_SERVERS[0]
         assert result["fetched"] > 0
         assert result["inserted"] >= 1
         
