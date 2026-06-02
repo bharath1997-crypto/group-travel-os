@@ -72,7 +72,12 @@ export const EXPLORE_CATEGORY_PILLS = [
   "Sports",
   "Food",
   "Nightlife",
+  "Shopping",
   "Parks",
+  "Gaming",
+  "Amusement",
+  "Trekking",
+  "Landmarks",
 ] as const;
 
 export type ExploreCategoryPill = (typeof EXPLORE_CATEGORY_PILLS)[number];
@@ -82,7 +87,12 @@ const SPECIFIC_EXPLORE_PILLS = [
   "Sports",
   "Food",
   "Nightlife",
+  "Shopping",
   "Parks",
+  "Gaming",
+  "Amusement",
+  "Trekking",
+  "Landmarks",
 ] as const satisfies readonly ExploreCategoryPill[];
 
 type SpecificExplorePill = (typeof SPECIFIC_EXPLORE_PILLS)[number];
@@ -110,23 +120,39 @@ function matchesSpecificExplorePill(
         cat.includes("food") ||
         name.includes("food") ||
         name.includes("wine") ||
-        name.includes("tasting")
+        name.includes("tasting") ||
+        name.includes("restaurant") ||
+        name.includes("cafe")
       );
     case "Nightlife":
       return (
+        cat.includes("nightlife") ||
         cat.includes("music") ||
         cat.includes("night") ||
         cat.includes("comedy") ||
         name.includes("dj") ||
-        name.includes("club")
+        name.includes("club") ||
+        name.includes("bar")
       );
+    case "Shopping":
+      return cat.includes("shopping") || cat.includes("shop") || cat.includes("retail");
     case "Parks":
       return (
+        cat.includes("parks") ||
+        cat.includes("park") ||
         cat.includes("fest") ||
         name.includes("park") ||
         name.includes("garden") ||
         name.includes("outdoor")
       );
+    case "Gaming":
+      return cat.includes("gaming") || cat.includes("arcade") || cat.includes("esports");
+    case "Amusement":
+      return cat.includes("amusement") || cat.includes("theme park");
+    case "Trekking":
+      return cat.includes("trekking") || cat.includes("trek") || cat.includes("hike");
+    case "Landmarks":
+      return cat.includes("landmarks") || cat.includes("landmark") || cat.includes("museum");
     default:
       return false;
   }

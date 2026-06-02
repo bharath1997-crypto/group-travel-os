@@ -1607,7 +1607,7 @@ def _query_db_events_haversine(
     date_to: str | None = None,
     limit: int | None = None,
 ) -> list[dict[str, Any]]:
-    """Return ticketmaster_event rows from explore_contents within radius_miles."""
+    """Return ticketmaster_event and osm_place rows from explore_contents within radius_miles."""
     from sqlalchemy import text
     from datetime import date
 
@@ -1624,8 +1624,8 @@ def _query_db_events_haversine(
             sin(radians(:lat)) * sin(radians(venue_lat))
           )) AS distance_miles
         FROM explore_contents
-        WHERE content_type = 'ticketmaster_event'
-          AND start_date >= :today
+        WHERE content_type IN ('ticketmaster_event', 'osm_place')
+          AND (content_type = 'osm_place' OR start_date >= :today)
           AND venue_lat IS NOT NULL
           AND venue_lon IS NOT NULL
           AND venue_lat BETWEEN :lat_min AND :lat_max
@@ -1646,10 +1646,10 @@ def _query_db_events_haversine(
         query_str += " AND LOWER(category) = LOWER(:category)"
         params["category"] = cat
     if date_from:
-        query_str += " AND start_date >= :date_from"
+        query_str += " AND (content_type = 'osm_place' OR start_date >= :date_from)"
         params["date_from"] = date_from
     if date_to:
-        query_str += " AND start_date <= :date_to"
+        query_str += " AND (content_type = 'osm_place' OR start_date <= :date_to)"
         params["date_to"] = date_to
 
     full_sql = f"""

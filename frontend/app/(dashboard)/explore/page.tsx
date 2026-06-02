@@ -32,6 +32,8 @@ import {
   type ExploreEvent,
   type ExploreFeedDebug,
   type ExploreCategoryPill,
+  EXPLORE_CATEGORY_PILLS,
+  matchesExploreCategoryPill,
   cityLabel,
   hydrateSectionsFromResponse,
   loadExploreFeedCache,
@@ -617,6 +619,7 @@ export default function ExploreHubPage() {
   const [weekendEvents, setWeekendEvents] = useState<ExploreEvent[]>([]);
   const [popularEvents, setPopularEvents] = useState<ExploreEvent[]>([]);
   const [nationalEvents, setNationalEvents] = useState<ExploreEvent[]>([]);
+  const [activeCategory, setActiveCategory] = useState<ExploreCategoryPill>("All");
   const [userCoords, setUserCoords] = useState<UserCoords | null>(null);
   const [radiusMiles, setRadiusMiles] = useState(EXPLORE_RADIUS_MILES);
 
@@ -956,6 +959,7 @@ export default function ExploreHubPage() {
       setWeekendEvents(hub.sections.weekend);
       setPopularEvents(hub.sections.popular);
       setNationalEvents(hub.sections.national);
+      setActiveCategory(hub.activeCategory);
       hasLoadedFullRef.current = hub.loadedFull;
       setDisplayCity(loadExploreCity() || DEFAULT_EXPLORE_CITY);
       setLoading(false);
@@ -981,7 +985,7 @@ export default function ExploreHubPage() {
 
   useEffect(() => {
     hubPersistRef.current = {
-      activeCategory: "All" as ExploreCategoryPill,
+      activeCategory,
       sections: {
         trending: trendingEvents,
         weekend: weekendEvents,
@@ -1001,6 +1005,7 @@ export default function ExploreHubPage() {
       loadedFull: hasLoadedFullRef.current,
     };
   }, [
+    activeCategory,
     trendingEvents,
     weekendEvents,
     popularEvents,
@@ -1107,13 +1112,18 @@ export default function ExploreHubPage() {
       }
     }
     let result = Array.from(uniqueMap.values());
+    if (activeCategory !== "All") {
+      result = result.filter((ev) =>
+        matchesExploreCategoryPill(ev, activeCategory),
+      );
+    }
     if (selectedDate || datePreset) {
       result = result.filter((ev) =>
         matchesEvent(ev.date || ev.start_date)
       );
     }
     return result;
-  }, [trendingEvents, weekendEvents, popularEvents, nationalEvents, selectedDate, datePreset, matchesEvent]);
+  }, [trendingEvents, weekendEvents, popularEvents, nationalEvents, activeCategory, selectedDate, datePreset, matchesEvent]);
 
   const trendingActivities = useMemo(() => {
     return allLiveEvents.filter((ev) =>
@@ -1199,6 +1209,12 @@ export default function ExploreHubPage() {
   const filteredParks = useMemo(() => filterPlaceholders(PLACEHOLDERS.parks), [filterPlaceholders]);
   const filteredNightlife = useMemo(() => filterPlaceholders(PLACEHOLDERS.nightlife), [filterPlaceholders]);
   const filteredShopping = useMemo(() => filterPlaceholders(PLACEHOLDERS.shopping), [filterPlaceholders]);
+
+  const showLiveSection = (pill: ExploreCategoryPill) =>
+    activeCategory === "All" || activeCategory === pill;
+
+  const showOsmSection = (pill: ExploreCategoryPill) =>
+    activeCategory === "All" || activeCategory === pill;
 
   return (
     <div className="p-6">
@@ -1317,8 +1333,26 @@ export default function ExploreHubPage() {
         <ExploreMapLink />
       </div>
 
+      <div className="mb-6 flex flex-wrap gap-2">
+        {EXPLORE_CATEGORY_PILLS.map((cat) => (
+          <button
+            key={cat}
+            type="button"
+            onClick={() => setActiveCategory(cat)}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+              activeCategory === cat
+                ? "bg-teal-700 text-white shadow-sm"
+                : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-2">
         {/* 1. Trending Activities */}
+        {showLiveSection("Activities") && (
         <ExploreSection
           title="Trending Activities"
           icon="ti-flame"
@@ -1327,8 +1361,10 @@ export default function ExploreHubPage() {
           seeAllHref="/explore/activities"
           userCity={displayCity}
         />
+        )}
 
         {/* 2. Upcoming Events */}
+        {showLiveSection("Events") && (
         <ExploreSection
           title="Upcoming Events"
           icon="ti-calendar"
@@ -1337,8 +1373,10 @@ export default function ExploreHubPage() {
           seeAllHref="/explore/events"
           userCity={displayCity}
         />
+        )}
 
         {/* 3. Photo Spots & Landmarks */}
+        {showOsmSection("Landmarks") && (
         <ExploreSection
           title="Photo Spots & Landmarks"
           icon="ti-camera"
@@ -1348,8 +1386,10 @@ export default function ExploreHubPage() {
           userCity={displayCity}
           isPlaceholder={true}
         />
+        )}
 
         {/* 4. Trekking & Adventure */}
+        {showOsmSection("Trekking") && (
         <ExploreSection
           title="Trekking & Adventure"
           icon="ti-map"
@@ -1359,8 +1399,10 @@ export default function ExploreHubPage() {
           userCity={displayCity}
           isPlaceholder={true}
         />
+        )}
 
         {/* 5. Gaming */}
+        {showOsmSection("Gaming") && (
         <ExploreSection
           title="Gaming"
           icon="ti-game-controller"
@@ -1370,8 +1412,10 @@ export default function ExploreHubPage() {
           userCity={displayCity}
           isPlaceholder={true}
         />
+        )}
 
         {/* 6. Amusement Parks */}
+        {showOsmSection("Amusement") && (
         <ExploreSection
           title="Amusement Parks"
           icon="ti-ticket"
@@ -1381,8 +1425,10 @@ export default function ExploreHubPage() {
           userCity={displayCity}
           isPlaceholder={true}
         />
+        )}
 
         {/* 7. Restaurants & Food */}
+        {showOsmSection("Food") && (
         <ExploreSection
           title="Restaurants & Food"
           icon="ti-soup"
@@ -1392,8 +1438,10 @@ export default function ExploreHubPage() {
           userCity={displayCity}
           isPlaceholder={true}
         />
+        )}
 
         {/* 8. Parks & Outdoors */}
+        {showOsmSection("Parks") && (
         <ExploreSection
           title="Parks & Outdoors"
           icon="ti-trees"
@@ -1403,8 +1451,10 @@ export default function ExploreHubPage() {
           userCity={displayCity}
           isPlaceholder={true}
         />
+        )}
 
         {/* 9. Nightlife */}
+        {showOsmSection("Nightlife") && (
         <ExploreSection
           title="Nightlife"
           icon="ti-glass"
@@ -1414,8 +1464,10 @@ export default function ExploreHubPage() {
           userCity={displayCity}
           isPlaceholder={true}
         />
+        )}
 
         {/* 10. Sports & Fitness */}
+        {showLiveSection("Sports") && (
         <ExploreSection
           title="Sports & Fitness"
           icon="ti-activity"
@@ -1424,8 +1476,10 @@ export default function ExploreHubPage() {
           seeAllHref="/explore/sports"
           userCity={displayCity}
         />
+        )}
 
         {/* 11. Shopping */}
+        {showOsmSection("Shopping") && (
         <ExploreSection
           title="Shopping"
           icon="ti-shopping-cart"
@@ -1435,6 +1489,7 @@ export default function ExploreHubPage() {
           userCity={displayCity}
           isPlaceholder={true}
         />
+        )}
       </div>
 
       <div ref={loadMoreRef} className="h-1" aria-hidden />
