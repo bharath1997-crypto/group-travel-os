@@ -621,6 +621,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
           imageUrl={event.image_url}
           alt={event.title}
           category={event.category}
+          placeId={event.id}
           className="relative h-full w-full overflow-hidden"
           imgClassName="h-full w-full object-cover"
           overlay
@@ -762,6 +763,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
                         imageUrl={item.image_url}
                         alt={item.title}
                         category={item.category}
+                        placeId={item.id}
                         className="relative h-full w-full overflow-hidden"
                         imgClassName="h-full w-full object-cover"
                       />

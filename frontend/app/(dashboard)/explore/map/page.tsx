@@ -980,6 +980,7 @@ export default function ExploreMapViewPage() {
                     imageUrl={selectedItem.image_url}
                     alt={selectedItem.name || selectedItem.title || "Place"}
                     category={selectedItem.category}
+                    placeId={selectedItem.id}
                     className="relative overflow-hidden"
                     style={{ height: "160px", borderRadius: "20px 20px 0 0" }}
                     imgClassName="h-full w-full object-cover"

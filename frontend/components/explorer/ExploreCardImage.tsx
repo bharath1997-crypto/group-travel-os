@@ -8,6 +8,7 @@ type ExploreCardImageProps = {
   imageUrl?: string | null;
   alt: string;
   category?: string;
+  placeId?: string;
   className?: string;
   imgClassName?: string;
   overlay?: boolean;
@@ -19,6 +20,7 @@ export function ExploreCardImage({
   imageUrl,
   alt,
   category,
+  placeId,
   className = "relative aspect-[4/3] overflow-hidden bg-slate-100",
   imgClassName = "h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]",
   overlay = false,
@@ -26,7 +28,11 @@ export function ExploreCardImage({
   children,
 }: ExploreCardImageProps) {
   const gradient = getCategoryGradient(category);
-  const resolvedUrl = getPlaceImage(imageUrl ?? null, category ?? "");
+  const resolvedUrl = getPlaceImage(
+    imageUrl ?? null,
+    category ?? "",
+    placeId ?? alt,
+  );
 
   return (
     <div className={className} style={style}>

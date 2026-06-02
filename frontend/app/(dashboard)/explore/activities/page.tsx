@@ -53,6 +53,7 @@ function ExploreCard({
         imageUrl={item.image_url}
         alt={item.name}
         category={item.category}
+        placeId={item.id}
       >
         <span className="absolute left-3 top-3 rounded-lg bg-white/95 px-2 py-0.5 text-[9px] font-semibold text-teal-700 shadow-sm backdrop-blur">
           {item.category || "Activities"}
