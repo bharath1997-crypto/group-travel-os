@@ -13,7 +13,7 @@ import {
   Search,
   Star,
   Info,
-  Map,
+  Map as MapIcon,
   List,
   Grid,
   Navigation,
@@ -139,6 +139,51 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 }
 
+function calculateRadius(
+  ne: { lat: () => number; lng: () => number },
+  sw: { lat: () => number; lng: () => number },
+): number {
+  const latDiff = Math.abs(ne.lat() - sw.lat());
+  const lonDiff = Math.abs(ne.lng() - sw.lng());
+  const maxDiff = Math.max(latDiff, lonDiff);
+  return Math.min(maxDiff * 69, 500);
+}
+
+function mergeMapEvents(prev: any[], incoming: any[]): any[] {
+  const byId = new Map<string, any>();
+  for (const ev of prev) {
+    if (ev?.id) byId.set(String(ev.id), ev);
+  }
+  for (const ev of incoming) {
+    if (ev?.id) byId.set(String(ev.id), ev);
+  }
+  return Array.from(byId.values());
+}
+
+function getHydratedPlaceholders(lat: number, lng: number) {
+  const list: any[] = [];
+  Object.keys(PLACEHOLDERS).forEach((catKey) => {
+    const items = PLACEHOLDERS[catKey];
+    items.forEach((item, idx) => {
+      const angle = (idx * 72 + catKey.charCodeAt(0)) * (Math.PI / 180);
+      const radiusDeg = 0.01 + idx * 0.008;
+      const offsetLat = lat + Math.sin(angle) * radiusDeg;
+      const offsetLng = lng + Math.cos(angle) * radiusDeg;
+
+      list.push({
+        ...item,
+        venue_lat: offsetLat,
+        venue_lon: offsetLng,
+        city: item.city || "Nearby",
+        distance_miles: haversineDistance(lat, lng, offsetLat, offsetLng),
+      });
+    });
+  });
+  return list;
+}
+
+const BOUNDS_FETCH_DEBOUNCE_MS = 500;
+
 function teardownClusterer(clusterer: MarkerClusterer | null) {
   if (!clusterer) return;
   clusterer.clearMarkers();
@@ -152,6 +197,11 @@ export default function ExploreMapViewPage() {
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const clustererRef = useRef<MarkerClusterer | null>(null);
+  const boundsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const boundsListenerRef = useRef<any>(null);
+  const fetchPlacesForBoundsRef = useRef<
+    (centerLat: number, centerLon: number, radiusMiles: number) => Promise<void>
+  >(async () => {});
   const categoryScrollRef = useRef<HTMLDivElement>(null);
   const categoryTapRef = useRef<{ category: string; timestamp: number } | null>(null);
   const [mapContainerReady, setMapContainerReady] = useState(false);
@@ -379,6 +429,88 @@ export default function ExploreMapViewPage() {
     };
   }, [userLocation.lat, userLocation.lng, displayCity, selectedDate, datePreset]);
 
+  const fetchPlacesForBounds = useCallback(
+    async (centerLat: number, centerLon: number, radiusMiles: number) => {
+      const cappedRadius = Math.min(
+        Math.max(Math.round(radiusMiles), 10),
+        Math.min(radius, 500),
+      );
+      setLoading(true);
+
+      try {
+        const data = await apiFetch<any>(
+          `/explore/events?lat=${centerLat}&lon=${centerLon}&radius=${cappedRadius}&per_page=200`,
+          {},
+          60000,
+        );
+
+        if (data.display_city) {
+          setDisplayCity(String(data.display_city).split(",")[0].trim());
+        } else if (data.city) {
+          setDisplayCity(String(data.city).split(",")[0].trim());
+        }
+
+        const list = data.events || [];
+        setEvents((prev) => {
+          const merged = mergeMapEvents(prev, list);
+          if (merged.length === 0) {
+            return getHydratedPlaceholders(centerLat, centerLon);
+          }
+          return merged;
+        });
+        setIsCached(false);
+
+        try {
+          localStorage.setItem("rovvy_map_cache", JSON.stringify(list));
+        } catch {
+          /* ignore */
+        }
+      } catch (err) {
+        console.warn("Map events API issue:", err);
+        try {
+          const cached = localStorage.getItem("rovvy_map_cache");
+          if (cached) {
+            const parsed = JSON.parse(cached) as any[];
+            setEvents((prev) => mergeMapEvents(prev, parsed));
+            setIsCached(true);
+            triggerToast("Showing cached offline results");
+          } else {
+            setEvents((prev) => {
+              if (prev.length > 0) return prev;
+              return getHydratedPlaceholders(centerLat, centerLon);
+            });
+          }
+        } catch {
+          setEvents((prev) => {
+            if (prev.length > 0) return prev;
+            return getHydratedPlaceholders(centerLat, centerLon);
+          });
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [radius, triggerToast],
+  );
+
+  fetchPlacesForBoundsRef.current = fetchPlacesForBounds;
+
+  const scheduleBoundsFetch = useCallback((map: any) => {
+    if (boundsTimerRef.current) clearTimeout(boundsTimerRef.current);
+    boundsTimerRef.current = setTimeout(() => {
+      const bounds = map.getBounds();
+      if (!bounds) return;
+
+      const ne = bounds.getNorthEast();
+      const sw = bounds.getSouthWest();
+      const centerLat = (ne.lat() + sw.lat()) / 2;
+      const centerLon = (ne.lng() + sw.lng()) / 2;
+      const radiusMiles = calculateRadius(ne, sw);
+
+      void fetchPlacesForBoundsRef.current(centerLat, centerLon, radiusMiles);
+    }, BOUNDS_FETCH_DEBOUNCE_MS);
+  }, []);
+
   // Geolocation tracking
   useEffect(() => {
     if (typeof navigator !== "undefined" && navigator.geolocation) {
@@ -397,73 +529,12 @@ export default function ExploreMapViewPage() {
     }
   }, []);
 
-  // Hydrate local cache or fetch from backend
+  // Refetch when manual radius cap changes (uses current viewport)
   useEffect(() => {
-    setLoading(true);
-    const apiPath = `/explore/events?lat=${userLocation.lat}&lon=${userLocation.lng}&radius=${radius}&per_page=200`;
-
-    apiFetch<any>(apiPath, {}, 60000)
-      .then((data) => {
-        if (data.display_city) {
-          setDisplayCity(String(data.display_city).split(",")[0].trim());
-        } else if (data.city) {
-          setDisplayCity(String(data.city).split(",")[0].trim());
-        }
-        let list = data.events || [];
-        if (list.length === 0) {
-          list = getHydratedPlaceholders(userLocation.lat, userLocation.lng);
-        }
-        setEvents(list);
-        setIsCached(false);
-        try {
-          localStorage.setItem("rovvy_map_cache", JSON.stringify(list));
-        } catch {
-          /* ignore */
-        }
-      })
-      .catch((err) => {
-        console.warn("Map events API issue:", err);
-        // Load offline cache
-        try {
-          const cached = localStorage.getItem("rovvy_map_cache");
-          if (cached) {
-            setEvents(JSON.parse(cached));
-            setIsCached(true);
-            triggerToast("Showing cached offline results");
-          } else {
-            // Fallback immediately to nearby placeholders
-            setEvents(getHydratedPlaceholders(userLocation.lat, userLocation.lng));
-          }
-        } catch {
-          setEvents(getHydratedPlaceholders(userLocation.lat, userLocation.lng));
-        }
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [userLocation.lat, userLocation.lng, radius]);
-
-  const getHydratedPlaceholders = (lat: number, lng: number) => {
-    const list: any[] = [];
-    Object.keys(PLACEHOLDERS).forEach((catKey) => {
-      const items = PLACEHOLDERS[catKey];
-      items.forEach((item, idx) => {
-        const angle = (idx * 72 + catKey.charCodeAt(0)) * (Math.PI / 180);
-        const radiusDeg = 0.01 + idx * 0.008;
-        const offsetLat = lat + Math.sin(angle) * radiusDeg;
-        const offsetLng = lng + Math.cos(angle) * radiusDeg;
-
-        list.push({
-          ...item,
-          venue_lat: offsetLat,
-          venue_lon: offsetLng,
-          city: item.city || "Nearby",
-          distance_miles: haversineDistance(lat, lng, offsetLat, offsetLng)
-        });
-      });
-    });
-    return list;
-  };
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    scheduleBoundsFetch(map);
+  }, [radius, scheduleBoundsFetch]);
 
   // Google Maps Loader
   useEffect(() => {
@@ -518,6 +589,11 @@ export default function ExploreMapViewPage() {
             strokeWeight: 2,
           },
         });
+
+        boundsListenerRef.current = map.addListener("bounds_changed", () => {
+          scheduleBoundsFetch(map);
+        });
+        scheduleBoundsFetch(map);
       })
       .catch((err: unknown) => {
         if (!cancelled) console.error("Maps loader failed:", err);
@@ -525,6 +601,12 @@ export default function ExploreMapViewPage() {
 
     return () => {
       cancelled = true;
+      if (boundsTimerRef.current) clearTimeout(boundsTimerRef.current);
+      boundsTimerRef.current = null;
+      if (boundsListenerRef.current) {
+        boundsListenerRef.current.remove();
+        boundsListenerRef.current = null;
+      }
       if (clustererRef.current) {
         teardownClusterer(clustererRef.current);
         clustererRef.current = null;
@@ -536,7 +618,7 @@ export default function ExploreMapViewPage() {
         (window as any).gm_authFailure = null;
       }
     };
-  }, [mapContainerReady]);
+  }, [mapContainerReady, scheduleBoundsFetch]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -700,7 +782,7 @@ export default function ExploreMapViewPage() {
               </button>
             </Link>
             <button className="flex items-center gap-1 rounded-md bg-white px-2.5 py-1 text-xs font-bold text-teal-700 shadow-sm">
-              <Map size={14} />
+              <MapIcon size={14} />
               <span>Map</span>
             </button>
           </div>
