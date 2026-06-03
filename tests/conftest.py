@@ -32,6 +32,17 @@ def sqlite_create_explorer_events_table() -> None:
 
     Base.metadata.create_all(bind=engine, tables=[ExploreEvent.__table__])
 
+    import sqlalchemy as sa
+    from sqlalchemy.dialects.postgresql import JSONB
+    from app.models.explore_content import ExploreContent
+
+    # Override JSONB → JSON for SQLite compatibility in CI
+    for col in ExploreContent.__table__.columns:
+        if isinstance(col.type, JSONB):
+            col.type = sa.JSON()
+
+    ExploreContent.__table__.create(bind=engine, checkfirst=True)
+
 
 def exec_result(
     *,
