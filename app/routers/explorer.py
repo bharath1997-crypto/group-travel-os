@@ -360,6 +360,100 @@ def chat_with_wayra(
     return {"response": response_text, "city": body.city}
 
 
+_live_context_cache: dict[uuid.UUID, tuple[float, str | None]] = {}
+
+
+@wayra_router.get("/live-context/{trip_id}", status_code=status.HTTP_200_OK)
+def get_wayra_live_context(
+    trip_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    import time
+    import json
+    import httpx
+    from sqlalchemy import select
+    from app.services.timer_service import TimerService
+    from app.utils.firebase import get_rtdb
+    from app.models.trip_plan import TripPlan
+    from app.services.wayra_service import _gemini_key, _GEMINI_URL
+    from app.core.api_limits import API_TIMEOUT_SECONDS
+
+    TimerService._verify_membership(db, current_user.id, trip_id)
+
+    now = time.time()
+    if trip_id in _live_context_cache:
+        cached_time, cached_alert = _live_context_cache[trip_id]
+        if now - cached_time < 60:
+            return {"alert": cached_alert}
+
+    locations = get_rtdb(f"trips/{trip_id}/locations") or {}
+    plan = db.execute(select(TripPlan).where(TripPlan.trip_id == trip_id)).scalar_one_or_none()
+    plan_data = plan.plan_json if plan else {"days": []}
+
+    key = _gemini_key()
+    if not key:
+        return {"alert": None}
+
+    try:
+        instruction = (
+            "You are Wayra, Rovvy's proactive group travel coordinator assistant. "
+            "Analyze the current group members' live locations and the trip plan to identify coordination issues, delays, or helpful suggestions. "
+            "If everything looks perfectly on track, return nothing (an empty string). "
+            "Otherwise, write a very short, proactive warning or tip (maximum 1 sentence, under 15 words) for the group. "
+            "Examples: '3 members are 2km behind', 'Leave now to reach destination on time', 'Traffic delay: plan departure 10 mins early'. "
+            "Keep it highly relevant and concise. No conversational fluff, just the warning/suggestion."
+        )
+        context_data = {
+            "locations": locations,
+            "trip_plan": plan_data,
+        }
+        body = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {
+                            "text": f"{instruction}\n\nContext Data (JSON):\n{json.dumps(context_data)}\n\nOutput:"
+                        }
+                    ],
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.4,
+                "maxOutputTokens": 60,
+            },
+        }
+
+        with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
+            r = client.post(_GEMINI_URL, params={"key": key}, json=body)
+
+        alert_text = None
+        if r.status_code == 200:
+            data = r.json()
+            candidates = data.get("candidates")
+            if isinstance(candidates, list) and candidates:
+                first = candidates[0]
+                if isinstance(first, dict):
+                    content = first.get("content")
+                    if isinstance(content, dict):
+                        parts = content.get("parts")
+                        if isinstance(parts, list):
+                            chunks = []
+                            for p in parts:
+                                if isinstance(p, dict) and isinstance(p.get("text"), str):
+                                    chunks.append(p["text"])
+                            txt = "".join(chunks).strip()
+                            if txt:
+                                alert_text = txt
+
+        _live_context_cache[trip_id] = (now, alert_text)
+        return {"alert": alert_text}
+    except Exception as exc:
+        logger.warning("Failed to fetch Wayra live-context alert: %s", exc)
+        return {"alert": None}
+
+
 @router.post("/shorts/import", status_code=status.HTTP_201_CREATED)
 def import_short(
     body: ShortImportRequest,

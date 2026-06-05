@@ -293,3 +293,60 @@ def change_trip_status(
 ):
     trip = TripService.change_status(db, trip_id, data.status, current_user)
     return trip
+
+
+@trips_router.post(
+    "/{trip_id}/plan",
+    status_code=status.HTTP_200_OK,
+    summary="Save trip plan",
+)
+def save_trip_plan(
+    trip_id: uuid.UUID,
+    plan_json: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from sqlalchemy import select
+    from app.services.timer_service import TimerService
+    from app.models.trip_plan import TripPlan
+    from app.utils.exceptions import AppException
+
+    TimerService._verify_membership(db, current_user.id, trip_id)
+
+    plan = db.execute(select(TripPlan).where(TripPlan.trip_id == trip_id)).scalar_one_or_none()
+    if plan:
+        plan.plan_json = plan_json
+    else:
+        plan = TripPlan(trip_id=trip_id, plan_json=plan_json)
+        db.add(plan)
+
+    try:
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        AppException.internal(f"Could not save trip plan: {exc}")
+
+    return {"status": "success", "message": "Trip plan saved"}
+
+
+@trips_router.get(
+    "/{trip_id}/plan",
+    status_code=status.HTTP_200_OK,
+    summary="Get trip plan",
+)
+def get_trip_plan(
+    trip_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from sqlalchemy import select
+    from app.services.timer_service import TimerService
+    from app.models.trip_plan import TripPlan
+
+    TimerService._verify_membership(db, current_user.id, trip_id)
+
+    plan = db.execute(select(TripPlan).where(TripPlan.trip_id == trip_id)).scalar_one_or_none()
+    if not plan:
+        return {"days": []}
+    return plan.plan_json
+

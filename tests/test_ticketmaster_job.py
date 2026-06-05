@@ -61,9 +61,7 @@ def _close_tm_db(db, event_ids: list[str] | None = None) -> None:
 
 def _purge_all_ticketmaster(db) -> None:
     db.rollback()
-    db.execute(
-        delete(ExploreContent).where(ExploreContent.content_type == "ticketmaster_event")
-    )
+    db.execute(delete(ExploreContent))
     db.commit()
 
 

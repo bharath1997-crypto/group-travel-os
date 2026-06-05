@@ -50,10 +50,10 @@ export const CATEGORY_DEFAULT_IMAGES: Record<string, string[]> = {
   ],
   Landmarks: [
     "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400",
-    "https://images.unsplash.com/photo-1496564799988-8e?w=400",
-    "https://images.unsplash.com/photo-1502602898657?w=400",
-    "https://images.unsplash.com/photo-1518568814500-bf?w=400",
-    "https://images.unsplash.com/photo-1545569341-9eb?w=400",
+    "https://images.unsplash.com/photo-1496564799988-8e69-2e1698e1417f?w=400",
+    "https://images.unsplash.com/photo-1502602898657-3e71750bb17a?w=400",
+    "https://images.unsplash.com/photo-1518568814500-bf9f399f47ee?w=400",
+    "https://images.unsplash.com/photo-1545569341-9ebf0f1085e1?w=400",
   ],
   Events: [
     "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400",

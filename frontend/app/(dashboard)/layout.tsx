@@ -4,7 +4,22 @@ import { AIAssistantSidecar } from "@/components/ai/AIAssistantSidecar";
 import { LoungeDock } from "@/components/LoungeDock";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, MoreVertical, X as LucideX, Calendar, Users as LucideUsers, Bot, MessageSquare, DollarSign } from "lucide-react";
+import {
+  Search,
+  MoreVertical,
+  X as LucideX,
+  Calendar,
+  Users as LucideUsers,
+  Bot,
+  MessageSquare,
+  DollarSign,
+  ChevronLeft,
+  ChevronRight,
+  Home,
+  Compass,
+  User,
+  type LucideIcon,
+} from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -36,17 +51,17 @@ type NavSectionDef = {
   id: "home" | "plan" | "explore" | "group" | "profile";
   href: string;
   label: string;
-  emoji: string;
+  Icon: LucideIcon;
   subs: SubNavItem[];
 };
 
 const NAV_SECTIONS: NavSectionDef[] = [
-  { id: "home", href: "/dashboard", label: "Home", emoji: "🏠", subs: [] },
+  { id: "home", href: "/dashboard", label: "Home", Icon: Home, subs: [] },
   {
     id: "plan",
     href: "/plan",
     label: "Plan",
-    emoji: "🗓️",
+    Icon: Calendar,
     subs: [
       { href: "/flights", label: "Flights" },
       { href: "/hotels", label: "Hotels" },
@@ -59,7 +74,7 @@ const NAV_SECTIONS: NavSectionDef[] = [
     id: "explore",
     href: "/explore",
     label: "Explore",
-    emoji: "🔍",
+    Icon: Compass,
     subs: [
       { href: "/activities", label: "Activities" },
       { href: "/explore/events", label: "Events" },
@@ -71,7 +86,7 @@ const NAV_SECTIONS: NavSectionDef[] = [
     id: "group",
     href: "/group",
     label: "Group",
-    emoji: "👥",
+    Icon: LucideUsers,
     subs: [
       { href: "/buddy", label: "Buddy Trips" },
       { href: "/travel-hub", label: "Rovvy Lounge" },
@@ -82,7 +97,7 @@ const NAV_SECTIONS: NavSectionDef[] = [
     id: "profile",
     href: "/profile",
     label: "Profile",
-    emoji: "👤",
+    Icon: User,
     subs: [],
   },
 ];
@@ -333,13 +348,12 @@ function SidebarNavSection({
             : "text-[#94A3B8] hover:bg-[rgba(248,250,252,0.06)] hover:text-[#F8FAFC]",
         ].join(" ")}
       >
-        <span
-          className="flex h-5 w-5 shrink-0 items-center justify-center text-base leading-none"
+        <section.Icon
+          size={18}
+          strokeWidth={2}
+          className={`h-5 w-5 shrink-0 ${active ? "text-[#CCFBF1]" : "text-[#94A3B8]"}`}
           aria-hidden
-          style={{ opacity: active ? 1 : 0.85 }}
-        >
-          {section.emoji}
-        </span>
+        />
         <span className="min-w-0 flex-1 truncate">{section.label}</span>
       </Link>
       {showSubs ? (
@@ -372,8 +386,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const { user, loading } = useDashboardUser();
   const hideAssistantSidecar = pathname.startsWith("/travel-hub");
 
-  const isMapPage = pathname === "/map";
-  const isLivePage = pathname === "/live";
+  const isMapPage = pathname === "/map" || pathname === "/explore/map";
+  const isLivePage = pathname === "/live" || pathname.startsWith("/trip-live");
   const isExplorerEventsShell = pathname.startsWith("/explore/events");
   const isExploreShortsShell = pathname.startsWith("/explore/shorts");
   const isFlightsPage = pathname.startsWith("/flights");
@@ -396,6 +410,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     let c = false;
@@ -465,6 +480,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     pathname.startsWith("/profile");
 
   const useFullWidthInner =
+    isSidebarCollapsed ||
     isMapPage ||
     isLivePage ||
     isExplorerEventsShell ||
@@ -513,16 +529,26 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const MOBILE_TABS = NAV_SECTIONS.map((s) => ({
     href: s.href,
     label: s.label,
-    emoji: s.emoji,
+    Icon: s.Icon,
     id: s.id,
   }));
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-[#F8F9FA]">
+    <div
+      className="min-h-screen min-h-[100dvh] bg-[#F8F9FA]"
+      style={
+        {
+          ["--sidebar-width-md" as string]: "200px",
+          ["--sidebar-width-xl" as string]: "240px",
+        } as CSSProperties
+      }
+    >
       <ConnectionStatusBanner />
       {/* Desktop / tablet sidebar */}
       <aside
-        className="fixed left-0 top-0 z-40 hidden h-full min-h-screen w-[200px] xl:w-[240px] flex-col border-r border-[#1E293B] md:flex"
+        className={`fixed left-0 top-0 z-40 hidden h-full min-h-screen w-[200px] xl:w-[240px] flex-col border-r border-[#1E293B] md:flex transition-transform duration-300 ease-in-out ${
+          isSidebarCollapsed ? "-translate-x-full" : "translate-x-0"
+        }`}
         style={{ backgroundColor: NAV_BG }}
       >
         <div className="shrink-0 border-b border-[rgba(248,250,252,0.08)] px-4 py-4 xl:py-5">
@@ -593,11 +619,21 @@ function DashboardChrome({ children }: { children: ReactNode }) {
       <div
         className={
           isMapPage
-            ? "flex min-h-screen min-h-[100dvh] flex-col transition-all duration-300 ease-in-out max-md:ml-0 md:ml-[200px] xl:ml-[240px]"
-            : "flex min-h-screen min-h-[100dvh] flex-col pb-[calc(56px+env(safe-area-inset-bottom,0px))] transition-all duration-300 ease-in-out max-md:ml-0 max-md:pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:ml-[200px] xl:ml-[240px] md:pb-0"
+            ? `flex min-h-screen min-h-[100dvh] w-full min-w-0 flex-col transition-[margin] duration-300 ease-in-out max-md:ml-0 ${
+                isSidebarCollapsed ? "md:ml-0 xl:ml-0" : "md:ml-[var(--sidebar-width-md)] xl:ml-[var(--sidebar-width-xl)]"
+              }`
+            : `flex min-h-screen min-h-[100dvh] w-full min-w-0 flex-col pb-[calc(56px+env(safe-area-inset-bottom,0px))] transition-[margin] duration-300 ease-in-out max-md:ml-0 max-md:pb-[calc(56px+env(safe-area-inset-bottom,0px))] ${
+                isSidebarCollapsed ? "md:ml-0 xl:ml-0" : "md:ml-[var(--sidebar-width-md)] xl:ml-[var(--sidebar-width-xl)]"
+              } md:pb-0`
         }
       >
-        <header className="fixed top-0 left-0 right-0 z-30 md:left-[200px] xl:left-[240px] flex h-[52px] shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white px-3 md:px-6 shadow-sm select-none">
+        <header
+          className={`fixed top-0 right-0 z-30 flex h-[52px] shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white px-3 md:px-6 shadow-sm select-none transition-[left] duration-300 ease-in-out left-0 ${
+            isSidebarCollapsed
+              ? "md:left-0 xl:left-0"
+              : "md:left-[var(--sidebar-width-md)] xl:left-[var(--sidebar-width-xl)]"
+          }`}
+        >
           {searchOpen ? (
             <div className="flex items-center w-full gap-2 px-1">
               <input
@@ -625,6 +661,20 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           ) : (
             <>
               <div className="flex items-center gap-1.5 min-w-0">
+                {isMdUp && (
+                  <button
+                    type="button"
+                    onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                    className="p-1.5 text-stone-500 hover:text-stone-800 rounded-lg hover:bg-stone-50 transition-colors mr-1 shrink-0"
+                    aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                  >
+                    {isSidebarCollapsed ? (
+                      <ChevronRight size={18} />
+                    ) : (
+                      <ChevronLeft size={18} />
+                    )}
+                  </button>
+                )}
                 {!isMdUp ? (
                   <Link href="/dashboard" className="flex items-center gap-1.5 min-w-0">
                     <RovvyIcon size={26} />
@@ -781,8 +831,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             <div
               className={
                 useFullWidthInner
-                  ? "flex w-full max-w-none flex-col gap-0"
-                  : "mx-auto flex w-full max-w-6xl flex-col gap-5"
+                  ? "flex w-full min-w-0 max-w-none flex-col gap-0"
+                  : "mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-5"
               }
             >
               <PresenceHeartbeat />
@@ -798,7 +848,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           aria-label="Primary"
         >
           <div className="mx-auto flex h-14 w-full max-w-lg items-stretch justify-between px-1">
-            {MOBILE_TABS.map(({ href, label, emoji, id }) => {
+            {MOBILE_TABS.map(({ href, label, Icon, id }) => {
               const def = NAV_SECTIONS.find((s) => s.id === id)!;
               const active = sectionActive(pathname, def);
               return (
@@ -814,16 +864,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                       title="Updates"
                     />
                   ) : null}
-                  <span
-                    className="text-lg leading-none"
+                  <Icon
+                    size={20}
+                    strokeWidth={2}
+                    className={active ? "text-[#0F766E]" : "text-[#94A3B8]"}
                     aria-hidden
-                    style={{
-                      filter: active ? "none" : "grayscale(1)",
-                      opacity: active ? 1 : 0.55,
-                    }}
-                  >
-                    {emoji}
-                  </span>
+                  />
                   <span
                     className={`max-w-full truncate text-[10px] font-semibold ${
                       active ? "text-[#0F766E]" : "text-[#94A3B8]"

@@ -6,6 +6,7 @@ export type ExploreEvent = {
   time: string;
   venue: string;
   city: string;
+  state?: string;
   country: string;
   image_url: string | null;
   ticket_url: string;
@@ -334,12 +335,62 @@ export function loadEventSnapshot(id: string): ExploreEvent | null {
   }
 }
 
+type PlaceLocation = {
+  name?: string;
+  venue?: string;
+  city?: string;
+  state?: string;
+  formatted_address?: string;
+  venue_lat?: number | null;
+  venue_lon?: number | null;
+};
+
+/** Street + city/state line for map cards and detail popups. */
+export function formatPlaceAddress(item: PlaceLocation): string {
+  if (item.formatted_address?.trim()) {
+    return item.formatted_address.trim();
+  }
+  const name = item.name?.trim();
+  const street = item.venue?.trim();
+  const streetLine =
+    street && street !== name && street !== "Various Venues" ? street : null;
+  const city =
+    item.city && item.city !== "Unknown" ? item.city : null;
+  const locality = [city, item.state].filter(Boolean).join(", ");
+  const parts = [streetLine, locality].filter(Boolean);
+  if (parts.length) return parts.join(" · ");
+  return name || "Resolving address…";
+}
+
 export function mapsUrl(event: ExploreEvent): string {
   if (event.venue_lat != null && event.venue_lon != null) {
-    return `https://www.google.com/maps/search/?api=1&query=${event.venue_lat},${event.venue_lon}`;
+    const label = encodeURIComponent(event.name || event.venue || "Place");
+    return `https://www.google.com/maps/search/?api=1&query=${label}@${event.venue_lat},${event.venue_lon}`;
   }
-  const q = encodeURIComponent(`${event.venue}, ${event.city}`);
+  const q = encodeURIComponent(formatPlaceAddress(event) || event.name);
   return `https://www.google.com/maps/search/?api=1&query=${q}`;
+}
+
+/** Google Maps driving directions from user location (or destination-only). */
+export function directionsUrl(
+  item: PlaceLocation,
+  origin?: { lat: number; lng: number } | null,
+): string {
+  const { venue_lat: lat, venue_lon: lon } = item;
+  if (lat != null && lon != null) {
+    const dest = `${lat},${lon}`;
+    if (origin) {
+      return `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${dest}&travelmode=driving`;
+    }
+    return `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`;
+  }
+  const q = encodeURIComponent(
+    `${item.name || ""} ${formatPlaceAddress(item)}`.trim(),
+  );
+  if (origin) {
+    return `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${q}&travelmode=driving`;
+  }
+  return `https://www.google.com/maps/dir/?api=1&destination=${q}&travelmode=driving`;
 }
 
 export type ExploreSections = {

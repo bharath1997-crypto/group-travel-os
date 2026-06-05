@@ -26,6 +26,8 @@ from app.models.live_checklist import LiveChecklist
 from app.models.live_session import LiveSession
 from app.models.saved_pin import SavedPin
 from app.models.buddy_trip import BuddyJoinRequest, BuddyTrip
+from app.models.sos_event import SOSEvent
+from app.models.trip_plan import TripPlan
 
 __all__: list[str] = [
     "User",
@@ -67,4 +69,6 @@ __all__: list[str] = [
     "LiveSession",
     "BuddyTrip",
     "BuddyJoinRequest",
+    "SOSEvent",
+    "TripPlan",
 ]

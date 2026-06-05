@@ -8,11 +8,15 @@ export type ProfileCacheUser = {
   full_name?: string;
   email?: string;
   avatar_url?: string | null;
+  profile_picture?: string | null;
 };
 
 export function syncLocalProfileCache(user: ProfileCacheUser): void {
   if (typeof window === "undefined") return;
-  const u = user.avatar_url?.trim();
+  const u =
+    user.profile_picture?.trim() ||
+    user.avatar_url?.trim() ||
+    null;
   if (u) {
     localStorage.setItem(AVATAR_URL_KEY, u);
   } else {

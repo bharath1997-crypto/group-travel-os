@@ -1278,6 +1278,7 @@ def _explore_content_to_event_dict(
         "time": getattr(row, "start_time", None) or "19:00",
         "venue": getattr(row, "venue_name", None) or "Various Venues",
         "city": getattr(row, "city", None) or "US",
+        "state": getattr(row, "state", None) or "",
         "country": "US",
         "image_url": getattr(row, "image_url", None),
         "ticket_url": getattr(row, "ticket_url", None) or "",

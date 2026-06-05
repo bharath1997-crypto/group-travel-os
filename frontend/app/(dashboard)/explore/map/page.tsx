@@ -19,20 +19,41 @@ import {
   Navigation,
   Share2,
   CalendarPlus,
-  ThumbsUp,
-  ThumbsDown,
-  HelpCircle,
   TrendingUp,
   ExternalLink,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   RotateCcw,
+  X,
+  Music,
+  Activity,
+  Utensils,
+  Trees,
+  GlassWater,
+  Gamepad2,
+  FerrisWheel,
+  Mountain,
+  Camera,
+  ShoppingBag,
+  Trophy,
 } from "lucide-react";
+import { useDashboardUser } from "@/contexts/dashboard-user-context";
 import { apiFetch } from "@/lib/api";
+import {
+  getCachedProfileAvatarUrl,
+  syncLocalProfileCache,
+} from "@/lib/profileCache";
+import { resolveProfilePhotoUrl } from "@/lib/profilePhoto";
+import { dicebearAvatarSvgUrl } from "@/lib/dicebearAvatar";
 import { ExploreCardImage } from "@/components/explorer/ExploreCardImage";
 import { MinimalCalendar } from "@/components/explorer/MinimalCalendar";
-import { cityLabel } from "@/lib/explore-events";
+import {
+  cityLabel,
+  directionsUrl,
+  formatPlaceAddress,
+  mapsUrl,
+} from "@/lib/explore-events";
 import {
   isExploreMapCategory,
   matchesMapCategory,
@@ -46,6 +67,13 @@ import {
   formatWeatherChip,
   resolveWeatherDate,
 } from "@/lib/explore-weather";
+import {
+  fetchPlaceEnrichment,
+  getCachedPlaceEnrichment,
+  mergePlaceEnrichment,
+  setCachedPlaceEnrichment,
+  type PlaceEnrichment,
+} from "@/lib/place-enrichment";
 
 // Custom pin colors per category
 const PIN_COLORS: Record<string, string> = {
@@ -90,6 +118,21 @@ const CATEGORIES = [
   "Shopping",
   "Sports"
 ];
+
+const CATEGORY_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  All: Compass,
+  Events: Music,
+  Activities: Activity,
+  Food: Utensils,
+  Parks: Trees,
+  Nightlife: GlassWater,
+  Gaming: Gamepad2,
+  Amusement: FerrisWheel,
+  Trekking: Mountain,
+  Landmarks: Camera,
+  Shopping: ShoppingBag,
+  Sports: Trophy,
+};
 
 // Rich fallback placeholder locations
 const PLACEHOLDERS: Record<string, any[]> = {
@@ -195,18 +238,28 @@ export default function ExploreMapViewPage() {
   const searchParams = useSearchParams();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
+  const userLocationMarkerRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const clustererRef = useRef<MarkerClusterer | null>(null);
+  const routePolylineRef = useRef<any>(null);
+  const enrichAbortRef = useRef<AbortController | null>(null);
   const boundsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const boundsListenerRef = useRef<any>(null);
   const fetchPlacesForBoundsRef = useRef<
     (centerLat: number, centerLon: number, radiusMiles: number) => Promise<void>
   >(async () => {});
   const categoryScrollRef = useRef<HTMLDivElement>(null);
-  const categoryTapRef = useRef<{ category: string; timestamp: number } | null>(null);
+  const categoryClickRef = useRef<{
+    category: string;
+    clicks: number;
+    timer: ReturnType<typeof setTimeout> | null;
+  } | null>(null);
+  const activeCategoryRef = useRef<string | null>("All");
+  const listItemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const [mapContainerReady, setMapContainerReady] = useState(false);
   const [canScrollCategoriesLeft, setCanScrollCategoriesLeft] = useState(false);
   const [canScrollCategoriesRight, setCanScrollCategoriesRight] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const setMapContainerNode = useCallback((node: HTMLDivElement | null) => {
     mapContainerRef.current = node;
@@ -221,11 +274,14 @@ export default function ExploreMapViewPage() {
   const [userLocation, setUserLocation] = useState({ lat: 41.8781, lng: -87.6298 });
   const [displayCity, setDisplayCity] = useState("Chicago");
   const [radius, setRadius] = useState<number>(defaultRadius);
-  const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [activeCategory, setActiveCategory] = useState<string | null>("All");
+  activeCategoryRef.current = activeCategory;
+
   const { selectedDate, datePreset, onDateChange, matchesEvent } =
     useExploreDateFilter();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [enrichLoading, setEnrichLoading] = useState(false);
 
   const triggerToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -257,9 +313,137 @@ export default function ExploreMapViewPage() {
 
   // Interaction State
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
-  const [votes, setVotes] = useState<Record<string, "go" | "skip" | "maybe">>({});
   const [events, setEvents] = useState<any[]>([]);
   const [mapError, setMapError] = useState<"missing-key" | "auth-failure" | null>(null);
+  const [userLocIconSvg, setUserLocIconSvg] = useState<string>("");
+  const [profileButtonAvatarUrl, setProfileButtonAvatarUrl] = useState<string | null>(
+    null,
+  );
+  const [profileButtonInitials, setProfileButtonInitials] = useState("Y");
+  const [profileButtonImgFailed, setProfileButtonImgFailed] = useState(false);
+  const { user: dashboardUser } = useDashboardUser();
+
+  useEffect(() => {
+    let active = true;
+    const loadAvatar = async () => {
+      if (typeof window === "undefined") return;
+      const userName =
+        dashboardUser?.full_name?.trim() ||
+        localStorage.getItem("gt_user_name")?.trim() ||
+        "You";
+      const initials = userName.charAt(0).toUpperCase() || "Y";
+
+      // Default fallback SVG (Initials inside brand-teal ring)
+      const getFallbackSvg = () => `
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+          <circle cx="18" cy="18" r="16" fill="#0F766E" fill-opacity="0.15" />
+          <circle cx="18" cy="18" r="12" fill="#0F766E" fill-opacity="0.3" />
+          <circle cx="18" cy="18" r="9" fill="#0F766E" stroke="#FFFFFF" stroke-width="1.5" />
+          <text x="18" y="21" font-size="9" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-weight="bold" text-anchor="middle">${initials}</text>
+        </svg>
+      `;
+
+      let meForPhoto: {
+        avatar_url?: string | null;
+        profile_picture?: string | null;
+        google_picture?: string | null;
+        facebook_picture?: string | null;
+      } | null = dashboardUser
+        ? {
+            avatar_url: dashboardUser.avatar_url,
+            profile_picture: null,
+          }
+        : null;
+
+      if (!resolveProfilePhotoUrl(meForPhoto)) {
+        const cached = getCachedProfileAvatarUrl()?.trim();
+        if (cached) {
+          meForPhoto = { avatar_url: cached, profile_picture: null };
+        }
+      }
+
+      if (!resolveProfilePhotoUrl(meForPhoto)) {
+        try {
+          const me = await apiFetch<{
+            full_name?: string | null;
+            avatar_url?: string | null;
+            profile_picture?: string | null;
+            google_picture?: string | null;
+            facebook_picture?: string | null;
+          }>("/auth/me");
+          syncLocalProfileCache(me);
+          meForPhoto = {
+            avatar_url: me.avatar_url,
+            profile_picture:
+              me.profile_picture?.trim() ||
+              me.google_picture?.trim() ||
+              me.facebook_picture?.trim() ||
+              null,
+          };
+        } catch {
+          /* use generated fallback below */
+        }
+      }
+
+      const avatarUrl = resolveProfilePhotoUrl(meForPhoto);
+      const displayUrl = avatarUrl || dicebearAvatarSvgUrl(userName);
+      let iconSvg = getFallbackSvg();
+
+      if (displayUrl) {
+        try {
+          const res = await fetch(displayUrl);
+          if (res.ok) {
+            const blob = await res.blob();
+            const base64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+
+            if (active) {
+              iconSvg = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="16" fill="#0F766E" fill-opacity="0.15" />
+                  <circle cx="18" cy="18" r="12" fill="#0F766E" fill-opacity="0.3" />
+                  <circle cx="18" cy="18" r="9" fill="#FFFFFF" stroke="#0F766E" stroke-width="2" />
+                  <clipPath id="avatar-clip">
+                    <circle cx="18" cy="18" r="8" />
+                  </clipPath>
+                  <image href="${base64}" x="10" y="10" width="16" height="16" clip-path="url(#avatar-clip)" preserveAspectRatio="xMidYMid slice" />
+                </svg>
+              `;
+            }
+          }
+        } catch (err) {
+          console.warn("Could not fetch avatar for map marker, using initials fallback:", err);
+        }
+      }
+
+      if (active) {
+        setUserLocIconSvg(iconSvg);
+        setProfileButtonAvatarUrl(displayUrl);
+        setProfileButtonInitials(initials);
+        setProfileButtonImgFailed(false);
+      }
+    };
+
+    void loadAvatar();
+    return () => {
+      active = false;
+    };
+  }, [dashboardUser?.avatar_url, dashboardUser?.full_name]);
+
+  useEffect(() => {
+    if (userLocationMarkerRef.current && userLocIconSvg && typeof window !== "undefined" && (window as any).google) {
+      const google = (window as any).google;
+      userLocationMarkerRef.current.setIcon({
+        url: `data:image/svg+xml;utf-8,${encodeURIComponent(userLocIconSvg)}`,
+        scaledSize: new google.maps.Size(36, 36),
+        anchor: new google.maps.Point(18, 18),
+      });
+    }
+  }, [userLocIconSvg]);
 
   useEffect(() => {
     checkCategoryScroll();
@@ -283,16 +467,16 @@ export default function ExploreMapViewPage() {
   }, [categoryParam]);
 
   const setCategoryFilter = useCallback(
-    (category: string) => {
+    (category: string | null) => {
       setActiveCategory(category);
-      const enteringCategory = isCategoryMapMode(category);
+      const enteringCategory = category != null && isCategoryMapMode(category);
       if (enteringCategory) {
         setRadius(CATEGORY_MAP_DEFAULT_RADIUS);
       } else if (!categoryParam) {
         setRadius(MAIN_MAP_DEFAULT_RADIUS);
       }
       const params = new URLSearchParams(searchParams.toString());
-      if (category === "All") params.delete("category");
+      if (!category || category === "All") params.delete("category");
       else params.set("category", category);
       const qs = params.toString();
       router.replace(qs ? `/explore/map?${qs}` : "/explore/map", { scroll: false });
@@ -300,45 +484,94 @@ export default function ExploreMapViewPage() {
     [router, searchParams, categoryParam],
   );
 
-  const handleCategoryTap = useCallback(
+  const flushCategoryClick = useCallback(
     (cat: string) => {
-      const now = Date.now();
-      const prev = categoryTapRef.current;
+      const snap = categoryClickRef.current;
+      categoryClickRef.current = null;
+      if (!snap || snap.category !== cat) return;
 
-      if (prev && prev.category === cat && now - prev.timestamp < 320) {
-        categoryTapRef.current = null;
-        if (cat !== "All" && activeCategory === cat) {
-          setCategoryFilter("All");
+      const isActive = activeCategoryRef.current === cat;
+
+      if (snap.clicks >= 2 || isActive) {
+        if (isActive) {
+          setCategoryFilter(null);
         } else {
           setCategoryFilter(cat);
         }
         return;
       }
 
-      categoryTapRef.current = { category: cat, timestamp: now };
-      window.setTimeout(() => {
-        if (
-          categoryTapRef.current?.category === cat &&
-          categoryTapRef.current.timestamp === now
-        ) {
-          categoryTapRef.current = null;
-          setCategoryFilter(cat);
-        }
-      }, 320);
+      setCategoryFilter(cat);
     },
-    [activeCategory, setCategoryFilter],
+    [setCategoryFilter],
   );
 
+  const handleCategoryTap = useCallback(
+    (cat: string) => {
+      const pending = categoryClickRef.current;
+
+      if (pending?.timer) {
+        clearTimeout(pending.timer);
+        pending.timer = null;
+      }
+
+      if (pending?.category === cat) {
+        pending.clicks += 1;
+        pending.timer = window.setTimeout(() => flushCategoryClick(cat), 280);
+        return;
+      }
+
+      categoryClickRef.current = {
+        category: cat,
+        clicks: 1,
+        timer: window.setTimeout(() => flushCategoryClick(cat), 280),
+      };
+    },
+    [flushCategoryClick],
+  );
+
+  const handleCategoryDoubleTap = useCallback(
+    (cat: string) => {
+      const pending = categoryClickRef.current;
+      if (pending?.timer) {
+        clearTimeout(pending.timer);
+      }
+      categoryClickRef.current = null;
+
+      if (activeCategoryRef.current === cat) {
+        setCategoryFilter(null);
+      } else {
+        setCategoryFilter(cat);
+      }
+    },
+    [setCategoryFilter],
+  );
+
+  useEffect(() => {
+    return () => {
+      const pending = categoryClickRef.current;
+      if (pending?.timer) clearTimeout(pending.timer);
+    };
+  }, []);
+
   const clearAllFilters = useCallback(() => {
-    const keepCategory = isCategoryMapMode(activeCategory) ? activeCategory : "All";
+    const keepCategory =
+      activeCategory && isCategoryMapMode(activeCategory) ? activeCategory : "All";
     setActiveCategory(keepCategory);
     onDateChange(null, null);
     setSearchQuery("");
     setRadius(
-      isCategoryMapMode(keepCategory) ? CATEGORY_MAP_DEFAULT_RADIUS : MAIN_MAP_DEFAULT_RADIUS,
+      keepCategory && isCategoryMapMode(keepCategory)
+        ? CATEGORY_MAP_DEFAULT_RADIUS
+        : MAIN_MAP_DEFAULT_RADIUS,
     );
-    if (keepCategory === "All") router.replace("/explore/map", { scroll: false });
-    else router.replace(`/explore/map?category=${encodeURIComponent(keepCategory)}`, { scroll: false });
+    if (!keepCategory || keepCategory === "All") {
+      router.replace("/explore/map", { scroll: false });
+    } else {
+      router.replace(`/explore/map?category=${encodeURIComponent(keepCategory)}`, {
+        scroll: false,
+      });
+    }
   }, [activeCategory, onDateChange, router]);
 
   const hasActiveFilters =
@@ -346,13 +579,21 @@ export default function ExploreMapViewPage() {
     !!datePreset ||
     !!searchQuery.trim() ||
     radius !== defaultRadius ||
-    (!isCategoryMap && activeCategory !== "All");
+    (!isCategoryMap && activeCategory === null);
+
+  const noCategorySelected = activeCategory === null;
 
   const { filteredEventsList, dateFilterRelaxed } = useMemo(() => {
+    if (activeCategory === null) {
+      return { filteredEventsList: [], dateFilterRelaxed: false };
+    }
+
     const applyFilters = (includeDate: boolean) => {
       let result = events;
       if (activeCategory !== "All") {
-        result = result.filter((ev) => matchesMapCategory(ev.category, activeCategory));
+        result = result.filter((ev) =>
+          matchesMapCategory(ev.category, activeCategory),
+        );
       }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -568,27 +809,40 @@ export default function ExploreMapViewPage() {
         const map = new google.maps.Map(mapContainerRef.current, {
           center: userLocation,
           zoom: 13,
-          mapTypeControl: false,
+          mapTypeControl: true,
+          mapTypeControlOptions: {
+            style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+            position: google.maps.ControlPosition.BOTTOM_LEFT,
+          },
           streetViewControl: true,
-          fullscreenControl: false,
+          fullscreenControl: true,
+          zoomControl: true,
           styles: [],
         });
 
         mapInstanceRef.current = map;
 
-        new google.maps.Marker({
+        const userLocSvg = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="16" fill="#0F766E" fill-opacity="0.15" />
+            <circle cx="18" cy="18" r="10" fill="#0F766E" fill-opacity="0.35" />
+            <circle cx="18" cy="18" r="6" fill="#0F766E" stroke="#FFFFFF" stroke-width="2" />
+          </svg>
+        `;
+
+        const initialUserLocSvg = userLocIconSvg || userLocSvg;
+
+        const userLocMarker = new google.maps.Marker({
           position: userLocation,
           map,
           title: "Your Location",
           icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: "#0F766E",
-            fillOpacity: 1,
-            strokeColor: "#FFFFFF",
-            strokeWeight: 2,
+            url: `data:image/svg+xml;utf-8,${encodeURIComponent(initialUserLocSvg)}`,
+            scaledSize: new google.maps.Size(36, 36),
+            anchor: new google.maps.Point(18, 18),
           },
         });
+        userLocationMarkerRef.current = userLocMarker;
 
         boundsListenerRef.current = map.addListener("bounds_changed", () => {
           scheduleBoundsFetch(map);
@@ -613,7 +867,12 @@ export default function ExploreMapViewPage() {
       }
       markersRef.current.forEach((m) => m.setMap(null));
       markersRef.current = [];
+      if (userLocationMarkerRef.current) {
+        userLocationMarkerRef.current.setMap(null);
+        userLocationMarkerRef.current = null;
+      }
       mapInstanceRef.current = null;
+      clearDrivingRoute();
       if (typeof window !== "undefined") {
         (window as any).gm_authFailure = null;
       }
@@ -624,30 +883,134 @@ export default function ExploreMapViewPage() {
     const map = mapInstanceRef.current;
     if (!map) return;
     map.setCenter(userLocation);
+    if (userLocationMarkerRef.current) {
+      userLocationMarkerRef.current.setPosition(userLocation);
+    }
   }, [userLocation]);
 
   // SVG customized category pin icon
-  const getPinIcon = (category: string) => {
+  const getPinIcon = (category: string, isSelected = false) => {
     if (typeof window === "undefined" || !(window as any).google) return undefined;
     const color = PIN_COLORS[category] || "#0F766E";
     const emoji = PIN_EMOJI[category] || "📍";
+    const size = isSelected ? 48 : 40;
+    const r = isSelected ? 20 : 18;
+    const ring = isSelected
+      ? `<circle cx="24" cy="24" r="22" fill="none" stroke="#2563EB" stroke-width="3" opacity="0.85"/>`
+      : "";
     const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+      <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 48 48">
         <defs>
           <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow dx="0" dy="3" stdDeviation="2" flood-opacity="0.3"/>
           </filter>
         </defs>
-        <circle cx="20" cy="20" r="18" fill="${color}" stroke="#FFFFFF" stroke-width="2.5" filter="url(#shadow)"/>
-        <text x="20" y="25" font-size="18" text-anchor="middle" font-family="Segoe UI Symbol, Apple Color Emoji">${emoji}</text>
+        ${ring}
+        <circle cx="24" cy="24" r="${r}" fill="${color}" stroke="#FFFFFF" stroke-width="2.5" filter="url(#shadow)"/>
+        <text x="24" y="29" font-size="${isSelected ? 20 : 18}" text-anchor="middle" font-family="Segoe UI Symbol, Apple Color Emoji">${emoji}</text>
       </svg>
     `;
+    const anchor = isSelected ? 24 : 20;
     return {
       url: `data:image/svg+xml;utf-8,${encodeURIComponent(svg)}`,
-      scaledSize: new (window as any).google.maps.Size(36, 36),
-      anchor: new (window as any).google.maps.Point(18, 18)
+      scaledSize: new (window as any).google.maps.Size(size, size),
+      anchor: new (window as any).google.maps.Point(anchor, anchor),
+      zIndex: isSelected ? 2000 : 1,
     };
   };
+
+  const clearDrivingRoute = useCallback(() => {
+    if (routePolylineRef.current) {
+      routePolylineRef.current.setMap(null);
+      routePolylineRef.current = null;
+    }
+  }, []);
+
+  const drawDrivingRoute = useCallback(
+    (route: PlaceEnrichment["route"]) => {
+      const map = mapInstanceRef.current;
+      const google = (window as any).google;
+      clearDrivingRoute();
+      if (!map || !google || !route?.polyline?.length) return;
+
+      routePolylineRef.current = new google.maps.Polyline({
+        path: route.polyline.map(([lat, lng]) => ({ lat, lng })),
+        geodesic: true,
+        strokeColor: "#0F766E",
+        strokeOpacity: 0.9,
+        strokeWeight: 5,
+        map,
+        zIndex: 500,
+      });
+    },
+    [clearDrivingRoute],
+  );
+
+  const loadPlaceDetails = useCallback(
+    async (ev: any) => {
+      enrichAbortRef.current?.abort();
+      const controller = new AbortController();
+      enrichAbortRef.current = controller;
+
+      const cached = getCachedPlaceEnrichment(ev.id);
+      if (cached) {
+        setSelectedItem((prev: any) =>
+          prev?.id === ev.id ? mergePlaceEnrichment(prev, cached) : prev,
+        );
+        drawDrivingRoute(cached.route);
+        return;
+      }
+
+      setEnrichLoading(true);
+      try {
+        const enrichment = await fetchPlaceEnrichment(ev, userLocation);
+        if (controller.signal.aborted) return;
+        setCachedPlaceEnrichment(ev.id, enrichment);
+        setSelectedItem((prev: any) =>
+          prev?.id === ev.id ? mergePlaceEnrichment(prev, enrichment) : prev,
+        );
+        drawDrivingRoute(enrichment.route);
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          console.warn("Place enrichment failed:", err);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setEnrichLoading(false);
+        }
+      }
+    },
+    [userLocation, drawDrivingRoute],
+  );
+
+  const selectPlace = useCallback(
+    (ev: any) => {
+      setSelectedItem(ev);
+      const lat = ev.venue_lat || ev.lat;
+      const lng = ev.venue_lon || ev.lng;
+      const map = mapInstanceRef.current;
+      if (map && lat && lng) {
+        map.panTo({ lat, lng });
+        if (map.getZoom() < 15) map.setZoom(15);
+      }
+      void loadPlaceDetails(ev);
+    },
+    [loadPlaceDetails],
+  );
+
+  const closePlaceDetails = useCallback(() => {
+    enrichAbortRef.current?.abort();
+    enrichAbortRef.current = null;
+    setEnrichLoading(false);
+    setSelectedItem(null);
+    clearDrivingRoute();
+  }, [clearDrivingRoute]);
+
+  useEffect(() => {
+    if (noCategorySelected) {
+      closePlaceDetails();
+    }
+  }, [noCategorySelected, closePlaceDetails]);
 
   // Update map markers when events or filters change
   useEffect(() => {
@@ -670,15 +1033,17 @@ export default function ExploreMapViewPage() {
       const lng = ev.venue_lon || ev.lng;
       if (!lat || !lng) return;
 
+      const isSelected = selectedItem?.id === ev.id;
+
       const marker = new google.maps.Marker({
         position: { lat, lng },
         title: ev.name,
-        icon: getPinIcon(ev.category || "Events"),
+        icon: getPinIcon(ev.category || "Events", isSelected),
+        zIndex: isSelected ? 2000 : 1,
       });
 
       marker.addListener("click", () => {
-        setSelectedItem(ev);
-        map.panTo({ lat, lng });
+        selectPlace(ev);
       });
 
       markers.push(marker);
@@ -692,7 +1057,7 @@ export default function ExploreMapViewPage() {
       map,
       markers,
       algorithmOptions: {
-        maxZoom: 14,
+        maxZoom: 16,
       },
       renderer: {
         render: ({ count, position }) =>
@@ -721,7 +1086,7 @@ export default function ExploreMapViewPage() {
       markersRef.current.forEach((m) => m.setMap(null));
       markersRef.current = [];
     };
-  }, [filteredEventsList]);
+  }, [filteredEventsList, selectedItem?.id, selectPlace]);
 
   // Drive time estimator
   const driveTime = (miles: number) => {
@@ -732,11 +1097,6 @@ export default function ExploreMapViewPage() {
       return `${hrs} hr ${remaining} min`;
     }
     return `${mins} min`;
-  };
-
-  const handleVote = (id: string, option: "go" | "skip" | "maybe") => {
-    setVotes((prev) => ({ ...prev, [id]: prev[id] === option ? undefined : (option as any) }));
-    triggerToast(`Vote registered: ${option.toUpperCase()}`);
   };
 
   const toggleSaveItem = (id: string) => {
@@ -810,18 +1170,6 @@ export default function ExploreMapViewPage() {
             </select>
           </div>
 
-          {/* Search bar */}
-          <div className="relative w-48">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search map..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 py-1.5 pl-7 pr-3 text-xs outline-none focus:border-teal-500"
-            />
-          </div>
-
           {hasActiveFilters && (
             <button
               type="button"
@@ -859,23 +1207,35 @@ export default function ExploreMapViewPage() {
             const count = events.filter(
               (ev) => cat === "All" || matchesMapCategory(ev.category, cat)
             ).length;
+            const IconComponent = CATEGORY_ICONS[cat] || Compass;
 
             return (
               <button
                 key={cat}
                 type="button"
                 onClick={() => handleCategoryTap(cat)}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all shrink-0 ${
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  handleCategoryDoubleTap(cat);
+                }}
+                className={`group flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-300 shrink-0 border ${
                   isActive
-                    ? "bg-teal-700 text-white shadow-sm"
-                    : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
+                    ? "bg-teal-600 text-white border-teal-600 shadow-sm"
+                    : "bg-slate-50 text-slate-600 border-slate-100 hover:bg-teal-600 hover:text-white hover:border-teal-600 hover:shadow-sm"
                 }`}
               >
-                <span>{PIN_EMOJI[cat] || "🧭"}</span>
+                <IconComponent
+                  size={14}
+                  className={`transition-colors duration-300 ${
+                    isActive ? "text-white" : "text-slate-500 group-hover:text-white"
+                  }`}
+                />
                 <span>{cat}</span>
                 <span
-                  className={`ml-1 rounded px-1 py-0.2 text-[9px] ${
-                    isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                  className={`ml-1 rounded px-1 py-0.2 text-[9px] transition-all duration-300 ${
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "bg-slate-200 text-slate-500 group-hover:bg-white/20 group-hover:text-white"
                   }`}
                 >
                   {count}
@@ -897,11 +1257,11 @@ export default function ExploreMapViewPage() {
         ) : null}
       </div>
 
-      {/* Main Map & Sidebar Workspace */}
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Map view (left, full height minus bottom strip) */}
-        <div className="flex-1 h-full relative flex flex-col">
-          <div ref={setMapContainerNode} className="flex-1 w-full bg-slate-100 relative" />
+      {/* Main: Full Screen Map & Floating Results Panel */}
+      <div className="flex flex-1 overflow-hidden relative w-full h-full">
+        {/* Map Canvas */}
+        <div className="absolute inset-0 w-full h-full z-0">
+          <div ref={setMapContainerNode} className="absolute inset-0 bg-slate-100" />
 
           {mapError ? (
             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0F172A] p-6 overflow-hidden select-text">
@@ -973,212 +1333,329 @@ export default function ExploreMapViewPage() {
             </div>
           ) : null}
 
-          {/* Floating Premium Popup Card at Bottom Left of Map */}
-          {!mapError && selectedItem && (
-                <div className="absolute bottom-4 left-4 z-10 w-80 overflow-hidden rounded-2xl border border-white/20 bg-white/95 shadow-xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-300">
+          {/* Floating live-location / center-on-me (profile avatar) */}
+          {!mapError && (
+            <button
+              type="button"
+              onClick={() => {
+                if (mapInstanceRef.current && userLocation) {
+                  mapInstanceRef.current.panTo(userLocation);
+                  mapInstanceRef.current.setZoom(15);
+                  triggerToast("Centered on your location");
+                }
+              }}
+              className="absolute bottom-28 right-4 z-10 flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-2 border-teal-600 bg-white p-0.5 shadow-md ring-2 ring-teal-600/20 transition hover:scale-105 hover:ring-teal-600/40 active:scale-95"
+              title="Center on my location"
+              aria-label="Center map on my live location"
+            >
+              {profileButtonAvatarUrl && !profileButtonImgFailed ? (
+                <img
+                  src={profileButtonAvatarUrl}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full rounded-full object-cover"
+                  onError={() => setProfileButtonImgFailed(true)}
+                />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">
+                  {profileButtonInitials}
+                </span>
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Floating results panel sheet */}
+        <div
+          className={`absolute top-4 left-4 z-10 w-96 rounded-2xl border border-slate-200/80 bg-white/80 p-6 shadow-xl backdrop-blur-md transition-all duration-300 flex flex-col max-h-[calc(100%-2rem)] ${
+            isCollapsed ? "-translate-x-[110%] pointer-events-none" : "translate-x-0"
+          }`}
+        >
+          {selectedItem ? (
+            <>
+              <div className="flex items-center justify-between pb-4 border-b border-slate-200/60 shrink-0">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={closePlaceDetails}
+                    className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-slate-100/50 text-slate-700 transition"
+                    aria-label="Back to results"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <span className="text-sm font-semibold text-slate-800 font-sans">Details</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {enrichLoading && (
+                    <span className="text-[10px] text-teal-600 font-medium animate-pulse">
+                      Loading details…
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsCollapsed(true)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-slate-100/50 text-slate-500 hover:text-slate-700 transition"
+                    aria-label="Collapse panel"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto mt-4 pr-1 -mr-2 space-y-4">
+                <div className="relative w-full overflow-hidden rounded-xl bg-slate-100 shadow-sm animate-fade-in" style={{ height: "180px" }}>
                   <ExploreCardImage
                     imageUrl={selectedItem.image_url}
-                    alt={selectedItem.name || selectedItem.title || "Place"}
+                    alt={selectedItem.name || "Place"}
                     category={selectedItem.category}
                     placeId={selectedItem.id}
-                    className="relative overflow-hidden"
-                    style={{ height: "160px", borderRadius: "20px 20px 0 0" }}
+                    className="relative h-full w-full"
                     imgClassName="h-full w-full object-cover"
                     overlay
                   />
-                  <div className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="rounded-lg px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur" style={{ backgroundColor: PIN_COLORS[selectedItem.category] || "#0F766E" }}>
-                      {PIN_EMOJI[selectedItem.category] || "🧭"} {selectedItem.category || "Place"}
-                    </span>
-                    <span className="text-[10px] font-semibold text-slate-500 flex items-center gap-1">
-                      🚗 {driveTime(selectedItem.distance_miles || 1.5)} drive
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-bold text-slate-900 line-clamp-1">{selectedItem.name}</h3>
-                  <div className="flex items-center gap-1.5 my-1">
-                    <div className="flex">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <Star key={i} size={10} className="fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-                    <span className="text-[9px] text-slate-500">4.5 (200+)</span>
-                  </div>
-                  <div className="flex items-start gap-1 text-[10px] text-slate-500 mt-1 min-w-0">
-                    <MapPin size={11} className="mt-0.5 shrink-0 text-slate-400" />
-                    <span className="truncate">{selectedItem.venue}</span>
-                  </div>
-                  
-                  {/* Actions Grid */}
-                  <div className="grid grid-cols-3 gap-1.5 mt-3 pt-3 border-t border-slate-100">
-                    <button 
-                      onClick={() => triggerToast("Booking experience redirect...")}
-                      className="rounded-lg bg-teal-700 py-1.5 text-center text-[10px] font-bold text-white hover:bg-teal-800 transition"
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="text-base font-bold text-slate-900 leading-snug">
+                      {selectedItem.name}
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={closePlaceDetails}
+                      className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 shrink-0"
+                      aria-label="Close"
                     >
-                      Book
+                      <X size={16} />
                     </button>
-                    <button 
+                  </div>
+
+                  {selectedItem.description && (
+                    <p className="text-xs text-slate-600 leading-relaxed line-clamp-4">
+                      {selectedItem.description}
+                    </p>
+                  )}
+
+                  {selectedItem.rating != null && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-semibold text-slate-800">
+                        {Number(selectedItem.rating).toFixed(1)}
+                      </span>
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <Star
+                            key={i}
+                            size={12}
+                            className={
+                              i <= Math.round(Number(selectedItem.rating))
+                                ? "fill-amber-400 text-amber-400"
+                                : "text-slate-200"
+                            }
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-slate-500">
+                    {selectedItem.category}
+                    {selectedItem.price_min != null && selectedItem.price_min > 0
+                      ? ` · $${selectedItem.price_min}${selectedItem.price_max ? `–$${selectedItem.price_max}` : ""}`
+                      : ""}
+                  </p>
+
+                  <div className="flex items-start gap-2 text-xs text-slate-700">
+                    <MapPin size={16} className="mt-0.5 shrink-0 text-teal-600" />
+                    <span className={enrichLoading && !selectedItem.formatted_address ? "text-slate-400 italic" : ""}>
+                      {formatPlaceAddress(selectedItem)}
+                    </span>
+                  </div>
+
+                  {(selectedItem.route || selectedItem.distance_miles != null) && (
+                    <p className="text-xs text-slate-500 ml-6 flex items-center gap-1">
+                      <Navigation size={12} className="text-slate-400 shrink-0" />
+                      {selectedItem.route ? (
+                        <>
+                          {selectedItem.route.duration_minutes} min drive ·{" "}
+                          {selectedItem.route.distance_miles} mi by car
+                        </>
+                      ) : (
+                        <>
+                          {driveTime(selectedItem.distance_miles)} drive ·{" "}
+                          {selectedItem.distance_miles.toFixed(1)} mi from you
+                        </>
+                      )}
+                    </p>
+                  )}
+
+                  {selectedItem.wikipedia_url && (
+                    <a
+                      href={selectedItem.wikipedia_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-slate-400 hover:text-teal-600 ml-6 inline-block"
+                    >
+                      Summary from Wikipedia ↗
+                    </a>
+                  )}
+
+                  <div className="flex gap-2">
+                    <a
+                      href={directionsUrl(selectedItem, userLocation)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-2 rounded-full bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition shadow-sm"
+                    >
+                      <Navigation size={16} />
+                      Directions
+                    </a>
+                    <button
+                      type="button"
                       onClick={() => toggleSaveItem(selectedItem.id)}
-                      className={`rounded-lg py-1.5 text-center text-[10px] font-bold transition border ${
+                      className={`flex items-center justify-center rounded-full border px-4 py-2.5 text-sm font-semibold transition ${
                         savedIds.has(selectedItem.id)
-                          ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                          : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                          ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                       }`}
                     >
-                      {savedIds.has(selectedItem.id) ? "Saved!" : "Save to Trip"}
-                    </button>
-                    <button 
-                      onClick={() => triggerToast("Group Poll created!")}
-                      className="rounded-lg bg-slate-100 py-1.5 text-center text-[10px] font-bold text-slate-700 hover:bg-slate-200 transition"
-                    >
-                      Poll
+                      {savedIds.has(selectedItem.id) ? "Saved" : "Save"}
                     </button>
                   </div>
-                  </div>
-                </div>
-          )}
+                  <p className="text-[9px] text-slate-400 text-center">
+                    Route shown on map · Directions opens Google Maps (driving)
+                  </p>
 
-          {/* Street View thumbnail strip */}
-          <div className="h-[60px] bg-slate-900 flex items-center px-4 gap-4 overflow-x-auto text-white text-xs border-t border-slate-800 shrink-0">
-            <span className="font-semibold text-slate-400 uppercase tracking-wider text-[9px]">Street View:</span>
-            {mapError ? (
-              <span className="text-slate-500 italic text-[10px]">Street View unavailable while Google Maps connection is pending</span>
-            ) : selectedItem ? (
-              <div className="flex items-center gap-3 w-full">
-                <div className="h-10 w-20 rounded bg-slate-800 overflow-hidden relative border border-slate-700 shrink-0">
-                  <img
-                    src={`https://maps.googleapis.com/maps/api/streetview?size=160x80&location=${selectedItem.venue_lat || 41.8781},${selectedItem.venue_lon || -87.6298}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
-                    alt="Street View Preview"
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = "https://images.unsplash.com/photo-1514565131-fce0801e5785?w=160&q=80";
-                    }}
-                  />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-medium truncate text-slate-200 text-[11px]">{selectedItem.name}</p>
-                  <p className="text-[9px] text-slate-500 truncate">{selectedItem.venue}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <a
+                      href={mapsUrl(selectedItem)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                    >
+                      <ExternalLink size={14} />
+                      Open in Maps
+                    </a>
+                    <Link
+                      href={`/explore/event/${selectedItem.id}`}
+                      className="flex items-center justify-center rounded-lg border border-slate-200 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                    >
+                      View details
+                    </Link>
+                  </div>
                 </div>
               </div>
-            ) : (
-              <span className="text-slate-500 italic text-[10px]">Select a marker on the map to see Street View panorama</span>
-            )}
-          </div>
-        </div>
-
-        {/* Sidebar list (right, 265px) */}
-        <div className="w-[265px] border-l border-slate-200 flex flex-col h-full bg-white shrink-0 select-none">
-          <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <span className="text-xs font-bold text-slate-700">Explore List</span>
-            <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[9px] font-bold text-slate-600">
-              {filteredEventsList.length} items
-            </span>
-          </div>
-
-          {/* List content */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
-            {filteredEventsList.map((ev) => {
-              const isSelected = selectedItem?.id === ev.id;
-              const hasSaved = savedIds.has(ev.id);
-              const vote = votes[ev.id];
-
-              return (
-                <div
-                  key={ev.id}
-                  onClick={() => setSelectedItem(ev)}
-                  className={`p-3 transition hover:bg-slate-50/80 cursor-pointer ${
-                    isSelected ? "bg-teal-50/60 border-l-4 border-teal-700" : ""
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-1">
-                    <span className="text-[10px] font-bold truncate flex items-center gap-1" style={{ color: PIN_COLORS[ev.category] || "#0F766E" }}>
-                      {PIN_EMOJI[ev.category] || "🧭"} {ev.category}
-                    </span>
-                    {hasSaved && (
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" title="Saved to Trip" />
+            </>
+          ) : (
+            <>
+              <div className="pb-4 border-b border-slate-200/60 shrink-0 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search
+                      size={16}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                    />
+                    <input
+                      type="text"
+                      placeholder={`Search in ${cityLabel(displayCity)}`}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full rounded-full border border-slate-200/80 bg-white/50 py-2 pl-9 pr-4 text-xs outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/30 shadow-sm"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        aria-label="Clear search"
+                      >
+                        <X size={14} />
+                      </button>
                     )}
                   </div>
-                  <h4 className="text-xs font-bold text-slate-900 mt-1 line-clamp-1">{ev.name}</h4>
-                  <p className="text-[10px] text-slate-500 truncate">{ev.venue}</p>
-
-                  <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-100/60">
-                    <span className="text-[9px] text-slate-400">
-                      🚗 {driveTime(ev.distance_miles || 1.5)}
-                    </span>
-                    
-                    {/* Voting Actions */}
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleVote(ev.id, "go");
-                        }}
-                        className={`p-1 rounded hover:bg-slate-100 transition ${
-                          vote === "go" ? "text-emerald-600 bg-emerald-50" : "text-slate-400"
-                        }`}
-                        title="Go"
-                      >
-                        <ThumbsUp size={11} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleVote(ev.id, "skip");
-                        }}
-                        className={`p-1 rounded hover:bg-slate-100 transition ${
-                          vote === "skip" ? "text-rose-600 bg-rose-50" : "text-slate-400"
-                        }`}
-                        title="Skip"
-                      >
-                        <ThumbsDown size={11} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleVote(ev.id, "maybe");
-                        }}
-                        className={`p-1 rounded hover:bg-slate-100 transition ${
-                          vote === "maybe" ? "text-amber-600 bg-amber-50" : "text-slate-400"
-                        }`}
-                        title="Maybe"
-                      >
-                        <HelpCircle size={11} />
-                      </button>
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsCollapsed(true)}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition shadow-sm"
+                    aria-label="Collapse panel"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
                 </div>
-              );
-            })}
+                <p className="text-[10px] text-slate-500 font-medium px-1 flex items-center justify-between">
+                  <span>{loading ? "Loading…" : `${filteredEventsList.length} results`} {isCached ? " · cached" : ""}</span>
+                  <span className="text-teal-700 font-semibold">{cityLabel(displayCity)}</span>
+                </p>
+              </div>
 
-            {filteredEventsList.length === 0 && (
-              <p className="p-6 text-center text-xs text-slate-400 italic">No matching places found</p>
-            )}
-          </div>
+              <div className="flex-1 overflow-y-auto mt-2 pr-1 -mr-2">
+                {filteredEventsList.map((ev) => (
+                  <button
+                    key={ev.id}
+                    type="button"
+                    ref={(el) => {
+                      if (el) listItemRefs.current.set(ev.id, el);
+                      else listItemRefs.current.delete(ev.id);
+                    }}
+                    onClick={() => selectPlace(ev)}
+                    className="w-full text-left flex gap-3 py-3 border-b border-slate-100/60 hover:bg-slate-50/50 rounded-lg px-2 -mx-2 transition"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs font-semibold text-slate-900 line-clamp-2 leading-snug">
+                        {ev.name}
+                      </h4>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                        {ev.rating != null && (
+                          <span className="text-[10px] font-semibold text-slate-800 flex items-center gap-0.5">
+                            {Number(ev.rating).toFixed(1)}
+                            <Star size={8} className="fill-amber-400 text-amber-400" />
+                          </span>
+                        )}
+                        <span className="text-[10px] text-slate-500">{ev.category}</span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-1 line-clamp-1">
+                        {formatPlaceAddress(ev)}
+                      </p>
+                      {ev.distance_miles != null && (
+                        <p className="text-[9px] text-slate-400 mt-0.5">
+                          {driveTime(ev.distance_miles)} · {ev.distance_miles.toFixed(1)} mi
+                        </p>
+                      )}
+                    </div>
+                    <div className="w-14 h-14 shrink-0 rounded-lg overflow-hidden border border-slate-100 bg-slate-100 shadow-sm">
+                      <ExploreCardImage
+                        imageUrl={ev.image_url}
+                        alt={ev.name}
+                        category={ev.category}
+                        placeId={ev.id}
+                        className="relative h-full w-full"
+                        imgClassName="h-full w-full object-cover"
+                      />
+                    </div>
+                  </button>
+                ))}
 
-          {/* Bottom Actions Workspace */}
-          <div className="p-3 border-t border-slate-200 bg-slate-50 space-y-2 shrink-0">
-            <button
-              onClick={() => triggerToast("Group Poll created in Trip Workspace!")}
-              className="w-full rounded-xl bg-teal-700 py-2 text-center text-xs font-bold text-white hover:bg-teal-800 transition"
-            >
-              Group Poll
-            </button>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => triggerToast("Planning route sequence...")}
-                className="rounded-xl border border-slate-200 bg-white py-1.5 text-center text-[10px] font-bold text-slate-700 hover:bg-slate-50 transition"
-              >
-                Plan Route
-              </button>
-              <button
-                onClick={() => triggerToast("Structuring Plan Day schedule...")}
-                className="rounded-xl border border-slate-200 bg-white py-1.5 text-center text-[10px] font-bold text-slate-700 hover:bg-slate-50 transition"
-              >
-                Plan Day
-              </button>
-            </div>
-          </div>
+                {filteredEventsList.length === 0 && !loading && (
+                  <p className="p-8 text-center text-xs text-slate-400">
+                    {noCategorySelected
+                      ? "No categories selected. Choose a category above to show places on the map."
+                      : "No places match your search. Try another category or zoom the map."}
+                  </p>
+                )}
+              </div>
+            </>
+          )}
         </div>
+
+        {/* Restore Trigger Button */}
+        {isCollapsed && (
+          <button
+            type="button"
+            onClick={() => setIsCollapsed(false)}
+            className="absolute top-4 left-4 z-20 flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 bg-white/95 text-slate-700 shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-slate-50 hover:text-teal-600 hover:scale-105 active:scale-95"
+            aria-label="Restore search panel"
+          >
+            <ChevronRight size={20} />
+          </button>
+        )}
       </div>
 
       {/* Dynamic Toast Messages */}

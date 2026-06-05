@@ -23,7 +23,6 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-import { CategoryScrollRow } from "@/components/explorer/CategoryScrollRow";
 import { ExploreCardImage } from "@/components/explorer/ExploreCardImage";
 import { ExploreMapLink } from "@/components/explorer/ExploreMapLink";
 import { MinimalCalendar } from "@/components/explorer/MinimalCalendar";
@@ -410,7 +409,7 @@ function ExploreCard({ item, userCity, categoryColor, isPlaceholder }: ExploreCa
 
   return (
     <article
-      className="group flex w-56 shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-400 hover:shadow-md"
+      className="group flex h-full w-full min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-400 hover:shadow-md"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
         <ExploreCardImage
@@ -520,7 +519,7 @@ function ExploreSection({
         </Link>
       </div>
 
-      <CategoryScrollRow title="" subtitle="">
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
         {visibleItems.map((item, index) => {
           const cardEl = (
             <ExploreCard
@@ -532,7 +531,7 @@ function ExploreSection({
           );
           if (isPlaceholder) {
             return (
-              <Link key={item.id} href={seeAllHref} className="block shrink-0">
+              <Link key={item.id} href={seeAllHref} className="block min-w-0">
                 {cardEl}
               </Link>
             );
@@ -541,14 +540,14 @@ function ExploreSection({
             <Link
               key={item.id || index}
               href={`/explore/event/${encodeURIComponent(item.id)}?city=${encodeURIComponent(cityLabel(userCity))}`}
-              className="block shrink-0"
+              className="block min-w-0"
               onClick={() => saveEventSnapshot(item)}
             >
               {cardEl}
             </Link>
           );
         })}
-      </CategoryScrollRow>
+      </div>
     </section>
   );
 }
@@ -1218,7 +1217,7 @@ export default function ExploreHubPage() {
     activeCategory === "All" || activeCategory === pill;
 
   return (
-    <div className="p-6">
+    <div className="w-full min-w-0 px-4 py-6 md:px-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
           Discover experiences near you

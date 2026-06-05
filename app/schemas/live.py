@@ -74,3 +74,11 @@ class MyActiveLiveOut(BaseModel):
     trip_id: UUID | None = None
     status: str | None = None
     member_count: int = 0
+
+
+class SOSRequest(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    latitude: float
+    longitude: float
+

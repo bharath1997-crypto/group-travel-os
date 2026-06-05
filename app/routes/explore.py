@@ -33,6 +33,7 @@ from app.services.explore_city_extended_service import (
     get_wiki_summary_cached,
 )
 from app.services.external.universal_fallback_service import get_universal_fallback
+from app.services.place_enrichment_service import enrich_place
 from app.services.events_service import get_national_picks
 from app.utils.database import get_db
 
@@ -804,6 +805,34 @@ def get_explore_event(
             source=tm_row.source,
         )
 
+    osm_row = (
+        db.query(ExploreContent)
+        .filter(
+            ExploreContent.content_type == "osm_place",
+            ExploreContent.event_id == lookup_id,
+        )
+        .first()
+    )
+    if osm_row:
+        enrichment = {}
+        if isinstance(osm_row.data, dict):
+            enrichment = osm_row.data.get("enrichment") or {}
+        return _event_detail_response(
+            event_id=lookup_id,
+            title=osm_row.title or "Place",
+            category=osm_row.category or "Place",
+            venue=osm_row.venue_name or osm_row.title or "Place",
+            city=osm_row.city or "US",
+            state=osm_row.state,
+            start_date=None,
+            start_time=None,
+            price_min=osm_row.price_min,
+            price_max=osm_row.price_max,
+            image_url=osm_row.image_url or enrichment.get("image_url"),
+            ticket_url=osm_row.ticket_url,
+            source=osm_row.source or "openstreetmap",
+        )
+
     # Legacy: JSON aggregated cache blobs
     rows = (
         db.query(ExploreContent)
@@ -856,6 +885,40 @@ def get_explore_event(
         )
 
     AppException.not_found("Event not found")
+
+
+@router.get("/places/{event_id}/enrich", status_code=status.HTTP_200_OK)
+async def enrich_explore_place(
+    event_id: str,
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+    name: str = Query("", max_length=300),
+    origin_lat: float | None = Query(None, ge=-90, le=90),
+    origin_lon: float | None = Query(None, ge=-180, le=180),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """
+    Lazy enrichment when a user selects a place on the map.
+    Address via Nominatim, image/description via Wikipedia, driving route via OSRM (free).
+    Cached server-side on the place row for 7 days.
+    """
+    from urllib.parse import unquote
+
+    lookup_id = unquote(event_id).strip()
+    if not lookup_id:
+        AppException.not_found("Place not found")
+
+    result = await enrich_place(
+        db,
+        event_id=lookup_id,
+        lat=lat,
+        lon=lon,
+        name=name.strip(),
+        origin_lat=origin_lat,
+        origin_lon=origin_lon,
+        include_route=origin_lat is not None and origin_lon is not None,
+    )
+    return result
 
 
 @router.get("/places", status_code=status.HTTP_200_OK)
