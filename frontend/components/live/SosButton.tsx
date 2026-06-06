@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertOctagon, HelpCircle, LifeBuoy, Loader2 } from "lucide-react";
+import { AlertOctagon, LifeBuoy, Loader2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
 interface SosButtonProps {
@@ -39,8 +39,9 @@ export function SosButton({ tripId }: SosButtonProps) {
             setStatusText(null);
             setLoading(false);
           }, 3000);
-        } catch (err: any) {
-          setStatusText(err?.message || "Failed to broadcast SOS alert.");
+        } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : "Failed to broadcast SOS alert.";
+          setStatusText(errorMsg);
           setLoading(false);
         }
       },

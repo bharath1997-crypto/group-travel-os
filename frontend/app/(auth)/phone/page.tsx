@@ -113,7 +113,7 @@ export default function PhoneOtpPage() {
         );
         syncLocalProfileCache(data.user);
       }
-      router.replace("/dashboard");
+      router.replace("/explore");
     } catch (e) {
       setVerifyError(
         e instanceof Error ? e.message : "Verification failed. Try again.",

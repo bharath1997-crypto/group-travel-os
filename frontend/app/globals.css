@@ -232,3 +232,12 @@ input[type="date"]::-webkit-outer-spin-button {
   display: none !important;
   -webkit-appearance: none !important;
 }
+
+/* Hide scrollbar — used for horizontal sub-nav strips */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

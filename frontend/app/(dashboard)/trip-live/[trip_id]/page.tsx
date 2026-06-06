@@ -13,6 +13,10 @@ import { LiveSidebar } from "@/components/live/LiveSidebar";
 import { CountdownTimer } from "@/components/live/CountdownTimer";
 import { TripPlanner } from "./plan";
 import { AlertCircle, ArrowLeft, Loader2, Navigation, MapPin } from "lucide-react";
+import { TripPlan } from "@/components/live/TripPlan";
+import { MemberPanel } from "@/components/live/MemberPanel";
+import { MeetingPoint } from "@/components/live/MeetingPoint";
+import { GroupChat } from "@/components/live/GroupChat";
 
 const LiveMap = dynamic(
   () => import("@/components/live/LiveMap").then((m) => m.LiveMap),
@@ -87,6 +91,8 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
 
   const [pickingMeetPoint, setPickingMeetPoint] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, { full_name: string | null; avatar_url: string | null }>>({});
+  const [activePanelTab, setActivePanelTab] = useState<'plan' | 'members' | 'meetpoints' | 'chat'>('members');
+  const [meetPointTrigger, setMeetPointTrigger] = useState(0);
 
   // 1. Initial configuration setup
   useEffect(() => {
@@ -111,8 +117,8 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
       }
 
       // Check Trip Plan / Itinerary
-      const planRes = await apiFetch<any>(`/trips/${tripId}/plan`);
-      const isPlanPopulated = Array.isArray(planRes?.days) && planRes.days.length > 0;
+      const planRes = await apiFetch<any>(`/trips/${tripId}/live-plan`);
+      const isPlanPopulated = Array.isArray(planRes) && planRes.length > 0;
       setHasPlan(isPlanPopulated);
 
       // Fetch Trip metadata
@@ -283,6 +289,7 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
         method: "POST",
         body: JSON.stringify({ lat, lng, name: label }),
       });
+      setMeetPointTrigger((prev) => prev + 1);
     } catch (err) {
       console.error("Failed to publish meet point:", err);
     }
@@ -458,17 +465,102 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
           </div>
         </div>
 
-        {/* The Live Interactive Map */}
-        <div className="w-full h-full">
-          <LiveMap
-            tripId={tripId}
-            firebaseDb={firebase.db}
-            members={activeMembersList}
-            meetPoint={meetPoint}
-            pickingMeetPoint={pickingMeetPoint}
-            onMapPick={handleMapPickPoint}
-            currentUserId={currentUserId}
-          />
+        {/* Content area: Map + Side Panel */}
+        <div className="flex-1 flex flex-col md:flex-row w-full h-full pt-20 overflow-hidden">
+          {/* The Live Interactive Map */}
+          <div className="flex-1 h-2/3 md:h-full relative min-h-[300px]">
+            <LiveMap
+              tripId={tripId}
+              firebaseDb={firebase.db}
+              members={activeMembersList}
+              meetPoint={meetPoint}
+              pickingMeetPoint={pickingMeetPoint}
+              onMapPick={handleMapPickPoint}
+              currentUserId={currentUserId}
+            />
+          </div>
+
+          {/* Interactive Right Tabs Panel */}
+          <div className="w-full md:w-96 h-1/3 md:h-full bg-slate-900 border-t md:border-t-0 md:border-l border-slate-800 flex flex-col shrink-0 overflow-hidden">
+            {/* Tabs selector */}
+            <div className="flex border-b border-slate-800 p-2 gap-1 bg-slate-950/20">
+              <button
+                onClick={() => setActivePanelTab('members')}
+                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition ${
+                  activePanelTab === 'members'
+                    ? "bg-[#0F766E] text-white shadow-sm"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800"
+                }`}
+              >
+                Crew
+              </button>
+              <button
+                onClick={() => setActivePanelTab('plan')}
+                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition ${
+                  activePanelTab === 'plan'
+                    ? "bg-[#0F766E] text-white shadow-sm"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800"
+                }`}
+              >
+                Plan
+              </button>
+              <button
+                onClick={() => setActivePanelTab('meetpoints')}
+                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition ${
+                  activePanelTab === 'meetpoints'
+                    ? "bg-[#0F766E] text-white shadow-sm"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800"
+                }`}
+              >
+                Meet
+              </button>
+              <button
+                onClick={() => setActivePanelTab('chat')}
+                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition ${
+                  activePanelTab === 'chat'
+                    ? "bg-[#0F766E] text-white shadow-sm"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800"
+                }`}
+              >
+                Chat
+              </button>
+            </div>
+
+            {/* Tab content */}
+            <div className="flex-1 overflow-hidden p-4">
+              {activePanelTab === 'members' && (
+                <MemberPanel
+                  members={activeMembersList}
+                  meetPoint={meetPoint}
+                  currentUserId={currentUserId}
+                />
+              )}
+              {activePanelTab === 'plan' && (
+                <TripPlan
+                  tripId={tripId}
+                  isAdmin={tripMeta?.my_role === "admin" || tripMeta?.my_role === "coordinator"}
+                  onEditRequest={() => setShowPlanEditor(true)}
+                />
+              )}
+              {activePanelTab === 'meetpoints' && (
+                <MeetingPoint
+                  tripId={tripId}
+                  isAdmin={tripMeta?.my_role === "admin" || tripMeta?.my_role === "coordinator"}
+                  onSetMeetPointClick={() => setPickingMeetPoint(true)}
+                  currentUserId={currentUserId}
+                  meetPointListUpdatedTrigger={meetPointTrigger}
+                />
+              )}
+              {activePanelTab === 'chat' && (
+                <GroupChat
+                  tripId={tripId}
+                  firebaseDb={firebase.db}
+                  currentUserId={currentUserId}
+                  currentUserName={profiles[currentUserId!]?.full_name || "Traveler"}
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

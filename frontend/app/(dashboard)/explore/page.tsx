@@ -9,7 +9,9 @@ import {
   ChevronRight,
   MapPin,
   Navigation,
+  Pencil,
   Search,
+  X,
   Star,
   Flame,
   Camera,
@@ -73,6 +75,25 @@ type EventsAPIResponse = {
 
 type UserCoords = { lat: number; lon: number };
 
+type ExploreLocation = {
+  city: string;
+  region: string;
+  country: string;
+  lat: number;
+  lng: number;
+  manually_set: boolean;
+};
+
+type OpenMeteoCityResult = {
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  country: string;
+  country_code?: string;
+  admin1?: string;
+};
+
 type CitySuggestion = {
   label: string;
   city: string;
@@ -84,16 +105,68 @@ type CityAutocompleteResponse = {
 };
 
 const EVENTS_FETCH_TIMEOUT_MS = 60_000;
-const GEOLOCATION_TIMEOUT_MS = 8_000;
+const GEOLOCATION_TIMEOUT_MS = 5_000;
 const LS_EXPLORE_CITY = "rovvy_explore_city";
 const LS_EXPLORE_COORDS = "rovvy_explore_coords";
+const LS_EXPLORE_LOCATION = "rovvy_explore_location";
 const EXPLORE_RADIUS_MILES = 200;
+const EXPLORE_HERO_RADIUS_MILES = 250;
 const EXPLORE_INITIAL_PER_PAGE = 20;
 const EXPLORE_FULL_PER_PAGE = 100;
 const DEFAULT_EXPLORE_CITY = "Chicago";
 
 let exploreEventsInFlight = false;
 let exploreEventsInFlightMode: "geo" | "city" | null = null;
+
+function countryFlagFromName(country: string, countryCode?: string) {
+  const code = (countryCode ?? "").trim().toUpperCase();
+  if (code.length === 2) {
+    return String.fromCodePoint(
+      ...[...code].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65),
+    );
+  }
+  return "🌍";
+}
+
+function saveExploreLocation(location: ExploreLocation) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(LS_EXPLORE_LOCATION, JSON.stringify(location));
+    const label = location.region
+      ? `${location.city}, ${location.region}`
+      : `${location.city}, ${location.country}`;
+    saveExploreCity(label, { lat: location.lat, lon: location.lng });
+  } catch {
+    /* ignore */
+  }
+}
+
+function loadExploreLocation(): ExploreLocation | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(LS_EXPLORE_LOCATION);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ExploreLocation;
+    if (
+      typeof parsed.city === "string" &&
+      typeof parsed.country === "string" &&
+      typeof parsed.lat === "number" &&
+      typeof parsed.lng === "number"
+    ) {
+      return {
+        city: parsed.city,
+        region: parsed.region ?? "",
+        country: parsed.country,
+        lat: parsed.lat,
+        lng: parsed.lng,
+        manually_set: Boolean(parsed.manually_set),
+      };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
 
 function saveExploreCity(label: string, coords?: UserCoords | null) {
   if (typeof window === "undefined") return;
@@ -221,6 +294,131 @@ function requestGeolocationCoords(): Promise<UserCoords | null> {
       },
     );
   });
+}
+
+async function reverseGeocodeCoords(
+  lat: number,
+  lng: number,
+): Promise<{ city: string; region: string; country: string } | null> {
+  try {
+    const r = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+      { headers: NOMINATIM_HEADERS },
+    );
+    if (!r.ok) return null;
+    const data = (await r.json()) as {
+      address?: {
+        city?: string;
+        town?: string;
+        village?: string;
+        state?: string;
+        country?: string;
+      };
+    };
+    const addr = data.address;
+    if (!addr) return null;
+    const city =
+      addr.city?.trim() ||
+      addr.town?.trim() ||
+      addr.village?.trim() ||
+      addr.state?.trim() ||
+      "";
+    if (!city) return null;
+    return {
+      city,
+      region: addr.state?.trim() || "",
+      country: addr.country?.trim() || "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchIpGeolocation(): Promise<ExploreLocation | null> {
+  try {
+    const r = await fetch("https://ipapi.co/json/");
+    if (!r.ok) return null;
+    const data = (await r.json()) as {
+      city?: string;
+      region?: string;
+      country_name?: string;
+      latitude?: number;
+      longitude?: number;
+    };
+    if (
+      typeof data.latitude !== "number" ||
+      typeof data.longitude !== "number"
+    ) {
+      return null;
+    }
+    return {
+      city: data.city?.trim() || "Your area",
+      region: data.region?.trim() || "",
+      country: data.country_name?.trim() || "",
+      lat: data.latitude,
+      lng: data.longitude,
+      manually_set: false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function detectUserLocation(): Promise<ExploreLocation> {
+  const gpsCoords = await requestGeolocationCoords();
+  if (gpsCoords) {
+    const rev = await reverseGeocodeCoords(gpsCoords.lat, gpsCoords.lon);
+    if (rev) {
+      return {
+        city: rev.city,
+        region: rev.region,
+        country: rev.country,
+        lat: gpsCoords.lat,
+        lng: gpsCoords.lon,
+        manually_set: false,
+      };
+    }
+    return {
+      city: "Your area",
+      region: "",
+      country: "",
+      lat: gpsCoords.lat,
+      lng: gpsCoords.lon,
+      manually_set: false,
+    };
+  }
+
+  const ipLoc = await fetchIpGeolocation();
+  if (ipLoc) return ipLoc;
+
+  const fallbackCity = DEFAULT_EXPLORE_CITY;
+  const geo = await nominatimCityLatLon(fallbackCity);
+  return {
+    city: fallbackCity,
+    region: "Illinois",
+    country: "United States",
+    lat: geo?.lat ?? 41.8781,
+    lng: geo?.lon ?? -87.6298,
+    manually_set: false,
+  };
+}
+
+async function searchCitiesOpenMeteo(
+  query: string,
+): Promise<OpenMeteoCityResult[]> {
+  const q = query.trim();
+  if (!q) return [];
+  try {
+    const url =
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}` +
+      `&count=5&language=en&format=json`;
+    const r = await fetch(url);
+    if (!r.ok) return [];
+    const data = (await r.json()) as { results?: OpenMeteoCityResult[] };
+    return data.results ?? [];
+  } catch {
+    return [];
+  }
 }
 
 async function nominatimCityLatLon(
@@ -409,7 +607,7 @@ function ExploreCard({ item, userCity, categoryColor, isPlaceholder }: ExploreCa
 
   return (
     <article
-      className="group flex h-full w-full min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-400 hover:shadow-md"
+      className="group flex h-full w-full shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-400 hover:shadow-md"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
         <ExploreCardImage
@@ -519,7 +717,7 @@ function ExploreSection({
         </Link>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+      <div className="flex flex-row flex-nowrap gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {visibleItems.map((item, index) => {
           const cardEl = (
             <ExploreCard
@@ -531,7 +729,11 @@ function ExploreSection({
           );
           if (isPlaceholder) {
             return (
-              <Link key={item.id} href={seeAllHref} className="block min-w-0">
+              <Link
+                key={item.id}
+                href={seeAllHref}
+                className="block w-[200px] shrink-0 sm:w-[220px]"
+              >
                 {cardEl}
               </Link>
             );
@@ -540,7 +742,7 @@ function ExploreSection({
             <Link
               key={item.id || index}
               href={`/explore/event/${encodeURIComponent(item.id)}?city=${encodeURIComponent(cityLabel(userCity))}`}
-              className="block min-w-0"
+              className="block w-[200px] shrink-0 sm:w-[220px]"
               onClick={() => saveEventSnapshot(item)}
             >
               {cardEl}
@@ -557,6 +759,7 @@ export default function ExploreHubPage() {
   const searchParams = useSearchParams();
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const locationModalRef = useRef<HTMLDivElement>(null);
   const fetchGenerationRef = useRef(0);
   const mountedRef = useRef(false);
   const userCoordsRef = useRef<UserCoords | null>(null);
@@ -603,6 +806,16 @@ export default function ExploreHubPage() {
   });
 
   const [displayCity, setDisplayCity] = useState(DEFAULT_EXPLORE_CITY);
+  const [exploreLocation, setExploreLocation] = useState<ExploreLocation | null>(
+    null,
+  );
+  const [locationDetecting, setLocationDetecting] = useState(true);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationSearch, setLocationSearch] = useState("");
+  const [locationResults, setLocationResults] = useState<OpenMeteoCityResult[]>(
+    [],
+  );
+  const [locationSearchLoading, setLocationSearchLoading] = useState(false);
   const [gpsLocating, setGpsLocating] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [citySearch, setCitySearch] = useState("");
@@ -816,18 +1029,38 @@ export default function ExploreHubPage() {
     }
   }, [fetchEventsByCity, fetchEventsByCoords, loading, loadingMore]);
 
-  const applyLocationByCoords = useCallback(
-    async (coords: UserCoords, placeholderLabel?: string) => {
+  const applyExploreLocation = useCallback(
+    async (location: ExploreLocation) => {
+      const coords: UserCoords = { lat: location.lat, lon: location.lng };
+      setExploreLocation(location);
+      setDisplayCity(location.city);
       setCoords(coords);
-      const label = placeholderLabel?.trim() || loadExploreCity() || "Your area";
-      setDisplayCity(label);
-      saveExploreCity(label, coords);
+      saveExploreLocation(location);
+      setShowLocationModal(false);
+      setLocationSearch("");
+      setLocationResults([]);
       setShowCityDropdown(false);
       setCitySearch("");
       setCitySuggestions([]);
       await fetchEventsByCoords(coords, { force: true });
     },
     [fetchEventsByCoords, setCoords],
+  );
+
+  const applyLocationByCoords = useCallback(
+    async (coords: UserCoords, placeholderLabel?: string) => {
+      const rev = await reverseGeocodeCoords(coords.lat, coords.lon);
+      const location: ExploreLocation = {
+        city: rev?.city || placeholderLabel?.split(",")[0]?.trim() || "Your area",
+        region: rev?.region || "",
+        country: rev?.country || "",
+        lat: coords.lat,
+        lng: coords.lon,
+        manually_set: true,
+      };
+      await applyExploreLocation(location);
+    },
+    [applyExploreLocation],
   );
 
   const submitCitySearch = useCallback(async () => {
@@ -869,38 +1102,25 @@ export default function ExploreHubPage() {
   );
 
   const detectGPSCity = useCallback(async () => {
-    const savedCity = loadExploreCity();
-    const storedCoords = readStoredCoords();
-    if (storedCoords) {
-      setCoords(storedCoords);
-      if (savedCity) setDisplayCity(savedCity);
-      await fetchEventsByCoords(storedCoords, { force: true });
-      return;
-    }
-
-    const fallbackCity = resolveFallbackCity();
-    setDisplayCity(fallbackCity);
     setGpsLocating(true);
-
-    const cityFetchPromise = fetchByCityOrGeocode(fallbackCity);
-
+    setLocationDetecting(true);
     try {
-      const gpsCoords = await requestGeolocationCoords();
-      if (gpsCoords) {
-        setCoords(gpsCoords);
-        saveExploreCity(savedCity || fallbackCity, gpsCoords);
-        await fetchEventsByCoords(gpsCoords, { force: true });
-        return;
-      }
+      const detected = await detectUserLocation();
+      await applyExploreLocation({ ...detected, manually_set: false });
     } finally {
       setGpsLocating(false);
+      setLocationDetecting(false);
     }
-
-    await cityFetchPromise;
-  }, [fetchByCityOrGeocode, fetchEventsByCoords, setCoords]);
+  }, [applyExploreLocation]);
 
   const bootstrapExplore = useCallback(async () => {
     if (hubRestoredRef.current) {
+      const storedLoc = loadExploreLocation();
+      if (storedLoc) {
+        setExploreLocation(storedLoc);
+        setDisplayCity(storedLoc.city);
+      }
+      setLocationDetecting(false);
       const coords = readStoredCoords();
       if (coords && !hasLoadedFullRef.current) {
         await fetchEventsByCoords(coords, {
@@ -911,35 +1131,35 @@ export default function ExploreHubPage() {
       return;
     }
 
-    const savedCoords = readStoredCoords();
-    const saved = loadExploreCity();
-    const fallbackCity = resolveFallbackCity();
-    setDisplayCity(saved || fallbackCity);
+    setLocationDetecting(true);
+    try {
+      const stored = loadExploreLocation();
+      let location: ExploreLocation;
 
-    if (savedCoords) {
-      setCoords(savedCoords);
-      const cityKey = exploreCityKey(savedCoords, saved);
+      if (stored?.manually_set) {
+        location = stored;
+      } else {
+        location = await detectUserLocation();
+        location = { ...location, manually_set: false };
+        saveExploreLocation(location);
+      }
+
+      setExploreLocation(location);
+      setDisplayCity(location.city);
+      const coords: UserCoords = { lat: location.lat, lon: location.lng };
+      setCoords(coords);
+
+      const cityKey = exploreCityKey(coords, location.city);
       const cached = cityKey ? loadExploreFeedCache(cityKey) : null;
       const perPage =
         cached && exploreSectionsTotal(cached.sections) > EXPLORE_INITIAL_PER_PAGE
           ? EXPLORE_FULL_PER_PAGE
           : EXPLORE_INITIAL_PER_PAGE;
-      await fetchEventsByCoords(savedCoords, { force: true, perPage });
-      return;
+      await fetchEventsByCoords(coords, { force: true, perPage });
+    } finally {
+      setLocationDetecting(false);
     }
-
-    if (saved) {
-      const geo = await nominatimCityLatLon(saved);
-      if (geo) {
-        setCoords(geo);
-        saveExploreCity(saved, geo);
-        await fetchEventsByCoords(geo, { force: true });
-        return;
-      }
-    }
-
-    await detectGPSCity();
-  }, [detectGPSCity, fetchEventsByCoords, setCoords]);
+  }, [fetchEventsByCoords, setCoords]);
 
   useEffect(() => {
     exploreEventsInFlight = false;
@@ -961,13 +1181,18 @@ export default function ExploreHubPage() {
       setNationalEvents(hub.sections.national);
       setActiveCategory(hub.activeCategory);
       hasLoadedFullRef.current = hub.loadedFull;
+      const storedLoc = loadExploreLocation();
+      if (storedLoc) setExploreLocation(storedLoc);
       setDisplayCity(loadExploreCity() || DEFAULT_EXPLORE_CITY);
+      setLocationDetecting(false);
       setLoading(false);
       return;
     }
 
     const coords = readStoredCoords();
     const fallbackCity = resolveFallbackCity();
+    const storedLoc = loadExploreLocation();
+    if (storedLoc) setExploreLocation(storedLoc);
     setDisplayCity(fallbackCity);
 
     const cityKey =
@@ -1091,6 +1316,49 @@ export default function ExploreHubPage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!showLocationModal) return;
+    function handleModalOutside(e: MouseEvent) {
+      if (
+        locationModalRef.current &&
+        !locationModalRef.current.contains(e.target as Node)
+      ) {
+        setShowLocationModal(false);
+      }
+    }
+    document.addEventListener("mousedown", handleModalOutside);
+    return () => document.removeEventListener("mousedown", handleModalOutside);
+  }, [showLocationModal]);
+
+  useEffect(() => {
+    if (!showLocationModal) return;
+    if (locationSearch.trim().length < 2) {
+      setLocationResults([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setLocationSearchLoading(true);
+      void searchCitiesOpenMeteo(locationSearch)
+        .then(setLocationResults)
+        .finally(() => setLocationSearchLoading(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [locationSearch, showLocationModal]);
+
+  const selectLocationResult = useCallback(
+    (result: OpenMeteoCityResult) => {
+      void applyExploreLocation({
+        city: result.name,
+        region: result.admin1?.trim() || "",
+        country: result.country,
+        lat: result.latitude,
+        lng: result.longitude,
+        manually_set: true,
+      });
+    },
+    [applyExploreLocation],
+  );
 
   const selectCity = (suggestion: CitySuggestion) => {
     setCityLoading(true);
@@ -1223,7 +1491,24 @@ export default function ExploreHubPage() {
           Discover experiences near you
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Curated picks within 200 miles of {cityLabel(displayCity)}
+          {locationDetecting ? (
+            "Detecting your location..."
+          ) : (
+            <>
+              Explore near you · within {EXPLORE_HERO_RADIUS_MILES} miles of{" "}
+              <button
+                type="button"
+                onClick={() => setShowLocationModal(true)}
+                className="inline-flex items-center gap-1 font-medium text-slate-700 underline decoration-slate-300 underline-offset-2 hover:text-teal-700"
+              >
+                {exploreLocation?.city ?? cityLabel(displayCity)}
+                {exploreLocation?.country
+                  ? `, ${exploreLocation.country}`
+                  : ""}
+                <Pencil size={12} className="text-teal-600" aria-hidden />
+              </button>
+            </>
+          )}
         </p>
         {fetchError && (
           <p className="mt-2 text-xs text-amber-700">
@@ -1349,6 +1634,104 @@ export default function ExploreHubPage() {
           </button>
         ))}
       </div>
+
+      {showLocationModal ? (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30 p-4">
+          <div
+            ref={locationModalRef}
+            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="change-location-title"
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <h2
+                id="change-location-title"
+                className="text-base font-semibold text-slate-900"
+              >
+                Change location
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowLocationModal(false)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="relative mb-3">
+              <Search
+                size={15}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                autoFocus
+                type="text"
+                value={locationSearch}
+                onChange={(e) => setLocationSearch(e.target.value)}
+                placeholder="Search any city..."
+                className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-sm text-slate-900 placeholder-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/20"
+              />
+            </div>
+
+            {locationSearchLoading ? (
+              <p className="py-3 text-center text-xs text-slate-400">
+                Searching...
+              </p>
+            ) : null}
+
+            <ul className="max-h-56 overflow-y-auto">
+              {locationResults.map((result) => (
+                <li key={result.id}>
+                  <button
+                    type="button"
+                    onClick={() => selectLocationResult(result)}
+                    className="flex w-full items-center gap-2 rounded-lg px-2 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    <span className="text-base" aria-hidden>
+                      {countryFlagFromName(
+                        result.country,
+                        result.country_code,
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="font-medium text-slate-900">
+                        {result.name}
+                      </span>
+                      {result.admin1 ? (
+                        <span className="text-slate-500">
+                          , {result.admin1}
+                        </span>
+                      ) : null}
+                      <span className="text-slate-400"> · {result.country}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            {!locationSearchLoading &&
+            locationSearch.trim().length >= 2 &&
+            locationResults.length === 0 ? (
+              <p className="py-3 text-center text-xs text-slate-400">
+                No cities found
+              </p>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => void detectGPSCity()}
+              disabled={gpsLocating}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-700 hover:bg-teal-100 disabled:opacity-60"
+            >
+              <Navigation size={15} />
+              {gpsLocating ? "Detecting location..." : "Use my current location"}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="space-y-2">
         {/* 1. Trending Activities */}

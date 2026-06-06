@@ -190,7 +190,7 @@ export default function SubscriptionPage() {
           message: `Pro activated for ${gname}!`,
         });
       }
-      window.setTimeout(() => router.push("/dashboard"), 1200);
+      window.setTimeout(() => router.push("/explore"), 1200);
     } catch (e) {
       showToast({
         kind: "error",

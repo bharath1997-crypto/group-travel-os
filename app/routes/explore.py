@@ -1001,12 +1001,14 @@ def explore_guide(
 @router.get("/weather", status_code=status.HTTP_200_OK)
 def explore_weather(
     city: str = Query(..., max_length=120),
-    lat: float = Query(...),
-    lon: float = Query(...),
+    lat: float | None = Query(None),
+    lon: float | None = Query(None),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     city_strip = city.strip()
-    weather = get_weather_cached(db, city_strip, lat, lon)
+    actual_lat = lat if lat is not None else 41.8781
+    actual_lon = lon if lon is not None else -87.6298
+    weather = get_weather_cached(db, city_strip, actual_lat, actual_lon)
     return {"city": city_strip, "weather": weather[0] if weather else None}
 
 

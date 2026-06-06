@@ -753,9 +753,17 @@ export default function TripDetailPage() {
               ? `${trip.start_date} → ${trip.end_date}`
               : "Dates TBD"}
           </p>
-          <span className="mt-3 inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-bold capitalize">
-            {trip.status}
-          </span>
+          <div className="mt-3 flex items-center gap-2">
+            <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-bold capitalize">
+              {trip.status}
+            </span>
+            <Link
+              href={`/trip-live/${trip.id}`}
+              className="inline-flex items-center gap-1 rounded-full bg-[#0F766E] hover:bg-[#0D635C] px-3.5 py-1 text-xs font-bold text-white shadow-md transition"
+            >
+              🚀 Go LIVE Mode
+            </Link>
+          </div>
           <div className="mt-4 flex items-center pl-2">
             {members.slice(0, 5).map((m, i) => (
               <img

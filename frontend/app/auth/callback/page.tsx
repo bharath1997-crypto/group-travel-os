@@ -72,7 +72,7 @@ export default function OAuthCallbackPage() {
             /* ignore quota / private mode */
           }
         }
-        router.replace(oauthNewUser ? "/complete-profile" : "/dashboard");
+        router.replace(oauthNewUser ? "/complete-profile" : "/explore");
       } catch {
         clearToken();
         setMsg("Could not load profile — redirecting…");

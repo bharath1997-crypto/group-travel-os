@@ -306,6 +306,10 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(live_sos_router, prefix="/api/v1")
 
+    from app.routes.live_plan import router as live_plan_router
+
+    app.include_router(live_plan_router, prefix="/api/v1")
+
     from app.routes.trip_space import router as trip_space_router
     app.include_router(trip_space_router, prefix="/api/v1")
 
@@ -314,6 +318,9 @@ def _register_routes(app: FastAPI) -> None:
     from app.routes.explore import router as explore_content_router
     from app.routes.explorer import router as explorer_feed_router
     from app.routes.admin import router as admin_router
+
+    from app.routes.lounge import router as lounge_router
+    app.include_router(lounge_router, prefix="/api/v1")
 
     app.include_router(explore_content_router, prefix="/api/v1", tags=["explore_content"])
     app.include_router(explorer_feed_router, prefix="/api/v1", tags=["explorer_pipeline"])

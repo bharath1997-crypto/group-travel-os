@@ -24,7 +24,7 @@ export default function Home() {
     if (phase !== "go") return;
     const token = getToken();
     if (token) {
-      router.replace("/dashboard");
+      router.replace("/explore");
       return;
     }
     if (typeof window !== "undefined" && localStorage.getItem(ONBOARD_KEY) !== "true") {

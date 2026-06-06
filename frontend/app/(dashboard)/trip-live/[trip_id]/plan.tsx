@@ -104,7 +104,7 @@ export function TripPlanner({ tripId, onPlanSaved }: TripPlannerProps) {
     setSaving(true);
     setError(null);
     try {
-      await apiFetch(`/trips/${tripId}/plan`, {
+      await apiFetch(`/trips/${tripId}/live-plan`, {
         method: "POST",
         body: JSON.stringify({ days }),
       });

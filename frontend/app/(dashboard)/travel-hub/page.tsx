@@ -145,7 +145,7 @@ function fetchWithTimeout(
   });
 }
 
-/** Connect hub: Travelo Connect shell + warm chat (WhatsApp-inspired) */
+/** Connect hub: Rovvy Lounge shell + warm chat (WhatsApp-inspired) */
 const BG = "#0f3460";
 const LIST_ROW_HOVER = "#fff0f3";
 const LIST_ROW_SELECTED = "#E94560";
@@ -14396,7 +14396,7 @@ export default function TravelHubPage() {
             <div className="flex items-center justify-between">
               <div className="min-w-0">
                 <p className="truncate text-[20px] font-bold tracking-tight text-white">
-                  Travelo Connect
+                  Rovvy Lounge
                 </p>
                 <p className="mt-0.5 text-[11px] font-medium text-white/60">
                   Messages, calls, and updates

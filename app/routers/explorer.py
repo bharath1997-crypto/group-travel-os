@@ -4,6 +4,7 @@ app/routers/explorer.py — Explorer and Wayra endpoints.
 from __future__ import annotations
 
 import logging
+import uuid
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
@@ -452,6 +453,174 @@ def get_wayra_live_context(
     except Exception as exc:
         logger.warning("Failed to fetch Wayra live-context alert: %s", exc)
         return {"alert": None}
+
+
+_nearby_picks_cache: dict[uuid.UUID, tuple[float, list[dict]]] = {}
+
+
+@wayra_router.get("/nearby/{trip_id}", status_code=status.HTTP_200_OK)
+def get_wayra_nearby_picks(
+    trip_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    import time
+    import json
+    import math
+    import httpx
+    from sqlalchemy import text
+    from app.services.timer_service import TimerService
+    from app.utils.firebase import get_rtdb
+    from app.services.wayra_service import _gemini_key, _GEMINI_URL
+    from app.core.api_limits import API_TIMEOUT_SECONDS
+
+    TimerService._verify_membership(db, current_user.id, trip_id)
+
+    now = time.time()
+    if trip_id in _nearby_picks_cache:
+        cached_time, cached_picks = _nearby_picks_cache[trip_id]
+        if now - cached_time < 300:
+            return {"picks": cached_picks}
+
+    locations = get_rtdb(f"trips/{trip_id}/locations") or {}
+    valid_coords = []
+    for uid, loc in locations.items():
+        lat = loc.get("lat") or loc.get("latitude")
+        lng = loc.get("lng") or loc.get("longitude")
+        if lat is not None and lng is not None:
+            valid_coords.append((float(lat), float(lng)))
+
+    if valid_coords:
+        centroid_lat = sum(c[0] for c in valid_coords) / len(valid_coords)
+        centroid_lng = sum(c[1] for c in valid_coords) / len(valid_coords)
+    else:
+        centroid_lat, centroid_lng = 41.8781, -87.6298
+
+    poi_list = []
+    try:
+        lat_delta = 10.0 / 69.0
+        lon_delta = 10.0 / (69.0 * max(abs(math.cos(math.radians(centroid_lat))), 1e-6))
+        query_str = """
+            SELECT title, category, venue_name, venue_lat, venue_lon,
+              (3959 * acos(
+                cos(radians(:lat)) * cos(radians(venue_lat)) *
+                cos(radians(venue_lon) - radians(:lon)) +
+                sin(radians(:lat)) * sin(radians(venue_lat))
+              )) AS distance_miles
+            FROM explore_contents
+            WHERE content_type = 'osm_place'
+              AND venue_lat IS NOT NULL
+              AND venue_lon IS NOT NULL
+              AND venue_lat BETWEEN :lat_min AND :lat_max
+              AND venue_lon BETWEEN :lon_min AND :lon_max
+        """
+        params = {
+            "lat": centroid_lat,
+            "lon": centroid_lng,
+            "lat_min": centroid_lat - lat_delta,
+            "lat_max": centroid_lat + lat_delta,
+            "lon_min": centroid_lng - lon_delta,
+            "lon_max": centroid_lng + lon_delta,
+            "radius": 10.0,
+        }
+        full_sql = f"""
+            SELECT * FROM (
+                {query_str}
+            ) AS subq
+            WHERE distance_miles <= :radius
+            ORDER BY distance_miles ASC
+            LIMIT 20
+        """
+        rows = db.execute(text(full_sql), params).all()
+        for r in rows:
+            poi_list.append({
+                "name": r.title or r.venue_name or "POI",
+                "type": r.category or "point of interest",
+                "distance": round(float(r.distance_miles), 2),
+                "description": ""
+            })
+    except Exception as exc:
+        logger.warning("Failed to query database for nearby POIs: %s", exc)
+
+    if not poi_list:
+        poi_list = [
+            {"name": "Starved Rock State Park", "type": "park", "distance": 1.2, "description": "Beautiful regional park with hiking routes."},
+            {"name": "Matthiessen State Park", "type": "park", "distance": 3.4, "description": "Quiet park with scenic canyons and waterfalls."},
+        ]
+
+    key = _gemini_key()
+    if not key:
+        picks = poi_list[:2]
+        _nearby_picks_cache[trip_id] = (now, picks)
+        return {"picks": picks}
+
+    try:
+        instruction = (
+            "You are Wayra, Rovvy's proactive group travel coordinator assistant. "
+            "Below is a list of nearby Points of Interest (POIs). "
+            "Analyze them and pick the top 2 recommendations for the group. "
+            "For each recommendation, output a JSON array of 2 objects containing: "
+            "'name' (str), 'type' (str), 'distance' (float, in miles), and 'description' (str, a very short, catchy 1-sentence tip on why to visit). "
+            "Respond ONLY with the JSON array. Do NOT wrap it in ```json blocks or any formatting."
+        )
+        body = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {
+                            "text": f"{instruction}\n\nNearby POIs:\n{json.dumps(poi_list)}\n\nOutput:"
+                        }
+                    ],
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.4,
+                "maxOutputTokens": 300,
+            },
+        }
+
+        with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
+            r = client.post(_GEMINI_URL, params={"key": key}, json=body)
+
+        picks = []
+        if r.status_code == 200:
+            data = r.json()
+            candidates = data.get("candidates")
+            if isinstance(candidates, list) and candidates:
+                first = candidates[0]
+                if isinstance(first, dict):
+                    content = first.get("content")
+                    if isinstance(content, dict):
+                        parts = content.get("parts")
+                        if isinstance(parts, list):
+                            chunks = []
+                            for p in parts:
+                                if isinstance(p, dict) and isinstance(p.get("text"), str):
+                                    chunks.append(p["text"])
+                            txt = "".join(chunks).strip()
+                            try:
+                                parsed = json.loads(txt)
+                                if isinstance(parsed, list):
+                                    for item in parsed:
+                                        if isinstance(item, dict) and "name" in item:
+                                            picks.append({
+                                                "name": item.get("name"),
+                                                "type": item.get("type", "POI"),
+                                                "distance": item.get("distance", 0.0),
+                                                "description": item.get("description", "")
+                                            })
+                            except Exception:
+                                pass
+
+        if not picks:
+            picks = poi_list[:2]
+
+        _nearby_picks_cache[trip_id] = (now, picks)
+        return {"picks": picks}
+    except Exception as exc:
+        logger.warning("Failed to fetch Wayra nearby picks: %s", exc)
+        return {"picks": poi_list[:2]}
 
 
 @router.post("/shorts/import", status_code=status.HTTP_201_CREATED)

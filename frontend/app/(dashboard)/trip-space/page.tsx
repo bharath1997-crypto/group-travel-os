@@ -1111,14 +1111,14 @@ export default function TripSpacePage() {
                   <span className="text-[9px] text-[#94A3B8] mt-1">Copy invite link</span>
                 </button>
 
-                {/* Live Map */}
+                {/* LIVE Mode */}
                 <Link
                   href="/live"
                   className="flex flex-col items-center justify-center text-center rounded-xl border border-[#334155] bg-[#0F172A] hover:border-[#0F766E] hover:bg-[#0F766E]/10 p-5 group transition"
                 >
                   <MapPin className="h-6 w-6 text-pink-400 group-hover:scale-110 transition-transform mb-3" />
-                  <span className="text-xs font-bold text-white">Live Map</span>
-                  <span className="text-[9px] text-[#94A3B8] mt-1">Coordinate group</span>
+                  <span className="text-xs font-bold text-white">LIVE Mode</span>
+                  <span className="text-[9px] text-[#94A3B8] mt-1">Live trip tracking</span>
                 </Link>
               </div>
             </div>

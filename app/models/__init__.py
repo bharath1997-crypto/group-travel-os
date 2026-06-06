@@ -28,6 +28,7 @@ from app.models.saved_pin import SavedPin
 from app.models.buddy_trip import BuddyJoinRequest, BuddyTrip
 from app.models.sos_event import SOSEvent
 from app.models.trip_plan import TripPlan
+from app.models.lounge import LoungeChat, LoungeMember, LoungeDriveSync
 
 __all__: list[str] = [
     "User",
@@ -71,4 +72,8 @@ __all__: list[str] = [
     "BuddyJoinRequest",
     "SOSEvent",
     "TripPlan",
+    "LoungeChat",
+    "LoungeMember",
+    "LoungeDriveSync",
 ]
+

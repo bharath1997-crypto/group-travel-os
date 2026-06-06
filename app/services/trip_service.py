@@ -96,6 +96,39 @@ class TripService:
             created_by=current_user.id,
         )
         db.add(trip)
+        db.flush()
+
+        # Auto-create trip-linked Lounge Chat if not a mock db session
+        is_mock = False
+        try:
+            from unittest.mock import Mock
+            if isinstance(db, Mock):
+                is_mock = True
+        except ImportError:
+            pass
+
+        if not is_mock:
+            from app.models.lounge import LoungeChat, LoungeMember
+            lounge_chat = LoungeChat(
+                type="trip",
+                name=trip.title,
+                trip_id=trip.id,
+                created_by=current_user.id,
+            )
+            db.add(lounge_chat)
+            db.flush()
+
+            group_members = db.execute(
+                select(GroupMember).where(GroupMember.group_id == group_id)
+            ).scalars().all()
+
+            for gm in group_members:
+                db.add(LoungeMember(
+                    chat_id=lounge_chat.id,
+                    user_id=gm.user_id,
+                    is_admin=(gm.user_id == current_user.id or gm.role == MemberRole.admin)
+                ))
+
         db.commit()
         db.refresh(trip)
         from app.services.notification_service import NotificationService

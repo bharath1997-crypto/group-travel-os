@@ -252,7 +252,7 @@ export default function ExploreMapViewPage() {
   const categoryClickRef = useRef<{
     category: string;
     clicks: number;
-    timer: ReturnType<typeof setTimeout> | null;
+    timer: any;
   } | null>(null);
   const activeCategoryRef = useRef<string | null>("All");
   const listItemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -371,7 +371,7 @@ export default function ExploreMapViewPage() {
             google_picture?: string | null;
             facebook_picture?: string | null;
           }>("/auth/me");
-          syncLocalProfileCache(me);
+          syncLocalProfileCache(me as any);
           meForPhoto = {
             avatar_url: me.avatar_url,
             profile_picture:

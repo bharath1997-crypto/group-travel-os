@@ -247,6 +247,15 @@ def get_trip(
     current_user: User = Depends(get_current_user),
 ):
     trip = TripService.get_trip(db, trip_id, current_user)
+    from sqlalchemy import select
+    from app.models.group import GroupMember
+    member = db.execute(
+        select(GroupMember).where(
+            GroupMember.group_id == trip.group_id,
+            GroupMember.user_id == current_user.id,
+        )
+    ).scalar_one_or_none()
+    trip.my_role = member.role.value if member else "member"
     return trip
 
 

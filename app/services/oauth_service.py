@@ -145,7 +145,7 @@ def google_authorize_url(oauth_intent: str = "login") -> str:
             "client_id": settings.GOOGLE_CLIENT_ID,
             "redirect_uri": oauth_redirect_uri("google"),
             "response_type": "code",
-            "scope": "openid email profile",
+            "scope": "openid email profile https://www.googleapis.com/auth/drive.appdata",
             "state": state,
             "access_type": "online",
             "include_granted_scopes": "true",

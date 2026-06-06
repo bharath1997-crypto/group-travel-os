@@ -32,7 +32,7 @@ type LoginResponse = {
 };
 
 function safeNextPath(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/explore";
   return raw;
 }
 

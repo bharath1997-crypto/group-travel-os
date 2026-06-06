@@ -416,7 +416,7 @@ export default function SettingsHubPage() {
 
   return (
     <>
-      <SettingsScreenHeader title="Settings and activity" backHref="/dashboard" />
+      <SettingsScreenHeader title="Settings and activity" backHref="/explore" />
       <SettingsSearchInput value={q} onChange={setQ} />
       {loadErr ? (
         <div className="mx-3 mt-2 rounded-xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-red-900">
