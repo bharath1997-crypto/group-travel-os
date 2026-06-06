@@ -1,27 +1,43 @@
 "use client";
 
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { onValue, ref, update as rtdbUpdate, type Database } from "firebase/database";
+import { ref, onValue, update as rtdbUpdate, type Database } from "firebase/database";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { initFirebase } from "@/lib/firebase-client";
-import { LivePaywall } from "@/components/live/LivePaywall";
 import { ChecklistOverlay } from "@/components/live/ChecklistOverlay";
-import { LiveSidebar } from "@/components/live/LiveSidebar";
-import { CountdownTimer } from "@/components/live/CountdownTimer";
 import { TripPlanner } from "./plan";
-import { AlertCircle, ArrowLeft, Loader2, Navigation, MapPin } from "lucide-react";
-import { TripPlan } from "@/components/live/TripPlan";
-import { MemberPanel } from "@/components/live/MemberPanel";
-import { MeetingPoint } from "@/components/live/MeetingPoint";
-import { GroupChat } from "@/components/live/GroupChat";
 
-const LiveMap = dynamic(
-  () => import("@/components/live/LiveMap").then((m) => m.LiveMap),
+// Icons from lucide-react
+import {
+  Map as MapIcon,
+  Users as UsersIcon,
+  MessageSquare as ChatIcon,
+  Calendar as PlanIcon,
+  ShieldAlert as SafetyIcon,
+  Sparkles as ActivityIcon,
+  AlertCircle,
+  Loader2,
+  ArrowLeft,
+  WifiOff,
+  Clock,
+  LogOut,
+  MapPin
+} from "lucide-react";
+
+// Dynamically import GroupMap to avoid Leaflet SSR issues
+const GroupMap = dynamic(
+  () => import("@/components/live/GroupMap").then((m) => m.GroupMap),
   { ssr: false }
 );
+
+import { MemberPanel } from "@/components/live/MemberPanel";
+import { GroupChat } from "@/components/live/GroupChat";
+import { TripPlan } from "@/components/live/TripPlan";
+import { SafetyPanel } from "@/components/live/SafetyPanel";
+import { ActivityPanel } from "@/components/live/ActivityPanel";
 
 interface LiveSession {
   id: string;
@@ -36,13 +52,6 @@ interface TripMeta {
   title: string;
   group_id: string;
   my_role: "admin" | "coordinator" | "member";
-}
-
-interface Member {
-  user_id: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  quick_status?: string | null;
 }
 
 function parseJwtUserId(token: string | null): string | null {
@@ -69,7 +78,6 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
     db: null,
   });
 
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [hasPlan, setHasPlan] = useState<boolean | null>(null);
   const [showPlanEditor, setShowPlanEditor] = useState<boolean>(false);
   const [tripMeta, setTripMeta] = useState<TripMeta | null>(null);
@@ -80,8 +88,14 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
 
   // Live Sync states
   const [fbStatus, setFbStatus] = useState<string | null>(null);
+  const [timerState, setTimerState] = useState<{
+    started_at?: number;
+    duration_seconds?: number;
+    is_active?: boolean;
+  } | null>(null);
+
   const [membersLocs, setMembersLocs] = useState<
-    Record<string, { lat: number | null; lng: number | null; quick_status?: string | null }>
+    Record<string, { lat: number | null; lng: number | null; quick_status?: string | null; updated_at?: number | null }>
   >({});
   const [meetPoint, setMeetPoint] = useState<{
     lat: number | null;
@@ -91,8 +105,11 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
 
   const [pickingMeetPoint, setPickingMeetPoint] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, { full_name: string | null; avatar_url: string | null }>>({});
-  const [activePanelTab, setActivePanelTab] = useState<'plan' | 'members' | 'meetpoints' | 'chat'>('members');
-  const [meetPointTrigger, setMeetPointTrigger] = useState(0);
+  const [activeTab, setActiveTab] = useState<"map" | "members" | "chat" | "plan" | "safety" | "activity">("map");
+
+  // Footer Duration clock
+  const [sessionStartTime, setSessionStartTime] = useState<number>(Date.now());
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   // 1. Initial configuration setup
   useEffect(() => {
@@ -102,20 +119,20 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
     setFirebase({ ok: ready.ok, db: ready.db });
   }, []);
 
-  // 2. Fetch page load gating context
+  // Timer for footer duration
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const diff = Math.floor((Date.now() - sessionStartTime) / 1000);
+      setElapsedSeconds(diff);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [sessionStartTime]);
+
+  // 2. Fetch page load gating context (subscription gate completely bypassed as requested)
   const loadPageContext = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Check Stripe Paywall Access
-      const accessRes = await apiFetch<{ has_access: boolean }>(`/payments/live-access/${tripId}`);
-      setHasAccess(accessRes.has_access);
-
-      if (!accessRes.has_access) {
-        setLoading(false);
-        return;
-      }
-
       // Check Trip Plan / Itinerary
       const planRes = await apiFetch<any>(`/trips/${tripId}/live-plan`);
       const isPlanPopulated = Array.isArray(planRes) && planRes.length > 0;
@@ -123,8 +140,6 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
 
       // Fetch Trip metadata
       const tripRes = await apiFetch<any>(`/trips/${tripId}`);
-      // Find my member role on this trip
-      // For fallback/simplicity, retrieve user list or role from response or set member
       const userRole = tripRes?.my_role || "member";
       setTripMeta({
         id: tripRes.id,
@@ -180,6 +195,7 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
           lat: row?.lat ?? row?.latitude ?? null,
           lng: row?.lng ?? row?.longitude ?? null,
           quick_status: row?.quick_status ?? null,
+          updated_at: row?.updated_at ?? null,
         };
       });
       setMembersLocs(parsed);
@@ -199,10 +215,16 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
       }
     });
 
+    const timerRef = ref(firebase.db, `trips/${tripId}/timer`);
+    const unsubscribeTimer = onValue(timerRef, (snap) => {
+      setTimerState(snap.val());
+    });
+
     return () => {
       unsubscribeStatus();
       unsubscribeLocs();
       unsubscribeMp();
+      unsubscribeTimer();
     };
   }, [firebase.db, tripId]);
 
@@ -240,6 +262,7 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
         body: JSON.stringify({ trip_id: tripId }),
       });
       setSession(res);
+      setSessionStartTime(Date.now());
       await loadPageContext();
     } catch (err: any) {
       setError(err?.message || "Failed to initialize live coordination session");
@@ -264,19 +287,7 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
   };
 
   const handleGoLiveManual = () => {
-    // Just trigger state refresh; FCM notify / firebase state already managed by API
     loadPageContext();
-  };
-
-  const triggerQuickStatus = async (statusVal: string) => {
-    try {
-      await apiFetch(`/live/trips/${tripId}/quick-status`, {
-        method: "POST",
-        body: JSON.stringify({ status: statusVal }),
-      });
-    } catch (err) {
-      console.error("Failed to update quick status:", err);
-    }
   };
 
   const handleMapPickPoint = async (lat: number, lng: number) => {
@@ -289,13 +300,32 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
         method: "POST",
         body: JSON.stringify({ lat, lng, name: label }),
       });
-      setMeetPointTrigger((prev) => prev + 1);
     } catch (err) {
       console.error("Failed to publish meet point:", err);
     }
   };
 
-  // 6. View Rendering Decision Tree
+  // Remaining count for active countdown timer
+  const countdownFormatted = useMemo(() => {
+    if (!timerState || !timerState.is_active || !timerState.started_at || !timerState.duration_seconds) {
+      return "00:00";
+    }
+    const elapsed = Math.floor(Date.now() / 1000) - timerState.started_at;
+    const remaining = Math.max(0, timerState.duration_seconds - elapsed);
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }, [timerState, elapsedSeconds]);
+
+  // Session duration formatting
+  const formattedSessionDuration = useMemo(() => {
+    const hrs = Math.floor(elapsedSeconds / 3600);
+    const mins = Math.floor((elapsedSeconds % 3600) / 60);
+    const secs = elapsedSeconds % 60;
+    return `${String(hrs).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  }, [elapsedSeconds]);
+
+  // View Rendering Decision Tree
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 text-slate-800">
@@ -325,10 +355,6 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
     );
   }
 
-  if (hasAccess === false) {
-    return <LivePaywall tripId={tripId} onAccessGranted={() => setHasAccess(true)} />;
-  }
-
   if (hasPlan === false || showPlanEditor) {
     return (
       <TripPlanner
@@ -349,7 +375,7 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 text-slate-800">
         <div className="max-w-md w-full bg-white border border-slate-200 shadow-xl rounded-3xl p-8 text-center flex flex-col items-center gap-6">
           <div className="h-16 w-16 bg-teal-50 text-[#0F766E] rounded-full flex items-center justify-center shadow-inner">
-            <Navigation className="h-8 w-8" />
+            <MapIcon className="h-8 w-8" />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
@@ -408,161 +434,185 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
       quick_status: loc?.quick_status || null,
       lat: loc?.lat || null,
       lng: loc?.lng || null,
+      updated_at: loc?.updated_at || null,
     };
   });
 
+  const isAdmin = tripMeta?.my_role === "admin" || tripMeta?.my_role === "coordinator";
+
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#0F172A]">
-      {/* Sidebar Controls */}
-      <LiveSidebar
-        tripId={tripId}
-        sessionId={session.id}
-        members={activeMembersList}
-        firebaseDb={firebase.db}
-        isAdmin={tripMeta?.my_role === "admin" || tripMeta?.my_role === "coordinator"}
-        onSetMeetPoint={() => setPickingMeetPoint(true)}
-        onEndSession={handleEndSession}
-        currentUserId={currentUserId}
-      />
-
-      {/* Main workspace */}
-      <div className="flex-1 flex flex-col relative h-full">
-        {/* Top Control Bar */}
-        <div className="absolute top-4 left-4 right-4 z-[1000] flex flex-wrap items-center justify-between gap-3 pointer-events-none">
-          {/* Quick status bar */}
-          <div className="flex items-center gap-2 bg-white/95 backdrop-blur border border-slate-200 p-2 rounded-2xl shadow-xl pointer-events-auto">
-            <span className="text-xs font-bold text-slate-500 px-2 uppercase tracking-wider">Status:</span>
-            <button
-              onClick={() => triggerQuickStatus("here")}
-              className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-xl border border-emerald-100 transition"
-            >
-              ✅ Here
-            </button>
-            <button
-              onClick={() => triggerQuickStatus("on_my_way")}
-              className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-xl border border-blue-100 transition"
-            >
-              🚗 On Way
-            </button>
-            <button
-              onClick={() => triggerQuickStatus("running_late")}
-              className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold rounded-xl border border-amber-100 transition"
-            >
-              🏃 Late
-            </button>
+    <div className="flex flex-col h-screen w-full overflow-hidden bg-[#FFFFFF] font-sans">
+      
+      {/* 1. TOP BAR (background #0A0F1E) */}
+      <header className="bg-[#0A0F1E] h-16 px-4 flex items-center justify-between border-b border-slate-900 shrink-0 text-white select-none">
+        <div className="flex items-center gap-3">
+          {/* Pulsing red LIVE pill */}
+          <div className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/25 px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-red-500 tracking-wider">
+            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+            LIVE
           </div>
-
-          {/* Right Side Top Status (Countdown Timer) */}
-          <div className="flex items-center gap-3 pointer-events-auto">
-            {pickingMeetPoint && (
-              <div className="bg-[#0F766E] text-white px-4 py-2 rounded-xl text-xs font-bold animate-pulse shadow-xl flex items-center gap-2">
-                <MapPin className="h-4 w-4" /> Click map to place meet point coordinate
-              </div>
-            )}
-            <div className="bg-white/95 backdrop-blur border border-slate-200 p-2 rounded-2xl shadow-xl">
-              <CountdownTimer tripId={tripId} firebaseDb={firebase.db} />
-            </div>
+          <div className="min-w-0">
+            <h1 className="text-sm font-black tracking-tight truncate max-w-[160px] md:max-w-xs">{tripMeta?.title || "Active Trip"}</h1>
+            <span className="text-[10px] text-slate-400 font-bold block">Day 1 · Main Spot</span>
           </div>
         </div>
 
-        {/* Content area: Map + Side Panel */}
-        <div className="flex-1 flex flex-col md:flex-row w-full h-full pt-20 overflow-hidden">
-          {/* The Live Interactive Map */}
-          <div className="flex-1 h-2/3 md:h-full relative min-h-[300px]">
-            <LiveMap
+        <div className="flex items-center gap-2">
+          {/* Members online chip */}
+          <div className="hidden sm:flex items-center gap-1.5 bg-slate-900/60 border border-slate-800 px-3 py-1.5 rounded-full text-xs font-bold text-slate-300">
+            <UsersIcon size={12} className="text-[#0F766E]" />
+            <span>{activeMembersList.length} crew</span>
+          </div>
+
+          {/* Time remaining chip */}
+          {timerState?.is_active && (
+            <div className="flex items-center gap-1.5 bg-slate-900/60 border border-slate-800 px-3 py-1.5 rounded-full text-xs font-black text-teal-400 tabular-nums">
+              <Clock size={12} />
+              <span>{countdownFormatted}</span>
+            </div>
+          )}
+
+          {/* Offline chip */}
+          <div className="flex items-center gap-1.5 bg-slate-900/60 border border-slate-800 px-3 py-1.5 rounded-full text-xs font-bold text-slate-400">
+            <WifiOff size={12} />
+            <span className="hidden xs:inline">Offline Ready</span>
+          </div>
+
+          {/* End session button */}
+          {isAdmin && (
+            <button
+              onClick={handleEndSession}
+              className="flex items-center gap-1 px-3 py-1.5 bg-red-650 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition border border-red-600 shadow"
+            >
+              <LogOut size={12} />
+              <span className="hidden md:inline">End Session</span>
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* 2. 6 NAVIGATION TABS (background #0F172A) */}
+      <nav className="bg-[#0F172A] h-12 flex border-b border-slate-800 shrink-0 select-none overflow-x-auto">
+        <div className="flex items-center justify-around w-full max-w-3xl mx-auto px-4 gap-1">
+          {[
+            { id: "map", label: "Map", icon: MapIcon },
+            { id: "members", label: "Members", icon: UsersIcon },
+            { id: "chat", label: "Chat", icon: ChatIcon },
+            { id: "plan", label: "Plan", icon: PlanIcon },
+            { id: "safety", label: "Safety", icon: SafetyIcon },
+            { id: "activity", label: "Activity", icon: ActivityIcon },
+          ].map((tab) => {
+            const isActive = activeTab === tab.id;
+            const IconComp = tab.icon;
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id as any);
+                  setPickingMeetPoint(false);
+                }}
+                className={`flex-1 h-full flex flex-col items-center justify-center gap-0.5 border-b-2 text-xs font-black transition-all ${
+                  isActive
+                    ? "border-[#0F766E] text-[#0F766E]"
+                    : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <IconComp size={16} />
+                <span className="text-[10px] tracking-wide">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* 3. PANEL HEIGHT: 520px container for active tab content */}
+      <main className="w-full max-w-3xl mx-auto flex-1 md:flex-none h-[520px] bg-[#F8FAFC] border-x border-slate-200 relative overflow-hidden">
+        {/* Picking Location Overlay Banner */}
+        {pickingMeetPoint && (
+          <div className="absolute top-2 inset-x-2 z-50 flex justify-center">
+            <div className="bg-[#0F766E] text-white px-4 py-2 rounded-xl text-xs font-bold animate-pulse shadow-lg flex items-center gap-2">
+              <MapPin className="h-4 w-4 animate-bounce" /> Click the map to drop your new meeting coordinate
+            </div>
+          </div>
+        )}
+
+        <div className="w-full h-full p-4 overflow-hidden">
+          {activeTab === "map" && (
+            <GroupMap
+              tripId={tripId}
+              firebaseDb={firebase.db}
+              currentUserId={currentUserId}
+              meetPoint={meetPoint}
+              pickingMeetPoint={pickingMeetPoint}
+              onMapPick={handleMapPickPoint}
+              members={activeMembersList}
+            />
+          )}
+
+          {activeTab === "members" && (
+            <MemberPanel
               tripId={tripId}
               firebaseDb={firebase.db}
               members={activeMembersList}
               meetPoint={meetPoint}
-              pickingMeetPoint={pickingMeetPoint}
-              onMapPick={handleMapPickPoint}
               currentUserId={currentUserId}
+              isAdmin={isAdmin}
+              onSetMeetPointClick={() => {
+                setActiveTab("map");
+                setPickingMeetPoint(true);
+              }}
             />
-          </div>
+          )}
 
-          {/* Interactive Right Tabs Panel */}
-          <div className="w-full md:w-96 h-1/3 md:h-full bg-slate-900 border-t md:border-t-0 md:border-l border-slate-800 flex flex-col shrink-0 overflow-hidden">
-            {/* Tabs selector */}
-            <div className="flex border-b border-slate-800 p-2 gap-1 bg-slate-950/20">
-              <button
-                onClick={() => setActivePanelTab('members')}
-                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition ${
-                  activePanelTab === 'members'
-                    ? "bg-[#0F766E] text-white shadow-sm"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800"
-                }`}
-              >
-                Crew
-              </button>
-              <button
-                onClick={() => setActivePanelTab('plan')}
-                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition ${
-                  activePanelTab === 'plan'
-                    ? "bg-[#0F766E] text-white shadow-sm"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800"
-                }`}
-              >
-                Plan
-              </button>
-              <button
-                onClick={() => setActivePanelTab('meetpoints')}
-                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition ${
-                  activePanelTab === 'meetpoints'
-                    ? "bg-[#0F766E] text-white shadow-sm"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800"
-                }`}
-              >
-                Meet
-              </button>
-              <button
-                onClick={() => setActivePanelTab('chat')}
-                className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition ${
-                  activePanelTab === 'chat'
-                    ? "bg-[#0F766E] text-white shadow-sm"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800"
-                }`}
-              >
-                Chat
-              </button>
-            </div>
+          {activeTab === "chat" && (
+            <GroupChat
+              tripId={tripId}
+              firebaseDb={firebase.db}
+              currentUserId={currentUserId}
+              currentUserName={profiles[currentUserId!]?.full_name || "Traveler"}
+            />
+          )}
 
-            {/* Tab content */}
-            <div className="flex-1 overflow-hidden p-4">
-              {activePanelTab === 'members' && (
-                <MemberPanel
-                  members={activeMembersList}
-                  meetPoint={meetPoint}
-                  currentUserId={currentUserId}
-                />
-              )}
-              {activePanelTab === 'plan' && (
-                <TripPlan
-                  tripId={tripId}
-                  isAdmin={tripMeta?.my_role === "admin" || tripMeta?.my_role === "coordinator"}
-                  onEditRequest={() => setShowPlanEditor(true)}
-                />
-              )}
-              {activePanelTab === 'meetpoints' && (
-                <MeetingPoint
-                  tripId={tripId}
-                  isAdmin={tripMeta?.my_role === "admin" || tripMeta?.my_role === "coordinator"}
-                  onSetMeetPointClick={() => setPickingMeetPoint(true)}
-                  currentUserId={currentUserId}
-                  meetPointListUpdatedTrigger={meetPointTrigger}
-                />
-              )}
-              {activePanelTab === 'chat' && (
-                <GroupChat
-                  tripId={tripId}
-                  firebaseDb={firebase.db}
-                  currentUserId={currentUserId}
-                  currentUserName={profiles[currentUserId!]?.full_name || "Traveler"}
-                />
-              )}
-            </div>
-          </div>
+          {activeTab === "plan" && (
+            <TripPlan
+              tripId={tripId}
+              isAdmin={isAdmin}
+            />
+          )}
+
+          {activeTab === "safety" && (
+            <SafetyPanel
+              tripId={tripId}
+              members={activeMembersList}
+              meetPoint={meetPoint}
+              currentUserId={currentUserId}
+              isAdmin={isAdmin}
+            />
+          )}
+
+          {activeTab === "activity" && (
+            <ActivityPanel
+              tripId={tripId}
+              currentUserId={currentUserId}
+              members={activeMembersList}
+            />
+          )}
         </div>
-      </div>
+      </main>
+
+      {/* 4. FOOTER BAR */}
+      <footer className="bg-[#0A0F1E] h-10 px-4 flex items-center justify-between border-t border-slate-900 shrink-0 text-slate-400 text-[10px] font-black select-none uppercase tracking-wider">
+        <div className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          <span>Offline Maps: Chicago Area Cached (42.5 MB)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Clock size={12} className="text-teal-400" />
+          <span>Duration: {formattedSessionDuration}</span>
+        </div>
+      </footer>
+
     </div>
   );
 }

@@ -26,6 +26,7 @@ router = APIRouter(prefix="/trips", tags=["Live Plan"])
 class ActivityInput(BaseModel):
     time: str | None = None
     description: str
+    status: str | None = None
 
 
 class DayPlanInput(BaseModel):
