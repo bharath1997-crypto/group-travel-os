@@ -1,13 +1,14 @@
 "use client";
 
 import { use, useCallback, useEffect, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ref, onValue, update as rtdbUpdate, type Database } from "firebase/database";
-import { apiFetch } from "@/lib/api";
+import { API_BASE, apiFetch } from "@/lib/api";
+import { RovvyLogo } from "@/components/RovvyLogo";
 import { getToken } from "@/lib/auth";
 import { initFirebase } from "@/lib/firebase-client";
-import { ChecklistOverlay } from "@/components/live/ChecklistOverlay";
+import { ChecklistOverlay, type MemberReadiness } from "@/components/live/ChecklistOverlay";
 import { TripPlanner } from "./plan";
 
 // Icons from lucide-react
@@ -18,14 +19,17 @@ import {
   Calendar as PlanIcon,
   ShieldAlert as SafetyIcon,
   Sparkles as ActivityIcon,
-  AlertCircle,
   Loader2,
   ArrowLeft,
   WifiOff,
   Clock,
   LogOut,
-  MapPin
+  MapPin,
+  Bot,
+  Send,
 } from "lucide-react";
+import WayraIcon from "@/components/ui/WayraIcon";
+import { emitOpenWayra } from "@/lib/open-wayra";
 
 // Dynamically import GroupMap to avoid Leaflet SSR issues
 const GroupMap = dynamic(
@@ -54,6 +58,112 @@ interface TripMeta {
   my_role: "admin" | "coordinator" | "member";
 }
 
+async function fetchWithRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  delay = 2000,
+  onAttempt?: (attempt: number) => void,
+): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    onAttempt?.(i + 1);
+    try {
+      return await fn();
+    } catch (err) {
+      if (i === maxRetries - 1) throw err;
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new Error("Failed after retries");
+}
+
+async function pingHealth(): Promise<void> {
+  try {
+    const origin = new URL(API_BASE).origin;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    await fetch(`${origin}/health`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+  } catch {
+    /* proceed with trip fetch even if health check fails */
+  }
+}
+
+function SoloWayraPanel() {
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<
+    { role: "wayra" | "user"; text: string }[]
+  >([
+    {
+      role: "wayra",
+      text: "Hi! I'm Wayra, your solo travel companion. I'm watching your location and ready to help with suggestions, safety, and your itinerary.",
+    },
+  ]);
+
+  const send = () => {
+    const text = input.trim();
+    if (!text) return;
+    setMessages((prev) => [...prev, { role: "user", text }]);
+    setInput("");
+    emitOpenWayra({ prompt: text });
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "wayra",
+        text: "Opening full Wayra chat — ask me anything about your trip, nearby spots, or safety.",
+      },
+    ]);
+  };
+
+  return (
+    <div className="flex h-full flex-col rounded-2xl border border-violet-100 bg-white shadow-sm overflow-hidden">
+      <div className="flex items-center gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-4 py-3">
+        <WayraIcon state="flying" size={0.45} variant="raw" animate />
+        <div>
+          <p className="text-sm font-bold text-[#0F172A]">Wayra AI</p>
+          <p className="text-[10px] text-violet-600 font-semibold">Solo companion · Live</p>
+        </div>
+      </div>
+      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+        {messages.map((m, i) => (
+          <div
+            key={`${m.role}-${i}`}
+            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+          >
+            <div
+              className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+                m.role === "user"
+                  ? "bg-[#8B5CF6] text-white"
+                  : "bg-violet-50 text-slate-700 border border-violet-100"
+              }`}
+            >
+              {m.text}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-violet-100 p-3">
+        <div className="flex items-center gap-2">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && send()}
+            placeholder="Ask Wayra anything…"
+            className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#8B5CF6] focus:ring-1 focus:ring-[#8B5CF6]"
+          />
+          <button
+            type="button"
+            onClick={send}
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#8B5CF6] text-white transition hover:bg-[#7C3AED]"
+            aria-label="Send to Wayra"
+          >
+            <Send size={16} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function parseJwtUserId(token: string | null): string | null {
   if (!token?.trim()) return null;
   try {
@@ -69,7 +179,9 @@ function parseJwtUserId(token: string | null): string | null {
 
 export default function TripLivePage({ params }: { params: Promise<{ trip_id: string }> }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { trip_id: tripId } = use(params);
+  const isSoloMode = searchParams.get("mode") === "solo";
 
   // States
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -84,7 +196,8 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
   const [session, setSession] = useState<LiveSession | null>(null);
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  const [fetchAttempt, setFetchAttempt] = useState(1);
 
   // Live Sync states
   const [fbStatus, setFbStatus] = useState<string | null>(null);
@@ -105,6 +218,7 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
 
   const [pickingMeetPoint, setPickingMeetPoint] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, { full_name: string | null; avatar_url: string | null }>>({});
+  const [checklistReadiness, setChecklistReadiness] = useState<MemberReadiness[]>([]);
   const [activeTab, setActiveTab] = useState<"map" | "members" | "chat" | "plan" | "safety" | "activity">("map");
 
   // Footer Duration clock
@@ -131,38 +245,54 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
   // 2. Fetch page load gating context (subscription gate completely bypassed as requested)
   const loadPageContext = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setError(false);
+    setFetchAttempt(1);
     try {
-      // Check Trip Plan / Itinerary
-      const planRes = await apiFetch<any>(`/trips/${tripId}/live-plan`);
-      const isPlanPopulated = Array.isArray(planRes) && planRes.length > 0;
-      setHasPlan(isPlanPopulated);
+      await pingHealth();
 
-      // Fetch Trip metadata
-      const tripRes = await apiFetch<any>(`/trips/${tripId}`);
-      const userRole = tripRes?.my_role || "member";
-      setTripMeta({
-        id: tripRes.id,
-        title: tripRes.title,
-        group_id: tripRes.group_id,
-        my_role: userRole,
-      });
+      await fetchWithRetry(
+        async () => {
+          const planRes = await apiFetch<any>(`/trips/${tripId}/live-plan`);
+          const isPlanPopulated = Array.isArray(planRes) && planRes.length > 0;
+          setHasPlan(isPlanPopulated);
 
-      // Fetch Active Live Session
-      const sessionRes = await apiFetch<LiveSession | null>(`/live/trips/${tripId}/session`);
-      setSession(sessionRes);
+          const tripRes = await apiFetch<any>(`/trips/${tripId}`);
+          const userRole = tripRes?.my_role || "member";
+          setTripMeta({
+            id: tripRes.id,
+            title: tripRes.title,
+            group_id: tripRes.group_id,
+            my_role: userRole,
+          });
 
-      if (sessionRes?.id) {
-        // Fetch Checklist status to get profile names
-        const checklist = await apiFetch<any[]>(`/live/sessions/${sessionRes.id}/checklist`);
-        const map: Record<string, { full_name: string | null; avatar_url: string | null }> = {};
-        checklist.forEach((item) => {
-          map[item.user_id] = { full_name: item.full_name, avatar_url: item.avatar_url };
-        });
-        setProfiles(map);
-      }
-    } catch (err: any) {
-      setError(err?.message || "Failed to load trip coordination data");
+          const sessionRes = await apiFetch<LiveSession | null>(`/live/trips/${tripId}/session`);
+          setSession(sessionRes);
+
+          if (sessionRes?.id) {
+            const checklist = await apiFetch<any[]>(`/live/sessions/${sessionRes.id}/checklist`);
+            const map: Record<string, { full_name: string | null; avatar_url: string | null }> = {};
+            const readiness: MemberReadiness[] = [];
+            checklist.forEach((item) => {
+              map[item.user_id] = { full_name: item.full_name, avatar_url: item.avatar_url };
+              readiness.push({
+                user_id: item.user_id,
+                full_name: item.full_name,
+                avatar_url: item.avatar_url,
+                is_accepted: item.is_accepted,
+              });
+            });
+            setProfiles(map);
+            setChecklistReadiness(readiness);
+          } else {
+            setChecklistReadiness([]);
+          }
+        },
+        3,
+        2000,
+        setFetchAttempt,
+      );
+    } catch {
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -264,8 +394,8 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
       setSession(res);
       setSessionStartTime(Date.now());
       await loadPageContext();
-    } catch (err: any) {
-      setError(err?.message || "Failed to initialize live coordination session");
+    } catch {
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -329,10 +459,16 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 text-slate-800">
-        <Loader2 className="h-10 w-10 animate-spin text-[#0F766E]" />
-        <p className="mt-4 text-sm font-semibold text-slate-500 animate-pulse">
-          Loading Trip LIVE dashboard...
+        <RovvyLogo variant="primary" size="lg" showTagline={false} className="items-center" />
+        <p className="mt-6 text-sm font-semibold text-slate-600">
+          Connecting to Trip LIVE...
         </p>
+        <Loader2 className="mt-4 h-10 w-10 animate-spin text-[#0F766E]" />
+        {fetchAttempt > 1 && (
+          <p className="mt-4 text-xs font-medium text-slate-500">
+            Attempt {fetchAttempt} of 3
+          </p>
+        )}
       </div>
     );
   }
@@ -341,15 +477,23 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 text-slate-800">
         <div className="max-w-md w-full bg-white border border-slate-200 shadow-xl rounded-3xl p-8 text-center flex flex-col items-center gap-4">
-          <AlertCircle className="h-12 w-12 text-red-600 animate-bounce" />
-          <h2 className="text-xl font-bold text-slate-850">Something went wrong</h2>
-          <p className="text-sm text-slate-500">{error}</p>
-          <button
-            onClick={loadPageContext}
-            className="mt-4 px-6 py-2.5 bg-[#0F766E] text-white rounded-xl font-semibold shadow hover:bg-[#0D635C] transition"
-          >
-            Retry
-          </button>
+          <WifiOff className="h-12 w-12 text-slate-400" />
+          <h2 className="text-xl font-bold text-slate-800">Unable to connect</h2>
+          <p className="text-sm text-slate-500">Check your connection and try again</p>
+          <div className="mt-2 flex flex-col sm:flex-row gap-3 w-full">
+            <button
+              onClick={loadPageContext}
+              className="flex-1 px-6 py-2.5 bg-[#0F766E] text-white rounded-xl font-semibold shadow hover:bg-[#0D635C] transition"
+            >
+              Retry
+            </button>
+            <button
+              onClick={() => router.back()}
+              className="flex-1 px-6 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-xl font-semibold hover:bg-slate-50 transition"
+            >
+              Go back
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -371,27 +515,36 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
   // If no session exists
   if (!session) {
     const isOwner = tripMeta?.my_role === "admin" || tripMeta?.my_role === "coordinator";
+    const canStart = isSoloMode || isOwner;
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 text-slate-800">
         <div className="max-w-md w-full bg-white border border-slate-200 shadow-xl rounded-3xl p-8 text-center flex flex-col items-center gap-6">
-          <div className="h-16 w-16 bg-teal-50 text-[#0F766E] rounded-full flex items-center justify-center shadow-inner">
-            <MapIcon className="h-8 w-8" />
+          <div className={`h-16 w-16 rounded-full flex items-center justify-center shadow-inner ${
+            isSoloMode ? "bg-violet-50 text-[#8B5CF6]" : "bg-teal-50 text-[#0F766E]"
+          }`}>
+            {isSoloMode ? <Bot className="h-8 w-8" /> : <MapIcon className="h-8 w-8" />}
           </div>
           <div>
             <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
-              Ready to Roam Together?
+              {isSoloMode ? "Ready for Solo LIVE?" : "Ready to Roam Together?"}
             </h2>
             <p className="text-sm text-slate-500 mt-2">
-              Start a live session to activate real-time GPS coordinate synchronization, meeting point pins, group timers, and Wayra coordination.
+              {isSoloMode
+                ? "Start a solo live session with Wayra watching your location, personal timers, and safety alerts."
+                : "Start a live session to activate real-time GPS coordinate synchronization, meeting point pins, group timers, and Wayra coordination."}
             </p>
           </div>
 
-          {isOwner ? (
+          {canStart ? (
             <button
               onClick={handleStartSession}
-              className="w-full py-4 bg-[#0F766E] hover:bg-[#0D635C] text-white rounded-xl font-bold transition shadow-lg shadow-teal-100"
+              className={`w-full py-4 text-white rounded-xl font-bold transition shadow-lg ${
+                isSoloMode
+                  ? "bg-[#8B5CF6] hover:bg-[#7C3AED] shadow-violet-100"
+                  : "bg-[#0F766E] hover:bg-[#0D635C] shadow-teal-100"
+              }`}
             >
-              Start Live Coordination
+              {isSoloMode ? "Start Solo LIVE" : "Start Live Coordination"}
             </button>
           ) : (
             <div className="p-3 bg-amber-50 border border-amber-100 text-amber-600 rounded-xl text-xs font-semibold">
@@ -410,8 +563,8 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
     );
   }
 
-  // Pre-live checklist overlay
-  if (effectiveStatus === "pre_live") {
+  // Pre-live checklist overlay (group mode only)
+  if (effectiveStatus === "pre_live" && !isSoloMode) {
     return (
       <ChecklistOverlay
         tripId={tripId}
@@ -420,6 +573,7 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
         isAdmin={tripMeta?.my_role === "admin" || tripMeta?.my_role === "coordinator"}
         onGoLive={handleGoLiveManual}
         currentUserId={currentUserId}
+        initialReadiness={checklistReadiness}
       />
     );
   }
@@ -440,6 +594,29 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
 
   const isAdmin = tripMeta?.my_role === "admin" || tripMeta?.my_role === "coordinator";
 
+  const soloMembersList = currentUserId
+    ? activeMembersList.filter((m) => m.user_id === currentUserId)
+    : activeMembersList.slice(0, 1);
+
+  const mapMembers = isSoloMode ? soloMembersList : activeMembersList;
+
+  const navTabs = isSoloMode
+    ? [
+        { id: "map" as const, label: "Map", icon: MapIcon },
+        { id: "members" as const, label: "Wayra AI", icon: Bot },
+        { id: "plan" as const, label: "Plan", icon: PlanIcon },
+        { id: "safety" as const, label: "Safety", icon: SafetyIcon },
+        { id: "activity" as const, label: "Activity", icon: ActivityIcon },
+      ]
+    : [
+        { id: "map" as const, label: "Map", icon: MapIcon },
+        { id: "members" as const, label: "Members", icon: UsersIcon },
+        { id: "chat" as const, label: "Chat", icon: ChatIcon },
+        { id: "plan" as const, label: "Plan", icon: PlanIcon },
+        { id: "safety" as const, label: "Safety", icon: SafetyIcon },
+        { id: "activity" as const, label: "Activity", icon: ActivityIcon },
+      ];
+
   return (
     <div className="flex flex-col h-screen w-full overflow-hidden bg-[#FFFFFF] font-sans">
       
@@ -458,11 +635,17 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Members online chip */}
-          <div className="hidden sm:flex items-center gap-1.5 bg-slate-900/60 border border-slate-800 px-3 py-1.5 rounded-full text-xs font-bold text-slate-300">
-            <UsersIcon size={12} className="text-[#0F766E]" />
-            <span>{activeMembersList.length} crew</span>
-          </div>
+          {isSoloMode ? (
+            <div className="hidden sm:flex items-center gap-1.5 bg-violet-500/15 border border-violet-500/30 px-3 py-1.5 rounded-full text-xs font-bold text-violet-300">
+              <Bot size={12} className="text-[#8B5CF6]" />
+              <span>Solo LIVE</span>
+            </div>
+          ) : (
+            <div className="hidden sm:flex items-center gap-1.5 bg-slate-900/60 border border-slate-800 px-3 py-1.5 rounded-full text-xs font-bold text-slate-300">
+              <UsersIcon size={12} className="text-[#0F766E]" />
+              <span>{activeMembersList.length} crew</span>
+            </div>
+          )}
 
           {/* Time remaining chip */}
           {timerState?.is_active && (
@@ -491,17 +674,31 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
         </div>
       </header>
 
-      {/* 2. 6 NAVIGATION TABS (background #0F172A) */}
+      {isSoloMode && (
+        <div className="shrink-0 border-b border-violet-200 bg-gradient-to-r from-violet-600 to-[#8B5CF6] px-4 py-2.5 text-white">
+          <div className="mx-auto flex max-w-3xl items-center gap-3">
+            <WayraIcon state="flying" size={0.38} variant="raw" animate />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-black uppercase tracking-wider">Wayra Solo Companion</p>
+              <p className="truncate text-[11px] text-violet-100">
+                Watching your location · Real-time suggestions · Safety alerts active
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => emitOpenWayra()}
+              className="shrink-0 rounded-lg bg-white/20 px-3 py-1.5 text-[10px] font-bold hover:bg-white/30 transition"
+            >
+              Open Wayra
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 2. NAVIGATION TABS (background #0F172A) */}
       <nav className="bg-[#0F172A] h-12 flex border-b border-slate-800 shrink-0 select-none overflow-x-auto">
         <div className="flex items-center justify-around w-full max-w-3xl mx-auto px-4 gap-1">
-          {[
-            { id: "map", label: "Map", icon: MapIcon },
-            { id: "members", label: "Members", icon: UsersIcon },
-            { id: "chat", label: "Chat", icon: ChatIcon },
-            { id: "plan", label: "Plan", icon: PlanIcon },
-            { id: "safety", label: "Safety", icon: SafetyIcon },
-            { id: "activity", label: "Activity", icon: ActivityIcon },
-          ].map((tab) => {
+          {navTabs.map((tab) => {
             const isActive = activeTab === tab.id;
             const IconComp = tab.icon;
 
@@ -514,7 +711,9 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
                 }}
                 className={`flex-1 h-full flex flex-col items-center justify-center gap-0.5 border-b-2 text-xs font-black transition-all ${
                   isActive
-                    ? "border-[#0F766E] text-[#0F766E]"
+                    ? isSoloMode
+                      ? "border-[#8B5CF6] text-[#8B5CF6]"
+                      : "border-[#0F766E] text-[#0F766E]"
                     : "border-transparent text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -543,29 +742,33 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
               tripId={tripId}
               firebaseDb={firebase.db}
               currentUserId={currentUserId}
-              meetPoint={meetPoint}
-              pickingMeetPoint={pickingMeetPoint}
-              onMapPick={handleMapPickPoint}
-              members={activeMembersList}
+              meetPoint={isSoloMode ? { lat: null, lng: null, name: null } : meetPoint}
+              pickingMeetPoint={isSoloMode ? false : pickingMeetPoint}
+              onMapPick={isSoloMode ? () => {} : handleMapPickPoint}
+              members={mapMembers}
             />
           )}
 
           {activeTab === "members" && (
-            <MemberPanel
-              tripId={tripId}
-              firebaseDb={firebase.db}
-              members={activeMembersList}
-              meetPoint={meetPoint}
-              currentUserId={currentUserId}
-              isAdmin={isAdmin}
-              onSetMeetPointClick={() => {
-                setActiveTab("map");
-                setPickingMeetPoint(true);
-              }}
-            />
+            isSoloMode ? (
+              <SoloWayraPanel />
+            ) : (
+              <MemberPanel
+                tripId={tripId}
+                firebaseDb={firebase.db}
+                members={activeMembersList}
+                meetPoint={meetPoint}
+                currentUserId={currentUserId}
+                isAdmin={isAdmin}
+                onSetMeetPointClick={() => {
+                  setActiveTab("map");
+                  setPickingMeetPoint(true);
+                }}
+              />
+            )
           )}
 
-          {activeTab === "chat" && (
+          {!isSoloMode && activeTab === "chat" && (
             <GroupChat
               tripId={tripId}
               firebaseDb={firebase.db}
@@ -584,10 +787,10 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
           {activeTab === "safety" && (
             <SafetyPanel
               tripId={tripId}
-              members={activeMembersList}
-              meetPoint={meetPoint}
+              members={mapMembers}
+              meetPoint={isSoloMode ? { lat: null, lng: null, name: null } : meetPoint}
               currentUserId={currentUserId}
-              isAdmin={isAdmin}
+              isAdmin={isSoloMode ? true : isAdmin}
             />
           )}
 
@@ -595,7 +798,7 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
             <ActivityPanel
               tripId={tripId}
               currentUserId={currentUserId}
-              members={activeMembersList}
+              members={mapMembers}
             />
           )}
         </div>

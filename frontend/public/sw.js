@@ -39,15 +39,34 @@ self.addEventListener('notificationclick', function (event) {
   }
 
   event.waitUntil(
-    clients.matchAll({ type: 'window' }).then(function (clientList) {
+    clients.matchAll({ type: "window" }).then(function (clientList) {
       for (const client of clientList) {
-        if (client.url.includes(url) && 'focus' in client) {
-          return client.focus()
+        if (client.url.includes(url) && "focus" in client) {
+          return client.focus();
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow(url)
+        return clients.openWindow(url);
       }
     }),
-  )
-})
+  );
+});
+
+const MAP_CACHE_NAME = "map-tiles-cache-v1";
+
+self.addEventListener("fetch", function (event) {
+  const url = new URL(event.request.url);
+  if (url.hostname.includes("tile.openstreetmap.org")) {
+    event.respondWith(
+      caches.open(MAP_CACHE_NAME).then(function (cache) {
+        return cache.match(event.request).then(function (response) {
+          const fetchPromise = fetch(event.request).then(function (networkResponse) {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+          return response || fetchPromise;
+        });
+      })
+    );
+  }
+});

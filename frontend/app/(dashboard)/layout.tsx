@@ -23,6 +23,7 @@ import {
   Bus,
   Heart,
   LayoutDashboard,
+  ShoppingCart,
   type LucideIcon,
 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
@@ -30,6 +31,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { IconBell, IconCheck, IconLogout } from "@/components/icons";
 
+import { LiveModal } from "@/components/live/LiveModal";
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { VerificationBanner } from "@/components/VerificationBanner";
@@ -417,6 +419,39 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const [sidebarProfileLoading, setSidebarProfileLoading] = useState(true);
   const [notifCount, setNotifCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [liveModalOpen, setLiveModalOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    if (loading || !user) return;
+    let c = false;
+    (async () => {
+      try {
+        const data = await apiFetch<{ count: number }>("/cart/count");
+        if (c) return;
+        setCartCount(Math.max(0, Math.floor(data.count)));
+      } catch {
+        /* keep count */
+      }
+    })();
+    return () => {
+      c = true;
+    };
+  }, [loading, user]);
+
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      (async () => {
+        try {
+          const data = await apiFetch<{ count: number }>("/cart/count");
+          setCartCount(Math.max(0, Math.floor(data.count)));
+        } catch {}
+      })();
+    };
+    window.addEventListener("gt-cart-updated", handleCartUpdate);
+    return () => window.removeEventListener("gt-cart-updated", handleCartUpdate);
+  }, []);
+
 
   useEffect(() => {
     let c = false;
@@ -576,24 +611,37 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               {NAV_SECTIONS.map((section) => {
                 const active = sectionActive(pathname, section);
                 const isLive = section.id === "live";
+                if (isLive) {
+                  return (
+                    <button
+                      key={section.id}
+                      type="button"
+                      onClick={() => setLiveModalOpen(true)}
+                      className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[13px] font-semibold whitespace-nowrap transition-all ${
+                        active
+                          ? "text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200"
+                          : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
+                      }`}
+                    >
+                      <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                      </span>
+                      {section.label}
+                    </button>
+                  );
+                }
                 return (
                   <Link
                     key={section.id}
                     href={section.href}
                     className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[13px] font-semibold whitespace-nowrap transition-all ${
                       active
-                        ? isLive
-                          ? "text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200"
-                          : "text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
+                        ? "text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
                         : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
                     }`}
                   >
-                    {isLive ? (
-                      <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                      </span>
-                    ) : section.Icon ? (
+                    {section.Icon ? (
                       <section.Icon size={15} strokeWidth={2} aria-hidden />
                     ) : null}
                     {section.label}
@@ -603,6 +651,20 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             </nav>
 
             <div className="hidden md:block h-6 w-px bg-stone-200" />
+
+            {/* Travel Cart */}
+            <Link
+              href="/cart"
+              className="relative p-2 text-stone-500 hover:text-stone-800 rounded-lg hover:bg-stone-100 transition-colors"
+              aria-label="Travel Cart"
+            >
+              <ShoppingCart size={20} />
+              {cartCount > 0 ? (
+                <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-teal-600 px-1 text-[8px] font-bold text-white ring-2 ring-white">
+                  {cartCount > 99 ? "99" : cartCount}
+                </span>
+              ) : null}
+            </Link>
 
             {/* Notifications */}
             <Link
@@ -781,9 +843,10 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
               if (isCenter) {
                 return (
-                  <Link
+                  <button
                     key={href}
-                    href={href}
+                    type="button"
+                    onClick={() => setLiveModalOpen(true)}
                     className="flex flex-1 flex-col items-center justify-start -mt-5"
                     aria-label="LIVE mode"
                   >
@@ -802,7 +865,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                     }`}>
                       Live
                     </span>
-                  </Link>
+                  </button>
                 );
               }
 
@@ -857,6 +920,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         />
       ) : null}
       {user && <LoungeDock />}
+      <LiveModal open={liveModalOpen} onClose={() => setLiveModalOpen(false)} />
     </div>
   );
 }

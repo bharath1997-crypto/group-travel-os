@@ -29,6 +29,7 @@ from app.models.buddy_trip import BuddyJoinRequest, BuddyTrip
 from app.models.sos_event import SOSEvent
 from app.models.trip_plan import TripPlan
 from app.models.lounge import LoungeChat, LoungeMember, LoungeDriveSync
+from app.models.cart import TravelCart
 
 __all__: list[str] = [
     "User",
@@ -75,5 +76,6 @@ __all__: list[str] = [
     "LoungeChat",
     "LoungeMember",
     "LoungeDriveSync",
+    "TravelCart",
 ]
 

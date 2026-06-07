@@ -5,7 +5,7 @@ import { CheckCircle2, Circle, Loader2, Play } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { Database, ref, onValue } from "firebase/database";
 
-interface MemberReadiness {
+export interface MemberReadiness {
   user_id: string;
   full_name: string | null;
   avatar_url: string | null;
@@ -19,6 +19,23 @@ interface ChecklistOverlayProps {
   isAdmin: boolean;
   onGoLive: () => void;
   currentUserId: string | null;
+  initialReadiness?: MemberReadiness[];
+}
+
+async function fetchWithRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  delay = 2000,
+): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (i === maxRetries - 1) throw err;
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new Error("Failed after retries");
 }
 
 const ITEMS = [
@@ -35,32 +52,45 @@ export function ChecklistOverlay({
   isAdmin,
   onGoLive,
   currentUserId,
+  initialReadiness = [],
 }: ChecklistOverlayProps) {
-  const [readiness, setReadiness] = useState<MemberReadiness[]>([]);
+  const [readiness, setReadiness] = useState<MemberReadiness[]>(initialReadiness);
   const [checkedItems, setCheckedItems] = useState<boolean[]>(ITEMS.map(() => false));
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // 1. Initial fetch from API
-    const fetchChecklist = async () => {
-      try {
-        const rows = await apiFetch<any[]>(`/live/sessions/${sessionId}/checklist`);
-        setReadiness(
-          rows.map((r) => ({
-            user_id: r.user_id,
-            full_name: r.full_name,
-            avatar_url: r.avatar_url,
-            is_accepted: r.is_accepted,
-          }))
-        );
-      } catch (err) {
-        console.error("Failed to load checklist readiness:", err);
-      }
-    };
-    fetchChecklist();
+    let cancelled = false;
 
-    // 2. Realtime firebase listener
-    if (!firebaseDb) return;
+    if (initialReadiness.length > 0) {
+      setReadiness(initialReadiness);
+    } else {
+      const fetchChecklist = async () => {
+        try {
+          const rows = await fetchWithRetry(() =>
+            apiFetch<any[]>(`/live/sessions/${sessionId}/checklist`),
+          );
+          if (cancelled) return;
+          setReadiness(
+            rows.map((r) => ({
+              user_id: r.user_id,
+              full_name: r.full_name,
+              avatar_url: r.avatar_url,
+              is_accepted: r.is_accepted,
+            })),
+          );
+        } catch {
+          /* Firebase listener may still populate readiness */
+        }
+      };
+      fetchChecklist();
+    }
+
+    if (!firebaseDb) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
     const dbRef = ref(firebaseDb, `trips/${tripId}/live_session/checklist`);
     const unsubscribe = onValue(dbRef, (snapshot) => {
       const val = snapshot.val() as Record<string, { accepted?: boolean }> | null;
@@ -69,12 +99,15 @@ export function ChecklistOverlay({
         prev.map((m) => ({
           ...m,
           is_accepted: !!val[m.user_id]?.accepted,
-        }))
+        })),
       );
     });
 
-    return () => unsubscribe();
-  }, [sessionId, firebaseDb, tripId]);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [sessionId, firebaseDb, tripId, initialReadiness]);
 
   const toggleItem = (index: number) => {
     setCheckedItems((prev) => {

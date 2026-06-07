@@ -57,6 +57,7 @@ async def lifespan(app: FastAPI):
 
     from app.jobs.scheduler import start_scheduler, scheduler
     from app.jobs.events_prewarm_job import prewarm_events_cache
+    from app.services.cart_notification_service import CartNotificationService
 
     start_scheduler()
     scheduler.add_job(
@@ -65,6 +66,13 @@ async def lifespan(app: FastAPI):
         hours=6,
         id="events_prewarm",
         replace_existing=True,
+    )
+    scheduler.add_job(
+        CartNotificationService.send_abandoned_notifications,
+        trigger="interval",
+        minutes=15,
+        id="cart_notifications",
+        replace_existing=True
     )
 
     yield
@@ -234,6 +242,10 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(weather_router, prefix="/api/v1")
 
+    from app.routes.geocoding import router as geocoding_router
+
+    app.include_router(geocoding_router, prefix="/api/v1")
+
     from app.routes.travel_intel import router as travel_intel_router
 
     app.include_router(travel_intel_router, prefix="/api/v1")
@@ -321,6 +333,11 @@ def _register_routes(app: FastAPI) -> None:
 
     from app.routes.lounge import router as lounge_router
     app.include_router(lounge_router, prefix="/api/v1")
+
+    from app.routes.cart import router as cart_router
+    from app.routes.video_extract import router as video_extract_router
+    app.include_router(cart_router, prefix="/api/v1")
+    app.include_router(video_extract_router, prefix="/api/v1")
 
     app.include_router(explore_content_router, prefix="/api/v1", tags=["explore_content"])
     app.include_router(explorer_feed_router, prefix="/api/v1", tags=["explorer_pipeline"])
