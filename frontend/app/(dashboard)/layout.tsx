@@ -591,14 +591,14 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           FIXED TOP HEADER — never hides on scroll
       ═══════════════════════════════════════════════════ */}
       <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-stone-200 shadow-sm select-none">
-        <div className="flex h-16 items-center gap-3 px-4 md:px-6">
-
+        <div className="flex h-16 items-center gap-2 px-3 md:gap-3 md:px-6">
           {/* Logo */}
           <Link
             href="/explore"
             className="flex shrink-0 items-center focus-visible:outline-none"
           >
-            <RovvyLogo variant="primary" size="sm" />
+            <RovvyLogo variant="primary" size="sm" className="hidden xl:block" />
+            <RovvyIcon size={26} className="xl:hidden" />
           </Link>
 
           {/* Search — Google-style pill, centered in header */}
@@ -607,9 +607,9 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           </div>
 
           {/* Navigation + Notifications + Overflow Menu */}
-          <div className="ml-auto flex shrink-0 items-center gap-2 md:ml-0 md:gap-3">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 md:ml-0 md:gap-3">
             {/* Primary nav tabs — desktop only */}
-            <nav className="hidden md:flex items-center gap-0.5" aria-label="Primary">
+            <nav className="hidden md:flex items-center gap-0.5 xl:gap-1" aria-label="Primary">
               {NAV_SECTIONS.map((section) => {
                 const active = sectionActive(pathname, section);
                 const isLive = section.id === "live";
@@ -619,17 +619,18 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                       key={section.id}
                       type="button"
                       onClick={() => setLiveModalOpen(true)}
-                      className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[13px] font-semibold whitespace-nowrap transition-all ${
+                      className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-all ${
                         active
                           ? "text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200"
                           : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
                       }`}
+                      title={section.label}
                     >
                       <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
                         <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
                       </span>
-                      {section.label}
+                      <span className="hidden xl:inline">{section.label}</span>
                     </button>
                   );
                 }
@@ -637,16 +638,17 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   <Link
                     key={section.id}
                     href={section.href}
-                    className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[13px] font-semibold whitespace-nowrap transition-all ${
+                    className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-all ${
                       active
                         ? "text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
                         : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
                     }`}
+                    title={section.label}
                   >
                     {section.Icon ? (
                       <section.Icon size={15} strokeWidth={2} aria-hidden />
                     ) : null}
-                    {section.label}
+                    <span className="hidden xl:inline">{section.label}</span>
                   </Link>
                 );
               })}
