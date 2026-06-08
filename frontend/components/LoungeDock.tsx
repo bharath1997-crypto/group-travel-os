@@ -18,6 +18,9 @@ import {
   Smile,
   Sparkles,
   Cloud,
+  Phone,
+  Video,
+  SquarePen,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { initFirebase } from "@/lib/firebase-client";
@@ -81,11 +84,13 @@ export function LoungeDock() {
   const [currentUser, setCurrentUser] = useState<{ id: string; full_name: string } | null>(null);
 
   // Search & Navigation
-  const [activeTab, setActiveTab] = useState<"chats" | "contacts" | "settings">("chats");
+  const [activeTab, setActiveTab] = useState<"chats" | "calls" | "updates">("chats");
   const [searchQuery, setSearchQuery] = useState("");
   const [showNewGroupModal, setShowNewGroupModal] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
+  const [showNewChatOverlay, setShowNewChatOverlay] = useState(false);
+  const [showSettingsOverlay, setShowSettingsOverlay] = useState(false);
 
   // Backup Settings
   const [backupInterval, setBackupInterval] = useState("24h");
@@ -623,8 +628,27 @@ export function LoungeDock() {
               <span>Rovvy Lounge</span>
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            {isOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            {isOpen && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSettingsOverlay((prev) => !prev);
+                  setShowNewChatOverlay(false);
+                }}
+                className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
+                title="Backup Settings"
+              >
+                <Settings size={14} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
+            >
+              {isOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+            </button>
           </div>
         </div>
 
@@ -634,37 +658,69 @@ export function LoungeDock() {
             <div className="bg-slate-950 p-2 shrink-0 space-y-2 border-b border-slate-800">
               <div className="flex bg-slate-900 p-0.5 rounded-lg text-xs font-semibold">
                 <button
-                  onClick={() => setActiveTab("chats")}
+                  onClick={() => {
+                    setActiveTab("chats");
+                    setShowSettingsOverlay(false);
+                  }}
                   className={`flex-1 py-1 rounded-md transition-all ${
-                    activeTab === "chats" ? "bg-[#0F766E] text-white" : "text-slate-400 hover:text-white"
+                    activeTab === "chats" && !showSettingsOverlay ? "bg-[#0F766E] text-white" : "text-slate-400 hover:text-white"
                   }`}
                 >
                   Chats
                 </button>
                 <button
-                  onClick={() => setActiveTab("contacts")}
+                  onClick={() => {
+                    setActiveTab("calls");
+                    setShowSettingsOverlay(false);
+                  }}
                   className={`flex-1 py-1 rounded-md transition-all ${
-                    activeTab === "contacts" ? "bg-[#0F766E] text-white" : "text-slate-400 hover:text-white"
+                    activeTab === "calls" && !showSettingsOverlay ? "bg-[#0F766E] text-white" : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  Contacts
+                  Calls
                 </button>
                 <button
-                  onClick={() => setActiveTab("settings")}
+                  onClick={() => {
+                    setActiveTab("updates");
+                    setShowSettingsOverlay(false);
+                  }}
                   className={`flex-1 py-1 rounded-md transition-all ${
-                    activeTab === "settings" ? "bg-[#0F766E] text-white" : "text-slate-400 hover:text-white"
+                    activeTab === "updates" && !showSettingsOverlay ? "bg-[#0F766E] text-white" : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  Settings
+                  Updates
                 </button>
               </div>
 
-              {activeTab !== "settings" && (
+              {!showSettingsOverlay && !showNewChatOverlay && activeTab === "chats" && (
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1 flex items-center">
+                    <Search size={14} className="absolute left-3 text-slate-500" />
+                    <input
+                      type="text"
+                      placeholder="Search chats..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-slate-900 text-xs text-white pl-8 pr-3 py-1.5 rounded-lg border border-slate-800 outline-none focus:border-[#0F766E] font-medium"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewChatOverlay(true)}
+                    className="p-1.5 bg-[#0F766E] hover:bg-teal-700 text-white rounded-lg transition-colors flex items-center justify-center shrink-0"
+                    title="New Chat"
+                  >
+                    <SquarePen size={14} />
+                  </button>
+                </div>
+              )}
+
+              {!showSettingsOverlay && activeTab === "calls" && (
                 <div className="relative flex items-center">
                   <Search size={14} className="absolute left-3 text-slate-500" />
                   <input
                     type="text"
-                    placeholder={`Search ${activeTab}...`}
+                    placeholder="Search contacts..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full bg-slate-900 text-xs text-white pl-8 pr-3 py-1.5 rounded-lg border border-slate-800 outline-none focus:border-[#0F766E] font-medium"
@@ -675,8 +731,123 @@ export function LoungeDock() {
 
             {/* List Content */}
             <div className="flex-1 overflow-y-auto bg-white p-2 divide-y divide-stone-100">
+              {/* SETTINGS OVERLAY */}
+              {showSettingsOverlay && (
+                <div className="p-3 text-stone-800 space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+                    <span className="text-xs font-bold text-[#0F766E]">Lounge Settings</span>
+                    <button
+                      onClick={() => setShowSettingsOverlay(false)}
+                      className="text-stone-400 hover:text-stone-600 p-1"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wide text-[#0F766E] mb-2 flex items-center gap-1.5">
+                      <Cloud size={14} />
+                      <span>Google Drive Backup</span>
+                    </h4>
+                    <p className="text-[10px] text-stone-500 font-medium mb-3 leading-relaxed">
+                      All messages are delivered in real-time and deleted from Rovvy servers. You can back up messages to your own Google Drive.
+                    </p>
+
+                    <label className="block text-[11px] font-bold text-stone-600 mb-1">
+                      Backup Interval
+                    </label>
+                    <select
+                      value={backupInterval}
+                      onChange={(e) => updateSettings(e.target.value, wifiOnly)}
+                      className="w-full text-xs border border-stone-250 p-2 rounded-lg outline-none focus:border-[#0F766E] text-stone-850 font-semibold mb-3 bg-white"
+                    >
+                      <option value="6h">Every 6 Hours</option>
+                      <option value="12h">Every 12 Hours</option>
+                      <option value="24h">Daily (24 Hours)</option>
+                    </select>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-stone-600">
+                        Back up on Wi-Fi Only
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={wifiOnly}
+                        onChange={(e) => updateSettings(backupInterval, e.target.checked)}
+                        className="h-4 w-4 text-[#0F766E] focus:ring-[#0F766E] border-stone-300 rounded"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* NEW CHAT / CONTACTS OVERLAY */}
+              {!showSettingsOverlay && activeTab === "chats" && showNewChatOverlay && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between p-2 mb-2 bg-slate-50 rounded-lg">
+                    <span className="text-xs font-bold text-[#0F766E]">Start New Chat</span>
+                    <button
+                      onClick={() => setShowNewChatOverlay(false)}
+                      className="text-stone-400 hover:text-stone-600 p-1"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+
+                  {/* Create Group Button */}
+                  <button
+                    onClick={() => setShowNewGroupModal(true)}
+                    className="w-full flex items-center gap-2 p-2 rounded-lg bg-teal-50 hover:bg-teal-100 text-[#0F766E] text-xs font-bold transition-all mb-2 border border-teal-100"
+                  >
+                    <Plus size={16} />
+                    <span>Create Group Chat</span>
+                  </button>
+
+                  <div className="relative flex items-center mb-2">
+                    <Search size={14} className="absolute left-3 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search contacts..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-slate-50 text-xs text-stone-850 pl-8 pr-3 py-1.5 rounded-lg border border-stone-250 outline-none focus:border-[#0F766E] font-medium"
+                    />
+                  </div>
+
+                  {filteredContacts.length === 0 ? (
+                    <div className="text-center py-8 text-stone-400 text-xs font-semibold">
+                      No contacts found
+                    </div>
+                  ) : (
+                    filteredContacts.map((contact) => (
+                      <div
+                        key={contact.id}
+                        onClick={() => {
+                          startDirectChat(contact.id);
+                          setShowNewChatOverlay(false);
+                        }}
+                        className="flex items-center justify-between p-2.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-8 w-8 rounded-full bg-[#0F766E] text-white flex items-center justify-center text-xs font-bold shadow-sm shrink-0">
+                            {contact.full_name.charAt(0)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-stone-850 truncate">
+                              {contact.full_name}
+                            </p>
+                            <p className="text-[9px] text-stone-500 font-medium">
+                              @{contact.username || "user"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
               {/* CHATS TAB */}
-              {activeTab === "chats" && (
+              {!showSettingsOverlay && !showNewChatOverlay && activeTab === "chats" && (
                 <>
                   {filteredChats.length === 0 ? (
                     <div className="text-center py-8 text-stone-400 text-xs font-semibold">
@@ -719,84 +890,78 @@ export function LoungeDock() {
                 </>
               )}
 
-              {/* CONTACTS TAB */}
-              {activeTab === "contacts" && (
-                <div className="space-y-1">
-                  {/* Create Group Button */}
-                  <button
-                    onClick={() => setShowNewGroupModal(true)}
-                    className="w-full flex items-center gap-2 p-2 rounded-lg bg-teal-50 hover:bg-teal-100 text-[#0F766E] text-xs font-bold transition-all mb-2 border border-teal-100"
-                  >
-                    <Plus size={16} />
-                    <span>Create Group Chat</span>
-                  </button>
-
+              {/* CALLS TAB */}
+              {!showSettingsOverlay && activeTab === "calls" && (
+                <div className="space-y-3 p-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-stone-500">
+                    Favorites
+                  </p>
                   {filteredContacts.length === 0 ? (
-                    <div className="text-center py-8 text-stone-400 text-xs font-semibold">
-                      No contacts found
+                    <div className="text-center py-4 text-stone-400 text-xs font-semibold">
+                      No favorites found
                     </div>
                   ) : (
                     filteredContacts.map((contact) => (
                       <div
                         key={contact.id}
-                        onClick={() => startDirectChat(contact.id)}
-                        className="flex items-center justify-between p-2.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
+                        className="flex items-center justify-between py-1.5 border-b border-stone-50"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-8 w-8 rounded-full bg-[#0F766E] text-white flex items-center justify-center text-xs font-bold shadow-sm shrink-0">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="h-7 w-7 rounded-full bg-[#0F766E]/10 text-[#0F766E] flex items-center justify-center text-xs font-bold shrink-0">
                             {contact.full_name.charAt(0)}
                           </div>
                           <div className="min-w-0">
                             <p className="text-xs font-bold text-stone-850 truncate">
                               {contact.full_name}
                             </p>
-                            <p className="text-[9px] text-stone-500 font-medium">
-                              @{contact.username || "user"}
-                            </p>
                           </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => alert("Calls coming soon")}
+                            className="p-1.5 text-[#0F766E] hover:bg-teal-50 rounded-full transition-colors"
+                            title="Voice Call"
+                          >
+                            <Phone size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => alert("Calls coming soon")}
+                            className="p-1.5 text-[#0F766E] hover:bg-teal-50 rounded-full transition-colors"
+                            title="Video Call"
+                          >
+                            <Video size={14} />
+                          </button>
                         </div>
                       </div>
                     ))
                   )}
+                  
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-stone-500 pt-2">
+                    Recent
+                  </p>
+                  <div className="flex flex-col items-center justify-center py-4 text-center">
+                    <p className="text-xs font-semibold text-stone-850">No recent calls</p>
+                    <p className="text-[10px] text-stone-500 mt-0.5">Your call history will appear here</p>
+                  </div>
                 </div>
               )}
 
-              {/* SETTINGS TAB */}
-              {activeTab === "settings" && (
-                <div className="p-3 text-stone-800 space-y-4">
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wide text-[#0F766E] mb-2 flex items-center gap-1.5">
-                      <Cloud size={14} />
-                      <span>Google Drive Backup</span>
-                    </h4>
-                    <p className="text-[10px] text-stone-500 font-medium mb-3 leading-relaxed">
-                      All messages are delivered in real-time and deleted from Rovvy servers. You can back up messages to your own Google Drive.
-                    </p>
-
-                    <label className="block text-[11px] font-bold text-stone-600 mb-1">
-                      Backup Interval
-                    </label>
-                    <select
-                      value={backupInterval}
-                      onChange={(e) => updateSettings(e.target.value, wifiOnly)}
-                      className="w-full text-xs border border-stone-250 p-2 rounded-lg outline-none focus:border-[#0F766E] text-stone-850 font-semibold mb-3 bg-white"
-                    >
-                      <option value="6h">Every 6 Hours</option>
-                      <option value="12h">Every 12 Hours</option>
-                      <option value="24h">Daily (24 Hours)</option>
-                    </select>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-stone-600">
-                        Back up on Wi-Fi Only
-                      </span>
-                      <input
-                        type="checkbox"
-                        checked={wifiOnly}
-                        onChange={(e) => updateSettings(backupInterval, e.target.checked)}
-                        className="h-4 w-4 text-[#0F766E] focus:ring-[#0F766E] border-stone-300 rounded"
-                      />
+              {/* UPDATES TAB */}
+              {!showSettingsOverlay && activeTab === "updates" && (
+                <div className="space-y-4 p-2">
+                  <div className="flex items-center gap-3 py-2 border-b border-stone-100">
+                    <div className="h-9 w-9 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold">
+                      {currentUser?.full_name?.charAt(0) || "U"}
                     </div>
+                    <div>
+                      <p className="text-xs font-bold text-stone-850">My Status</p>
+                      <p className="text-[10px] text-stone-500">No status updates</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <p className="text-xs font-semibold text-stone-500">No updates yet</p>
                   </div>
                 </div>
               )}
