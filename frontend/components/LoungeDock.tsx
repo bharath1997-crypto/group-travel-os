@@ -55,8 +55,20 @@ type Message = {
   id: string;
   sender_id: string;
   sender_name: string;
+  sender_avatar?: string;
   text: string;
   timestamp: number;
+  type?: string;
+  wayra_visible?: boolean;
+  location_details?: {
+    place_name: string | null;
+    city: string | null;
+    country: string | null;
+    latitude: number;
+    longitude: number;
+    thumbnail: string;
+    confidence: string;
+  };
 };
 
 export function LoungeDock() {
@@ -78,6 +90,9 @@ export function LoungeDock() {
   // Backup Settings
   const [backupInterval, setBackupInterval] = useState("24h");
   const [wifiOnly, setWifiOnly] = useState(true);
+
+  // Wayra status tracking
+  const [wayraStatus, setWayraStatus] = useState<Record<string, { enabled: boolean; off_since: string | null }>>({});
 
   // Firebase Ref
   const firebaseInstance = useRef<ReturnType<typeof initFirebase> | null>(null);
@@ -106,7 +121,6 @@ export function LoungeDock() {
       setIsOpen((prev) => !prev);
     };
     const handleOpenAi = () => {
-      // AI companion fallback
       setIsOpen(true);
     };
     window.addEventListener("toggle-rovvy-lounge", handleToggle);
@@ -128,8 +142,41 @@ export function LoungeDock() {
     } catch {}
   };
 
+  const toggleWayra = async (chatId: string) => {
+    const currentStatus = wayraStatus[chatId];
+    if (!currentStatus) return;
+    const newEnabled = !currentStatus.enabled;
+    try {
+      const res = await apiFetch<{ status: string; enabled: boolean }>(`/wayra/group/${chatId}/toggle`, {
+        method: "POST",
+        body: JSON.stringify({ enabled: newEnabled }),
+      });
+      if (res.status === "success") {
+        setWayraStatus((prev) => ({
+          ...prev,
+          [chatId]: {
+            ...prev[chatId],
+            enabled: res.enabled,
+            off_since: res.enabled ? null : new Date().toISOString(),
+          },
+        }));
+      }
+    } catch (err) {
+      alert("Only group administrators can toggle Wayra AI settings.");
+    }
+  };
+
   const handleThreadClick = async (chatId: string) => {
     if (!openChatBoxes.includes(chatId)) {
+      const chat = chats.find((c) => c.id === chatId);
+      if (chat && (chat.type === "group" || chat.type === "trip" || chat.trip_id)) {
+        apiFetch<{ enabled: boolean; off_since: string | null }>(`/wayra/group/${chatId}/status`)
+          .then((status) => {
+            setWayraStatus((prev) => ({ ...prev, [chatId]: status }));
+          })
+          .catch(() => {});
+      }
+
       // Load restore messages (from Google Drive via backend endpoint)
       try {
         const restoreRes = await apiFetch<{ messages: Message[] }>(`/lounge/drive/restore/${chatId}`);
@@ -204,6 +251,10 @@ export function LoungeDock() {
 
     const messageId = uuidv4();
     const timestamp = Date.now();
+    
+    const isWayraEnabled = wayraStatus[chatId]?.enabled !== false;
+    const chat = chats.find((c) => c.id === chatId);
+    const isGroup = chat && (chat.type === "group" || chat.type === "trip" || chat.trip_id);
 
     const newMsg: Message = {
       id: messageId,
@@ -211,6 +262,7 @@ export function LoungeDock() {
       sender_name: currentUser.full_name,
       text,
       timestamp,
+      wayra_visible: isGroup ? isWayraEnabled : true,
     };
 
     // 1. Deliver instantly via Firebase RTDB
@@ -243,6 +295,46 @@ export function LoungeDock() {
         }),
       });
     } catch {}
+
+    // 3. Mentions & URL detection
+    if (isGroup && chat) {
+      const hasMention = text.toLowerCase().includes("@wayra");
+      if (hasMention) {
+        apiFetch<{ response: string | null }>(`/wayra/group/${chat.trip_id || chat.id}/mention`, {
+          method: "POST",
+          body: JSON.stringify({ message: text, chat_id: chatId }),
+        }).catch(() => {});
+      }
+
+      // Detect URL
+      apiFetch<{ is_travel_url: boolean; url: string }>("/wayra/group/detect-url", {
+        method: "POST",
+        body: JSON.stringify({ message: text }),
+      }).then(async (res) => {
+        if (res.is_travel_url && fb && fb.ok && fb.db) {
+          const extRes = await apiFetch<any>("/wayra/group/extract-location", {
+            method: "POST",
+            body: JSON.stringify({ url: res.url }),
+          });
+          if (extRes && extRes.place_name) {
+            const previewMsgId = uuidv4();
+            const previewText = `📍 Location detected: ${extRes.place_name} (${extRes.city || ""}, ${extRes.country || ""})`;
+            const previewMsg: Message = {
+              id: previewMsgId,
+              sender_id: "wayra_ai",
+              sender_name: "Wayra AI",
+              text: previewText,
+              timestamp: Date.now(),
+              type: "location_preview",
+              wayra_visible: true,
+              location_details: extRes,
+            };
+            const msgRef = ref(fb.db, `chats/${chatId}/messages/${previewMsgId}`);
+            await set(msgRef, previewMsg);
+          }
+        }
+      }).catch(() => {});
+    }
   };
 
   // Create Direct Chat
@@ -338,18 +430,46 @@ export function LoungeDock() {
               onClick={(e) => handleCloseChatBox(chatId, e)}
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className="h-6 w-6 rounded-full bg-teal-850 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                <div className="h-6 w-6 rounded-full bg-teal-800 text-white flex items-center justify-center text-xs font-bold shrink-0">
                   {chatAvatar}
                 </div>
                 <span className="text-xs font-bold truncate">{chatName}</span>
               </div>
-              <button
-                type="button"
-                onClick={(e) => handleCloseChatBox(chatId, e)}
-                className="hover:bg-white/20 p-1 rounded transition-colors"
-              >
-                <X size={14} />
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {(chat.type === "group" || chat.type === "trip" || chat.trip_id) && wayraStatus[chatId] && (
+                  <button
+                    type="button"
+                    title={wayraStatus[chatId].enabled ? "Disable Wayra AI (Privacy Mode)" : "Enable Wayra AI"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleWayra(chatId);
+                    }}
+                    className={`p-1 rounded transition-all duration-300 relative flex items-center justify-center ${
+                      wayraStatus[chatId].enabled
+                        ? "text-emerald-300 hover:text-emerald-100 hover:bg-emerald-500/20"
+                        : "text-stone-400 hover:text-stone-200 hover:bg-stone-500/20"
+                    }`}
+                  >
+                    <Sparkles
+                      size={14}
+                      className={wayraStatus[chatId].enabled ? "animate-pulse" : ""}
+                    />
+                    {wayraStatus[chatId].enabled && (
+                      <span className="absolute -top-1 -right-1 flex h-1.5 w-1.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                      </span>
+                    )}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={(e) => handleCloseChatBox(chatId, e)}
+                  className="hover:bg-white/20 p-1 rounded transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
             </div>
 
             {/* Chat Body / Message History */}
@@ -357,13 +477,20 @@ export function LoungeDock() {
               <div className="overflow-y-auto space-y-2 max-h-full pr-1">
                 {chatMsgs.map((m) => {
                   const isUser = m.sender_id === currentUser?.id;
+                  const isWayra = m.sender_id === "wayra_ai" || m.sender_avatar === "wayra";
                   return (
                     <div
                       key={m.id}
                       className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
                     >
                       <div className="flex items-center gap-1 mb-0.5 text-[9px] text-stone-500 font-medium">
-                        <span>{isUser ? "You" : m.sender_name}</span>
+                        {isWayra ? (
+                          <span className="flex items-center gap-0.5 text-[#0F766E] font-bold">
+                            <Sparkles size={8} /> {m.sender_name}
+                          </span>
+                        ) : (
+                          <span>{isUser ? "You" : m.sender_name}</span>
+                        )}
                         <span>·</span>
                         <span>
                           {new Date(m.timestamp).toLocaleTimeString([], {
@@ -371,16 +498,57 @@ export function LoungeDock() {
                             minute: "2-digit",
                           })}
                         </span>
+                        {m.wayra_visible === false && (
+                          <span className="text-stone-400 text-[8px] flex items-center gap-0.5 font-bold" title="Private to members (Hidden from AI)">
+                            · 🔒 Private
+                          </span>
+                        )}
                       </div>
-                      <div
-                        className={`px-3 py-1.5 rounded-2xl max-w-[85%] leading-relaxed break-words font-medium shadow-sm ${
-                          isUser
-                            ? "bg-[#0F766E] text-white rounded-tr-none"
-                            : "bg-white text-stone-850 border border-stone-200 rounded-tl-none"
-                        }`}
-                      >
-                        {m.text}
-                      </div>
+                      {m.type === "location_preview" && m.location_details ? (
+                        <div className="bg-white rounded-lg border border-stone-200 overflow-hidden shadow-sm max-w-[85%] text-stone-850">
+                          {m.location_details.thumbnail && (
+                            <img
+                              src={m.location_details.thumbnail}
+                              alt={m.location_details.place_name || "Location"}
+                              className="w-full h-24 object-cover"
+                            />
+                          )}
+                          <div className="p-2.5">
+                            <div className="flex items-start gap-1.5">
+                              <span className="text-[#0F766E] mt-0.5">📍</span>
+                              <div>
+                                <h4 className="font-bold text-xs leading-snug">{m.location_details.place_name}</h4>
+                                <p className="text-[10px] text-stone-500 font-semibold">
+                                  {[m.location_details.city, m.location_details.country].filter(Boolean).join(", ")}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between text-[9px] font-bold uppercase tracking-wider text-[#0F766E] border-t border-stone-100 pt-2">
+                              <span>Confidence: {m.location_details.confidence}</span>
+                              <a
+                                href={`https://www.google.com/maps/search/?api=1&query=${m.location_details.latitude},${m.location_details.longitude}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline"
+                              >
+                                View Map →
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className={`px-3 py-1.5 rounded-2xl max-w-[85%] leading-relaxed break-words font-medium shadow-sm ${
+                            isUser
+                              ? "bg-[#0F766E] text-white rounded-tr-none"
+                              : isWayra
+                              ? "bg-teal-50 text-teal-800 border border-teal-100 rounded-tl-none font-semibold"
+                              : "bg-white text-stone-850 border border-stone-200 rounded-tl-none"
+                          }`}
+                        >
+                          {m.text}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

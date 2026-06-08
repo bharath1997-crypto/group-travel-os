@@ -131,6 +131,20 @@ class TripService:
 
         db.commit()
         db.refresh(trip)
+
+        try:
+            from app.services.wayra_personal_service import WayraPersonalService
+            WayraPersonalService.store_memory(
+                db=db,
+                user_id=current_user.id,
+                memory_type="trip_create",
+                content=f"Created trip '{trip.title}'.",
+                source="trip",
+                source_id=str(trip.id)
+            )
+        except Exception as e:
+            logger.error("Failed to store trip memory: %s", e)
+
         from app.services.notification_service import NotificationService
 
         NotificationService.on_trip_created(db, trip, current_user)

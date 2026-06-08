@@ -345,20 +345,12 @@ def vote_explorer_item(
 @wayra_router.post("/chat", status_code=status.HTTP_200_OK)
 def chat_with_wayra(
     body: WayraChatRequest,
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> dict[str, str]:
-    message = body.message.strip()
-    context = f"city={body.city}; trip_context={body.trip_context}".strip()
-    logger.info("Wayra chat user=%s %s", current_user.id, context)
-
-    from app.services.wayra_service import WayraService
-    response_text = WayraService().chat(
-        message=message,
-        city=body.city,
-        trip_context=body.trip_context,
-    )
-
-    return {"response": response_text, "city": body.city}
+):
+    from app.services.wayra_personal_service import WayraPersonalService
+    res = WayraPersonalService.chat(current_user.id, body.message, db)
+    return res
 
 
 _live_context_cache: dict[uuid.UUID, tuple[float, str | None]] = {}
@@ -708,3 +700,251 @@ def react_to_short(
         
     db.commit()
     return {"status": "success", "likes": short.likes_count, "reactions": short.reaction_counts}
+
+
+# ── New Wayra Dual System Endpoints ───────────────────────────────────────────
+
+class WayraToggleRequest(BaseModel):
+    enabled: bool
+
+class WayraMentionRequest(BaseModel):
+    message: str
+    chat_id: str
+
+class WayraDetectUrlRequest(BaseModel):
+    message: str
+
+class WayraExtractLocationRequest(BaseModel):
+    url: str
+
+@wayra_router.get("/context", status_code=status.HTTP_200_OK)
+def get_wayra_personal_context(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.services.wayra_personal_service import WayraPersonalService
+    return WayraPersonalService.get_user_context(current_user.id, db)
+
+@wayra_router.get("/group/{id_or_group_id}/status", status_code=status.HTTP_200_OK)
+def get_wayra_group_status(
+    id_or_group_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Check by group first
+    settings_row = db.execute(
+        select(WayraGroupSettings).where(WayraGroupSettings.group_id == id_or_group_id)
+    ).scalar_one_or_none()
+    
+    if settings_row:
+        return {
+            "enabled": settings_row.wayra_enabled,
+            "off_since": settings_row.turned_off_at.isoformat() if settings_row.turned_off_at else None
+        }
+        
+    # Check by chat_id
+    from app.models.lounge import LoungeChat
+    chat = db.execute(
+        select(LoungeChat).where(LoungeChat.id == id_or_group_id)
+    ).scalar_one_or_none()
+    
+    if chat:
+        if chat.trip_id:
+            from app.models.trip import Trip
+            trip = db.execute(
+                select(Trip).where(Trip.id == chat.trip_id)
+            ).scalar_one_or_none()
+            if trip:
+                settings_row = db.execute(
+                    select(WayraGroupSettings).where(WayraGroupSettings.group_id == trip.group_id)
+                ).scalar_one_or_none()
+                if settings_row:
+                    return {
+                        "enabled": settings_row.wayra_enabled,
+                        "off_since": settings_row.turned_off_at.isoformat() if settings_row.turned_off_at else None
+                    }
+        return {
+            "enabled": chat.wayra_enabled,
+            "off_since": chat.wayra_off_since.isoformat() if chat.wayra_off_since else None
+        }
+        
+    return {
+        "enabled": True,
+        "off_since": None
+    }
+
+@wayra_router.post("/group/{group_id}/toggle", status_code=status.HTTP_200_OK)
+def toggle_wayra_group(
+    group_id: uuid.UUID,
+    body: WayraToggleRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.services.group_service import GroupService
+    from app.models.wayra import WayraGroupSettings
+    from app.models.lounge import LoungeChat
+    from app.models.trip import Trip
+    from app.models.group import Group
+    from datetime import datetime, timezone
+    import time
+    
+    # Resolve group_id if it's a chat_id
+    group_exists = db.execute(select(Group).where(Group.id == group_id)).scalar_one_or_none()
+    if not group_exists:
+        chat = db.execute(select(LoungeChat).where(LoungeChat.id == group_id)).scalar_one_or_none()
+        if chat:
+            if chat.trip_id:
+                trip = db.execute(select(Trip).where(Trip.id == chat.trip_id)).scalar_one_or_none()
+                if trip:
+                    group_id = trip.group_id
+            else:
+                g = db.execute(select(Group).where(Group.name == chat.name)).scalar_one_or_none()
+                if g:
+                    group_id = g.id
+                    
+    GroupService.require_admin(db, group_id, current_user.id)
+    
+    settings_row = db.execute(
+        select(WayraGroupSettings).where(WayraGroupSettings.group_id == group_id)
+    ).scalar_one_or_none()
+    
+    if not settings_row:
+        settings_row = WayraGroupSettings(group_id=group_id, wayra_enabled=True)
+        db.add(settings_row)
+        db.flush()
+        
+    enabled = body.enabled
+    now_dt = datetime.now(timezone.utc)
+    
+    settings_row.wayra_enabled = enabled
+    if enabled:
+        settings_row.turned_on_at = now_dt
+        settings_row.turned_on_by = current_user.id
+        settings_row.turned_off_at = None
+        settings_row.turned_off_by = None
+        msg_text = "Wayra joined the group (Admin turned on)"
+    else:
+        settings_row.turned_off_at = now_dt
+        settings_row.turned_off_by = current_user.id
+        settings_row.turned_on_at = None
+        settings_row.turned_on_by = None
+        msg_text = "Wayra left the group (Admin turned off)"
+        
+    trip_ids_stmt = select(Trip.id).where(Trip.group_id == group_id)
+    chats = db.execute(
+        select(LoungeChat).where(
+            (LoungeChat.trip_id.in_(trip_ids_stmt)) | 
+            ((LoungeChat.type == "group") & (LoungeChat.name == select(Group.name).where(Group.id == group_id).scalar_subquery()))
+        )
+    ).scalars().all()
+    
+    for chat in chats:
+        chat.wayra_enabled = enabled
+        chat.wayra_off_since = None if enabled else now_dt
+        
+    db.commit()
+    
+    for chat in chats:
+        try:
+            from app.utils.firebase import get_rtdb_ref
+            ref = get_rtdb_ref(f"chats/{chat.id}/messages")
+            ref.push({
+                "sender_id": "system",
+                "sender_name": "System",
+                "message": msg_text,
+                "text": msg_text,
+                "timestamp": int(time.time() * 1000),
+                "type": "system",
+                "wayra_visible": True
+            })
+        except Exception as e:
+            logger.error("Failed to post system message to Firebase: %s", e)
+            
+        if chat.trip_id:
+            try:
+                from app.utils.firebase import get_rtdb_ref
+                ref = get_rtdb_ref(f"trips/{chat.trip_id}/chat")
+                ref.push({
+                    "sender_id": "system",
+                    "sender_name": "System",
+                    "message": msg_text,
+                    "text": msg_text,
+                    "timestamp": int(time.time() * 1000),
+                    "type": "system",
+                    "wayra_visible": True
+                })
+            except Exception as e:
+                logger.error("Failed to post system message to Firebase trip: %s", e)
+                
+    return {"status": "success", "enabled": enabled}
+
+@wayra_router.post("/group/{group_id}/mention", status_code=status.HTTP_200_OK)
+def mention_wayra_group(
+    group_id: uuid.UUID,
+    body: WayraMentionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.services.wayra_group_service import WayraGroupService
+    import time
+    
+    response_text = WayraGroupService.respond_to_mention(
+        group_id=group_id,
+        message=body.message,
+        sender_name=current_user.full_name or "Traveler",
+        db=db
+    )
+    
+    if not response_text:
+        return {"response": None}
+        
+    try:
+        from app.utils.firebase import get_rtdb_ref
+        ref = get_rtdb_ref(f"chats/{body.chat_id}/messages")
+        ref.push({
+            "sender_id": "wayra_ai",
+            "sender_name": "Wayra AI",
+            "sender_avatar": "wayra",
+            "message": response_text,
+            "text": response_text,
+            "timestamp": int(time.time() * 1000),
+            "type": "wayra",
+            "wayra_visible": True
+        })
+        
+        from app.models.lounge import LoungeChat
+        chat = db.execute(select(LoungeChat).where(LoungeChat.id == uuid.UUID(body.chat_id))).scalar_one_or_none()
+        if chat and chat.trip_id:
+            trip_ref = get_rtdb_ref(f"trips/{chat.trip_id}/chat")
+            trip_ref.push({
+                "sender_id": "wayra_ai",
+                "sender_name": "Wayra AI",
+                "sender_avatar": "wayra",
+                "message": response_text,
+                "text": response_text,
+                "timestamp": int(time.time() * 1000),
+                "type": "wayra",
+                "wayra_visible": True
+            })
+    except Exception as e:
+        logger.error("Failed to post Wayra group response: %s", e)
+        
+    return {"response": response_text}
+
+@wayra_router.post("/group/detect-url", status_code=status.HTTP_200_OK)
+def detect_wayra_url(
+    body: WayraDetectUrlRequest,
+    current_user: User = Depends(get_current_user),
+):
+    from app.services.wayra_group_service import WayraGroupService
+    return WayraGroupService.detect_travel_url(body.message)
+
+@wayra_router.post("/group/extract-location", status_code=status.HTTP_200_OK)
+async def extract_wayra_location(
+    body: WayraExtractLocationRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.services.wayra_group_service import WayraGroupService
+    res = await WayraGroupService.extract_url_location(body.url, db)
+    return res

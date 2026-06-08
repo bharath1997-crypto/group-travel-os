@@ -30,6 +30,7 @@ from app.models.sos_event import SOSEvent
 from app.models.trip_plan import TripPlan
 from app.models.lounge import LoungeChat, LoungeMember, LoungeDriveSync
 from app.models.cart import TravelCart
+from app.models.wayra import WayraPersonalMemory, WayraGroupSettings, WayraGroupMemory
 
 __all__: list[str] = [
     "User",
@@ -77,5 +78,8 @@ __all__: list[str] = [
     "LoungeMember",
     "LoungeDriveSync",
     "TravelCart",
+    "WayraPersonalMemory",
+    "WayraGroupSettings",
+    "WayraGroupMemory",
 ]
 

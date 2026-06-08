@@ -25,6 +25,7 @@ import {
   Settings,
   BarChart2,
   ChevronDown,
+  Sparkles,
 } from "lucide-react";
 
 import { RovvyLogo } from "@/components/RovvyLogo";
@@ -279,19 +280,31 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         </div>
 
         {/* Top bar actions in sidebar */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-800/50">
+        <div className="flex flex-col gap-1.5 px-4 py-3 border-b border-slate-800/50">
+          <div className="flex items-center gap-2">
+            <Link
+              href="/chat"
+              className="flex items-center gap-2 flex-1 rounded-xl px-3 py-2 text-xs font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition"
+            >
+              <MessageSquare className="h-4 w-4" /> Chat Hub
+            </Link>
+            <button
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition"
+              aria-label="Search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+          </div>
           <Link
-            href="/chat"
-            className="flex items-center gap-2 flex-1 rounded-xl px-3 py-2 text-xs font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition"
+            href="/wayra"
+            className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition ${
+              pathname === "/wayra"
+                ? "bg-[#0F766E]/20 text-[#CCFBF1]"
+                : "text-slate-400 hover:bg-slate-800 hover:text-white"
+            }`}
           >
-            <MessageSquare className="h-4 w-4" /> Chat Hub
+            <Sparkles className="h-4 w-4 text-[#0F766E]" /> Wayra Personal AI
           </Link>
-          <button
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition"
-            aria-label="Search"
-          >
-            <Search className="h-4 w-4" />
-          </button>
         </div>
 
         {/* Primary nav */}
@@ -413,6 +426,16 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              href="/wayra"
+              className={`flex items-center gap-2 rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold transition ${
+                pathname === "/wayra"
+                  ? "bg-[#0F766E]/20 text-[#CCFBF1]"
+                  : "text-slate-300 hover:bg-slate-700 hover:text-white"
+              }`}
+            >
+              <Sparkles className="h-4 w-4 text-[#0F766E]" /> Wayra AI
+            </Link>
             <Link
               href="/chat"
               className="flex items-center gap-2 rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition"

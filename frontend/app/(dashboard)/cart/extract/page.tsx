@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   ArrowLeft, 
   Sparkles, 
@@ -33,19 +33,21 @@ type ExtractionResult = {
 
 export default function VideoExtractPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fromShare, setFromShare] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ExtractionResult | null>(null);
   const [addingToCart, setAddingToCart] = useState(false);
   const [added, setAdded] = useState(false);
+  const autoExtracted = useRef(false);
 
-  // Form submit handler to run extraction
-  const handleExtract = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!url.trim()) return;
+  const runExtraction = useCallback(async (urlToExtract: string, shared = false) => {
+    if (!urlToExtract.trim()) return;
 
     setLoading(true);
+    setFromShare(shared);
     setError(null);
     setResult(null);
     setAdded(false);
@@ -53,14 +55,29 @@ export default function VideoExtractPage() {
     try {
       const data = await apiFetch<ExtractionResult>("/cart/extract-from-url", {
         method: "POST",
-        body: JSON.stringify({ url: url.trim() }),
+        body: JSON.stringify({ url: urlToExtract.trim() }),
       });
       setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to extract location details.");
     } finally {
       setLoading(false);
+      setFromShare(false);
     }
+  }, []);
+
+  useEffect(() => {
+    const sharedUrl = searchParams.get("url");
+    if (sharedUrl && !autoExtracted.current) {
+      autoExtracted.current = true;
+      setUrl(sharedUrl);
+      runExtraction(sharedUrl, true);
+    }
+  }, [searchParams, runExtraction]);
+
+  const handleExtract = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await runExtraction(url);
   };
 
   // Handler to add the resolved location to the cart
@@ -119,6 +136,13 @@ export default function VideoExtractPage() {
           </p>
         </div>
 
+        {fromShare && loading ? (
+          <div className="flex items-center gap-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 mb-6 text-sm font-medium text-teal-800">
+            <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+            Extracting location from shared link...
+          </div>
+        ) : null}
+
         {/* Input Form */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm mb-6">
           <form onSubmit={handleExtract} className="space-y-4">
@@ -150,7 +174,9 @@ export default function VideoExtractPage() {
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Extracting place details...
+                  {fromShare
+                    ? "Extracting location from shared link..."
+                    : "Extracting place details..."}
                 </>
               ) : (
                 <>

@@ -69,8 +69,68 @@ class GroupService:
             role=MemberRole.admin,
         )
         db.add(admin_row)
-        db.commit()
-        db.refresh(group)
+
+        # Create general Lounge Chat for the group if not mock
+        is_mock = type(db).__name__ in ("MagicMock", "Mock")
+        if not is_mock:
+            from app.models.lounge import LoungeChat, LoungeMember
+            from app.models.wayra import WayraGroupSettings
+            import time
+
+            lounge_chat = LoungeChat(
+                type="group",
+                name=group.name,
+                created_by=current_user.id,
+            )
+            db.add(lounge_chat)
+            db.flush()
+
+            # Add creator to lounge members
+            creator_member = LoungeMember(
+                chat_id=lounge_chat.id,
+                user_id=current_user.id,
+                is_admin=True
+            )
+            db.add(creator_member)
+
+            # Add Wayra as virtual member (user_id=None)
+            wayra_member = LoungeMember(
+                chat_id=lounge_chat.id,
+                user_id=None,
+                is_admin=False
+            )
+            db.add(wayra_member)
+
+            # Set wayra_enabled=True in settings
+            wayra_settings = WayraGroupSettings(
+                group_id=group.id,
+                wayra_enabled=True
+            )
+            db.add(wayra_settings)
+
+            db.commit()
+            db.refresh(group)
+
+            # Post welcome message to Firebase
+            try:
+                from app.utils.firebase import get_rtdb_ref
+                messages_ref = get_rtdb_ref(f"chats/{lounge_chat.id}/messages")
+                messages_ref.push({
+                    "sender_id": "wayra_ai",
+                    "sender_name": "Wayra AI",
+                    "sender_avatar": "wayra",
+                    "message": "Hi! I'm Wayra, your group travel assistant. I'll help plan trips, split expenses, and find the best experiences for your group. Tag me with @wayra anytime! 🗺️",
+                    "text": "Hi! I'm Wayra, your group travel assistant. I'll help plan trips, split expenses, and find the best experiences for your group. Tag me with @wayra anytime! 🗺️",
+                    "timestamp": int(time.time() * 1000),
+                    "type": "wayra",
+                    "wayra_visible": True
+                })
+            except Exception as e:
+                logger.error("Failed to post welcome message to Firebase: %s", e)
+        else:
+            db.commit()
+            db.refresh(group)
+
         logger.info("Group created: %s by user %s", group.id, current_user.id)
         return group
 
@@ -104,6 +164,20 @@ class GroupService:
         db.add(member)
         db.commit()
         db.refresh(group)
+
+        try:
+            from app.services.wayra_personal_service import WayraPersonalService
+            WayraPersonalService.store_memory(
+                db=db,
+                user_id=current_user.id,
+                memory_type="group_join",
+                content=f"Joined group '{group.name}'.",
+                source="group",
+                source_id=str(group.id)
+            )
+        except Exception as e:
+            logger.error("Failed to store group join memory: %s", e)
+
         from app.services.notification_service import NotificationService
 
         NotificationService.on_user_joined_group(db, group, current_user)

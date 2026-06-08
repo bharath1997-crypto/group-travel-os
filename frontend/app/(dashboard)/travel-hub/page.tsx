@@ -14278,7 +14278,7 @@ export default function TravelHubPage() {
       color: TEXT,
     };
     if (isMd) {
-      return { ...base, height: "calc(100vh - 64px)" };
+      return { ...base, height: "calc(100vh - 108px)" };
     }
     return {
       ...base,

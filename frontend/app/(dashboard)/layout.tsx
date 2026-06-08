@@ -518,7 +518,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     isExplorerEventsShell ||
     isExploreShortsShell ||
     isLivePage ||
-    pathname.startsWith("/profile");
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/travel-hub");
 
   const useFullWidthInner =
     isMapPage ||
@@ -530,7 +531,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     isActivitiesPage ||
     isHotelsPage ||
     isBuddyPage ||
-    isDarkHub;
+    isDarkHub ||
+    pathname.startsWith("/travel-hub");
 
   useEffect(() => {
     if (loading || !user) return;
@@ -708,11 +710,11 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => { router.push("/groups/new"); setMenuOpen(false); }}
+                      onClick={() => { router.push("/travel-hub"); setMenuOpen(false); }}
                       className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
                     >
-                      <LucideUsers size={14} className="text-[#0F766E]" />
-                      <span>Create Group</span>
+                      <MessageSquare size={14} className="text-[#0F766E]" />
+                      <span>Rovvy Lounge</span>
                     </button>
                     <button
                       type="button"

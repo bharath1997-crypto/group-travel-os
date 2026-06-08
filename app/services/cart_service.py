@@ -54,6 +54,21 @@ class CartService:
         db.add(cart_item)
         db.commit()
         db.refresh(cart_item)
+
+        try:
+            from app.services.wayra_personal_service import WayraPersonalService
+            WayraPersonalService.store_memory(
+                db=db,
+                user_id=user_id,
+                memory_type="cart_add",
+                content=f"Added {cart_item.item_name} ({cart_item.item_category or cart_item.item_type}) to travel cart.",
+                source="cart",
+                source_id=str(cart_item.id)
+            )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error("Failed to store cart memory: %s", e)
+
         return cart_item
 
     @staticmethod

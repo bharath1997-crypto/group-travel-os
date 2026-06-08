@@ -56,6 +56,18 @@ const MAP_CACHE_NAME = "map-tiles-cache-v1";
 
 self.addEventListener("fetch", function (event) {
   const url = new URL(event.request.url);
+  if (url.pathname === "/cart/extract" && event.request.method === "GET") {
+    const sharedUrl = url.searchParams.get("url") || url.searchParams.get("text");
+    if (sharedUrl) {
+      event.respondWith(
+        Response.redirect(
+          "/cart/extract?url=" + encodeURIComponent(sharedUrl),
+          303
+        )
+      );
+      return;
+    }
+  }
   if (url.hostname.includes("tile.openstreetmap.org")) {
     event.respondWith(
       caches.open(MAP_CACHE_NAME).then(function (cache) {

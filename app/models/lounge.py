@@ -33,6 +33,8 @@ class LoungeChat(Base):
     last_message_preview: Mapped[str | None] = mapped_column(String(255), nullable=True)
     last_message_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    wayra_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    wayra_off_since: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     members = relationship("LoungeMember", back_populates="chat", cascade="all, delete-orphan")
 
@@ -50,10 +52,10 @@ class LoungeMember(Base):
         ForeignKey("lounge_chats.id", ondelete="CASCADE"),
         nullable=False,
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
     )
     joined_at: Mapped[datetime] = mapped_column(
         DateTime,
@@ -69,7 +71,7 @@ class LoungeMember(Base):
     )
 
     chat = relationship("LoungeChat", back_populates="members")
-    user = relationship("User")
+    user = relationship("User", foreign_keys=[user_id])
 
 
 class LoungeDriveSync(Base):
