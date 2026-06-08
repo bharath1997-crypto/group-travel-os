@@ -94,6 +94,7 @@ export function LoungeDock() {
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
   const [showNewChatOverlay, setShowNewChatOverlay] = useState(false);
   const [showSettingsOverlay, setShowSettingsOverlay] = useState(false);
+  const [settingsScreen, setSettingsScreen] = useState<"menu" | "settings">("menu");
 
   // Backup Settings
   const [backupInterval, setBackupInterval] = useState("24h");
@@ -516,13 +517,17 @@ export function LoungeDock() {
               <button
                 type="button"
                 onClick={() => {
-                  setShowSettingsOverlay((prev) => !prev);
+                  setShowSettingsOverlay((prev) => {
+                    const next = !prev;
+                    if (next) setSettingsScreen("menu");
+                    return next;
+                  });
                   setShowNewChatOverlay(false);
                 }}
                 className={`p-1.5 rounded transition-colors ${
                   showSettingsOverlay ? "bg-[#0F766E] text-white" : "text-slate-400 hover:text-white hover:bg-slate-850"
                 }`}
-                title="Lounge Settings"
+                title="Lounge Connect"
               >
                 <Menu size={15} />
               </button>
@@ -774,49 +779,142 @@ export function LoungeDock() {
                   {/* SETTINGS OVERLAY */}
                   {showSettingsOverlay && (
                     <div className="p-3 text-slate-900 space-y-4">
-                      <div className="flex items-center justify-between pb-2 border-b border-stone-100">
-                        <span className="text-xs font-bold text-[#0F766E]">Lounge Settings</span>
-                        <button
-                          onClick={() => setShowSettingsOverlay(false)}
-                          className="text-stone-400 hover:text-stone-600 p-1"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold uppercase tracking-wide text-[#0F766E] mb-2 flex items-center gap-1.5">
-                          <Cloud size={14} />
-                          <span>Google Drive Backup</span>
-                        </h4>
-                        <p className="text-[10px] text-stone-500 font-medium mb-3 leading-relaxed">
-                          All messages are delivered in real-time and deleted from Rovvy servers. You can back up messages to your own Google Drive.
-                        </p>
+                      {settingsScreen === "menu" ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+                            <div>
+                              <p className="text-xs font-bold text-[#0F766E]">Connect</p>
+                              <p className="text-[10px] text-stone-500 font-medium">
+                                {currentUser?.full_name?.trim() || "Travel Hub User"}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => setShowSettingsOverlay(false)}
+                              className="text-stone-400 hover:text-stone-600 p-1"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
 
-                        <label className="block text-[11px] font-bold text-stone-600 mb-1">
-                          Backup Interval
-                        </label>
-                        <select
-                          value={backupInterval}
-                          onChange={(e) => updateSettings(e.target.value, wifiOnly)}
-                          className="w-full text-xs border border-stone-250 p-2 rounded-lg outline-none focus:border-[#0F766E] text-slate-900 font-semibold mb-3 bg-white"
-                        >
-                          <option value="6h">Every 6 Hours</option>
-                          <option value="12h">Every 12 Hours</option>
-                          <option value="24h">Daily (24 Hours)</option>
-                        </select>
+                          <nav className="flex flex-col text-xs font-semibold space-y-1">
+                            <button
+                              type="button"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] transition-colors"
+                              onClick={() => {
+                                setShowSettingsOverlay(false);
+                                setShowNewChatOverlay(true);
+                              }}
+                            >
+                              New chat
+                            </button>
+                            <button
+                              type="button"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] transition-colors"
+                              onClick={() => {
+                                setShowSettingsOverlay(false);
+                                setShowNewGroupModal(true);
+                              }}
+                            >
+                              New group
+                            </button>
+                            <button
+                              type="button"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] transition-colors"
+                              onClick={() => {
+                                setShowSettingsOverlay(false);
+                                setShowNewChatOverlay(true);
+                              }}
+                            >
+                              Contacts
+                            </button>
+                            <button
+                              type="button"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] transition-colors"
+                              onClick={() => {
+                                alert("Linked devices coming soon");
+                              }}
+                            >
+                              Linked devices
+                            </button>
+                            <button
+                              type="button"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] transition-colors"
+                              onClick={() => {
+                                alert("Starred messages coming soon");
+                              }}
+                            >
+                              Starred
+                            </button>
 
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-stone-600">
-                            Back up on Wi-Fi Only
-                          </span>
-                          <input
-                            type="checkbox"
-                            checked={wifiOnly}
-                            onChange={(e) => updateSettings(backupInterval, e.target.checked)}
-                            className="h-4 w-4 text-[#0F766E] focus:ring-[#0F766E] border-stone-300 rounded"
-                          />
+                            <div className="h-px bg-stone-100 my-1" />
+
+                            <button
+                              type="button"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] font-bold transition-colors"
+                              onClick={() => {
+                                setSettingsScreen("settings");
+                              }}
+                            >
+                              Settings
+                            </button>
+                          </nav>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => setSettingsScreen("menu")}
+                                className="text-stone-400 hover:text-stone-600 p-0.5 rounded-full hover:bg-stone-50"
+                                title="Back to Connect Menu"
+                              >
+                                <ChevronLeft size={16} className="text-[#0F766E]" />
+                              </button>
+                              <span className="text-xs font-bold text-[#0F766E]">Lounge Settings</span>
+                            </div>
+                            <button
+                              onClick={() => setShowSettingsOverlay(false)}
+                              className="text-stone-400 hover:text-stone-600 p-1"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-bold uppercase tracking-wide text-[#0F766E] mb-2 flex items-center gap-1.5">
+                              <Cloud size={14} />
+                              <span>Google Drive Backup</span>
+                            </h4>
+                            <p className="text-[10px] text-stone-500 font-medium mb-3 leading-relaxed">
+                              All messages are delivered in real-time and deleted from Rovvy servers. You can back up messages to your own Google Drive.
+                            </p>
+
+                            <label className="block text-[11px] font-bold text-stone-600 mb-1">
+                              Backup Interval
+                            </label>
+                            <select
+                              value={backupInterval}
+                              onChange={(e) => updateSettings(e.target.value, wifiOnly)}
+                              className="w-full text-xs border border-stone-250 p-2 rounded-lg outline-none focus:border-[#0F766E] text-slate-900 font-semibold mb-3 bg-white"
+                            >
+                              <option value="6h">Every 6 Hours</option>
+                              <option value="12h">Every 12 Hours</option>
+                              <option value="24h">Daily (24 Hours)</option>
+                            </select>
+
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-stone-600">
+                                Back up on Wi-Fi Only
+                              </span>
+                              <input
+                                type="checkbox"
+                                checked={wifiOnly}
+                                onChange={(e) => updateSettings(backupInterval, e.target.checked)}
+                                className="h-4 w-4 text-[#0F766E] focus:ring-[#0F766E] border-stone-300 rounded"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
