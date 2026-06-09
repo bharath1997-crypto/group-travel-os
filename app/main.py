@@ -330,6 +330,7 @@ def _register_routes(app: FastAPI) -> None:
     from app.routes.explore import router as explore_content_router
     from app.routes.explorer import router as explorer_feed_router
     from app.routes.admin import router as admin_router
+    from app.routes.unified_events import router as unified_events_router
 
     from app.routes.lounge import router as lounge_router
     app.include_router(lounge_router, prefix="/api/v1")
@@ -344,6 +345,11 @@ def _register_routes(app: FastAPI) -> None:
     app.include_router(explorer_router, prefix="/api/v1", tags=["explorer"])
     app.include_router(wayra_router, prefix="/api/v1", tags=["wayra"])
     app.include_router(admin_router, prefix="/api/v1")
+    app.include_router(
+        unified_events_router,
+        prefix="/api/v1",
+        tags=["unified-events"],
+    )
 
 
 

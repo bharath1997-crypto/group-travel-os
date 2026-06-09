@@ -5,13 +5,19 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, BackgroundTasks, status
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 
 from app.jobs.daily_events_fetch import run_daily_events_fetch
 from app.jobs.foursquare_fetch import request_foursquare_fetch_cancel, run_foursquare_fetch
 from app.jobs.job_control import foursquare_job, osm_job
 from app.jobs.osm_fetch import request_osm_fetch_cancel, run_osm_fetch
+from app.services.ticketmaster_migration_service \
+    import migrate_ticketmaster_to_unified
+from app.utils.auth import get_current_user
+from app.utils.database import get_db
+from app.utils.exceptions import AppException
 
 logger = logging.getLogger(__name__)
 
@@ -92,3 +98,17 @@ def cancel_osm_fetch() -> dict[str, str]:
     request_osm_fetch_cancel()
     logger.info("OSM fetch cancellation requested")
     return {"status": "success", "message": "OSM fetch cancellation requested."}
+
+
+@router.post("/migrate-events")
+async def run_migration(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    if not current_user.is_admin:
+        AppException.forbidden("Admin privileges required")
+    result = await migrate_ticketmaster_to_unified(
+        db=db,
+        north_america_only=True
+    )
+    return result
