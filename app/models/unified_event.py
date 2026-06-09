@@ -1,10 +1,11 @@
 from sqlalchemy import (
     Column, String, Float, Boolean,
-    DateTime, Text, Index
+    DateTime, Text
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from app.utils.database import Base
 import uuid
+from datetime import datetime
 
 class UnifiedEvent(Base):
     __tablename__ = "unified_events"
@@ -36,7 +37,10 @@ class UnifiedEvent(Base):
     min_price = Column(Float)
     max_price = Column(Float)
     currency = Column(String(10), default='USD')
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
-    last_synced_at = Column(DateTime)
+    created_at = Column(DateTime,
+        default=datetime.utcnow)
+    updated_at = Column(DateTime,
+        default=datetime.utcnow)
+    last_synced_at = Column(DateTime,
+        default=datetime.utcnow)
     dedup_hash = Column(String(64), unique=True)

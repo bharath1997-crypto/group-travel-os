@@ -5,6 +5,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from app.utils.database import Base
 import uuid
+from datetime import datetime
 
 class EventProvider(Base):
     __tablename__ = "event_providers"
@@ -26,4 +27,5 @@ class EventProvider(Base):
         default='available')
     tickets_remaining = Column(Integer)
     raw_data = Column(JSONB)
-    last_updated = Column(DateTime)
+    last_updated = Column(DateTime,
+        default=datetime.utcnow)

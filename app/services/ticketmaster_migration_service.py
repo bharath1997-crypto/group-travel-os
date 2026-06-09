@@ -1,7 +1,6 @@
 import logging
-from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import select, text
+from sqlalchemy import text
 from app.services.event_dedup_service \
     import EventDedupService
 
@@ -51,6 +50,11 @@ def _build_explore_events_query(db: Session) -> str:
         if "source_name" in columns
         else "TRUE"
     )
+    future_filter = (
+        f"{start_expr} >= NOW()"
+        if start_expr != "NULL"
+        else "TRUE"
+    )
 
     return f"""
         SELECT
@@ -80,16 +84,18 @@ def _build_explore_events_query(db: Session) -> str:
         FROM explore_events
         WHERE {status_filter}
           AND {source_filter}
+          AND {future_filter}
         ORDER BY {start_expr} ASC NULLS LAST
     """
 
 
 async def migrate_ticketmaster_to_unified(
     db: Session,
-    north_america_only: bool = True
+    north_america_only: bool = True,
+    dry_run: bool = False
 ) -> dict:
 
-    # Check if explore_events table exists
+    # Verify source table exists
     result = db.execute(text("""
         SELECT EXISTS (
             SELECT FROM information_schema.tables
@@ -98,11 +104,10 @@ async def migrate_ticketmaster_to_unified(
     """))
     if not result.scalar():
         return {
-            "error": "explore_events table not found",
+            "error": "explore_events not found",
             "migrated": 0
         }
 
-    # Fetch Ticketmaster events from explore_events
     rows = db.execute(text(_build_explore_events_query(db))).fetchall()
 
     migrated = 0
@@ -116,15 +121,19 @@ async def migrate_ticketmaster_to_unified(
                 row.country_code or 'US'
             ).upper()
 
-            # North America filter
             if north_america_only:
                 if country_code not in \
                         NORTH_AMERICA_CODES:
                     skipped_region += 1
                     continue
 
-            title = row.title or row.name or ""
+            title = row.title or \
+                getattr(row, 'name', '') or ""
             if not title.strip():
+                continue
+
+            if dry_run:
+                migrated += 1
                 continue
 
             event, created = EventDedupService\
@@ -133,20 +142,26 @@ async def migrate_ticketmaster_to_unified(
                     title=title,
                     city=row.city or "",
                     country_code=country_code,
-                    start_datetime=row.start_datetime,
+                    start_datetime=\
+                        row.start_datetime,
                     venue_name=row.venue_name,
-                    venue_address=row.venue_address,
+                    venue_address=\
+                        row.venue_address,
                     lat=row.lat,
                     lng=row.lng,
                     category=row.category,
                     image_url=row.image_url,
                     description=row.description,
-                    is_free=bool(row.is_free),
+                    is_free=bool(
+                        row.is_free or False
+                    ),
                     min_price=row.min_price,
                     max_price=row.max_price,
-                    currency=row.currency or 'USD',
+                    currency=\
+                        row.currency or 'USD',
                     timezone=row.timezone,
-                    state_province=row.state_province,
+                    state_province=\
+                        row.state_province,
                     country=row.country
                 )
 
@@ -159,11 +174,14 @@ async def migrate_ticketmaster_to_unified(
                     provider_url=row.url or "",
                     min_price=row.min_price,
                     max_price=row.max_price,
-                    currency=row.currency or 'USD',
+                    currency=\
+                        row.currency or 'USD',
                     availability="available",
                     price_label=(
-                        f"From ${row.min_price:.0f}"
-                        if row.min_price else "See site"
+                        f"From $"
+                        f"{row.min_price:.0f}"
+                        if row.min_price
+                        else "See site"
                     )
                 )
 
@@ -172,30 +190,30 @@ async def migrate_ticketmaster_to_unified(
             else:
                 skipped_duplicates += 1
 
-            # Commit every 500 rows
             if (migrated + skipped_duplicates) \
                     % 500 == 0:
                 db.commit()
                 logger.info(
-                    f"Progress: {migrated} migrated, "
+                    f"Progress: {migrated} "
+                    f"migrated, "
                     f"{skipped_duplicates} deduped"
                 )
 
         except Exception as e:
             logger.error(
-                f"Error migrating event "
-                f"{getattr(row, 'id', '?')}: {e}"
+                f"Error migrating event: {e}"
             )
             errors += 1
             continue
 
-    db.commit()
+    if not dry_run:
+        db.commit()
 
     return {
+        "dry_run": dry_run,
         "total_source_rows": len(rows),
         "migrated_new": migrated,
         "skipped_duplicates": skipped_duplicates,
         "skipped_other_regions": skipped_region,
-        "errors": errors,
-        "unified_events_created": migrated
+        "errors": errors
     }

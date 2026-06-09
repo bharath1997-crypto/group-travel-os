@@ -4,6 +4,9 @@ from datetime import datetime
 from rapidfuzz import fuzz
 from sqlalchemy.orm import Session
 from sqlalchemy import select, and_, func
+import logging
+
+logger = logging.getLogger(__name__)
 
 class EventDedupService:
 
@@ -11,8 +14,8 @@ class EventDedupService:
         'the', 'a', 'an', 'at', 'in', 'on', 'of',
         'presents', 'featuring', 'feat', 'ft',
         'official', 'live', 'concert', 'show',
-        'tour', 'event', 'festival', '2024',
-        '2025', '2026', '2027'
+        'tour', 'event', 'festival',
+        '2024', '2025', '2026', '2027'
     }
 
     @staticmethod
@@ -21,32 +24,33 @@ class EventDedupService:
             return ""
         t = title.lower().strip()
         t = re.sub(r'[^\w\s]', ' ', t)
-        words = t.split()
         words = [
-            w for w in words
+            w for w in t.split()
             if w not in EventDedupService.STOP_WORDS
         ]
-        t = ' '.join(words)
-        t = re.sub(r'\s+', ' ', t).strip()
-        return t
+        return re.sub(r'\s+', ' ',
+            ' '.join(words)).strip()
 
     @staticmethod
     def generate_dedup_hash(
         title: str,
         city: str,
+        venue_name: str,
         start_datetime: datetime
     ) -> str:
         normalized = EventDedupService\
             .normalize_title(title)
-        city_clean = city.lower().strip() \
-            if city else "unknown"
+        city_clean = (city or "unknown")\
+            .lower().strip()
+        venue_clean = (venue_name or "")\
+            .lower().strip()[:50]
         date_str = start_datetime\
             .strftime("%Y-%m-%d") \
             if start_datetime else "unknown"
-        key = f"{normalized}|{city_clean}|{date_str}"
+        key = f"{normalized}|{city_clean}" \
+              f"|{venue_clean}|{date_str}"
         return hashlib.sha256(
-            key.encode()
-        ).hexdigest()
+            key.encode()).hexdigest()
 
     @staticmethod
     def find_or_create_event(
@@ -69,12 +73,16 @@ class EventDedupService:
         timezone: str = None,
         state_province: str = None,
         country: str = None
-    ):
-        from app.models.unified_event import UnifiedEvent
+    ) -> tuple:
+        from app.models.unified_event \
+            import UnifiedEvent
 
         dedup_hash = EventDedupService\
             .generate_dedup_hash(
-                title, city or "", start_datetime
+                title,
+                city or "",
+                venue_name or "",
+                start_datetime
             )
 
         # Fast path: exact hash match
@@ -89,12 +97,12 @@ class EventDedupService:
         # Fuzzy match: same city + same date
         if start_datetime and city:
             day_start = start_datetime.replace(
-                hour=0, minute=0, second=0,
-                microsecond=0
+                hour=0, minute=0,
+                second=0, microsecond=0
             )
             day_end = start_datetime.replace(
-                hour=23, minute=59, second=59,
-                microsecond=999999
+                hour=23, minute=59,
+                second=59, microsecond=999999
             )
             stmt2 = select(UnifiedEvent).where(
                 and_(
@@ -113,14 +121,15 @@ class EventDedupService:
                 .normalize_title(title)
             for candidate in candidates:
                 norm_existing = EventDedupService\
-                    .normalize_title(candidate.title)
-                similarity = fuzz.ratio(
+                    .normalize_title(
+                        candidate.title
+                    )
+                if fuzz.ratio(
                     norm_new, norm_existing
-                )
-                if similarity >= 85:
+                ) >= 85:
                     return candidate, False
 
-        # Create new unified event
+        # Create new event
         now = datetime.utcnow()
         new_event = UnifiedEvent(
             title=title,
@@ -180,7 +189,6 @@ class EventDedupService:
         )
         existing = db.execute(stmt)\
             .scalar_one_or_none()
-
         now = datetime.utcnow()
 
         if existing:
@@ -189,7 +197,8 @@ class EventDedupService:
             existing.availability = availability
             existing.last_updated = now
             if affiliate_url:
-                existing.affiliate_url = affiliate_url
+                existing.affiliate_url = \
+                    affiliate_url
             if price_label:
                 existing.price_label = price_label
             return existing

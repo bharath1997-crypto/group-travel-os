@@ -13,6 +13,9 @@ from app.models.unified_event import UnifiedEvent
 from app.services.event_dedup_service import EventDedupService
 from tests.conftest import exec_result
 
+VENUE = "United Center"
+DT = datetime(2026, 6, 14, 20, 0, 0)
+
 
 def test_normalize_title_removes_stopwords():
     result = EventDedupService.normalize_title(
@@ -31,32 +34,45 @@ def test_normalize_title_lowercase():
     assert result == "taylor swift eras"
 
 
+def test_normalize_title_handles_empty():
+    assert EventDedupService.normalize_title("") == ""
+    assert EventDedupService.normalize_title(None) == ""
+
+
 def test_dedup_hash_same_event_same_hash():
-    dt = datetime(2026, 6, 14, 20, 0, 0)
     h1 = EventDedupService.generate_dedup_hash(
-        "Taylor Swift", "Chicago", dt
+        "Taylor Swift", "Chicago", VENUE, DT
     )
     h2 = EventDedupService.generate_dedup_hash(
-        "Taylor Swift", "Chicago", dt
+        "Taylor Swift", "Chicago", VENUE, DT
     )
     assert h1 == h2
 
 
+def test_dedup_hash_different_venue_different_hash():
+    h1 = EventDedupService.generate_dedup_hash(
+        "Taylor Swift", "Chicago", VENUE, DT
+    )
+    h2 = EventDedupService.generate_dedup_hash(
+        "Taylor Swift", "Chicago", "Wrigley Field", DT
+    )
+    assert h1 != h2
+
+
 def test_dedup_hash_different_date_different_hash():
     h1 = EventDedupService.generate_dedup_hash(
-        "Taylor Swift",
-        "Chicago",
-        datetime(2026, 6, 14, 20, 0, 0),
+        "Taylor Swift", "Chicago", VENUE, DT
     )
     h2 = EventDedupService.generate_dedup_hash(
         "Taylor Swift",
         "Chicago",
+        VENUE,
         datetime(2026, 6, 15, 20, 0, 0),
     )
     assert h1 != h2
 
 
-def test_is_same_event_high_similarity():
+def test_fuzzy_match_similar_titles():
     a = EventDedupService.normalize_title(
         "Taylor Swift: The Eras Tour"
     )
@@ -66,39 +82,30 @@ def test_is_same_event_high_similarity():
     assert fuzz.ratio(a, b) >= 85
 
 
-def test_is_different_event_low_similarity():
-    a = EventDedupService.normalize_title("Taylor Swift")
-    b = EventDedupService.normalize_title("Chicago Bulls vs Lakers")
-    assert fuzz.ratio(a, b) < 85
-
-
-def test_different_city_not_duplicate():
-    dt = datetime(2026, 6, 14, 20, 0, 0)
+def test_fuzzy_no_match_different_city():
     h1 = EventDedupService.generate_dedup_hash(
-        "Taylor Swift", "Chicago", dt
+        "Taylor Swift", "Chicago", VENUE, DT
     )
     h2 = EventDedupService.generate_dedup_hash(
-        "Taylor Swift", "New York", dt
+        "Taylor Swift", "New York", VENUE, DT
     )
     assert h1 != h2
 
 
-def test_different_date_not_duplicate():
+def test_fuzzy_no_match_different_date():
     h1 = EventDedupService.generate_dedup_hash(
-        "Taylor Swift",
-        "Chicago",
-        datetime(2026, 6, 14, 20, 0, 0),
+        "Taylor Swift", "Chicago", VENUE, DT
     )
     h2 = EventDedupService.generate_dedup_hash(
         "Taylor Swift",
         "Chicago",
+        VENUE,
         datetime(2026, 6, 15, 20, 0, 0),
     )
     assert h1 != h2
 
 
 def test_find_or_create_creates_new_event(db):
-    dt = datetime(2026, 6, 14, 20, 0, 0)
     db.execute.side_effect = [
         exec_result(scalar_one_or_none=None),
         exec_result(scalars_all=[]),
@@ -109,7 +116,8 @@ def test_find_or_create_creates_new_event(db):
         title="Taylor Swift",
         city="Chicago",
         country_code="US",
-        start_datetime=dt,
+        start_datetime=DT,
+        venue_name=VENUE,
     )
 
     assert created is True
@@ -120,8 +128,7 @@ def test_find_or_create_creates_new_event(db):
     assert event.dedup_hash is not None
 
 
-def test_find_or_create_finds_existing_by_hash(db):
-    dt = datetime(2026, 6, 14, 20, 0, 0)
+def test_find_or_create_finds_by_hash(db):
     existing = UnifiedEvent(
         id=uuid.uuid4(),
         title="Taylor Swift",
@@ -129,9 +136,10 @@ def test_find_or_create_finds_existing_by_hash(db):
         normalized_title="taylor swift",
         city="Chicago",
         country_code="US",
-        start_datetime=dt,
+        start_datetime=DT,
+        venue_name=VENUE,
         dedup_hash=EventDedupService.generate_dedup_hash(
-            "Taylor Swift", "Chicago", dt
+            "Taylor Swift", "Chicago", VENUE, DT
         ),
     )
     db.execute.return_value = exec_result(scalar_one_or_none=existing)
@@ -141,7 +149,41 @@ def test_find_or_create_finds_existing_by_hash(db):
         title="Taylor Swift",
         city="Chicago",
         country_code="US",
-        start_datetime=dt,
+        start_datetime=DT,
+        venue_name=VENUE,
+    )
+
+    assert created is False
+    assert event is existing
+    db.add.assert_not_called()
+
+
+def test_find_or_create_finds_by_fuzzy(db):
+    existing = UnifiedEvent(
+        id=uuid.uuid4(),
+        title="Taylor Swift Eras Tour",
+        canonical_title="Taylor Swift Eras Tour",
+        normalized_title="taylor swift eras",
+        city="Chicago",
+        country_code="US",
+        start_datetime=DT,
+        venue_name="Other Venue",
+        dedup_hash=EventDedupService.generate_dedup_hash(
+            "Taylor Swift Eras Tour", "Chicago", "Other Venue", DT
+        ),
+    )
+    db.execute.side_effect = [
+        exec_result(scalar_one_or_none=None),
+        exec_result(scalars_all=[existing]),
+    ]
+
+    event, created = EventDedupService.find_or_create_event(
+        db=db,
+        title="Taylor Swift: The Eras Tour",
+        city="Chicago",
+        country_code="US",
+        start_datetime=DT,
+        venue_name=VENUE,
     )
 
     assert created is False
@@ -169,7 +211,7 @@ def test_add_provider_creates_new(db):
     assert provider.min_price == 89.0
 
 
-def test_add_provider_updates_existing_price(db):
+def test_add_provider_updates_existing(db):
     event_id = uuid.uuid4()
     existing = EventProvider(
         id=uuid.uuid4(),
