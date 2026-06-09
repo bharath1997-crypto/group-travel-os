@@ -65,10 +65,16 @@ async def search_unified_events(
             .where(
                 EventProvider.event_id == event.id
             ).order_by(
-                EventProvider.min_price.asc()
+                EventProvider.min_price.asc().nulls_last()
             )
         providers = db.execute(providers_stmt)\
             .scalars().all()
+
+        provider_prices = [
+            p.min_price for p in providers
+            if p.min_price is not None
+        ]
+        cheapest_price = min(provider_prices) if provider_prices else None
 
         result.append({
             "id": str(event.id),
@@ -86,6 +92,7 @@ async def search_unified_events(
             "image_url": event.image_url,
             "is_free": event.is_free,
             "min_price": event.min_price,
+            "cheapest_price": cheapest_price,
             "currency": event.currency or "USD",
             "providers": [
                 {

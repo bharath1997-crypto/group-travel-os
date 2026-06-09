@@ -74,6 +74,16 @@ async def lifespan(app: FastAPI):
         id="cart_notifications",
         replace_existing=True
     )
+    from app.jobs.enrich_event_prices import run_price_enrichment_sync
+
+    scheduler.add_job(
+        run_price_enrichment_sync,
+        trigger="cron",
+        hour=4,
+        minute=0,
+        id="price_enrichment",
+        replace_existing=True,
+    )
 
     yield
 
