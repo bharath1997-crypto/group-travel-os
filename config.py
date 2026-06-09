@@ -114,6 +114,14 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="FOURSQUARE_API_KEY",
     )
+    viator_api_key: str = Field(
+        default="",
+        validation_alias="VIATOR_API_KEY",
+    )
+    viator_partner_id: str = Field(
+        default="P00305012",
+        validation_alias="VIATOR_PARTNER_ID",
+    )
 
     @field_validator("foursquare_api_key", mode="before")
     @classmethod

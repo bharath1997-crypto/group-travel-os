@@ -31,6 +31,15 @@ async def lifespan(app: FastAPI):
     db_ok = check_db_connection()
     if db_ok:
         logger.info("Database connection verified")
+        from app.services.scraper_framework import ScraperFramework
+        from app.utils.database import SessionLocal
+
+        _health_db = SessionLocal()
+        try:
+            ScraperFramework.get_or_create_health(_health_db, "viator")
+            _health_db.commit()
+        finally:
+            _health_db.close()
     else:
         # Log but don't crash — health endpoint will surface this
         logger.error("Database connection FAILED on startup — check DATABASE_URL in .env")
@@ -82,6 +91,16 @@ async def lifespan(app: FastAPI):
         hour=4,
         minute=0,
         id="price_enrichment",
+        replace_existing=True,
+    )
+    from app.jobs.viator_sync import run_viator_sync_sync
+
+    scheduler.add_job(
+        run_viator_sync_sync,
+        trigger="cron",
+        hour=3,
+        minute=0,
+        id="viator_sync",
         replace_existing=True,
     )
 

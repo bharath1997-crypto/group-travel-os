@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.models.scraper_health import ScraperHealth
 from app.services.ticketmaster_migration_service \
     import migrate_ticketmaster_to_unified
+from app.jobs.viator_sync import run_viator_sync
 from app.utils.auth import get_current_user
 from app.utils.database import get_db
 from app.utils.exceptions import AppException
@@ -50,6 +51,14 @@ async def run_migration(
             dry_run=False
         )
     return result
+
+
+@router.post("/viator/sync")
+async def viator_sync(
+    current_user=Depends(get_current_user),
+):
+    _require_admin(current_user)
+    return await run_viator_sync()
 
 
 @router.get("/scrapers/health")
