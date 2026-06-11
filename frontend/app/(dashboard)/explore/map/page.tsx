@@ -17,7 +17,7 @@ const ExploreMap = dynamic(
 
 export default function ExploreMapPage() {
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col bg-white">
+    <div style={{ height: "100vh", width: "100%", overflow: "hidden" }}>
       <ExploreMap />
     </div>
   );

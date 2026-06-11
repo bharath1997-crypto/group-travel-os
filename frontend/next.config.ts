@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
+  transpilePackages: ["maplibre-gl"],
   outputFileTracingRoot: path.resolve(__dirname, ".."),
   /** Pin Turbopack to this app when multiple lockfiles exist above this folder. */
   turbopack: {

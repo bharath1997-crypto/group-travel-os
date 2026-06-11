@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import {
   ArrowLeft,
   Loader2,
@@ -13,8 +14,6 @@ import {
 } from "lucide-react";
 
 import { type PlaceResult, useExploreMap } from "@/hooks/useExploreMap";
-
-import "maplibre-gl/dist/maplibre-gl.css";
 
 const CORAL = "#E94560";
 const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 };
@@ -92,7 +91,7 @@ function createMarkerElement(color: string): HTMLDivElement {
 }
 
 export function ExploreMap() {
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -153,10 +152,10 @@ export function ExploreMap() {
   }, [runFetch]);
 
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
+    if (!mapContainer.current || mapRef.current) return;
 
     const map = new maplibregl.Map({
-      container: mapContainerRef.current,
+      container: mapContainer.current,
       style: {
         version: 8,
         sources: {
@@ -299,8 +298,22 @@ export function ExploreMap() {
   };
 
   return (
-    <div className="relative h-full min-h-0 w-full bg-white">
-      <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" />
+    <div
+      className="relative w-full bg-white"
+      style={{
+        width: "100%",
+        height: "calc(100vh - 120px)",
+        minHeight: "500px",
+      }}
+    >
+      <div
+        ref={mapContainer}
+        style={{
+          width: "100%",
+          height: "calc(100vh - 120px)",
+          minHeight: "500px",
+        }}
+      />
 
       <div className="pointer-events-none absolute inset-0 z-10 flex flex-col">
         <div className="flex items-start justify-between gap-2 p-3">
