@@ -1,0 +1,326 @@
+"""Tests for Explorer v2 PostGIS places API."""
+from __future__ import annotations
+
+import uuid
+from unittest.mock import MagicMock
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app.main import app
+from app.schemas.explorer_v2 import ExploreNearbyResponse, ExploreViewportResponse, PlaceResult
+from app.services.explorer.explorer_v2_service import ExplorerV2Service
+from app.utils.auth import get_current_user
+
+client = TestClient(app)
+
+
+def _mock_user() -> MagicMock:
+    user = MagicMock()
+    user.id = uuid.UUID("00000000-0000-0000-0000-000000000042")
+    user.email = "explorer-v2@example.com"
+    user.full_name = "Explorer V2 Tester"
+    user.is_active = True
+    return user
+
+
+def _sample_row(place_id: uuid.UUID | None = None, distance_m: float | None = 120.5) -> dict:
+    pid = place_id or uuid.uuid4()
+    return {
+        "id": pid,
+        "name": "Test Cafe",
+        "category": "restaurant",
+        "subcategory": "cafe",
+        "lat": 40.7128,
+        "lng": -74.0060,
+        "address": {"city": "New York", "country": "US"},
+        "website": "https://example.com",
+        "phone": "+1-555-0100",
+        "opening_hours": "Mo-Sa 09:00-17:00",
+        "photo_url": None,
+        "source": "osm",
+        "distance_m": distance_m,
+    }
+
+
+@pytest.fixture
+def auth_header():
+    app.dependency_overrides[get_current_user] = _mock_user
+    yield {}
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_get_nearby_cache_miss_queries_db_and_writes_cache(monkeypatch):
+    db = MagicMock()
+    place_id = uuid.uuid4()
+    row = _sample_row(place_id)
+
+    execute_result = MagicMock()
+    execute_result.mappings.return_value.all.return_value = [row]
+    db.execute.return_value = execute_result
+
+    set_cache = MagicMock()
+    monkeypatch.setattr(
+        "app.services.explorer.explorer_v2_service.explorer_service.get_cache",
+        lambda _db, _key: None,
+    )
+    monkeypatch.setattr(
+        "app.services.explorer.explorer_v2_service.explorer_service.set_cache",
+        set_cache,
+    )
+
+    service = ExplorerV2Service()
+    result = service.get_nearby(
+        lat=40.7128,
+        lng=-74.0060,
+        radius_m=5000,
+        categories=None,
+        limit=50,
+        db=db,
+    )
+
+    assert result.cached is False
+    assert result.total == 1
+    assert result.places[0].name == "Test Cafe"
+    assert result.places[0].distance_m == 120.5
+    db.execute.assert_called_once()
+    set_cache.assert_called_once()
+    cache_args = set_cache.call_args
+    assert cache_args[0][3] == [str(place_id)]
+
+
+def test_get_nearby_cache_hit_skips_spatial_query(monkeypatch):
+    db = MagicMock()
+    place_id = uuid.uuid4()
+    row = _sample_row(place_id)
+
+    execute_result = MagicMock()
+    execute_result.mappings.return_value.all.return_value = [row]
+    db.execute.return_value = execute_result
+
+    monkeypatch.setattr(
+        "app.services.explorer.explorer_v2_service.explorer_service.get_cache",
+        lambda _db, _key: [str(place_id)],
+    )
+    set_cache = MagicMock()
+    monkeypatch.setattr(
+        "app.services.explorer.explorer_v2_service.explorer_service.set_cache",
+        set_cache,
+    )
+
+    service = ExplorerV2Service()
+    result = service.get_nearby(
+        lat=40.7128,
+        lng=-74.0060,
+        radius_m=5000,
+        categories=None,
+        limit=50,
+        db=db,
+    )
+
+    assert result.cached is True
+    assert result.total == 1
+    set_cache.assert_not_called()
+    sql = str(db.execute.call_args[0][0])
+    assert "ST_DWithin" not in sql
+
+
+def test_get_viewport_cache_miss_queries_db(monkeypatch):
+    db = MagicMock()
+    row = _sample_row(distance_m=None)
+
+    execute_result = MagicMock()
+    execute_result.mappings.return_value.all.return_value = [row]
+    db.execute.return_value = execute_result
+
+    set_cache = MagicMock()
+    monkeypatch.setattr(
+        "app.services.explorer.explorer_v2_service.explorer_service.get_cache",
+        lambda _db, _key: None,
+    )
+    monkeypatch.setattr(
+        "app.services.explorer.explorer_v2_service.explorer_service.set_cache",
+        set_cache,
+    )
+
+    service = ExplorerV2Service()
+    result = service.get_viewport(
+        sw_lat=40.0,
+        sw_lng=-75.0,
+        ne_lat=41.0,
+        ne_lng=-74.0,
+        categories=None,
+        limit=100,
+        db=db,
+    )
+
+    assert result.cached is False
+    assert result.total == 1
+    assert result.places[0].distance_m is None
+    sql = str(db.execute.call_args[0][0])
+    assert "ST_Within" in sql
+    set_cache.assert_called_once()
+
+
+def test_get_viewport_cache_hit(monkeypatch):
+    db = MagicMock()
+    place_id = uuid.uuid4()
+    row = _sample_row(place_id, distance_m=None)
+
+    execute_result = MagicMock()
+    execute_result.mappings.return_value.all.return_value = [row]
+    db.execute.return_value = execute_result
+
+    monkeypatch.setattr(
+        "app.services.explorer.explorer_v2_service.explorer_service.get_cache",
+        lambda _db, _key: [str(place_id)],
+    )
+    monkeypatch.setattr(
+        "app.services.explorer.explorer_v2_service.explorer_service.set_cache",
+        MagicMock(),
+    )
+
+    service = ExplorerV2Service()
+    result = service.get_viewport(
+        sw_lat=40.0,
+        sw_lng=-75.0,
+        ne_lat=41.0,
+        ne_lng=-74.0,
+        categories=None,
+        limit=100,
+        db=db,
+    )
+
+    assert result.cached is True
+    sql = str(db.execute.call_args[0][0])
+    assert "ST_Within" not in sql
+
+
+def test_get_nearby_applies_categories_filter(monkeypatch):
+    db = MagicMock()
+    execute_result = MagicMock()
+    execute_result.mappings.return_value.all.return_value = []
+    db.execute.return_value = execute_result
+
+    monkeypatch.setattr(
+        "app.services.explorer.explorer_v2_service.explorer_service.get_cache",
+        lambda _db, _key: None,
+    )
+    monkeypatch.setattr(
+        "app.services.explorer.explorer_v2_service.explorer_service.set_cache",
+        MagicMock(),
+    )
+
+    service = ExplorerV2Service()
+    service.get_nearby(
+        lat=40.0,
+        lng=-74.0,
+        radius_m=3000,
+        categories=["restaurant", "park"],
+        limit=25,
+        db=db,
+    )
+
+    sql = str(db.execute.call_args[0][0])
+    params = db.execute.call_args[0][1]
+    assert "category = ANY" in sql
+    assert params["categories"] == ["restaurant", "park"]
+
+
+def test_nearby_radius_exceeds_max_returns_400(auth_header):
+    response = client.get(
+        "/api/v2/explorer/nearby",
+        params={"lat": 40.7, "lng": -74.0, "radius_m": 60000},
+    )
+    assert response.status_code == 400
+
+
+def test_viewport_invalid_bbox_returns_400(auth_header):
+    response = client.get(
+        "/api/v2/explorer/viewport",
+        params={
+            "sw_lat": 41.0,
+            "sw_lng": -75.0,
+            "ne_lat": 40.0,
+            "ne_lng": -74.0,
+        },
+    )
+    assert response.status_code == 400
+
+
+def test_nearby_requires_auth_401():
+    response = client.get(
+        "/api/v2/explorer/nearby",
+        params={"lat": 40.7, "lng": -74.0},
+    )
+    assert response.status_code == 401
+
+
+def test_nearby_endpoint_returns_service_response(auth_header, monkeypatch):
+    place = PlaceResult(
+        id=uuid.uuid4(),
+        name="Router Place",
+        category="park",
+        subcategory="playground",
+        lat=40.0,
+        lng=-74.0,
+        address=None,
+        website=None,
+        phone=None,
+        opening_hours=None,
+        photo_url=None,
+        source="osm",
+        distance_m=50.0,
+    )
+    mock_response = ExploreNearbyResponse(places=[place], cached=False, total=1)
+    monkeypatch.setattr(
+        "app.routers.explorer_v2.explorer_v2_service.get_nearby",
+        MagicMock(return_value=mock_response),
+    )
+
+    response = client.get(
+        "/api/v2/explorer/nearby",
+        params={"lat": 40.0, "lng": -74.0},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["cached"] is False
+    assert body["total"] == 1
+    assert body["places"][0]["name"] == "Router Place"
+
+
+def test_viewport_endpoint_returns_service_response(auth_header, monkeypatch):
+    place = PlaceResult(
+        id=uuid.uuid4(),
+        name="Viewport Place",
+        category="landmark",
+        subcategory="museum",
+        lat=40.5,
+        lng=-74.5,
+        address=None,
+        website=None,
+        phone=None,
+        opening_hours=None,
+        photo_url=None,
+        source="osm",
+        distance_m=None,
+    )
+    mock_response = ExploreViewportResponse(places=[place], cached=True, total=1)
+    monkeypatch.setattr(
+        "app.routers.explorer_v2.explorer_v2_service.get_viewport",
+        MagicMock(return_value=mock_response),
+    )
+
+    response = client.get(
+        "/api/v2/explorer/viewport",
+        params={
+            "sw_lat": 40.0,
+            "sw_lng": -75.0,
+            "ne_lat": 41.0,
+            "ne_lng": -74.0,
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["cached"] is True
+    assert body["places"][0]["name"] == "Viewport Place"

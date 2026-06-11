@@ -386,6 +386,10 @@ def _register_routes(app: FastAPI) -> None:
         tags=["unified-experiences"],
     )
 
+    from app.routers.explorer_v2 import router as explorer_v2_router
+
+    app.include_router(explorer_v2_router, prefix="/api/v2/explorer")
+
 
 
 # ── App instance ──────────────────────────────────────────────────────────────
