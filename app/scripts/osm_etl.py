@@ -22,6 +22,10 @@ from app.db.session import SessionLocal
 logger = logging.getLogger(__name__)
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+OVERPASS_HTTP_HEADERS = {
+    "User-Agent": "Rovvy/1.0 (group travel app; contact@rovvy.app)",
+    "Accept": "application/json",
+}
 TILE_STEP_DEGREES = 5.0
 TILE_SLEEP_SECONDS = 10
 RETRY_WAIT_SECONDS = 30
@@ -76,19 +80,19 @@ ON CONFLICT (osm_id) DO UPDATE SET
 
 def build_overpass_query(sw_lat: float, sw_lng: float, ne_lat: float, ne_lng: float) -> str:
     """Build Overpass QL for a bounding-box tile."""
-    return f"""
-[out:json][timeout:60];
-(
-  node["amenity"~"restaurant|cafe|bar|pub|nightclub|cinema|theatre|fast_food|food_court"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});
-  node["leisure"~"park|playground|sports_centre|fitness_centre|golf_course|marina|water_park"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});
-  node["tourism"~"attraction|museum|viewpoint|artwork|gallery|zoo|theme_park"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});
-  node["shop"~"mall|department_store|supermarket|marketplace"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});
-  node["natural"~"beach|peak|waterfall|hot_spring|cave_entrance"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});
-  node["historic"~"monument|memorial|castle|ruins|landmark"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});
-  node["amenity"~"nightclub|casino|bowling_alley|arts_centre"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});
-);
-out body;
-"""
+    return (
+        "[out:json][timeout:60];\n"
+        f"(\n"
+        f"  node[\"amenity\"~\"restaurant|cafe|bar|pub|nightclub|cinema|theatre|fast_food|food_court\"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});\n"
+        f"  node[\"leisure\"~\"park|playground|sports_centre|fitness_centre|golf_course|marina|water_park\"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});\n"
+        f"  node[\"tourism\"~\"attraction|museum|viewpoint|artwork|gallery|zoo|theme_park\"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});\n"
+        f"  node[\"shop\"~\"mall|department_store|supermarket|marketplace\"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});\n"
+        f"  node[\"natural\"~\"beach|peak|waterfall|hot_spring|cave_entrance\"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});\n"
+        f"  node[\"historic\"~\"monument|memorial|castle|ruins|landmark\"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});\n"
+        f"  node[\"amenity\"~\"nightclub|casino|bowling_alley|arts_centre\"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});\n"
+        f");\n"
+        "out body;\n"
+    )
 
 
 def map_category(tags: dict[str, Any]) -> tuple[str, str] | None:
@@ -201,11 +205,15 @@ def fetch_overpass_tile(
     query = build_overpass_query(sw_lat, sw_lng, ne_lat, ne_lng)
     owns_client = client is None
     if owns_client:
-        client = httpx.Client(timeout=120.0)
+        client = httpx.Client(headers=OVERPASS_HTTP_HEADERS, timeout=90.0)
 
     try:
         for attempt in range(2):
-            response = client.post(OVERPASS_URL, content=query)
+            response = client.post(
+                OVERPASS_URL,
+                data={"data": query},
+                headers=OVERPASS_HTTP_HEADERS,
+            )
             if response.status_code in (429, 504) and attempt == 0:
                 logger.warning(
                     "Overpass %s for tile (%s,%s,%s,%s) — retrying in %ss",

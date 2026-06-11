@@ -119,6 +119,7 @@ def test_map_node_to_place_maps_fields():
 
 def test_build_overpass_query_contains_bbox():
     query = build_overpass_query(24.0, -125.0, 29.0, -120.0)
+    assert query.startswith("[out:json][timeout:60];")
     assert "24.0,-125.0,29.0,-120.0" in query
     assert "out body;" in query
 
