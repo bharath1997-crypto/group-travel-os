@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, timedelta
 
 import httpx
 
@@ -12,21 +11,24 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
-VIATOR_BASE_URL = "https://api.viator.com/partner"
-VIATOR_SANDBOX_URL = "https://api.sandbox.viator.com/partner"
+VIATOR_BASE_URL = "https://viatorapi.viator.com/service"
+VIATOR_PRODUCTS_SEARCH_URL = f"{VIATOR_BASE_URL}/search/products"
+
+# Viator destination IDs (New York = 684)
+CITY_DEST_IDS: dict[str, int] = {
+    "new york": 684,
+}
 
 
-def _api_base_url() -> str:
-    if settings.ENVIRONMENT == "development":
-        return VIATOR_SANDBOX_URL
-    return VIATOR_BASE_URL
+def _dest_id_for(location: str) -> int:
+    return CITY_DEST_IDS.get((location or "").lower().strip(), 684)
 
 
 def _viator_headers() -> dict[str, str]:
     return {
         "exp-api-key": settings.viator_api_key,
         "Accept-Language": "en-US",
-        "Accept": "application/json;version=2.0",
+        "Content-Type": "application/json",
     }
 
 
@@ -86,32 +88,19 @@ async def search_viator_experiences(
     if not (settings.viator_api_key or "").strip():
         return []
 
-    today = date.today()
-    end = today + timedelta(days=180)
+    dest_id = _dest_id_for(location)
     body = {
-        "filtering": {
-            "destination": location,
-            "lowestPrice": 0,
-            "highestPrice": 999999,
-            "startDate": today.isoformat(),
-            "endDate": end.isoformat(),
-        },
-        "sorting": {
-            "sort": "REVIEW_AVG_RATING",
-            "order": "DESC",
-        },
-        "pagination": {
-            "start": 1,
-            "count": limit,
-        },
-        "currency": "USD",
+        "destId": dest_id,
+        "currencyCode": "USD",
+        "topX": f"1-{limit}",
+        "sortOrder": "TOP_RATED",
     }
 
     db = SessionLocal()
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(
-                f"{_api_base_url()}/products/search",
+                VIATOR_PRODUCTS_SEARCH_URL,
                 headers=_viator_headers(),
                 json=body,
             )
@@ -157,3 +146,37 @@ async def search_viator_experiences(
         return []
     finally:
         db.close()
+
+
+async def test_viator_connection():
+    import httpx
+    from config import settings
+
+    key = settings.viator_api_key
+    print(f"Key length: {len(key)}")
+    print(f"Key first 8: {key[:8]}")
+
+    # Test 1: Product search (New York destId 684)
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            VIATOR_PRODUCTS_SEARCH_URL,
+            headers={
+                "exp-api-key": key,
+                "Accept-Language": "en-US",
+                "Content-Type": "application/json",
+            },
+            json={
+                "destId": 684,
+                "currencyCode": "USD",
+                "topX": "1-5",
+                "sortOrder": "TOP_RATED",
+            },
+            timeout=10.0,
+        )
+        print(f"Status: {r.status_code}")
+        print(f"Response: {r.text[:300]}")
+
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(test_viator_connection())

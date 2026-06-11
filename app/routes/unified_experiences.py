@@ -4,13 +4,13 @@ from sqlalchemy import select, and_, func
 from datetime import datetime
 from typing import Optional
 from app.utils.database import get_db
-from app.models.unified_event import UnifiedEvent
+from app.models.unified_experience import UnifiedExperience
 from app.models.event_provider import EventProvider
 
 router = APIRouter()
 
-@router.get("/unified-events/search")
-async def search_unified_events(
+@router.get("/unified-experiences/search")
+async def search_unified_experiences(
     city: Optional[str] = Query(None),
     country_code: Optional[str] = Query("US"),
     category: Optional[str] = Query(None),
@@ -21,40 +21,40 @@ async def search_unified_events(
     db: Session = Depends(get_db)
 ):
     filters = [
-        UnifiedEvent.status != 'cancelled',
-        UnifiedEvent.start_datetime >= datetime.utcnow()
+        UnifiedExperience.status != 'cancelled',
+        UnifiedExperience.start_datetime >= datetime.utcnow()
     ]
 
     if city:
         filters.append(
-            func.lower(UnifiedEvent.city)
+            func.lower(UnifiedExperience.city)
             == city.lower().strip()
         )
     if country_code:
         filters.append(
-            func.upper(UnifiedEvent.country_code)
+            func.upper(UnifiedExperience.country_code)
             == country_code.upper()
         )
     if category:
         filters.append(
-            func.lower(UnifiedEvent.category)
+            func.lower(UnifiedExperience.category)
             == category.lower()
         )
     if date_from:
         filters.append(
-            UnifiedEvent.start_datetime
+            UnifiedExperience.start_datetime
             >= datetime.fromisoformat(date_from)
         )
     if date_to:
         filters.append(
-            UnifiedEvent.start_datetime
+            UnifiedExperience.start_datetime
             <= datetime.fromisoformat(date_to)
         )
 
-    stmt = select(UnifiedEvent).where(
+    stmt = select(UnifiedExperience).where(
         and_(*filters)
     ).order_by(
-        UnifiedEvent.start_datetime.asc()
+        UnifiedExperience.start_datetime.asc()
     ).limit(limit).offset(offset)
 
     events = db.execute(stmt).scalars().all()

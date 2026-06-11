@@ -620,28 +620,28 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
   return (
     <div className="flex flex-col h-screen w-full overflow-hidden bg-[#FFFFFF] font-sans">
       
-      {/* 1. TOP BAR (background #0A0F1E) */}
-      <header className="bg-[#0A0F1E] h-16 px-4 flex items-center justify-between border-b border-slate-900 shrink-0 text-white select-none">
+      {/* 1. TOP BAR (background #F8FAFC) */}
+      <header className="bg-[#F8FAFC] h-16 px-4 flex items-center justify-between border-b border-slate-200 shrink-0 text-slate-900 select-none">
         <div className="flex items-center gap-3">
           {/* Pulsing red LIVE pill */}
-          <div className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/25 px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-red-500 tracking-wider">
+          <div className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/25 px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-red-600 tracking-wider">
             <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
             LIVE
           </div>
           <div className="min-w-0">
-            <h1 className="text-sm font-black tracking-tight truncate max-w-[160px] md:max-w-xs">{tripMeta?.title || "Active Trip"}</h1>
-            <span className="text-[10px] text-slate-400 font-bold block">Day 1 · Main Spot</span>
+            <h1 className="text-sm font-black tracking-tight truncate max-w-[160px] md:max-w-xs text-slate-900">{tripMeta?.title || "Active Trip"}</h1>
+            <span className="text-[10px] text-slate-500 font-bold block">Day 1 · Main Spot</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {isSoloMode ? (
-            <div className="hidden sm:flex items-center gap-1.5 bg-violet-500/15 border border-violet-500/30 px-3 py-1.5 rounded-full text-xs font-bold text-violet-300">
+            <div className="hidden sm:flex items-center gap-1.5 bg-violet-50 border border-violet-200 px-3 py-1.5 rounded-full text-xs font-bold text-violet-700">
               <Bot size={12} className="text-[#8B5CF6]" />
               <span>Solo LIVE</span>
             </div>
           ) : (
-            <div className="hidden sm:flex items-center gap-1.5 bg-slate-900/60 border border-slate-800 px-3 py-1.5 rounded-full text-xs font-bold text-slate-300">
+            <div className="hidden sm:flex items-center gap-1.5 bg-teal-50 border border-teal-200/50 px-3 py-1.5 rounded-full text-xs font-bold text-teal-700">
               <UsersIcon size={12} className="text-[#0F766E]" />
               <span>{activeMembersList.length} crew</span>
             </div>
@@ -649,14 +649,14 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
 
           {/* Time remaining chip */}
           {timerState?.is_active && (
-            <div className="flex items-center gap-1.5 bg-slate-900/60 border border-slate-800 px-3 py-1.5 rounded-full text-xs font-black text-teal-400 tabular-nums">
+            <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full text-xs font-black text-amber-700 tabular-nums">
               <Clock size={12} />
               <span>{countdownFormatted}</span>
             </div>
           )}
 
           {/* Offline chip */}
-          <div className="flex items-center gap-1.5 bg-slate-900/60 border border-slate-800 px-3 py-1.5 rounded-full text-xs font-bold text-slate-400">
+          <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-500">
             <WifiOff size={12} />
             <span className="hidden xs:inline">Offline Ready</span>
           </div>
@@ -665,7 +665,7 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
           {isAdmin && (
             <button
               onClick={handleEndSession}
-              className="flex items-center gap-1 px-3 py-1.5 bg-red-650 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition border border-red-600 shadow"
+              className="flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold transition border border-red-600 shadow-sm"
             >
               <LogOut size={12} />
               <span className="hidden md:inline">End Session</span>
@@ -695,8 +695,8 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
         </div>
       )}
 
-      {/* 2. NAVIGATION TABS (background #0F172A) */}
-      <nav className="bg-[#0F172A] h-12 flex border-b border-slate-800 shrink-0 select-none overflow-x-auto">
+      {/* 2. NAVIGATION TABS (background white) */}
+      <nav className="bg-white h-12 flex border-b border-slate-200 shrink-0 select-none overflow-x-auto">
         <div className="flex items-center justify-around w-full max-w-3xl mx-auto px-4 gap-1">
           {navTabs.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -714,7 +714,7 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
                     ? isSoloMode
                       ? "border-[#8B5CF6] text-[#8B5CF6]"
                       : "border-[#0F766E] text-[#0F766E]"
-                    : "border-transparent text-slate-400 hover:text-slate-200"
+                    : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
                 <IconComp size={16} />

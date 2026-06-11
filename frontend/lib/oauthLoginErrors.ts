@@ -5,7 +5,7 @@ import {
 } from "@/lib/oauth";
 
 export type OauthLoginAlert = {
-  variant: "warning" | "error";
+  variant: "warning" | "error" | "info";
   title?: string;
   body: string;
   showCreateAccount?: boolean;

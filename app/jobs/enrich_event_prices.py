@@ -1,4 +1,4 @@
-"""Enrich unified events with StubHub and SeatGeek prices."""
+"""Enrich unified experiences with StubHub and SeatGeek prices."""
 from __future__ import annotations
 
 import asyncio
@@ -9,7 +9,7 @@ from sqlalchemy import and_, exists, not_, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.event_provider import EventProvider
-from app.models.unified_event import UnifiedEvent
+from app.models.unified_experience import UnifiedExperience
 from app.services.event_dedup_service import EventDedupService
 from app.services.providers.seatgeek_scraper import scrape_seatgeek_prices
 from app.services.providers.stubhub_scraper import scrape_stubhub_prices
@@ -28,29 +28,29 @@ def get_events_needing_prices(
 
     has_stubhub = exists().where(
         and_(
-            EventProvider.event_id == UnifiedEvent.id,
+            EventProvider.event_id == UnifiedExperience.id,
             EventProvider.provider == "stubhub",
         )
     )
     has_seatgeek = exists().where(
         and_(
-            EventProvider.event_id == UnifiedEvent.id,
+            EventProvider.event_id == UnifiedExperience.id,
             EventProvider.provider == "seatgeek",
         )
     )
 
     stmt = (
-        select(UnifiedEvent)
+        select(UnifiedExperience)
         .where(
             and_(
-                UnifiedEvent.start_datetime >= datetime.utcnow(),
-                UnifiedEvent.start_datetime <= cutoff,
-                UnifiedEvent.status != "cancelled",
-                UnifiedEvent.country_code == "US",
+                UnifiedExperience.start_datetime >= datetime.utcnow(),
+                UnifiedExperience.start_datetime <= cutoff,
+                UnifiedExperience.status != "cancelled",
+                UnifiedExperience.country_code == "US",
                 or_(not_(has_stubhub), not_(has_seatgeek)),
             )
         )
-        .order_by(UnifiedEvent.start_datetime.asc())
+        .order_by(UnifiedExperience.start_datetime.asc())
         .limit(limit)
     )
 

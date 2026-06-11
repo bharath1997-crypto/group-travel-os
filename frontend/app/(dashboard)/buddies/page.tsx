@@ -5,11 +5,12 @@ import { useCallback, useEffect, useState } from "react";
 
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
+import { emitOpenLounge } from "@/lib/open-lounge";
 
-const MUTED = "#94A3B8";
-const PANEL = "#0F172A";
-const CARD = "#1E293B";
-const BORDER = "rgba(148, 163, 184, 0.25)";
+const MUTED = "#64748B";
+const PANEL = "#F8FAFC";
+const CARD = "#FFFFFF";
+const BORDER = "#E2E8F0";
 const DICEBEAR_INITIALS = "https://api.dicebear.com/7.x/initials/svg";
 
 type SocialUserOut = {
@@ -59,15 +60,15 @@ function planBadgeStyle(
 ): { label: string; className: string } {
   const p = plan ?? "free";
   if (p === "free")
-    return { label: "Free", className: "bg-slate-600 text-slate-100" };
+    return { label: "Free", className: "bg-slate-100 text-slate-700 border border-slate-200" };
   if (p === "pass_3day" || p === "pass_7day")
     return {
       label: p === "pass_3day" ? "3-Day" : "7-Day",
-      className: "bg-rose-600/90 text-white",
+      className: "bg-rose-50 text-rose-700 border border-rose-200",
     };
   if (p === "pro" || p === "enterprise")
-    return { label: "Pro", className: "bg-purple-600/80 text-white" };
-  return { label: p, className: "bg-slate-600 text-slate-100" };
+    return { label: "Pro", className: "bg-teal-50 text-teal-700 border border-teal-250" };
+  return { label: p, className: "bg-slate-100 text-slate-700 border border-slate-200" };
 }
 
 function poolUser(
@@ -308,34 +309,29 @@ export default function BuddiesPage() {
   );
 
   return (
-    <div
-      className="min-h-screen w-full pb-24"
-      style={{ background: PANEL, color: "#E2E8F0" }}
-    >
-      <header
-        className="sticky top-0 z-20 border-b px-4 py-4"
-        style={{ background: PANEL, borderColor: BORDER }}
-      >
-        <h1
-          className="text-center text-lg font-bold tracking-tight"
-          style={{ color: "#F8FAFC" }}
-        >
-          Buddies
-        </h1>
+    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-slate-200/80">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+            Buddies
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">Connect with travel companions and friends</p>
+        </div>
         {err ? (
-          <p className="mt-1 text-center text-xs text-rose-400">{err}</p>
+          <p className="text-xs text-rose-500 font-medium">{err}</p>
         ) : null}
-        <div className="mt-4 flex items-center justify-center gap-1 rounded-xl bg-slate-900/50 p-1">
+        
+        <div className="flex items-center gap-1 rounded-xl bg-slate-150 p-1 border border-slate-200/40 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setTabInUrl("buddies")}
-            className={`relative flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
-              tab === "buddies" ? "bg-slate-700 text-white" : "text-slate-400"
+            className={`relative flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
+              tab === "buddies" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"
             }`}
           >
             Buddies
             {buddiesCount > 0 ? (
-              <span className="rounded-full bg-slate-600 px-1.5 py-0.5 text-[10px] text-slate-200">
+              <span className="rounded-full bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-[10px] text-slate-700">
                 {buddiesCount}
               </span>
             ) : null}
@@ -343,32 +339,32 @@ export default function BuddiesPage() {
           <button
             type="button"
             onClick={() => setTabInUrl("requests")}
-            className={`relative flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
-              tab === "requests" ? "bg-slate-700 text-white" : "text-slate-400"
+            className={`relative flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
+              tab === "requests" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"
             }`}
           >
             Requests
             {receivedCount > 0 ? (
-              <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+              <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
                 {receivedCount}
               </span>
             ) : null}
             {receivedCount === 0 && totalRequests > 0 ? (
-              <span className="rounded-full bg-slate-600 px-1.5 py-0.5 text-[10px] text-slate-200">
+              <span className="rounded-full bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-[10px] text-slate-700">
                 {totalRequests}
               </span>
             ) : null}
           </button>
         </div>
-      </header>
+      </div>
 
-      <div className="mx-auto w-full max-w-2xl px-4 py-4">
+      <div className="mt-6 mx-auto w-full max-w-2xl">
         {loading ? (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="h-20 animate-pulse rounded-xl bg-slate-800/60"
+                className="h-20 animate-pulse rounded-2xl bg-slate-200/60 border border-slate-200/80"
               />
             ))}
           </div>
@@ -377,33 +373,32 @@ export default function BuddiesPage() {
         {!loading && tab === "buddies" ? (
           <>
             {connections.length === 0 ? (
-              <p className="py-8 text-center text-sm" style={{ color: MUTED }}>
+              <p className="py-12 text-center text-sm text-slate-500">
                 No buddies yet — connect with travelers!
               </p>
             ) : (
-              <ul className="space-y-2">
+              <ul className="space-y-3 list-none p-0 m-0">
                 {connections.map((c) => {
                   const pb = planBadgeStyle(c.plan ?? null);
                   return (
                     <li
                       key={String(c.id)}
-                      className="flex items-center gap-3 rounded-xl border p-3"
-                      style={{ background: CARD, borderColor: BORDER }}
+                      className="flex items-center gap-3 rounded-2xl border p-4 bg-white border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200"
                     >
                       <img
                         src={socialAvatarUrl(c)}
                         alt=""
-                        className="h-12 w-12 shrink-0 rounded-full object-cover"
+                        className="h-12 w-12 shrink-0 rounded-full object-cover border border-slate-100 shadow-sm"
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-semibold text-slate-100">
+                        <p className="truncate font-bold text-slate-900">
                           {formatDisplayName(c.full_name)}
                         </p>
-                        <p className="truncate text-xs" style={{ color: MUTED }}>
+                        <p className="truncate text-xs text-slate-500">
                           @{c.username?.trim() ? c.username : "user"}
                         </p>
                         <span
-                          className={`mt-0.5 inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${pb.className}`}
+                          className={`mt-1 inline-block rounded-md px-2 py-0.5 text-[10px] font-semibold ${pb.className}`}
                         >
                           {pb.label}
                         </span>
@@ -412,13 +407,9 @@ export default function BuddiesPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            sessionStorage.setItem(
-                              "gt_open_dm_user_id",
-                              c.id,
-                            );
-                            router.push("/travel-hub");
+                            emitOpenLounge({ openDmUserId: String(c.id) });
                           }}
-                          className="rounded-lg border border-slate-500/60 bg-slate-800/50 px-2.5 py-1.5 text-xs font-semibold text-slate-200"
+                          className="rounded-lg border border-slate-200 bg-white hover:bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 transition"
                         >
                           Message
                         </button>
@@ -426,7 +417,7 @@ export default function BuddiesPage() {
                           type="button"
                           disabled={removeBusy === String(c.id)}
                           onClick={() => void removeBuddy(c)}
-                          className="rounded-lg border border-rose-700/50 bg-rose-950/30 px-2.5 py-1.5 text-xs font-semibold text-rose-200 disabled:opacity-50"
+                          className="rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 text-xs font-bold text-rose-600 transition disabled:opacity-50"
                         >
                           Remove
                         </button>
@@ -437,47 +428,36 @@ export default function BuddiesPage() {
               </ul>
             )}
 
-            <section className="mt-8">
-              <h2
-                className="mb-3 text-sm font-bold"
-                style={{ color: "#F8FAFC" }}
-              >
+            <section className="mt-10 border-t border-slate-200/80 pt-8">
+              <h2 className="mb-4 text-lg font-bold text-slate-900">
                 People You May Know
               </h2>
               {suggestions.length === 0 ? (
-                <p
-                  className="text-center text-xs"
-                  style={{ color: MUTED }}
-                >
+                <p className="text-center text-xs text-slate-400 py-4">
                   No suggestions right now
                 </p>
               ) : (
                 <div
-                  className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  className="flex gap-3 overflow-x-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
                   {suggestions.map((row) => {
                     const requested = row.friend_status === "pending_sent";
                     return (
                       <div
                         key={String(row.id)}
-                        className="w-[min(200px,78vw)] shrink-0 rounded-xl p-3"
-                        style={{ background: CARD, border: `1px solid ${BORDER}` }}
+                        className="w-[min(200px,78vw)] shrink-0 rounded-2xl p-4 bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200"
                       >
                         <div className="flex flex-col items-center text-center">
                           <img
                             src={socialAvatarUrl(row)}
                             alt=""
-                            className="h-16 w-16 rounded-full object-cover"
+                            className="h-16 w-16 rounded-full object-cover border border-slate-100 shadow-sm"
                           />
-                          <p className="mt-2 line-clamp-1 w-full text-sm font-semibold text-slate-100">
+                          <p className="mt-3 line-clamp-1 w-full text-sm font-bold text-slate-900">
                             {formatDisplayName(row.full_name)}
                           </p>
-                          <p
-                            className="line-clamp-1 w-full text-xs"
-                            style={{ color: MUTED }}
-                          >
-                            @
-                            {row.username?.trim() ? row.username : "user"}
+                          <p className="line-clamp-1 w-full text-xs text-slate-500">
+                            @{row.username?.trim() ? row.username : "user"}
                           </p>
                           <button
                             type="button"
@@ -485,8 +465,7 @@ export default function BuddiesPage() {
                               connectBusy === String(row.id) || requested
                             }
                             onClick={() => void connect(row)}
-                            className="mt-2 w-full rounded-lg border border-slate-500/50 bg-slate-800/40 py-1.5 text-xs font-semibold text-slate-200 disabled:opacity-50"
-                            style={{ borderColor: BORDER }}
+                            className="mt-3 w-full rounded-lg bg-teal-600 hover:bg-teal-700 py-2 text-xs font-bold text-white transition shadow-sm disabled:opacity-50"
                           >
                             {requested ? "Requested" : "Connect"}
                           </button>
@@ -501,20 +480,17 @@ export default function BuddiesPage() {
         ) : null}
 
         {!loading && tab === "requests" ? (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div>
-              <h2
-                className="mb-2 text-xs font-bold uppercase tracking-wide"
-                style={{ color: MUTED }}
-              >
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500">
                 Received
               </h2>
               {received.length === 0 ? (
-                <p className="py-2 text-sm" style={{ color: MUTED }}>
+                <p className="py-4 text-sm text-slate-500">
                   No pending requests
                 </p>
               ) : (
-                <ul className="space-y-2">
+                <ul className="space-y-3 list-none p-0 m-0">
                   {received.map((fr) => {
                     const other = poolUser(
                       userPool,
@@ -523,24 +499,19 @@ export default function BuddiesPage() {
                     return (
                       <li
                         key={String(fr.id)}
-                        className="flex items-center gap-3 rounded-xl border p-3"
-                        style={{ background: CARD, borderColor: BORDER }}
+                        className="flex items-center gap-3 rounded-2xl border p-4 bg-white border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200"
                       >
                         <img
                           src={socialAvatarUrl(other)}
                           alt=""
-                          className="h-12 w-12 shrink-0 rounded-full object-cover"
+                          className="h-12 w-12 shrink-0 rounded-full object-cover border border-slate-100 shadow-sm"
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-semibold text-slate-100">
+                          <p className="truncate font-bold text-slate-900">
                             {formatDisplayName(other.full_name)}
                           </p>
-                          <p
-                            className="truncate text-xs"
-                            style={{ color: MUTED }}
-                          >
-                            @
-                            {other.username?.trim() ? other.username : "user"}
+                          <p className="truncate text-xs text-slate-500">
+                            @{other.username?.trim() ? other.username : "user"}
                           </p>
                         </div>
                         <div className="flex shrink-0 gap-1.5">
@@ -548,7 +519,7 @@ export default function BuddiesPage() {
                             type="button"
                             disabled={frBusy === String(fr.id)}
                             onClick={() => void accept(fr)}
-                            className="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                            className="rounded-lg bg-teal-600 hover:bg-teal-700 px-3 py-1.5 text-xs font-bold text-white transition shadow-sm disabled:opacity-50"
                           >
                             Accept
                           </button>
@@ -556,7 +527,7 @@ export default function BuddiesPage() {
                             type="button"
                             disabled={frBusy === String(fr.id)}
                             onClick={() => void decline(fr)}
-                            className="rounded-lg bg-slate-600 px-2.5 py-1.5 text-xs font-semibold text-slate-200 disabled:opacity-50"
+                            className="rounded-lg border border-slate-200 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 transition disabled:opacity-50"
                           >
                             Decline
                           </button>
@@ -568,22 +539,16 @@ export default function BuddiesPage() {
               )}
             </div>
 
-            <div
-              className="border-t pt-2"
-              style={{ borderColor: BORDER }}
-            >
-              <h2
-                className="mb-2 text-xs font-bold uppercase tracking-wide"
-                style={{ color: MUTED }}
-              >
+            <div className="border-t border-slate-200/80 pt-6">
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500">
                 Sent
               </h2>
               {sent.length === 0 ? (
-                <p className="py-2 text-sm" style={{ color: MUTED }}>
+                <p className="py-4 text-sm text-slate-500">
                   No sent requests
                 </p>
               ) : (
-                <ul className="space-y-2">
+                <ul className="space-y-3 list-none p-0 m-0">
                   {sent.map((fr) => {
                     const other = poolUser(
                       userPool,
@@ -592,35 +557,30 @@ export default function BuddiesPage() {
                     return (
                       <li
                         key={String(fr.id)}
-                        className="flex items-center gap-3 rounded-xl border p-3"
-                        style={{ background: CARD, borderColor: BORDER }}
+                        className="flex items-center gap-3 rounded-2xl border p-4 bg-white border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200"
                       >
                         <img
                           src={socialAvatarUrl(other)}
                           alt=""
-                          className="h-12 w-12 shrink-0 rounded-full object-cover"
+                          className="h-12 w-12 shrink-0 rounded-full object-cover border border-slate-100 shadow-sm"
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-semibold text-slate-100">
+                          <p className="truncate font-bold text-slate-900">
                             {formatDisplayName(other.full_name)}
                           </p>
-                          <p
-                            className="truncate text-xs"
-                            style={{ color: MUTED }}
-                          >
-                            @
-                            {other.username?.trim() ? other.username : "user"}
+                          <p className="truncate text-xs text-slate-500">
+                            @{other.username?.trim() ? other.username : "user"}
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
-                          <span className="rounded-md bg-slate-700/80 px-2 py-1 text-[10px] font-medium text-slate-300">
+                          <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[10px] font-bold text-slate-500 border border-slate-200">
                             Requested
                           </span>
                           <button
                             type="button"
                             disabled={cancelBusy === String(fr.id)}
                             onClick={() => void cancelSent(fr)}
-                            className="rounded-lg border border-slate-500/50 bg-slate-800/50 px-2.5 py-1.5 text-xs font-semibold text-slate-200 disabled:opacity-50"
+                            className="rounded-lg border border-slate-200 bg-white hover:bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition disabled:opacity-50"
                           >
                             Cancel
                           </button>

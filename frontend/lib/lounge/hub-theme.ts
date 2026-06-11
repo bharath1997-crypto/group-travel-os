@@ -1,0 +1,22 @@
+/** List / left-panel colors for full-page travel hub tabs */
+export const HUB_LIST_THEME = {
+  ACCENT: "#4a9eff",
+  BG: "#0f3460",
+  LIST_ROW_HOVER: "#fff0f3",
+  LIST_ROW_SELECTED: "#E94560",
+  TEXT: "#e8eaf0",
+  TEXT_MUTED: "#8892a4",
+  TEXT_SECONDARY: "#8892a4",
+  SECTION_LABEL: "#8892a4",
+  BRAND_ACCENT: "#E94560",
+  LIST_TEXT: "#1f2937",
+  LIST_TEXT_MUTED: "#6b7280",
+  LIST_BORDER: "#eef2f7",
+  ONLINE: "#22C55E",
+  RIGHT_PANEL_BG: "#e8ddd0",
+  BORDER_SUB: "rgba(255,255,255,0.08)",
+  MSG_BORDER: "#e9edef",
+  SURFACE: "#1e2a3a",
+  EMAIL_INVITE_AVATAR_BG: "#0d9488",
+  ADD_BY_EMAIL_ROW_BG: "#1e2538",
+} as const;

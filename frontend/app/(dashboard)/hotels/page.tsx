@@ -140,100 +140,108 @@ export default function HotelsPage() {
   }, [rows, sort, priceLo, priceHi, starsMin, amenPick]);
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] text-[#0F3460]">
-      <div className="sticky top-0 z-20 -mx-3 border-b border-slate-200/80 bg-[#0F3460] px-3 py-4 text-white shadow-md md:-mx-5 md:px-5">
-        <div className="mx-auto max-w-6xl">
-          <h1 className="text-lg font-bold tracking-tight md:text-xl">Hotels</h1>
-          <p className="mt-1 text-xs leading-relaxed text-teal-100/95 md:text-sm">
-            Curated nightly rates via Agoda (Travelpayouts affiliate links).
-          </p>
-          <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
-            <label className="flex flex-col gap-2 lg:col-span-3">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
-                Location
-              </span>
-              <input
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g. NYC, Miami, Vancouver"
-                className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm placeholder:text-slate-400 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300/60"
-              />
-            </label>
-            <label className="flex flex-col gap-2 lg:col-span-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
-                Check-in
-              </span>
-              <input
-                type="date"
-                value={checkIn}
-                onChange={(e) => setCheckIn(e.target.value)}
-                className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
-              />
-            </label>
-            <label className="flex flex-col gap-2 lg:col-span-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
-                Check-out
-              </span>
-              <input
-                type="date"
-                value={checkOut}
-                onChange={(e) => setCheckOut(e.target.value)}
-                className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
-              />
-            </label>
-            <label className="flex flex-col gap-2 lg:col-span-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
-                Adults
-              </span>
-              <select
-                value={adults}
-                onChange={(e) => setAdults(Number(e.target.value))}
-                className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
-              >
-                {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-2 lg:col-span-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
-                Rooms
-              </span>
-              <select
-                value={rooms}
-                onChange={(e) => setRooms(Number(e.target.value))}
-                className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
-              >
-                {Array.from({ length: 6 }, (_, i) => i + 1).map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="lg:col-span-2">
-              <button
-                type="button"
-                onClick={() => void runSearch()}
-                className="w-full rounded-xl bg-teal-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-teal-900/30 transition hover:bg-teal-400"
-              >
-                Search hotels
-              </button>
-            </div>
+    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
+      {/* Search Header */}
+      <div className="max-w-6xl mx-auto mb-6">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center border border-teal-200/60">
+            <span className="text-xl">🏨</span>
+          </div>
+          <span className="text-xs font-bold uppercase tracking-widest text-teal-600">Rovvy Hotels</span>
+        </div>
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+          Hotels
+        </h1>
+        <p className="mt-2 text-sm text-slate-500 leading-relaxed max-w-2xl">
+          Curated nightly rates via Agoda (Travelpayouts affiliate links).
+        </p>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <label className="flex flex-col gap-1.5 lg:col-span-3">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Location
+            </span>
+            <input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g. NYC, Miami, Vancouver"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 lg:col-span-2">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Check-in
+            </span>
+            <input
+              type="date"
+              value={checkIn}
+              onChange={(e) => setCheckIn(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 lg:col-span-2">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Check-out
+            </span>
+            <input
+              type="date"
+              value={checkOut}
+              onChange={(e) => setCheckOut(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 lg:col-span-2">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Adults
+            </span>
+            <select
+              value={adults}
+              onChange={(e) => setAdults(Number(e.target.value))}
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+            >
+              {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1.5 lg:col-span-1">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Rooms
+            </span>
+            <select
+              value={rooms}
+              onChange={(e) => setRooms(Number(e.target.value))}
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+            >
+              {Array.from({ length: 6 }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="lg:col-span-2">
+            <button
+              type="button"
+              onClick={() => void runSearch()}
+              className="w-full rounded-xl bg-teal-600 px-4 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/10 hover:bg-teal-700 transition"
+            >
+              Search hotels
+            </button>
           </div>
         </div>
       </div>
 
       <div className="mx-auto mt-4 max-w-6xl px-0">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-          <aside className="w-full shrink-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-[200px] lg:w-64 xl:w-72">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+          <aside className="w-full shrink-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-[120px] lg:w-64 xl:w-72">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-550">
               Filters
             </p>
             <div className="mt-4 space-y-2">
-              <p className="text-sm font-semibold text-[#0F3460]">Price / night</p>
+              <p className="text-sm font-semibold text-slate-900">Price / night</p>
               <div className="flex justify-between text-xs text-slate-600">
                 <span>${pbounds.lo}</span>
                 <span>${pbounds.hi}</span>
@@ -244,7 +252,7 @@ export default function HotelsPage() {
                 max={pbounds.hi}
                 value={priceLo}
                 onChange={(e) => setPriceLo(Number(e.target.value))}
-                className="w-full accent-teal-500"
+                className="w-full accent-teal-600"
               />
               <input
                 type="range"
@@ -252,11 +260,11 @@ export default function HotelsPage() {
                 max={pbounds.hi}
                 value={priceHi}
                 onChange={(e) => setPriceHi(Number(e.target.value))}
-                className="w-full accent-teal-500"
+                className="w-full accent-teal-600"
               />
             </div>
             <div className="mt-5">
-              <p className="text-sm font-semibold text-[#0F3460]">Min stars</p>
+              <p className="text-sm font-semibold text-slate-900">Min stars</p>
               <input
                 type="range"
                 min={1}
@@ -264,12 +272,12 @@ export default function HotelsPage() {
                 step={1}
                 value={starsMin}
                 onChange={(e) => setStarsMin(Number(e.target.value))}
-                className="mt-2 w-full accent-teal-500"
+                className="mt-2 w-full accent-teal-600"
               />
               <p className="text-xs text-slate-600">{starsMin}+ ⭐</p>
             </div>
             <div className="mt-5">
-              <p className="text-sm font-semibold text-[#0F3460]">Amenities</p>
+              <p className="text-sm font-semibold text-slate-900">Amenities</p>
               <div className="mt-2 max-h-40 space-y-1.5 overflow-y-auto">
                 {COMMON_AMENITIES.map((a) => (
                   <label
@@ -308,10 +316,10 @@ export default function HotelsPage() {
                   key={v}
                   type="button"
                   onClick={() => setSort(v)}
-                  className={`rounded-full px-3 py-1 text-xs font-bold ${
+                  className={`rounded-full px-3 py-1 text-xs font-bold transition ${
                     sort === v
-                      ? "bg-teal-500 text-white"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                      ? "bg-teal-600 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-205"
                   }`}
                 >
                   {label}
@@ -366,14 +374,14 @@ export default function HotelsPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-lg font-bold text-[#0F3460]">
+                        <span className="text-lg font-bold text-slate-900">
                           {h.name}
                         </span>
                         <span className="text-sm text-amber-700">
                           {(h.stars ?? 0) > 0 ? "⭐".repeat(h.stars!) : ""}
                         </span>
                       </div>
-                      <p className="mt-1 text-sm text-slate-600">{h.address}</p>
+                      <p className="mt-1 text-sm text-slate-650">{h.address}</p>
                       <p className="text-sm font-semibold text-slate-700">{h.location}</p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {h.amenities.slice(0, 6).map((am) => (
@@ -387,11 +395,11 @@ export default function HotelsPage() {
                       </div>
                       <p className="mt-2 text-sm text-slate-600">
                         Rating{" "}
-                        <span className="font-semibold text-[#0F3460]">
+                        <span className="font-semibold text-slate-900">
                           {h.rating?.toFixed(1) ?? "—"}
                         </span>
                         {h.review_count != null ? (
-                          <span className="text-slate-500">
+                          <span className="text-slate-550">
                             {" "}
                             · {h.review_count.toLocaleString()} reviews
                           </span>
@@ -400,7 +408,7 @@ export default function HotelsPage() {
                     </div>
                     <div className="flex flex-row items-center justify-between gap-3 border-t border-slate-100 pt-3 lg:w-44 lg:flex-col lg:border-t-0 lg:pt-0">
                       <div className="text-left lg:text-right">
-                        <p className="text-xs font-semibold uppercase text-slate-500">
+                        <p className="text-xs font-semibold uppercase text-slate-555">
                           Per night
                         </p>
                         <p className="text-2xl font-extrabold text-teal-600">
@@ -411,7 +419,7 @@ export default function HotelsPage() {
                         href={h.booking_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex min-w-[112px] items-center justify-center rounded-xl bg-[#0F3460] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0c2d52]"
+                        className="inline-flex min-w-[112px] items-center justify-center rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-teal-700 shadow"
                       >
                         View Deal
                       </a>

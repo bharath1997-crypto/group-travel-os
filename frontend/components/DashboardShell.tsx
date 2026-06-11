@@ -67,7 +67,7 @@ function getPrimaryTab(pathname: string): PrimaryTab {
     pathname.startsWith("/flights") || pathname.startsWith("/hotels") ||
     pathname.startsWith("/routes") || pathname.startsWith("/buses") ||
     pathname.startsWith("/group") || pathname.startsWith("/buddy") ||
-    pathname.startsWith("/travel-hub")
+    false
   )
     return "trips";
   if (pathname.startsWith("/trip-live") || pathname.startsWith("/live"))

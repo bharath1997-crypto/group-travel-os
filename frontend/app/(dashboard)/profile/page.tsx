@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { OpenLoungeButton } from "@/components/lounge/OpenLoungeButton";
 import {
   LogOut,
   User,
@@ -1793,13 +1794,10 @@ export default function ProfilePage() {
             <p className="text-sm leading-relaxed text-[#6C757D]">
               Join travel groups, meet like-minded explorers, and share your journey.
             </p>
-            <Link
-              href="/travel-hub"
-              className="mt-4 inline-flex items-center gap-2 rounded-full border border-teal-600 px-4 py-1.5 text-xs font-semibold text-teal-600 hover:bg-teal-50"
-            >
-              Explore Hub
+            <OpenLoungeButton className="mt-4 inline-flex items-center gap-2 rounded-full border border-teal-600 px-4 py-1.5 text-xs font-semibold text-teal-600 hover:bg-teal-50">
+              Open Rovvy Lounge
               <IconChevronRight size={14} />
-            </Link>
+            </OpenLoungeButton>
           </div>
 
           {/* Spotlight Card */}

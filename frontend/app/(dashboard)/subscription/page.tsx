@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { OpenLoungeButton } from "@/components/lounge/OpenLoungeButton";
 import { useRouter } from "next/navigation";
 import {
   useCallback,
@@ -372,13 +373,12 @@ export default function SubscriptionPage() {
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
               <span>Add at least 2 members before purchasing a pass</span>
             </p>
-            <Link
-              href="/travel-hub"
+            <OpenLoungeButton
               className="mt-2 inline-block text-sm font-semibold"
               style={{ color: CORAL }}
             >
               Invite Members →
-            </Link>
+            </OpenLoungeButton>
           </div>
         ) : null}
       </section>

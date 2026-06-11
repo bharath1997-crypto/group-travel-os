@@ -1,4 +1,4 @@
-"""Sync Viator experiences into unified_events + event_providers."""
+"""Sync Viator experiences into unified_experiences + event_providers."""
 from __future__ import annotations
 
 import asyncio

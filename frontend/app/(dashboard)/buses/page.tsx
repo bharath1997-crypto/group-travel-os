@@ -230,74 +230,81 @@ export default function BusesPage() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] text-[#0F3460]">
-      {/* Sticky Search Bar */}
-      <div className="sticky top-0 z-20 -mx-3 border-b border-slate-200/80 bg-[#0F3460] px-3 py-4 text-white shadow-md md:-mx-5 md:px-5">
-        <div className="mx-auto max-w-6xl">
-          <h1 className="text-lg font-bold tracking-tight md:text-xl">Buses</h1>
-          <p className="mt-1 text-xs leading-relaxed text-teal-100/95 md:text-sm">
-            Search bus deals via Busbud.
-          </p>
+    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
+      {/* Search Header */}
+      <div className="max-w-6xl mx-auto mb-6">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center border border-teal-200/60">
+            <span className="text-xl">🚌</span>
+          </div>
+          <span className="text-xs font-bold uppercase tracking-widest text-teal-600">Rovvy Buses</span>
+        </div>
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Buses</h1>
+        <p className="mt-2 text-sm text-slate-500 leading-relaxed max-w-2xl">
+          Search and compare bus deals via Busbud.
+        </p>
+      </div>
 
-          <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
-            <label className="flex flex-col gap-2 lg:col-span-3">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
-                From
-              </span>
-              <input
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-                placeholder="e.g. NYC, Chicago"
-                className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm placeholder:text-slate-400 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300/60"
-              />
-            </label>
-            <label className="flex flex-col gap-2 lg:col-span-3">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
-                To
-              </span>
-              <input
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-                placeholder="e.g. Boston, Detroit"
-                className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm placeholder:text-slate-400 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300/60"
-              />
-            </label>
-            <label className="flex flex-col gap-2 lg:col-span-3">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
-                Date
-              </span>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
-              />
-            </label>
-            <label className="flex flex-col gap-2 lg:col-span-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
-                Guests
-              </span>
-              <select
-                value={passengers}
-                onChange={(e) => setPassengers(Number(e.target.value))}
-                className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
-              >
-                {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="lg:col-span-2">
-              <button
-                type="button"
-                onClick={() => void runSearch()}
-                className="w-full rounded-xl bg-teal-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-teal-900/30 transition hover:bg-teal-400"
-              >
-                Search Buses
-              </button>
-            </div>
+      {/* Search Inputs Card */}
+      <div className="mx-auto max-w-6xl bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
+          <label className="flex flex-col gap-2 lg:col-span-3">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              From
+            </span>
+            <input
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              placeholder="e.g. NYC, Chicago"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+            />
+          </label>
+          <label className="flex flex-col gap-2 lg:col-span-3">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              To
+            </span>
+            <input
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              placeholder="e.g. Boston, Detroit"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+            />
+          </label>
+          <label className="flex flex-col gap-2 lg:col-span-3">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Date
+            </span>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+            />
+          </label>
+          <label className="flex flex-col gap-2 lg:col-span-1">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Guests
+            </span>
+            <select
+              value={passengers}
+              onChange={(e) => setPassengers(Number(e.target.value))}
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+            >
+              {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="lg:col-span-2">
+            <button
+              type="button"
+              onClick={() => void runSearch()}
+              className="w-full rounded-xl bg-teal-600 hover:bg-teal-700 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/10 transition"
+            >
+              Search Buses
+            </button>
           </div>
         </div>
       </div>
@@ -312,7 +319,7 @@ export default function BusesPage() {
 
             {/* Price Filter */}
             <div className="mt-4 space-y-1">
-              <p className="text-sm font-semibold text-[#0F3460]">Price</p>
+              <p className="text-sm font-bold text-slate-900">Price</p>
               <div className="flex gap-2 text-xs text-slate-600">
                 <span>${priceBounds.min}</span>
                 <span className="ml-auto">${priceBounds.max}</span>
@@ -337,7 +344,7 @@ export default function BusesPage() {
 
             {/* Operators Filter */}
             <div className="mt-5">
-              <p className="text-sm font-semibold text-[#0F3460]">Operators</p>
+              <p className="text-sm font-bold text-slate-900">Operators</p>
               <div className="mt-2 max-h-36 space-y-1.5 overflow-y-auto">
                 {operatorOptions.length === 0 ? (
                   <p className="text-xs text-slate-500">Search to see operators</p>
@@ -367,7 +374,7 @@ export default function BusesPage() {
 
             {/* Departure Time Filter */}
             <div className="mt-5">
-              <p className="text-sm font-semibold text-[#0F3460]">Departure</p>
+              <p className="text-sm font-bold text-slate-900">Departure</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {(
                   [
@@ -381,9 +388,9 @@ export default function BusesPage() {
                     key={v}
                     type="button"
                     onClick={() => setTimeFilter(v)}
-                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${
                       timeFilter === v
-                        ? "bg-[#0F3460] text-white"
+                        ? "bg-teal-600 text-white shadow-sm"
                         : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
                   >
@@ -395,7 +402,7 @@ export default function BusesPage() {
 
             {/* Amenities Filter */}
             <div className="mt-5">
-              <p className="text-sm font-semibold text-[#0F3460]">Amenities</p>
+              <p className="text-sm font-bold text-slate-900">Amenities</p>
               <div className="mt-2 max-h-36 space-y-1.5 overflow-y-auto">
                 {amenityOptions.length === 0 ? (
                   <p className="text-xs text-slate-500">Search to see amenities</p>
@@ -556,7 +563,7 @@ export default function BusesPage() {
                           href={b.booking_url || "#"}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex min-w-[112px] items-center justify-center rounded-xl bg-[#0F3460] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0c2d52]"
+                          className="inline-flex min-w-[112px] items-center justify-center rounded-xl bg-teal-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-teal-700 shadow-sm"
                         >
                           Book Now
                         </a>

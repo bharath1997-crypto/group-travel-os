@@ -4,13 +4,15 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import BrandedLoading from "@/components/BrandedLoading";
+import { emitOpenLounge } from "@/lib/open-lounge";
 
-/** Canonical entry for new group creation — hands off to Travel Hub create modal. */
+/** Opens group creation in the independent Rovvy Lounge dock popup. */
 export default function NewGroupPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/travel-hub?action=create-group");
+    emitOpenLounge({ createGroup: true });
+    router.replace("/explore");
   }, [router]);
 
   return (

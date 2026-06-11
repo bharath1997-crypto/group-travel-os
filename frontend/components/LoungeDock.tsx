@@ -1,19 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
-  MessageSquare,
   X,
   ChevronUp,
   ChevronDown,
   ChevronLeft,
   Send,
-  User,
-  Users,
   Search,
-  Settings,
   Plus,
-  Check,
   Paperclip,
   Mic,
   Smile,
@@ -23,10 +18,92 @@ import {
   Video,
   SquarePen,
   Menu,
+  FileText,
+  MapPin,
+  BarChart,
+  Reply,
+  Info,
+  Image as ImageIcon,
+  DollarSign,
+  Ban,
+  CheckCheck,
+  Star,
+  Contact as ContactIcon,
+  CalendarDays,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { initFirebase } from "@/lib/firebase-client";
-import { ref, onValue, push, set, off } from "firebase/database";
+import { ref, onValue, push, set, off, remove, get, update, type Database } from "firebase/database";
+import {
+  AdvancedScheduledCallModal,
+  type ScheduledCallData,
+} from "@/components/AdvancedScheduledCallModal";
+import { ConnectSettingsPopup } from "@/components/lounge/ConnectSettingsPopup";
+import { ConnectSettingsPanel } from "@/components/lounge/ConnectSettingsPanel";
+import {
+  readChatPrefs,
+  updateChatPref as patchChatPrefLs,
+  markChatDeleted as markChatDeletedLs,
+  readDeletedChats,
+  GT_SCHEDULED_CALLS,
+  type ChatPrefs,
+} from "@/lib/lounge/chat-prefs";
+import { readJsonLs, writeJsonLs } from "@/lib/lounge/storage";
+import WayraIcon from "@/components/ui/WayraIcon";
+import { SplitExpenseModal } from "@/components/lounge/SplitExpenseModal";
+import { CallOverlay } from "@/components/lounge/CallOverlay";
+import { useLoungeCalls } from "@/components/lounge/useLoungeCalls";
+import { type DemoChatView } from "@/components/lounge/DemoDmChatPanel";
+import { LoungeChatWindow } from "@/components/lounge/LoungeChatWindow";
+import { HubTabBar, type HubTabId } from "@/components/lounge/hub/HubTabBar";
+import {
+  HubCallsTab,
+  HubChatsTab,
+  HubGroupsTab,
+  HubSearchField,
+  HubUpdatesTab,
+} from "@/components/lounge/hub/TravelHubTabs";
+import { HubSearchResults } from "@/components/lounge/hub/HubSearchResults";
+import { HubChatContextMenu } from "@/components/lounge/hub/HubChatContextMenu";
+import { ConnectProfileDrawer } from "@/components/lounge/hub/ConnectProfileDrawer";
+import { useHubConnectSearch } from "@/components/lounge/useHubConnectSearch";
+import { DemoContactsSection } from "@/components/lounge/DemoContactsSection";
+import {
+  dockChatToChatInfo,
+  dockGroupToGroupOut,
+  dockUserToUserMe,
+  type DockChat,
+} from "@/lib/lounge/dock-adapters";
+import { dmListPeerOnline, loungeChatDisplayName } from "@/lib/lounge/hub-utils";
+import type {
+  ChatInfo,
+  ContactPerson,
+  GroupMemberOut,
+  GroupOut,
+  UserMe,
+} from "@/lib/lounge/hub-types";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { isDemoChatId } from "@/lib/lounge/demo-contacts";
+import { readBuddyFavourites, toggleBuddyFavourite } from "@/lib/lounge/buddy-favourites";
+import {
+  LOUNGE_URL_CONNECT,
+  LOUNGE_URL_CREATE_GROUP,
+  OPEN_LOUNGE_EVENT,
+  type OpenLoungeDetail,
+} from "@/lib/open-lounge";
+import type { UserSearchResultRow } from "@/lib/lounge/hub-types";
+import {
+  DEMO_CHAT_ROVVY_HELP_ID,
+  DEMO_CHAT_COMMUNITY_ID,
+  QUICK_REACTION_CHIPS,
+  type GtCallHistoryEntry,
+  type StarredMessage,
+} from "@/lib/lounge/constants";
+import {
+  readCallHistoryLs,
+  readStarredMessagesLs,
+  writeStarredMessagesLs,
+} from "@/lib/lounge/storage";
 
 type Contact = {
   id: string;
@@ -74,27 +151,57 @@ type Message = {
     thumbnail: string;
     confidence: string;
   };
+  metadata?: any;
 };
 
 export function LoungeDock() {
   const [isOpen, setIsOpen] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [selectedChatId, setSelectedChatId] = useState<string | null>(null); // single active chat ID
+  const [openChatIds, setOpenChatIds] = useState<string[]>([]);
+  const [minimizedChatIds, setMinimizedChatIds] = useState<string[]>([]);
+  const [openChatMetas, setOpenChatMetas] = useState<Record<string, ChatInfo>>({});
+  const [focusedChatId, setFocusedChatId] = useState<string | null>(null);
+  const [scheduleVersion, setScheduleVersion] = useState(0);
+  const [demoChatViews, setDemoChatViews] = useState<Record<string, DemoChatView>>({});
+  const [recordingChatId, setRecordingChatId] = useState<string | null>(null);
+  const [splitChatId, setSplitChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [inputTexts, setInputTexts] = useState<Record<string, string>>({});
-  const [currentUser, setCurrentUser] = useState<{ id: string; full_name: string } | null>(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState<Record<string, boolean>>({});
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    full_name: string;
+    username?: string | null;
+  } | null>(null);
+  const [firebaseDb, setFirebaseDb] = useState<Database | null>(null);
 
   // Search & Navigation
-  const [activeTab, setActiveTab] = useState<"chats" | "calls" | "updates">("chats");
+  const [activeTab, setActiveTab] = useState<HubTabId>("chats");
+  const [buddyFavourites, setBuddyFavourites] = useState<string[]>([]);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showNewGroupModal, setShowNewGroupModal] = useState(false);
-  const [groupName, setGroupName] = useState("");
-  const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
+  const [createGroupRequestId, setCreateGroupRequestId] = useState(0);
   const [showNewChatOverlay, setShowNewChatOverlay] = useState(false);
   const [showSettingsOverlay, setShowSettingsOverlay] = useState(false);
-  const [settingsScreen, setSettingsScreen] = useState<"menu" | "settings">("menu");
+  const [settingsScreen, setSettingsScreen] = useState<
+    "menu" | "settings" | "starred" | "connect"
+  >("menu");
+  const [loungeIntent, setLoungeIntent] = useState<OpenLoungeDetail | null>(
+    null,
+  );
+
+  // Attachments and Recording State
+  const [showAttachMenu, setShowAttachMenu] = useState<Record<string, boolean>>({});
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const docInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const audioUploadInputRef = useRef<HTMLInputElement | null>(null);
 
   // Backup Settings
   const [backupInterval, setBackupInterval] = useState("24h");
@@ -103,14 +210,45 @@ export function LoungeDock() {
   // Wayra status tracking
   const [wayraStatus, setWayraStatus] = useState<Record<string, { enabled: boolean; off_since: string | null }>>({});
 
+  // P1/P2 features
+  const [showSplitModal, setShowSplitModal] = useState(false);
+  const [callHistory, setCallHistory] = useState<GtCallHistoryEntry[]>([]);
+  const [starredMessages, setStarredMessages] = useState<StarredMessage[]>([]);
+  const [groups, setGroups] = useState<GroupOut[]>([]);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    chat: ChatInfo;
+  } | null>(null);
+  const masterAbortRef = useRef<AbortController | null>(null);
+  const [callToast, setCallToast] = useState<string | null>(null);
+  const [chatPrefs, setChatPrefs] = useState<Record<string, ChatPrefs>>({});
+  const [deletedChatIds, setDeletedChatIds] = useState<string[]>([]);
+  const [scheduledCalls, setScheduledCalls] = useState<ScheduledCallData[]>([]);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [dockToast, setDockToast] = useState<string | null>(null);
+
   // Firebase Ref
   const firebaseInstance = useRef<ReturnType<typeof initFirebase> | null>(null);
   const firebaseListeners = useRef<Record<string, () => void>>({});
 
+  const loungeCalls = useLoungeCalls({
+    db: firebaseDb,
+    userId: currentUser?.id ?? null,
+    userName: currentUser?.full_name ?? null,
+    onToast: (msg) => {
+      setCallToast(msg);
+      setDockToast(msg);
+    },
+    onHistoryUpdate: (entries) => setCallHistory((prev) => [...entries, ...prev].slice(0, 200)),
+  });
+
   // Fetch initial data
   useEffect(() => {
     // 1. Fetch current user
-    apiFetch<{ id: string; full_name: string }>("/auth/me")
+    apiFetch<{ id: string; full_name: string; username?: string | null }>(
+      "/auth/me",
+    )
       .then((user) => setCurrentUser(user))
       .catch(() => {});
 
@@ -122,22 +260,74 @@ export function LoungeDock() {
       .then((data) => setContacts(data))
       .catch(() => {});
 
+    // 4. Bootstrap (groups + connections — same as full-page lounge)
+    apiFetch<{
+      groups?: { id: string; name: string; members?: { user_id: string; full_name: string }[] }[];
+      connections?: Contact[];
+    }>("/connect/bootstrap")
+      .then((boot) => {
+        if (boot.groups) {
+          setGroups(boot.groups.map((g) => dockGroupToGroupOut(g)));
+        }
+        if (boot.connections?.length) {
+          setContacts((prev) => {
+            const map = new Map(prev.map((c) => [c.id, c]));
+            for (const c of boot.connections!) {
+              if (!map.has(c.id)) map.set(c.id, c);
+            }
+            return [...map.values()];
+          });
+        }
+      })
+      .catch(() => {});
+
+    setCallHistory(readCallHistoryLs());
+    setStarredMessages(readStarredMessagesLs());
+    setChatPrefs(readChatPrefs());
+    setDeletedChatIds(readDeletedChats());
+    setScheduledCalls(readJsonLs<ScheduledCallData[]>(GT_SCHEDULED_CALLS, []));
+    setBuddyFavourites(readBuddyFavourites());
+
     // Initialize Firebase Client
-    firebaseInstance.current = initFirebase();
+    const fb = initFirebase();
+    firebaseInstance.current = fb;
+    if (fb.ok && fb.db) setFirebaseDb(fb.db);
 
     // Toggle and open events
     const handleToggle = () => {
       setIsOpen((prev) => !prev);
     };
-    const handleOpenAi = () => {
+    const handleOpenLounge = (e: Event) => {
       setIsOpen(true);
+      const detail = (e as CustomEvent<OpenLoungeDetail | undefined>).detail;
+      if (detail && Object.keys(detail).length > 0) {
+        setLoungeIntent(detail);
+      }
     };
+
+    const params = new URLSearchParams(window.location.search);
+    const urlConnect = params.get(LOUNGE_URL_CONNECT)?.trim();
+    const urlCreateGroup = params.get(LOUNGE_URL_CREATE_GROUP);
+    if (urlConnect || urlCreateGroup) {
+      params.delete(LOUNGE_URL_CONNECT);
+      params.delete(LOUNGE_URL_CREATE_GROUP);
+      params.delete("u");
+      const qs = params.toString();
+      const path = window.location.pathname;
+      window.history.replaceState(null, "", qs ? `${path}?${qs}` : path);
+      setIsOpen(true);
+      setLoungeIntent({
+        ...(urlConnect ? { connectUserId: urlConnect } : {}),
+        ...(urlCreateGroup ? { createGroup: true } : {}),
+      });
+    }
+
     window.addEventListener("toggle-rovvy-lounge", handleToggle);
-    window.addEventListener("open-ai-sidecar", handleOpenAi);
+    window.addEventListener(OPEN_LOUNGE_EVENT, handleOpenLounge);
 
     return () => {
       window.removeEventListener("toggle-rovvy-lounge", handleToggle);
-      window.removeEventListener("open-ai-sidecar", handleOpenAi);
+      window.removeEventListener(OPEN_LOUNGE_EVENT, handleOpenLounge);
 
       // Clean up firebase subscriptions
       Object.values(firebaseListeners.current).forEach((unsubscribe) => unsubscribe());
@@ -150,6 +340,101 @@ export function LoungeDock() {
       setChats(data);
     } catch {}
   };
+
+  // Subscribe to Firebase user_chats to keep chats list in real-time sync with main page
+  useEffect(() => {
+    const fb = firebaseInstance.current;
+    if (!fb || !fb.ok || !fb.db || !currentUser) return;
+    const db = fb.db;
+
+    const userChatsRef = ref(db, `user_chats/${currentUser.id}`);
+    
+    // Store unsubscribers for info listeners
+    const infoUnsubs: (() => void)[] = [];
+
+    const unsubscribeUserChats = onValue(userChatsRef, (snapshot) => {
+      const val = snapshot.val() as Record<string, boolean> | null;
+      const chatIds = val ? Object.keys(val) : [];
+
+      // Unsubscribe previous info listeners
+      infoUnsubs.forEach((unsub) => unsub());
+      infoUnsubs.length = 0;
+
+      const mergedChats: Record<string, Chat> = {};
+
+      if (chatIds.length === 0) {
+        return;
+      }
+
+      chatIds.forEach((chatId) => {
+        const infoRef = ref(db, `chats/${chatId}/info`);
+        const unsubInfo = onValue(infoRef, (snapInfo) => {
+          if (!snapInfo.exists()) return;
+          const infoVal = snapInfo.val();
+
+          // Map members
+          const firebaseMembers = infoVal.members || [];
+          const membersList: Member[] = (Array.isArray(firebaseMembers) ? firebaseMembers : Object.values(firebaseMembers)).map((uid: any) => {
+            const userId = typeof uid === "string" ? uid : uid?.user_id || "";
+            let fullName = "Unknown User";
+            if (userId === currentUser.id) {
+              fullName = currentUser.full_name;
+            } else {
+              const matchedContact = contacts.find((c) => c.id === userId);
+              fullName = matchedContact ? matchedContact.full_name : (uid?.full_name || userId);
+            }
+            return {
+              id: userId,
+              user_id: userId,
+              full_name: fullName,
+              avatar_url: null,
+              is_admin: false,
+            };
+          });
+
+          // Determine name
+          let chatName = infoVal.name || null;
+          if (!chatName && infoVal.type === "individual") {
+            const otherMember = membersList.find((m) => m.user_id !== currentUser.id);
+            chatName = otherMember
+              ? otherMember.full_name
+              : currentUser.full_name || "You";
+          }
+
+          const chatObj: Chat = {
+            id: chatId,
+            type: infoVal.type === "individual" ? "direct" : infoVal.type,
+            name: chatName,
+            trip_id: infoVal.trip_id || null,
+            created_by: infoVal.created_by || null,
+            created_at: infoVal.created_at ? new Date(infoVal.created_at).toISOString() : new Date().toISOString(),
+            last_message_preview: infoVal.last_message || null,
+            last_message_at: infoVal.last_message_time ? new Date(infoVal.last_message_time).toISOString() : null,
+            avatar_url: infoVal.avatar_url || null,
+            members: membersList,
+          };
+
+          mergedChats[chatId] = chatObj;
+
+          // Convert to array and sort by last message time
+          const sortedList = Object.values(mergedChats).sort((a, b) => {
+            const timeA = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+            const timeB = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+            return timeB - timeA;
+          });
+
+          setChats(sortedList);
+        });
+
+        infoUnsubs.push(() => off(infoRef, "value", unsubInfo));
+      });
+    });
+
+    return () => {
+      off(userChatsRef, "value", unsubscribeUserChats);
+      infoUnsubs.forEach((unsub) => unsub());
+    };
+  }, [currentUser, contacts, firebaseInstance.current]);
 
   const toggleWayra = async (chatId: string) => {
     const currentStatus = wayraStatus[chatId];
@@ -170,15 +455,303 @@ export function LoungeDock() {
           },
         }));
       }
-    } catch (err) {
-      alert("Only group administrators can toggle Wayra AI settings.");
+    } catch {
+      showToast("Only group administrators can toggle Wayra AI settings.");
     }
   };
 
-  const handleThreadClick = async (chatId: string) => {
+  const isSpecialChat = (chatId: string) =>
+    chatId === DEMO_CHAT_ROVVY_HELP_ID ||
+    chatId === DEMO_CHAT_COMMUNITY_ID ||
+    isDemoChatId(chatId);
+
+  const openDemoChat = (
+    row: DemoChatView | {
+      kind: "self";
+      id: string;
+      name: string;
+      initials: string;
+      bg: string;
+      sub: string;
+    },
+  ) => {
+    const view: DemoChatView = {
+      id: row.id,
+      name: row.name,
+      kind: row.kind === "self" ? "self" : row.kind,
+      initials: row.initials,
+      bg: row.bg,
+    };
+    setDemoChatViews((prev) => ({ ...prev, [row.id]: view }));
+    void openChatWindow(row.id);
+    setShowNewChatOverlay(false);
+    setShowSettingsOverlay(false);
+    setActiveTab("chats");
+    setIsOpen(true);
+  };
+
+  const showToast = (msg: string) => {
+    setDockToast(msg);
+    globalThis.setTimeout(() => setDockToast(null), 3000);
+  };
+
+  const showToastHub = (msg: string, _type?: "success" | "error") => {
+    showToast(msg);
+  };
+
+  const handleUnauthorized = useCallback(() => {
+    localStorage.removeItem("gt_token");
+    window.location.href = "/login";
+  }, []);
+
+  const updateChatPref = useCallback((chatId: string, patch: Partial<ChatPrefs>) => {
+    const next = patchChatPrefLs(chatId, patch);
+    setChatPrefs(next);
+  }, []);
+
+  const closeChatWindow = useCallback((chatId: string) => {
+    setOpenChatIds((prev) => prev.filter((id) => id !== chatId));
+    setMinimizedChatIds((prev) => prev.filter((id) => id !== chatId));
+    setOpenChatMetas((prev) => {
+      if (!prev[chatId]) return prev;
+      const next = { ...prev };
+      delete next[chatId];
+      return next;
+    });
+    setFocusedChatId((cur) => (cur === chatId ? null : cur));
+    setDemoChatViews((prev) => {
+      if (!prev[chatId]) return prev;
+      const next = { ...prev };
+      delete next[chatId];
+      return next;
+    });
+    if (recordingChatId === chatId) {
+      setRecordingChatId(null);
+      setIsRecording(false);
+    }
+    if (firebaseListeners.current[chatId]) {
+      firebaseListeners.current[chatId]();
+      delete firebaseListeners.current[chatId];
+    }
+  }, [recordingChatId]);
+
+  const markChatDeleted = useCallback(
+    (chatId: string) => {
+      const deleted = markChatDeletedLs(chatId);
+      setDeletedChatIds(deleted);
+      closeChatWindow(chatId);
+    },
+    [closeChatWindow],
+  );
+
+  const reloadGroups = useCallback(async (): Promise<GroupOut[] | null> => {
+    try {
+      const boot = await apiFetch<{
+        groups?: { id: string; name: string; members?: { user_id: string; full_name: string }[] }[];
+      }>("/connect/bootstrap");
+      if (boot.groups) {
+        const mapped = boot.groups.map((g) => dockGroupToGroupOut(g));
+        setGroups(mapped);
+        return mapped;
+      }
+    } catch {
+      /* ignore */
+    }
+    return null;
+  }, []);
+
+  const hubUser = useMemo(
+    () => dockUserToUserMe(currentUser),
+    [currentUser],
+  );
+
+  const mainChatList = useMemo(() => {
+    let list = chats
+      .filter(
+        (c) =>
+          !deletedChatIds.includes(c.id) && !chatPrefs[c.id]?.archived,
+      )
+      .map((c) => dockChatToChatInfo(c as DockChat, currentUser?.id));
+
+    return list;
+  }, [chats, deletedChatIds, chatPrefs, currentUser]);
+
+  const groupsOnlyList = useMemo(
+    () => mainChatList.filter((c) => c.type === "group"),
+    [mainChatList],
+  );
+
+  const pullRefresh = usePullToRefresh(async () => {
+    await fetchChats();
+    showToast("Chats refreshed");
+  });
+
+  const initGroupChat = useCallback(
+    async (
+      database: Database,
+      group: GroupOut,
+      members: GroupMemberOut[],
+      current: UserMe,
+    ) => {
+      const chatId = `group_${group.id}`;
+      const chatRef = ref(database, `chats/${chatId}/info`);
+      try {
+        const snapshot = await get(chatRef);
+        const memberIds = members.map((m) => m.user_id);
+        if (!snapshot.exists()) {
+          await set(chatRef, {
+            id: chatId,
+            name: group.name,
+            type: "group",
+            group_id: group.id,
+            members: memberIds,
+            created_by: current.id,
+            created_at: Date.now(),
+            last_message: "",
+            last_message_time: Date.now(),
+            last_message_sender: "",
+          });
+          for (const uid of memberIds) {
+            await set(ref(database, `user_chats/${uid}/${chatId}`), true);
+          }
+        } else {
+          await update(chatRef, { members: memberIds });
+        }
+      } catch (e) {
+        console.warn("initGroupChat", e);
+      }
+    },
+    [],
+  );
+
+  const resolveHubChatInfo = useCallback(
+    (chatId: string): ChatInfo | null => {
+      if (!chatId) return null;
+      if (chatId === DEMO_CHAT_ROVVY_HELP_ID) {
+        return {
+          id: DEMO_CHAT_ROVVY_HELP_ID,
+          name: "Rovvy Help",
+          type: "individual",
+          members: [],
+          created_by: "system",
+          created_at: Date.now(),
+          isBot: true,
+        };
+      }
+      if (chatId === DEMO_CHAT_COMMUNITY_ID) {
+        return {
+          id: DEMO_CHAT_COMMUNITY_ID,
+          name: "Community Updates",
+          type: "individual",
+          members: [],
+          created_by: "system",
+          created_at: Date.now(),
+          isAnnouncement: true,
+        };
+      }
+
+      const cached = openChatMetas[chatId];
+      if (cached) return cached;
+
+      const fromMain = mainChatList.find((c) => c.id === chatId);
+      if (fromMain) {
+        if (fromMain.type === "group" && fromMain.group_id) {
+          const g = groups.find((x) => x.id === fromMain.group_id);
+          if (
+            g?.name &&
+            (!fromMain.name?.trim() || fromMain.name === "Direct Chat")
+          ) {
+            return { ...fromMain, name: g.name };
+          }
+        }
+        return fromMain;
+      }
+
+      if (chatId.startsWith("group_")) {
+        const gid = chatId.slice("group_".length);
+        const g = groups.find((x) => x.id === gid);
+        if (g && currentUser) {
+          const ids = (g.members ?? []).map((m) => m.user_id);
+          return {
+            id: chatId,
+            name: g.name,
+            type: "group",
+            group_id: g.id,
+            members: ids.length > 0 ? ids : [currentUser.id],
+            created_by: currentUser.id,
+            created_at: Date.now(),
+          };
+        }
+      }
+
+      const chat = chats.find((c) => c.id === chatId);
+      if (!chat) return null;
+      const info = dockChatToChatInfo(chat as DockChat, currentUser?.id);
+      if (info.type === "group" && info.group_id) {
+        const g = groups.find((x) => x.id === info.group_id);
+        if (
+          g?.name &&
+          (!info.name?.trim() ||
+            info.name === "Direct Chat" ||
+            info.name === "Group")
+        ) {
+          return { ...info, name: g.name };
+        }
+      }
+      return info;
+    },
+    [mainChatList, groups, chats, currentUser, openChatMetas],
+  );
+
+  const openChatWindow = async (chatId: string, chatMeta?: ChatInfo) => {
+    setContextMenu(null);
+
+    if (isDemoChatId(chatId) && !demoChatViews[chatId]) {
+      return;
+    }
+
+    if (chatMeta) {
+      setOpenChatMetas((prev) => ({ ...prev, [chatId]: chatMeta }));
+    }
+    setMinimizedChatIds((prev) => prev.filter((id) => id !== chatId));
+
+    if (isSpecialChat(chatId)) {
+      updateChatPref(chatId, { lastReadAt: Date.now() });
+      setOpenChatIds((prev) =>
+        prev.includes(chatId)
+          ? [...prev.filter((id) => id !== chatId), chatId]
+          : [...prev, chatId],
+      );
+      setFocusedChatId(chatId);
+      setIsOpen(true);
+      setShowNewChatOverlay(false);
+      setShowSettingsOverlay(false);
+      setSearchQuery("");
+      return;
+    }
+
     const chat = chats.find((c) => c.id === chatId);
-    if (chat && (chat.type === "group" || chat.type === "trip" || chat.trip_id)) {
-      apiFetch<{ enabled: boolean; off_since: string | null }>(`/wayra/group/${chatId}/status`)
+    const resolved =
+      chatMeta ?? resolveHubChatInfo(chatId);
+    const isGroupLike =
+      resolved?.type === "group" ||
+      chatId.startsWith("group_") ||
+      Boolean(
+        chat && (chat.type === "group" || chat.type === "trip" || chat.trip_id),
+      );
+
+    if (isGroupLike) {
+      if (chatId.startsWith("group_") && hubUser) {
+        const gid = chatId.slice("group_".length);
+        const g = groups.find((x) => x.id === gid);
+        const fb = firebaseInstance.current;
+        if (g && fb?.ok && fb.db) {
+          void initGroupChat(fb.db, g, g.members ?? [], hubUser);
+        }
+      }
+      apiFetch<{ enabled: boolean; off_since: string | null }>(
+        `/wayra/group/${chatId}/status`,
+      )
         .then((status) => {
           setWayraStatus((prev) => ({ ...prev, [chatId]: status }));
         })
@@ -199,11 +772,136 @@ export function LoungeDock() {
     // Subscribe to real-time Firebase messages
     subscribeToFirebase(chatId);
 
-    setSelectedChatId(chatId);
+    updateChatPref(chatId, { lastReadAt: Date.now() });
+    setOpenChatIds((prev) =>
+      prev.includes(chatId)
+        ? [...prev.filter((id) => id !== chatId), chatId]
+        : [...prev, chatId],
+    );
+    setFocusedChatId(chatId);
     setIsOpen(true);
     setShowNewChatOverlay(false);
     setShowSettingsOverlay(false);
   };
+
+  const onSelectHubChat = useCallback(
+    (c: ChatInfo) => {
+      if (c.isBot || c.id === DEMO_CHAT_ROVVY_HELP_ID) {
+        void openChatWindow(DEMO_CHAT_ROVVY_HELP_ID);
+        updateChatPref(DEMO_CHAT_ROVVY_HELP_ID, { lastReadAt: Date.now() });
+        return;
+      }
+      if (c.isAnnouncement || c.id === DEMO_CHAT_COMMUNITY_ID) {
+        void openChatWindow(DEMO_CHAT_COMMUNITY_ID);
+        updateChatPref(DEMO_CHAT_COMMUNITY_ID, { lastReadAt: Date.now() });
+        return;
+      }
+      void openChatWindow(c.id, c);
+    },
+    [updateChatPref],
+  );
+
+  const closeSearchOverlay = useCallback(() => {
+    setSearchQuery("");
+  }, []);
+
+  const searchActive =
+    searchQuery.trim().length > 0 &&
+    !showSettingsOverlay &&
+    !showNewChatOverlay;
+
+  const openDirectChatFromPerson = useCallback(
+    async (p: ContactPerson) => {
+      try {
+        const chat = await apiFetch<Chat>("/lounge/chats/direct", {
+          method: "POST",
+          body: JSON.stringify({ user_id: p.id }),
+        });
+        await fetchChats();
+        void openChatWindow(chat.id);
+        setActiveTab("chats");
+        closeSearchOverlay();
+      } catch {
+        showToastHub("Could not start chat", "error");
+      }
+    },
+    [closeSearchOverlay, showToastHub],
+  );
+
+  const activeHubChat = useMemo(
+    (): ChatInfo | null =>
+      focusedChatId ? resolveHubChatInfo(focusedChatId) : null,
+    [focusedChatId, resolveHubChatInfo],
+  );
+
+  const hubSearch = useHubConnectSearch({
+    open: searchQuery.trim().length >= 2,
+    searchQuery,
+    groups,
+    mainChatList,
+    userId: currentUser?.id,
+    db: firebaseDb,
+    masterAbortRef,
+    handleUnauthorized,
+    showToast: showToastHub,
+    onOpenDirectChat: openDirectChatFromPerson,
+    onOpenGroupChat: onSelectHubChat,
+    onCloseOverlay: closeSearchOverlay,
+    reloadGroups,
+  });
+
+  useEffect(() => {
+    if (!currentUser?.id || !loungeIntent) return;
+
+    const intent = loungeIntent;
+    setLoungeIntent(null);
+
+    if (intent.createGroup) {
+      setCreateGroupRequestId((n) => n + 1);
+    }
+
+    if (intent.openProfile) {
+      hubSearch.setSearchProfileFor(intent.openProfile);
+    }
+
+    if (intent.connectUserId) {
+      void (async () => {
+        try {
+          const d = await apiFetch<{
+            id: string;
+            full_name: string;
+            username: string | null;
+            profile_picture?: string | null;
+            avatar_url?: string | null;
+          }>(`/users/${intent.connectUserId}`);
+          hubSearch.setSearchProfileFor({
+            id: String(d.id),
+            full_name: d.full_name,
+            username: d.username,
+            profile_picture: d.profile_picture ?? null,
+            avatar_url: d.avatar_url ?? null,
+            friend_status: "none",
+          });
+        } catch {
+          /* profile may be unavailable */
+        }
+      })();
+    }
+
+    if (intent.openDmUserId) {
+      void openDirectChatFromPerson({
+        id: intent.openDmUserId,
+        full_name: "Chat",
+        username: null,
+        avatar_url: null,
+      });
+    }
+  }, [
+    currentUser?.id,
+    loungeIntent,
+    hubSearch.setSearchProfileFor,
+    openDirectChatFromPerson,
+  ]);
 
   const subscribeToFirebase = (chatId: string) => {
     const fb = firebaseInstance.current;
@@ -237,20 +935,16 @@ export function LoungeDock() {
     firebaseListeners.current[chatId] = () => off(messagesRef, "value", unsubscribe);
   };
 
-  const handleCloseChatBox = (chatId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (selectedChatId === chatId) {
-      setSelectedChatId(null);
-    }
-    if (firebaseListeners.current[chatId]) {
-      firebaseListeners.current[chatId]();
-      delete firebaseListeners.current[chatId];
-    }
-  };
-
-  const handleSend = async (chatId: string) => {
-    const text = inputTexts[chatId]?.trim();
+  const handleSend = async (
+    chatId: string,
+    replyToMsg?: Message | null,
+  ) => {
+    let text = inputTexts[chatId]?.trim();
     if (!text || !currentUser) return;
+
+    if (replyToMsg) {
+      text = `↩ ${replyToMsg.sender_name}: ${replyToMsg.text.slice(0, 60)}${replyToMsg.text.length > 60 ? "…" : ""}\n${text}`;
+    }
 
     // Clear input first
     setInputTexts((prev) => ({ ...prev, [chatId]: "" }));
@@ -343,6 +1037,115 @@ export function LoungeDock() {
     }
   };
 
+  const sendAttachmentMessage = async (chatId: string, type: string, text: string, metadata?: any) => {
+    if (!currentUser) return;
+    const messageId = uuidv4();
+    const timestamp = Date.now();
+    
+    const isWayraEnabled = wayraStatus[chatId]?.enabled !== false;
+    const chat = chats.find((c) => c.id === chatId);
+    const isGroup = chat && (chat.type === "group" || chat.type === "trip" || chat.trip_id);
+
+    const newMsg: Message = {
+      id: messageId,
+      sender_id: currentUser.id,
+      sender_name: currentUser.full_name,
+      text,
+      timestamp,
+      type,
+      wayra_visible: isGroup ? isWayraEnabled : true,
+      metadata,
+    };
+
+    // 1. Deliver instantly via Firebase RTDB
+    const fb = firebaseInstance.current;
+    if (fb && fb.ok && fb.db) {
+      try {
+        const msgRef = ref(fb.db, `chats/${chatId}/messages/${messageId}`);
+        await set(msgRef, newMsg);
+      } catch {}
+    }
+
+    // Update state locally
+    setMessages((prev) => {
+      const current = prev[chatId] || [];
+      if (current.some((m) => m.id === messageId)) return prev;
+      return {
+        ...prev,
+        [chatId]: [...current, newMsg],
+      };
+    });
+
+    // 2. Perform background sync to backend drive cache
+    try {
+      const allMsgs = [...(messages[chatId] || []), newMsg];
+      await apiFetch("/lounge/drive/sync", {
+        method: "POST",
+        body: JSON.stringify({
+          chat_id: chatId,
+          messages: allMsgs,
+        }),
+      });
+    } catch {}
+  };
+
+  const startVoiceRecording = async (chatId: string) => {
+    try {
+      setRecordingChatId(chatId);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach((track) => track.stop());
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        
+        // Convert to base64
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64Data = reader.result as string;
+          void sendAttachmentMessage(chatId, "audio", "", {
+            url: base64Data,
+            duration: recordingDuration,
+          });
+        };
+        reader.readAsDataURL(audioBlob);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingDuration(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
+    } catch {
+      showToast("Could not access microphone. Check browser permissions.");
+    }
+  };
+
+  const stopVoiceRecording = (cancel: boolean) => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    setIsRecording(false);
+    setRecordingChatId(null);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      if (cancel) {
+        // Discard
+        mediaRecorderRef.current.onstop = null;
+      }
+      mediaRecorderRef.current.stop();
+    }
+  };
+
   // Create Direct Chat
   const startDirectChat = async (targetUserId: string) => {
     try {
@@ -351,27 +1154,7 @@ export function LoungeDock() {
         body: JSON.stringify({ user_id: targetUserId }),
       });
       await fetchChats();
-      handleThreadClick(chat.id);
-      setActiveTab("chats");
-    } catch {}
-  };
-
-  // Create Group Chat
-  const createGroupChat = async () => {
-    if (!groupName.trim() || selectedContactIds.length === 0) return;
-    try {
-      const chat = await apiFetch<Chat>("/lounge/chats/group", {
-        method: "POST",
-        body: JSON.stringify({
-          name: groupName,
-          member_ids: selectedContactIds,
-        }),
-      });
-      await fetchChats();
-      handleThreadClick(chat.id);
-      setShowNewGroupModal(false);
-      setGroupName("");
-      setSelectedContactIds([]);
+      void openChatWindow(chat.id);
       setActiveTab("chats");
     } catch {}
   };
@@ -397,27 +1180,138 @@ export function LoungeDock() {
     });
   };
 
-  // Filter lists based on search
-  const filteredChats = chats.filter((c) => {
-    if (!searchQuery) return true;
-    const name = c.name || c.members.find((m) => m.user_id !== currentUser?.id)?.full_name || "";
-    return name.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const toggleChatPref = (chatId: string, key: "pinned" | "muted" | "archived") => {
+    const cur = chatPrefs[chatId]?.[key] ?? false;
+    updateChatPref(chatId, { [key]: !cur });
+    setContextMenu(null);
+    const labels: Record<string, [string, string]> = {
+      pinned: ["Chat pinned", "Chat unpinned"],
+      muted: ["Chat muted", "Chat unmuted"],
+      archived: ["Chat archived", "Chat unarchived"],
+    };
+    showToast(!cur ? labels[key][0] : labels[key][1]);
+  };
+
+  const toggleBuddyFav = (contactId: string) => {
+    const next = toggleBuddyFavourite(contactId);
+    setBuddyFavourites(next);
+    showToast(next.includes(contactId) ? "Added to favourites" : "Removed from favourites");
+  };
+
+  const deleteChatFromList = (chatId: string) => {
+    markChatDeleted(chatId);
+    setContextMenu(null);
+    showToast("Chat removed from list");
+  };
+
+  const blockChatUser = async (chatId: string) => {
+    const chat = chats.find((c) => c.id === chatId);
+    const peer = chat?.members?.find((m) => m.user_id !== currentUser?.id);
+    if (!peer) return;
+    try {
+      await apiFetch("/social/block", {
+        method: "POST",
+        body: JSON.stringify({ user_id: peer.user_id }),
+      });
+      showToast(`${peer.full_name} blocked`);
+      deleteChatFromList(chatId);
+    } catch {
+      showToast("Could not block user");
+    }
+  };
+
+  const handleScheduleCall = (data: Omit<ScheduledCallData, "id" | "createdAt">) => {
+    const entry: ScheduledCallData = {
+      ...data,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+    };
+    const next = [entry, ...scheduledCalls];
+    setScheduledCalls(next);
+    writeJsonLs(GT_SCHEDULED_CALLS, next);
+    setShowScheduleModal(false);
+    showToast("Call scheduled");
+  };
+
+  const handleFileSelect = async (
+    chatId: string,
+    file: File,
+    type: "image" | "video" | "document",
+  ) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      void sendAttachmentMessage(chatId, type, file.name, {
+        url: base64,
+        name: file.name,
+        size: file.size,
+      });
+    };
+    reader.readAsDataURL(file);
+    setShowAttachMenu((prev) => ({ ...prev, [chatId]: false }));
+  };
+
+  const handleShareLocation = (chatId: string) => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition((pos) => {
+      void sendAttachmentMessage(chatId, "location", "Shared location", {
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude,
+      });
+    });
+    setShowAttachMenu((prev) => ({ ...prev, [chatId]: false }));
+  };
+
+  const handleSplitSubmit = (amount: number, splitEqually: boolean) => {
+    if (!splitChatId) return;
+    const sym = "₹";
+    const t = splitEqually
+      ? `Split ${sym}${amount.toFixed(2)} equally`
+      : `Split ${sym}${amount.toFixed(2)}`;
+    void sendAttachmentMessage(splitChatId, "split", t, {
+      amount,
+      currency: "INR",
+      split_equally: splitEqually,
+    });
+    setSplitChatId(null);
+  };
+
+  const starMessage = (chatId: string, msg: Message) => {
+    const entry: StarredMessage = {
+      chatId,
+      messageId: msg.id,
+      text: msg.text,
+      senderName: msg.sender_name,
+      timestamp: msg.timestamp,
+    };
+    const next = [entry, ...starredMessages.filter((s) => s.messageId !== msg.id)].slice(0, 100);
+    setStarredMessages(next);
+    writeStarredMessagesLs(next);
+  };
 
   const filteredContacts = contacts.filter((c) => {
     if (!searchQuery) return true;
     return c.full_name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
+  const dockSettingsOpen =
+    showSettingsOverlay && settingsScreen === "settings";
+
   return (
-    <div className="fixed bottom-0 right-[40px] z-[80] hidden md:flex items-end gap-3 pointer-events-none select-none">
-      {/* MAIN DOCK WIDGET */}
+    <div className="fixed bottom-0 right-2 sm:right-[40px] z-[80] pointer-events-none select-none">
+      <div className="flex flex-row-reverse items-end gap-3">
+      {/* MAIN DOCK WIDGET — always shows chat list when open */}
       <div
         className={`bg-slate-900 text-white shadow-2xl rounded-t-xl flex flex-col border border-slate-700/50 pointer-events-auto select-text overflow-hidden transition-all duration-300 ease-in-out ${
-          isOpen ? "w-[340px] md:w-[360px] h-[480px] md:h-[500px]" : "w-[290px] h-11"
+          isOpen
+            ? `w-[340px] md:w-[360px] ${
+                dockSettingsOpen
+                  ? "h-[min(90vh,720px)]"
+                  : "h-[480px] md:h-[500px]"
+              }`
+            : "w-[290px] h-11"
         }`}
       >
-        {/* Title bar (main or conversation) */}
         {!isOpen ? (
           <div
             className="h-11 shrink-0 px-4 bg-slate-900 text-white flex items-center justify-between cursor-pointer border-b border-slate-800/80 hover:bg-slate-800 w-full"
@@ -434,76 +1328,7 @@ export function LoungeDock() {
             </div>
             <ChevronUp size={16} />
           </div>
-        ) : selectedChatId ? (
-          // Conversation Title Bar
-          (() => {
-            const chat = chats.find((c) => c.id === selectedChatId);
-            const chatName = chat
-              ? chat.name ||
-                chat.members.find((m) => m.user_id !== currentUser?.id)?.full_name ||
-                "Direct Chat"
-              : "Chat";
-            const chatAvatar = chatName.charAt(0);
-
-            return (
-              <div className="h-14 shrink-0 px-3 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800/80">
-                <div className="flex items-center gap-2 min-w-0">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedChatId(null)}
-                    className="p-1 hover:bg-slate-805 rounded text-slate-400 hover:text-white transition-colors"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-                  <div className="h-7 w-7 rounded-full bg-[#0F766E] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm">
-                    {chatAvatar}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold truncate leading-tight">{chatName}</p>
-                    <p className="text-[9px] text-white/50 font-medium leading-none mt-0.5">
-                      {chat && (chat.type === "group" || chat.type === "trip" || chat.trip_id) && wayraStatus[selectedChatId]?.enabled
-                        ? "Wayra AI Active"
-                        : "Lounge Ephemeral"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {chat && (chat.type === "group" || chat.type === "trip" || chat.trip_id) && wayraStatus[selectedChatId] && (
-                    <button
-                      type="button"
-                      title={wayraStatus[selectedChatId].enabled ? "Disable Wayra AI (Privacy Mode)" : "Enable Wayra AI"}
-                      onClick={() => toggleWayra(selectedChatId)}
-                      className={`p-1.5 rounded transition-all duration-300 relative flex items-center justify-center ${
-                        wayraStatus[selectedChatId].enabled
-                          ? "text-emerald-300 hover:text-emerald-100 hover:bg-emerald-500/20"
-                          : "text-stone-400 hover:text-stone-200 hover:bg-stone-500/20"
-                      }`}
-                    >
-                      <Sparkles
-                        size={14}
-                        className={wayraStatus[selectedChatId].enabled ? "animate-pulse" : ""}
-                      />
-                      {wayraStatus[selectedChatId].enabled && (
-                        <span className="absolute -top-0.5 -right-0.5 flex h-1.5 w-1.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                        </span>
-                      )}
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setIsOpen(false)}
-                    className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
-                  >
-                    <ChevronDown size={16} />
-                  </button>
-                </div>
-              </div>
-            );
-          })()
         ) : (
-          // Main Title Bar
           <div className="h-14 shrink-0 px-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800/80">
             <div className="min-w-0">
               <p className="text-[14px] font-bold tracking-tight text-white leading-tight">
@@ -557,227 +1382,122 @@ export function LoungeDock() {
         )}
 
         {isOpen && (
-          <>
-            {/* CONVERSATION VIEW MODE */}
-            {selectedChatId ? (
-              <div className="flex-1 flex flex-col min-h-0 bg-stone-50">
-                {/* Chat Body / Message History */}
-                <div className="flex-1 overflow-y-auto p-3 space-y-2.5 bg-stone-50 text-[12px] flex flex-col justify-end min-h-0 relative">
-                  <div className="overflow-y-auto space-y-2 max-h-full pr-1">
-                    {(() => {
-                      const chatMsgs = messages[selectedChatId] || [];
-                      return chatMsgs.map((m) => {
-                        const isUser = m.sender_id === currentUser?.id;
-                        const isWayra = m.sender_id === "wayra_ai" || m.sender_avatar === "wayra";
-                        return (
-                          <div
-                            key={m.id}
-                            className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
-                          >
-                            <div className="flex items-center gap-1 mb-0.5 text-[9px] font-medium">
-                              {isWayra ? (
-                                <span className="flex items-center gap-0.5 text-[#0F766E] font-bold">
-                                  <Sparkles size={8} /> {m.sender_name}
-                                </span>
-                              ) : (
-                                <span className="text-slate-900 font-bold">{isUser ? "You" : m.sender_name}</span>
-                              )}
-                              <span className="text-stone-500">·</span>
-                              <span className="text-stone-500">
-                                {new Date(m.timestamp).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </span>
-                              {m.wayra_visible === false && (
-                                <span className="text-stone-400 text-[8px] flex items-center gap-0.5 font-bold" title="Private to members (Hidden from AI)">
-                                  · 🔒 Private
-                                </span>
-                              )}
-                            </div>
-                            {m.type === "location_preview" && m.location_details ? (
-                              <div className="bg-white rounded-lg border border-stone-200 overflow-hidden shadow-sm max-w-[85%] text-slate-900">
-                                {m.location_details.thumbnail && (
-                                  <img
-                                    src={m.location_details.thumbnail}
-                                    alt={m.location_details.place_name || "Location"}
-                                    className="w-full h-24 object-cover"
-                                  />
-                                )}
-                                <div className="p-2.5">
-                                  <div className="flex items-start gap-1.5">
-                                    <span className="text-[#0F766E] mt-0.5">📍</span>
-                                    <div>
-                                      <h4 className="font-bold text-xs leading-snug">{m.location_details.place_name}</h4>
-                                      <p className="text-[10px] text-stone-500 font-semibold">
-                                        {[m.location_details.city, m.location_details.country].filter(Boolean).join(", ")}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="mt-2 flex items-center justify-between text-[9px] font-bold uppercase tracking-wider text-[#0F766E] border-t border-stone-100 pt-2">
-                                    <span>Confidence: {m.location_details.confidence}</span>
-                                    <a
-                                      href={`https://www.google.com/maps/search/?api=1&query=${m.location_details.latitude},${m.location_details.longitude}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="hover:underline"
-                                    >
-                                      View Map →
-                                    </a>
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <div
-                                className={`px-3 py-1.5 rounded-2xl max-w-[85%] leading-relaxed break-words font-medium shadow-sm ${
-                                  isUser
-                                    ? "bg-[#0F766E] text-white rounded-tr-none"
-                                    : isWayra
-                                    ? "bg-teal-50 text-teal-800 border border-teal-100 rounded-tl-none font-semibold"
-                                    : "bg-white text-slate-900 border border-stone-200 rounded-tl-none"
-                                }`}
-                              >
-                                {m.text}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-
-                  {/* Emoji Picker Overlay inside conversation body */}
-                  {showEmojiPicker[selectedChatId] && (
-                    <div className="absolute bottom-12 left-2 right-2 bg-white border border-stone-200 rounded-lg p-2 shadow-lg flex gap-2 justify-around z-50">
-                      {["😊", "👍", "✈️", "🏨", "📍", "🚗", "🗺️", "🔥"].map((emoji) => (
-                        <button
-                          key={emoji}
-                          type="button"
-                          onClick={() => {
-                            setInputTexts((prev) => ({
-                              ...prev,
-                              [selectedChatId]: (prev[selectedChatId] || "") + emoji,
-                            }));
-                            setShowEmojiPicker((prev) => ({ ...prev, [selectedChatId]: false }));
-                          }}
-                          className="text-lg hover:scale-125 transition-transform"
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Input form */}
-                <div className="p-2 border-t border-stone-200 bg-white flex items-center gap-1.5 shrink-0 relative">
-                  <button
-                    type="button"
-                    onClick={() => alert("Attachments are currently disabled in ephemeral Lounge chat")}
-                    className="text-stone-400 hover:text-stone-600 p-1 shrink-0"
-                    title="Attach file"
-                  >
-                    <Paperclip size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowEmojiPicker((prev) => ({ ...prev, [selectedChatId]: !prev[selectedChatId] }))}
-                    className="text-stone-400 hover:text-[#0F766E] p-1 shrink-0"
-                    title="Emojis"
-                  >
-                    <Smile size={16} />
-                  </button>
-                  <input
-                    type="text"
-                    placeholder="Type a message…"
-                    value={inputTexts[selectedChatId] || ""}
-                    onChange={(e) =>
-                      setInputTexts((prev) => ({ ...prev, [selectedChatId]: e.target.value }))
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleSend(selectedChatId);
-                    }}
-                    className="flex-1 text-xs border border-stone-250 px-3 py-1.5 rounded-full outline-none focus:border-[#0F766E] text-slate-900 font-medium bg-stone-50"
-                  />
-                  {(inputTexts[selectedChatId] || "").trim() ? (
-                    <button
-                      type="button"
-                      onClick={() => handleSend(selectedChatId)}
-                      className="text-[#0F766E] hover:text-teal-700 p-1 shrink-0"
-                      title="Send message"
-                    >
-                      <Send size={16} />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => alert("Voice messaging coming soon")}
-                      className="text-stone-400 hover:text-stone-600 p-1 shrink-0"
-                      title="Microphone"
-                    >
-                      <Mic size={16} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              // TAB LIST MODE
               <>
                 {/* Search Bar - styled exactly like main Lounge search bar */}
                 {!showSettingsOverlay && !showNewChatOverlay && (
-                  <div className="bg-slate-950 px-3 py-2 shrink-0 border-b border-slate-800/60">
-                    <div
-                      className="flex h-9 w-full items-center gap-2 rounded-full px-3 text-left text-xs text-white/70 transition hover:bg-white/[0.18]"
-                      style={{ background: "rgba(255,255,255,0.14)" }}
-                    >
-                      <Search className="h-3.5 w-3.5 shrink-0 text-white/60" strokeWidth={2.5} />
-                      <input
-                        type="text"
-                        placeholder={activeTab === "chats" ? "Search chats, people, and groups..." : "Search contacts..."}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="bg-transparent text-xs text-white w-full border-none outline-none placeholder:text-white/50"
-                      />
-                    </div>
+                  <div className="shrink-0 border-b border-slate-800/60 bg-slate-950 px-3 py-2">
+                    <HubSearchField
+                      tone="dock"
+                      placeholder="Search chats, people, and groups..."
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                    />
                   </div>
                 )}
 
                 {/* Tab Bar - below search bar */}
-                {!showSettingsOverlay && !showNewChatOverlay && (
-                  <div className="bg-slate-950 px-2 pb-1.5 shrink-0 border-b border-slate-800/80">
-                    <div className="flex bg-slate-900 p-0.5 rounded-lg text-xs font-semibold">
-                      <button
-                        onClick={() => setActiveTab("chats")}
-                        className={`flex-1 py-1 rounded-md transition-all ${
-                          activeTab === "chats" ? "bg-[#0F766E] text-white" : "text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        Chats
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("calls")}
-                        className={`flex-1 py-1 rounded-md transition-all ${
-                          activeTab === "calls" ? "bg-[#0F766E] text-white" : "text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        Calls
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("updates")}
-                        className={`flex-1 py-1 rounded-md transition-all ${
-                          activeTab === "updates" ? "bg-[#0F766E] text-white" : "text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        Updates
-                      </button>
-                    </div>
-                  </div>
-                )}
+                {!showSettingsOverlay && !showNewChatOverlay ? (
+                  <HubTabBar
+                    variant="dock"
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    tabs={["chats", "calls", "updates"]}
+                  />
+                ) : null}
 
                 {/* List Content */}
-                <div className="flex-1 overflow-y-auto bg-white p-2 divide-y divide-stone-100">
-                  {/* SETTINGS OVERLAY */}
-                  {showSettingsOverlay && (
+                <div
+                  ref={pullRefresh.scrollRef}
+                  className={`flex-1 bg-white ${
+                    dockSettingsOpen
+                      ? "flex min-h-0 flex-col overflow-hidden"
+                      : "overflow-y-auto p-2 divide-y divide-stone-100"
+                  }`}
+                  style={{
+                    transform: pullRefresh.pullDist ? `translateY(${pullRefresh.pullDist * 0.35}px)` : undefined,
+                    transition: pullRefresh.pullDist ? "none" : "transform 0.2s ease-out",
+                  }}
+                  onTouchStart={(e) => {
+                    if (activeTab === "chats" && !searchActive) {
+                      pullRefresh.onTouchStart(e);
+                    }
+                  }}
+                  onTouchMove={(e) => {
+                    if (activeTab === "chats" && !searchActive) {
+                      pullRefresh.onTouchMove(e);
+                    }
+                  }}
+                  onTouchEnd={() => {
+                    if (activeTab === "chats" && !searchActive) {
+                      pullRefresh.onTouchEnd();
+                    }
+                  }}
+                >
+                  {searchActive ? (
+                    <HubSearchResults
+                      tone="dock"
+                      searchQuery={searchQuery}
+                      loading={hubSearch.searchOverlayLoading}
+                      overlayChats={hubSearch.overlayChats}
+                      overlayContacts={hubSearch.overlayContacts}
+                      overlayPeople={hubSearch.overlayPeople}
+                      discoverGroupsList={hubSearch.discoverGroupsList}
+                      groups={groups}
+                      onOpenGroupChat={hubSearch.openGroupChatFromSearch}
+                      onOpenDirectChat={openDirectChatFromPerson}
+                      onViewProfile={hubSearch.setSearchProfileFor}
+                      userSearchActionId={hubSearch.userSearchActionId}
+                      onConnect={hubSearch.connectUserSearchRow}
+                      onAccept={hubSearch.acceptUserSearchRow}
+                      onMessageBuddy={hubSearch.messageUserSearchRow}
+                      onBlock={hubSearch.blockUserSearch}
+                      buddiesMenuOpenId={hubSearch.buddiesMenuOpenId}
+                      onBuddiesMenuOpenIdChange={hubSearch.setBuddiesMenuOpenId}
+                      onJoinDiscoverGroup={hubSearch.joinDiscoverGroup}
+                      showToast={showToastHub}
+                      onDismiss={closeSearchOverlay}
+                    />
+                  ) : null}
+                  {!searchActive && pullRefresh.pullDist > 20 && activeTab === "chats" ? (
+                    <div className="pointer-events-none py-1 text-center text-[10px] text-stone-500">
+                      {pullRefresh.pullDist >= 60 ? "Release to refresh" : "Pull to refresh"}
+                    </div>
+                  ) : null}
+                  {!searchActive && showSettingsOverlay && settingsScreen === "settings" ? (
+                    <ConnectSettingsPanel
+                      variant="dock"
+                      user={
+                        currentUser
+                          ? {
+                              id: currentUser.id,
+                              full_name: currentUser.full_name,
+                              username: currentUser.username,
+                            }
+                          : null
+                      }
+                      onClose={() => setSettingsScreen("menu")}
+                      onExit={() => {
+                        setSettingsScreen("menu");
+                        setShowSettingsOverlay(false);
+                      }}
+                      showToast={showToast}
+                      onLogout={() => {
+                        localStorage.removeItem("gt_token");
+                        window.location.href = "/login";
+                      }}
+                      onShareInvite={async () => {
+                        try {
+                          await navigator.clipboard.writeText(
+                            `${window.location.origin}/join`,
+                          );
+                          showToast("Invite link copied");
+                        } catch {
+                          showToast("Could not copy link");
+                        }
+                      }}
+                    />
+                  ) : null}
+                  {!searchActive && showSettingsOverlay && settingsScreen !== "settings" && (
                     <div className="p-3 text-slate-900 space-y-4">
                       {settingsScreen === "menu" ? (
                         <div className="space-y-3">
@@ -812,7 +1532,7 @@ export function LoungeDock() {
                               className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] transition-colors"
                               onClick={() => {
                                 setShowSettingsOverlay(false);
-                                setShowNewGroupModal(true);
+                                setCreateGroupRequestId((n) => n + 1);
                               }}
                             >
                               New group
@@ -822,7 +1542,7 @@ export function LoungeDock() {
                               className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] transition-colors"
                               onClick={() => {
                                 setShowSettingsOverlay(false);
-                                setShowNewChatOverlay(true);
+                                setActiveTab("chats");
                               }}
                             >
                               Contacts
@@ -830,20 +1550,19 @@ export function LoungeDock() {
                             <button
                               type="button"
                               className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] transition-colors"
-                              onClick={() => {
-                                alert("Linked devices coming soon");
-                              }}
+                              onClick={() => setSettingsScreen("connect")}
                             >
-                              Linked devices
+                              Privacy &amp; blocked
                             </button>
                             <button
                               type="button"
-                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] transition-colors"
-                              onClick={() => {
-                                alert("Starred messages coming soon");
-                              }}
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] transition-colors flex items-center justify-between"
+                              onClick={() => setSettingsScreen("starred")}
                             >
-                              Starred
+                              <span>Starred</span>
+                              {starredMessages.length > 0 ? (
+                                <span className="text-[9px] font-bold text-[#0F766E]">{starredMessages.length}</span>
+                              ) : null}
                             </button>
 
                             <div className="h-px bg-stone-100 my-1" />
@@ -851,13 +1570,40 @@ export function LoungeDock() {
                             <button
                               type="button"
                               className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] font-bold transition-colors"
-                              onClick={() => {
-                                setSettingsScreen("settings");
-                              }}
+                              onClick={() => setSettingsScreen("settings")}
                             >
                               Settings
                             </button>
                           </nav>
+                        </div>
+                      ) : settingsScreen === "connect" ? (
+                        <ConnectSettingsPopup
+                          onClose={() => setSettingsScreen("menu")}
+                          onToast={showToast}
+                        />
+                      ) : settingsScreen === "starred" ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+                            <div className="flex items-center gap-1.5">
+                              <button onClick={() => setSettingsScreen("menu")} className="p-0.5 text-stone-400">
+                                <ChevronLeft size={16} className="text-[#0F766E]" />
+                              </button>
+                              <span className="text-xs font-bold text-[#0F766E]">Starred messages</span>
+                            </div>
+                            <button onClick={() => setShowSettingsOverlay(false)} className="text-stone-400 p-1">
+                              <X size={14} />
+                            </button>
+                          </div>
+                          {starredMessages.length === 0 ? (
+                            <p className="py-6 text-center text-xs text-stone-500">No starred messages yet</p>
+                          ) : (
+                            starredMessages.map((s) => (
+                              <div key={s.messageId} className="rounded-lg border border-stone-100 bg-stone-50 p-2">
+                                <p className="text-[10px] font-bold text-[#0F766E]">{s.senderName}</p>
+                                <p className="text-xs text-slate-800 mt-0.5 line-clamp-2">{s.text}</p>
+                              </div>
+                            ))
+                          )}
                         </div>
                       ) : (
                         <div className="space-y-4">
@@ -918,8 +1664,7 @@ export function LoungeDock() {
                     </div>
                   )}
 
-                  {/* NEW CHAT / CONTACTS OVERLAY */}
-                  {!showSettingsOverlay && activeTab === "chats" && showNewChatOverlay && (
+                  {!searchActive && !showSettingsOverlay && activeTab === "chats" && showNewChatOverlay && (
                     <div className="space-y-1">
                       <div className="flex items-center justify-between p-2 mb-2 bg-slate-50 rounded-lg">
                         <span className="text-xs font-bold text-[#0F766E]">Start New Chat</span>
@@ -933,7 +1678,7 @@ export function LoungeDock() {
 
                       {/* Create Group Button */}
                       <button
-                        onClick={() => setShowNewGroupModal(true)}
+                        onClick={() => setCreateGroupRequestId((n) => n + 1)}
                         className="w-full flex items-center gap-2 p-2 rounded-lg bg-teal-50 hover:bg-teal-100 text-[#0F766E] text-xs font-bold transition-all mb-2 border border-teal-100"
                       >
                         <Plus size={16} />
@@ -950,6 +1695,12 @@ export function LoungeDock() {
                           className="w-full bg-slate-50 text-xs text-slate-900 pl-8 pr-3 py-1.5 rounded-lg border border-stone-250 outline-none focus:border-[#0F766E] font-medium"
                         />
                       </div>
+
+                      <DemoContactsSection
+                        currentUserName={currentUser?.full_name}
+                        currentUserInitials={currentUser?.full_name?.charAt(0) || "Y"}
+                        onOpenDemo={openDemoChat}
+                      />
 
                       {filteredContacts.length === 0 ? (
                         <div className="text-center py-8 text-stone-400 text-xs font-semibold">
@@ -978,208 +1729,362 @@ export function LoungeDock() {
                                 </p>
                               </div>
                             </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-
-                  {/* CHATS TAB */}
-                  {!showSettingsOverlay && !showNewChatOverlay && activeTab === "chats" && (
-                    <>
-                      {filteredChats.length === 0 ? (
-                        <div className="text-center py-8 text-stone-400 text-xs font-semibold animate-pulse">
-                          No active chats
-                        </div>
-                      ) : (
-                        filteredChats.map((c) => {
-                          const name =
-                            c.name ||
-                            c.members.find((m) => m.user_id !== currentUser?.id)?.full_name ||
-                            "Direct Chat";
-                          const avatar = name.charAt(0);
-
-                          return (
-                            <div
-                              key={c.id}
-                              onClick={() => handleThreadClick(c.id)}
-                              className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleBuddyFav(contact.id);
+                              }}
+                              className="p-1 text-stone-400 hover:text-amber-500"
+                              aria-label="Favourite"
                             >
-                              <div className="h-8 w-8 rounded-full bg-[#0F766E] text-white flex items-center justify-center text-xs font-bold shadow-sm shrink-0">
-                                {avatar}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between">
-                                  <p className="text-xs font-bold text-slate-900 truncate">{name}</p>
-                                  {c.type !== "direct" && (
-                                    <span className="text-[8px] bg-teal-50 text-[#0F766E] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide border border-teal-100">
-                                      {c.type}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-[10px] text-stone-500 truncate mt-0.5 font-medium">
-                                  {c.last_message_preview || "No messages yet"}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
-                    </>
-                  )}
-
-                  {/* CALLS TAB */}
-                  {!showSettingsOverlay && activeTab === "calls" && (
-                    <div className="space-y-3 p-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-stone-500">
-                        Favorites
-                      </p>
-                      {filteredContacts.length === 0 ? (
-                        <div className="text-center py-4 text-stone-400 text-xs font-semibold">
-                          No favorites found
-                        </div>
-                      ) : (
-                        filteredContacts.map((contact) => (
-                          <div
-                            key={contact.id}
-                            className="flex items-center justify-between py-1.5 border-b border-stone-50"
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="h-7 w-7 rounded-full bg-[#0F766E]/10 text-[#0F766E] flex items-center justify-center text-xs font-bold shrink-0">
-                                {contact.full_name.charAt(0)}
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-xs font-bold text-slate-900 truncate">
-                                  {contact.full_name}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => alert("Calls coming soon")}
-                                className="p-1.5 text-[#0F766E] hover:bg-teal-50 rounded-full transition-colors"
-                                title="Voice Call"
-                              >
-                                <Phone size={14} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => alert("Calls coming soon")}
-                                className="p-1.5 text-[#0F766E] hover:bg-teal-50 rounded-full transition-colors"
-                                title="Video Call"
-                              >
-                                <Video size={14} />
-                              </button>
-                            </div>
+                              <Star
+                                size={14}
+                                className={buddyFavourites.includes(contact.id) ? "fill-amber-400 text-amber-400" : ""}
+                              />
+                            </button>
                           </div>
                         ))
                       )}
-
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-stone-500 pt-2">
-                        Recent
-                      </p>
-                      <div className="flex flex-col items-center justify-center py-4 text-center">
-                        <p className="text-xs font-semibold text-slate-900">No recent calls</p>
-                        <p className="text-[10px] text-stone-500 mt-0.5">Your call history will appear here</p>
-                      </div>
                     </div>
                   )}
 
-                  {/* UPDATES TAB */}
-                  {!showSettingsOverlay && activeTab === "updates" && (
-                    <div className="space-y-4 p-2">
-                      <div className="flex items-center gap-3 py-2 border-b border-stone-100">
-                        <div className="h-9 w-9 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold">
-                          {currentUser?.full_name?.charAt(0) || "U"}
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-900">My Status</p>
-                          <p className="text-[10px] text-stone-500">No status updates</p>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-center justify-center py-8 text-center">
-                        <p className="text-xs font-semibold text-stone-500 font-medium">No updates yet</p>
-                      </div>
-                    </div>
-                  )}
+                  {!searchActive && !showSettingsOverlay && !showNewChatOverlay && activeTab === "chats" ? (
+                    <HubChatsTab
+                      groups={groups}
+                      user={hubUser}
+                      mainChatList={mainChatList}
+                      activeChatId={focusedChatId ?? undefined}
+                      chatPrefs={chatPrefs}
+                      onSelectChat={onSelectHubChat}
+                      onNavigateToGroup={(gid) => {
+                        const existing = mainChatList.find(
+                          (c) => c.type === "group" && c.group_id === gid,
+                        );
+                        if (existing) {
+                          void openChatWindow(existing.id, existing);
+                          return;
+                        }
+                        const g = groups.find((x) => x.id === gid);
+                        if (!g || !currentUser) return;
+                        const ids = (g.members ?? []).map((m) => m.user_id);
+                        void openChatWindow(`group_${g.id}`, {
+                          id: `group_${g.id}`,
+                          name: g.name,
+                          type: "group",
+                          group_id: g.id,
+                          members: ids.length > 0 ? ids : [currentUser.id],
+                          created_by: currentUser.id,
+                          created_at: Date.now(),
+                        });
+                      }}
+                      updateChatPref={updateChatPref}
+                      markChatDeleted={markChatDeleted}
+                      showToast={showToastHub}
+                      setContextMenu={setContextMenu}
+                      longPressTimerRef={longPressTimerRef}
+                    />
+                  ) : null}
+
+                  {!searchActive && !showSettingsOverlay && activeTab === "calls" ? (
+                    <HubCallsTab
+                      showCallToast={showToast}
+                      mainChatList={mainChatList}
+                      callHistory={callHistory}
+                      onOpenHistoryRow={(e) => {
+                        const c = mainChatList.find(
+                          (x) =>
+                            x.type === "individual" &&
+                            x.members.includes(e.user_id),
+                        );
+                        if (c) {
+                          setActiveTab("chats");
+                          void openChatWindow(c.id);
+                        }
+                      }}
+                      onStartAudioCall={(userId, name, avatar) =>
+                        loungeCalls.startOutgoingCall("audio", {
+                          id: userId,
+                          name,
+                          avatar,
+                        })
+                      }
+                      onStartVideoCall={(userId, name, avatar) =>
+                        loungeCalls.startOutgoingCall("video", {
+                          id: userId,
+                          name,
+                          avatar,
+                        })
+                      }
+                      handleUnauthorized={handleUnauthorized}
+                      masterAbortRef={masterAbortRef}
+                    />
+                  ) : null}
+
+                  {!searchActive && !showSettingsOverlay && activeTab === "updates" ? (
+                    <HubUpdatesTab
+                      currentUser={hubUser}
+                      activeChatId={focusedChatId ?? undefined}
+                      chatPrefs={chatPrefs}
+                      onSelectChat={onSelectHubChat}
+                    />
+                  ) : null}
                 </div>
               </>
-            )}
-          </>
         )}
       </div>
 
-      {/* CREATE GROUP MODAL */}
-      {showNewGroupModal && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 select-text">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm border border-stone-200 overflow-hidden animate-zoom-in animate-fade-in">
-            <div className="bg-[#0F766E] p-3 text-white flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider">New Group Chat</span>
-              <button onClick={() => setShowNewGroupModal(false)} className="hover:bg-white/20 p-1 rounded">
-                <X size={16} />
-              </button>
-            </div>
+      {openChatIds.map((chatId) => {
+        const chatInfo = resolveHubChatInfo(chatId);
+        const dockChat = chats.find((c) => c.id === chatId);
+        const isGroup =
+          chatInfo?.type === "group" ||
+          Boolean(
+            dockChat &&
+              (dockChat.type === "group" ||
+                dockChat.type === "trip" ||
+                dockChat.trip_id),
+          );
+        const callLabel = loungeChatDisplayName(chatInfo, {
+          selfId: currentUser?.id,
+          selfName: currentUser?.full_name,
+          groups,
+        });
+        const peerId = chatInfo?.members.find((m) => m !== currentUser?.id);
+        const peerContact = peerId
+          ? contacts.find((c) => c.id === peerId)
+          : undefined;
+        return (
+          <LoungeChatWindow
+            key={chatId}
+            chatId={chatId}
+            chatInfo={chatInfo}
+            demoChatView={demoChatViews[chatId] ?? null}
+            groups={groups}
+            contacts={contacts.map((c) => ({
+              id: c.id,
+              full_name: c.full_name,
+              username: c.username,
+              avatar_url: c.avatar_url,
+            }))}
+            chatPrefs={chatPrefs}
+            currentUser={currentUser}
+            messages={messages[chatId] ?? []}
+            inputText={inputTexts[chatId] ?? ""}
+            onInputTextChange={(value) =>
+              setInputTexts((prev) => ({ ...prev, [chatId]: value }))
+            }
+            onClose={() => closeChatWindow(chatId)}
+            minimized={minimizedChatIds.includes(chatId)}
+            onToggleMinimized={() => {
+              setMinimizedChatIds((prev) =>
+                prev.includes(chatId)
+                  ? prev.filter((id) => id !== chatId)
+                  : [...prev, chatId],
+              );
+              setFocusedChatId(chatId);
+            }}
+            onSend={(replyTo) => void handleSend(chatId, replyTo ?? null)}
+            onSendAttachment={(type, text, metadata) =>
+              void sendAttachmentMessage(chatId, type, text, metadata)
+            }
+            onFileSelect={(file, type) => void handleFileSelect(chatId, file, type)}
+            onShareLocation={() => handleShareLocation(chatId)}
+            onStarMessage={(msg) => starMessage(chatId, msg as Message)}
+            onBlockUser={() => void blockChatUser(chatId)}
+            onLeaveGroupSuccess={(gid) => {
+              closeChatWindow(`group_${gid}`);
+              closeChatWindow(chatId);
+              void reloadGroups();
+            }}
+            onOpenSplit={() => {
+              setSplitChatId(chatId);
+              setShowSplitModal(true);
+            }}
+            onToggleWayra={() => toggleWayra(chatId)}
+            onToast={showToast}
+            onVoiceCall={() => {
+              if (!peerId) {
+                showToast("No one to call in this chat");
+                return;
+              }
+              loungeCalls.startOutgoingCall("audio", {
+                id: peerId,
+                name: callLabel,
+                avatar: peerContact?.avatar_url ?? null,
+              });
+            }}
+            onVideoCall={() => {
+              if (!peerId) {
+                showToast("No one to call in this chat");
+                return;
+              }
+              loungeCalls.startOutgoingCall("video", {
+                id: peerId,
+                name: callLabel,
+                avatar: peerContact?.avatar_url ?? null,
+              });
+            }}
+            onScheduleCall={() => {
+              setFocusedChatId(chatId);
+              setShowScheduleModal(true);
+            }}
+            onOpenDirectChat={openDirectChatFromPerson}
+            onClearChat={() => {
+              setMessages((prev) => ({ ...prev, [chatId]: [] }));
+              showToast("Chat cleared");
+            }}
+            onToggleFavorite={() => {
+              const cur = chatPrefs[chatId]?.favorite ?? false;
+              updateChatPref(chatId, { favorite: !cur });
+              showToast(cur ? "Removed from favorites" : "Added to favorites");
+            }}
+            onToggleMute={() => {
+              const cur = chatPrefs[chatId]?.muted ?? false;
+              updateChatPref(chatId, { muted: !cur });
+              showToast(cur ? "Unmuted" : "Muted");
+            }}
+            reloadGroups={reloadGroups}
+            handleUnauthorized={handleUnauthorized}
+            masterAbortRef={masterAbortRef}
+            scheduleVersion={scheduleVersion}
+            onScheduleChanged={() => setScheduleVersion((v) => v + 1)}
+            peerOnline={
+              chatInfo && hubUser
+                ? dmListPeerOnline(hubUser, chatInfo, groups)
+                : null
+            }
+            wayraStatus={wayraStatus[chatId]}
+            isGroup={isGroup}
+            firebaseDb={firebaseDb}
+            isRecording={recordingChatId === chatId && isRecording}
+            recordingDuration={recordingDuration}
+            onStartRecording={() => void startVoiceRecording(chatId)}
+            onStopRecording={stopVoiceRecording}
+            onTyping={() => setFocusedChatId(chatId)}
+            longPressTimerRef={longPressTimerRef}
+          />
+        );
+      })}
+      </div>
 
-            <div className="p-4 space-y-4 text-slate-900">
-              <div>
-                <label className="block text-[11px] font-bold text-stone-600 mb-1">
-                  Group Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Summer Friends"
-                  value={groupName}
-                  onChange={(e) => setGroupName(e.target.value)}
-                  className="w-full text-xs border border-stone-250 p-2.5 rounded-lg outline-none focus:border-[#0F766E] text-slate-900 font-medium"
-                />
-              </div>
+      <CallOverlay
+        callState={loungeCalls.callState}
+        currentCall={loungeCalls.currentCall}
+        callDurationSec={loungeCalls.callDurationSec}
+        isMuted={loungeCalls.isMuted}
+        isCameraOff={loungeCalls.isCameraOff}
+        isSharingScreen={loungeCalls.isSharingScreen}
+        localStream={loungeCalls.localStream}
+        remoteStream={loungeCalls.remoteStream}
+        audioOutputDevices={loungeCalls.audioOutputDevices}
+        onAccept={() => void loungeCalls.acceptIncomingCall()}
+        onDecline={() => void loungeCalls.declineIncomingCall()}
+        onHangup={() => loungeCalls.hangupCall()}
+        onToggleMute={loungeCalls.toggleMute}
+        onToggleCamera={loungeCalls.toggleCamera}
+        onShareScreen={() => void loungeCalls.shareScreen()}
+        onListAudioOutputs={() => void loungeCalls.listAudioOutputs()}
+        onSetAudioOutput={(id) => void loungeCalls.setAudioOutput(id)}
+        onBindRemoteAudio={loungeCalls.bindRemoteAudioElement}
+      />
 
-              <div>
-                <label className="block text-[11px] font-bold text-stone-600 mb-2">
-                  Select Members
-                </label>
-                <div className="max-h-40 overflow-y-auto divide-y divide-stone-100 border border-stone-200 rounded-lg p-1">
-                  {contacts.map((c) => {
-                    const isSelected = selectedContactIds.includes(c.id);
-                    return (
-                      <div
-                        key={c.id}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedContactIds(selectedContactIds.filter((id) => id !== c.id));
-                          } else {
-                            setSelectedContactIds([...selectedContactIds, c.id]);
-                          }
-                        }}
-                        className="flex items-center justify-between p-2 rounded-md hover:bg-slate-50 cursor-pointer transition-colors"
-                      >
-                        <span className="text-xs font-bold text-slate-900">{c.full_name}</span>
-                        <div
-                          className={`h-4 w-4 rounded border flex items-center justify-center transition-colors ${
-                            isSelected ? "bg-[#0F766E] border-[#0F766E]" : "border-stone-300"
-                          }`}
-                        >
-                          {isSelected && <Check size={10} className="text-white" />}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+      <SplitExpenseModal
+        open={showSplitModal}
+        currencySymbol="₹"
+        onClose={() => {
+          setShowSplitModal(false);
+          setSplitChatId(null);
+        }}
+        onSubmit={handleSplitSubmit}
+      />
 
-              <button
-                type="button"
-                onClick={createGroupChat}
-                disabled={!groupName.trim() || selectedContactIds.length === 0}
-                className="w-full bg-[#0F766E] text-white text-xs font-bold py-2.5 rounded-lg hover:bg-teal-700 disabled:opacity-40 transition-all uppercase tracking-wider shadow-sm"
-              >
-                Create Group
-              </button>
-            </div>
-          </div>
+      {(callToast || dockToast) ? (
+        <div className="fixed bottom-24 right-4 z-[310] rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white shadow-lg">
+          {dockToast || callToast}
+          <button type="button" onClick={() => { setCallToast(null); setDockToast(null); }} className="ml-2 text-white/60">✕</button>
         </div>
-      )}
+      ) : null}
+
+      <AdvancedScheduledCallModal
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        contacts={contacts.map((c) => ({
+          id: c.id,
+          name: c.full_name,
+          avatar: c.avatar_url,
+          type: "individual" as const,
+          subtitle: c.username ? `@${c.username}` : undefined,
+        }))}
+        currentUserId={currentUser?.id ?? ""}
+        onSchedule={handleScheduleCall}
+      />
+
+      <ConnectProfileDrawer
+        profile={hubSearch.searchProfileFor}
+        onClose={() => hubSearch.setSearchProfileFor(null)}
+        activeChat={activeHubChat}
+        peerOnline={hubSearch.profilePanelPeerOnline}
+        subTab={hubSearch.searchProfileSubTab}
+        onSubTabChange={hubSearch.setSearchProfileSubTab}
+        reportDialogOpen={hubSearch.profileReportDialogOpen}
+        onReportDialogOpenChange={hubSearch.setProfileReportDialogOpen}
+        userSearchActionId={hubSearch.userSearchActionId}
+        onConnect={hubSearch.connectUserSearchRow}
+        onAccept={hubSearch.acceptUserSearchRow}
+        onBlock={hubSearch.blockUserSearch}
+        onOpenInChatSearch={() => {
+          if (focusedChatId) void openChatWindow(focusedChatId);
+        }}
+        onOpenSearchOverlay={() => {
+          hubSearch.setSearchProfileFor(null);
+          setActiveTab("chats");
+        }}
+        showToast={showToastHub}
+      />
+
+      <HubChatContextMenu
+        menu={contextMenu}
+        onClose={() => setContextMenu(null)}
+        tone="dock"
+        chatPrefs={chatPrefs}
+        updateChatPref={updateChatPref}
+        onDeleteChat={markChatDeleted}
+        showToast={showToastHub}
+      />
+
+      <HubGroupsTab
+        listHidden
+        openCreateRequestId={createGroupRequestId}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        groups={groups}
+        user={hubUser}
+        groupsOnlyList={groupsOnlyList}
+        activeChatId={focusedChatId ?? undefined}
+        chatPrefs={chatPrefs}
+        onSelectChat={onSelectHubChat}
+        reloadGroups={reloadGroups}
+        onGroupCreated={(group) => {
+          setGroups((prev) => {
+            const i = prev.findIndex((g) => g.id === group.id);
+            if (i >= 0) {
+              const next = [...prev];
+              next[i] = group;
+              return next;
+            }
+            return [group, ...prev];
+          });
+          setActiveTab("chats");
+        }}
+        onUnauthorized={handleUnauthorized}
+        updateChatPref={updateChatPref}
+        markChatDeleted={markChatDeleted}
+        showToast={showToastHub}
+        setContextMenu={setContextMenu}
+        longPressTimerRef={longPressTimerRef}
+        masterAbortRef={masterAbortRef}
+      />
     </div>
   );
 }

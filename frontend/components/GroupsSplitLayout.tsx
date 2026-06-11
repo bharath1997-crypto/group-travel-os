@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { OpenLoungeButton } from "@/components/lounge/OpenLoungeButton";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 
 import { Avatar } from "@/components/Avatar";
@@ -49,12 +50,9 @@ export function GroupsSplitLayout({ children }: { children: ReactNode }) {
             <h2 className="text-sm font-semibold text-gray-900">Travel Hub</h2>
             <p className="text-xs text-gray-500">Yours</p>
           </div>
-          <Link
-            href="/travel-hub"
-            className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-800 hover:bg-gray-100"
-          >
-            Home
-          </Link>
+          <OpenLoungeButton className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-800 hover:bg-gray-100">
+            Lounge
+          </OpenLoungeButton>
         </div>
         {loading ? (
           <div className="flex justify-center py-10">

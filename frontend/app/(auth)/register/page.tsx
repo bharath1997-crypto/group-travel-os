@@ -47,14 +47,14 @@ function ageFromDob(isoDate: string): number {
 function EyeIcon({ show }: { show: boolean }) {
   if (show) {
     return (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     );
   }
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
     </svg>
   );
@@ -62,7 +62,7 @@ function EyeIcon({ show }: { show: boolean }) {
 
 function UserIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
       <circle cx="12" cy="8" r="4" />
       <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
     </svg>
@@ -71,7 +71,7 @@ function UserIcon() {
 
 function MailIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
       <rect x="2" y="4" width="20" height="16" rx="3" />
       <path d="M2 8l10 6 10-6" />
     </svg>
@@ -80,7 +80,7 @@ function MailIcon() {
 
 function LockIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
       <rect x="5" y="11" width="14" height="10" rx="2" />
       <path d="M8 11V7a4 4 0 018 0v4" />
     </svg>
@@ -89,7 +89,7 @@ function LockIcon() {
 
 function CalendarIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden>
       <rect x="3" y="5" width="18" height="16" rx="3" />
       <path d="M8 3v4M16 3v4M3 11h18" />
     </svg>
@@ -110,19 +110,19 @@ function SignupField({
 } & InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[11px] sm:text-xs font-medium text-[#94A3B8]">
+      <span className="mb-1 block text-[11px] sm:text-xs font-semibold text-slate-500">
         {label}
       </span>
-      <span className="flex h-[40px] sm:h-[42px] items-center gap-2 rounded-[8px] border border-[#334155] bg-[#1E293B] px-3 transition focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]">
+      <span className="flex h-[40px] sm:h-[42px] items-center gap-2 rounded-[8px] border border-slate-200 bg-white px-3 transition focus-within:border-[#E94560] focus-within:ring-1 focus-within:ring-[#E94560]">
         {icon}
         <input
           {...inputProps}
-          className="min-w-0 flex-1 bg-transparent text-[13px] sm:text-sm text-white outline-none placeholder:text-[#94A3B8] disabled:cursor-not-allowed disabled:opacity-60 py-1.5 sm:py-2"
+          className="min-w-0 flex-1 bg-transparent text-[13px] sm:text-sm text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60 py-1.5 sm:py-2"
         />
         {endAdornment}
       </span>
       {error ? (
-        <span className="mt-0.5 block text-[11px] sm:text-xs font-medium text-[#E8619A]" role="alert">
+        <span className="mt-0.5 block text-[11px] sm:text-xs font-semibold text-red-500" role="alert">
           {error}
         </span>
       ) : null}
@@ -151,8 +151,8 @@ function FacebookIcon() {
 
 function AppleIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="white" aria-hidden>
-      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.4c1.39.07 2.35.74 3.15.8 1.2-.24 2.35-.93 3.64-.84 1.54.12 2.7.72 3.46 1.83-3.16 1.9-2.41 6.06.52 7.23-.61 1.62-1.43 3.22-2.77 4.86zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" className="text-slate-900" aria-hidden>
+      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.4c1.39.07 2.35.74 3.15.8(1.2-.24 2.35-.93 3.64-.84 1.54.12 2.7.72 3.46 1.83-3.16 1.9-2.41 6.06.52 7.23-.61 1.62-1.43 3.22-2.77 4.86zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
     </svg>
   );
 }
@@ -192,7 +192,7 @@ function SocialButton({
       aria-label={label}
       onClick={onClick}
       disabled={disabled}
-      className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-[#334155] bg-[#1E293B] text-xs font-medium text-white transition hover:bg-[#334155] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94560] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {children}
     </button>
@@ -213,11 +213,11 @@ function GoogleSignUpButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#334155] bg-[#1E293B] px-4 text-[15px] font-semibold text-white shadow-sm transition hover:bg-[#334155] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-[15px] font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94560] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {busy ? (
         <>
-          <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+          <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-transparent" />
           Signing up…
         </>
       ) : (
@@ -250,7 +250,6 @@ function RegisterPageInner() {
   const [oauthAlert, setOauthAlert] = useState<OauthLoginAlert | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [oauthBusy, setOauthBusy] = useState(false);
-  const [checkEmailFor, setCheckEmailFor] = useState<string | null>(null);
   const isBusy = submitting || oauthBusy;
 
   // Read-tracking states
@@ -362,7 +361,14 @@ function RegisterPageInner() {
     setOauthAlert(null);
     setError(null);
     try {
-      await startGoogleOAuth("signup");
+      const openedNewTab = await startGoogleOAuth("signup");
+      if (openedNewTab) {
+        setOauthBusy(false);
+        setOauthAlert({
+          variant: "info",
+          body: "Complete Google sign-up in the new browser tab that just opened.",
+        });
+      }
     } catch (err) {
       setOauthBusy(false);
       setOauthAlert({
@@ -378,7 +384,14 @@ function RegisterPageInner() {
     setOauthAlert(null);
     setError(null);
     try {
-      await startFacebookOAuth("signup");
+      const openedNewTab = await startFacebookOAuth("signup");
+      if (openedNewTab) {
+        setOauthBusy(false);
+        setOauthAlert({
+          variant: "info",
+          body: "Complete Facebook sign-up in the new browser tab that just opened.",
+        });
+      }
     } catch (err) {
       setOauthBusy(false);
       setOauthAlert({
@@ -389,60 +402,58 @@ function RegisterPageInner() {
     }
   }
 
-
-
   return (
-    <div className="flex min-h-screen md:h-screen md:overflow-hidden bg-[#0F172A]">
-      <aside className="relative hidden w-[38%] xl:w-[42%] flex-col justify-between overflow-hidden bg-[#0F172A] p-6 xl:p-9 md:flex">
-        <span className="absolute -left-10 -top-10 h-[180px] w-[180px] rounded-full border border-[rgba(255,255,255,0.08)]" aria-hidden />
-        <span className="absolute -right-5 bottom-[60px] h-[120px] w-[120px] rounded-full border border-[rgba(232,97,154,0.2)]" aria-hidden />
-        <span className="absolute bottom-[100px] left-10 h-[60px] w-[60px] rounded-full bg-[rgba(232,97,154,0.08)]" aria-hidden />
+    <div className="auth-shell flex min-h-dvh overflow-y-auto bg-slate-50 md:min-h-dvh">
+      <aside className="relative hidden w-[38%] xl:w-[42%] flex-col justify-between overflow-hidden bg-white border-r border-slate-200 p-6 xl:p-9 md:flex">
+        <span className="absolute -left-10 -top-10 h-[180px] w-[180px] rounded-full border border-slate-100" aria-hidden />
+        <span className="absolute -right-5 bottom-[60px] h-[120px] w-[120px] rounded-full border border-teal-500/10" aria-hidden />
+        <span className="absolute bottom-[100px] left-10 h-[60px] w-[60px] rounded-full bg-teal-50" aria-hidden />
         <div className="relative z-[1] flex flex-col items-start">
           <RovvyLogo variant="dark" size="lg" showTagline={true} />
         </div>
         <div className="relative z-[1] max-w-sm my-auto">
-          <h1 className="text-[22px] font-medium leading-tight text-white">
+          <h1 className="text-[22px] font-bold leading-tight text-slate-900">
             Your next adventure starts here.
           </h1>
-          <p className="mt-2 text-xs leading-relaxed text-white/55">
+          <p className="mt-2 text-xs leading-relaxed text-slate-500">
             Join thousands of groups planning trips together.
           </p>
           <ul className="mt-8 space-y-4">
             {INTRO_FEATURES.map(({ icon: Icon, title, body }) => (
               <li key={title} className="flex gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.08] text-[#5EEAD4]" aria-hidden>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-[#0F766E]" aria-hidden>
                   <Icon className="h-4.5 w-4.5" strokeWidth={1.75} />
                 </span>
                 <span>
-                  <span className="block text-xs font-semibold text-white">{title}</span>
-                  <span className="mt-0.5 block text-xs leading-relaxed text-white/55">{body}</span>
+                  <span className="block text-xs font-semibold text-slate-800">{title}</span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{body}</span>
                 </span>
               </li>
             ))}
           </ul>
         </div>
         <div className="relative z-[1] flex gap-1.5" aria-hidden>
-          <span className="h-1.5 w-1.5 rounded-full bg-[#E8619A]" />
-          <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
-          <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
+          <span className="h-1.5 w-1.5 rounded-full bg-[#E94560]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-slate-200" />
+          <span className="h-1.5 w-1.5 rounded-full bg-slate-200" />
         </div>
       </aside>
 
-      <main className="flex w-full flex-1 flex-col justify-start bg-[#0F172A] px-4 pt-12 pb-6 md:px-8 xl:px-12 md:overflow-y-auto">
+      <main className="flex w-full flex-1 flex-col justify-start bg-slate-50 px-4 pt-12 pb-6 md:px-8 xl:px-12 md:overflow-y-auto">
         <div className="mx-auto my-auto w-full max-w-[480px] p-2 xs:p-4 md:p-6 page-wrapper">
           <div className="mb-6 flex flex-col items-center md:items-start">
-            <RovvyLogo variant="white" size="md" showTagline={false} />
+            <RovvyLogo variant="dark" size="md" showTagline={false} />
           </div>
-          <h2 className="text-center text-lg sm:text-xl font-semibold text-white md:text-left">
+          <h2 className="text-center text-lg sm:text-xl font-bold text-slate-900 md:text-left">
             Create your account
           </h2>
-          <p className="mb-4 sm:mb-5 mt-1 text-center text-xs sm:text-[13px] text-[#94A3B8] md:text-left">
+          <p className="mb-4 sm:mb-5 mt-1 text-center text-xs sm:text-[13px] text-slate-500 md:text-left">
             Start planning your first group trip
           </p>
 
-          <div className="rounded-2xl border border-[#334155] bg-[#1E293B] p-6 sm:p-8">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
             {fromOauth ? (
-              <p className="mb-3 rounded-[8px] border border-[#E8619A]/30 bg-[#0F172A] px-3 py-2 text-center text-xs text-white">
+              <p className="mb-3 rounded-[8px] border border-slate-200 bg-slate-50 px-3 py-2 text-center text-xs text-slate-700">
                 Finish creating your Rovvy account below, or continue with Google or Facebook.
               </p>
             ) : null}
@@ -465,7 +476,7 @@ function RegisterPageInner() {
                 <SignupField
                   label={
                     <>
-                      Username <span className="text-[#E8619A]">*</span>
+                      Username <span className="text-[#E94560]">*</span>
                     </>
                   }
                   id="reg-username"
@@ -518,7 +529,7 @@ function RegisterPageInner() {
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       disabled={isBusy}
-                      className="flex h-8 w-8 items-center justify-center text-[#94A3B8] transition hover:text-white"
+                      className="flex h-8 w-8 items-center justify-center text-slate-400 transition hover:text-slate-600"
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       <EyeIcon show={showPassword} />
@@ -540,7 +551,7 @@ function RegisterPageInner() {
                       type="button"
                       onClick={() => setShowConfirmPassword((v) => !v)}
                       disabled={isBusy}
-                      className="flex h-8 w-8 items-center justify-center text-[#94A3B8] transition hover:text-white"
+                      className="flex h-8 w-8 items-center justify-center text-slate-400 transition hover:text-slate-600"
                       aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
                     >
                       <EyeIcon show={showConfirmPassword} />
@@ -552,7 +563,7 @@ function RegisterPageInner() {
               <SignupField
                 label={
                   <>
-                    Date of Birth <span className="text-[#E8619A]">*</span>
+                    Date of Birth <span className="text-[#E94560]">*</span>
                   </>
                 }
                 id="reg-dob"
@@ -574,11 +585,15 @@ function RegisterPageInner() {
 
               {oauthAlert ? (
                 <div
-                  className="rounded-[8px] border border-red-500/30 bg-red-950/20 px-3 py-2 text-xs sm:text-sm text-slate-200"
+                  className={`rounded-[8px] px-3 py-2 text-xs sm:text-sm text-slate-800 ${
+                    oauthAlert.variant === "info"
+                      ? "border border-teal-200 bg-teal-50 text-teal-800"
+                      : "border border-red-200 bg-red-50 text-red-800"
+                  }`}
                   role="alert"
                 >
                   {oauthAlert.title ? (
-                    <p className="font-semibold text-white">{oauthAlert.title}</p>
+                    <p className="font-bold text-slate-900">{oauthAlert.title}</p>
                   ) : null}
                   <p className={oauthAlert.title ? "mt-1" : ""}>{oauthAlert.body}</p>
                 </div>
@@ -586,7 +601,7 @@ function RegisterPageInner() {
 
               {/* Terms & Privacy checkbox tracking */}
               <div className="flex flex-col gap-1.5 mt-1 mb-2">
-                <label className={`flex items-start gap-2 text-xs text-[#94A3B8] select-none ${!(termsRead && privacyRead) ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                <label className={`flex items-start gap-2 text-xs text-slate-500 select-none ${!(termsRead && privacyRead) ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
                   }`}>
                   <div className="relative flex items-center justify-center mt-0.5 shrink-0">
                     <input
@@ -598,7 +613,7 @@ function RegisterPageInner() {
                         setAgreed(e.target.checked);
                         if (e.target.checked) setAgreeError(null);
                       }}
-                      className={`h-4 w-4 appearance-none rounded border border-[#334155] bg-[#1E293B] transition checked:bg-[#0F766E] checked:border-[#0F766E] disabled:bg-slate-900 disabled:border-[#334155] ${!(termsRead && privacyRead) ? "cursor-not-allowed" : "cursor-pointer focus:ring-1 focus:ring-[#0F766E]"
+                      className={`h-4 w-4 appearance-none rounded border border-slate-200 bg-white transition checked:bg-[#E94560] checked:border-[#E94560] disabled:bg-slate-100 disabled:border-slate-200 ${!(termsRead && privacyRead) ? "cursor-not-allowed" : "cursor-pointer focus:ring-1 focus:ring-[#E94560]"
                         }`}
                     />
                     {agreed && (
@@ -607,7 +622,7 @@ function RegisterPageInner() {
                       </svg>
                     )}
                   </div>
-                  <span className="leading-normal text-[11px] sm:text-xs text-[#94A3B8]">
+                  <span className="leading-normal text-[11px] sm:text-xs text-slate-500">
                     I agree to the{" "}
                     <Link href="/terms" target="_blank" className="font-semibold text-[#0F766E] hover:underline">
                       Terms of Service
@@ -621,15 +636,15 @@ function RegisterPageInner() {
                 </label>
 
                 {!(termsRead && privacyRead) ? (
-                  <p className="text-[10px] text-slate-400 flex items-center gap-1 font-medium bg-[#1E293B] border border-[#334155] p-1.5 rounded-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 text-[#94A3B8] shrink-0">
+                  <p className="text-[10px] text-slate-500 flex items-center gap-1 font-semibold bg-slate-50 border border-slate-200 p-1.5 rounded-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 text-slate-400 shrink-0">
                       <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
                     </svg>
                     Please read our Terms and Privacy Policy first to unlock this checkbox.
                   </p>
                 ) : !agreed ? (
-                  <p className="text-[10px] text-[#0F766E] flex items-center gap-1 font-medium bg-[#0F766E]/10 border border-[#0F766E]/20 p-1.5 rounded-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 text-[#0F766E] shrink-0">
+                  <p className="text-[10px] text-teal-800 flex items-center gap-1 font-semibold bg-teal-50 border border-teal-200 p-1.5 rounded-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 text-teal-600 shrink-0">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4.13-5.69z" clipRule="evenodd" />
                     </svg>
                     Checkbox unlocked! Please check the box to continue.
@@ -637,7 +652,7 @@ function RegisterPageInner() {
                 ) : null}
 
                 {agreeError && (
-                  <p className="text-[10px] sm:text-[11px] font-medium text-red-400" role="alert">
+                  <p className="text-[10px] sm:text-[11px] font-semibold text-red-600" role="alert">
                     {agreeError}
                   </p>
                 )}
@@ -657,11 +672,11 @@ function RegisterPageInner() {
                     setAgreeError("Please agree to our Terms and Privacy Policy to continue");
                   }
                 }}
-                className={`flex h-[40px] sm:h-11 w-full items-center justify-center rounded-[8px] text-[13px] sm:text-sm font-medium tracking-[0.3px] text-white transition-all ${isBusy
-                    ? "bg-[#0F766E]/60 cursor-not-allowed"
+                className={`flex h-[40px] sm:h-11 w-full items-center justify-center rounded-[8px] text-[13px] sm:text-sm font-bold tracking-[0.3px] text-white shadow-sm transition-all ${isBusy
+                    ? "bg-[#E94560]/60 cursor-not-allowed"
                     : !agreed
-                      ? "bg-[#0F766E]/50 cursor-not-allowed hover:bg-[#0F766E]/50"
-                      : "bg-[#0F766E] hover:bg-[#0D6B63] cursor-pointer"
+                      ? "bg-[#E94560]/50 cursor-not-allowed hover:bg-[#E94560]/50"
+                      : "bg-[#E94560] hover:bg-[#D83A56] cursor-pointer"
                   }`}
               >
                 {submitting ? (
@@ -674,18 +689,18 @@ function RegisterPageInner() {
                 )}
               </button>
               {error ? (
-                <p className="text-center text-sm font-medium text-red-400" role="alert">
+                <p className="text-center text-sm font-semibold text-red-650" role="alert">
                   {error}
                 </p>
               ) : null}
             </form>
 
             <div className="my-4 sm:my-5 flex items-center gap-3">
-              <hr className="flex-1 border-0 border-t border-[#334155]" />
-              <span className="text-xs font-medium uppercase tracking-wide text-[#94A3B8]">
+              <hr className="flex-1 border-0 border-t border-slate-200" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                 or continue with
               </span>
-              <hr className="flex-1 border-0 border-t border-[#334155]" />
+              <hr className="flex-1 border-0 border-t border-slate-200" />
             </div>
 
             <div className="mt-4 flex flex-col gap-3">
@@ -702,11 +717,11 @@ function RegisterPageInner() {
               </div>
             </div>
 
-            <p className="mt-8 text-center text-sm text-white">
+            <p className="mt-8 text-center text-sm text-slate-650">
               Already have an account?{" "}
               <Link
                 href="/login"
-                className="font-semibold text-[#0F766E] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:rounded-sm focus-visible:outline-[#0F766E]"
+                className="font-bold text-[#E94560] hover:text-[#D83A56] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:rounded-sm focus-visible:outline-[#E94560]"
               >
                 Sign in
               </Link>

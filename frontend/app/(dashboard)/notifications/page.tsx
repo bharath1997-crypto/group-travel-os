@@ -5,17 +5,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bell, CheckCircle, Plane, Users, XCircle } from "lucide-react";
 
 import { apiFetch, API_BASE } from "@/lib/api";
+import { emitOpenLounge } from "@/lib/open-lounge";
 
-const GT_TRAVELHUB_OPEN_PROFILE = "gt_travelhub_open_profile";
 const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
 const RELOAD_HUB = "gt-reload-travelhub-groups";
 
-const PAGE_BG = "#0f172a";
-const UNREAD_ROW = "#1a1f35";
-const READ_ROW = "#0f172a";
-const MUTED = "#6b7280";
-const TEXT = "#f9fafb";
-const CORAL = "#ff6b6b";
+const PAGE_BG = "#f8fafc";
+const UNREAD_ROW = "#f1f5f9";
+const READ_ROW = "#ffffff";
+const MUTED = "#64748b";
+const TEXT = "#0f172a";
+const CORAL = "#e94560";
 
 type NotificationRow = {
   id: string;
@@ -60,13 +60,13 @@ async function fetchAndEmitUnread() {
 }
 
 const SkeletonRow = () => (
-  <li className="rounded-xl border border-white/[0.08] p-3 md:p-4" style={{ background: UNREAD_ROW }}>
+  <li className="rounded-xl border border-slate-200 p-3 md:p-4" style={{ background: UNREAD_ROW }}>
     <div className="flex gap-3">
       <div
         className="h-11 w-11 shrink-0 rounded-full"
         style={{
           background:
-            "linear-gradient(90deg, #1e2538 25%, #2a3248 50%, #1e2538 75%)",
+            "linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)",
           backgroundSize: "200% 100%",
           animation: "shimmer 1.5s infinite",
         }}
@@ -76,7 +76,7 @@ const SkeletonRow = () => (
           className="h-4 w-3/4 max-w-[240px] rounded"
           style={{
             background:
-              "linear-gradient(90deg, #1e2538 25%, #2a3248 50%, #1e2538 75%)",
+              "linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)",
             backgroundSize: "200% 100%",
             animation: "shimmer 1.5s infinite",
             borderRadius: 8,
@@ -86,7 +86,7 @@ const SkeletonRow = () => (
           className="h-3 w-full max-w-md rounded"
           style={{
             background:
-              "linear-gradient(90deg, #1e2538 25%, #2a3248 50%, #1e2538 75%)",
+              "linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)",
             backgroundSize: "200% 100%",
             animation: "shimmer 1.5s infinite",
             borderRadius: 8,
@@ -318,23 +318,6 @@ export default function NotificationsPage() {
             n.body.match(/^(.+?)\s+wants to connect with you\.?/i) ??
             n.body.match(/^(.+?)\s+wants to connect/i);
           const fullName = m?.[1]?.trim() ?? "User";
-          try {
-            sessionStorage.setItem(
-              GT_TRAVELHUB_OPEN_PROFILE,
-              JSON.stringify({
-                id: senderId,
-                full_name: fullName,
-                username: null,
-                profile_picture: null,
-                avatar_url: null,
-                is_verified: false,
-                plan: "free",
-                friend_status: "pending_received" as const,
-              }),
-            );
-          } catch {
-            /* ignore */
-          }
           if (!n.is_read) {
             try {
               await apiFetch<NotificationRow>(`/notifications/${n.id}/read`, {
@@ -350,7 +333,16 @@ export default function NotificationsPage() {
               );
             }
           }
-          router.push("/travel-hub");
+          emitOpenLounge({
+            openProfile: {
+              id: senderId,
+              full_name: fullName,
+              username: null,
+              profile_picture: null,
+              avatar_url: null,
+              friend_status: "pending_received",
+            },
+          });
           return;
         }
       }
@@ -479,7 +471,7 @@ export default function NotificationsPage() {
       >
         <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1
-            className="text-xl font-bold tracking-tight text-[#f9fafb] md:text-2xl"
+            className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl"
           >
             Notifications
           </h1>
@@ -545,7 +537,7 @@ export default function NotificationsPage() {
                         void onRowActivate(n);
                       }
                     }}
-                    className="w-full cursor-default rounded-xl border border-white/[0.08] p-3 text-left md:p-4"
+                    className="w-full cursor-default rounded-xl border border-slate-200 p-3 text-left md:p-4 shadow-sm"
                     style={{ background: unread ? UNREAD_ROW : READ_ROW }}
                   >
                     <div className="flex w-full items-start gap-3">

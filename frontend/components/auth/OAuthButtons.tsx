@@ -64,18 +64,19 @@ export function OAuthButtons({
   async function goGoogle() {
     onBusyChange?.(true);
     try {
-      await startGoogleOAuth(intent);
+      const openedNewTab = await startGoogleOAuth(intent);
+      if (openedNewTab) onBusyChange?.(false);
     } catch (err) {
       onBusyChange?.(false);
       console.error(err);
-      // Let the parent component handle error presentation or just rely on console
     }
   }
 
   async function goFacebook() {
     onBusyChange?.(true);
     try {
-      await startFacebookOAuth(intent);
+      const openedNewTab = await startFacebookOAuth(intent);
+      if (openedNewTab) onBusyChange?.(false);
     } catch (err) {
       onBusyChange?.(false);
       console.error(err);

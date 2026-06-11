@@ -197,3 +197,30 @@ export async function apiFetchPublic<T = unknown>(
 
   return res.json() as Promise<T>;
 }
+
+export function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
+  const { signal: external, ...rest } = init;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+  const onExternalAbort = () => {
+    clearTimeout(timeout);
+    controller.abort();
+  };
+  if (external) {
+    if (external.aborted) {
+      clearTimeout(timeout);
+      controller.abort();
+    } else {
+      external.addEventListener("abort", onExternalAbort, { once: true });
+    }
+  }
+  return fetch(input, { ...rest, signal: controller.signal }).finally(() => {
+    clearTimeout(timeout);
+    if (external) {
+      external.removeEventListener("abort", onExternalAbort);
+    }
+  });
+}

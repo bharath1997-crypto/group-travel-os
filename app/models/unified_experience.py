@@ -7,8 +7,8 @@ from app.utils.database import Base
 import uuid
 from datetime import datetime
 
-class UnifiedEvent(Base):
-    __tablename__ = "unified_events"
+class UnifiedExperience(Base):
+    __tablename__ = "unified_experiences"
 
     id = Column(UUID(as_uuid=True),
         primary_key=True, default=uuid.uuid4)

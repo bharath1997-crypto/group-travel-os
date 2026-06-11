@@ -74,8 +74,8 @@ class EventDedupService:
         state_province: str = None,
         country: str = None
     ) -> tuple:
-        from app.models.unified_event \
-            import UnifiedEvent
+        from app.models.unified_experience \
+            import UnifiedExperience
 
         dedup_hash = EventDedupService\
             .generate_dedup_hash(
@@ -86,8 +86,8 @@ class EventDedupService:
             )
 
         # Fast path: exact hash match
-        stmt = select(UnifiedEvent).where(
-            UnifiedEvent.dedup_hash == dedup_hash
+        stmt = select(UnifiedExperience).where(
+            UnifiedExperience.dedup_hash == dedup_hash
         )
         existing = db.execute(stmt)\
             .scalar_one_or_none()
@@ -104,13 +104,13 @@ class EventDedupService:
                 hour=23, minute=59,
                 second=59, microsecond=999999
             )
-            stmt2 = select(UnifiedEvent).where(
+            stmt2 = select(UnifiedExperience).where(
                 and_(
-                    func.lower(UnifiedEvent.city)
+                    func.lower(UnifiedExperience.city)
                         == city.lower().strip(),
-                    UnifiedEvent.start_datetime
+                    UnifiedExperience.start_datetime
                         >= day_start,
-                    UnifiedEvent.start_datetime
+                    UnifiedExperience.start_datetime
                         <= day_end
                 )
             )
@@ -131,7 +131,7 @@ class EventDedupService:
 
         # Create new event
         now = datetime.utcnow()
-        new_event = UnifiedEvent(
+        new_event = UnifiedExperience(
             title=title,
             canonical_title=title,
             normalized_title=EventDedupService

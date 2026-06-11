@@ -13,7 +13,7 @@ class EventProvider(Base):
     id = Column(UUID(as_uuid=True),
         primary_key=True, default=uuid.uuid4)
     event_id = Column(UUID(as_uuid=True),
-        ForeignKey("unified_events.id",
+        ForeignKey("unified_experiences.id",
         ondelete="CASCADE"))
     provider = Column(String(50), nullable=False)
     provider_event_id = Column(String(500))

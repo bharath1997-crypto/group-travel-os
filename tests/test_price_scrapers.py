@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.jobs.enrich_event_prices import get_events_needing_prices, run_price_enrichment
-from app.models.unified_event import UnifiedEvent
+from app.models.unified_experience import UnifiedExperience
 from app.services.providers.seatgeek_scraper import scrape_seatgeek_prices
 from app.services.providers.stubhub_scraper import scrape_stubhub_prices
 from tests.conftest import exec_result
@@ -81,7 +81,7 @@ async def test_stubhub_returns_none_on_error():
 
 
 def test_get_events_needing_prices_returns_list(db):
-    event = UnifiedEvent(
+    event = UnifiedExperience(
         id=uuid.uuid4(),
         title="Show",
         canonical_title="Show",
@@ -99,7 +99,7 @@ def test_get_events_needing_prices_returns_list(db):
 
 @pytest.mark.anyio
 async def test_enrichment_skips_blocked_provider():
-    event = UnifiedEvent(
+    event = UnifiedExperience(
         id=uuid.uuid4(),
         title="Show",
         canonical_title="Show",

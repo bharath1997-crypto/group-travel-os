@@ -9,7 +9,7 @@ import pytest
 from rapidfuzz import fuzz
 
 from app.models.event_provider import EventProvider
-from app.models.unified_event import UnifiedEvent
+from app.models.unified_experience import UnifiedExperience
 from app.services.event_dedup_service import EventDedupService
 from tests.conftest import exec_result
 
@@ -129,7 +129,7 @@ def test_find_or_create_creates_new_event(db):
 
 
 def test_find_or_create_finds_by_hash(db):
-    existing = UnifiedEvent(
+    existing = UnifiedExperience(
         id=uuid.uuid4(),
         title="Taylor Swift",
         canonical_title="Taylor Swift",
@@ -159,7 +159,7 @@ def test_find_or_create_finds_by_hash(db):
 
 
 def test_find_or_create_finds_by_fuzzy(db):
-    existing = UnifiedEvent(
+    existing = UnifiedExperience(
         id=uuid.uuid4(),
         title="Taylor Swift Eras Tour",
         canonical_title="Taylor Swift Eras Tour",

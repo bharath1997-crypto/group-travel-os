@@ -3,6 +3,7 @@
 import { Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
+import { OpenLoungeButton } from "@/components/lounge/OpenLoungeButton";
 import type { AppPreferences } from "@/lib/app-settings";
 import { fetchAppSettings, patchAppSettings, prefSection } from "@/lib/app-settings";
 
@@ -70,12 +71,17 @@ export default function SettingsGeneralPage() {
           Favorite people for trip updates and map highlights. Manage the list from
           your travel hub connections — counts sync in Settings home.
         </div>
-        <SettingsLinkRow
-          href="/travel-hub"
-          icon={Users}
-          label="Manage connections"
-          sublabel="Add or remove travelers you trust most"
-        />
+        <OpenLoungeButton className="flex w-full items-center gap-3 border-b border-stone-100 px-4 py-3.5 text-left hover:bg-stone-50">
+          <Users className="h-5 w-5 shrink-0 text-stone-700" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium text-stone-900">
+              Manage connections
+            </span>
+            <span className="block text-xs text-stone-500">
+              Add or remove travelers you trust most
+            </span>
+          </span>
+        </OpenLoungeButton>
       </div>
       <div id="crosspost" className="scroll-mt-16">
         <SettingsToggleRow

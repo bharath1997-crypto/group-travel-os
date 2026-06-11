@@ -37,6 +37,10 @@ async def lifespan(app: FastAPI):
         _health_db = SessionLocal()
         try:
             ScraperFramework.get_or_create_health(_health_db, "viator")
+            ScraperFramework.get_or_create_health(_health_db, "eventbrite")
+            ScraperFramework.get_or_create_health(_health_db, "purge")
+            ScraperFramework.get_or_create_health(_health_db, "stubhub")
+            ScraperFramework.get_or_create_health(_health_db, "seatgeek")
             _health_db.commit()
         finally:
             _health_db.close()
@@ -360,7 +364,7 @@ def _register_routes(app: FastAPI) -> None:
     from app.routes.explorer import router as explorer_feed_router
     from app.routes.admin import router as admin_router
     from app.routes.admin_events import router as admin_events_router
-    from app.routes.unified_events import router as unified_events_router
+    from app.routes.unified_experiences import router as unified_experiences_router
 
     from app.routes.lounge import router as lounge_router
     app.include_router(lounge_router, prefix="/api/v1")
@@ -377,9 +381,9 @@ def _register_routes(app: FastAPI) -> None:
     app.include_router(admin_router, prefix="/api/v1")
     app.include_router(admin_events_router, prefix="/api/v1")
     app.include_router(
-        unified_events_router,
+        unified_experiences_router,
         prefix="/api/v1",
-        tags=["unified-events"],
+        tags=["unified-experiences"],
     )
 
 

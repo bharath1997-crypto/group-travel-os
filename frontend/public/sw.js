@@ -33,9 +33,9 @@ self.addEventListener('notificationclick', function (event) {
   if (data.type === 'group_invite') {
     url = '/notifications'
   } else if (data.type === 'new_message') {
-    url = '/travel-hub'
+    url = '/explore'
   } else if (data.type === 'incoming_call') {
-    url = '/travel-hub'
+    url = '/explore'
   }
 
   event.waitUntil(

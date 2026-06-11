@@ -2,6 +2,7 @@
 
 import { AIAssistantSidecar } from "@/components/ai/AIAssistantSidecar";
 import { LoungeDock } from "@/components/LoungeDock";
+import { emitOpenLounge } from "@/lib/open-lounge";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -214,8 +215,7 @@ function sectionActive(pathname: string, section: NavSectionDef): boolean {
       pathname.startsWith("/routes") ||
       pathname.startsWith("/buses") ||
       pathname.startsWith("/group") ||
-      pathname.startsWith("/buddy") ||
-      pathname.startsWith("/travel-hub")
+      pathname.startsWith("/buddy")
     );
   }
   if (section.id === "live") {
@@ -395,7 +395,6 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading } = useDashboardUser();
-  const hideAssistantSidecar = pathname.startsWith("/travel-hub");
 
   const isMapPage = pathname === "/map" || pathname === "/explore/map";
   const isLivePage = pathname === "/live" || pathname.startsWith("/trip-live");
@@ -518,8 +517,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     isExplorerEventsShell ||
     isExploreShortsShell ||
     isLivePage ||
-    pathname.startsWith("/profile") ||
-    pathname.startsWith("/travel-hub");
+    pathname.startsWith("/profile");
 
   const useFullWidthInner =
     isMapPage ||
@@ -531,8 +529,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     isActivitiesPage ||
     isHotelsPage ||
     isBuddyPage ||
-    isDarkHub ||
-    pathname.startsWith("/travel-hub");
+    isDarkHub;
 
   useEffect(() => {
     if (loading || !user) return;
@@ -712,7 +709,10 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => { router.push("/travel-hub"); setMenuOpen(false); }}
+                      onClick={() => {
+                        emitOpenLounge();
+                        setMenuOpen(false);
+                      }}
                       className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
                     >
                       <MessageSquare size={14} className="text-[#0F766E]" />
@@ -901,7 +901,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         </nav>
       </div>
 
-      {user && !hideAssistantSidecar ? (
+      {user ? (
         <AIAssistantSidecar
           page={
             pathname

@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import L from "leaflet";
 import Link from "next/link";
+import { OpenLoungeButton } from "@/components/lounge/OpenLoungeButton";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
@@ -1615,13 +1616,12 @@ function MembersTab({
                 Balance: owes ₹{owe.toFixed(0)} / owed ₹{owed.toFixed(0)}
               </p>
             </div>
-            <Link
-              href="/travel-hub"
+            <OpenLoungeButton
               className="shrink-0 rounded-lg border px-3 py-1.5 text-xs font-bold"
               style={{ borderColor: CORAL, color: CORAL }}
             >
               Message
-            </Link>
+            </OpenLoungeButton>
           </li>
         );
       })}

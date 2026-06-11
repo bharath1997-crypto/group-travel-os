@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { emitOpenLounge } from "@/lib/open-lounge";
 
 type GroupOut = {
   id: string;
@@ -45,13 +46,19 @@ function JoinPageInner() {
         });
         setGroupName(g.name);
         setPhase("ok");
-        setTimeout(() => router.replace("/travel-hub"), 800);
+        setTimeout(() => {
+          emitOpenLounge();
+          router.replace("/explore");
+        }, 800);
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Could not join group";
         if (msg.toLowerCase().includes("already")) {
           setGroupName("");
           setPhase("ok");
-          setTimeout(() => router.replace("/travel-hub"), 600);
+          setTimeout(() => {
+            emitOpenLounge();
+            router.replace("/explore");
+          }, 600);
           return;
         }
         setError(msg);
@@ -84,7 +91,7 @@ function JoinPageInner() {
                 : "You're already in this group"}
             </h1>
             <p className="mt-1 text-sm text-white/70">
-              Taking you to Travel Hub…
+              Opening Rovvy Lounge…
             </p>
           </>
         ) : null}
@@ -99,9 +106,12 @@ function JoinPageInner() {
             <button
               type="button"
               className="mt-4 w-full rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold hover:bg-white/15"
-              onClick={() => router.replace("/travel-hub")}
+              onClick={() => {
+                emitOpenLounge();
+                router.replace("/explore");
+              }}
             >
-              Back to Travel Hub
+              Open Rovvy Lounge
             </button>
           </>
         ) : null}
