@@ -154,7 +154,7 @@ export default function ExploreV2Page() {
         fetchV2<ExploreEventV2[]>("/events", { lat: latitude, lng: longitude, radius_m: 50000, limit: 8 }).catch(() => []),
         fetchV2<{ places: ExplorePlace[] }>("/nearby", { lat: latitude, lng: longitude, limit: 5, categories: ["landmark", "sightseeing", "monument"] }).catch(() => ({ places: [] })),
         fetchV2<{ places: ExplorePlace[] }>("/nearby", { lat: latitude, lng: longitude, limit: 5, categories: ["nature", "trail", "viewpoint"] }).catch(() => ({ places: [] })),
-        fetchV2<{ places: ExplorePlace[] }>("/nearby", { lat: latitude, lng: longitude, limit: 5, categories: ["gaming", "entertainment", "arcade"] }).catch(() => ({ places: [] })),
+        fetchV2<{ places: ExplorePlace[] }>("/nearby", { lat: latitude, lng: longitude, limit: 5, categories: ["gaming"] }).catch(() => ({ places: [] })),
         fetchV2<{ places: ExplorePlace[] }>("/nearby", { lat: latitude, lng: longitude, limit: 5, categories: ["amusement_park", "theme_park"] }).catch(() => ({ places: [] })),
         fetchV2<{ places: ExplorePlace[] }>("/nearby", { lat: latitude, lng: longitude, limit: 5, categories: ["restaurant", "cafe", "food"] }).catch(() => ({ places: [] })),
         fetchV2<{ places: ExplorePlace[] }>("/nearby", { lat: latitude, lng: longitude, limit: 5, categories: ["park", "garden", "beach"] }).catch(() => ({ places: [] })),
