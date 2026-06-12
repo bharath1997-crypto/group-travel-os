@@ -76,3 +76,10 @@ firebase-credentials.json
 /test_*.py
 /fix_alembic.py
 /clear_cache.py
+
+# ── OSM ETL local data (large; download separately) ─────────────────────────────
+scripts/*.pbf
+scripts/*.osm.pbf
+etl_log.txt
+ci_log.zip
+openapi_prod.json
