@@ -324,3 +324,76 @@ def test_viewport_endpoint_returns_service_response(auth_header, monkeypatch):
     body = response.json()
     assert body["cached"] is True
     assert body["places"][0]["name"] == "Viewport Place"
+
+
+def test_get_city_nominatim_success(auth_header, monkeypatch):
+    class MockResponse:
+        status_code = 200
+        def raise_for_status(self):
+            pass
+        def json(self):
+            return {
+                "address": {
+                    "city": "Austin",
+                    "country": "United States"
+                }
+            }
+
+    monkeypatch.setattr(
+        "httpx.get",
+        lambda *args, **kwargs: MockResponse()
+    )
+
+    response = client.get("/api/v2/explorer/city", params={"lat": 30.2672, "lng": -97.7431})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["city"] == "Austin"
+    assert data["country"] == "United States"
+
+
+def test_get_city_nominatim_failure_fallback(auth_header, monkeypatch):
+    def mock_get(*args, **kwargs):
+        raise Exception("Network error")
+
+    monkeypatch.setattr("httpx.get", mock_get)
+
+    response = client.get("/api/v2/explorer/city", params={"lat": 30.2672, "lng": -97.7431})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["city"] == "Chicago"
+    assert data["country"] == "United States"
+
+
+def test_get_events_success(auth_header, monkeypatch):
+    db_mock = MagicMock()
+    
+    row = {
+        "id": uuid.UUID("11111111-1111-1111-1111-111111111111"),
+        "title": "Test Concert",
+        "start_time": "2026-06-15T20:00:00Z",
+        "end_time": "2026-06-15T23:00:00Z",
+        "ticket_url": "https://ticketmaster.com/tc",
+        "price_min": 25.0,
+        "price_max": 75.0,
+        "category": "Music",
+        "lat": 30.2672,
+        "lng": -97.7431,
+    }
+    
+    execute_result = MagicMock()
+    execute_result.mappings.return_value.all.return_value = [row]
+    db_mock.execute.return_value = execute_result
+    
+    from app.utils.database import get_db
+    app.dependency_overrides[get_db] = lambda: db_mock
+
+    try:
+        response = client.get("/api/v2/explorer/events", params={"lat": 30.2672, "lng": -97.7431})
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["title"] == "Test Concert"
+        assert data[0]["category"] == "Music"
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
