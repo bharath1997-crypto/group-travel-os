@@ -9,7 +9,11 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.schemas.explorer_v2 import ExploreNearbyResponse, ExploreViewportResponse, PlaceResult
-from app.services.explorer.explorer_v2_service import ExplorerV2Service
+from app.services.explorer.explorer_v2_service import (
+    ExplorerV2Service,
+    SECTION_CATEGORIES,
+    _resolve_categories,
+)
 from app.utils.auth import get_current_user
 
 client = TestClient(app)
@@ -194,6 +198,13 @@ def test_get_viewport_cache_hit(monkeypatch):
     assert result.cached is True
     sql = str(db.execute.call_args[0][0])
     assert "ST_Within" not in sql
+
+
+def test_resolve_categories_expands_section_keys():
+    assert _resolve_categories(["gaming"]) == ["gaming"]
+    assert _resolve_categories(["landmark"]) == ["landmark", "photo_spot"]
+    assert _resolve_categories(["trekking"]) == ["trekking", "nature"]
+    assert "entertainment" not in SECTION_CATEGORIES["gaming"]
 
 
 def test_get_nearby_applies_categories_filter(monkeypatch):

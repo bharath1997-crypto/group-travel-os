@@ -95,8 +95,18 @@ def sqlite_db():
 def test_map_category_restaurant_and_landmark():
     assert map_category({"amenity": "cafe"}) == ("restaurant", "cafe")
     assert map_category({"tourism": "museum"}) == ("landmark", "museum")
+    assert map_category({"tourism": "theme_park"}) == ("amusement", "theme_park")
     assert map_category({"natural": "peak"}) == ("trekking", "peak")
     assert map_category({"historic": "monument"}) == ("landmark", "monument")
+    assert map_category({"amenity": "theatre"}) == ("entertainment", "theatre")
+    assert map_category({"amenity": "arts_centre"}) == ("entertainment", "arts_centre")
+    assert map_category({"amenity": "bowling_alley"}) == ("gaming", "bowling_alley")
+    assert map_category({"leisure": "playground"}) is None
+
+
+def test_build_overpass_query_excludes_playground():
+    query = build_overpass_query(24.0, -125.0, 29.0, -120.0)
+    assert "playground" not in query
 
 
 def test_map_node_to_place_skips_missing_name():

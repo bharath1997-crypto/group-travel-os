@@ -78,13 +78,67 @@ ON CONFLICT (osm_id) DO UPDATE SET
 """)
 
 
+CATEGORY_MAP: dict[str, str] = {
+    # Restaurants
+    "restaurant": "restaurant",
+    "cafe": "restaurant",
+    "fast_food": "restaurant",
+    "food_court": "restaurant",
+    "bar": "nightlife",
+    "pub": "nightlife",
+    "nightclub": "nightlife",
+    "casino": "nightlife",
+    # Entertainment
+    "cinema": "entertainment",
+    "theatre": "entertainment",
+    "arts_centre": "entertainment",
+    "bowling_alley": "gaming",
+    # Gaming only
+    "arcade": "gaming",
+    "amusement_arcade": "gaming",
+    # Parks
+    "park": "park",
+    # playground — skipped (not useful for Rovvy)
+    "sports_centre": "sports",
+    "fitness_centre": "sports",
+    "golf_course": "sports",
+    "marina": "activities",
+    "water_park": "activities",
+    "swimming_pool": "sports",
+    # Tourism
+    "attraction": "landmark",
+    "museum": "landmark",
+    "gallery": "landmark",
+    "zoo": "landmark",
+    "theme_park": "amusement",
+    "viewpoint": "photo_spot",
+    "artwork": "photo_spot",
+    # Shopping
+    "mall": "shopping",
+    "department_store": "shopping",
+    "marketplace": "shopping",
+    "supermarket": "shopping",
+    # Nature
+    "beach": "nature",
+    "waterfall": "nature",
+    "hot_spring": "nature",
+    "cave_entrance": "nature",
+    "peak": "trekking",
+    # Historic
+    "monument": "landmark",
+    "memorial": "landmark",
+    "castle": "landmark",
+    "ruins": "landmark",
+}
+
+
 def build_overpass_query(sw_lat: float, sw_lng: float, ne_lat: float, ne_lng: float) -> str:
     """Build Overpass QL for a bounding-box tile."""
     return (
         "[out:json][timeout:60];\n"
         f"(\n"
         f"  node[\"amenity\"~\"restaurant|cafe|bar|pub|nightclub|cinema|theatre|fast_food|food_court\"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});\n"
-        f"  node[\"leisure\"~\"park|playground|sports_centre|fitness_centre|golf_course|marina|water_park\"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});\n"
+        f"  node[\"leisure\"~\"park|sports_centre|fitness_centre|golf_course|marina|water_park\"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});\n"
         f"  node[\"tourism\"~\"attraction|museum|viewpoint|artwork|gallery|zoo|theme_park\"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});\n"
         f"  node[\"shop\"~\"mall|department_store|supermarket|marketplace\"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});\n"
         f"  node[\"natural\"~\"beach|peak|waterfall|hot_spring|cave_entrance\"]({sw_lat},{sw_lng},{ne_lat},{ne_lng});\n"
@@ -97,39 +151,20 @@ def build_overpass_query(sw_lat: float, sw_lng: float, ne_lat: float, ne_lng: fl
 
 def map_category(tags: dict[str, Any]) -> tuple[str, str] | None:
     """Map OSM tags to Rovvy (category, subcategory)."""
-    amenity = tags.get("amenity")
-    leisure = tags.get("leisure")
-    tourism = tags.get("tourism")
-    shop = tags.get("shop")
-    natural = tags.get("natural")
-    historic = tags.get("historic")
+    if tags.get("leisure") == "playground":
+        return None
 
-    if amenity in ("restaurant", "cafe", "fast_food", "food_court"):
-        return "restaurant", amenity
-    if amenity in ("bar", "pub", "nightclub", "casino"):
-        return "nightlife", amenity
-    if amenity in ("cinema", "theatre", "arts_centre"):
-        return "entertainment", amenity
-    if amenity == "bowling_alley":
-        return "gaming", amenity
-    if leisure in ("park", "playground"):
-        return "park", leisure
-    if leisure in ("sports_centre", "fitness_centre", "golf_course"):
-        return "sports", leisure
-    if leisure in ("water_park", "marina"):
-        return "activities", leisure
-    if tourism in ("attraction", "museum", "gallery", "zoo", "theme_park"):
-        return "landmark", tourism
-    if tourism in ("viewpoint", "artwork"):
-        return "photo_spot", tourism
-    if shop in ("mall", "department_store", "marketplace"):
-        return "shopping", shop
-    if natural in ("beach", "waterfall", "hot_spring", "cave_entrance"):
-        return "nature", natural
-    if natural == "peak":
-        return "trekking", natural
+    for tag_key in ("amenity", "leisure", "tourism", "shop", "natural"):
+        tag_value = tags.get(tag_key)
+        if not tag_value:
+            continue
+        category = CATEGORY_MAP.get(tag_value)
+        if category:
+            return category, tag_value
+
+    historic = tags.get("historic")
     if historic:
-        return "landmark", historic
+        return CATEGORY_MAP.get(historic, "landmark"), historic
     return None
 
 

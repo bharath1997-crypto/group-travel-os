@@ -19,6 +19,35 @@ logger = logging.getLogger(__name__)
 
 CACHE_TTL_SECONDS = 3600
 
+SECTION_CATEGORIES: dict[str, list[str]] = {
+    "landmark": ["landmark", "photo_spot"],
+    "trekking": ["trekking", "nature"],
+    "gaming": ["gaming"],
+    "amusement": ["amusement"],
+    "restaurant": ["restaurant"],
+    "park": ["park"],
+    "nightlife": ["nightlife"],
+    "sports": ["sports"],
+    "shopping": ["shopping"],
+    "entertainment": ["entertainment"],
+}
+
+
+def _resolve_categories(categories: list[str] | None) -> list[str] | None:
+    """Expand explorer section keys into underlying place categories."""
+    if not categories:
+        return None
+
+    resolved: list[str] = []
+    for category in categories:
+        mapped = SECTION_CATEGORIES.get(category)
+        if mapped:
+            resolved.extend(mapped)
+        else:
+            resolved.append(category)
+
+    return list(dict.fromkeys(resolved))
+
 
 def _build_cache_key(raw_key: str) -> str:
     return hashlib.sha256(raw_key.encode()).hexdigest()
@@ -118,7 +147,8 @@ class ExplorerV2Service:
                 total=len(places),
             )
 
-        category_sql, category_params = _category_clause(categories)
+        resolved_categories = _resolve_categories(categories)
+        category_sql, category_params = _category_clause(resolved_categories)
         query = text(
             f"""
             SELECT id, name, category, subcategory, lat, lng, address,
@@ -189,7 +219,8 @@ class ExplorerV2Service:
                 total=len(places),
             )
 
-        category_sql, category_params = _category_clause(categories)
+        resolved_categories = _resolve_categories(categories)
+        category_sql, category_params = _category_clause(resolved_categories)
         query = text(
             f"""
             SELECT id, name, category, subcategory, lat, lng, address,
