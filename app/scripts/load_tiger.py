@@ -31,7 +31,7 @@ TIGER_LAYERS: dict[str, dict[str, object]] = {
     "tl_2024_us_zcta520": {
         "table": "tiger_zcta",
         "columns": ["zcta5ce20", "geoid"],
-        "column_map": {"ZCTA5CE20": "zcta5ce20", "GEOID": "geoid"},
+        "column_map": {"ZCTA5CE20": "zcta5ce20", "GEOID20": "geoid"},
         "index": "idx_tiger_zcta_geom",
         "kind": "single",
     },
@@ -108,17 +108,24 @@ def _insert_geodataframe(
         f"VALUES ({', '.join(f':{column}' for column in columns)}, "
         "ST_Multi(ST_SetSRID(ST_GeomFromEWKB(:geom), 4326)))"
     )
-    records = [
-        {
-            **{column: row[column] for column in columns},
-            "geom": wkb.dumps(row.geom),
-        }
-        for _, row in gdf.iterrows()
-    ]
+    total = len(gdf)
+    records: list[dict[str, object]] = []
 
-    with engine.begin() as conn:
-        for offset in range(0, len(records), chunk_size):
-            conn.execute(insert_sql, records[offset : offset + chunk_size])
+    for index, row in enumerate(gdf.itertuples(index=False), start=1):
+        record = {column: getattr(row, column) for column in columns}
+        record["geom"] = wkb.dumps(row.geom)
+        records.append(record)
+
+        if len(records) >= chunk_size:
+            with engine.begin() as conn:
+                conn.execute(insert_sql, records)
+            logger.info("  inserted %d/%d rows into %s", index, total, table)
+            records = []
+
+    if records:
+        with engine.begin() as conn:
+            conn.execute(insert_sql, records)
+        logger.info("  inserted %d/%d rows into %s", total, total, table)
 
 
 def _load_layer(engine, tiger_dir: Path, layer_name: str, config: dict[str, object]) -> int:
