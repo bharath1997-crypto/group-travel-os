@@ -80,6 +80,8 @@ firebase-credentials.json
 # ── OSM ETL local data (large; download separately) ─────────────────────────────
 scripts/*.pbf
 scripts/*.osm.pbf
+scripts/tiger/
 etl_log.txt
+osm_etl.lock
 ci_log.zip
 openapi_prod.json
