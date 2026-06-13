@@ -81,28 +81,36 @@ def test_run_stage_2_dry_run_uses_count_and_skips_commit():
 
 def test_run_stage_1_writes_and_commits():
     db = MagicMock()
-    db.execute.return_value.rowcount = 5
+    scope_result = MagicMock()
+    scope_result.fetchall.return_value = [SimpleNamespace(scope="IL")]
+    update_result = MagicMock()
+    update_result.rowcount = 5
+    db.execute.side_effect = [scope_result, update_result]
 
     count = run_stage_1(db, dry_run=False)
 
     assert count == 5
-    executed_sql = str(db.execute.call_args[0][0])
-    assert "UPDATE places" in executed_sql
-    assert "tiger_state" in executed_sql
-    db.commit.assert_called_once()
+    update_sql = str(db.execute.call_args_list[1][0][0])
+    assert "UPDATE places" in update_sql
+    assert "tiger_state" in update_sql
+    assert db.commit.call_count == 1
 
 
 def test_run_stage_2_writes_and_commits():
     db = MagicMock()
-    db.execute.return_value.rowcount = 3
+    scope_result = MagicMock()
+    scope_result.fetchall.return_value = [SimpleNamespace(scope="17")]
+    update_result = MagicMock()
+    update_result.rowcount = 3
+    db.execute.side_effect = [scope_result, update_result]
 
     count = run_stage_2(db, dry_run=False)
 
     assert count == 3
-    executed_sql = str(db.execute.call_args[0][0])
-    assert "UPDATE places" in executed_sql
-    assert "tiger_place" in executed_sql
-    db.commit.assert_called_once()
+    update_sql = str(db.execute.call_args_list[1][0][0])
+    assert "UPDATE places" in update_sql
+    assert "tiger_place" in update_sql
+    assert db.commit.call_count == 1
 
 
 def test_run_stage_5_reverse_geocoder_batch_logic():

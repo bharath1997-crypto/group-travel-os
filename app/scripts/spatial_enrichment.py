@@ -20,6 +20,21 @@ from app.db.session import SessionLocal
 
 logger = logging.getLogger(__name__)
 
+STAGE_1_STATE_SQL = text("""
+UPDATE places p
+SET
+  address = jsonb_set(COALESCE(p.address, '{}'::jsonb), '{state}', to_jsonb(s.stusps)),
+  state_source = 'tiger_state',
+  geocode_confidence = 'high',
+  geocode_updated_at = NOW()
+FROM tiger_states s
+WHERE s.stusps = :scope
+  AND p.address->>'state' IS NULL
+  AND p.geom IS NOT NULL
+  AND ST_Intersects(s.geom, p.geom)
+  AND ST_Contains(s.geom, p.geom)
+""")
+
 STAGE_1_UPDATE_SQL = text("""
 UPDATE places p
 SET
@@ -30,15 +45,31 @@ SET
 FROM tiger_states s
 WHERE p.address->>'state' IS NULL
   AND p.geom IS NOT NULL
+  AND ST_Intersects(s.geom, p.geom)
   AND ST_Contains(s.geom, p.geom)
 """)
 
 STAGE_1_COUNT_SQL = text("""
 SELECT COUNT(*) AS n
 FROM places p
-JOIN tiger_states s ON ST_Contains(s.geom, p.geom)
+JOIN tiger_states s ON ST_Intersects(s.geom, p.geom) AND ST_Contains(s.geom, p.geom)
 WHERE p.address->>'state' IS NULL
   AND p.geom IS NOT NULL
+""")
+
+STAGE_2_STATE_SQL = text("""
+UPDATE places p
+SET
+  address = jsonb_set(COALESCE(p.address, '{}'::jsonb), '{city}', to_jsonb(pl.name)),
+  city_source = 'tiger_place',
+  geocode_confidence = 'high',
+  geocode_updated_at = NOW()
+FROM tiger_places pl
+WHERE pl.statefp = :scope
+  AND p.address->>'city' IS NULL
+  AND p.geom IS NOT NULL
+  AND ST_Intersects(pl.geom, p.geom)
+  AND ST_Contains(pl.geom, p.geom)
 """)
 
 STAGE_2_UPDATE_SQL = text("""
@@ -51,15 +82,35 @@ SET
 FROM tiger_places pl
 WHERE p.address->>'city' IS NULL
   AND p.geom IS NOT NULL
+  AND ST_Intersects(pl.geom, p.geom)
   AND ST_Contains(pl.geom, p.geom)
 """)
 
 STAGE_2_COUNT_SQL = text("""
 SELECT COUNT(*) AS n
 FROM places p
-JOIN tiger_places pl ON ST_Contains(pl.geom, p.geom)
+JOIN tiger_places pl ON ST_Intersects(pl.geom, p.geom) AND ST_Contains(pl.geom, p.geom)
 WHERE p.address->>'city' IS NULL
   AND p.geom IS NOT NULL
+""")
+
+STAGE_3_BATCH_SQL = text("""
+WITH batch AS (
+  SELECT id
+  FROM places
+  WHERE address->>'postcode' IS NULL
+    AND geom IS NOT NULL
+  LIMIT :batch_size
+)
+UPDATE places p
+SET
+  address = jsonb_set(COALESCE(p.address, '{}'::jsonb), '{postcode}', to_jsonb(z.zcta5ce20)),
+  postcode_source = 'census_zcta_approx',
+  geocode_updated_at = NOW()
+FROM tiger_zcta z, batch b
+WHERE p.id = b.id
+  AND ST_Intersects(z.geom, p.geom)
+  AND ST_Contains(z.geom, p.geom)
 """)
 
 STAGE_3_UPDATE_SQL = text("""
@@ -71,15 +122,31 @@ SET
 FROM tiger_zcta z
 WHERE p.address->>'postcode' IS NULL
   AND p.geom IS NOT NULL
+  AND ST_Intersects(z.geom, p.geom)
   AND ST_Contains(z.geom, p.geom)
 """)
 
 STAGE_3_COUNT_SQL = text("""
 SELECT COUNT(*) AS n
 FROM places p
-JOIN tiger_zcta z ON ST_Contains(z.geom, p.geom)
+JOIN tiger_zcta z ON ST_Intersects(z.geom, p.geom) AND ST_Contains(z.geom, p.geom)
 WHERE p.address->>'postcode' IS NULL
   AND p.geom IS NOT NULL
+""")
+
+STAGE_4_STATE_SQL = text("""
+UPDATE places p
+SET
+  address = jsonb_set(COALESCE(p.address, '{}'::jsonb), '{city}', to_jsonb(cs.name)),
+  city_source = 'county_subdivision',
+  geocode_confidence = 'medium',
+  geocode_updated_at = NOW()
+FROM tiger_cousub cs
+WHERE cs.statefp = :scope
+  AND p.address->>'city' IS NULL
+  AND p.geom IS NOT NULL
+  AND ST_Intersects(cs.geom, p.geom)
+  AND ST_Contains(cs.geom, p.geom)
 """)
 
 STAGE_4_UPDATE_SQL = text("""
@@ -92,13 +159,14 @@ SET
 FROM tiger_cousub cs
 WHERE p.address->>'city' IS NULL
   AND p.geom IS NOT NULL
+  AND ST_Intersects(cs.geom, p.geom)
   AND ST_Contains(cs.geom, p.geom)
 """)
 
 STAGE_4_COUNT_SQL = text("""
 SELECT COUNT(*) AS n
 FROM places p
-JOIN tiger_cousub cs ON ST_Contains(cs.geom, p.geom)
+JOIN tiger_cousub cs ON ST_Intersects(cs.geom, p.geom) AND ST_Contains(cs.geom, p.geom)
 WHERE p.address->>'city' IS NULL
   AND p.geom IS NOT NULL
 """)
@@ -127,9 +195,41 @@ ORDER BY n DESC
 """)
 
 
+def _configure_session(db: Session) -> None:
+    """Allow long-running spatial UPDATE statements on Supabase/Postgres."""
+    if db.bind is not None and db.bind.dialect.name != "sqlite":
+        db.execute(text("SET statement_timeout = '900s'"))
+        db.commit()
+
+
+STATE_SCOPES_SQL = text("SELECT DISTINCT stusps AS scope FROM tiger_states ORDER BY scope")
+STATEFP_SCOPES_SQL = text("SELECT DISTINCT statefp AS scope FROM tiger_places ORDER BY scope")
+COUSUB_SCOPES_SQL = text("SELECT DISTINCT statefp AS scope FROM tiger_cousub ORDER BY scope")
+
+SPATIAL_BATCH_SIZE = 5000
+
+
 def _execute_count(db: Session, sql: Any) -> int:
     result = db.execute(sql).scalar_one()
     return int(result or 0)
+
+
+def _run_scoped_updates(
+    db: Session,
+    *,
+    scopes_sql: Any,
+    update_sql: Any,
+) -> int:
+    scopes = [row.scope for row in db.execute(scopes_sql).fetchall()]
+    total = 0
+    for scope in scopes:
+        result = db.execute(update_sql, {"scope": scope})
+        db.commit()
+        batch_count = int(result.rowcount or 0)
+        total += batch_count
+        if batch_count:
+            logger.info("  scope=%s updated=%d", scope, batch_count)
+    return total
 
 
 def run_stage_1(db: Session, *, dry_run: bool = False) -> int:
@@ -138,9 +238,11 @@ def run_stage_1(db: Session, *, dry_run: bool = False) -> int:
         logger.info("Stage 1 dry-run: %d rows would be updated with state", count)
         return count
 
-    result = db.execute(STAGE_1_UPDATE_SQL)
-    db.commit()
-    count = int(result.rowcount or 0)
+    count = _run_scoped_updates(
+        db,
+        scopes_sql=STATE_SCOPES_SQL,
+        update_sql=STAGE_1_STATE_SQL,
+    )
     logger.info("Stage 1 complete: %d rows updated with state", count)
     return count
 
@@ -151,24 +253,33 @@ def run_stage_2(db: Session, *, dry_run: bool = False) -> int:
         logger.info("Stage 2 dry-run: %d rows would be updated with city", count)
         return count
 
-    result = db.execute(STAGE_2_UPDATE_SQL)
-    db.commit()
-    count = int(result.rowcount or 0)
+    count = _run_scoped_updates(
+        db,
+        scopes_sql=STATEFP_SCOPES_SQL,
+        update_sql=STAGE_2_STATE_SQL,
+    )
     logger.info("Stage 2 complete: %d rows updated with city", count)
     return count
 
 
-def run_stage_3(db: Session, *, dry_run: bool = False) -> int:
+def run_stage_3(db: Session, *, dry_run: bool = False, batch_size: int = SPATIAL_BATCH_SIZE) -> int:
     if dry_run:
         count = _execute_count(db, STAGE_3_COUNT_SQL)
         logger.info("Stage 3 dry-run: %d rows would be updated with postcode", count)
         return count
 
-    result = db.execute(STAGE_3_UPDATE_SQL)
-    db.commit()
-    count = int(result.rowcount or 0)
-    logger.info("Stage 3 complete: %d rows updated with postcode", count)
-    return count
+    total = 0
+    while True:
+        result = db.execute(STAGE_3_BATCH_SQL, {"batch_size": batch_size})
+        db.commit()
+        batch_count = int(result.rowcount or 0)
+        if batch_count == 0:
+            break
+        total += batch_count
+        logger.info("Stage 3 batch: %d rows updated (%d total)", batch_count, total)
+
+    logger.info("Stage 3 complete: %d rows updated with postcode", total)
+    return total
 
 
 def run_stage_4(db: Session, *, dry_run: bool = False) -> int:
@@ -180,9 +291,11 @@ def run_stage_4(db: Session, *, dry_run: bool = False) -> int:
         )
         return count
 
-    result = db.execute(STAGE_4_UPDATE_SQL)
-    db.commit()
-    count = int(result.rowcount or 0)
+    count = _run_scoped_updates(
+        db,
+        scopes_sql=COUSUB_SCOPES_SQL,
+        update_sql=STAGE_4_STATE_SQL,
+    )
     logger.info("Stage 4 complete: %d rows updated with county subdivision", count)
     return count
 
@@ -244,7 +357,7 @@ def run_enrichment(
     stage_runners = {
         "1": lambda: run_stage_1(db, dry_run=dry_run),
         "2": lambda: run_stage_2(db, dry_run=dry_run),
-        "3": lambda: run_stage_3(db, dry_run=dry_run),
+        "3": lambda: run_stage_3(db, dry_run=dry_run, batch_size=batch_size),
         "4": lambda: run_stage_4(db, dry_run=dry_run),
         "5": lambda: run_stage_5(db, batch_size=batch_size, dry_run=dry_run),
     }
@@ -296,6 +409,7 @@ def main() -> None:
 
     db = SessionLocal()
     try:
+        _configure_session(db)
         logger.info(
             "Starting spatial enrichment stage=%s dry_run=%s batch_size=%d",
             args.stage,

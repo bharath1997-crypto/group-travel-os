@@ -11,6 +11,7 @@ import logging
 from pathlib import Path
 
 import geopandas as gpd
+from shapely import wkb
 from sqlalchemy import create_engine, text
 
 from config import settings
@@ -94,6 +95,32 @@ def _read_merged_state_layer(layer_dir: Path) -> gpd.GeoDataFrame:
     return merged
 
 
+def _insert_geodataframe(
+    engine,
+    gdf: gpd.GeoDataFrame,
+    table: str,
+    columns: list[str],
+    *,
+    chunk_size: int = 1000,
+) -> None:
+    insert_sql = text(
+        f"INSERT INTO {table} ({', '.join(columns)}, geom) "
+        f"VALUES ({', '.join(f':{column}' for column in columns)}, "
+        "ST_Multi(ST_SetSRID(ST_GeomFromEWKB(:geom), 4326)))"
+    )
+    records = [
+        {
+            **{column: row[column] for column in columns},
+            "geom": wkb.dumps(row.geom),
+        }
+        for _, row in gdf.iterrows()
+    ]
+
+    with engine.begin() as conn:
+        for offset in range(0, len(records), chunk_size):
+            conn.execute(insert_sql, records[offset : offset + chunk_size])
+
+
 def _load_layer(engine, tiger_dir: Path, layer_name: str, config: dict[str, object]) -> int:
     table = str(config["table"])
     columns = list(config["columns"])  # type: ignore[arg-type]
@@ -127,7 +154,7 @@ def _load_layer(engine, tiger_dir: Path, layer_name: str, config: dict[str, obje
         _create_table(conn, table, columns)
 
     row_count = len(gdf)
-    gdf.to_postgis(table, engine, if_exists="append", index=False)
+    _insert_geodataframe(engine, gdf, table, columns)
 
     with engine.begin() as conn:
         conn.execute(
