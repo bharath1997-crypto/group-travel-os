@@ -180,11 +180,16 @@ WHERE address->>'city' IS NULL
 
 STAGE_5_UPDATE_SQL = text("""
 UPDATE places SET
-  address = jsonb_set(COALESCE(address, '{}'::jsonb), '{city}', to_jsonb(CAST(:city AS text))),
+  address = jsonb_set(
+    COALESCE(address, '{}'::jsonb),
+    '{city}',
+    to_jsonb(CAST(:city AS TEXT))
+  ),
   city_source = 'reverse_geocoder_fallback',
   geocode_confidence = 'low',
   geocode_updated_at = NOW()
-WHERE id = :id AND address->>'city' IS NULL
+WHERE id = (:id)::uuid
+  AND address->>'city' IS NULL
 """)
 
 SUMMARY_SQL = text("""
