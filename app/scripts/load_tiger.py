@@ -25,24 +25,28 @@ TIGER_LAYERS: dict[str, dict[str, object]] = {
         "columns": ["geoid", "stusps", "name"],
         "column_map": {"GEOID": "geoid", "STUSPS": "stusps", "NAME": "name"},
         "index": "idx_tiger_states_geom",
-    },
-    "tl_2024_us_place": {
-        "table": "tiger_places",
-        "columns": ["geoid", "name", "statefp"],
-        "column_map": {"GEOID": "geoid", "NAME": "name", "STATEFP": "statefp"},
-        "index": "idx_tiger_places_geom",
+        "kind": "single",
     },
     "tl_2024_us_zcta520": {
         "table": "tiger_zcta",
         "columns": ["zcta5ce20", "geoid"],
         "column_map": {"ZCTA5CE20": "zcta5ce20", "GEOID": "geoid"},
         "index": "idx_tiger_zcta_geom",
+        "kind": "single",
     },
-    "tl_2024_us_cousub": {
+    "place": {
+        "table": "tiger_places",
+        "columns": ["geoid", "name", "statefp"],
+        "column_map": {"GEOID": "geoid", "NAME": "name", "STATEFP": "statefp"},
+        "index": "idx_tiger_places_geom",
+        "kind": "merged_states",
+    },
+    "cousub": {
         "table": "tiger_cousub",
         "columns": ["geoid", "name", "statefp"],
         "column_map": {"GEOID": "geoid", "NAME": "name", "STATEFP": "statefp"},
         "index": "idx_tiger_cousub_geom",
+        "kind": "merged_states",
     },
 }
 
@@ -69,19 +73,46 @@ def _create_table(conn, table: str, columns: list[str]) -> None:
     )
 
 
-def _load_layer(engine, tiger_dir: Path, layer_name: str, config: dict[str, object]) -> int:
-    layer_dir = tiger_dir / layer_name
+def _read_merged_state_layer(layer_dir: Path) -> gpd.GeoDataFrame:
     if not layer_dir.is_dir():
         raise FileNotFoundError(f"Missing TIGER layer directory: {layer_dir}")
 
-    shapefile_path = _find_shapefile(layer_dir)
+    subdirs = sorted(path for path in layer_dir.iterdir() if path.is_dir())
+    if not subdirs:
+        raise FileNotFoundError(f"No extracted state shapefiles found in {layer_dir}")
+
+    frames: list[gpd.GeoDataFrame] = []
+    for subdir in subdirs:
+        shapefile_path = _find_shapefile(subdir)
+        frames.append(gpd.read_file(shapefile_path))
+
+    merged = gpd.GeoDataFrame(
+        gpd.pd.concat(frames, ignore_index=True),
+        geometry="geometry",
+        crs=frames[0].crs,
+    )
+    return merged
+
+
+def _load_layer(engine, tiger_dir: Path, layer_name: str, config: dict[str, object]) -> int:
     table = str(config["table"])
     columns = list(config["columns"])  # type: ignore[arg-type]
     column_map = dict(config["column_map"])  # type: ignore[arg-type]
     index_name = str(config["index"])
+    kind = str(config["kind"])
 
-    logger.info("Reading shapefile %s", shapefile_path)
-    gdf = gpd.read_file(shapefile_path)
+    if kind == "merged_states":
+        layer_dir = tiger_dir / layer_name
+        logger.info("Reading merged state shapefiles from %s", layer_dir)
+        gdf = _read_merged_state_layer(layer_dir)
+    else:
+        layer_dir = tiger_dir / layer_name
+        if not layer_dir.is_dir():
+            raise FileNotFoundError(f"Missing TIGER layer directory: {layer_dir}")
+        shapefile_path = _find_shapefile(layer_dir)
+        logger.info("Reading shapefile %s", shapefile_path)
+        gdf = gpd.read_file(shapefile_path)
+
     gdf = gdf.to_crs(epsg=4326)
 
     missing = [src for src in column_map if src not in gdf.columns]
