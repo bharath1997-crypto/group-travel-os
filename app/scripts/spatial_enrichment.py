@@ -180,7 +180,7 @@ WHERE address->>'city' IS NULL
 
 STAGE_5_UPDATE_SQL = text("""
 UPDATE places SET
-  address = jsonb_set(COALESCE(address, '{}'::jsonb), '{city}', to_jsonb(:city)),
+  address = jsonb_set(COALESCE(address, '{}'::jsonb), '{city}', to_jsonb(:city::text)),
   city_source = 'reverse_geocoder_fallback',
   geocode_confidence = 'low',
   geocode_updated_at = NOW()
