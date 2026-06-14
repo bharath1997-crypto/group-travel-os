@@ -5,12 +5,20 @@ import Link from "next/link";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
+  Activity,
   ArrowLeft,
+  Landmark,
+  LayoutGrid,
   Loader2,
   Map as MapIcon,
+  Martini,
   Minus,
   Navigation,
   Plus,
+  Ticket,
+  Trees,
+  Utensils,
+  type LucideIcon,
 } from "lucide-react";
 
 import { type PlaceResult, useExploreMap } from "@/hooks/useExploreMap";
@@ -36,22 +44,49 @@ const CATEGORY_COLORS: Record<string, string> = {
   default: "#64748B",
 };
 
+const CATEGORY_ICON_PATHS: Record<string, string> = {
+  restaurant:
+    '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+  nightlife: '<path d="M8 22h8"/><path d="M12 11v11"/><path d="m19 3-7 8-7-8Z"/>',
+  park:
+    '<path d="m17 14 3 3.3a1 1 0 0 1-.7 1.7H4.7a1 1 0 0 1-.7-1.7L7 14h-.3a1 1 0 0 1-.7-1.7L9 9h-.2A1 1 0 0 1 8 7.3L12 3l4 4.3a1 1 0 0 1-.8 1.7H15l3 3.3a1 1 0 0 1-.7 1.7Z"/><path d="M12 22v-3"/>',
+  landmark:
+    '<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
+  entertainment:
+    '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>',
+  shopping:
+    '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+  nature: '<path d="m8 3 4 8 5-5 5 15H2L8 3z"/>',
+  trekking: '<path d="m8 3 4 8 5-5 5 15H2L8 3z"/>',
+  sports:
+    '<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>',
+  activities:
+    '<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>',
+  photo_spot:
+    '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  gaming:
+    '<line x1="6" x2="10" y1="11" y2="11"/><line x1="8" x2="8" y1="9" y2="13"/><line x1="15" x2="15.01" y1="12" y2="12"/><line x1="18" x2="18.01" y1="10" y2="10"/><rect width="20" height="12" x="2" y="6" rx="2"/>',
+  default:
+    '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+};
+
 type MapMode = "nearby" | "viewport";
 
 type FilterChip = {
   id: string;
   label: string;
   apiCategories: string[] | null;
+  Icon: LucideIcon;
 };
 
 const FILTER_CHIPS: FilterChip[] = [
-  { id: "all", label: "All", apiCategories: null },
-  { id: "events", label: "Events", apiCategories: ["entertainment"] },
-  { id: "restaurants", label: "Restaurants", apiCategories: ["restaurant"] },
-  { id: "parks", label: "Parks", apiCategories: ["park"] },
-  { id: "nightlife", label: "Nightlife", apiCategories: ["nightlife"] },
-  { id: "landmarks", label: "Landmarks", apiCategories: ["landmark", "photo_spot"] },
-  { id: "activities", label: "Activities", apiCategories: ["activities", "sports"] },
+  { id: "all", label: "All", apiCategories: null, Icon: LayoutGrid },
+  { id: "events", label: "Events", apiCategories: ["entertainment"], Icon: Ticket },
+  { id: "restaurants", label: "Restaurants", apiCategories: ["restaurant"], Icon: Utensils },
+  { id: "parks", label: "Parks", apiCategories: ["park"], Icon: Trees },
+  { id: "nightlife", label: "Nightlife", apiCategories: ["nightlife"], Icon: Martini },
+  { id: "landmarks", label: "Landmarks", apiCategories: ["landmark", "photo_spot"], Icon: Landmark },
+  { id: "activities", label: "Activities", apiCategories: ["activities", "sports"], Icon: Activity },
 ];
 
 function markerColor(category: string | null): string {
@@ -78,15 +113,25 @@ function buildPopupHtml(place: PlaceResult): string {
   `;
 }
 
-function createMarkerElement(color: string): HTMLDivElement {
+function categoryIconSvg(category: string | null): string {
+  const key =
+    category && CATEGORY_ICON_PATHS[category] ? category : "default";
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${CATEGORY_ICON_PATHS[key]}</svg>`;
+}
+
+function createMarkerElement(category: string | null): HTMLDivElement {
   const el = document.createElement("div");
-  el.style.width = "14px";
-  el.style.height = "14px";
+  el.style.width = "28px";
+  el.style.height = "28px";
+  el.style.display = "flex";
+  el.style.alignItems = "center";
+  el.style.justifyContent = "center";
   el.style.borderRadius = "50%";
-  el.style.backgroundColor = color;
+  el.style.backgroundColor = markerColor(category);
   el.style.border = "2px solid #FFFFFF";
   el.style.boxShadow = "0 2px 6px rgba(15,23,42,0.35)";
   el.style.cursor = "pointer";
+  el.innerHTML = categoryIconSvg(category);
   return el;
 }
 
@@ -243,7 +288,7 @@ export function ExploreMap() {
     markersRef.current = [];
 
     for (const place of places) {
-      const el = createMarkerElement(markerColor(place.category));
+      const el = createMarkerElement(place.category);
       const popup = new maplibregl.Popup({
         offset: 12,
         closeButton: true,
@@ -299,20 +344,12 @@ export function ExploreMap() {
 
   return (
     <div
-      className="relative w-full bg-white"
-      style={{
-        width: "100%",
-        height: "calc(100vh - 120px)",
-        minHeight: "500px",
-      }}
+      className="relative flex h-full w-full flex-col bg-white"
+      style={{ minHeight: "320px" }}
     >
       <div
         ref={mapContainer}
-        style={{
-          width: "100%",
-          height: "calc(100vh - 120px)",
-          minHeight: "500px",
-        }}
+        className="min-h-0 w-full flex-1"
       />
 
       <div className="pointer-events-none absolute inset-0 z-10 flex flex-col">
@@ -381,12 +418,13 @@ export function ExploreMap() {
                 key={chip.id}
                 type="button"
                 onClick={() => toggleChip(chip.id)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold shadow-sm transition ${
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-sm transition ${
                   active
                     ? "border-[#E94560] bg-[#E94560] text-white"
                     : "border-slate-200 bg-white text-slate-600 hover:border-[#E94560]/40"
                 }`}
               >
+                <chip.Icon size={14} />
                 {chip.label}
               </button>
             );
