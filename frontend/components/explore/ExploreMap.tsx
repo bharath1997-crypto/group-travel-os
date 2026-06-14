@@ -140,10 +140,10 @@ export function ExploreMap() {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const modeRef = useRef<MapMode>("nearby");
+  const modeRef = useRef<MapMode>("viewport");
   const categoriesRef = useRef<string[] | null>(null);
 
-  const [mode, setMode] = useState<MapMode>("nearby");
+  const [mode, setMode] = useState<MapMode>("viewport");
   const [selectedChipIds, setSelectedChipIds] = useState<string[]>(["all"]);
   const [userCenter, setUserCenter] = useState(DEFAULT_CENTER);
 
