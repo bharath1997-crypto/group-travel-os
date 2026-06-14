@@ -690,20 +690,6 @@ export function ExploreMap() {
         </div>
       </div>
 
-      {/* Empty-state hint — shown when no chips are selected */}
-      {!hasActiveFilter && !loading && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3">
-          <div className="rounded-2xl border border-slate-200 bg-white/90 px-6 py-5 text-center shadow-lg backdrop-blur-sm">
-            <div className="mb-1 text-2xl">🗺️</div>
-            <div className="text-sm font-semibold text-slate-700">
-              Tap a category to discover places
-            </div>
-            <div className="mt-1 text-xs text-slate-400">
-              Restaurants · Parks · Nightlife · Landmarks&nbsp;…
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Loading spinner */}
       {loading && (
