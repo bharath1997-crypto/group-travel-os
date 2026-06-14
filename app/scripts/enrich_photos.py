@@ -382,7 +382,7 @@ def run_tier3_pexels(
             f"""
             SELECT id, osm_id, category
             FROM places
-            WHERE photo_url IS NULL
+            WHERE photo_source = 'unsplash'
               AND category IS NOT NULL
               {category_sql}
             {limit_sql}
