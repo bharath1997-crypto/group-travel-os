@@ -849,9 +849,9 @@ export function ExploreMap() {
               )}
 
               {/* Distance */}
-              {selectedPlace.distance_m != null && (
+              {selectedPlace.distance_m != null && selectedPlace.distance_m > 0 && (
                 <div style={{ fontSize: 13, color: "#0F766E", marginBottom: 8, fontWeight: 500 }}>
-                  {(selectedPlace.distance_m / 1609).toFixed(1)} mi away{referencePoint ? " from pin" : ""}
+                  {(selectedPlace.distance_m / 1609.34).toFixed(1)} mi away{referencePoint ? " from pin" : ""}
                 </div>
               )}
 
