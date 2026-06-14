@@ -94,44 +94,31 @@ function markerColor(category: string | null): string {
   return CATEGORY_COLORS[category] ?? CATEGORY_COLORS.default;
 }
 
-function buildPopupHtml(place: PlaceResult): string {
-  const city = place.address?.city;
-  const website = place.website
-    ? `<a href="${place.website}" target="_blank" rel="noopener noreferrer" style="color:${CORAL};font-size:12px;">Website</a>`
-    : "";
-  const hours = place.opening_hours
-    ? `<p style="margin:4px 0 0;font-size:11px;color:#64748B;">${place.opening_hours}</p>`
-    : "";
-  return `
-    <div style="font-family:Inter,system-ui,sans-serif;padding:2px 0;">
-      <strong style="display:block;color:${CORAL};font-size:14px;margin-bottom:4px;">${place.name}</strong>
-      <span style="font-size:11px;color:#64748B;">${place.category ?? "Place"}</span>
-      ${city ? `<p style="margin:6px 0 0;font-size:12px;color:#334155;">${city}</p>` : ""}
-      ${hours}
-      ${website ? `<div style="margin-top:8px;">${website}</div>` : ""}
-    </div>
-  `;
-}
+const FALLBACK_PHOTO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 24 24' fill='%23CBD5E1'%3E%3Crect width='24' height='24' rx='12' fill='%23F1F5F9'/%3E%3Cpath d='M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z' fill='%23CBD5E1'/%3E%3Ccircle cx='12' cy='10' r='3' fill='%23F1F5F9'/%3E%3C/svg%3E";
 
-function categoryIconSvg(category: string | null): string {
-  const key =
-    category && CATEGORY_ICON_PATHS[category] ? category : "default";
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${CATEGORY_ICON_PATHS[key]}</svg>`;
-}
-
-function createMarkerElement(category: string | null): HTMLDivElement {
+function createPhotoBubble(
+  place: PlaceResult,
+  onClick: (p: PlaceResult) => void,
+): HTMLDivElement {
+  const color = markerColor(place.category);
   const el = document.createElement("div");
-  el.style.width = "28px";
-  el.style.height = "28px";
-  el.style.display = "flex";
-  el.style.alignItems = "center";
-  el.style.justifyContent = "center";
-  el.style.borderRadius = "50%";
-  el.style.backgroundColor = markerColor(category);
-  el.style.border = "2px solid #FFFFFF";
-  el.style.boxShadow = "0 2px 6px rgba(15,23,42,0.35)";
-  el.style.cursor = "pointer";
-  el.innerHTML = categoryIconSvg(category);
+  el.style.cssText = [
+    "width:44px",
+    "height:44px",
+    "border-radius:50%",
+    `background-image:url(${place.photo_url ?? FALLBACK_PHOTO})`,
+    "background-size:cover",
+    "background-position:center",
+    "background-color:#E2E8F0",
+    `border:3px solid ${color}`,
+    "box-shadow:0 2px 8px rgba(0,0,0,0.3)",
+    "cursor:pointer",
+    "transition:transform 0.15s ease",
+    "flex-shrink:0",
+  ].join(";");
+  el.addEventListener("mouseenter", () => { el.style.transform = "scale(1.1)"; });
+  el.addEventListener("mouseleave", () => { el.style.transform = "scale(1)"; });
+  el.addEventListener("click", (e) => { e.stopPropagation(); onClick(place); });
   return el;
 }
 
@@ -146,6 +133,7 @@ export function ExploreMap() {
   const [mode, setMode] = useState<MapMode>("viewport");
   const [selectedChipIds, setSelectedChipIds] = useState<string[]>(["all"]);
   const [userCenter, setUserCenter] = useState(DEFAULT_CENTER);
+  const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(null);
 
   const { places, loading, error, cached, total, fetchNearby, fetchViewport } =
     useExploreMap();
@@ -236,6 +224,10 @@ export function ExploreMap() {
       }
     });
 
+    map.on("click", () => {
+      setSelectedPlace(null);
+    });
+
     mapRef.current = map;
 
     if (typeof navigator !== "undefined" && navigator.geolocation) {
@@ -288,19 +280,10 @@ export function ExploreMap() {
     markersRef.current = [];
 
     for (const place of places) {
-      const el = createMarkerElement(place.category);
-      const popup = new maplibregl.Popup({
-        offset: 12,
-        closeButton: true,
-        maxWidth: "280px",
-        className: "rovvy-explore-popup",
-      }).setHTML(buildPopupHtml(place));
-
+      const el = createPhotoBubble(place, setSelectedPlace);
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat([place.lng, place.lat])
-        .setPopup(popup)
         .addTo(map);
-
       markersRef.current.push(marker);
     }
   }, [places]);
@@ -415,7 +398,10 @@ export function ExploreMap() {
           </div>
         </div>
 
-        <div className="pointer-events-auto mt-auto flex flex-wrap gap-2 p-3">
+        <div
+          className="pointer-events-auto mt-auto flex flex-wrap gap-2 p-3"
+          style={{ paddingBottom: selectedPlace ? "196px" : undefined }}
+        >
           {FILTER_CHIPS.map((chip) => {
             const active =
               chip.id === "all"
@@ -463,18 +449,134 @@ export function ExploreMap() {
         </div>
       )}
 
-      <style jsx global>{`
-        .maplibregl-popup-content {
-          width: 280px;
-          background: #ffffff;
-          border-radius: 12px;
-          padding: 12px;
-          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
-        }
-        .maplibregl-popup-close-button {
-          color: #64748b;
-        }
-      `}</style>
+      {/* Bottom sheet */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: "180px",
+          background: "#fff",
+          borderRadius: "16px 16px 0 0",
+          boxShadow: "0 -4px 20px rgba(0,0,0,0.15)",
+          transform: selectedPlace ? "translateY(0)" : "translateY(100%)",
+          transition: "transform 0.3s ease",
+          padding: "16px",
+          display: "flex",
+          gap: "12px",
+          zIndex: 100,
+          overflow: "hidden",
+        }}
+      >
+        {selectedPlace && (
+          <>
+            {/* Close pill */}
+            <button
+              type="button"
+              aria-label="Dismiss"
+              onClick={() => setSelectedPlace(null)}
+              style={{
+                position: "absolute",
+                top: 8,
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                background: "#CBD5E1",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+              }}
+            />
+
+            <img
+              src={selectedPlace.photo_url ?? FALLBACK_PHOTO}
+              alt={selectedPlace.name}
+              style={{
+                width: 120,
+                height: 148,
+                objectFit: "cover",
+                borderRadius: 8,
+                flexShrink: 0,
+                marginTop: 12,
+                background: "#F1F5F9",
+              }}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = FALLBACK_PHOTO;
+              }}
+            />
+
+            <div style={{ flex: 1, minWidth: 0, marginTop: 12 }}>
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: "#0F172A",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  marginBottom: 4,
+                }}
+              >
+                {selectedPlace.name}
+              </div>
+
+              {selectedPlace.category && (
+                <span
+                  style={{
+                    display: "inline-block",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: markerColor(selectedPlace.category),
+                    background: markerColor(selectedPlace.category) + "18",
+                    borderRadius: 20,
+                    padding: "2px 8px",
+                    marginBottom: 6,
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {selectedPlace.category}
+                </span>
+              )}
+
+              {selectedPlace.address?.city && (
+                <div style={{ fontSize: 13, color: "#64748B", marginBottom: 2 }}>
+                  {selectedPlace.address.city}
+                </div>
+              )}
+
+              {selectedPlace.distance_m != null && (
+                <div style={{ fontSize: 13, color: "#0F766E", marginBottom: 8 }}>
+                  {(selectedPlace.distance_m / 1609).toFixed(1)} mi away
+                </div>
+              )}
+
+              {selectedPlace.website && (
+                <a
+                  href={selectedPlace.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "inline-block",
+                    marginTop: 4,
+                    padding: "6px 14px",
+                    background: "#0F766E",
+                    color: "#fff",
+                    borderRadius: 6,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    textDecoration: "none",
+                  }}
+                >
+                  Visit website
+                </a>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
