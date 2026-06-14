@@ -7,13 +7,15 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import {
   Activity,
   ArrowLeft,
+  Clock,
+  ExternalLink,
   Landmark,
-  LayoutGrid,
   Loader2,
   MapPin,
   Martini,
   Minus,
   Navigation,
+  Phone,
   Plus,
   Target,
   Ticket,
@@ -78,6 +80,18 @@ const FALLBACK_PHOTO =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='12' fill='%23F1F5F9'/%3E%3Cpath d='M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z' fill='%23CBD5E1'/%3E%3Ccircle cx='12' cy='10' r='3' fill='%23F1F5F9'/%3E%3C/svg%3E";
 
 const EMPTY_GEOJSON = { type: "FeatureCollection" as const, features: [] };
+
+// ── Format address fields into a single readable string ──────────────────────
+function formatAddress(addr: Record<string, string | null> | null): string {
+  if (!addr) return "";
+  const street = [addr.house_number, addr.road ?? addr.street]
+    .filter(Boolean)
+    .join(" ");
+  const city     = addr.city ?? addr.town ?? addr.village ?? addr.municipality ?? "";
+  const state    = addr.state ?? addr.region ?? "";
+  const postcode = addr.postcode ?? addr.postal_code ?? "";
+  return [street, city, state, postcode].filter(Boolean).join(", ");
+}
 
 // ── Circle polygon GeoJSON ────────────────────────────────────────────────────
 function circleGeoJSON(
@@ -654,7 +668,7 @@ export function ExploreMap() {
         {/* Category chips + status row */}
         <div
           className="pointer-events-auto mt-auto p-3"
-          style={{ paddingBottom: selectedPlace ? "196px" : undefined }}
+          style={{ paddingBottom: selectedPlace ? "296px" : undefined }}
         >
           {/* Count label — only visible when a category is active */}
           {countLabel && (
@@ -722,21 +736,21 @@ export function ExploreMap() {
         style={{
           position: "absolute",
           bottom: 0, left: 0, right: 0,
-          height: "180px",
+          height: "280px",
           background: "#fff",
           borderRadius: "16px 16px 0 0",
-          boxShadow: "0 -4px 20px rgba(0,0,0,0.15)",
+          boxShadow: "0 -4px 24px rgba(0,0,0,0.18)",
           transform: selectedPlace ? "translateY(0)" : "translateY(100%)",
           transition: "transform 0.3s ease",
-          padding: "16px",
-          display: "flex",
-          gap: "12px",
           zIndex: 100,
           overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         {selectedPlace && (
           <>
+            {/* Drag handle (sits above image) */}
             <button
               type="button"
               aria-label="Dismiss"
@@ -745,47 +759,120 @@ export function ExploreMap() {
                 position: "absolute", top: 8, left: "50%",
                 transform: "translateX(-50%)",
                 width: 36, height: 4, borderRadius: 2,
-                background: "#CBD5E1", border: "none", cursor: "pointer", padding: 0,
+                background: "rgba(203,213,225,0.9)", border: "none",
+                cursor: "pointer", padding: 0, zIndex: 2,
               }}
             />
-            <img
-              src={selectedPlace.photo_url ?? FALLBACK_PHOTO}
-              alt={selectedPlace.name}
-              style={{
-                width: 120, height: 148, objectFit: "cover",
-                borderRadius: 8, flexShrink: 0, marginTop: 12, background: "#F1F5F9",
-              }}
-              onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_PHOTO; }}
-            />
-            <div style={{ flex: 1, minWidth: 0, marginTop: 12 }}>
-              <div style={{ fontSize: 16, fontWeight: 600, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>
-                {selectedPlace.name}
+
+            {/* Hero image — full width */}
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <img
+                src={selectedPlace.photo_url ?? FALLBACK_PHOTO}
+                alt={selectedPlace.name}
+                style={{
+                  width: "100%", height: 140,
+                  objectFit: "cover", display: "block",
+                  background: "#F1F5F9",
+                }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_PHOTO; }}
+              />
+              {/* Close button on image */}
+              <button
+                type="button"
+                onClick={() => setSelectedPlace(null)}
+                style={{
+                  position: "absolute", top: 8, right: 8,
+                  width: 28, height: 28, borderRadius: "50%",
+                  background: "rgba(0,0,0,0.45)", border: "none",
+                  cursor: "pointer", display: "flex", alignItems: "center",
+                  justifyContent: "center", color: "#fff",
+                }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Scrollable details */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "10px 14px 14px" }}>
+
+              {/* Name + category row */}
+              <div style={{ marginBottom: 6 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {selectedPlace.name}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3, flexWrap: "wrap" }}>
+                  {selectedPlace.category && (
+                    <span style={{ fontSize: 11, fontWeight: 600, color: markerColor(selectedPlace.category), background: markerColor(selectedPlace.category) + "18", borderRadius: 20, padding: "2px 8px", textTransform: "capitalize", flexShrink: 0 }}>
+                      {selectedPlace.category}
+                    </span>
+                  )}
+                  {selectedPlace.subcategory && (
+                    <span style={{ fontSize: 12, color: "#94A3B8", textTransform: "capitalize" }}>
+                      {selectedPlace.subcategory}
+                    </span>
+                  )}
+                </div>
               </div>
-              {selectedPlace.category && (
-                <span style={{ display: "inline-block", fontSize: 11, fontWeight: 600, color: markerColor(selectedPlace.category), background: markerColor(selectedPlace.category) + "18", borderRadius: 20, padding: "2px 8px", marginBottom: 6, textTransform: "capitalize" }}>
-                  {selectedPlace.category}
-                </span>
-              )}
-              {selectedPlace.address?.city && (
-                <div style={{ fontSize: 13, color: "#64748B", marginBottom: 2 }}>
-                  {selectedPlace.address.city}
+
+              {/* Address */}
+              {formatAddress(selectedPlace.address) && (
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 5, fontSize: 13, color: "#64748B", marginBottom: 4 }}>
+                  <MapPin size={13} style={{ marginTop: 1, flexShrink: 0, color: "#94A3B8" }} />
+                  <span>{formatAddress(selectedPlace.address)}</span>
                 </div>
               )}
+
+              {/* Phone */}
+              {selectedPlace.phone && (
+                <a
+                  href={`tel:${selectedPlace.phone}`}
+                  style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "#2563EB", textDecoration: "none", marginBottom: 4 }}
+                >
+                  <Phone size={13} style={{ flexShrink: 0 }} />
+                  {selectedPlace.phone}
+                </a>
+              )}
+
+              {/* Opening hours */}
+              {selectedPlace.opening_hours && (
+                <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "#64748B", marginBottom: 4, overflow: "hidden" }}>
+                  <Clock size={13} style={{ flexShrink: 0 }} />
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {selectedPlace.opening_hours}
+                  </span>
+                </div>
+              )}
+
+              {/* Distance */}
               {selectedPlace.distance_m != null && (
-                <div style={{ fontSize: 13, color: "#0F766E", marginBottom: 8 }}>
+                <div style={{ fontSize: 13, color: "#0F766E", marginBottom: 8, fontWeight: 500 }}>
                   {(selectedPlace.distance_m / 1609).toFixed(1)} mi away{referencePoint ? " from pin" : ""}
                 </div>
               )}
-              {selectedPlace.website && (
+
+              {/* Action buttons */}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {selectedPlace.website && (
+                  <a
+                    href={selectedPlace.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 14px", background: "#0F766E", color: "#fff", borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none" }}
+                  >
+                    <ExternalLink size={13} />
+                    Website
+                  </a>
+                )}
                 <a
-                  href={selectedPlace.website}
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${selectedPlace.lat},${selectedPlace.lng}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ display: "inline-block", marginTop: 4, padding: "6px 14px", background: "#0F766E", color: "#fff", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none" }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 14px", background: "#F1F5F9", color: "#0F172A", border: "1px solid #E2E8F0", borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none" }}
                 >
-                  Visit website
+                  <Navigation size={13} />
+                  Directions
                 </a>
-              )}
+              </div>
             </div>
           </>
         )}
