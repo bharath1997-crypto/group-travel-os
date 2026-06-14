@@ -154,13 +154,13 @@ function placesToGeoJSON(places: PlaceResult[]) {
         subcategory:   p.subcategory,
         lat:           p.lat,
         lng:           p.lng,
-        address:       JSON.stringify(p.address),
-        website:       p.website ?? null,
-        phone:         p.phone ?? null,
-        opening_hours: p.opening_hours ?? null,
-        photo_url:     p.photo_url ?? null,
+        address:       JSON.stringify(p.address || {}),
+        website:       p.website       || "",
+        phone:         p.phone         || "",
+        opening_hours: p.opening_hours || "",
+        photo_url:     p.photo_url     || "",
         source:        p.source,
-        distance_m:    p.distance_m ?? null,
+        distance_m:    p.distance_m    ?? 0,
       },
     })),
   };
@@ -398,12 +398,29 @@ export function ExploreMap() {
           .catch(() => {});
       });
 
-      // Click point → open bottom sheet
+      // Click point → open detail panel
       map.on("click", "unclustered-point", (e) => {
         layerClickHandled = true;
         const feature = e.features?.[0];
         if (!feature?.properties) return;
-        setSelectedPlace(propsToPlace(feature.properties as Record<string, unknown>));
+        const props = feature.properties as Record<string, unknown>;
+        let addr: Record<string, string | null> | null = null;
+        try { addr = JSON.parse(props.address as string || "{}") as Record<string, string | null>; } catch { addr = null; }
+        setSelectedPlace({
+          id:            String(props.id ?? ""),
+          name:          String(props.name ?? ""),
+          category:      (props.category as string) || null,
+          subcategory:   (props.subcategory as string) || null,
+          photo_url:     (props.photo_url as string) || null,
+          distance_m:    props.distance_m != null ? Number(props.distance_m) : null,
+          address:       addr,
+          website:       (props.website as string) || null,
+          phone:         (props.phone as string) || null,
+          opening_hours: (props.opening_hours as string) || null,
+          lat:           Number(props.lat ?? 0),
+          lng:           Number(props.lng ?? 0),
+          source:        String(props.source ?? ""),
+        });
       });
 
       const setCursor = (cursor: string) => () => {
@@ -668,7 +685,7 @@ export function ExploreMap() {
         {/* Category chips + status row */}
         <div
           className="pointer-events-auto mt-auto p-3"
-          style={{ paddingRight: selectedPlace ? "332px" : undefined }}
+          style={{ paddingBottom: selectedPlace ? "296px" : undefined }}
         >
           {/* Count label — only visible when a category is active */}
           {countLabel && (
@@ -731,16 +748,16 @@ export function ExploreMap() {
         </div>
       )}
 
-      {/* ── Right-side detail panel ──────────────────────────────────────── */}
+      {/* ── Bottom sheet ─────────────────────────────────────────────────── */}
       <div
         style={{
           position: "absolute",
-          top: 0, right: 0, bottom: 0,
-          width: "320px",
+          bottom: 0, left: 0, right: 0,
+          height: "280px",
           background: "#fff",
-          borderRadius: "16px 0 0 16px",
-          boxShadow: "-4px 0 24px rgba(0,0,0,0.15)",
-          transform: selectedPlace ? "translateX(0)" : "translateX(100%)",
+          borderRadius: "16px 16px 0 0",
+          boxShadow: "0 -4px 24px rgba(0,0,0,0.18)",
+          transform: selectedPlace ? "translateY(0)" : "translateY(100%)",
           transition: "transform 0.3s ease",
           zIndex: 100,
           overflow: "hidden",
@@ -760,6 +777,7 @@ export function ExploreMap() {
                   width: "100%", height: 140,
                   objectFit: "cover", display: "block",
                   background: "#F1F5F9",
+                  borderRadius: "12px 12px 0 0",
                 }}
                 onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_PHOTO; }}
               />
