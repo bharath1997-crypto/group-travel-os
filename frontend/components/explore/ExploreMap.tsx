@@ -668,7 +668,7 @@ export function ExploreMap() {
         {/* Category chips + status row */}
         <div
           className="pointer-events-auto mt-auto p-3"
-          style={{ paddingBottom: selectedPlace ? "296px" : undefined }}
+          style={{ paddingRight: selectedPlace ? "332px" : undefined }}
         >
           {/* Count label — only visible when a category is active */}
           {countLabel && (
@@ -731,16 +731,16 @@ export function ExploreMap() {
         </div>
       )}
 
-      {/* ── Bottom sheet ─────────────────────────────────────────────────── */}
+      {/* ── Right-side detail panel ──────────────────────────────────────── */}
       <div
         style={{
           position: "absolute",
-          bottom: 0, left: 0, right: 0,
-          height: "280px",
+          top: 0, right: 0, bottom: 0,
+          width: "320px",
           background: "#fff",
-          borderRadius: "16px 16px 0 0",
-          boxShadow: "0 -4px 24px rgba(0,0,0,0.18)",
-          transform: selectedPlace ? "translateY(0)" : "translateY(100%)",
+          borderRadius: "16px 0 0 16px",
+          boxShadow: "-4px 0 24px rgba(0,0,0,0.15)",
+          transform: selectedPlace ? "translateX(0)" : "translateX(100%)",
           transition: "transform 0.3s ease",
           zIndex: 100,
           overflow: "hidden",
@@ -750,19 +750,6 @@ export function ExploreMap() {
       >
         {selectedPlace && (
           <>
-            {/* Drag handle (sits above image) */}
-            <button
-              type="button"
-              aria-label="Dismiss"
-              onClick={() => setSelectedPlace(null)}
-              style={{
-                position: "absolute", top: 8, left: "50%",
-                transform: "translateX(-50%)",
-                width: 36, height: 4, borderRadius: 2,
-                background: "rgba(203,213,225,0.9)", border: "none",
-                cursor: "pointer", padding: 0, zIndex: 2,
-              }}
-            />
 
             {/* Hero image — full width */}
             <div style={{ position: "relative", flexShrink: 0 }}>
