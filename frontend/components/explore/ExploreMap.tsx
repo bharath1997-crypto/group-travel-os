@@ -11,13 +11,16 @@ import {
   LayoutGrid,
   Loader2,
   Map as MapIcon,
+  MapPin,
   Martini,
   Minus,
   Navigation,
   Plus,
+  Target,
   Ticket,
   Trees,
   Utensils,
+  X,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,21 +29,28 @@ import { type PlaceResult, useExploreMap } from "@/hooks/useExploreMap";
 const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 };
 const NEARBY_RADIUS_M = 5000;
 const VIEWPORT_DEBOUNCE_MS = 600;
+// Backend hard limit is 50 000 m — all presets must stay at or below this.
+const RADIUS_PRESETS = [
+  { label: "5 km",  m: 5_000 },
+  { label: "15 km", m: 15_000 },
+  { label: "30 km", m: 30_000 },
+  { label: "50 km", m: 50_000 },
+] as const;
 
 const CATEGORY_COLORS: Record<string, string> = {
-  restaurant: "#E94560",
-  nightlife: "#7C3AED",
-  park: "#16A34A",
-  landmark: "#D97706",
-  entertainment: "#0EA5E9",
-  shopping: "#EC4899",
-  nature: "#059669",
-  trekking: "#92400E",
-  sports: "#1D4ED8",
-  activities: "#059669",
-  photo_spot: "#D97706",
-  gaming: "#7C3AED",
-  default: "#64748B",
+  restaurant:   "#E94560",
+  nightlife:    "#7C3AED",
+  park:         "#16A34A",
+  landmark:     "#D97706",
+  entertainment:"#0EA5E9",
+  shopping:     "#EC4899",
+  nature:       "#059669",
+  trekking:     "#92400E",
+  sports:       "#1D4ED8",
+  activities:   "#059669",
+  photo_spot:   "#D97706",
+  gaming:       "#7C3AED",
+  default:      "#64748B",
 };
 
 type MapMode = "nearby" | "viewport";
@@ -53,13 +63,13 @@ type FilterChip = {
 };
 
 const FILTER_CHIPS: FilterChip[] = [
-  { id: "all", label: "All", apiCategories: null, Icon: LayoutGrid },
-  { id: "events", label: "Events", apiCategories: ["entertainment"], Icon: Ticket },
-  { id: "restaurants", label: "Restaurants", apiCategories: ["restaurant"], Icon: Utensils },
-  { id: "parks", label: "Parks", apiCategories: ["park"], Icon: Trees },
-  { id: "nightlife", label: "Nightlife", apiCategories: ["nightlife"], Icon: Martini },
-  { id: "landmarks", label: "Landmarks", apiCategories: ["landmark", "photo_spot"], Icon: Landmark },
-  { id: "activities", label: "Activities", apiCategories: ["activities", "sports"], Icon: Activity },
+  { id: "all",        label: "All",         apiCategories: null,                              Icon: LayoutGrid },
+  { id: "events",     label: "Events",      apiCategories: ["entertainment"],                 Icon: Ticket },
+  { id: "restaurants",label: "Restaurants", apiCategories: ["restaurant"],                    Icon: Utensils },
+  { id: "parks",      label: "Parks",       apiCategories: ["park"],                          Icon: Trees },
+  { id: "nightlife",  label: "Nightlife",   apiCategories: ["nightlife"],                     Icon: Martini },
+  { id: "landmarks",  label: "Landmarks",   apiCategories: ["landmark", "photo_spot"],        Icon: Landmark },
+  { id: "activities", label: "Activities",  apiCategories: ["activities", "sports"],          Icon: Activity },
 ];
 
 function markerColor(category: string | null): string {
@@ -69,6 +79,55 @@ function markerColor(category: string | null): string {
 
 const FALLBACK_PHOTO =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='12' fill='%23F1F5F9'/%3E%3Cpath d='M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z' fill='%23CBD5E1'/%3E%3Ccircle cx='12' cy='10' r='3' fill='%23F1F5F9'/%3E%3C/svg%3E";
+
+// ── Helper: approximate circle polygon (GeoJSON) ──────────────────────────────
+function circleGeoJSON(
+  center: { lat: number; lng: number },
+  radiusM: number,
+  steps = 72,
+) {
+  const latRad = (center.lat * Math.PI) / 180;
+  const coords: [number, number][] = [];
+  for (let i = 0; i <= steps; i++) {
+    const angle = (i / steps) * 2 * Math.PI;
+    const dlat = (radiusM * Math.sin(angle)) / 111_320;
+    const dlng =
+      (radiusM * Math.cos(angle)) / (111_320 * Math.cos(latRad));
+    coords.push([center.lng + dlng, center.lat + dlat]);
+  }
+  return {
+    type: "FeatureCollection" as const,
+    features: [
+      {
+        type: "Feature" as const,
+        geometry: { type: "Polygon" as const, coordinates: [coords] },
+        properties: {},
+      },
+    ],
+  };
+}
+
+// ── Helper: animated GPS dot DOM element ──────────────────────────────────────
+function createGpsDot(): HTMLDivElement {
+  const wrap = document.createElement("div");
+  wrap.className = "rovvy-gps-wrap";
+  const outer = document.createElement("div");
+  outer.className = "rovvy-gps-outer";
+  const inner = document.createElement("div");
+  inner.className = "rovvy-gps-inner";
+  wrap.appendChild(outer);
+  wrap.appendChild(inner);
+  return wrap;
+}
+
+// ── Helper: reference pin DOM element ────────────────────────────────────────
+function createRefPin(): HTMLDivElement {
+  const el = document.createElement("div");
+  el.style.cssText =
+    "width:36px;height:36px;cursor:default;display:flex;align-items:flex-end;justify-content:center;";
+  el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z" fill="#E94560" stroke="white" stroke-width="1.5"/><circle cx="12" cy="10" r="2.5" fill="white"/></svg>`;
+  return el;
+}
 
 function placesToGeoJSON(places: PlaceResult[]) {
   return {
@@ -125,19 +184,32 @@ export function ExploreMap() {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Refs that mirror state for use inside map event closures ──────────────
   const modeRef = useRef<MapMode>("viewport");
   const categoriesRef = useRef<string[] | null>(null);
   const placesRef = useRef<PlaceResult[]>([]);
+  const pinModeRef = useRef(false);
+  const referencePointRef = useRef<{ lat: number; lng: number } | null>(null);
+  const radiusMRef = useRef(NEARBY_RADIUS_M);
 
+  // ── Marker instances ──────────────────────────────────────────────────────
+  const gpsMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const refPinMarkerRef = useRef<maplibregl.Marker | null>(null);
+
+  // ── Component state ───────────────────────────────────────────────────────
   const [mode, setMode] = useState<MapMode>("viewport");
   const [selectedChipIds, setSelectedChipIds] = useState<string[]>(["all"]);
   const [userCenter, setUserCenter] = useState(DEFAULT_CENTER);
+  const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(null);
+  const [referencePoint, setReferencePoint] = useState<{ lat: number; lng: number } | null>(null);
+  const [pinMode, setPinMode] = useState(false);
+  const [radiusM, setRadiusM] = useState(NEARBY_RADIUS_M);
 
   const { places, loading, error, cached, total, fetchNearby, fetchViewport } =
     useExploreMap();
 
-  // Keep a ref in sync so the map load handler can access current places.
   placesRef.current = places;
 
   const apiCategories = useMemo(() => {
@@ -153,21 +225,27 @@ export function ExploreMap() {
     return values.size ? Array.from(values) : null;
   }, [selectedChipIds]);
 
-  useEffect(() => {
-    modeRef.current = mode;
-  }, [mode]);
+  // ── Sync refs with state ──────────────────────────────────────────────────
+  useEffect(() => { modeRef.current = mode; }, [mode]);
+  useEffect(() => { categoriesRef.current = apiCategories; }, [apiCategories]);
+  useEffect(() => { pinModeRef.current = pinMode; }, [pinMode]);
+  useEffect(() => { referencePointRef.current = referencePoint; }, [referencePoint]);
+  useEffect(() => { radiusMRef.current = radiusM; }, [radiusM]);
 
-  useEffect(() => {
-    categoriesRef.current = apiCategories;
-  }, [apiCategories]);
-
+  // ── Fetch logic: reference point overrides mode ───────────────────────────
   const runFetch = useCallback(() => {
     const map = mapRef.current;
     if (!map) return;
     const categories = categoriesRef.current;
+    const refPt = referencePointRef.current;
+
+    if (refPt) {
+      void fetchNearby(refPt.lat, refPt.lng, radiusMRef.current, categories);
+      return;
+    }
     if (modeRef.current === "nearby") {
       const center = map.getCenter();
-      void fetchNearby(center.lat, center.lng, NEARBY_RADIUS_M, categories);
+      void fetchNearby(center.lat, center.lng, radiusMRef.current, categories);
       return;
     }
     const bounds = map.getBounds();
@@ -179,9 +257,7 @@ export function ExploreMap() {
 
   const scheduleViewportFetch = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      runFetch();
-    }, VIEWPORT_DEBOUNCE_MS);
+    debounceRef.current = setTimeout(() => { runFetch(); }, VIEWPORT_DEBOUNCE_MS);
   }, [runFetch]);
 
   // ── Map initialisation ────────────────────────────────────────────────────
@@ -192,9 +268,7 @@ export function ExploreMap() {
       container: mapContainer.current,
       style: {
         version: 8,
-        // Glyphs are required for the cluster-count symbol layer.
-        glyphs:
-          "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+        glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
         sources: {
           osm: {
             type: "raster",
@@ -215,6 +289,9 @@ export function ExploreMap() {
     );
 
     map.on("moveend", () => {
+      // When a reference pin is set the map shouldn't re-fetch on pan/zoom —
+      // only explicit radius / category changes trigger a new fetch.
+      if (referencePointRef.current) return;
       if (modeRef.current === "viewport") {
         scheduleViewportFetch();
       } else {
@@ -222,12 +299,33 @@ export function ExploreMap() {
       }
     });
 
-    // Track whether a layer handled the current click so we don't dismiss
-    // the bottom sheet immediately after opening it.
     let layerClickHandled = false;
 
     map.on("load", () => {
-      // ── GeoJSON source with built-in clustering ──────────────────────────
+      // ── Radius circle source (filled behind markers) ─────────────────────
+      map.addSource("radius-circle", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      map.addLayer({
+        id: "radius-fill",
+        type: "fill",
+        source: "radius-circle",
+        paint: { "fill-color": "#2563EB", "fill-opacity": 0.07 },
+      });
+      map.addLayer({
+        id: "radius-stroke",
+        type: "line",
+        source: "radius-circle",
+        paint: {
+          "line-color": "#2563EB",
+          "line-width": 2,
+          "line-dasharray": [4, 3],
+          "line-opacity": 0.7,
+        },
+      });
+
+      // ── GeoJSON source with built-in clustering ───────────────────────────
       map.addSource("places", {
         type: "geojson",
         data: placesToGeoJSON(placesRef.current),
@@ -236,7 +334,6 @@ export function ExploreMap() {
         clusterRadius: 50,
       });
 
-      // Cluster bubble
       map.addLayer({
         id: "clusters",
         type: "circle",
@@ -244,20 +341,11 @@ export function ExploreMap() {
         filter: ["has", "point_count"],
         paint: {
           "circle-color": "#0F766E",
-          "circle-radius": [
-            "step",
-            ["get", "point_count"],
-            20,
-            10,
-            30,
-            50,
-            40,
-          ],
+          "circle-radius": ["step", ["get", "point_count"], 20, 10, 30, 50, 40],
           "circle-opacity": 0.85,
         },
       });
 
-      // Cluster count label
       map.addLayer({
         id: "cluster-count",
         type: "symbol",
@@ -271,7 +359,6 @@ export function ExploreMap() {
         paint: { "text-color": "#ffffff" },
       });
 
-      // Single-place circles
       map.addLayer({
         id: "unclustered-point",
         type: "circle",
@@ -279,18 +366,17 @@ export function ExploreMap() {
         filter: ["!", ["has", "point_count"]],
         paint: {
           "circle-color": [
-            "match",
-            ["get", "category"],
-            "restaurant",   "#E94560",
-            "nightlife",    "#7C3AED",
-            "park",         "#16A34A",
-            "landmark",     "#D97706",
-            "entertainment","#0EA5E9",
-            "shopping",     "#EC4899",
-            "nature",       "#059669",
-            "trekking",     "#92400E",
-            "sports",       "#1D4ED8",
-            /* default */   "#64748B",
+            "match", ["get", "category"],
+            "restaurant",    "#E94560",
+            "nightlife",     "#7C3AED",
+            "park",          "#16A34A",
+            "landmark",      "#D97706",
+            "entertainment", "#0EA5E9",
+            "shopping",      "#EC4899",
+            "nature",        "#059669",
+            "trekking",      "#92400E",
+            "sports",        "#1D4ED8",
+            /* default */    "#64748B",
           ],
           "circle-radius": 10,
           "circle-stroke-width": 2,
@@ -298,62 +384,65 @@ export function ExploreMap() {
         },
       });
 
-      // ── Click: cluster → zoom to expand ─────────────────────────────────
+      // Cluster: zoom to expand
       map.on("click", "clusters", (e) => {
         layerClickHandled = true;
-        const features = map.queryRenderedFeatures(e.point, {
-          layers: ["clusters"],
-        });
+        const features = map.queryRenderedFeatures(e.point, { layers: ["clusters"] });
         if (!features.length) return;
         const clusterId = features[0].properties?.cluster_id as number;
         const geom = features[0].geometry;
         if (geom.type !== "Point") return;
-        const coords = geom.coordinates as [number, number];
         (map.getSource("places") as maplibregl.GeoJSONSource)
           .getClusterExpansionZoom(clusterId)
           .then((zoom) => {
-            map.easeTo({ center: coords, zoom });
+            map.easeTo({ center: geom.coordinates as [number, number], zoom });
           })
           .catch(() => {});
       });
 
-      // ── Click: individual point → open bottom sheet ──────────────────────
+      // Individual point: open bottom sheet
       map.on("click", "unclustered-point", (e) => {
         layerClickHandled = true;
         const feature = e.features?.[0];
         if (!feature?.properties) return;
-        setSelectedPlace(
-          propsToPlace(feature.properties as Record<string, unknown>),
-        );
+        setSelectedPlace(propsToPlace(feature.properties as Record<string, unknown>));
       });
 
-      // ── Cursor pointer on hover ──────────────────────────────────────────
       const setCursor = (cursor: string) => () => {
-        map.getCanvas().style.cursor = cursor;
+        // In pin-drop mode we keep the crosshair regardless.
+        if (!pinModeRef.current) map.getCanvas().style.cursor = cursor;
       };
-      map.on("mouseenter", "clusters",          setCursor("pointer"));
-      map.on("mouseleave", "clusters",          setCursor(""));
-      map.on("mouseenter", "unclustered-point", setCursor("pointer"));
-      map.on("mouseleave", "unclustered-point", setCursor(""));
+      map.on("mouseenter", "clusters",           setCursor("pointer"));
+      map.on("mouseleave", "clusters",           setCursor(""));
+      map.on("mouseenter", "unclustered-point",  setCursor("pointer"));
+      map.on("mouseleave", "unclustered-point",  setCursor(""));
     });
 
-    // ── Click on map background → dismiss bottom sheet ───────────────────
-    map.on("click", () => {
+    // Map background click: either drop a reference pin or dismiss bottom sheet
+    map.on("click", (e) => {
+      if (pinModeRef.current) {
+        // Drop a reference pin at the clicked location
+        setReferencePoint({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+        setPinMode(false);
+        // cursor reset is handled by the pinMode effect
+        return;
+      }
       if (!layerClickHandled) setSelectedPlace(null);
       layerClickHandled = false;
     });
 
     mapRef.current = map;
 
-    // ── Geolocation / initial fetch ──────────────────────────────────────
+    // Geolocation / initial fetch
     if (typeof navigator !== "undefined" && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
           setUserCenter({ lat, lng });
+          setGpsLocation({ lat, lng });
           map.flyTo({ center: [lng, lat], zoom: 13, essential: true });
-          void fetchNearby(lat, lng, NEARBY_RADIUS_M, categoriesRef.current);
+          void fetchNearby(lat, lng, radiusMRef.current, categoriesRef.current);
         },
         () => {
           map.flyTo({
@@ -364,7 +453,7 @@ export function ExploreMap() {
           void fetchNearby(
             DEFAULT_CENTER.lat,
             DEFAULT_CENTER.lng,
-            NEARBY_RADIUS_M,
+            radiusMRef.current,
             categoriesRef.current,
           );
         },
@@ -374,7 +463,7 @@ export function ExploreMap() {
       void fetchNearby(
         DEFAULT_CENTER.lat,
         DEFAULT_CENTER.lng,
-        NEARBY_RADIUS_M,
+        radiusMRef.current,
         categoriesRef.current,
       );
     }
@@ -386,20 +475,80 @@ export function ExploreMap() {
     };
   }, [fetchNearby, runFetch, scheduleViewportFetch]);
 
-  // ── Update GeoJSON source whenever places change ──────────────────────────
+  // ── Update GeoJSON source when places change ──────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const source = map.getSource("places") as
-      | maplibregl.GeoJSONSource
-      | undefined;
+    const source = map.getSource("places") as maplibregl.GeoJSONSource | undefined;
     if (!source) return;
     source.setData(placesToGeoJSON(places));
   }, [places]);
 
+  // ── GPS blue dot marker ───────────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !gpsLocation) return;
+    if (!gpsMarkerRef.current) {
+      const el = createGpsDot();
+      gpsMarkerRef.current = new maplibregl.Marker({ element: el, anchor: "center" })
+        .setLngLat([gpsLocation.lng, gpsLocation.lat])
+        .addTo(map);
+    } else {
+      gpsMarkerRef.current.setLngLat([gpsLocation.lng, gpsLocation.lat]);
+    }
+  }, [gpsLocation]);
+
+  // ── Reference pin marker + auto-fetch when point changes ─────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!referencePoint) {
+      if (refPinMarkerRef.current) {
+        refPinMarkerRef.current.remove();
+        refPinMarkerRef.current = null;
+      }
+      return;
+    }
+    if (!refPinMarkerRef.current) {
+      refPinMarkerRef.current = new maplibregl.Marker({
+        element: createRefPin(),
+        anchor: "bottom",
+      })
+        .setLngLat([referencePoint.lng, referencePoint.lat])
+        .addTo(map);
+    } else {
+      refPinMarkerRef.current.setLngLat([referencePoint.lng, referencePoint.lat]);
+    }
+    map.flyTo({ center: [referencePoint.lng, referencePoint.lat], zoom: 12, essential: true });
+    runFetch();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [referencePoint]);
+
+  // ── Radius circle: update whenever center / radius / mode changes ─────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const source = map.getSource("radius-circle") as maplibregl.GeoJSONSource | undefined;
+    if (!source) return;
+    const center = referencePoint ?? (mode === "nearby" ? gpsLocation : null);
+    if (!center) {
+      source.setData({ type: "FeatureCollection", features: [] });
+      return;
+    }
+    source.setData(circleGeoJSON(center, radiusM));
+  }, [referencePoint, gpsLocation, mode, radiusM]);
+
+  // ── Pin-mode cursor ───────────────────────────────────────────────────────
+  useEffect(() => {
+    const canvas = mapRef.current?.getCanvas();
+    if (!canvas) return;
+    canvas.style.cursor = pinMode ? "crosshair" : "";
+  }, [pinMode]);
+
+  // ── Trigger re-fetch on category / mode / radius changes ─────────────────
   useEffect(() => {
     runFetch();
-  }, [apiCategories, mode, runFetch]);
+  }, [apiCategories, mode, runFetch, radiusM]);
 
   // ── UI handlers ───────────────────────────────────────────────────────────
   const toggleChip = (chipId: string) => {
@@ -420,34 +569,65 @@ export function ExploreMap() {
   const handleGeolocate = () => {
     const map = mapRef.current;
     if (!map) return;
+    setReferencePoint(null); // clear any reference pin
     map.flyTo({ center: [userCenter.lng, userCenter.lat], zoom: 13, essential: true });
-    if (mode === "nearby") {
-      void fetchNearby(userCenter.lat, userCenter.lng, NEARBY_RADIUS_M, apiCategories);
-    }
+    void fetchNearby(userCenter.lat, userCenter.lng, radiusMRef.current, apiCategories);
   };
+
+  // Whether the radius ring / selector should be shown
+  const showRadiusUI = !!referencePoint || mode === "nearby";
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div
       className="relative w-full bg-white"
-      style={{
-        width: "100%",
-        height: "calc(100dvh - 112px)",
-        minHeight: "480px",
-      }}
+      style={{ width: "100%", height: "calc(100dvh - 112px)", minHeight: "480px" }}
     >
+      {/* GPS dot animation styles */}
+      <style>{`
+        @keyframes rovvy-gps-pulse {
+          0%   { transform: scale(1);   opacity: 0.75; }
+          100% { transform: scale(3.5); opacity: 0; }
+        }
+        .rovvy-gps-wrap {
+          position: relative;
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .rovvy-gps-outer {
+          position: absolute;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: rgba(37, 99, 235, 0.35);
+          animation: rovvy-gps-pulse 2s ease-out infinite;
+        }
+        .rovvy-gps-inner {
+          position: relative;
+          width: 13px;
+          height: 13px;
+          background: #2563EB;
+          border-radius: 50%;
+          border: 2.5px solid #ffffff;
+          box-shadow: 0 0 0 3px rgba(37,99,235,0.2), 0 2px 6px rgba(37,99,235,0.5);
+          z-index: 1;
+        }
+      `}</style>
+
       <div
         ref={mapContainer}
-        style={{
-          width: "100%",
-          height: "calc(100dvh - 112px)",
-          minHeight: "480px",
-        }}
+        style={{ width: "100%", height: "calc(100dvh - 112px)", minHeight: "480px" }}
       />
 
       {/* ── Floating overlay ─────────────────────────────────────────────── */}
       <div className="pointer-events-none absolute inset-0 z-10 flex flex-col">
+
+        {/* Top row */}
         <div className="flex items-start justify-between gap-2 p-3">
+          {/* Left: back + mode toggle + pin mode */}
           <div className="pointer-events-auto flex items-center gap-2">
             <Link
               href="/explore"
@@ -458,7 +638,10 @@ export function ExploreMap() {
             </Link>
             <button
               type="button"
-              onClick={() => setMode((m) => (m === "nearby" ? "viewport" : "nearby"))}
+              onClick={() => {
+                setReferencePoint(null);
+                setMode((m) => (m === "nearby" ? "viewport" : "nearby"));
+              }}
               className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-[#E94560] hover:text-[#E94560]"
             >
               <span className="flex items-center gap-1.5">
@@ -466,13 +649,43 @@ export function ExploreMap() {
                 {mode === "nearby" ? "Nearby" : "Viewport"}
               </span>
             </button>
+
+            {/* Pin-drop mode toggle */}
+            <button
+              type="button"
+              onClick={() => setPinMode((v) => !v)}
+              title={pinMode ? "Click on the map to drop a reference pin" : "Drop a reference pin anywhere on the map"}
+              className={`flex h-9 w-9 items-center justify-center rounded-lg border shadow-sm transition ${
+                pinMode
+                  ? "border-[#E94560] bg-[#E94560] text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-[#E94560]/60 hover:text-[#E94560]"
+              }`}
+            >
+              <Target size={16} />
+            </button>
+
+            {/* Clear reference pin */}
+            {referencePoint && (
+              <button
+                type="button"
+                onClick={() => setReferencePoint(null)}
+                title="Clear reference pin"
+                className="flex h-9 items-center gap-1.5 rounded-lg border border-[#E94560]/50 bg-white px-2 text-xs font-semibold text-[#E94560] shadow-sm transition hover:bg-[#E94560]/5"
+              >
+                <MapPin size={13} />
+                <span>Ref pin</span>
+                <X size={12} />
+              </button>
+            )}
           </div>
 
+          {/* Center: places count */}
           <div className="pointer-events-auto rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 shadow-sm">
             {loading ? "Loading…" : `${total} places found`}
             {cached ? " · cached" : ""}
           </div>
 
+          {/* Right: zoom + GPS */}
           <div className="pointer-events-auto flex flex-col gap-1">
             <button
               type="button"
@@ -490,16 +703,52 @@ export function ExploreMap() {
             >
               <Minus size={16} />
             </button>
+            {/* GPS / my location — blue tint when GPS is available */}
             <button
               type="button"
               onClick={handleGeolocate}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50"
+              title="Go to my location"
+              className={`flex h-9 w-9 items-center justify-center rounded-lg border shadow-sm transition ${
+                gpsLocation
+                  ? "border-blue-400 bg-blue-600 text-white hover:bg-blue-700"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
               aria-label="Center on my location"
             >
               <Navigation size={16} />
             </button>
           </div>
         </div>
+
+        {/* Radius selector — shown in nearby mode or when reference pin is set */}
+        {showRadiusUI && (
+          <div className="pointer-events-auto mx-auto flex items-center gap-1 rounded-full border border-slate-200 bg-white/95 px-2 py-1 shadow-sm">
+            <span className="pl-1 pr-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+              radius
+            </span>
+            {RADIUS_PRESETS.map((preset) => (
+              <button
+                key={preset.m}
+                type="button"
+                onClick={() => setRadiusM(preset.m)}
+                className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${
+                  radiusM === preset.m
+                    ? "bg-blue-600 text-white"
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Pin-mode hint */}
+        {pinMode && (
+          <div className="pointer-events-none mx-auto mt-2 rounded-full bg-[#E94560] px-4 py-1.5 text-xs font-semibold text-white shadow-md">
+            Click anywhere on the map to set a reference point
+          </div>
+        )}
 
         {/* Filter chips */}
         <div
@@ -576,7 +825,6 @@ export function ExploreMap() {
       >
         {selectedPlace && (
           <>
-            {/* Drag handle / dismiss */}
             <button
               type="button"
               aria-label="Dismiss"
@@ -655,6 +903,7 @@ export function ExploreMap() {
               {selectedPlace.distance_m != null && (
                 <div style={{ fontSize: 13, color: "#0F766E", marginBottom: 8 }}>
                   {(selectedPlace.distance_m / 1609).toFixed(1)} mi away
+                  {referencePoint ? " from pin" : ""}
                 </div>
               )}
 
