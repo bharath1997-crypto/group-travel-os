@@ -684,7 +684,7 @@ export function ExploreMap() {
 
         {/* Vertical category chips — left side, Google Maps style */}
         <div
-          className="flex flex-1 items-start px-3 pt-1"
+          className="flex flex-1 items-start justify-end px-3 pt-1"
           style={{ paddingBottom: selectedPlace ? "296px" : "12px" }}
         >
           <div className="pointer-events-auto flex flex-col gap-2">
