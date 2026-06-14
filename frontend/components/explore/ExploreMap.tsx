@@ -344,12 +344,20 @@ export function ExploreMap() {
 
   return (
     <div
-      className="relative flex h-full w-full flex-col bg-white"
-      style={{ minHeight: "320px" }}
+      className="relative w-full bg-white"
+      style={{
+        width: "100%",
+        height: "calc(100dvh - 112px)",
+        minHeight: "480px",
+      }}
     >
       <div
         ref={mapContainer}
-        className="min-h-0 w-full flex-1"
+        style={{
+          width: "100%",
+          height: "calc(100dvh - 112px)",
+          minHeight: "480px",
+        }}
       />
 
       <div className="pointer-events-none absolute inset-0 z-10 flex flex-col">

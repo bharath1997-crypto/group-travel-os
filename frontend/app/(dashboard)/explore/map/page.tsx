@@ -17,7 +17,7 @@ const ExploreMap = dynamic(
 
 export default function ExploreMapPage() {
   return (
-    <div style={{ height: "100%", width: "100%", overflow: "hidden" }}>
+    <div style={{ height: "100dvh", width: "100%", overflow: "hidden" }}>
       <ExploreMap />
     </div>
   );
