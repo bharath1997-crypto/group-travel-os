@@ -422,13 +422,13 @@ export function ExploreMap() {
           const lng = pos.coords.longitude;
           setUserCenter({ lat, lng });
           setGpsLocation({ lat, lng });
-          // flyTo triggers moveend, which will fetch only if a chip is already active
-          map.flyTo({ center: [lng, lat], zoom: 13, essential: true });
+          map.flyTo({ center: [lng, lat], zoom: 13, duration: 1000, essential: true });
         },
         () => {
-          map.flyTo({ center: [DEFAULT_CENTER.lng, DEFAULT_CENTER.lat], zoom: 4, essential: true });
+          // Fallback: Chicago
+          map.flyTo({ center: [-87.6298, 41.8781], zoom: 13, essential: true });
         },
-        { enableHighAccuracy: false, timeout: 8000 },
+        { enableHighAccuracy: false, timeout: 5000 },
       );
     }
 
