@@ -23,7 +23,6 @@ import {
 
 import { type PlaceResult, useExploreMap } from "@/hooks/useExploreMap";
 
-const CORAL = "#E94560";
 const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 };
 const NEARBY_RADIUS_M = 5000;
 const VIEWPORT_DEBOUNCE_MS = 600;
@@ -42,32 +41,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   photo_spot: "#D97706",
   gaming: "#7C3AED",
   default: "#64748B",
-};
-
-const CATEGORY_ICON_PATHS: Record<string, string> = {
-  restaurant:
-    '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
-  nightlife: '<path d="M8 22h8"/><path d="M12 11v11"/><path d="m19 3-7 8-7-8Z"/>',
-  park:
-    '<path d="m17 14 3 3.3a1 1 0 0 1-.7 1.7H4.7a1 1 0 0 1-.7-1.7L7 14h-.3a1 1 0 0 1-.7-1.7L9 9h-.2A1 1 0 0 1 8 7.3L12 3l4 4.3a1 1 0 0 1-.8 1.7H15l3 3.3a1 1 0 0 1-.7 1.7Z"/><path d="M12 22v-3"/>',
-  landmark:
-    '<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
-  entertainment:
-    '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>',
-  shopping:
-    '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
-  nature: '<path d="m8 3 4 8 5-5 5 15H2L8 3z"/>',
-  trekking: '<path d="m8 3 4 8 5-5 5 15H2L8 3z"/>',
-  sports:
-    '<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>',
-  activities:
-    '<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>',
-  photo_spot:
-    '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
-  gaming:
-    '<line x1="6" x2="10" y1="11" y2="11"/><line x1="8" x2="8" y1="9" y2="13"/><line x1="15" x2="15.01" y1="12" y2="12"/><line x1="18" x2="18.01" y1="10" y2="10"/><rect width="20" height="12" x="2" y="6" rx="2"/>',
-  default:
-    '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
 };
 
 type MapMode = "nearby" | "viewport";
@@ -94,41 +67,67 @@ function markerColor(category: string | null): string {
   return CATEGORY_COLORS[category] ?? CATEGORY_COLORS.default;
 }
 
-const FALLBACK_PHOTO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 24 24' fill='%23CBD5E1'%3E%3Crect width='24' height='24' rx='12' fill='%23F1F5F9'/%3E%3Cpath d='M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z' fill='%23CBD5E1'/%3E%3Ccircle cx='12' cy='10' r='3' fill='%23F1F5F9'/%3E%3C/svg%3E";
+const FALLBACK_PHOTO =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='12' fill='%23F1F5F9'/%3E%3Cpath d='M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z' fill='%23CBD5E1'/%3E%3Ccircle cx='12' cy='10' r='3' fill='%23F1F5F9'/%3E%3C/svg%3E";
 
-function createPhotoBubble(
-  place: PlaceResult,
-  onClick: (p: PlaceResult) => void,
-): HTMLDivElement {
-  const color = markerColor(place.category);
-  const el = document.createElement("div");
-  el.style.cssText = [
-    "width:44px",
-    "height:44px",
-    "border-radius:50%",
-    `background-image:url(${place.photo_url ?? FALLBACK_PHOTO})`,
-    "background-size:cover",
-    "background-position:center",
-    "background-color:#E2E8F0",
-    `border:3px solid ${color}`,
-    "box-shadow:0 2px 8px rgba(0,0,0,0.3)",
-    "cursor:pointer",
-    "transition:transform 0.15s ease",
-    "flex-shrink:0",
-  ].join(";");
-  el.addEventListener("mouseenter", () => { el.style.transform = "scale(1.1)"; });
-  el.addEventListener("mouseleave", () => { el.style.transform = "scale(1)"; });
-  el.addEventListener("click", (e) => { e.stopPropagation(); onClick(place); });
-  return el;
+function placesToGeoJSON(places: PlaceResult[]) {
+  return {
+    type: "FeatureCollection" as const,
+    features: places.map((p) => ({
+      type: "Feature" as const,
+      geometry: {
+        type: "Point" as const,
+        coordinates: [p.lng, p.lat] as [number, number],
+      },
+      properties: {
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        subcategory: p.subcategory,
+        lat: p.lat,
+        lng: p.lng,
+        address: JSON.stringify(p.address),
+        website: p.website ?? null,
+        phone: p.phone ?? null,
+        opening_hours: p.opening_hours ?? null,
+        photo_url: p.photo_url ?? null,
+        source: p.source,
+        distance_m: p.distance_m ?? null,
+      },
+    })),
+  };
+}
+
+function propsToPlace(props: Record<string, unknown>): PlaceResult {
+  return {
+    id: String(props.id ?? ""),
+    name: String(props.name ?? ""),
+    category: (props.category as string | null) ?? null,
+    subcategory: (props.subcategory as string | null) ?? null,
+    lat: Number(props.lat ?? 0),
+    lng: Number(props.lng ?? 0),
+    address: JSON.parse(
+      typeof props.address === "string" ? props.address : "null",
+    ) as Record<string, string | null> | null,
+    website: (props.website as string | null) || null,
+    phone: (props.phone as string | null) || null,
+    opening_hours: (props.opening_hours as string | null) || null,
+    photo_url: (props.photo_url as string | null) || null,
+    source: String(props.source ?? ""),
+    distance_m:
+      props.distance_m != null && props.distance_m !== ""
+        ? Number(props.distance_m)
+        : null,
+  };
 }
 
 export function ExploreMap() {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const markersRef = useRef<maplibregl.Marker[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const modeRef = useRef<MapMode>("viewport");
   const categoriesRef = useRef<string[] | null>(null);
+  const placesRef = useRef<PlaceResult[]>([]);
 
   const [mode, setMode] = useState<MapMode>("viewport");
   const [selectedChipIds, setSelectedChipIds] = useState<string[]>(["all"]);
@@ -137,6 +136,9 @@ export function ExploreMap() {
 
   const { places, loading, error, cached, total, fetchNearby, fetchViewport } =
     useExploreMap();
+
+  // Keep a ref in sync so the map load handler can access current places.
+  placesRef.current = places;
 
   const apiCategories = useMemo(() => {
     if (selectedChipIds.includes("all") || selectedChipIds.length === 0) {
@@ -162,14 +164,12 @@ export function ExploreMap() {
   const runFetch = useCallback(() => {
     const map = mapRef.current;
     if (!map) return;
-
     const categories = categoriesRef.current;
     if (modeRef.current === "nearby") {
       const center = map.getCenter();
       void fetchNearby(center.lat, center.lng, NEARBY_RADIUS_M, categories);
       return;
     }
-
     const bounds = map.getBounds();
     if (!bounds) return;
     const sw = bounds.getSouthWest();
@@ -184,6 +184,7 @@ export function ExploreMap() {
     }, VIEWPORT_DEBOUNCE_MS);
   }, [runFetch]);
 
+  // ── Map initialisation ────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
@@ -191,6 +192,9 @@ export function ExploreMap() {
       container: mapContainer.current,
       style: {
         version: 8,
+        // Glyphs are required for the cluster-count symbol layer.
+        glyphs:
+          "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
         sources: {
           osm: {
             type: "raster",
@@ -199,13 +203,7 @@ export function ExploreMap() {
             attribution: "© OpenStreetMap contributors",
           },
         },
-        layers: [
-          {
-            id: "osm",
-            type: "raster",
-            source: "osm",
-          },
-        ],
+        layers: [{ id: "osm", type: "raster", source: "osm" }],
       },
       center: [DEFAULT_CENTER.lng, DEFAULT_CENTER.lat],
       zoom: 4,
@@ -224,12 +222,130 @@ export function ExploreMap() {
       }
     });
 
+    // Track whether a layer handled the current click so we don't dismiss
+    // the bottom sheet immediately after opening it.
+    let layerClickHandled = false;
+
+    map.on("load", () => {
+      // ── GeoJSON source with built-in clustering ──────────────────────────
+      map.addSource("places", {
+        type: "geojson",
+        data: placesToGeoJSON(placesRef.current),
+        cluster: true,
+        clusterMaxZoom: 14,
+        clusterRadius: 50,
+      });
+
+      // Cluster bubble
+      map.addLayer({
+        id: "clusters",
+        type: "circle",
+        source: "places",
+        filter: ["has", "point_count"],
+        paint: {
+          "circle-color": "#0F766E",
+          "circle-radius": [
+            "step",
+            ["get", "point_count"],
+            20,
+            10,
+            30,
+            50,
+            40,
+          ],
+          "circle-opacity": 0.85,
+        },
+      });
+
+      // Cluster count label
+      map.addLayer({
+        id: "cluster-count",
+        type: "symbol",
+        source: "places",
+        filter: ["has", "point_count"],
+        layout: {
+          "text-field": "{point_count_abbreviated}",
+          "text-size": 13,
+          "text-font": ["Open Sans Semibold"],
+        },
+        paint: { "text-color": "#ffffff" },
+      });
+
+      // Single-place circles
+      map.addLayer({
+        id: "unclustered-point",
+        type: "circle",
+        source: "places",
+        filter: ["!", ["has", "point_count"]],
+        paint: {
+          "circle-color": [
+            "match",
+            ["get", "category"],
+            "restaurant",   "#E94560",
+            "nightlife",    "#7C3AED",
+            "park",         "#16A34A",
+            "landmark",     "#D97706",
+            "entertainment","#0EA5E9",
+            "shopping",     "#EC4899",
+            "nature",       "#059669",
+            "trekking",     "#92400E",
+            "sports",       "#1D4ED8",
+            /* default */   "#64748B",
+          ],
+          "circle-radius": 10,
+          "circle-stroke-width": 2,
+          "circle-stroke-color": "#ffffff",
+        },
+      });
+
+      // ── Click: cluster → zoom to expand ─────────────────────────────────
+      map.on("click", "clusters", (e) => {
+        layerClickHandled = true;
+        const features = map.queryRenderedFeatures(e.point, {
+          layers: ["clusters"],
+        });
+        if (!features.length) return;
+        const clusterId = features[0].properties?.cluster_id as number;
+        const geom = features[0].geometry;
+        if (geom.type !== "Point") return;
+        const coords = geom.coordinates as [number, number];
+        (map.getSource("places") as maplibregl.GeoJSONSource)
+          .getClusterExpansionZoom(clusterId)
+          .then((zoom) => {
+            map.easeTo({ center: coords, zoom });
+          })
+          .catch(() => {});
+      });
+
+      // ── Click: individual point → open bottom sheet ──────────────────────
+      map.on("click", "unclustered-point", (e) => {
+        layerClickHandled = true;
+        const feature = e.features?.[0];
+        if (!feature?.properties) return;
+        setSelectedPlace(
+          propsToPlace(feature.properties as Record<string, unknown>),
+        );
+      });
+
+      // ── Cursor pointer on hover ──────────────────────────────────────────
+      const setCursor = (cursor: string) => () => {
+        map.getCanvas().style.cursor = cursor;
+      };
+      map.on("mouseenter", "clusters",          setCursor("pointer"));
+      map.on("mouseleave", "clusters",          setCursor(""));
+      map.on("mouseenter", "unclustered-point", setCursor("pointer"));
+      map.on("mouseleave", "unclustered-point", setCursor(""));
+    });
+
+    // ── Click on map background → dismiss bottom sheet ───────────────────
     map.on("click", () => {
-      setSelectedPlace(null);
+      if (!layerClickHandled) setSelectedPlace(null);
+      layerClickHandled = false;
     });
 
     mapRef.current = map;
 
+    // ── Geolocation / initial fetch ──────────────────────────────────────
     if (typeof navigator !== "undefined" && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -265,33 +381,27 @@ export function ExploreMap() {
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = [];
       map.remove();
       mapRef.current = null;
     };
   }, [fetchNearby, runFetch, scheduleViewportFetch]);
 
+  // ── Update GeoJSON source whenever places change ──────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = [];
-
-    for (const place of places) {
-      const el = createPhotoBubble(place, setSelectedPlace);
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([place.lng, place.lat])
-        .addTo(map);
-      markersRef.current.push(marker);
-    }
+    const source = map.getSource("places") as
+      | maplibregl.GeoJSONSource
+      | undefined;
+    if (!source) return;
+    source.setData(placesToGeoJSON(places));
   }, [places]);
 
   useEffect(() => {
     runFetch();
   }, [apiCategories, mode, runFetch]);
 
+  // ── UI handlers ───────────────────────────────────────────────────────────
   const toggleChip = (chipId: string) => {
     if (chipId === "all") {
       setSelectedChipIds(["all"]);
@@ -310,21 +420,13 @@ export function ExploreMap() {
   const handleGeolocate = () => {
     const map = mapRef.current;
     if (!map) return;
-    map.flyTo({
-      center: [userCenter.lng, userCenter.lat],
-      zoom: 13,
-      essential: true,
-    });
+    map.flyTo({ center: [userCenter.lng, userCenter.lat], zoom: 13, essential: true });
     if (mode === "nearby") {
-      void fetchNearby(
-        userCenter.lat,
-        userCenter.lng,
-        NEARBY_RADIUS_M,
-        apiCategories,
-      );
+      void fetchNearby(userCenter.lat, userCenter.lng, NEARBY_RADIUS_M, apiCategories);
     }
   };
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div
       className="relative w-full bg-white"
@@ -343,6 +445,7 @@ export function ExploreMap() {
         }}
       />
 
+      {/* ── Floating overlay ─────────────────────────────────────────────── */}
       <div className="pointer-events-none absolute inset-0 z-10 flex flex-col">
         <div className="flex items-start justify-between gap-2 p-3">
           <div className="pointer-events-auto flex items-center gap-2">
@@ -398,6 +501,7 @@ export function ExploreMap() {
           </div>
         </div>
 
+        {/* Filter chips */}
         <div
           className="pointer-events-auto mt-auto flex flex-wrap gap-2 p-3"
           style={{ paddingBottom: selectedPlace ? "196px" : undefined }}
@@ -426,6 +530,7 @@ export function ExploreMap() {
         </div>
       </div>
 
+      {/* Loading spinner */}
       {loading && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
           <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-md">
@@ -449,7 +554,7 @@ export function ExploreMap() {
         </div>
       )}
 
-      {/* Bottom sheet */}
+      {/* ── Bottom sheet ─────────────────────────────────────────────────── */}
       <div
         style={{
           position: "absolute",
@@ -471,7 +576,7 @@ export function ExploreMap() {
       >
         {selectedPlace && (
           <>
-            {/* Close pill */}
+            {/* Drag handle / dismiss */}
             <button
               type="button"
               aria-label="Dismiss"
