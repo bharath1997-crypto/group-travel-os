@@ -682,23 +682,12 @@ export function ExploreMap() {
           </div>
         )}
 
-        {/* Category chips + status row */}
+        {/* Vertical category chips — left side, Google Maps style */}
         <div
-          className="pointer-events-auto mt-auto p-3"
-          style={{ paddingBottom: selectedPlace ? "296px" : undefined }}
+          className="flex flex-1 items-start px-3 pt-1"
+          style={{ paddingBottom: selectedPlace ? "296px" : "12px" }}
         >
-          {/* Count label — only visible when a category is active */}
-          {countLabel && (
-            <div className="mb-2 flex items-center gap-1.5">
-              <span className="rounded-full border border-slate-200 bg-white/95 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
-                {loading ? "Searching…" : countLabel}
-                {cached ? " · cached" : ""}
-              </span>
-            </div>
-          )}
-
-          {/* Category chips */}
-          <div className="flex flex-wrap gap-2">
+          <div className="pointer-events-auto flex flex-col gap-2">
             {FILTER_CHIPS.map((chip) => {
               const active = selectedChipIds.includes(chip.id);
               return (
@@ -717,6 +706,14 @@ export function ExploreMap() {
                 </button>
               );
             })}
+
+            {/* Count label — below chips, only when active */}
+            {countLabel && (
+              <span className="mt-1 rounded-full border border-slate-200 bg-white/95 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
+                {loading ? "Searching…" : countLabel}
+                {cached ? " · cached" : ""}
+              </span>
+            )}
           </div>
         </div>
       </div>
