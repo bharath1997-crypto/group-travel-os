@@ -92,3 +92,4 @@ websockets==16.0
 duffel-api
 yt-dlp
 instaloader
+rapidfuzz>=3.0.0
