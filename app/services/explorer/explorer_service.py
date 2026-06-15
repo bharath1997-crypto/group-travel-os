@@ -29,6 +29,16 @@ logger = logging.getLogger(__name__)
 DEFAULT_CACHE_TTL_SECONDS = 3 * 3600
 
 
+def _as_utc(dt: datetime) -> datetime:
+    """Return a timezone-aware UTC datetime.
+    SQLite returns naive datetimes even for TIMESTAMPTZ columns; PostgreSQL returns
+    aware.  Treat any naive value as UTC so comparisons work on both backends.
+    """
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 class ExplorerService:
     """Orchestrates the Explorer feed flow:
     Template -> Providers -> Normalization -> Deduplication -> AI Ranking -> Cache.
@@ -100,12 +110,8 @@ class ExplorerService:
             .filter(ExplorerCache.cache_key == cache_key)
             .first()
         )
-        if row:
-            expires = row.expires_at
-            if expires.tzinfo is None:
-                expires = expires.replace(tzinfo=timezone.utc)
-            if expires > datetime.now(timezone.utc):
-                return row.result_ids
+        if row and _as_utc(row.expires_at) > datetime.now(timezone.utc):
+            return row.result_ids
         return None
 
     def set_cache(
