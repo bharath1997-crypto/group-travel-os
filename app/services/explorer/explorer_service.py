@@ -100,8 +100,12 @@ class ExplorerService:
             .filter(ExplorerCache.cache_key == cache_key)
             .first()
         )
-        if row and row.expires_at > datetime.now(timezone.utc):
-            return row.result_ids
+        if row:
+            expires = row.expires_at
+            if expires.tzinfo is None:
+                expires = expires.replace(tzinfo=timezone.utc)
+            if expires > datetime.now(timezone.utc):
+                return row.result_ids
         return None
 
     def set_cache(
