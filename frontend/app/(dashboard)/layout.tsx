@@ -397,23 +397,6 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const { user, loading } = useDashboardUser();
   const hideAssistantSidecar = pathname.startsWith("/travel-hub");
 
-  const isMapPage = pathname === "/map";
-  const isLivePage = pathname === "/live";
-  const isExplorerEventsShell = pathname.startsWith("/explore/events");
-  const isExploreShortsShell = pathname.startsWith("/explore/shorts");
-  const isFlightsPage = pathname.startsWith("/flights");
-  const isRoutesPage = pathname.startsWith("/routes");
-  const isActivitiesPage = pathname.startsWith("/activities");
-  const isHotelsPage = pathname.startsWith("/hotels");
-  const isBuddyPage = pathname.startsWith("/buddy");
-  const isTripSpacePage = pathname.startsWith("/trip-space");
-  const isDarkHub =
-    pathname === "/plan" ||
-    pathname === "/group" ||
-    pathname === "/explore" ||
-    pathname === "/buses" ||
-    isTripSpacePage;
-
   const isMapPage = pathname === "/map" || pathname === "/explore/map";
   const isLivePage = pathname === "/live" || pathname.startsWith("/trip-live");
   const isExplorerEventsShell = pathname.startsWith("/explore/events");

@@ -402,24 +402,6 @@ function RegisterPageInner() {
     }
   }
 
-  async function goFacebook() {
-    setOauthBusy(true);
-    setOauthAlert(null);
-    setError(null);
-    try {
-      await startFacebookOAuth("signup");
-    } catch (err) {
-      setOauthBusy(false);
-      setOauthAlert({
-        variant: "error",
-        title: "Registration Failed",
-        body: err instanceof Error ? err.message : String(err),
-      });
-    }
-  }
-
-
-
   return (
     <div className="auth-shell flex min-h-dvh overflow-y-auto bg-slate-50 md:min-h-dvh">
       <aside className="relative hidden w-[38%] xl:w-[42%] flex-col justify-between overflow-hidden bg-white border-r border-slate-200 p-6 xl:p-9 md:flex">
