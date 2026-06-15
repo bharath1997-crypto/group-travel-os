@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PlaceResult(BaseModel):
@@ -34,6 +34,20 @@ class ExploreViewportResponse(BaseModel):
     places: list[PlaceResult]
     cached: bool
     total: int
+
+
+class SearchLogRequest(BaseModel):
+    query: str
+    source: str
+    results_count: int = Field(default=0, ge=0)
+    lat: float | None = None
+    lng: float | None = None
+
+
+class ExternalCallsRemainingResponse(BaseModel):
+    remaining: int
+    limit: int
+    reset: str
 
 
 class EventResult(BaseModel):

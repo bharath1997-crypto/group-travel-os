@@ -375,6 +375,130 @@ def test_get_city_nominatim_failure_fallback(auth_header, monkeypatch):
     assert data["country"] == "United States"
 
 
+# ── /search tests ────────────────────────────────────────────────────────────
+
+def test_search_returns_matching_places(auth_header):
+    """GET /search?q=pizza returns matching places from the DB (SQLite fallback)."""
+    from app.utils.database import get_db
+    db_mock = MagicMock()
+    pid = uuid.UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+    row = {
+        "id": pid,
+        "name": "Pizza Palace",
+        "category": "restaurant",
+        "subcategory": "pizza",
+        "lat": 41.8781,
+        "lng": -87.6298,
+        "address": None,
+        "photo_url": None,
+        "website": "https://pizza.example.com",
+        "phone": None,
+        "opening_hours": None,
+        "source": "osm",
+        "distance_m": 0.0,
+    }
+    execute_result = MagicMock()
+    execute_result.mappings.return_value.all.return_value = [row]
+    db_mock.execute.return_value = execute_result
+    app.dependency_overrides[get_db] = lambda: db_mock
+
+    try:
+        response = client.get("/api/v2/explorer/search", params={"q": "pizza"})
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["name"] == "Pizza Palace"
+        assert data[0]["category"] == "restaurant"
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def test_search_returns_empty_for_no_match(auth_header):
+    """GET /search?q=xyznotexist returns an empty list."""
+    from app.utils.database import get_db
+    db_mock = MagicMock()
+    execute_result = MagicMock()
+    execute_result.mappings.return_value.all.return_value = []
+    db_mock.execute.return_value = execute_result
+    app.dependency_overrides[get_db] = lambda: db_mock
+
+    try:
+        response = client.get("/api/v2/explorer/search", params={"q": "xyznotexist"})
+        assert response.status_code == 200
+        assert response.json() == []
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def test_search_requires_auth_401():
+    """GET /search without auth returns 401."""
+    response = client.get("/api/v2/explorer/search", params={"q": "pizza"})
+    assert response.status_code == 401
+
+
+def test_search_log_saves_to_db(auth_header):
+    """POST /search/log saves a search_log row (204 No Content)."""
+    from app.utils.database import get_db
+    db_mock = MagicMock()
+    db_mock.execute.return_value = MagicMock()
+    app.dependency_overrides[get_db] = lambda: db_mock
+
+    try:
+        response = client.post(
+            "/api/v2/explorer/search/log",
+            json={"query": "Eiffel Tower", "source": "nominatim", "results_count": 1},
+        )
+        assert response.status_code == 204
+        db_mock.execute.assert_called_once()
+        db_mock.commit.assert_called_once()
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def test_external_calls_remaining_returns_correct_count(auth_header):
+    """GET /search/external-calls-remaining returns correct remaining count."""
+    from app.utils.database import get_db
+    db_mock = MagicMock()
+    row_mock = MagicMock()
+    row_mock.__getitem__ = lambda self, key: 2  # 2 calls used
+    execute_result = MagicMock()
+    execute_result.mappings.return_value.one.return_value = row_mock
+    db_mock.execute.return_value = execute_result
+    app.dependency_overrides[get_db] = lambda: db_mock
+
+    try:
+        response = client.get("/api/v2/explorer/search/external-calls-remaining")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["remaining"] == 3
+        assert data["limit"] == 5
+        assert data["reset"] == "midnight UTC"
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def test_external_calls_remaining_returns_zero_after_5(auth_header):
+    """After 5+ HERE/Mapbox calls remaining is clamped to 0."""
+    from app.utils.database import get_db
+    db_mock = MagicMock()
+    row_mock = MagicMock()
+    row_mock.__getitem__ = lambda self, key: 7  # 7 calls (over the cap)
+    execute_result = MagicMock()
+    execute_result.mappings.return_value.one.return_value = row_mock
+    db_mock.execute.return_value = execute_result
+    app.dependency_overrides[get_db] = lambda: db_mock
+
+    try:
+        response = client.get("/api/v2/explorer/search/external-calls-remaining")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["remaining"] == 0
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+# ── /events tests ─────────────────────────────────────────────────────────────
+
 def test_get_events_success(auth_header, monkeypatch):
     db_mock = MagicMock()
     
