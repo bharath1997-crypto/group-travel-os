@@ -76,7 +76,16 @@ def _find_shapefile(layer_dir: Path) -> Path:
 
 def _create_table(conn, table: str, columns: list[str]) -> None:
     _set_timeouts(conn)
-    conn.execute(text(f"DROP TABLE IF EXISTS {table} CASCADE"))
+    conn.execute(text("SET LOCAL lock_timeout = '120s'"))
+    try:
+        conn.execute(text(f"DROP TABLE IF EXISTS {table} CASCADE"))
+    except Exception as exc:
+        raise RuntimeError(
+            f"Could not drop {table} — another session likely holds a lock "
+            f"(e.g. a stuck load_tiger run). Terminate stale backends in "
+            f"Supabase Dashboard → Database → Query, then retry."
+        ) from exc
+
     col_defs = ", ".join(f"{col} TEXT" for col in columns)
     conn.execute(
         text(
@@ -90,27 +99,7 @@ def _create_table(conn, table: str, columns: list[str]) -> None:
     )
 
 
-def _rename_geometry_column_to_geom(engine, table: str) -> None:
-    """Rename geometry column to geom after to_postgis when needed."""
-    with engine.begin() as conn:
-        _set_timeouts(conn)
-        row = conn.execute(
-            text(
-                """
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_schema = 'public'
-                  AND table_name = :table
-                  AND column_name = 'geometry'
-                """
-            ),
-            {"table": table},
-        ).fetchone()
-        if row is not None:
-            conn.execute(text(f"ALTER TABLE {table} RENAME COLUMN geometry TO geom"))
-
-
-def _postgis_chunk(
+def _load_chunk(
     engine,
     chunk: gpd.GeoDataFrame,
     table: str,
@@ -118,17 +107,13 @@ def _postgis_chunk(
     *,
     if_exists: str,
 ) -> None:
-    """Load one chunk via to_postgis, falling back to WKB insert on pandas 3.x."""
-    postgis_gdf = chunk.rename_geometry("geometry")
-    try:
-        postgis_gdf.to_postgis(table, engine, if_exists=if_exists, index=False)
-        _rename_geometry_column_to_geom(engine, table)
-    except ValueError:
-        if if_exists == "replace":
-            with engine.begin() as conn:
-                _set_timeouts(conn)
-                _create_table(conn, table, columns)
-        _insert_geodataframe(engine, chunk, table, columns)
+    """Load one ZCTA digit chunk (replace on first chunk, append thereafter)."""
+    if if_exists == "replace":
+        logger.info("Creating table %s", table)
+        with engine.begin() as conn:
+            _set_timeouts(conn)
+            _create_table(conn, table, columns)
+    _insert_geodataframe(engine, chunk, table, columns)
 
 
 def _create_gist_index(engine, table: str, index_name: str) -> None:
@@ -250,7 +235,7 @@ def _load_zcta_layer(
             len(chunk),
             if_exists,
         )
-        _postgis_chunk(engine, chunk, table, columns, if_exists=if_exists)
+        _load_chunk(engine, chunk, table, columns, if_exists=if_exists)
         row_count += len(chunk)
         first_chunk = False
 

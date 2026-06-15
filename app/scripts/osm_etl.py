@@ -10,14 +10,18 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
+import sys
 import time
+from pathlib import Path
 from typing import Any
 
 import httpx
-from sqlalchemy import text
-from sqlalchemy.orm import Session
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import Session, sessionmaker
 
-from app.db.session import SessionLocal
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +33,9 @@ OVERPASS_HTTP_HEADERS = {
 TILE_STEP_DEGREES = 5.0
 TILE_SLEEP_SECONDS = 10
 RETRY_WAIT_SECONDS = 30
+UPSERT_BATCH_SIZE = 50
+DEADLOCK_MAX_RETRIES = 5
+LOCK_FILE = Path("osm_etl.lock")
 
 USA_SW_LAT = 24.396308
 USA_SW_LNG = -125.0
@@ -275,9 +282,8 @@ def _upsert_sql(db: Session) -> Any:
     return SQLITE_UPSERT_SQL if dialect == "sqlite" else POSTGIS_UPSERT_SQL
 
 
-def upsert_place(db: Session, place: dict[str, Any]) -> None:
-    """Insert or update a single place row."""
-    params = {
+def _place_params(place: dict[str, Any]) -> dict[str, Any]:
+    return {
         "osm_id": place["osm_id"],
         "name": place["name"],
         "category": place["category"],
@@ -290,16 +296,110 @@ def upsert_place(db: Session, place: dict[str, Any]) -> None:
         "phone": place.get("phone"),
         "opening_hours": place.get("opening_hours"),
     }
-    db.execute(_upsert_sql(db), params)
+
+
+def upsert_place(db: Session, place: dict[str, Any], upsert_sql: Any | None = None) -> None:
+    """Insert or update a single place row."""
+    sql = _upsert_sql(db) if upsert_sql is None else upsert_sql
+    db.execute(sql, _place_params(place))
+
+
+def _is_deadlock(exc: OperationalError) -> bool:
+    orig = getattr(exc, "orig", None)
+    return orig is not None and orig.__class__.__name__ == "DeadlockDetected"
 
 
 def upsert_places(db: Session, places: list[dict[str, Any]]) -> int:
-    """Upsert a batch of places and return count inserted/updated."""
-    for place in places:
-        upsert_place(db, place)
-    if places:
-        db.commit()
-    return len(places)
+    """Upsert places in small batches with deadlock retries."""
+    if not places:
+        return 0
+
+    upsert_sql = _upsert_sql(db)
+    inserted = 0
+    for batch_start in range(0, len(places), UPSERT_BATCH_SIZE):
+        batch = places[batch_start : batch_start + UPSERT_BATCH_SIZE]
+        for attempt in range(DEADLOCK_MAX_RETRIES):
+            try:
+                for place in batch:
+                    upsert_place(db, place, upsert_sql)
+                db.commit()
+                inserted += len(batch)
+                break
+            except OperationalError as exc:
+                db.rollback()
+                if _is_deadlock(exc) and attempt < DEADLOCK_MAX_RETRIES - 1:
+                    wait = 0.5 * (attempt + 1)
+                    logger.warning("Deadlock on upsert batch — retry %d in %.1fs", attempt + 1, wait)
+                    time.sleep(wait)
+                    continue
+                raise
+    return inserted
+
+
+def create_etl_session() -> Session:
+    """Dedicated DB session for ETL — no SQL echo, longer statement timeout."""
+    engine = create_engine(
+        settings.DATABASE_URL,
+        echo=False,
+        pool_pre_ping=True,
+        connect_args={"connect_timeout": 5},
+    )
+    db = sessionmaker(bind=engine)()
+    if engine.dialect.name != "sqlite":
+        db.execute(text("SET statement_timeout = '300s'"))
+    return db
+
+
+def _configure_logging() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+    )
+    if sys.platform == "win32":
+        for handler in logging.root.handlers:
+            stream = getattr(handler, "stream", None)
+            if stream is not None and hasattr(stream, "reconfigure"):
+                stream.reconfigure(encoding="utf-8", errors="replace")
+
+
+def _pid_running(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    if sys.platform == "win32":
+        import ctypes
+
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        handle = ctypes.windll.kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if handle:
+            ctypes.windll.kernel32.CloseHandle(handle)
+            return True
+        return False
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def acquire_etl_lock() -> None:
+    """Prevent concurrent ETL runs that deadlock on places upserts."""
+    if LOCK_FILE.exists():
+        try:
+            existing_pid = int(LOCK_FILE.read_text().strip())
+        except ValueError:
+            existing_pid = 0
+        if _pid_running(existing_pid):
+            raise SystemExit(
+                f"OSM ETL already running (PID {existing_pid}). "
+                "Stop it before starting another run."
+            )
+        LOCK_FILE.unlink(missing_ok=True)
+    LOCK_FILE.write_text(str(os.getpid()), encoding="utf-8")
+
+
+def release_etl_lock() -> None:
+    if LOCK_FILE.exists() and LOCK_FILE.read_text(encoding="utf-8").strip() == str(os.getpid()):
+        LOCK_FILE.unlink(missing_ok=True)
 
 
 def run_etl(
@@ -309,13 +409,17 @@ def run_etl(
     ne_lng: float,
     db: Session | None = None,
     client: httpx.Client | None = None,
+    start_tile: int = 1,
 ) -> dict[str, int]:
     """Run full ETL over a bounding box grid."""
     owns_db = db is None
     if owns_db:
-        db = SessionLocal()
+        db = create_etl_session()
 
     tiles = generate_tiles(sw_lat, sw_lng, ne_lat, ne_lng)
+    if start_tile < 1 or start_tile > len(tiles):
+        raise ValueError(f"start_tile must be between 1 and {len(tiles)}")
+
     tiles_completed = 0
     total_fetched = 0
     total_inserted = 0
@@ -326,6 +430,9 @@ def run_etl(
 
     try:
         for idx, (t_sw_lat, t_sw_lng, t_ne_lat, t_ne_lng) in enumerate(tiles):
+            if idx + 1 < start_tile:
+                continue
+
             elements = fetch_overpass_tile(
                 t_sw_lat, t_sw_lng, t_ne_lat, t_ne_lng, client=client
             )
@@ -374,32 +481,46 @@ def run_etl(
 
 
 def main() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(message)s",
-    )
+    _configure_logging()
 
     parser = argparse.ArgumentParser(description="Import OSM POIs via Overpass API")
     parser.add_argument("--sw_lat", type=float, default=USA_SW_LAT)
     parser.add_argument("--sw_lng", type=float, default=USA_SW_LNG)
     parser.add_argument("--ne_lat", type=float, default=USA_NE_LAT)
     parser.add_argument("--ne_lng", type=float, default=USA_NE_LNG)
+    parser.add_argument(
+        "--start-tile",
+        type=int,
+        default=1,
+        help="Resume from this 1-based tile index (default: 1)",
+    )
     args = parser.parse_args()
 
-    logger.info(
-        "Starting OSM ETL bbox=(%s,%s,%s,%s)",
-        args.sw_lat,
-        args.sw_lng,
-        args.ne_lat,
-        args.ne_lng,
-    )
-    stats = run_etl(args.sw_lat, args.sw_lng, args.ne_lat, args.ne_lng)
-    logger.info(
-        "OSM ETL complete — tiles=%d fetched=%d inserted=%d",
-        stats["tiles_completed"],
-        stats["total_fetched"],
-        stats["total_inserted"],
-    )
+    acquire_etl_lock()
+    try:
+        logger.info(
+            "Starting OSM ETL bbox=(%s,%s,%s,%s) start_tile=%d",
+            args.sw_lat,
+            args.sw_lng,
+            args.ne_lat,
+            args.ne_lng,
+            args.start_tile,
+        )
+        stats = run_etl(
+            args.sw_lat,
+            args.sw_lng,
+            args.ne_lat,
+            args.ne_lng,
+            start_tile=args.start_tile,
+        )
+        logger.info(
+            "OSM ETL complete — tiles=%d fetched=%d inserted=%d",
+            stats["tiles_completed"],
+            stats["total_fetched"],
+            stats["total_inserted"],
+        )
+    finally:
+        release_etl_lock()
 
 
 if __name__ == "__main__":
