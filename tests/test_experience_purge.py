@@ -4,7 +4,7 @@ tests/test_experience_purge.py — Tests for the experience TTL purge job
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, delete
 
 from app.models.unified_experience import UnifiedExperience
@@ -29,7 +29,7 @@ def test_experience_purge_job():
     past_ids = []
     future_ids = []
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     # Past experiences: we want start_datetime < now - 2 days.
     # Set to 3 days ago.

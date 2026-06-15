@@ -1,6 +1,6 @@
 import hashlib
 import re
-from datetime import datetime
+from datetime import datetime, timezone as dt_timezone
 from rapidfuzz import fuzz
 from sqlalchemy.orm import Session
 from sqlalchemy import select, and_, func
@@ -130,7 +130,7 @@ class EventDedupService:
                     return candidate, False
 
         # Create new event
-        now = datetime.utcnow()
+        now = datetime.now(dt_timezone.utc).replace(tzinfo=None)
         new_event = UnifiedExperience(
             title=title,
             canonical_title=title,
@@ -189,7 +189,7 @@ class EventDedupService:
         )
         existing = db.execute(stmt)\
             .scalar_one_or_none()
-        now = datetime.utcnow()
+        now = datetime.now(dt_timezone.utc).replace(tzinfo=None)
 
         if existing:
             existing.min_price = min_price

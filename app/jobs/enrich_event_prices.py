@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import and_, exists, not_, or_, select
 from sqlalchemy.orm import Session
@@ -24,7 +24,7 @@ def get_events_needing_prices(
     limit: int = 100,
 ) -> list:
     """Events in the next 14 days (US) missing StubHub or SeatGeek prices."""
-    cutoff = datetime.utcnow() + timedelta(days=14)
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=14)
 
     has_stubhub = exists().where(
         and_(
@@ -43,7 +43,7 @@ def get_events_needing_prices(
         select(UnifiedExperience)
         .where(
             and_(
-                UnifiedExperience.start_datetime >= datetime.utcnow(),
+                UnifiedExperience.start_datetime >= datetime.now(timezone.utc).replace(tzinfo=None),
                 UnifiedExperience.start_datetime <= cutoff,
                 UnifiedExperience.status != "cancelled",
                 UnifiedExperience.country_code == "US",

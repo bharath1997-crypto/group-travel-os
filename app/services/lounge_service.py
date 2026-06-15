@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import select, or_, and_
 from sqlalchemy.orm import Session
 
@@ -245,7 +245,7 @@ class LoungeService:
             sync_entry = LoungeDriveSync(user_id=user_id, chat_id=chat_id)
             db.add(sync_entry)
 
-        sync_entry.last_synced_at = datetime.utcnow()
+        sync_entry.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
         if drive_file_id:
             sync_entry.drive_file_id = drive_file_id
 

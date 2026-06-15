@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.models.scraper_health import ScraperHealth
@@ -47,8 +47,12 @@ class ScraperFramework:
             return False
 
         if health.blocked_until:
-            if datetime.utcnow() < \
-                    health.blocked_until:
+            now_utc = datetime.now(timezone.utc)
+            blocked = health.blocked_until
+            # Normalise to naive UTC for comparison (stored as naive in DB)
+            if blocked.tzinfo is not None:
+                blocked = blocked.replace(tzinfo=None)
+            if now_utc.replace(tzinfo=None) < blocked:
                 logger.warning(
                     f"{provider} blocked until "
                     f"{health.blocked_until}"
@@ -71,7 +75,7 @@ class ScraperFramework:
     ):
         health = ScraperFramework\
             .get_or_create_health(db, provider)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         health.status = 'healthy'
         health.last_success_at = now
         health.consecutive_failures = 0
@@ -94,7 +98,7 @@ class ScraperFramework:
     ):
         health = ScraperFramework\
             .get_or_create_health(db, provider)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         health.last_failure_at = now
         health.last_error = str(error)[:500]
         health.consecutive_failures = \

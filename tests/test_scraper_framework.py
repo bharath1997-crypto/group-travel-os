@@ -1,7 +1,7 @@
 """Tests for ScraperFramework."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -44,7 +44,7 @@ def test_provider_blocked_after_3_failures(db):
 def test_provider_unblocked_after_expiry(db):
     health = _healthy()
     health.status = "blocked"
-    health.blocked_until = datetime.utcnow() - timedelta(hours=1)
+    health.blocked_until = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=1)
     health.consecutive_failures = 3
     db.execute.return_value = exec_result(scalar_one_or_none=health)
 

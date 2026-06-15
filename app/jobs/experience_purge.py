@@ -4,7 +4,7 @@ app/jobs/experience_purge.py — TTL purge job for unified_experiences table
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
@@ -22,7 +22,7 @@ def purge_expired_experiences(db: Session) -> int:
     """
     logger.info("Starting TTL purge job for unified_experiences table...")
     # Calculate cutoff datetime: now() - 2 days (UTC)
-    cutoff = datetime.utcnow() - timedelta(days=2)
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=2)
 
     stmt = delete(UnifiedExperience).where(UnifiedExperience.start_datetime < cutoff)
     result = db.execute(stmt)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -44,7 +44,7 @@ def _chat_out(cid: uuid.UUID, ctype: str = "direct", name: str | None = None) ->
         name=name,
         trip_id=None,
         created_by=uuid.UUID("00000000-0000-0000-0000-000000000099"),
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc).replace(tzinfo=None),
         last_message_preview=None,
         last_message_at=None,
         avatar_url=None,

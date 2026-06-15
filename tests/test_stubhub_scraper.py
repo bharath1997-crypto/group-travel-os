@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -156,8 +156,8 @@ async def test_stubhub_sync_dedup_reuses_existing_event(db):
             "Madison Square Garden",
             datetime(2026, 8, 20, 20, 0, 0),
         ),
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc).replace(tzinfo=None),
+        updated_at=datetime.now(timezone.utc).replace(tzinfo=None),
     )
 
     scraped = [{

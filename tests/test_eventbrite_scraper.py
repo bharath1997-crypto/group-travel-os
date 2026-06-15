@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -163,8 +163,8 @@ async def test_eventbrite_sync_dedup_reuses_existing_event(db):
             "Blue Note",
             datetime(2026, 7, 15, 19, 0, 0),
         ),
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc).replace(tzinfo=None),
+        updated_at=datetime.now(timezone.utc).replace(tzinfo=None),
     )
 
     scraped = [{
