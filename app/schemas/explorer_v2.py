@@ -37,17 +37,28 @@ class ExploreViewportResponse(BaseModel):
 
 
 class SearchLogRequest(BaseModel):
+    """Coordinates are intentionally excluded — never store geocoding results."""
     query: str
     source: str
     results_count: int = Field(default=0, ge=0)
-    lat: float | None = None
-    lng: float | None = None
 
 
 class ExternalCallsRemainingResponse(BaseModel):
     remaining: int
     limit: int
-    reset: str
+
+
+class GeocodingQuotaRow(BaseModel):
+    service: str
+    month: str
+    call_count: int
+    monthly_limit: int
+    safety_threshold: int
+    status: str
+
+
+class GeocodingQuotaResponse(BaseModel):
+    quotas: list[GeocodingQuotaRow]
 
 
 class EventResult(BaseModel):

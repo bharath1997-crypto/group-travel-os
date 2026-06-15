@@ -17,6 +17,8 @@ from app.schemas.explorer_v2 import (
     ExploreViewportResponse,
     EventResult,
     ExternalCallsRemainingResponse,
+    GeocodingQuotaResponse,
+    GeocodingQuotaRow,
     PlaceResult,
     SearchLogRequest,
 )
@@ -164,44 +166,62 @@ def log_search(
     body: SearchLogRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> Response:
-    """Record a geocoding waterfall event — only logs query text and source, never coordinates."""
+) -> dict:
+    """Record a geocoding waterfall event — query text + source only, coordinates NEVER stored."""
     is_sqlite = db.bind.dialect.name == "sqlite"
     if is_sqlite:
-        query = text("""
-            INSERT INTO search_logs (id, user_id, query, source, results_count, lat, lng, created_at)
-            VALUES (:id, :user_id, :query, :source, :results_count, :lat, :lng, :created_at)
+        log_query = text("""
+            INSERT INTO search_logs (id, user_id, query, source, results_count, created_at)
+            VALUES (:id, :user_id, :query, :source, :results_count, :created_at)
         """)
-        params: dict = {
+        log_params: dict = {
             "id": str(_uuid.uuid4()),
             "user_id": str(current_user.id),
             "query": body.query,
             "source": body.source,
             "results_count": body.results_count,
-            "lat": body.lat,
-            "lng": body.lng,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
     else:
-        query = text("""
-            INSERT INTO search_logs (user_id, query, source, results_count, lat, lng)
-            VALUES (:user_id, :query, :source, :results_count, :lat, :lng)
+        log_query = text("""
+            INSERT INTO search_logs (user_id, query, source, results_count)
+            VALUES (:user_id, :query, :source, :results_count)
         """)
-        params = {
+        log_params = {
             "user_id": current_user.id,
             "query": body.query,
             "source": body.source,
             "results_count": body.results_count,
-            "lat": body.lat,
-            "lng": body.lng,
         }
     try:
-        db.execute(query, params)
+        db.execute(log_query, log_params)
+        # Increment monthly quota counter for paid services
+        if body.source in ("geoapify", "opencage") and not is_sqlite:
+            month_key = datetime.now(timezone.utc).strftime("%Y-%m")
+            limit = 3000 if body.source == "geoapify" else 2500
+            threshold = limit - 200
+            db.execute(
+                text("""
+                    INSERT INTO geocoding_quota
+                        (service, month, call_count, monthly_limit, safety_threshold, status, updated_at)
+                    VALUES
+                        (:service, :month, 1, :limit, :threshold, 'active', NOW())
+                    ON CONFLICT (service, month) DO UPDATE
+                        SET call_count  = geocoding_quota.call_count + 1,
+                            updated_at  = NOW(),
+                            status      = CASE
+                                WHEN geocoding_quota.call_count + 1 >= geocoding_quota.safety_threshold
+                                THEN 'closed'
+                                ELSE geocoding_quota.status
+                            END
+                """),
+                {"service": body.source, "month": month_key, "limit": limit, "threshold": threshold},
+            )
         db.commit()
     except Exception as exc:
         logger.error(f"Error saving search log: {exc}")
         db.rollback()
-    return Response(status_code=204)
+    return {"ok": True}
 
 
 @router.get("/search/external-calls-remaining", response_model=ExternalCallsRemainingResponse)
@@ -209,20 +229,20 @@ def external_calls_remaining(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ExternalCallsRemainingResponse:
-    """Returns how many paid (HERE / Mapbox) geocoding calls the user can still make today."""
+    """Returns how many Geoapify/OpenCage geocoding calls the user can still make today."""
     is_sqlite = db.bind.dialect.name == "sqlite"
     if is_sqlite:
         query = text("""
             SELECT COUNT(*) AS cnt FROM search_logs
             WHERE user_id = :user_id
-              AND source IN ('here', 'mapbox')
+              AND source IN ('geoapify', 'opencage')
               AND created_at > datetime('now', '-24 hours')
         """)
     else:
         query = text("""
             SELECT COUNT(*) AS cnt FROM search_logs
             WHERE user_id = :user_id
-              AND source IN ('here', 'mapbox')
+              AND source IN ('geoapify', 'opencage')
               AND created_at > NOW() - INTERVAL '24 hours'
         """)
     try:
@@ -235,8 +255,46 @@ def external_calls_remaining(
     return ExternalCallsRemainingResponse(
         remaining=max(0, 5 - used),
         limit=5,
-        reset="midnight UTC",
     )
+
+
+@router.get("/geocoding-quota", response_model=GeocodingQuotaResponse)
+def get_geocoding_quota(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> GeocodingQuotaResponse:
+    """Returns monthly quota status for Geoapify and OpenCage."""
+    is_sqlite = db.bind.dialect.name == "sqlite"
+    if is_sqlite:
+        return GeocodingQuotaResponse(quotas=[])
+
+    month_key = datetime.now(timezone.utc).strftime("%Y-%m")
+    try:
+        rows = db.execute(
+            text("""
+                SELECT service, month, call_count, monthly_limit, safety_threshold, status
+                FROM geocoding_quota
+                WHERE month = :month
+                ORDER BY service
+            """),
+            {"month": month_key},
+        ).mappings().all()
+    except Exception as exc:
+        logger.error(f"Error querying geocoding_quota: {exc}")
+        return GeocodingQuotaResponse(quotas=[])
+
+    quotas = [
+        GeocodingQuotaRow(
+            service=r["service"],
+            month=r["month"],
+            call_count=int(r["call_count"]),
+            monthly_limit=int(r["monthly_limit"]),
+            safety_threshold=int(r["safety_threshold"]),
+            status=r["status"],
+        )
+        for r in rows
+    ]
+    return GeocodingQuotaResponse(quotas=quotas)
 
 
 @router.get("/city")

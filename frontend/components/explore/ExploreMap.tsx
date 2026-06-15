@@ -204,21 +204,74 @@ function pinDataUrl(color: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
+// ─── Device search cache (localStorage, 24 h TTL, 10 entries max) ────────────
+
+const CACHE_KEY = "rovvy_search_cache";
+const CACHE_TTL = 24 * 60 * 60 * 1000;
+
+interface CacheEntry {
+  query: string;
+  lat: number;
+  lng: number;
+  name: string;
+  timestamp: number;
+}
+
+function getCachedResult(query: string): CacheEntry | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const cache = JSON.parse(raw) as CacheEntry[];
+    const now = Date.now();
+    return (
+      cache.find(
+        (e) =>
+          e.query.toLowerCase() === query.toLowerCase() &&
+          now - e.timestamp < CACHE_TTL,
+      ) ?? null
+    );
+  } catch {
+    return null;
+  }
+}
+
+function saveCacheResult(
+  query: string,
+  lat: number,
+  lng: number,
+  name: string,
+): void {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    const cache: CacheEntry[] = raw ? (JSON.parse(raw) as CacheEntry[]) : [];
+    const filtered = cache.filter(
+      (e) => e.query.toLowerCase() !== query.toLowerCase(),
+    );
+    filtered.unshift({ query, lat, lng, name, timestamp: Date.now() });
+    localStorage.setItem(CACHE_KEY, JSON.stringify(filtered.slice(0, 10)));
+  } catch { /* storage full or SSR */ }
+}
+
+function clearSearchCache(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(CACHE_KEY);
+}
+
 // ─── Geocoding helpers (module-level, no React state) ────────────────────────
 
-function logSearch(
-  query: string,
-  source: string,
-  count: number,
-  token: string | null,
-): void {
+function logSearch(query: string, source: string, count: number): void {
+  if (typeof window === "undefined") return;
+  const token = localStorage.getItem("gt_token");
+  if (!token) return;
   // Fire-and-forget — never await, never block UI
   // NEVER stores geocoding coordinate results — only logs query + source
   fetch("/api/v2/explorer/search/log", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ query, source, results_count: count }),
   }).catch(() => {});
@@ -255,6 +308,8 @@ export function ExploreMap() {
   const gpsMarkerRef       = useRef<maplibregl.Marker | null>(null);
   const refPinMarkerRef    = useRef<maplibregl.Marker | null>(null);
   const searchMarkerRef    = useRef<maplibregl.Marker | null>(null);
+  // Mirrors gpsLocation for stable use inside closures (avoids stale deps)
+  const userLocationRef    = useRef<{ lat: number; lng: number } | null>(null);
 
   const [selectedChipIds, setSelectedChipIds] = useState<string[]>([]);
   const [userCenter,      setUserCenter]      = useState(DEFAULT_CENTER);
@@ -301,6 +356,36 @@ export function ExploreMap() {
   useEffect(() => { pinModeRef.current         = pinMode;          }, [pinMode]);
   useEffect(() => { referencePointRef.current  = referencePoint;   }, [referencePoint]);
   useEffect(() => { radiusMRef.current         = radiusM;          }, [radiusM]);
+  useEffect(() => { userLocationRef.current    = gpsLocation;      }, [gpsLocation]);
+
+  // ── Search pin (stable ref, declared early so map-init effect can reference it) ──
+  const dropSearchPin = useCallback((lat: number, lng: number, name: string) => {
+    const map = mapRef.current;
+    if (!map) return;
+    searchMarkerRef.current?.remove();
+    searchMarkerRef.current = null;
+    const el = document.createElement("div");
+    el.style.cssText = "position:relative;text-align:center;cursor:pointer;";
+    const label = name.split(",")[0] ?? name;
+    el.innerHTML = `
+      <div style="background:#0F766E;color:#fff;padding:4px 10px;border-radius:6px;
+        font-size:12px;font-weight:500;white-space:nowrap;max-width:200px;overflow:hidden;
+        text-overflow:ellipsis;margin-bottom:4px;box-shadow:0 2px 8px rgba(0,0,0,0.25);">
+        ${label}
+      </div>
+      <svg width="24" height="32" viewBox="0 0 24 32" style="display:block;margin:0 auto;">
+        <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20S24 21 24 12C24 5.4 18.6 0 12 0z"
+          fill="#0F766E"/>
+        <circle cx="12" cy="12" r="5" fill="white"/>
+      </svg>
+      <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+        width:16px;height:16px;border-radius:50%;background:rgba(15,118,110,0.25);
+        animation:rovvy-pulse 1.5s ease-out infinite;"></div>
+    `;
+    searchMarkerRef.current = new maplibregl.Marker({ element: el, anchor: "bottom" })
+      .setLngLat([lng, lat])
+      .addTo(map);
+  }, []);
 
   // ── Core fetch ──────────────────────────────────────────────────────────────
   const runFetch = useCallback(() => {
@@ -683,10 +768,20 @@ export function ExploreMap() {
 
   // ── Geocoding waterfall (fires on Enter) ────────────────────────────────────
   const handleSearch = useCallback(async (query: string) => {
-    if (!query.trim()) return;
+    if (!query.trim() || !mapRef.current) return;
     const token = typeof window !== "undefined" ? localStorage.getItem("gt_token") : null;
-    const userLat = gpsLocation?.lat;
-    const userLng = gpsLocation?.lng;
+    const userLat = userLocationRef.current?.lat;
+    const userLng = userLocationRef.current?.lng;
+
+    // Step 0: Device cache (localStorage, 24 h TTL)
+    const cached = getCachedResult(query);
+    if (cached) {
+      dropSearchPin(cached.lat, cached.lng, cached.name);
+      mapRef.current.flyTo({ center: [cached.lng, cached.lat], zoom: 14, duration: 1000 });
+      setSearchQuery("");
+      setSearchResults([]);
+      return;
+    }
 
     // Step 1: Rovvy DB (3 s timeout)
     try {
@@ -695,19 +790,17 @@ export function ExploreMap() {
       const latParam = userLat != null ? `&lat=${userLat}&lng=${userLng}` : "";
       const res = await fetch(
         `/api/v2/explorer/search?q=${encodeURIComponent(query)}&limit=10${latParam}`,
-        {
-          headers: { Authorization: `Bearer ${token ?? ""}` },
-          signal: controller.signal,
-        },
+        { headers: { Authorization: `Bearer ${token ?? ""}` }, signal: controller.signal },
       );
       clearTimeout(t);
       if (res.ok) {
-        const data = (await res.json()) as Array<{ lat: number; lng: number }>;
+        const data = (await res.json()) as Array<{ lat: number; lng: number; name: string }>;
         if (data.length > 0) {
           const src = mapRef.current?.getSource("places") as maplibregl.GeoJSONSource | undefined;
           src?.setData(placesToGeoJSON(data as Parameters<typeof placesToGeoJSON>[0]));
           mapRef.current?.flyTo({ center: [data[0].lng, data[0].lat], zoom: 14, duration: 1000 });
-          logSearch(query, "rovvy_db", data.length, token);
+          logSearch(query, "rovvy_db", data.length);
+          saveCacheResult(query, data[0].lat, data[0].lng, data[0].name);
           setSearchQuery("");
           setSearchResults([]);
           return;
@@ -715,29 +808,32 @@ export function ExploreMap() {
       }
     } catch { /* timeout or network — fall through */ }
 
-    // Step 2: Nominatim (5 s timeout) — always before paid APIs
+    // Step 2: Photon (OSM, free unlimited, no key)
     try {
       const controller = new AbortController();
       const t = setTimeout(() => controller.abort(), 5000);
-      const mapBounds = mapRef.current?.getBounds();
-      const viewboxParam = mapBounds
-        ? `&viewbox=${mapBounds.getWest()},${mapBounds.getNorth()},${mapBounds.getEast()},${mapBounds.getSouth()}&bounded=0`
-        : "";
+      const biasParam = userLat != null ? `&lat=${userLat}&lon=${userLng}` : "";
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1${viewboxParam}`,
-        {
-          headers: { "User-Agent": "Rovvy/1.0 (contact@rovvy.app)" },
-          signal: controller.signal,
-        },
+        `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=1${biasParam}`,
+        { signal: controller.signal },
       );
       clearTimeout(t);
-      const data = (await res.json()) as Array<{ lat: string; lon: string; display_name: string }>;
-      if (data.length > 0) {
-        const lat = parseFloat(data[0].lat);
-        const lng = parseFloat(data[0].lon);
-        dropSearchPin(lat, lng, data[0].display_name);
+      const data = (await res.json()) as {
+        features?: Array<{
+          geometry: { coordinates: [number, number] };
+          properties: { name?: string; city?: string };
+        }>;
+      };
+      if (data.features && data.features.length > 0) {
+        const [lng, lat] = data.features[0].geometry.coordinates;
+        const name =
+          data.features[0].properties.name ??
+          data.features[0].properties.city ??
+          query;
+        dropSearchPin(lat, lng, name);
         mapRef.current?.flyTo({ center: [lng, lat], zoom: 14, duration: 1000 });
-        logSearch(query, "nominatim", 1, token);
+        logSearch(query, "photon", 1);
+        saveCacheResult(query, lat, lng, name);
         setSearchQuery("");
         setSearchResults([]);
         return;
@@ -757,27 +853,36 @@ export function ExploreMap() {
     } catch { /* ignore */ }
 
     if (remaining <= 0) {
-      showToast("Daily search limit reached. Try a broader search term.");
+      showToast("Daily search limit reached. Try a nearby city or landmark.");
       return;
     }
 
-    // Step 4: HERE Geocoding (5 s timeout)
-    const HERE_KEY = process.env.NEXT_PUBLIC_HERE_API_KEY;
-    if (HERE_KEY) {
+    // Step 4: Geoapify (3000/day free, no card)
+    const GEOAPIFY_KEY = process.env.NEXT_PUBLIC_GEOAPIFY_KEY;
+    if (GEOAPIFY_KEY) {
       try {
         const controller = new AbortController();
         const t = setTimeout(() => controller.abort(), 5000);
+        const biasParam =
+          userLat != null ? `&bias=proximity:${userLng},${userLat}` : "";
         const res = await fetch(
-          `https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(query)}&apiKey=${HERE_KEY}&limit=1`,
+          `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&apiKey=${GEOAPIFY_KEY}&limit=1${biasParam}`,
           { signal: controller.signal },
         );
         clearTimeout(t);
-        const data = (await res.json()) as { items?: Array<{ position: { lat: number; lng: number }; title: string }> };
-        if (data.items && data.items.length > 0) {
-          const { lat, lng } = data.items[0].position;
-          dropSearchPin(lat, lng, data.items[0].title);
+        const data = (await res.json()) as {
+          features?: Array<{
+            geometry: { coordinates: [number, number] };
+            properties: { formatted?: string };
+          }>;
+        };
+        if (data.features && data.features.length > 0) {
+          const [lng, lat] = data.features[0].geometry.coordinates;
+          const name = data.features[0].properties.formatted ?? query;
+          dropSearchPin(lat, lng, name);
           mapRef.current?.flyTo({ center: [lng, lat], zoom: 14, duration: 1000 });
-          logSearch(query, "here", 1, token);
+          logSearch(query, "geoapify", 1);
+          saveCacheResult(query, lat, lng, name);
           setSearchQuery("");
           setSearchResults([]);
           return;
@@ -785,23 +890,30 @@ export function ExploreMap() {
       } catch { /* timeout or network — fall through */ }
     }
 
-    // Step 5: Mapbox Geocoding (5 s timeout)
-    const MAPBOX_KEY = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-    if (MAPBOX_KEY) {
+    // Step 5: OpenCage (2500/day free, no card)
+    const OPENCAGE_KEY = process.env.NEXT_PUBLIC_OPENCAGE_KEY;
+    if (OPENCAGE_KEY) {
       try {
         const controller = new AbortController();
         const t = setTimeout(() => controller.abort(), 5000);
         const res = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_KEY}&limit=1`,
+          `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(query)}&key=${OPENCAGE_KEY}&limit=1&no_annotations=1`,
           { signal: controller.signal },
         );
         clearTimeout(t);
-        const data = (await res.json()) as { features?: Array<{ center: [number, number]; place_name: string }> };
-        if (data.features && data.features.length > 0) {
-          const [lng, lat] = data.features[0].center;
-          dropSearchPin(lat, lng, data.features[0].place_name);
+        const data = (await res.json()) as {
+          results?: Array<{
+            geometry: { lat: number; lng: number };
+            formatted?: string;
+          }>;
+        };
+        if (data.results && data.results.length > 0) {
+          const { lat, lng } = data.results[0].geometry;
+          const name = data.results[0].formatted ?? query;
+          dropSearchPin(lat, lng, name);
           mapRef.current?.flyTo({ center: [lng, lat], zoom: 14, duration: 1000 });
-          logSearch(query, "mapbox", 1, token);
+          logSearch(query, "opencage", 1);
+          saveCacheResult(query, lat, lng, name);
           setSearchQuery("");
           setSearchResults([]);
           return;
@@ -810,9 +922,11 @@ export function ExploreMap() {
     }
 
     // Step 6: All sources exhausted
-    showToast("Couldn't find that location. Try a nearby city or long-press the map to drop a pin.");
-    logSearch(query, "failed", 0, token);
-  }, [gpsLocation, dropSearchPin]);
+    showToast(
+      "Couldn't find that location. Try a nearby city or long-press the map to drop a pin.",
+    );
+    logSearch(query, "failed", 0);
+  }, [dropSearchPin]);
 
   const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -820,17 +934,6 @@ export function ExploreMap() {
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
     searchDebounceRef.current = setTimeout(() => void runSearch(val), 400);
   };
-
-  const dropSearchPin = useCallback((lat: number, lng: number, label: string) => {
-    const map = mapRef.current;
-    if (!map) return;
-    searchMarkerRef.current?.remove();
-    searchMarkerRef.current = null;
-    const el = createSearchPin(label);
-    searchMarkerRef.current = new maplibregl.Marker({ element: el, anchor: "bottom" })
-      .setLngLat([lng, lat])
-      .addTo(map);
-  }, []);
 
   const removeSearchPin = () => {
     searchMarkerRef.current?.remove();
@@ -891,6 +994,10 @@ export function ExploreMap() {
         @keyframes rovvy-search-ring {
           0%   { transform:translateX(-50%) scale(1);   opacity:0.7; }
           100% { transform:translateX(-50%) scale(2.8); opacity:0; }
+        }
+        @keyframes rovvy-pulse {
+          0%   { transform:translateX(-50%) scale(1); opacity:0.6; }
+          100% { transform:translateX(-50%) scale(3); opacity:0; }
         }
       `}</style>
 

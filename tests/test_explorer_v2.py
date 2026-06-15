@@ -437,7 +437,7 @@ def test_search_requires_auth_401():
 
 
 def test_search_log_saves_to_db(auth_header):
-    """POST /search/log saves a search_log row (204 No Content)."""
+    """POST /search/log saves a search_log row and returns {ok: true}."""
     from app.utils.database import get_db
     db_mock = MagicMock()
     db_mock.execute.return_value = MagicMock()
@@ -446,9 +446,10 @@ def test_search_log_saves_to_db(auth_header):
     try:
         response = client.post(
             "/api/v2/explorer/search/log",
-            json={"query": "Eiffel Tower", "source": "nominatim", "results_count": 1},
+            json={"query": "Eiffel Tower", "source": "photon", "results_count": 1},
         )
-        assert response.status_code == 204
+        assert response.status_code == 200
+        assert response.json() == {"ok": True}
         db_mock.execute.assert_called_once()
         db_mock.commit.assert_called_once()
     finally:
@@ -456,11 +457,11 @@ def test_search_log_saves_to_db(auth_header):
 
 
 def test_external_calls_remaining_returns_correct_count(auth_header):
-    """GET /search/external-calls-remaining returns correct remaining count."""
+    """GET /search/external-calls-remaining returns correct remaining count (geoapify/opencage)."""
     from app.utils.database import get_db
     db_mock = MagicMock()
     row_mock = MagicMock()
-    row_mock.__getitem__ = lambda self, key: 2  # 2 calls used
+    row_mock.__getitem__ = lambda self, key: 2  # 2 geoapify/opencage calls used
     execute_result = MagicMock()
     execute_result.mappings.return_value.one.return_value = row_mock
     db_mock.execute.return_value = execute_result
@@ -472,13 +473,13 @@ def test_external_calls_remaining_returns_correct_count(auth_header):
         data = response.json()
         assert data["remaining"] == 3
         assert data["limit"] == 5
-        assert data["reset"] == "midnight UTC"
+        assert "reset" not in data
     finally:
         app.dependency_overrides.pop(get_db, None)
 
 
 def test_external_calls_remaining_returns_zero_after_5(auth_header):
-    """After 5+ HERE/Mapbox calls remaining is clamped to 0."""
+    """After 5+ Geoapify/OpenCage calls remaining is clamped to 0."""
     from app.utils.database import get_db
     db_mock = MagicMock()
     row_mock = MagicMock()
@@ -493,6 +494,43 @@ def test_external_calls_remaining_returns_zero_after_5(auth_header):
         assert response.status_code == 200
         data = response.json()
         assert data["remaining"] == 0
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def test_geocoding_quota_returns_empty_on_sqlite(auth_header):
+    """GET /geocoding-quota returns empty quotas list on SQLite (test DB)."""
+    response = client.get("/api/v2/explorer/geocoding-quota")
+    assert response.status_code == 200
+    data = response.json()
+    assert data == {"quotas": []}
+
+
+def test_search_log_rejects_lat_lng_fields(auth_header):
+    """POST /search/log ignores any lat/lng fields — schema strips them."""
+    from app.utils.database import get_db
+    db_mock = MagicMock()
+    db_mock.execute.return_value = MagicMock()
+    app.dependency_overrides[get_db] = lambda: db_mock
+
+    try:
+        # Even if a client sends lat/lng, Pydantic strips unknown fields
+        response = client.post(
+            "/api/v2/explorer/search/log",
+            json={
+                "query": "Taj Mahal",
+                "source": "geoapify",
+                "results_count": 1,
+                "lat": 27.1751,
+                "lng": 78.0421,
+            },
+        )
+        assert response.status_code == 200
+        assert response.json() == {"ok": True}
+        # Verify the SQL executed doesn't contain coordinate values
+        call_args = db_mock.execute.call_args
+        sql_str = str(call_args[0][0])
+        assert "lat" not in sql_str.lower() or "latitude" not in sql_str.lower()
     finally:
         app.dependency_overrides.pop(get_db, None)
 
