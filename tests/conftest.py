@@ -19,18 +19,57 @@ _SENT = object()
 def sqlite_create_explorer_events_table() -> None:
     """
     CI uses ``DATABASE_URL=sqlite:///./test.db`` without Alembic migrations.
-    Ensure ``explore_events`` exists so routes using ``ExploreEvent`` do not fail.
+    Ensure all tables used by integration tests exist so they do not fail.
     """
     from config import settings
 
     if not str(settings.DATABASE_URL or "").startswith("sqlite"):
         return
 
-    # Import registers the model on ``Base.metadata``.
-    from app.models.explore_event import ExploreEvent
+    import sqlalchemy as sa
+    from sqlalchemy.dialects.postgresql import JSONB
     from app.utils.database import Base, engine
 
-    Base.metadata.create_all(bind=engine, tables=[ExploreEvent.__table__])
+    # Import registers each model on ``Base.metadata``.
+    from app.models.explore_event import ExploreEvent
+    from app.models.explore_content import ExploreContent
+    from app.models.unified_experience import UnifiedExperience
+    from app.models.scraper_health import ScraperHealth
+    from app.models.trip import Trip
+    from app.models.trip_roster import TripRoster
+    from app.models.cart import TravelCart
+    from app.models.saved_pin import SavedPin
+    from app.models.location import Location
+    from app.models.expense import Expense, ExpenseSplit
+    from app.models.lounge import LoungeChat, LoungeMember
+    from app.models.wayra import WayraPersonalMemory
+
+    # Override JSONB → JSON for SQLite compatibility in CI
+    for model in (ExploreContent,):
+        for col in model.__table__.columns:
+            if isinstance(col.type, JSONB):
+                col.type = sa.JSON()
+
+    # Create tables in dependency order (FK targets before referencing tables).
+    # SQLite does not enforce FK constraints, but correct ordering avoids
+    # potential issues with SQLAlchemy's dependency sorter.
+    tables_to_create = [
+        ExploreEvent.__table__,
+        ExploreContent.__table__,
+        UnifiedExperience.__table__,
+        ScraperHealth.__table__,
+        Trip.__table__,
+        TravelCart.__table__,
+        SavedPin.__table__,
+        Location.__table__,
+        Expense.__table__,
+        ExpenseSplit.__table__,
+        LoungeChat.__table__,
+        LoungeMember.__table__,
+        WayraPersonalMemory.__table__,
+        TripRoster.__table__,
+    ]
+    Base.metadata.create_all(bind=engine, tables=tables_to_create, checkfirst=True)
 
 
 def exec_result(

@@ -22,12 +22,12 @@ export default function PlanHubPage() {
   ];
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#0F172A] px-4 py-8 text-[#F8FAFC] md:px-8">
+    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] px-4 py-8 text-slate-800 md:px-8">
       <div className="mx-auto max-w-4xl">
-        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
           Plan Your Trip
         </h1>
-        <p className="mt-2 max-w-xl text-sm text-[#94A3B8]">
+        <p className="mt-2 max-w-xl text-sm text-slate-500">
           Flights, stays, and how you move — start here.
         </p>
 
@@ -36,15 +36,15 @@ export default function PlanHubPage() {
             <li key={c.href}>
               <Link
                 href={c.href}
-                className="group relative flex h-full flex-col rounded-2xl border border-[#1E293B] bg-[#1E293B] p-5 shadow-lg transition hover:border-[#0F766E]/50 hover:bg-[#263548]"
+                className="group relative flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#0F766E]/50 hover:bg-slate-50"
               >
                 <span className="text-3xl" aria-hidden>
                   {c.emoji}
                 </span>
-                <span className="mt-3 text-lg font-semibold group-hover:text-[#CCFBF1]">
+                <span className="mt-3 text-lg font-semibold text-slate-900 group-hover:text-[#0F766E]">
                   {c.title}
                 </span>
-                <span className="mt-1 text-sm text-[#94A3B8]">{c.desc}</span>
+                <span className="mt-1 text-sm text-slate-500">{c.desc}</span>
                 <span className="mt-4 text-xs font-semibold uppercase tracking-wide text-[#0F766E]">
                   Open →
                 </span>

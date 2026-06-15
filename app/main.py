@@ -31,6 +31,19 @@ async def lifespan(app: FastAPI):
     db_ok = check_db_connection()
     if db_ok:
         logger.info("Database connection verified")
+        from app.services.scraper_framework import ScraperFramework
+        from app.utils.database import SessionLocal
+
+        _health_db = SessionLocal()
+        try:
+            ScraperFramework.get_or_create_health(_health_db, "viator")
+            ScraperFramework.get_or_create_health(_health_db, "eventbrite")
+            ScraperFramework.get_or_create_health(_health_db, "purge")
+            ScraperFramework.get_or_create_health(_health_db, "stubhub")
+            ScraperFramework.get_or_create_health(_health_db, "seatgeek")
+            _health_db.commit()
+        finally:
+            _health_db.close()
     else:
         # Log but don't crash — health endpoint will surface this
         logger.error("Database connection FAILED on startup — check DATABASE_URL in .env")
@@ -57,6 +70,7 @@ async def lifespan(app: FastAPI):
 
     from app.jobs.scheduler import start_scheduler, scheduler
     from app.jobs.events_prewarm_job import prewarm_events_cache
+    from app.services.cart_notification_service import CartNotificationService
 
     start_scheduler()
     scheduler.add_job(
@@ -64,6 +78,33 @@ async def lifespan(app: FastAPI):
         "interval",
         hours=6,
         id="events_prewarm",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        CartNotificationService.send_abandoned_notifications,
+        trigger="interval",
+        minutes=15,
+        id="cart_notifications",
+        replace_existing=True
+    )
+    from app.jobs.enrich_event_prices import run_price_enrichment_sync
+
+    scheduler.add_job(
+        run_price_enrichment_sync,
+        trigger="cron",
+        hour=4,
+        minute=0,
+        id="price_enrichment",
+        replace_existing=True,
+    )
+    from app.jobs.viator_sync import run_viator_sync_sync
+
+    scheduler.add_job(
+        run_viator_sync_sync,
+        trigger="cron",
+        hour=3,
+        minute=0,
+        id="viator_sync",
         replace_existing=True,
     )
 
@@ -234,6 +275,10 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(weather_router, prefix="/api/v1")
 
+    from app.routes.geocoding import router as geocoding_router
+
+    app.include_router(geocoding_router, prefix="/api/v1")
+
     from app.routes.travel_intel import router as travel_intel_router
 
     app.include_router(travel_intel_router, prefix="/api/v1")
@@ -265,6 +310,10 @@ def _register_routes(app: FastAPI) -> None:
     from app.routes.subscriptions import router as subscriptions_router
 
     app.include_router(subscriptions_router, prefix="/api/v1")
+
+    from app.routes.payments import router as payments_router
+
+    app.include_router(payments_router, prefix="/api/v1")
 
     from app.routes.pins import router as pins_router
 
@@ -298,6 +347,14 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(live_router, prefix="/api/v1")
 
+    from app.routes.live_sos import router as live_sos_router
+
+    app.include_router(live_sos_router, prefix="/api/v1")
+
+    from app.routes.live_plan import router as live_plan_router
+
+    app.include_router(live_plan_router, prefix="/api/v1")
+
     from app.routes.trip_space import router as trip_space_router
     app.include_router(trip_space_router, prefix="/api/v1")
 
@@ -305,11 +362,34 @@ def _register_routes(app: FastAPI) -> None:
     from app.routers.explorer import wayra_router
     from app.routes.explore import router as explore_content_router
     from app.routes.explorer import router as explorer_feed_router
+    from app.routes.admin import router as admin_router
+    from app.routes.admin_events import router as admin_events_router
+    from app.routes.unified_experiences import router as unified_experiences_router
+
+    from app.routes.lounge import router as lounge_router
+    app.include_router(lounge_router, prefix="/api/v1")
+
+    from app.routes.cart import router as cart_router
+    from app.routes.video_extract import router as video_extract_router
+    app.include_router(cart_router, prefix="/api/v1")
+    app.include_router(video_extract_router, prefix="/api/v1")
 
     app.include_router(explore_content_router, prefix="/api/v1", tags=["explore_content"])
     app.include_router(explorer_feed_router, prefix="/api/v1", tags=["explorer_pipeline"])
     app.include_router(explorer_router, prefix="/api/v1", tags=["explorer"])
     app.include_router(wayra_router, prefix="/api/v1", tags=["wayra"])
+    app.include_router(admin_router, prefix="/api/v1")
+    app.include_router(admin_events_router, prefix="/api/v1")
+    app.include_router(
+        unified_experiences_router,
+        prefix="/api/v1",
+        tags=["unified-experiences"],
+    )
+
+    from app.routers.explorer_v2 import router as explorer_v2_router
+
+    app.include_router(explorer_v2_router, prefix="/api/v2/explorer")
+
 
 
 # ── App instance ──────────────────────────────────────────────────────────────

@@ -33,11 +33,67 @@ from app.services.explore_city_extended_service import (
     get_wiki_summary_cached,
 )
 from app.services.external.universal_fallback_service import get_universal_fallback
+from app.services.place_enrichment_service import enrich_place
+from app.services.events_service import get_national_picks
 from app.utils.database import get_db
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/explore")
+
+_CITY_STATE_MAP: dict[str, str] = {
+    "chicago": "Illinois",
+    "milwaukee": "Wisconsin",
+    "indianapolis": "Indiana",
+    "detroit": "Michigan",
+    "new york": "New York",
+    "los angeles": "California",
+    "houston": "Texas",
+    "phoenix": "Arizona",
+    "philadelphia": "Pennsylvania",
+    "san antonio": "Texas",
+    "san diego": "California",
+    "dallas": "Texas",
+    "san jose": "California",
+    "austin": "Texas",
+    "miami": "Florida",
+    "seattle": "Washington",
+    "denver": "Colorado",
+    "boston": "Massachusetts",
+    "atlanta": "Georgia",
+    "las vegas": "Nevada",
+    "nashville": "Tennessee",
+    "portland": "Oregon",
+}
+
+
+def _state_label_for_city(city_name: str, nearest_metro: str | None = None) -> str:
+    for key in (city_name.split(",")[0].strip().lower(), (nearest_metro or "").lower()):
+        if key and key in _CITY_STATE_MAP:
+            return _CITY_STATE_MAP[key]
+    return "Your Region"
+
+
+def _explore_section_titles(
+    display_city: str,
+    nearest_metro: str | None = None,
+    *,
+    geo_search: bool = False,
+    radius_used: int | None = None,
+) -> dict[str, str]:
+    if geo_search:
+        from app.services.events_service import geo_section_titles
+
+        place = (display_city or "your area").split(",")[0].strip() or "your area"
+        return geo_section_titles(place, radius_used or 200)
+    loc = display_city.split(",")[0].strip()
+    state_name = _state_label_for_city(loc, nearest_metro)
+    return {
+        "trending": f"Near {loc}",
+        "weekend": "Happening This Weekend",
+        "popular": "Popular Nearby",
+        "national": "National Picks",
+    }
 
 
 @router.get("/debug-shorts", status_code=status.HTTP_200_OK)
@@ -197,12 +253,16 @@ async def city_autocomplete(
 
 @router.get("/events", status_code=status.HTTP_200_OK)
 async def explore_events(
-    city: str = Query("Chicago", max_length=120),
+    city: Optional[str] = Query(None, max_length=120),
     category: Optional[str] = Query(None),
     date_from: Optional[str] = Query(None, description="YYYY-MM-DD"),
     date_to: Optional[str] = Query(None, description="YYYY-MM-DD"),
     start_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
     end_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    lat: Optional[float] = Query(None, description="User GPS latitude"),
+    lon: Optional[float] = Query(None, description="User GPS longitude"),
+    radius: int = Query(200, ge=1, le=500, description="Search radius in miles"),
+    view: Optional[str] = Query(None, description="hub (sections) or list (paginated)"),
     page: int = Query(1),
     per_page: int = Query(20),
     db: Session = Depends(get_db),
@@ -211,9 +271,18 @@ async def explore_events(
     Fetches events near the city or coordinates using Ticketmaster,
     supporting pagination, filtering, and AI-generated seasonal fallback if empty.
     """
-    city_strip = city.strip()
+    city_strip = (city or "").strip()
+    if not city_strip and lat is None and lon is None:
+        city_strip = "Chicago"
     d_from = date_from or start_date
     d_to = date_to or end_date
+    geo_search = lat is not None and lon is not None
+    nearby_cities: list[dict[str, Any]] = []
+    display_city = city_strip.split(",")[0].strip()
+    nearest_metro: str | None = None
+    fetch_mode: str | None = None
+    radius_used: int | None = None
+    result: dict[str, Any] = {}
 
     # Dynamic test mock detection
     from app.services.explore_city_extended_service import get_ticketmaster_cached as original_fn
@@ -254,30 +323,78 @@ async def explore_events(
                     "start_date": date_str,
                     "sourceType": source
                 })
-            return {
-                "city": city_strip,
-                "total": len(events),
-                "page": page,
-                "per_page": per_page,
-                "events": events
-            }
+            total = len(events)
         else:
             events = []
             total = 0
     else:
         from app.services.events_service import search_events_extended
+
+        list_mode = (view or "").strip().lower() == "list"
+
+        if list_mode:
+            result = search_events_extended(
+                db,
+                city=city_strip,
+                category=category,
+                date_from=d_from,
+                date_to=d_to,
+                page=page,
+                per_page=per_page,
+                lat=lat,
+                lon=lon,
+                radius_miles=radius,
+            )
+            events = result.get("events", [])
+            total = result.get("total", 0)
+            nearby_cities = result.get("nearby_cities", [])
+            for ev in events:
+                ev["title"] = ev["name"]
+                ev["imageUrl"] = ev["image_url"]
+                ev["url"] = ev["ticket_url"]
+                ev["start_date"] = ev["date"]
+                ev["sourceType"] = ev["source"]
+            return {
+                "city": city_strip,
+                "display_city": result.get("display_city") or city_strip.split(",")[0].strip(),
+                "nearest_metro": result.get("nearest_metro"),
+                "fetch_mode": result.get("fetch_mode"),
+                "section_titles": result.get("section_titles")
+                or _explore_section_titles(
+                    result.get("display_city") or city_strip,
+                    result.get("nearest_metro"),
+                    geo_search=geo_search,
+                    radius_used=result.get("radius_used"),
+                ),
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "events": events,
+                "radius_miles": result.get("radius_used") if geo_search else None,
+                "radius_used": result.get("radius_used") if geo_search else None,
+                "nearby_cities": nearby_cities,
+            }
+
         result = search_events_extended(
             db,
             city=city_strip,
             category=category,
             date_from=d_from,
             date_to=d_to,
-            page=page,
-            per_page=per_page,
+            lat=lat,
+            lon=lon,
+            radius_miles=radius,
+            return_all=True,
+            pool_limit=per_page,
         )
         
         events = result.get("events", [])
         total = result.get("total", 0)
+        nearby_cities = result.get("nearby_cities", [])
+        display_city = result.get("display_city") or city_strip.split(",")[0].strip()
+        nearest_metro = result.get("nearest_metro")
+        fetch_mode = result.get("fetch_mode")
+        radius_used = result.get("radius_used")
         
         # Map compatibility fields in search_events_extended output
         for ev in events:
@@ -331,14 +448,477 @@ async def explore_events(
                 total = len(events)
         except Exception as exc:
             logger.warning("AI fallback events generation failed: %s", exc)
-            
+
+    # Section-splitting logic
+    import hashlib
+    from datetime import datetime, date, timedelta
+
+    def get_score(ev: dict[str, Any]) -> float:
+        if "popularity_score" in ev and ev["popularity_score"] is not None:
+            return float(ev["popularity_score"])
+        h = int(hashlib.md5(ev.get("name", "").encode("utf-8")).hexdigest(), 16)
+        return float(h % 100) / 10.0
+
+    def distance_key(ev: dict[str, Any]) -> float:
+        dist = ev.get("distance_miles")
+        if dist is None:
+            return 9999.0
+        try:
+            return float(dist)
+        except (TypeError, ValueError):
+            return 9999.0
+
+    def event_date_str(ev: dict[str, Any]) -> str:
+        raw = ev.get("date") or ev.get("start_date") or ""
+        if hasattr(raw, "strftime"):
+            return raw.strftime("%Y-%m-%d")
+        return str(raw).split("T")[0][:10]
+
+    def parse_event_date(ev: dict[str, Any]) -> date | None:
+        raw = ev.get("date") or ev.get("start_date") or ""
+        if isinstance(raw, date) and not isinstance(raw, datetime):
+            return raw
+        if isinstance(raw, datetime):
+            return raw.date()
+        if hasattr(raw, "strftime") and not isinstance(raw, str):
+            try:
+                return raw.date() if hasattr(raw, "date") else raw  # type: ignore[return-value]
+            except Exception:
+                pass
+        dt_str = event_date_str(ev)
+        if not dt_str:
+            return None
+        for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%m/%d/%Y"):
+            try:
+                return datetime.strptime(dt_str[:10], fmt).date()
+            except ValueError:
+                continue
+        return None
+
+    today_date = date.today()
+    # Calendar weekend: today through upcoming Sunday (Fri May 30 → Sun Jun 1)
+    weekend_end = today_date + timedelta(days=(6 - today_date.weekday()) % 7)
+    upcoming_events = [
+        ev for ev in events
+        if (d := parse_event_date(ev)) is not None and d >= today_date
+    ]
+
+    weekend_in_window = [
+        ev for ev in upcoming_events
+        if (d := parse_event_date(ev)) is not None and today_date <= d <= weekend_end
+    ]
+    logger.info(
+        "[explore] weekend window %s..%s — %d/%d upcoming events in range",
+        today_date.isoformat(),
+        weekend_end.isoformat(),
+        len(weekend_in_window),
+        len(upcoming_events),
+    )
+
+    def event_id(ev: dict[str, Any]) -> str:
+        eid = str(ev.get("id") or "").strip()
+        if eid:
+            return eid
+        return f"{ev.get('name', '')}|{event_date_str(ev)}|{ev.get('venue', '')}"
+
+    def pick_top(pool: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
+        return pool[:limit]
+
+    by_distance = sorted(upcoming_events, key=distance_key)
+
+    # 1. Near You — closest events within radius (no city-name filter)
+    trending = pick_top(by_distance, 40)
+    trending_ids = {event_id(ev) for ev in trending}
+
+    # 2. This Weekend — today through Sunday; prefer events not already in Near You
+    def is_this_weekend(ev: dict[str, Any]) -> bool:
+        ev_date = parse_event_date(ev)
+        if ev_date is None:
+            return False
+        return today_date <= ev_date <= weekend_end
+
+    weekend_non_trending = sorted(
+        [
+            ev
+            for ev in upcoming_events
+            if is_this_weekend(ev) and event_id(ev) not in trending_ids
+        ],
+        key=distance_key,
+    )
+    weekend_pool = weekend_non_trending
+    if not weekend_pool:
+        weekend_pool = sorted(
+            [ev for ev in upcoming_events if is_this_weekend(ev)],
+            key=distance_key,
+        )
+    weekend = pick_top(weekend_pool, 20)
+    logger.info(
+        "[explore] weekend section: %d events (pool=%d, non-trending=%d)",
+        len(weekend),
+        len(weekend_pool),
+        len(weekend_non_trending),
+    )
+
+    # 3. Popular Nearby — highest rated, any city within radius
+    by_score = sorted(upcoming_events, key=get_score, reverse=True)
+    popular = pick_top(by_score, 20)
+
+    # 4. National Picks — outside the user's 200mi zone (not expanded search radius)
+    local_radius = float(radius or 200)
+    national = get_national_picks(
+        db,
+        limit=20,
+        lat=lat,
+        lon=lon,
+        radius_miles=local_radius,
+    )
+
+    section_titles = result.get("section_titles") if geo_search and result else None
+    if not section_titles:
+        section_titles = _explore_section_titles(
+            display_city,
+            nearest_metro,
+            geo_search=geo_search,
+            radius_used=radius_used,
+        )
+
     return {
         "city": city_strip,
+        "display_city": display_city,
+        "nearest_metro": nearest_metro,
+        "fetch_mode": fetch_mode,
+        "section_titles": section_titles,
         "total": total,
+        "trending": trending,
+        "weekend": weekend,
+        "popular": popular,
+        "national": national,
+        "events": events,
         "page": page,
         "per_page": per_page,
-        "events": events
+        "radius_miles": radius_used if geo_search else None,
+        "radius_used": radius_used if geo_search else None,
+        "nearby_cities": nearby_cities if geo_search else [],
     }
+
+
+def _pseudo_rating_distance(name: str) -> tuple[float, float]:
+    import hashlib
+
+    h = int(hashlib.md5(name.encode("utf-8")).hexdigest(), 16)
+    rating = round(3.5 + (h % 15) / 10.0, 1)
+    distance = round(2.0 + (h % 18), 1)
+    return rating, distance
+
+
+def _state_for_city(city: str, explicit_state: str | None = None) -> str:
+    if explicit_state and explicit_state.strip():
+        return explicit_state.strip()
+    key = (city or "").split(",")[0].strip().lower()
+    return _CITY_STATE_MAP.get(key, "Your Region")
+
+
+def _event_detail_response(
+    *,
+    event_id: str,
+    title: str,
+    category: str,
+    venue: str,
+    city: str,
+    state: str | None,
+    start_date: str | None,
+    start_time: str | None,
+    price_min: float | None,
+    price_max: float | None,
+    image_url: str | None,
+    ticket_url: str | None,
+    source: str | None,
+) -> dict[str, Any]:
+    rating, distance = _pseudo_rating_distance(title)
+    return {
+        "id": event_id,
+        "title": title,
+        "category": category or "Event",
+        "venue": venue or "Various Venues",
+        "city": city or "US",
+        "state": _state_for_city(city, state),
+        "start_date": start_date or "",
+        "start_time": start_time or "19:00",
+        "price_min": price_min,
+        "price_max": price_max,
+        "image_url": image_url,
+        "ticket_url": ticket_url or "",
+        "source": source or "ticketmaster",
+        "distance_miles": distance,
+        "rating": rating,
+    }
+
+
+def _city_key(value: str | None) -> str:
+    return (value or "").split(",")[0].strip().lower()
+
+
+def _similar_event_card(row: ExploreContent, rating: float) -> dict[str, Any]:
+    start_date = (
+        row.start_date.isoformat() if row.start_date is not None else ""
+    )
+    return {
+        "id": row.event_id or str(row.id),
+        "title": row.title or "Event",
+        "category": row.category or "Event",
+        "venue": row.venue_name or "Various Venues",
+        "city": row.city or "US",
+        "state": row.state,
+        "start_date": start_date,
+        "start_time": row.start_time or "19:00",
+        "price_min": row.price_min,
+        "price_max": row.price_max,
+        "image_url": row.image_url,
+        "ticket_url": row.ticket_url or "",
+        "source": row.source or "ticketmaster",
+        "rating": rating,
+    }
+
+
+@router.get("/events/similar/{event_id}", status_code=status.HTTP_200_OK)
+def get_similar_explore_events(
+    event_id: str,
+    limit: int = Query(4, ge=1, le=12),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Return upcoming events similar to the anchor (category + city or within 50 mi)."""
+    from datetime import date
+    from urllib.parse import unquote
+
+    from sqlalchemy import func
+
+    from app.services.events_service import _compute_national_rating, _haversine_miles
+
+    lookup_id = unquote(event_id).strip()
+    if not lookup_id:
+        return {"events": []}
+
+    current = (
+        db.query(ExploreContent)
+        .filter(
+            ExploreContent.content_type == "ticketmaster_event",
+            ExploreContent.event_id == lookup_id,
+        )
+        .first()
+    )
+    if not current or not current.category:
+        return {"events": []}
+
+    today = date.today()
+    anchor_category = current.category.strip().lower()
+    anchor_city = _city_key(current.city)
+    anchor_lat = current.venue_lat
+    anchor_lon = current.venue_lon
+
+    candidates = (
+        db.query(ExploreContent)
+        .filter(
+            ExploreContent.content_type == "ticketmaster_event",
+            ExploreContent.event_id.isnot(None),
+            ExploreContent.event_id != lookup_id,
+            ExploreContent.start_date >= today,
+            func.lower(ExploreContent.category) == anchor_category,
+        )
+        .all()
+    )
+
+    scored: list[tuple[float, ExploreContent]] = []
+    for row in candidates:
+        same_city = _city_key(row.city) == anchor_city
+        within_radius = False
+        if (
+            anchor_lat is not None
+            and anchor_lon is not None
+            and row.venue_lat is not None
+            and row.venue_lon is not None
+        ):
+            try:
+                within_radius = (
+                    _haversine_miles(
+                        float(anchor_lat),
+                        float(anchor_lon),
+                        float(row.venue_lat),
+                        float(row.venue_lon),
+                    )
+                    <= 50.0
+                )
+            except (TypeError, ValueError):
+                within_radius = False
+
+        if not same_city and not within_radius:
+            continue
+
+        scored.append((_compute_national_rating(row), row))
+
+    scored.sort(key=lambda item: item[0], reverse=True)
+    events = [_similar_event_card(row, rating) for rating, row in scored[:limit]]
+    return {"events": events}
+
+
+@router.get("/events/{event_id}", status_code=status.HTTP_200_OK)
+def get_explore_event(
+    event_id: str,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Fetch a single event by id from ticketmaster cache or aggregated explore data."""
+    from urllib.parse import unquote
+
+    from app.models.explore_content import ExploreContent
+
+    lookup_id = unquote(event_id).strip()
+    if not lookup_id:
+        AppException.not_found("Event not found")
+
+    # Primary: bulk Ticketmaster rows saved by daily fetch job
+    tm_row = (
+        db.query(ExploreContent)
+        .filter(
+            ExploreContent.content_type == "ticketmaster_event",
+            ExploreContent.event_id == lookup_id,
+        )
+        .first()
+    )
+    if tm_row:
+        start_date = (
+            tm_row.start_date.isoformat()
+            if tm_row.start_date is not None
+            else None
+        )
+        return _event_detail_response(
+            event_id=lookup_id,
+            title=tm_row.title or "Event",
+            category=tm_row.category or "Event",
+            venue=tm_row.venue_name or "Various Venues",
+            city=tm_row.city or "US",
+            state=tm_row.state,
+            start_date=start_date,
+            start_time=tm_row.start_time,
+            price_min=tm_row.price_min,
+            price_max=tm_row.price_max,
+            image_url=tm_row.image_url,
+            ticket_url=tm_row.ticket_url,
+            source=tm_row.source,
+        )
+
+    osm_row = (
+        db.query(ExploreContent)
+        .filter(
+            ExploreContent.content_type == "osm_place",
+            ExploreContent.event_id == lookup_id,
+        )
+        .first()
+    )
+    if osm_row:
+        enrichment = {}
+        if isinstance(osm_row.data, dict):
+            enrichment = osm_row.data.get("enrichment") or {}
+        return _event_detail_response(
+            event_id=lookup_id,
+            title=osm_row.title or "Place",
+            category=osm_row.category or "Place",
+            venue=osm_row.venue_name or osm_row.title or "Place",
+            city=osm_row.city or "US",
+            state=osm_row.state,
+            start_date=None,
+            start_time=None,
+            price_min=osm_row.price_min,
+            price_max=osm_row.price_max,
+            image_url=osm_row.image_url or enrichment.get("image_url"),
+            ticket_url=osm_row.ticket_url,
+            source=osm_row.source or "openstreetmap",
+        )
+
+    # Legacy: JSON aggregated cache blobs
+    rows = (
+        db.query(ExploreContent)
+        .filter(ExploreContent.content_type == "events_aggregated")
+        .all()
+    )
+    for row in rows:
+        if not row.data:
+            continue
+        for ev in row.data:
+            eid = str(ev.get("id") or "").strip()
+            if not eid:
+                eid = f"{ev.get('name', '')}|{ev.get('date', '')}|{ev.get('venue', '')}"
+
+            if eid != lookup_id:
+                continue
+
+            name = ev.get("name") or ev.get("title") or "Event"
+            return _event_detail_response(
+                event_id=lookup_id,
+                title=name,
+                category=ev.get("category", "Event"),
+                venue=ev.get("venue", "Various Venues"),
+                city=ev.get("city", ""),
+                state=ev.get("state"),
+                start_date=ev.get("date") or ev.get("start_date"),
+                start_time=ev.get("time", "19:00"),
+                price_min=ev.get("price_min"),
+                price_max=ev.get("price_max"),
+                image_url=ev.get("image_url") or ev.get("imageUrl"),
+                ticket_url=ev.get("ticket_url") or ev.get("url"),
+                source=ev.get("source") or ev.get("sourceType") or "ticketmaster",
+            )
+
+    if lookup_id.startswith("mock-") or lookup_id.startswith("ai-ev-"):
+        return _event_detail_response(
+            event_id=lookup_id,
+            title="Local Experience",
+            category="Festival",
+            venue="Downtown Park Venue",
+            city="Chicago",
+            state="Illinois",
+            start_date="2026-06-15",
+            start_time="19:00",
+            price_min=10.0,
+            price_max=50.0,
+            image_url="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400",
+            ticket_url="https://www.google.com",
+            source="ai_fallback",
+        )
+
+    AppException.not_found("Event not found")
+
+
+@router.get("/places/{event_id}/enrich", status_code=status.HTTP_200_OK)
+async def enrich_explore_place(
+    event_id: str,
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+    name: str = Query("", max_length=300),
+    origin_lat: float | None = Query(None, ge=-90, le=90),
+    origin_lon: float | None = Query(None, ge=-180, le=180),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """
+    Lazy enrichment when a user selects a place on the map.
+    Address via Nominatim, image/description via Wikipedia, driving route via OSRM (free).
+    Cached server-side on the place row for 7 days.
+    """
+    from urllib.parse import unquote
+
+    lookup_id = unquote(event_id).strip()
+    if not lookup_id:
+        AppException.not_found("Place not found")
+
+    result = await enrich_place(
+        db,
+        event_id=lookup_id,
+        lat=lat,
+        lon=lon,
+        name=name.strip(),
+        origin_lat=origin_lat,
+        origin_lon=origin_lon,
+        include_route=origin_lat is not None and origin_lon is not None,
+    )
+    return result
 
 
 @router.get("/places", status_code=status.HTTP_200_OK)
@@ -421,12 +1001,14 @@ def explore_guide(
 @router.get("/weather", status_code=status.HTTP_200_OK)
 def explore_weather(
     city: str = Query(..., max_length=120),
-    lat: float = Query(...),
-    lon: float = Query(...),
+    lat: float | None = Query(None),
+    lon: float | None = Query(None),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     city_strip = city.strip()
-    weather = get_weather_cached(db, city_strip, lat, lon)
+    actual_lat = lat if lat is not None else 41.8781
+    actual_lon = lon if lon is not None else -87.6298
+    weather = get_weather_cached(db, city_strip, actual_lat, actual_lon)
     return {"city": city_strip, "weather": weather[0] if weather else None}
 
 

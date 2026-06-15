@@ -55,10 +55,10 @@ export default function NotFound() {
         {/* Buttons */}
         <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
           <Link
-            href="/dashboard"
+            href="/explore"
             className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#0F766E] to-[#14B8A6] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#0F766E]/20 transition duration-300 hover:brightness-110 active:scale-95 hover:shadow-[#0F766E]/40"
           >
-            Go to Dashboard
+            Go to Explore
           </Link>
           {mounted && logged ? (
             <button

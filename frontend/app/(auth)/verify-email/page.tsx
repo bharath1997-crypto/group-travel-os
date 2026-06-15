@@ -274,7 +274,7 @@ function VerifyEmailInner() {
             </div>
             <div className="mt-6 flex flex-col gap-3">
               <Link
-                href="/dashboard"
+                href="/explore"
                 className="flex min-h-12 w-full items-center justify-center rounded-xl bg-[#DC2626] text-sm font-semibold text-white transition hover:opacity-95"
               >
                 Start planning →

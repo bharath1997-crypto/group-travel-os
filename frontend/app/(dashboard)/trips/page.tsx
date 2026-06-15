@@ -8,8 +8,8 @@ import { TripCard, type TripCardTrip } from "@/components/trips";
 import { apiFetchWithStatus } from "@/lib/api";
 
 const CORAL = "#E94560";
-const BORDER = "#E9ECEF";
-const BG = "#F8F9FA";
+const BORDER = "#E2E8F0";
+const BG = "#F8FAFC";
 
 const Skeleton = ({
   width = "100%",
@@ -26,7 +26,7 @@ const Skeleton = ({
       width,
       height,
       background:
-        "linear-gradient(90deg, #1e2538 25%, #2a3248 50%, #1e2538 75%)",
+        "linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)",
       backgroundSize: "200% 100%",
       borderRadius: 8,
       animation: "shimmer 1.5s infinite",
@@ -239,15 +239,15 @@ export default function TripsPage() {
   ];
 
   return (
-    <div className="min-h-0 p-4 md:p-6" style={{ background: BG }}>
+    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-[22px] font-bold" style={{ color: "#0F3460" }}>
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
           Your Trips
         </h1>
         <button
           type="button"
           onClick={() => router.push("/trips/plan")}
-          className="rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95"
+          className="rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95 shadow-md shadow-rose-600/10"
           style={{ background: CORAL }}
         >
           + Plan New Trip
@@ -265,8 +265,8 @@ export default function TripsPage() {
             onClick={() => setFilter(t.id)}
             className={`border-b-2 pb-3 text-sm font-semibold transition ${
               filter === t.id
-                ? "border-[#E94560] text-[#E94560]"
-                : "border-transparent text-[#6C757D]"
+                ? "border-teal-600 text-teal-600"
+                : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
             {t.label}
@@ -280,7 +280,7 @@ export default function TripsPage() {
           <button
             type="button"
             onClick={() => void load()}
-            className="mt-2 font-semibold text-[#0F3460] underline"
+            className="mt-2 font-semibold text-teal-600 hover:text-teal-700 underline"
           >
             Retry
           </button>
@@ -324,13 +324,13 @@ function EmptyState({
   if (filter === "upcoming") {
     return (
       <div className="mt-16 flex flex-col items-center text-center">
-        <p className="text-lg font-semibold" style={{ color: "#0F3460" }}>
+        <p className="text-lg font-bold text-slate-900">
           No upcoming trips
         </p>
         <button
           type="button"
           onClick={onPlan}
-          className="mt-6 rounded-xl px-6 py-3 text-sm font-bold text-white"
+          className="mt-6 rounded-xl px-6 py-3 text-sm font-bold text-white shadow-md shadow-rose-600/10"
           style={{ background: CORAL }}
         >
           Plan New Trip →
@@ -341,10 +341,10 @@ function EmptyState({
   if (filter === "active") {
     return (
       <div className="mt-16 flex flex-col items-center text-center">
-        <p className="text-lg font-semibold" style={{ color: "#0F3460" }}>
+        <p className="text-lg font-bold text-slate-900">
           No active trips
         </p>
-        <p className="mt-2 max-w-sm text-sm text-[#6C757D]">
+        <p className="mt-2 max-w-sm text-sm text-slate-500">
           Start a trip to see it here
         </p>
       </div>
@@ -353,10 +353,10 @@ function EmptyState({
   if (filter === "completed") {
     return (
       <div className="mt-16 flex flex-col items-center text-center">
-        <p className="text-lg font-semibold" style={{ color: "#0F3460" }}>
+        <p className="text-lg font-bold text-slate-900">
           No completed trips yet
         </p>
-        <p className="mt-2 max-w-sm text-sm text-[#6C757D]">
+        <p className="mt-2 max-w-sm text-sm text-slate-500">
           Your finished trips will appear here
         </p>
       </div>
@@ -364,16 +364,16 @@ function EmptyState({
   }
   return (
     <div className="mt-16 flex flex-col items-center text-center">
-      <span className="inline-flex justify-center text-[#0F3460]" aria-hidden>
-        <Plane className="h-14 w-14" strokeWidth={1.5} />
+      <span className="inline-flex justify-center text-teal-600 bg-teal-50 p-4 rounded-full border border-teal-100/80 mb-4" aria-hidden>
+        <Plane className="h-10 w-10" strokeWidth={1.5} />
       </span>
-      <p className="mt-4 text-lg font-semibold" style={{ color: "#0F3460" }}>
+      <p className="text-lg font-bold text-slate-900">
         No trips yet
       </p>
       <button
         type="button"
         onClick={onPlan}
-        className="mt-6 rounded-xl px-6 py-3 text-sm font-bold text-white"
+        className="mt-6 rounded-xl px-6 py-3 text-sm font-bold text-white shadow-md shadow-rose-600/10"
         style={{ background: CORAL }}
       >
         + Plan Your First Trip

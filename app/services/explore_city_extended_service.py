@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.core.api_limits import API_TIMEOUT_SECONDS
 from app.models.explore_content import ExploreContent
+from app.utils.foursquare_auth import FOURSQUARE_PLACES_URL, foursquare_headers, normalize_foursquare_api_key
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -59,7 +60,7 @@ TTL_CITY_SCORES_HOURS = 168  # 1 week (Scores don't change fast)
 TTL_WIKI_HOURS = 168
 
 _TM_URL = "https://app.ticketmaster.com/discovery/v2/events.json"
-_FSQ_URL = "https://api.foursquare.com/v3/places/search"
+_FSQ_URL = FOURSQUARE_PLACES_URL
 _UNSPLASH_SEARCH = "https://api.unsplash.com/search/photos"
 _GNEWS_URL = "https://gnews.io/api/v4/search"
 _GEMINI_TIPS_MODEL = "gemini-2.5-flash"
@@ -386,7 +387,7 @@ def _foursquare_search(
     categories: str | None,
     query: str | None,
 ) -> list[dict[str, Any]]:
-    token = (settings.foursquare_api_key or "").strip()
+    token = normalize_foursquare_api_key()
     if not token:
         return []
     near = city.strip()
@@ -395,7 +396,7 @@ def _foursquare_search(
         params["categories"] = categories
     if query:
         params["query"] = query
-    headers: dict[str, str] = {"Authorization": token}
+    headers = foursquare_headers(token)
     with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
         r = client.get(
             _FSQ_URL,

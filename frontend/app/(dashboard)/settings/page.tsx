@@ -49,6 +49,7 @@ import {
   type SettingsCounts,
 } from "@/lib/app-settings";
 import { API_BASE } from "@/lib/api";
+import { OpenLoungeButton } from "@/components/lounge/OpenLoungeButton";
 import {
   SettingsLinkRow,
   SettingsSearchInput,
@@ -58,7 +59,8 @@ import {
 
 type HubItem = {
   label: string;
-  href: string;
+  href?: string;
+  openLounge?: boolean;
   icon: IconComponent;
   sublabel?: string;
   countKey?: keyof SettingsCounts;
@@ -224,7 +226,7 @@ const HUB: HubSection[] = [
       },
       {
         label: "Follow and invite friends",
-        href: "/travel-hub",
+        openLounge: true,
         icon: IconUserPlus,
         keywords: "invite connect",
       },
@@ -416,7 +418,7 @@ export default function SettingsHubPage() {
 
   return (
     <>
-      <SettingsScreenHeader title="Settings and activity" backHref="/dashboard" />
+      <SettingsScreenHeader title="Settings and activity" backHref="/explore" />
       <SettingsSearchInput value={q} onChange={setQ} />
       {loadErr ? (
         <div className="mx-3 mt-2 rounded-xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-red-900">
@@ -449,10 +451,28 @@ export default function SettingsHubPage() {
                     it.countKey != null ? bundle.counts[it.countKey] : undefined;
                   const sub =
                     it.label === "Account privacy" ? privacyLabel : it.sublabel;
+                  if (it.openLounge) {
+                    return (
+                      <OpenLoungeButton
+                        key={it.label}
+                        className="flex w-full items-center gap-3 border-b border-stone-100 px-4 py-3.5 text-left hover:bg-stone-50"
+                      >
+                        <it.icon className="h-5 w-5 shrink-0 text-stone-700" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-medium text-stone-900">
+                            {it.label}
+                          </span>
+                          {sub ? (
+                            <span className="block text-xs text-stone-500">{sub}</span>
+                          ) : null}
+                        </span>
+                      </OpenLoungeButton>
+                    );
+                  }
                   return (
                     <SettingsLinkRow
                       key={it.label + it.href}
-                      href={it.href}
+                      href={it.href!}
                       icon={it.icon}
                       label={it.label}
                       sublabel={sub}

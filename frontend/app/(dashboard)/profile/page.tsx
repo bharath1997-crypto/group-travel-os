@@ -1,7 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, User, Lock, Eye, EyeOff, Archive, HelpCircle, X } from "lucide-react";
+import { OpenLoungeButton } from "@/components/lounge/OpenLoungeButton";
+import {
+  LogOut,
+  User,
+  Lock,
+  Eye,
+  EyeOff,
+  Archive,
+  HelpCircle,
+  X,
+  Camera,
+  Backpack,
+  Sparkles,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { RovvyLogo } from "@/components/RovvyLogo";
 import {
@@ -32,6 +45,8 @@ import {
 
 import BrandedLoading from "@/components/BrandedLoading";
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
+import { syncLocalProfileCache } from "@/lib/profileCache";
+import { resolveProfilePhotoUrl } from "@/lib/profilePhoto";
 import { clearToken, getToken } from "@/lib/auth";
 import {
   bindAvatarStorageToUser,
@@ -43,8 +58,8 @@ import {
 const RED = "#e53e3e";
 const NAVY = "#1e2a3a";
 const GREEN = "#1d9e75";
-const CREAM = "#f5f5f0";
-const CARD_BORDER = "1px solid #e8e8e0";
+const CARD_BORDER_COLOR = "#E9ECEF";
+const CARD_BORDER = `1px solid ${CARD_BORDER_COLOR}`;
 
 const LS_INSTAGRAM = "gt_social_instagram";
 const LS_SNAPCHAT = "gt_social_snapchat";
@@ -273,10 +288,7 @@ function storyLabel(name: string): string {
   return t || "?";
 }
 
-function isHttpPhoto(a: string | null | undefined): boolean {
-  if (!a?.trim()) return false;
-  return a.startsWith("http") || a.startsWith("data:");
-}
+const MAX_PROFILE_PHOTO_BYTES = 5 * 1024 * 1024;
 
 /** Stable faux view counts for Spotlight tiles */
 function fauxViewsFromId(id: string): number {
@@ -555,6 +567,8 @@ function SkeletonBar({ h = 18, className = "" }: { h?: number; className?: strin
 export default function ProfilePage() {
   const router = useRouter();
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [profilePhotoImgFailed, setProfilePhotoImgFailed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [bootLoading, setBootLoading] = useState(true);
   const [me, setMe] = useState<UserMe | null>(null);
@@ -913,9 +927,12 @@ export default function ProfilePage() {
     return `user_${me.id.replace(/-/g, "").slice(0, 8)}`;
   })();
   const locationLine = [me?.home_city, me?.country].filter(Boolean).join(", ");
-  const photoUrl =
-    me?.profile_picture?.trim() ||
-    (isHttpPhoto(me?.avatar_url) ? me?.avatar_url : null);
+  const photoUrl = resolveProfilePhotoUrl(me);
+  const showProfilePhoto = !!photoUrl && !profilePhotoImgFailed;
+
+  useEffect(() => {
+    setProfilePhotoImgFailed(false);
+  }, [photoUrl]);
   const coverUrl =
     me?.cover_url?.trim() ||
     "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&h=400&fit=crop";
@@ -1145,6 +1162,51 @@ export default function ProfilePage() {
   const triggerCoverUpload = (e: React.MouseEvent) => {
     e.stopPropagation();
     coverInputRef.current?.click();
+  };
+
+  const handleProfilePhotoChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      showToast("Please choose a JPG, PNG, or WEBP image");
+      return;
+    }
+    if (file.size > MAX_PROFILE_PHOTO_BYTES) {
+      showToast("Image must be 5 MB or smaller");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Data = reader.result as string;
+      try {
+        const updated = await apiFetch<UserMe>("/auth/me", {
+          method: "PATCH",
+          body: JSON.stringify({
+            avatar_url: base64Data,
+          }),
+        });
+        setMe(updated);
+        syncLocalProfileCache(updated);
+        window.dispatchEvent(new Event("gt_avatar_updated"));
+        setProfilePhotoImgFailed(false);
+        showToast("Profile photo updated");
+      } catch (err) {
+        showToast(
+          err instanceof Error ? err.message : "Failed to update profile photo",
+        );
+      }
+    };
+    reader.onerror = () => showToast("Could not read that file");
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const triggerProfilePhotoUpload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    avatarInputRef.current?.click();
   };
 
   const isPro = plan?.plan === "pro" || plan?.plan === "enterprise";
@@ -1452,7 +1514,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen pb-16" style={{ background: CREAM }}>
+    <div className="min-h-screen bg-[#F8FAFC] pb-16">
       {storyViewer}
       {igPortal}
       {snapPortal}
@@ -1468,55 +1530,58 @@ export default function ProfilePage() {
 
       {/* 1. PROFILE HERO HEADER */}
       <div className="relative">
-        {/* Cover Image - Full Bleed */}
-        <div 
-          className={`relative h-56 w-full overflow-hidden bg-stone-200 md:h-72 ${isOwner ? "cursor-pointer" : ""}`}
-          onClick={isOwner ? triggerCoverUpload : undefined}
-        >
-          <input
-            type="file"
-            ref={coverInputRef}
-            onChange={handleCoverChange}
-            accept="image/*"
-            className="hidden"
-          />
-          <img 
-            src={coverUrl} 
-            alt="Cover" 
-            className="h-full w-full object-cover" 
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
-          
-          {isOwner && (
-            <button
-              type="button"
-              onClick={triggerCoverUpload}
-              className="absolute bottom-4 right-4 rounded-full bg-black/50 p-2.5 text-white text-xs font-semibold backdrop-blur-sm flex items-center gap-1.5 hover:bg-black/70 transition-all border border-white/10"
+        {/* Cover / sponsored placement — contained card */}
+        <div className="mx-auto max-w-4xl px-4 pt-4 sm:px-6 lg:px-8">
+          <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
+            <div
+              className={`relative h-56 w-full overflow-hidden bg-slate-100 md:h-72 ${isOwner ? "cursor-pointer" : ""}`}
+              onClick={isOwner ? triggerCoverUpload : undefined}
             >
-              <span>📷</span>
-              <span>Change Cover</span>
-            </button>
-          )}
-          
-          {/* Floating Action Buttons - Styled elegantly */}
-          <div className="absolute inset-x-0 top-0 flex items-center justify-end p-4 bg-gradient-to-b from-black/40 to-transparent">
-            <div className="flex gap-3">
-              <button
-                type="button"
-                className="rounded-full bg-white/20 backdrop-blur-md p-2.5 text-white hover:bg-white/40 transition-colors shadow-sm flex items-center justify-center"
-                aria-label="Share"
-                onClick={() => void shareProfile()}
-              >
-                <IconShare size={18} />
-              </button>
-              <button
-                type="button"
-                className="rounded-full bg-white/20 backdrop-blur-md p-2.5 text-white hover:bg-white/40 transition-colors shadow-sm flex items-center justify-center"
-                aria-label="Menu"
-                onClick={() => setProfileNavOpen(!profileNavOpen)}
-              >
-                <IconMenu size={18} />
-              </button>
+              <input
+                type="file"
+                ref={coverInputRef}
+                onChange={handleCoverChange}
+                accept="image/*"
+                className="hidden"
+              />
+              <img
+                src={coverUrl}
+                alt="Cover"
+                className="h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
+
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={triggerCoverUpload}
+                  className="absolute bottom-4 right-4 flex items-center gap-1.5 rounded-full border border-white/10 bg-black/50 p-2.5 text-xs font-semibold text-white backdrop-blur-sm transition-all hover:bg-black/70"
+                >
+                  <Camera size={14} aria-hidden />
+                  <span>Change Cover</span>
+                </button>
+              )}
+
+              <div className="absolute inset-x-0 top-0 flex items-center justify-end bg-gradient-to-b from-black/40 to-transparent p-4">
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    className="flex items-center justify-center rounded-full bg-white/20 p-2.5 text-white shadow-sm backdrop-blur-md transition-colors hover:bg-white/40"
+                    aria-label="Share"
+                    onClick={() => void shareProfile()}
+                  >
+                    <IconShare size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    className="flex items-center justify-center rounded-full bg-white/20 p-2.5 text-white shadow-sm backdrop-blur-md transition-colors hover:bg-white/40"
+                    aria-label="Menu"
+                    onClick={() => setProfileNavOpen(!profileNavOpen)}
+                  >
+                    <IconMenu size={18} />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1525,30 +1590,68 @@ export default function ProfilePage() {
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="relative -mt-20 flex flex-col items-center sm:-mt-24 sm:flex-row sm:items-end sm:gap-6">
             {/* Avatar */}
-            <div className="relative h-36 w-36 shrink-0 overflow-hidden rounded-full border-4 border-white bg-white shadow-lg sm:h-44 sm:w-44">
-              {photoUrl ? (
-                <img src={photoUrl} alt={displayName} className="h-full w-full object-cover" />
+            <div
+              className={`relative h-36 w-36 shrink-0 overflow-hidden rounded-full border-4 border-white bg-stone-100 shadow-lg sm:h-44 sm:w-44 ${
+                isOwner ? "cursor-pointer group" : ""
+              }`}
+              onClick={isOwner ? triggerProfilePhotoUpload : undefined}
+              onKeyDown={
+                isOwner
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        avatarInputRef.current?.click();
+                      }
+                    }
+                  : undefined
+              }
+              role={isOwner ? "button" : undefined}
+              tabIndex={isOwner ? 0 : undefined}
+              aria-label={isOwner ? "Change profile photo" : undefined}
+            >
+              <input
+                type="file"
+                ref={avatarInputRef}
+                onChange={handleProfilePhotoChange}
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+              />
+              {showProfilePhoto ? (
+                <img
+                  src={photoUrl!}
+                  alt={displayName}
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full object-cover"
+                  onError={() => setProfilePhotoImgFailed(true)}
+                />
               ) : (
-                <div className="h-full w-full bg-stone-100 flex items-center justify-center">
-                  <AvatarFaceSvg o={avatarOpts} className="h-32 w-32" />
+                <div className="flex h-full w-full items-center justify-center">
+                  <AvatarFaceSvg o={avatarOpts} className="h-full w-full" />
                 </div>
               )}
+              {isOwner ? (
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 transition group-hover:bg-black/35">
+                  <span className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-stone-800 opacity-0 shadow-sm transition group-hover:opacity-100">
+                    Change photo
+                  </span>
+                </div>
+              ) : null}
             </div>
 
             {/* Identity */}
             <div className="mt-4 flex flex-1 flex-col items-center text-center sm:mt-0 sm:items-start sm:pb-2 sm:text-left min-w-0">
               <div className="flex items-center gap-2 max-w-full">
-                <h1 className="text-2xl font-extrabold text-stone-800 sm:text-3xl break-words">{displayName}</h1>
+                <h1 className="break-words text-2xl font-extrabold text-[#2C3E50] sm:text-3xl">{displayName}</h1>
                 {me?.is_verified && (
                   <span className="text-teal-600 shrink-0" title="Verified">
                     <IconPlane size={20} active />
                   </span>
                 )}
               </div>
-              <p className="text-sm font-medium text-stone-500">@{handle.replace(/^@/, "")}</p>
-              
+              <p className="text-sm font-medium text-[#6C757D]">@{handle.replace(/^@/, "")}</p>
+
               {locationLine && (
-                <div className="mt-2 flex items-center gap-1 text-sm text-stone-600">
+                <div className="mt-2 flex items-center gap-1 text-sm text-[#6C757D]">
                   <IconMapPin size={16} className="text-teal-600" />
                   <span>{locationLine}</span>
                 </div>
@@ -1572,11 +1675,11 @@ export default function ProfilePage() {
           {/* Bio & Vibe Tags */}
           <div className="mt-5 max-w-3xl text-center sm:text-left">
             {bioLine ? (
-              <p className="text-sm text-stone-600 leading-relaxed">{bioLine}</p>
+              <p className="text-sm leading-relaxed text-[#6C757D]">{bioLine}</p>
             ) : isOwner ? (
-              <p className="text-sm text-stone-400 italic">Add your story ✈️</p>
+              <p className="text-sm italic text-slate-500">Add your story</p>
             ) : (
-              <p className="text-sm text-stone-400 italic">No bio yet.</p>
+              <p className="text-sm italic text-slate-500">No bio yet.</p>
             )}
             
             <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
@@ -1613,8 +1716,10 @@ export default function ProfilePage() {
                   <div className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full ${stat.color}`}>
                     <stat.icon size={20} active />
                   </div>
-                  <div className="text-2xl font-bold text-stone-800">{stat.value}</div>
-                  <div className="text-xs font-medium text-stone-500 uppercase tracking-wide mt-0.5">{stat.label}</div>
+                  <div className="text-2xl font-bold text-[#2C3E50]">{stat.value}</div>
+                  <div className="mt-0.5 text-xs font-medium uppercase tracking-wide text-[#6C757D]">
+                    {stat.label}
+                  </div>
                   
                   {isOwner && (
                     <div
@@ -1632,23 +1737,31 @@ export default function ProfilePage() {
               );
               
               return stat.href ? (
-                <Link href={stat.href} key={stat.key} className="relative flex flex-col items-center rounded-2xl border border-stone-100 bg-white p-5 text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                <Link
+                  href={stat.href}
+                  key={stat.key}
+                  className="relative flex cursor-pointer flex-col items-center rounded-2xl border border-[#E9ECEF] bg-white p-5 text-center shadow-sm transition-shadow hover:shadow-md"
+                >
                   {CardContent}
                 </Link>
               ) : (
-                <button key={stat.key} onClick={stat.onClick} className="relative flex flex-col items-center rounded-2xl border border-stone-100 bg-white p-5 text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer w-full">
+                <button
+                  key={stat.key}
+                  onClick={stat.onClick}
+                  className="relative flex w-full cursor-pointer flex-col items-center rounded-2xl border border-[#E9ECEF] bg-white p-5 text-center shadow-sm transition-shadow hover:shadow-md"
+                >
                   {CardContent}
                 </button>
               )
             })}
         </div>
 
-        {/* 3. GROUP MAP - Cleaned Up */}
-        <div className="overflow-hidden rounded-2xl border border-stone-100 bg-white shadow-sm hover:shadow-md transition-shadow">
-          <div className="px-5 py-4 flex items-center justify-between border-b border-stone-50">
+        {/* 3. GROUP MAP */}
+        <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-md">
+          <div className="flex items-center justify-between border-b border-[#E9ECEF] px-5 py-4">
             <div>
-              <h2 className="text-lg font-bold text-stone-800">Travel Map</h2>
-              <p className="text-xs text-stone-500 mt-0.5">Live view of your group travels</p>
+              <h2 className="text-lg font-bold text-[#2C3E50]">Travel Map</h2>
+              <p className="mt-0.5 text-xs text-[#6C757D]">Live view of your group travels</p>
             </div>
             <Link
               href="/map"
@@ -1657,49 +1770,46 @@ export default function ProfilePage() {
               Full Map →
             </Link>
           </div>
-          <div className="relative h-64 bg-stone-50">
-            <iframe
-              title="Group map"
-              src="/map?embed=1"
-              className="pointer-events-auto size-full border-0"
-              loading="lazy"
-            />
-            {/* Minimal overlay to prevent accidental scrolling while browsing profile */}
-            <div className="absolute inset-0 bg-black/5 pointer-events-none" />
+          <div className="overflow-hidden rounded-b-xl border-t border-[#E9ECEF] bg-[#F8FAFC] p-2">
+            <div className="relative h-64 overflow-hidden rounded-lg border border-[#E9ECEF] bg-white shadow-sm">
+              <iframe
+                title="Group map"
+                src="/map?embed=1"
+                className="pointer-events-auto size-full border-0"
+                loading="lazy"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-black/5" />
+            </div>
           </div>
-
         </div>
 
         {/* 4. INTENTIONAL CARDS: COMMUNITIES & SPOTLIGHT */}
         <div className="grid gap-6 sm:grid-cols-2">
           {/* Communities Card */}
-          <div className="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-stone-800">Communities</h2>
-              <span className="text-xl">🎒</span>
+          <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-[#2C3E50]">Communities</h2>
+              <Backpack size={20} className="text-teal-600" aria-hidden />
             </div>
-            <p className="text-sm text-stone-600 leading-relaxed">
+            <p className="text-sm leading-relaxed text-[#6C757D]">
               Join travel groups, meet like-minded explorers, and share your journey.
             </p>
-            <Link
-              href="/travel-hub"
-              className="mt-4 inline-flex items-center gap-2 rounded-full border border-teal-600 px-4 py-1.5 text-xs font-semibold text-teal-600 hover:bg-teal-50"
-            >
-              Explore Hub
+            <OpenLoungeButton className="mt-4 inline-flex items-center gap-2 rounded-full border border-teal-600 px-4 py-1.5 text-xs font-semibold text-teal-600 hover:bg-teal-50">
+              Open Rovvy Lounge
               <IconChevronRight size={14} />
-            </Link>
+            </OpenLoungeButton>
           </div>
 
           {/* Spotlight Card */}
-          <div className="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-stone-800">Spotlight</h2>
-              <span className="text-xl">✨</span>
+          <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-[#2C3E50]">Spotlight</h2>
+              <Sparkles size={20} className="text-amber-500" aria-hidden />
             </div>
             {upcomingTrips.length > 0 ? (
               <div>
-                <p className="text-sm text-stone-600 font-medium truncate">{upcomingTrips[0].title}</p>
-                <p className="text-xs text-stone-500 mt-0.5">{upcomingTrips[0].start_date}</p>
+                <p className="truncate text-sm font-medium text-[#2C3E50]">{upcomingTrips[0].title}</p>
+                <p className="mt-0.5 text-xs text-[#6C757D]">{upcomingTrips[0].start_date}</p>
                 <div className="mt-3 flex -space-x-2">
                   {Array.from({ length: Math.min(3, upcomingTrips[0].member_count) }).map((_, i) => (
                     <div key={i} className="h-6 w-6 rounded-full bg-stone-200 border-2 border-white flex items-center justify-center text-[10px] font-bold text-stone-600">
@@ -1715,7 +1825,7 @@ export default function ProfilePage() {
               </div>
             ) : (
               <div>
-                <p className="text-sm text-stone-500">No upcoming trips planned yet.</p>
+                <p className="text-sm text-[#6C757D]">No upcoming trips planned yet.</p>
                 <Link href="/trips/plan" className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-teal-700">
                   Plan a Trip
                 </Link>
@@ -1727,7 +1837,9 @@ export default function ProfilePage() {
         {/* 5. HIGHLIGHT STRIP (Stories) */}
         {storyTrips.length > 0 && (
           <div>
-            <h2 className="mb-3 text-sm font-semibold text-stone-500 uppercase tracking-wide">Highlights</h2>
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#6C757D]">
+              Highlights
+            </h2>
             <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:thin]">
               {storyTrips.slice(0, 8).map(({ trip, label }, i) => (
                 <button
@@ -1791,8 +1903,10 @@ export default function ProfilePage() {
                   <div className="h-16 w-16 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 mb-4">
                     <IconGrid size={24} />
                   </div>
-                  <h3 className="text-lg font-bold text-stone-800">No photos yet</h3>
-                  <p className="text-sm text-stone-500 mt-1 max-w-sm">Complete a trip and share your favorite moments with your crew.</p>
+                  <h3 className="text-lg font-bold text-[#2C3E50]">No photos yet</h3>
+                  <p className="mt-1 max-w-sm text-sm text-[#6C757D]">
+                    Complete a trip and share your favorite moments with your crew.
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -1818,8 +1932,10 @@ export default function ProfilePage() {
                   <div className="h-16 w-16 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 mb-4">
                     <IconPlane size={24} />
                   </div>
-                  <h3 className="text-lg font-bold text-stone-800">No trips yet</h3>
-                  <p className="text-sm text-stone-500 mt-1 max-w-sm">Start planning your next adventure with friends.</p>
+                  <h3 className="text-lg font-bold text-[#2C3E50]">No trips yet</h3>
+                  <p className="mt-1 max-w-sm text-sm text-[#6C757D]">
+                    Start planning your next adventure with friends.
+                  </p>
                   <Link href="/trips/plan" className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700">
                     Plan a Trip
                   </Link>
@@ -1830,8 +1946,8 @@ export default function ProfilePage() {
                     <div key={t.id} className="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <div className="font-bold text-stone-800">{t.title}</div>
-                          <div className="text-xs text-stone-500 mt-0.5">{t.group_name || "Group trip"}</div>
+                          <div className="font-bold text-[#2C3E50]">{t.title}</div>
+                          <div className="mt-0.5 text-xs text-[#6C757D]">{t.group_name || "Group trip"}</div>
                         </div>
                         <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-teal-50 text-teal-700">
                           Upcoming
@@ -1847,8 +1963,8 @@ export default function ProfilePage() {
                     <div key={t.id} className="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <div className="font-bold text-stone-800">{t.title}</div>
-                          <div className="text-xs text-stone-500 mt-0.5">{t.group_name || "Group trip"}</div>
+                          <div className="font-bold text-[#2C3E50]">{t.title}</div>
+                          <div className="mt-0.5 text-xs text-[#6C757D]">{t.group_name || "Group trip"}</div>
                         </div>
                         <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-stone-100 text-stone-600">
                           Completed

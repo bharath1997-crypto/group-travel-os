@@ -33,21 +33,52 @@ self.addEventListener('notificationclick', function (event) {
   if (data.type === 'group_invite') {
     url = '/notifications'
   } else if (data.type === 'new_message') {
-    url = '/travel-hub'
+    url = '/explore'
   } else if (data.type === 'incoming_call') {
-    url = '/travel-hub'
+    url = '/explore'
   }
 
   event.waitUntil(
-    clients.matchAll({ type: 'window' }).then(function (clientList) {
+    clients.matchAll({ type: "window" }).then(function (clientList) {
       for (const client of clientList) {
-        if (client.url.includes(url) && 'focus' in client) {
-          return client.focus()
+        if (client.url.includes(url) && "focus" in client) {
+          return client.focus();
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow(url)
+        return clients.openWindow(url);
       }
     }),
-  )
-})
+  );
+});
+
+const MAP_CACHE_NAME = "map-tiles-cache-v1";
+
+self.addEventListener("fetch", function (event) {
+  const url = new URL(event.request.url);
+  if (url.pathname === "/cart/extract" && event.request.method === "GET") {
+    const sharedUrl = url.searchParams.get("url") || url.searchParams.get("text");
+    if (sharedUrl) {
+      event.respondWith(
+        Response.redirect(
+          "/cart/extract?url=" + encodeURIComponent(sharedUrl),
+          303
+        )
+      );
+      return;
+    }
+  }
+  if (url.hostname.includes("tile.openstreetmap.org")) {
+    event.respondWith(
+      caches.open(MAP_CACHE_NAME).then(function (cache) {
+        return cache.match(event.request).then(function (response) {
+          const fetchPromise = fetch(event.request).then(function (networkResponse) {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+          return response || fetchPromise;
+        });
+      })
+    );
+  }
+});

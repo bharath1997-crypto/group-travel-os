@@ -101,7 +101,7 @@ export default function CompleteProfilePage() {
       });
       setMe(u);
       await refreshUser();
-      router.replace("/dashboard");
+      router.replace("/explore");
     } catch (err) {
       setMsg(err instanceof Error ? err.message : "Could not save profile");
     } finally {
@@ -340,7 +340,7 @@ export default function CompleteProfilePage() {
           <button
             type="button"
             className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:order-1"
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push("/explore")}
           >
             Skip for now
           </button>

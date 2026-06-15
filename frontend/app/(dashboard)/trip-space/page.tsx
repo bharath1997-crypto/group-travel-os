@@ -436,17 +436,17 @@ export default function TripSpacePage() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#0F172A] px-4 py-8 text-[#F8FAFC] md:px-8">
+    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] px-4 py-8 text-slate-800 md:px-8">
       <div className="mx-auto max-w-5xl">
         
         {/* Header Title */}
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0F766E]/20 text-[#CCFBF1]" aria-hidden>
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0F766E]/10 text-[#0F766E]" aria-hidden>
             <Compass className="h-6 w-6" strokeWidth={1.5} />
           </span>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Trip Space</h1>
-            <p className="text-xs text-[#94A3B8] font-medium tracking-wide uppercase">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Trip Space</h1>
+            <p className="text-xs text-slate-500 font-medium tracking-wide uppercase">
               Rovvy · Premium Weekend Travel Planner
             </p>
           </div>
@@ -456,25 +456,25 @@ export default function TripSpacePage() {
         {!selectedDestination ? (
           <div className="mt-8 space-y-8">
             {/* SETUP FORM */}
-            <div className="rounded-2xl border border-[#1E293B] bg-[#1E293B]/70 p-6 shadow-xl backdrop-blur-md">
-              <h2 className="text-lg font-bold text-[#CCFBF1] flex items-center gap-2 mb-6">
-                <Sparkles className="h-5 w-5 text-teal-400" />
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2 mb-6">
+                <Sparkles className="h-5 w-5 text-teal-600" />
                 Plan Your Perfect Weekend Trip
               </h2>
               
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 {/* Starting City */}
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="origin" className="text-xs font-semibold uppercase tracking-wider text-[#94A3B8]">
+                  <label htmlFor="origin" className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                     Starting From
                   </label>
                   <div className="relative">
-                    <MapPin className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-teal-400" />
+                    <MapPin className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-teal-600" />
                     <select
                       id="origin"
                       value={origin}
                       onChange={(e) => setOrigin(e.target.value)}
-                      className="w-full rounded-xl border border-[#334155] bg-[#0F172A] py-3 pl-10 pr-4 text-sm text-[#F8FAFC] outline-none focus:border-[#0F766E] transition-colors"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 outline-none focus:border-[#0F766E] transition-colors"
                     >
                       <option value="Chicago">Chicago, IL</option>
                       <option value="New York">New York, NY</option>
@@ -486,27 +486,27 @@ export default function TripSpacePage() {
 
                 {/* Dates */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-[#94A3B8]">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                     Travel Dates
                   </label>
                   <div className="flex items-center gap-2">
                     <div className="relative flex-1">
-                      <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-teal-400" />
+                      <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-teal-600" />
                       <input
                         type="date"
                         value={dateFrom}
                         onChange={(e) => setDateFrom(e.target.value)}
-                        className="w-full rounded-xl border border-[#334155] bg-[#0F172A] py-3 pl-9 pr-2 text-xs text-[#F8FAFC] outline-none focus:border-[#0F766E] transition-colors"
+                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-9 pr-2 text-xs text-slate-800 outline-none focus:border-[#0F766E] transition-colors"
                       />
                     </div>
-                    <span className="text-[#94A3B8] text-xs font-bold">to</span>
+                    <span className="text-slate-500 text-xs font-bold">to</span>
                     <div className="relative flex-1">
-                      <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-teal-400" />
+                      <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-teal-600" />
                       <input
                         type="date"
                         value={dateTo}
                         onChange={(e) => setDateTo(e.target.value)}
-                        className="w-full rounded-xl border border-[#334155] bg-[#0F172A] py-3 pl-9 pr-2 text-xs text-[#F8FAFC] outline-none focus:border-[#0F766E] transition-colors"
+                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-9 pr-2 text-xs text-slate-800 outline-none focus:border-[#0F766E] transition-colors"
                       />
                     </div>
                   </div>
@@ -514,16 +514,16 @@ export default function TripSpacePage() {
 
                 {/* Group size */}
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="group-size" className="text-xs font-semibold uppercase tracking-wider text-[#94A3B8]">
+                  <label htmlFor="group-size" className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                     Group Size
                   </label>
                   <div className="relative">
-                    <Users className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-teal-400" />
+                    <Users className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-teal-600" />
                     <select
                       id="group-size"
                       value={groupSize}
                       onChange={(e) => setGroupSize(parseInt(e.target.value))}
-                      className="w-full rounded-xl border border-[#334155] bg-[#0F172A] py-3 pl-10 pr-4 text-sm text-[#F8FAFC] outline-none focus:border-[#0F766E] transition-colors"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 outline-none focus:border-[#0F766E] transition-colors"
                     >
                       {[2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
                         <option key={n} value={n}>{n} People</option>
@@ -534,16 +534,16 @@ export default function TripSpacePage() {
 
                 {/* Max Drive hours */}
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="drive-time" className="text-xs font-semibold uppercase tracking-wider text-[#94A3B8]">
+                  <label htmlFor="drive-time" className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                     Max Drive Time
                   </label>
                   <div className="relative">
-                    <Clock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-teal-400" />
+                    <Clock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-teal-600" />
                     <select
                       id="drive-time"
                       value={maxDriveHours}
                       onChange={(e) => setMaxDriveHours(parseInt(e.target.value))}
-                      className="w-full rounded-xl border border-[#334155] bg-[#0F172A] py-3 pl-10 pr-4 text-sm text-[#F8FAFC] outline-none focus:border-[#0F766E] transition-colors"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 outline-none focus:border-[#0F766E] transition-colors"
                     >
                       <option value={1}>Under 1 hour</option>
                       <option value={2}>Under 2 hours</option>
@@ -557,7 +557,7 @@ export default function TripSpacePage() {
 
               {/* VIBE SELECTOR */}
               <div className="mt-6 flex flex-col gap-2.5">
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#94A3B8]">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Select Trip Vibe
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -569,7 +569,7 @@ export default function TripSpacePage() {
                       className={`rounded-full px-4 py-2 text-xs font-semibold border transition-all ${
                         selectedVibe === v
                           ? "bg-[#0F766E] text-white border-[#0F766E] shadow-lg shadow-[#0F766E]/20"
-                          : "bg-[#0F172A] border-[#334155] text-[#94A3B8] hover:border-[#0F766E] hover:text-[#CCFBF1]"
+                          : "bg-white border-slate-200 text-slate-600 hover:border-[#0F766E] hover:text-[#0F766E]"
                       }`}
                     >
                       {v}
@@ -577,8 +577,7 @@ export default function TripSpacePage() {
                   ))}
                 </div>
               </div>
-
-              {/* ACTION BUTTON */}
+              {/* ACTION BUTTON */}
               <div className="mt-8 flex justify-end">
                 <button
                   type="button"
@@ -594,15 +593,15 @@ export default function TripSpacePage() {
             {/* SUGGESTED DESTINATIONS GRID */}
             {destinations.length > 0 && (
               <div className="space-y-4 animate-fade-in">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Compass className="h-5 w-5 text-teal-400" />
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Compass className="h-5 w-5 text-teal-600" />
                   AI Suggested Weekend Getaways from {origin}
                 </h3>
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {destinations.map((dest, idx) => (
                     <div
                       key={dest.name + idx}
-                      className="group overflow-hidden rounded-2xl border border-[#1E293B] bg-[#1E293B]/40 hover:border-[#0F766E]/50 hover:bg-[#1E293B]/70 transition-all flex flex-col shadow-lg"
+                      className="group overflow-hidden rounded-2xl border border-slate-200 bg-white hover:border-[#0F766E]/50 hover:bg-slate-50 transition-all flex flex-col shadow-md"
                     >
                       <div className="relative h-44 w-full overflow-hidden">
                         <img
@@ -610,26 +609,26 @@ export default function TripSpacePage() {
                           alt={dest.name}
                           className="h-full w-full object-cover group-hover:scale-105 transition duration-500"
                         />
-                        <div className="absolute top-3 right-3 rounded-full bg-slate-900/85 px-3 py-1 text-[10px] font-bold text-emerald-400 border border-[#334155]">
+                        <div className="absolute top-3 right-3 rounded-full bg-slate-900/85 px-3 py-1 text-[10px] font-bold text-emerald-400 border border-slate-800">
                           🚗 {dest.drive || `${dest.drive_hours} hrs`}
                         </div>
                       </div>
                       <div className="p-5 flex-1 flex flex-col justify-between gap-4">
                         <div>
-                          <h4 className="text-base font-bold text-[#F8FAFC] group-hover:text-teal-400 transition-colors">
+                          <h4 className="text-base font-bold text-slate-900 group-hover:text-[#0F766E] transition-colors">
                             {dest.name}, {dest.state}
                           </h4>
-                          <span className="mt-1 inline-block rounded bg-[#0F766E]/20 px-2 py-0.5 text-[10px] font-semibold text-[#CCFBF1]">
+                          <span className="mt-1 inline-block rounded bg-[#0F766E]/10 px-2 py-0.5 text-[10px] font-semibold text-[#0F766E]">
                             {dest.vibe || dest.vibes?.join(", ")}
                           </span>
-                          <p className="mt-3 text-xs leading-relaxed text-[#94A3B8]">
+                          <p className="mt-3 text-xs leading-relaxed text-slate-500">
                             {dest.why || "Incredible weekend option with top activities and scenery perfect for group coordination."}
                           </p>
                         </div>
                         <button
                           type="button"
                           onClick={() => setSelectedDestination(dest)}
-                          className="flex items-center justify-center gap-1.5 w-full rounded-xl bg-slate-900 group-hover:bg-[#0f766e] py-3 text-xs font-bold text-white border border-[#334155] transition"
+                          className="flex items-center justify-center gap-1.5 w-full rounded-xl bg-slate-900 hover:bg-[#0f766e] py-3 text-xs font-bold text-white border border-slate-800 transition"
                         >
                           Explore This Destination
                           <ChevronRight className="h-3.5 w-3.5" />
@@ -645,24 +644,24 @@ export default function TripSpacePage() {
           /* TRIP WORKSPACE */
           <div className="mt-8 space-y-6 animate-fade-in">
             {/* Header info */}
-            <div className="rounded-2xl border border-[#1E293B] bg-[#1E293B]/70 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm">
               <div className="flex items-start gap-4">
                 <button
                   type="button"
                   onClick={() => setSelectedDestination(null)}
-                  className="mt-1 rounded-lg border border-[#334155] bg-[#0F172A] p-2 hover:border-[#0F766E] text-[#94A3B8] hover:text-[#CCFBF1] transition-colors"
+                  className="mt-1 rounded-lg border border-slate-200 bg-white p-2 hover:border-[#0F766E] text-slate-500 hover:text-[#0F766E] transition-colors"
                   title="Go Back"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </button>
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-xl font-bold text-white md:text-2xl">{selectedDestination.name}</h2>
-                    <span className="rounded-full bg-[#0F766E]/20 px-2.5 py-0.5 text-xs font-semibold text-[#CCFBF1]">
+                    <h2 className="text-xl font-bold text-slate-900 md:text-2xl">{selectedDestination.name}</h2>
+                    <span className="rounded-full bg-[#0F766E]/10 px-2.5 py-0.5 text-xs font-semibold text-[#0F766E]">
                       {selectedDestination.state}
                     </span>
                   </div>
-                  <p className="mt-1.5 text-xs font-semibold text-[#94A3B8] flex flex-wrap gap-x-4 gap-y-1">
+                  <p className="mt-1.5 text-xs font-semibold text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
                     <span>📅 {formatDateReadable(dateFrom)} - {formatDateReadable(dateTo)}</span>
                     <span>👥 {groupSize} people</span>
                     <span>🚗 {selectedDestination.drive || `${selectedDestination.drive_hours} hrs`} from {origin}</span>
@@ -672,7 +671,7 @@ export default function TripSpacePage() {
             </div>
 
             {/* TAB SELECTOR */}
-            <div className="flex overflow-x-auto border-b border-[#1E293B] pb-1 gap-2 scrollbar-none">
+            <div className="flex overflow-x-auto border-b border-slate-200 pb-1 gap-2 scrollbar-none">
               {(
                 [
                   { id: "overview", label: "Overview", icon: Compass },
@@ -690,8 +689,8 @@ export default function TripSpacePage() {
                     onClick={() => setSelectedTab(t.id)}
                     className={`flex items-center gap-2 px-5 py-3 text-xs font-bold transition-all border-b-2 rounded-t-lg -mb-[2px] ${
                       selectedTab === t.id
-                        ? "border-teal-500 text-teal-400 bg-[#1E293B]/40"
-                        : "border-transparent text-[#94A3B8] hover:text-[#CCFBF1] hover:bg-[#1E293B]/20"
+                        ? "border-teal-600 text-teal-600 bg-teal-50"
+                        : "border-transparent text-slate-500 hover:text-teal-650 hover:bg-slate-50"
                     }`}
                   >
                     <TabIcon className="h-4 w-4" />
@@ -702,7 +701,7 @@ export default function TripSpacePage() {
             </div>
 
             {/* TAB CONTENTS */}
-            <div className="rounded-2xl border border-[#1E293B] bg-[#1E293B]/40 p-6 min-h-[300px]">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 min-h-[300px] shadow-sm">
               
               {/* TAB 1: OVERVIEW */}
               {selectedTab === "overview" && (
@@ -710,9 +709,9 @@ export default function TripSpacePage() {
                   {/* Weather & Quick Stats */}
                   <div className="grid gap-6 md:grid-cols-2">
                     {/* AI Weather Widget */}
-                    <div className="rounded-xl border border-[#334155] bg-[#0F172A] p-5">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] flex items-center gap-2 mb-4">
-                        <CloudSun className="h-4 w-4 text-teal-400" />
+                    <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-5">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2 mb-4">
+                        <CloudSun className="h-4 w-4 text-teal-650" />
                         Weekend Forecast · Utica, IL
                       </h4>
                       {weatherLoading ? (
@@ -720,14 +719,14 @@ export default function TripSpacePage() {
                       ) : (
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-3xl font-extrabold text-white">
+                            <p className="text-3xl font-extrabold text-slate-900">
                               {weatherData?.temp_c != null ? `${weatherData.temp_c}°C` : "21°C"}
                             </p>
-                            <p className="text-xs font-semibold text-[#CCFBF1] capitalize mt-1">
+                            <p className="text-xs font-semibold text-[#0F766E] capitalize mt-1">
                               {weatherData?.description || "Partly Cloudy"}
                             </p>
                           </div>
-                          <div className="text-right text-xs text-[#94A3B8] space-y-1">
+                          <div className="text-right text-xs text-slate-500 space-y-1">
                             <p>💧 Humidity: {weatherData?.humidity || 62}%</p>
                             <p>💨 Wind speed: {weatherData?.wind_kph || 14} kph</p>
                           </div>
@@ -736,41 +735,41 @@ export default function TripSpacePage() {
                     </div>
 
                     {/* Drive stats */}
-                    <div className="rounded-xl border border-[#334155] bg-[#0F172A] p-5 flex flex-col justify-between">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-2">
+                    <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-5 flex flex-col justify-between">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                         Getaway Snapshot
                       </h4>
                       <div className="grid grid-cols-3 gap-2 text-center">
-                        <div className="p-2 border-r border-[#334155]">
-                          <p className="text-lg font-bold text-white">🚗 {selectedDestination.drive || "1.5 hrs"}</p>
-                          <p className="text-[10px] text-[#94A3B8] uppercase">Drive</p>
+                        <div className="p-2 border-r border-slate-200">
+                          <p className="text-lg font-bold text-slate-900">🚗 {selectedDestination.drive || "1.5 hrs"}</p>
+                          <p className="text-[10px] text-slate-500 uppercase">Drive</p>
                         </div>
-                        <div className="p-2 border-r border-[#334155]">
-                          <p className="text-lg font-bold text-emerald-400">💚 100%</p>
-                          <p className="text-[10px] text-[#94A3B8] uppercase">Group Match</p>
+                        <div className="p-2 border-r border-slate-200">
+                          <p className="text-lg font-bold text-emerald-600">💚 100%</p>
+                          <p className="text-[10px] text-slate-500 uppercase">Group Match</p>
                         </div>
                         <div className="p-2">
-                          <p className="text-lg font-bold text-teal-400">{selectedVibe}</p>
-                          <p className="text-[10px] text-[#94A3B8] uppercase">Vibe</p>
+                          <p className="text-lg font-bold text-[#0F766E]">{selectedVibe}</p>
+                          <p className="text-[10px] text-slate-500 uppercase">Vibe</p>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* AI Itinerary Summary */}
-                  <div className="rounded-xl border border-[#334155] bg-[#0F172A] p-5">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] flex items-center gap-2 mb-3">
-                      <Sparkles className="h-4 w-4 text-teal-400 animate-pulse" />
+                  <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2 mb-3">
+                      <Sparkles className="h-4 w-4 text-teal-655 animate-pulse" />
                       AI Suggested Itinerary Preview
                     </h4>
                     {aiSummaryLoading ? (
                       <div className="space-y-2 animate-pulse py-4">
-                        <div className="h-4 bg-slate-800 rounded w-full" />
-                        <div className="h-4 bg-slate-800 rounded w-5/6" />
-                        <div className="h-4 bg-slate-800 rounded w-2/3" />
+                        <div className="h-4 bg-slate-200 rounded w-full" />
+                        <div className="h-4 bg-slate-200 rounded w-5/6" />
+                        <div className="h-4 bg-slate-200 rounded w-2/3" />
                       </div>
                     ) : (
-                      <p className="text-xs leading-relaxed text-slate-300 whitespace-pre-line">
+                      <p className="text-xs leading-relaxed text-slate-700 whitespace-pre-line">
                         {aiSummary}
                       </p>
                     )}
@@ -782,12 +781,12 @@ export default function TripSpacePage() {
               {selectedTab === "stay" && (
                 <div className="space-y-6">
                   {/* Travelpayouts widget container */}
-                  <div className="rounded-xl border border-[#334155] bg-[#0F172A] p-5">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-4">
+                  <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">
                       Section A — Interactive Stays Map (Travelpayouts)
                     </h4>
-                    <div id="tp-widget-container" className="w-full min-h-[300px] bg-slate-900 rounded-lg flex items-center justify-center p-4">
-                      <p className="text-xs text-[#94A3B8]">Loading Stays Widget...</p>
+                    <div id="tp-widget-container" className="w-full min-h-[300px] bg-white rounded-lg flex items-center justify-center p-4 border border-slate-200">
+                      <p className="text-xs text-slate-400">Loading Stays Widget...</p>
                     </div>
                   </div>
 
@@ -798,17 +797,17 @@ export default function TripSpacePage() {
                       href={`https://www.airbnb.com/s/${encodeURIComponent(selectedDestination.city_search)}/homes?checkin=${dateFrom}&checkout=${dateTo}&adults=${groupSize}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-between rounded-xl border border-[#334155] bg-[#0F172A] hover:border-[#0F766E] p-4 text-left group transition"
+                      className="flex items-center justify-between rounded-xl border border-slate-200 bg-[#F8FAFC] hover:border-[#0F766E] p-4 text-left group transition hover:bg-slate-50"
                     >
                       <div>
-                        <h5 className="text-xs font-bold text-white group-hover:text-teal-400 transition-colors">
+                        <h5 className="text-xs font-bold text-slate-900 group-hover:text-[#0F766E] transition-colors">
                           Find Cabins & Houses on Airbnb
                         </h5>
-                        <p className="text-[10px] text-[#94A3B8] mt-1">
+                        <p className="text-[10px] text-slate-500 mt-1">
                           Browse cabins, scenic treehouses & vacation homes
                         </p>
                       </div>
-                      <ExternalLink className="h-4 w-4 text-[#94A3B8] group-hover:text-[#CCFBF1] transition-colors" />
+                      <ExternalLink className="h-4 w-4 text-slate-400 group-hover:text-[#0F766E] transition-colors" />
                     </a>
 
                     {/* Booking.com */}
@@ -816,17 +815,17 @@ export default function TripSpacePage() {
                       href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(selectedDestination.city_search)}&checkin=${dateFrom}&checkout=${dateTo}&group_adults=${groupSize}&aid=727732`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-between rounded-xl border border-[#334155] bg-[#0F172A] hover:border-[#0F766E] p-4 text-left group transition"
+                      className="flex items-center justify-between rounded-xl border border-slate-200 bg-[#F8FAFC] hover:border-[#0F766E] p-4 text-left group transition hover:bg-slate-50"
                     >
                       <div>
-                        <h5 className="text-xs font-bold text-white group-hover:text-teal-400 transition-colors">
+                        <h5 className="text-xs font-bold text-slate-900 group-hover:text-[#0F766E] transition-colors">
                           Search Stays on Booking.com
                         </h5>
-                        <p className="text-[10px] text-[#94A3B8] mt-1">
+                        <p className="text-[10px] text-slate-500 mt-1">
                           Compare hotels, resort lodges & holiday rentals
                         </p>
                       </div>
-                      <ExternalLink className="h-4 w-4 text-[#94A3B8] group-hover:text-[#CCFBF1] transition-colors" />
+                      <ExternalLink className="h-4 w-4 text-slate-400 group-hover:text-[#0F766E] transition-colors" />
                     </a>
                   </div>
                 </div>
@@ -837,41 +836,41 @@ export default function TripSpacePage() {
                 <div className="space-y-6">
                   {/* Events During Your Trip */}
                   <div className="mb-8">
-                    <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
+                    <h3 className="text-slate-900 font-bold text-lg mb-4 flex items-center gap-2">
                       <span>🎉</span> Events During Your Trip
                     </h3>
                     
                     {eventsLoading ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[1, 2, 3, 4].map(i => (
-                          <div key={i} className="bg-[#0F172A] border border-[#334155] rounded-xl h-32 animate-pulse" />
+                          <div key={i} className="bg-[#F8FAFC] border border-slate-200 rounded-xl h-32 animate-pulse" />
                         ))}
                       </div>
                     ) : tripEvents.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {tripEvents.slice(0, 6).map((event, i) => (
-                          <div key={i} className="bg-[#0F172A] rounded-xl p-4 border border-[#334155] hover:border-teal-500 transition-colors flex flex-col justify-between gap-3 shadow-md">
+                          <div key={i} className="bg-[#F8FAFC] rounded-xl p-4 border border-slate-200 hover:border-teal-500 transition-colors flex flex-col justify-between gap-3 shadow-sm">
                             <div>
                               <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold mb-2 inline-block ${
-                                event.category === 'Music' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
-                                event.category === 'Sports' ? 'bg-green-500/20 text-green-300 border border-green-500/30' :
-                                event.category === 'Arts' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' :
-                                'bg-teal-500/20 text-teal-300 border border-teal-500/30'
+                                event.category === 'Music' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
+                                event.category === 'Sports' ? 'bg-green-100 text-green-800 border border-green-200' :
+                                event.category === 'Arts' ? 'bg-orange-100 text-orange-800 border border-orange-200' :
+                                'bg-teal-100 text-teal-800 border border-teal-200'
                               }`}>
                                 {event.category}
                               </span>
                               
-                              <h4 className="text-white font-bold text-sm mb-1 line-clamp-2">{event.name}</h4>
+                              <h4 className="text-slate-900 font-bold text-sm mb-1 line-clamp-2">{event.name}</h4>
                               
-                              <p className="text-slate-400 text-[11px] mb-1">
+                              <p className="text-slate-500 text-[11px] mb-1">
                                 📅 {event.date} {event.time && `at ${event.time}`}
                               </p>
-                              <p className="text-slate-400 text-[11px]">
+                              <p className="text-slate-500 text-[11px]">
                                 📍 {event.venue}
                               </p>
                             </div>
                             
-                            <div className="flex items-center justify-between border-t border-[#334155] pt-3 mt-1">
+                            <div className="flex items-center justify-between border-t border-slate-200 pt-3 mt-1">
                               <span className="text-teal-400 text-xs font-semibold">
                                 {event.price_min ? `From $${event.price_min}` : 'See prices'}
                               </span>
@@ -890,10 +889,10 @@ export default function TripSpacePage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="bg-[#0F172A] rounded-xl p-6 text-center border border-[#334155]">
-                        <p className="text-slate-400 text-sm">No events found for these dates.</p>
+                      <div className="bg-[#F8FAFC] rounded-xl p-6 text-center border border-slate-200">
+                        <p className="text-slate-600 text-sm">No events found for these dates.</p>
                         <p className="text-slate-500 text-xs mt-1">Try browsing the full Events Directory for more options.</p>
-                        <Link href="/explore/events" className="text-teal-400 text-sm mt-3 inline-block hover:underline font-bold">
+                        <Link href="/explore/events" className="text-teal-600 text-sm mt-3 inline-block hover:underline font-bold">
                           Browse All Events →
                         </Link>
                       </div>
@@ -902,8 +901,8 @@ export default function TripSpacePage() {
 
                   {/* Add to Trip Poll Button */}
                   {tripEvents.length > 0 && (
-                    <div className="mb-6 p-4 bg-teal-950/20 border border-[#0F766E]/40 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-                      <p className="text-[#CCFBF1] text-xs font-semibold">
+                    <div className="mb-6 p-4 bg-teal-50 border border-teal-200 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                      <p className="text-teal-800 text-xs font-semibold">
                         🗳️ Want your group to vote on which events to attend?
                       </p>
                       <button 
@@ -917,18 +916,18 @@ export default function TripSpacePage() {
                   )}
 
                   {/* GetYourGuide Widget */}
-                  <div className="rounded-xl border border-[#334155] bg-[#0F172A] p-5">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-4">
+                  <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">
                       Premium Activities (GetYourGuide)
                     </h4>
-                    <div id="gyg-widget-container" className="w-full min-h-[250px] bg-slate-900 rounded-lg flex items-center justify-center p-4">
-                      <p className="text-xs text-[#94A3B8]">Loading Activities Widget...</p>
+                    <div id="gyg-widget-container" className="w-full min-h-[250px] bg-white rounded-lg flex items-center justify-center p-4 border border-slate-200">
+                      <p className="text-xs text-slate-400">Loading Activities Widget...</p>
                     </div>
                   </div>
 
                   {/* Curated Hardcoded Activity cards */}
                   <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
                       Curated Top Things To Do
                     </h4>
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -936,13 +935,13 @@ export default function TripSpacePage() {
                         { name: "Local Hike", desc: "Discover historic woods and scenic trails." },
                         { name: "Scenic Overlook", desc: "Enjoy panoramic viewpoints of the landscapes." }
                       ]).map((act: any) => (
-                        <div key={act.name} className="flex gap-3 rounded-xl border border-[#334155] bg-[#0F172A] p-4">
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#0F766E]/20 text-[#CCFBF1]" aria-hidden>
+                        <div key={act.name} className="flex gap-3 rounded-xl border border-slate-200 bg-[#F8FAFC] p-4">
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#0F766E]/10 text-[#0F766E]" aria-hidden>
                             <Activity className="h-4 w-4" />
                           </span>
                           <div>
-                            <h5 className="text-xs font-bold text-white">{act.name}</h5>
-                            <p className="text-[10px] text-[#94A3B8] mt-1 leading-relaxed">
+                            <h5 className="text-xs font-bold text-slate-900">{act.name}</h5>
+                            <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
                               {act.desc}
                             </p>
                           </div>
@@ -956,32 +955,32 @@ export default function TripSpacePage() {
               {/* TAB 4: EAT */}
               {selectedTab === "eat" && (
                 <div className="space-y-4">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                     Top Group Dining & Restaurants in {selectedDestination.name}
                   </h4>
                   
                   {placesLoading ? (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 animate-pulse">
                       {[1, 2, 3, 4, 5, 6].map(n => (
-                        <div key={n} className="h-28 bg-slate-800 rounded-xl" />
+                        <div key={n} className="h-28 bg-slate-200 rounded-xl" />
                       ))}
                     </div>
                   ) : placesData.length === 0 ? (
-                    <p className="text-xs text-[#94A3B8]">No restaurants found.</p>
+                    <p className="text-xs text-slate-500">No restaurants found.</p>
                   ) : (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       {placesData.map(p => (
-                        <div key={p.name} className="rounded-xl border border-[#334155] bg-[#0F172A] p-4 flex flex-col justify-between gap-3 shadow-md">
+                        <div key={p.name} className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-4 flex flex-col justify-between gap-3 shadow-sm">
                           <div>
-                            <h5 className="text-xs font-bold text-white">{p.name}</h5>
+                            <h5 className="text-xs font-bold text-slate-900">{p.name}</h5>
                             <div className="flex items-center gap-1.5 mt-1">
-                              <span className="text-amber-400 text-xs">★</span>
-                              <span className="text-[10px] font-bold text-white">{p.rating}</span>
-                              <span className="text-[10px] text-[#94A3B8] capitalize">
+                              <span className="text-amber-500 text-xs">★</span>
+                              <span className="text-[10px] font-bold text-slate-900">{p.rating}</span>
+                              <span className="text-[10px] text-slate-500 capitalize">
                                 · {p.types?.[0]?.replace("_", " ") || "Restaurant"}
                               </span>
                             </div>
-                            <p className="text-[10px] text-[#94A3B8] mt-2 truncate">
+                            <p className="text-[10px] text-slate-500 mt-2 truncate">
                               📍 {p.address || "Local Address"}
                             </p>
                           </div>
@@ -989,7 +988,7 @@ export default function TripSpacePage() {
                             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + " " + selectedDestination.name)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center gap-1 w-full rounded-lg bg-slate-900 hover:bg-[#0f766e] py-2 text-[10px] font-bold text-white border border-[#334155] transition"
+                            className="inline-flex items-center justify-center gap-1 w-full rounded-lg bg-slate-900 hover:bg-[#0f766e] py-2 text-[10px] font-bold text-white border border-slate-850 transition"
                           >
                             Get Directions
                             <Navigation className="h-3 w-3" />
@@ -1008,58 +1007,58 @@ export default function TripSpacePage() {
                   <div className="grid gap-6 md:grid-cols-2">
                     
                     {/* Fuel card */}
-                    <div className="rounded-xl border border-[#334155] bg-[#0F172A] p-5">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] flex items-center gap-2 mb-4">
-                        <DollarSign className="h-4 w-4 text-emerald-400" />
+                    <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-5">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2 mb-4">
+                        <DollarSign className="h-4 w-4 text-emerald-600" />
                         Estimated Fuel Cost
                       </h4>
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="text-3xl font-extrabold text-emerald-400">
+                          <p className="text-3xl font-extrabold text-emerald-600">
                             ${estimatedFuelCost}
                           </p>
-                          <p className="text-[10px] text-[#94A3B8] mt-1 font-semibold leading-relaxed">
+                          <p className="text-[10px] text-slate-500 mt-1 font-semibold leading-relaxed">
                             Based on {miles} miles drive at 25 MPG and gas priced at $3.50/gal.
                           </p>
                         </div>
-                        <div className="bg-[#0F766E]/20 border border-[#0F766E]/30 rounded-xl p-3 text-center">
-                          <p className="text-xs font-extrabold text-[#CCFBF1]">${costPerPerson}</p>
-                          <p className="text-[8px] text-[#94A3B8] uppercase mt-0.5">Per Person</p>
+                        <div className="bg-[#0F766E]/10 border border-[#0F766E]/20 rounded-xl p-3 text-center">
+                          <p className="text-xs font-extrabold text-[#0F766E]">${costPerPerson}</p>
+                          <p className="text-[8px] text-slate-500 uppercase mt-0.5">Per Person</p>
                         </div>
                       </div>
                     </div>
 
                     {/* Driving details */}
-                    <div className="rounded-xl border border-[#334155] bg-[#0F172A] p-5">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-3">
+                    <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-5">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
                         Parking Tip
                       </h4>
-                      <p className="text-xs leading-relaxed text-slate-300">
+                      <p className="text-xs leading-relaxed text-slate-700">
                         {selectedDestination.parking || "Parking is readily available in local public parking spaces and municipal lots."}
                       </p>
                       <div className="mt-3 flex items-center gap-2 text-[10px] text-[#0F766E]">
                         <Info className="h-3.5 w-3.5" />
-                        <span className="font-semibold text-[#CCFBF1]">Static Tip: Keep gas tanks filled before mountain tracks.</span>
+                        <span className="font-semibold text-[#0F766E]">Static Tip: Keep gas tanks filled before mountain tracks.</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Route overview */}
-                  <div className="rounded-xl border border-[#334155] bg-[#0F172A] p-5">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] flex items-center gap-2 mb-3">
-                      <Navigation className="h-4 w-4 text-teal-400" />
+                  <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2 mb-3">
+                      <Navigation className="h-4 w-4 text-teal-600" />
                       Drive Route Summary
                     </h4>
                     {routeLoading ? (
-                      <div className="h-10 animate-pulse bg-slate-800 rounded-xl" />
+                      <div className="h-10 animate-pulse bg-slate-200 rounded-xl" />
                     ) : (
                       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 text-xs">
                         <div className="space-y-1">
-                          <p className="font-bold text-white">Origin: {origin}</p>
-                          <p className="font-bold text-teal-400">Destination: {selectedDestination.name}</p>
+                          <p className="font-bold text-slate-900">Origin: {origin}</p>
+                          <p className="font-bold text-[#0F766E]">Destination: {selectedDestination.name}</p>
                         </div>
-                        <div className="text-right text-[#94A3B8]">
-                          <p className="font-bold text-white">🚗 Total Miles: {miles} mi</p>
+                        <div className="text-right text-slate-500">
+                          <p className="font-bold text-slate-900">🚗 Total Miles: {miles} mi</p>
                           <p className="mt-0.5">Approx Drive: {selectedDestination.drive || "1.5 hrs"}</p>
                         </div>
                       </div>
@@ -1070,9 +1069,9 @@ export default function TripSpacePage() {
             </div>
 
             {/* GROUP COORDINATION TOOLS PANEL */}
-            <div className="rounded-2xl border border-[#1E293B] bg-[#1E293B]/70 p-6 shadow-xl">
-              <h3 className="text-base font-bold text-[#CCFBF1] flex items-center gap-2 mb-6">
-                <Users className="h-5 w-5 text-teal-400" />
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="text-base font-bold text-[#0F766E] flex items-center gap-2 mb-6">
+                <Users className="h-5 w-5 text-teal-600" />
                 Group Coordination Panel
               </h3>
               
@@ -1080,21 +1079,21 @@ export default function TripSpacePage() {
                 {/* Polls */}
                 <Link
                   href="/trips/new?tab=polls"
-                  className="flex flex-col items-center justify-center text-center rounded-xl border border-[#334155] bg-[#0F172A] hover:border-[#0F766E] hover:bg-[#0F766E]/10 p-5 group transition"
+                  className="flex flex-col items-center justify-center text-center rounded-xl border border-slate-200 bg-white hover:border-[#0F766E] hover:bg-slate-50 p-5 group transition shadow-sm"
                 >
-                  <Vote className="h-6 w-6 text-teal-400 group-hover:scale-110 transition-transform mb-3" />
-                  <span className="text-xs font-bold text-white">Create Poll</span>
-                  <span className="text-[9px] text-[#94A3B8] mt-1">Vote on details</span>
+                  <Vote className="h-6 w-6 text-teal-600 group-hover:scale-110 transition-transform mb-3" />
+                  <span className="text-xs font-bold text-slate-800">Create Poll</span>
+                  <span className="text-[9px] text-slate-500 mt-1">Vote on details</span>
                 </Link>
 
                 {/* Split Costs */}
                 <Link
                   href="/split-activities"
-                  className="flex flex-col items-center justify-center text-center rounded-xl border border-[#334155] bg-[#0F172A] hover:border-[#0F766E] hover:bg-[#0F766E]/10 p-5 group transition"
+                  className="flex flex-col items-center justify-center text-center rounded-xl border border-slate-200 bg-white hover:border-[#0F766E] hover:bg-slate-50 p-5 group transition shadow-sm"
                 >
-                  <DollarSign className="h-6 w-6 text-emerald-400 group-hover:scale-110 transition-transform mb-3" />
-                  <span className="text-xs font-bold text-white">Split Costs</span>
-                  <span className="text-[9px] text-[#94A3B8] mt-1">Track shared costs</span>
+                  <DollarSign className="h-6 w-6 text-emerald-600 group-hover:scale-110 transition-transform mb-3" />
+                  <span className="text-xs font-bold text-slate-800">Split Costs</span>
+                  <span className="text-[9px] text-slate-500 mt-1">Track shared costs</span>
                 </Link>
 
                 {/* Share Trip */}
@@ -1104,21 +1103,21 @@ export default function TripSpacePage() {
                     navigator.clipboard.writeText(window.location.href);
                     alert("Trip workspace invite link copied to clipboard!");
                   }}
-                  className="flex flex-col items-center justify-center text-center rounded-xl border border-[#334155] bg-[#0F172A] hover:border-[#0F766E] hover:bg-[#0F766E]/10 p-5 group transition w-full"
+                  className="flex flex-col items-center justify-center text-center rounded-xl border border-slate-200 bg-white hover:border-[#0F766E] hover:bg-slate-50 p-5 group transition w-full shadow-sm"
                 >
-                  <Share2 className="h-6 w-6 text-sky-400 group-hover:scale-110 transition-transform mb-3" />
-                  <span className="text-xs font-bold text-white">Invite Friends</span>
-                  <span className="text-[9px] text-[#94A3B8] mt-1">Copy invite link</span>
+                  <Share2 className="h-6 w-6 text-sky-500 group-hover:scale-110 transition-transform mb-3" />
+                  <span className="text-xs font-bold text-slate-800">Invite Friends</span>
+                  <span className="text-[9px] text-slate-500 mt-1">Copy invite link</span>
                 </button>
 
-                {/* Live Map */}
+                {/* LIVE Mode */}
                 <Link
                   href="/live"
-                  className="flex flex-col items-center justify-center text-center rounded-xl border border-[#334155] bg-[#0F172A] hover:border-[#0F766E] hover:bg-[#0F766E]/10 p-5 group transition"
+                  className="flex flex-col items-center justify-center text-center rounded-xl border border-slate-200 bg-white hover:border-[#0F766E] hover:bg-slate-50 p-5 group transition shadow-sm"
                 >
-                  <MapPin className="h-6 w-6 text-pink-400 group-hover:scale-110 transition-transform mb-3" />
-                  <span className="text-xs font-bold text-white">Live Map</span>
-                  <span className="text-[9px] text-[#94A3B8] mt-1">Coordinate group</span>
+                  <MapPin className="h-6 w-6 text-pink-500 group-hover:scale-110 transition-transform mb-3" />
+                  <span className="text-xs font-bold text-slate-800">LIVE Mode</span>
+                  <span className="text-[9px] text-slate-500 mt-1">Live trip tracking</span>
                 </Link>
               </div>
             </div>

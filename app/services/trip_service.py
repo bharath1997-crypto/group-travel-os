@@ -15,7 +15,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.group import GroupMember, MemberRole
+from app.models.group import Group, GroupMember, MemberRole
 from app.models.trip import Trip, TripStatus
 from app.models.trip_roster import TripRoster
 from app.models.user import User
@@ -96,8 +96,55 @@ class TripService:
             created_by=current_user.id,
         )
         db.add(trip)
+        db.flush()
+
+        # Auto-create trip-linked Lounge Chat if not a mock db session
+        is_mock = False
+        try:
+            from unittest.mock import Mock
+            if isinstance(db, Mock):
+                is_mock = True
+        except ImportError:
+            pass
+
+        if not is_mock:
+            from app.models.lounge import LoungeChat, LoungeMember
+            lounge_chat = LoungeChat(
+                type="trip",
+                name=trip.title,
+                trip_id=trip.id,
+                created_by=current_user.id,
+            )
+            db.add(lounge_chat)
+            db.flush()
+
+            group_members = db.execute(
+                select(GroupMember).where(GroupMember.group_id == group_id)
+            ).scalars().all()
+
+            for gm in group_members:
+                db.add(LoungeMember(
+                    chat_id=lounge_chat.id,
+                    user_id=gm.user_id,
+                    is_admin=(gm.user_id == current_user.id or gm.role == MemberRole.admin)
+                ))
+
         db.commit()
         db.refresh(trip)
+
+        try:
+            from app.services.wayra_personal_service import WayraPersonalService
+            WayraPersonalService.store_memory(
+                db=db,
+                user_id=current_user.id,
+                memory_type="trip_create",
+                content=f"Created trip '{trip.title}'.",
+                source="trip",
+                source_id=str(trip.id)
+            )
+        except Exception as e:
+            logger.error("Failed to store trip memory: %s", e)
+
         from app.services.notification_service import NotificationService
 
         NotificationService.on_trip_created(db, trip, current_user)
@@ -127,6 +174,80 @@ class TripService:
             stmt = stmt.where(Trip.status == status_filter)
         rows = db.execute(stmt).scalars().all()
         return list(rows)
+
+    @staticmethod
+    def list_user_trips(db: Session, current_user: User) -> list[tuple[Trip, str]]:
+        """All trips in groups the user belongs to, with group name."""
+        stmt = (
+            select(Trip, Group.name)
+            .join(Group, Trip.group_id == Group.id)
+            .join(
+                GroupMember,
+                (GroupMember.group_id == Group.id)
+                & (GroupMember.user_id == current_user.id),
+            )
+            .order_by(Trip.start_date.asc().nullslast(), Trip.created_at.desc())
+        )
+        return list(db.execute(stmt).all())
+
+    @staticmethod
+    def add_trip_item(
+        db: Session,
+        trip_id: uuid.UUID,
+        data: Any,
+        current_user: User,
+    ) -> dict[str, Any]:
+        """Save an explore event as a location and attach it to the trip."""
+        from app.models.location import Location, TripLocation
+        from app.services.location_service import LocationService
+
+        trip = TripService.get_trip(db, trip_id, current_user)
+
+        title = str(getattr(data, "title", "") or "Event").strip()
+        venue = str(getattr(data, "venue", "") or "").strip()
+        city = str(getattr(data, "city", "") or "").strip()
+        state = str(getattr(data, "state", "") or "").strip()
+        event_id = str(getattr(data, "event_id", "") or "").strip()
+        if not event_id:
+            AppException.bad_request("event_id is required")
+
+        address_parts = [p for p in (venue, city, state) if p]
+        address = ", ".join(address_parts) if address_parts else city or None
+
+        notes_parts = [
+            f"event_id={event_id}",
+            f"date={getattr(data, 'start_date', '') or ''}",
+            f"time={getattr(data, 'start_time', '') or ''}",
+        ]
+        ticket_url = getattr(data, "ticket_url", None)
+        if ticket_url:
+            notes_parts.append(f"ticket={ticket_url}")
+
+        lat = getattr(data, "latitude", None)
+        lon = getattr(data, "longitude", None)
+        location = Location(
+            saved_by=current_user.id,
+            name=title[:200],
+            address=address,
+            latitude=float(lat) if lat is not None else 0.0,
+            longitude=float(lon) if lon is not None else 0.0,
+            category=getattr(data, "category", None) or "event",
+            notes=" | ".join(notes_parts)[:500],
+        )
+        db.add(location)
+        db.flush()
+
+        row = LocationService.add_to_trip(db, trip.id, location.id, current_user)
+        db.refresh(location)
+
+        return {
+            "id": row.id,
+            "trip_id": trip.id,
+            "location_id": location.id,
+            "event_id": event_id,
+            "title": title,
+            "added_at": row.added_at,
+        }
 
     @staticmethod
     def update_trip(

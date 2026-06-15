@@ -828,8 +828,12 @@ out body 20;
     if (searchDebounce.current) clearTimeout(searchDebounce.current);
     searchDebounce.current = setTimeout(async () => {
       try {
+        const bounds = mapRef.current?.getBounds();
+        const viewboxParam = bounds
+          ? `&viewbox=${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()},${bounds.getSouth()}&bounded=0`
+          : "";
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=5&addressdetails=1`,
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=5&addressdetails=1${viewboxParam}`,
           { headers: { "User-Agent": "Rovvy/1.0" } },
         );
         if (!res.ok) return;

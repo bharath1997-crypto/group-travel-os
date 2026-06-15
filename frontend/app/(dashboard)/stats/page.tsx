@@ -56,7 +56,7 @@ const Skeleton = ({
       width,
       height,
       background:
-        "linear-gradient(90deg, #1e2538 25%, #2a3248 50%, #1e2538 75%)",
+        "linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)",
       backgroundSize: "200% 100%",
       borderRadius: 8,
       animation: "shimmer 1.5s infinite",
@@ -127,9 +127,15 @@ export default function StatsPage() {
   }, [load]);
 
   return (
-    <div className="p-6 md:p-8">
-      <h1 className="text-2xl font-semibold text-[#0F3460]">My Stats</h1>
-      <p className="mt-1 text-sm text-[#6C757D]">Your activity overview</p>
+    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center border border-teal-200/60">
+          <span className="text-xl">📊</span>
+        </div>
+        <span className="text-xs font-bold uppercase tracking-widest text-teal-600">Rovvy Analytics</span>
+      </div>
+      <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">My Stats</h1>
+      <p className="mt-1 text-sm text-slate-500">Your activity overview</p>
 
       {error && !loading ? (
         <div className="mt-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -137,7 +143,7 @@ export default function StatsPage() {
           <button
             type="button"
             onClick={() => void load()}
-            className="mt-2 font-semibold text-[#0F3460] underline"
+            className="mt-2 font-semibold text-teal-600 hover:text-teal-700 underline"
           >
             Retry
           </button>
@@ -153,7 +159,7 @@ export default function StatsPage() {
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className="rounded-xl border border-[#E9ECEF] bg-white px-5 py-6 shadow-sm"
+                className="rounded-xl border border-slate-200 bg-white px-5 py-6 shadow-sm"
               >
                 <Skeleton height={36} width="4rem" />
                 <div className="mt-3">
@@ -175,7 +181,7 @@ export default function StatsPage() {
         <>
           {plan ? (
             <div className="mt-6 flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">
+              <span className="text-sm font-medium text-slate-500">
                 Current plan
               </span>
               <span
@@ -183,7 +189,7 @@ export default function StatsPage() {
               >
                 {plan.plan.replace(/_/g, " ")}
               </span>
-              <span className="text-xs text-gray-500">({plan.status})</span>
+              <span className="text-xs text-slate-400">({plan.status})</span>
             </div>
           ) : null}
 
@@ -191,12 +197,12 @@ export default function StatsPage() {
             {statCards.map(({ key, label }) => (
               <div
                 key={key}
-                className="rounded-xl border border-[#E9ECEF] bg-white px-5 py-6 shadow-sm"
+                className="rounded-xl border border-slate-200 bg-white px-5 py-6 shadow-sm transition hover:shadow-md"
               >
-                <p className="text-3xl font-semibold tabular-nums text-[#0F3460]">
+                <p className="text-3xl font-semibold tabular-nums text-teal-600">
                   {stats?.[key] ?? 0}
                 </p>
-                <p className="mt-2 text-sm font-medium text-gray-600">
+                <p className="mt-2 text-sm font-medium text-slate-600">
                   {label}
                 </p>
               </div>
@@ -204,7 +210,7 @@ export default function StatsPage() {
           </div>
 
           <div className="mt-10">
-            <h2 className="text-sm font-medium text-gray-700">
+            <h2 className="text-sm font-medium text-slate-700">
               Countries from trips
             </h2>
             {stats?.countries_from_trips &&
@@ -213,14 +219,14 @@ export default function StatsPage() {
                 {stats.countries_from_trips.map((c) => (
                   <span
                     key={c}
-                    className="rounded-full bg-white px-3 py-1 text-sm font-medium text-gray-800 ring-1 ring-gray-200"
+                    className="rounded-full bg-white px-3 py-1 text-sm font-medium text-slate-800 ring-1 ring-slate-250 shadow-sm border border-slate-200/80"
                   >
                     {c}
                   </span>
                 ))}
               </div>
             ) : (
-              <p className="mt-3 text-sm text-gray-600">
+              <p className="mt-3 text-sm text-slate-500">
                 No countries yet — start planning!
               </p>
             )}

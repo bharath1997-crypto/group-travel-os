@@ -227,156 +227,164 @@ export default function BuddyTripsPage() {
   const rows = tab === "browse" ? filteredBrowse : mineRows;
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] text-[#0F3460]">
-      <div className="sticky top-0 z-20 -mx-3 border-b border-slate-200/80 bg-[#0F3460] px-3 py-4 text-white shadow-md md:-mx-5 md:px-5">
-        <div className="mx-auto max-w-6xl">
-          <h1 className="text-lg font-bold tracking-tight md:text-xl">
-            Buddy trips
-          </h1>
-          <p className="mt-1 text-xs leading-relaxed text-teal-100/95 md:text-sm">
-            Meet travelers headed to the same destination — request to join curated groups.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
+    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
+      {/* Search Header */}
+      <div className="max-w-6xl mx-auto mb-6">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center border border-teal-200/60">
+            <span className="text-xl">🤝</span>
+          </div>
+          <span className="text-xs font-bold uppercase tracking-widest text-teal-600">Rovvy Buddies</span>
+        </div>
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+          Buddy trips
+        </h1>
+        <p className="mt-2 text-sm text-slate-500 leading-relaxed max-w-2xl">
+          Meet travelers headed to the same destination — request to join curated groups.
+        </p>
+
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setTab("browse");
+              void loadBrowse();
+            }}
+            className={`rounded-full px-4 py-2 text-xs font-bold md:text-sm transition ${
+              tab === "browse"
+                ? "bg-teal-600 text-white shadow-sm"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+            }`}
+          >
+            Browse trips
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setTab("mine");
+              void loadMine();
+            }}
+            className={`rounded-full px-4 py-2 text-xs font-bold md:text-sm transition ${
+              tab === "mine"
+                ? "bg-teal-600 text-white shadow-sm"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+            }`}
+          >
+            My trips
+          </button>
+          <button
+            type="button"
+            onClick={() => void refreshTab()}
+            className="ml-auto rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 md:text-sm transition"
+          >
+            Refresh
+          </button>
+        </div>
+
+        {tab === "browse" ? (
+          <div className="mt-4 flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <label className="flex min-w-[200px] flex-1 flex-col gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                Destination contains
+              </span>
+              <input
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+                placeholder="Tokyo, Lisbon…"
+                className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+              />
+            </label>
             <button
               type="button"
-              onClick={() => {
-                setTab("browse");
-                void loadBrowse();
-              }}
-              className={`rounded-full px-4 py-2 text-xs font-bold md:text-sm ${
-                tab === "browse"
-                  ? "bg-teal-400 text-[#0F3460]"
-                  : "bg-white/10 text-white hover:bg-white/20"
-              }`}
+              onClick={() => void loadBrowse()}
+              className="rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/10 hover:bg-teal-700 transition"
             >
-              Browse trips
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setTab("mine");
-                void loadMine();
-              }}
-              className={`rounded-full px-4 py-2 text-xs font-bold md:text-sm ${
-                tab === "mine"
-                  ? "bg-teal-400 text-[#0F3460]"
-                  : "bg-white/10 text-white hover:bg-white/20"
-              }`}
-            >
-              My trips
-            </button>
-            <button
-              type="button"
-              onClick={() => void refreshTab()}
-              className="ml-auto rounded-full bg-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white/20 md:text-sm"
-            >
-              Refresh
+              Search
             </button>
           </div>
-
-          {tab === "browse" ? (
-            <div className="mt-4 flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end">
-              <label className="flex min-w-[200px] flex-1 flex-col gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-100">
-                  Destination contains
-                </span>
-                <input
-                  value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                  placeholder="Tokyo, Lisbon…"
-                  className="rounded-lg border border-white/30 bg-white px-3 py-2 text-sm text-[#0F3460] shadow-sm placeholder:text-slate-400 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300/60"
-                />
-              </label>
+        ) : (
+          <div className="mt-4 grid gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:grid-cols-2 lg:grid-cols-12 lg:items-end">
+            <label className="lg:col-span-3 flex flex-col gap-1.5">
+              <span className="text-[11px] font-bold uppercase text-slate-500">
+                Destination
+              </span>
+              <input
+                value={createDest}
+                onChange={(e) => setCreateDest(e.target.value)}
+                placeholder="Where to?"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+              />
+            </label>
+            <label className="lg:col-span-2 flex flex-col gap-1.5">
+              <span className="text-[11px] font-bold uppercase text-slate-500">
+                From
+              </span>
+              <input
+                type="date"
+                value={createFrom}
+                onChange={(e) => setCreateFrom(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+              />
+            </label>
+            <label className="lg:col-span-2 flex flex-col gap-1.5">
+              <span className="text-[11px] font-bold uppercase text-slate-500">
+                To
+              </span>
+              <input
+                type="date"
+                value={createTo}
+                onChange={(e) => setCreateTo(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+              />
+            </label>
+            <label className="lg:col-span-1 flex flex-col gap-1.5">
+              <span className="text-[11px] font-bold uppercase text-slate-500">
+                Max size
+              </span>
+              <input
+                type="number"
+                min={2}
+                max={500}
+                value={createMax}
+                onChange={(e) => setCreateMax(Number(e.target.value))}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+              />
+            </label>
+            <label className="lg:col-span-4 flex flex-col gap-1.5">
+              <span className="text-[11px] font-bold uppercase text-slate-500">
+                Vibes (comma-separated)
+              </span>
+              <input
+                value={createTags}
+                onChange={(e) => setCreateTags(e.target.value)}
+                placeholder="Adventure, Chill"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+              />
+            </label>
+            <label className="lg:col-span-12 flex flex-col gap-1.5">
+              <span className="text-[11px] font-bold uppercase text-slate-500">
+                Description
+              </span>
+              <textarea
+                value={createDesc}
+                onChange={(e) => setCreateDesc(e.target.value)}
+                rows={2}
+                placeholder="Tell buddies about your plans..."
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+              />
+            </label>
+            <div className="lg:col-span-12">
               <button
                 type="button"
-                onClick={() => void loadBrowse()}
-                className="rounded-xl bg-teal-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-teal-900/30 hover:bg-teal-400"
+                disabled={createBusy}
+                onClick={() => void submitCreate()}
+                className="rounded-xl bg-teal-600 hover:bg-teal-700 px-5 py-2.5 text-sm font-bold text-white shadow transition disabled:opacity-50"
               >
-                Search
+                {createBusy ? "Creating…" : "Create buddy trip"}
               </button>
             </div>
-          ) : (
-            <div className="mt-4 grid gap-4 rounded-xl border border-white/15 bg-white/5 p-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
-              <label className="lg:col-span-3">
-                <span className="text-[11px] font-semibold uppercase text-teal-100">
-                  Destination
-                </span>
-                <input
-                  value={createDest}
-                  onChange={(e) => setCreateDest(e.target.value)}
-                  className="mt-2 w-full rounded-lg border border-white/30 bg-white px-3 py-2 text-sm text-[#0F3460]"
-                />
-              </label>
-              <label className="lg:col-span-2">
-                <span className="text-[11px] font-semibold uppercase text-teal-100">
-                  From
-                </span>
-                <input
-                  type="date"
-                  value={createFrom}
-                  onChange={(e) => setCreateFrom(e.target.value)}
-                  className="mt-2 w-full rounded-lg border border-white/30 bg-white px-3 py-2 text-sm text-[#0F3460]"
-                />
-              </label>
-              <label className="lg:col-span-2">
-                <span className="text-[11px] font-semibold uppercase text-teal-100">
-                  To
-                </span>
-                <input
-                  type="date"
-                  value={createTo}
-                  onChange={(e) => setCreateTo(e.target.value)}
-                  className="mt-2 w-full rounded-lg border border-white/30 bg-white px-3 py-2 text-sm text-[#0F3460]"
-                />
-              </label>
-              <label className="lg:col-span-1">
-                <span className="text-[11px] font-semibold uppercase text-teal-100">
-                  Max size
-                </span>
-                <input
-                  type="number"
-                  min={2}
-                  max={500}
-                  value={createMax}
-                  onChange={(e) => setCreateMax(Number(e.target.value))}
-                  className="mt-2 w-full rounded-lg border border-white/30 bg-white px-3 py-2 text-sm text-[#0F3460]"
-                />
-              </label>
-              <label className="lg:col-span-4">
-                <span className="text-[11px] font-semibold uppercase text-teal-100">
-                  Vibes (comma-separated)
-                </span>
-                <input
-                  value={createTags}
-                  onChange={(e) => setCreateTags(e.target.value)}
-                  placeholder="Adventure, Chill"
-                  className="mt-2 w-full rounded-lg border border-white/30 bg-white px-3 py-2 text-sm text-[#0F3460]"
-                />
-              </label>
-              <label className="lg:col-span-12">
-                <span className="text-[11px] font-semibold uppercase text-teal-100">
-                  Description
-                </span>
-                <textarea
-                  value={createDesc}
-                  onChange={(e) => setCreateDesc(e.target.value)}
-                  rows={2}
-                  className="mt-2 w-full rounded-lg border border-white/30 bg-white px-3 py-2 text-sm text-[#0F3460]"
-                />
-              </label>
-              <div className="lg:col-span-12">
-                <button
-                  type="button"
-                  disabled={createBusy}
-                  onClick={() => void submitCreate()}
-                  className="rounded-xl bg-teal-500 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-teal-400 disabled:opacity-50"
-                >
-                  {createBusy ? "Creating…" : "Create buddy trip"}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="mx-auto mt-4 max-w-6xl px-0">
@@ -395,9 +403,9 @@ export default function BuddyTripsPage() {
                     [v]: !p[v],
                   }))
                 }
-                className={`rounded-full px-3 py-1 text-xs font-bold ${
+                className={`rounded-full px-3 py-1 text-xs font-bold transition ${
                   vibePick[v]
-                    ? "bg-[#0F3460] text-white"
+                    ? "bg-teal-600 text-white shadow-sm"
                     : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
               >
@@ -452,7 +460,7 @@ export default function BuddyTripsPage() {
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-bold text-[#0F3460]">
+                          <h2 className="text-xl font-bold text-slate-900">
                             {t.destination}
                           </h2>
                           {mineOrg ? (
@@ -461,12 +469,12 @@ export default function BuddyTripsPage() {
                             </span>
                           ) : null}
                         </div>
-                        <p className="mt-1 text-sm font-semibold text-slate-700">
+                        <p className="mt-1 text-sm font-semibold text-slate-705">
                           {t.date_from} → {t.date_to}
                         </p>
-                        <p className="text-sm text-slate-600">
+                        <p className="text-sm text-slate-605">
                           Organizer{" "}
-                          <span className="font-semibold text-[#0F3460]">
+                          <span className="font-semibold text-slate-900">
                             {t.organizer?.full_name ?? "Traveler"}
                           </span>
                         </p>
@@ -477,7 +485,7 @@ export default function BuddyTripsPage() {
                           {t.vibe_tags.map((tag) => (
                             <span
                               key={tag}
-                              className="rounded-full bg-gradient-to-r from-teal-50 to-indigo-50 px-3 py-1 text-[11px] font-bold text-[#0F3460] ring-1 ring-teal-100"
+                              className="rounded-full bg-gradient-to-r from-teal-50 to-indigo-50 px-3 py-1 text-[11px] font-bold text-teal-700 ring-1 ring-teal-100/50"
                             >
                               {tag}
                             </span>
@@ -499,7 +507,7 @@ export default function BuddyTripsPage() {
                           <button
                             type="button"
                             onClick={() => setModalTrip(t)}
-                            className="rounded-xl bg-teal-500 px-4 py-2 text-sm font-bold text-white shadow hover:bg-teal-400"
+                            className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-bold text-white shadow hover:bg-teal-700 transition"
                           >
                             Request to join
                           </button>
@@ -517,7 +525,7 @@ export default function BuddyTripsPage() {
                               void loadRequests(t.id);
                             }
                           }}
-                          className="flex items-center text-sm font-semibold text-[#0F3460] hover:text-[#0c2d52]"
+                          className="flex items-center text-sm font-semibold text-teal-600 hover:text-teal-750 transition"
                         >
                           <span>Requests</span>
                           <span className="ml-1">{expandedRequests[t.id] ? "▲" : "▼"}</span>
@@ -535,7 +543,7 @@ export default function BuddyTripsPage() {
                                   <div className="flex items-center gap-2">
                                     <img src={dicebear(r.user_id)} alt="" className="h-8 w-8 rounded-full border border-slate-200 bg-white" />
                                     <div>
-                                      <span className="font-semibold text-[#0F3460]">{r.user?.full_name ?? "Traveler"}</span>
+                                      <span className="font-semibold text-slate-900">{r.user?.full_name ?? "Traveler"}</span>
                                       {r.message && <p className="mt-0.5 text-xs text-slate-600">&ldquo;{r.message}&rdquo;</p>}
                                       <p className="text-[10px] text-slate-400">{r.created_at ? new Date(r.created_at).toLocaleDateString() : ""}</p>
                                     </div>
@@ -544,14 +552,14 @@ export default function BuddyTripsPage() {
                                     <button
                                       type="button"
                                       onClick={() => void handleRequestAction(t.id, r.id, true)}
-                                      className="rounded-lg bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-700 hover:bg-teal-100"
+                                      className="rounded-lg bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-700 hover:bg-teal-100 transition"
                                     >
                                       ✅ Approve
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => void handleRequestAction(t.id, r.id, false)}
-                                      className="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100"
+                                      className="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition"
                                     >
                                       ❌ Decline
                                     </button>
@@ -577,7 +585,7 @@ export default function BuddyTripsPage() {
             aria-modal="true"
             className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl"
           >
-            <h3 className="text-lg font-bold text-[#0F3460]">
+            <h3 className="text-lg font-bold text-slate-900">
               Join {modalTrip.destination}
             </h3>
             <p className="mt-2 text-sm text-slate-600">
@@ -587,13 +595,13 @@ export default function BuddyTripsPage() {
               value={joinMsg}
               onChange={(e) => setJoinMsg(e.target.value)}
               rows={4}
-              className="mt-3 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-[#0F3460]"
+              className="mt-3 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:outline-none transition"
               placeholder="Hey! I'd love to join..."
             />
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
-                className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
                 onClick={() => {
                   setModalTrip(null);
                   setJoinMsg("");
@@ -605,7 +613,7 @@ export default function BuddyTripsPage() {
                 type="button"
                 disabled={joinBusy}
                 onClick={() => void submitJoin()}
-                className="rounded-xl bg-[#0F3460] px-5 py-2 text-sm font-bold text-white hover:bg-[#0c2d52] disabled:opacity-50"
+                className="rounded-xl bg-teal-600 px-5 py-2 text-sm font-bold text-white hover:bg-teal-700 transition disabled:opacity-50"
               >
                 {joinBusy ? "Sending…" : "Submit request"}
               </button>

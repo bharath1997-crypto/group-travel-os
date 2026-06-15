@@ -6,17 +6,23 @@ Instagram/Apify runs in a production-only background thread and merges into cach
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
+import math
 import os
 import threading
 import time
 from datetime import timedelta
 from typing import Any
+from urllib.parse import urlencode
 import concurrent.futures
 
 import httpx
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from app.models.explore_content import ExploreContent
 
 from app.core.api_limits import API_TIMEOUT_SECONDS
 from app.services.explore_city_extended_service import _aware, _get_row, _now, _upsert_list
@@ -40,23 +46,47 @@ YELP_EVENTS_LIMIT = 50
 EVENTBRITE_EVENTS_LIMIT = 50
 BANDSINTOWN_EVENTS_PER_PAGE = 50
 APIFY_INSTAGRAM_HASHTAG_ACTOR = "apify~instagram-hashtag-scraper"
+EXPLORE_RADIUS_MILES = 200
+GEO_SEARCH_RADII = (200, 300, 500)
+
+_MAJOR_VENUE_KEYWORDS = (
+    "stadium",
+    "arena",
+    "amphitheatre",
+    "amphitheater",
+    "coliseum",
+    "garden",
+    "dome",
+    "field",
+    "center",
+    "centre",
+    "bowl",
+)
+_MAJOR_METRO_CITIES = frozenset({
+    "new york",
+    "los angeles",
+    "chicago",
+    "houston",
+    "phoenix",
+    "philadelphia",
+    "san antonio",
+    "san diego",
+    "dallas",
+    "austin",
+    "miami",
+    "atlanta",
+    "boston",
+    "seattle",
+    "denver",
+    "las vegas",
+    "nashville",
+    "san francisco",
+})
 
 _cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 
 _background_instagram_lock = threading.Lock()
 _background_instagram_cities: set[str] = set()
-
-# Geographical coordinate mappings for Skiddle geosearch
-CITY_COORD_MAP = {
-    "london": (51.5074, -0.1278, "GB"),
-    "manchester": (53.4808, -2.2426, "GB"),
-    "edinburgh": (55.9533, -3.1883, "GB"),
-    "chicago": (41.8781, -87.6298, "US"),
-    "new york": (40.7128, -74.0060, "US"),
-    "tokyo": (35.6762, 139.6503, "JP"),
-    "paris": (48.8566, 2.3522, "FR"),
-    "sydney": (-33.8688, 151.2093, "AU"),
-}
 
 
 def _cache_key(city: str) -> str:
@@ -141,11 +171,110 @@ def get_events(city: str) -> list[dict[str, Any]]:
         return []
 
 
+def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    r = 3958.8
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    d_lat = math.radians(lat2 - lat1)
+    d_lon = math.radians(lon2 - lon1)
+    a = math.sin(d_lat / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(d_lon / 2) ** 2
+    return r * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def _reverse_geocode_place(lat: float, lon: float) -> str:
+    """Resolve a human place label from GPS coordinates (global)."""
+    try:
+        with httpx.Client(timeout=API_TIMEOUT_SECONDS, headers=BROWSER_HEADERS) as client:
+            resp = client.get(
+                "https://nominatim.openstreetmap.org/reverse",
+                params={
+                    "lat": lat,
+                    "lon": lon,
+                    "format": "json",
+                    "addressdetails": 1,
+                },
+                headers={"User-Agent": "RovvyExplore/1.0 (group-travel-os)"},
+            )
+        if resp.status_code != 200:
+            return ""
+        data = resp.json()
+        if not isinstance(data, dict):
+            return ""
+        address = data.get("address")
+        if not isinstance(address, dict):
+            return ""
+        for key in ("city", "town", "village", "hamlet", "municipality", "county"):
+            value = address.get(key)
+            if value:
+                return str(value).strip()
+    except Exception as exc:
+        logger.warning("Reverse geocode failed for (%s, %s): %s", lat, lon, exc)
+    return ""
+
+
+def _resolve_geo_display_city(
+    city: str,
+    lat: float,
+    lon: float,
+    events: list[dict[str, Any]],
+) -> str:
+    named = (city or "").strip().split(",")[0].strip()
+    if named:
+        return named
+    geocoded = _reverse_geocode_place(lat, lon)
+    if geocoded:
+        return geocoded
+    for ev in events:
+        event_city = str(ev.get("city") or "").strip().split(",")[0].strip()
+        if event_city:
+            return event_city
+    return "your area"
+
+
+def geo_section_titles(display_city: str, radius_used: int) -> dict[str, str]:
+    """Section titles for GPS-based discovery — no city name in the trending title."""
+    place = (display_city or "your area").split(",")[0].strip() or "your area"
+    return {
+        "trending": "Near You",
+        "trending_subtitle": f"Events within {radius_used} miles of {place}",
+        "weekend": "Happening This Weekend",
+        "popular": "Popular Nearby",
+        "national": "National Picks",
+    }
+
+
+def _annotate_event_distances(
+    events: list[dict[str, Any]],
+    user_lat: float,
+    user_lon: float,
+) -> list[dict[str, Any]]:
+    for ev in events:
+        v_lat = ev.get("venue_lat")
+        v_lon = ev.get("venue_lon")
+        if v_lat is not None and v_lon is not None:
+            dist = _haversine_miles(user_lat, user_lon, float(v_lat), float(v_lon))
+            ev["distance_miles"] = round(dist, 1)
+    return events
+
+
+def _log_ticketmaster_url(params: dict[str, Any], *, context: str = "") -> None:
+    """Log the exact Ticketmaster request URL (apikey redacted)."""
+    safe_params = dict(params)
+    if "apikey" in safe_params:
+        safe_params["apikey"] = "XXX"
+    query = urlencode(safe_params)
+    url = f"{TICKETMASTER_URL}?{query}"
+    prefix = f"Ticketmaster [{context}] " if context else "Ticketmaster "
+    logger.info("%srequest URL: %s", prefix, url)
+
+
 def _fetch_ticketmaster_events(
     city: str,
     category: str = "all",
     date_from: str | None = None,
     date_to: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    radius_miles: int = EXPLORE_RADIUS_MILES,
 ) -> list[dict[str, Any]]:
     api_key = (settings.ticketmaster_api_key or "").strip()
     if not api_key:
@@ -170,11 +299,24 @@ def _fetch_ticketmaster_events(
 
     params: dict[str, Any] = {
         "apikey": api_key,
-        "city": city,
         "size": 100,
         "sort": "date,asc",
         "locale": "*",
     }
+
+    if lat is not None and lon is not None:
+        # Geo search only — never mix city name with latlong (Ticketmaster rejects/conflicts).
+        params["latlong"] = f"{lat},{lon}"
+        params["radius"] = radius_miles
+        params["unit"] = "miles"
+        params.pop("city", None)
+        params.pop("dmaId", None)
+        params.pop("geoPoint", None)
+    else:
+        params["city"] = city
+        params.pop("latlong", None)
+        params.pop("radius", None)
+        params.pop("unit", None)
 
     if classification_name:
         params["classificationName"] = classification_name
@@ -191,8 +333,18 @@ def _fetch_ticketmaster_events(
         with httpx.Client(timeout=API_TIMEOUT_SECONDS, headers=BROWSER_HEADERS) as client:
             for page_num in range(2):
                 params["page"] = page_num
+                if page_num == 0 and lat is not None and lon is not None:
+                    _log_ticketmaster_url(params, context=f"geo-r{radius_miles}")
                 resp = client.get(TICKETMASTER_URL, params=params)
                 if resp.status_code != 200:
+                    if page_num == 0:
+                        logger.warning(
+                            "Ticketmaster HTTP %s for page=%s city=%s latlong=%s",
+                            resp.status_code,
+                            page_num,
+                            params.get("city"),
+                            params.get("latlong"),
+                        )
                     continue
 
                 data = resp.json()
@@ -225,12 +377,13 @@ def _fetch_ticketmaster_events(
                         if best:
                             img_url = best[1]
 
-                    category_val = "All"
+                    raw_segment = ""
                     classifications = raw.get("classifications", [])
                     if classifications and isinstance(classifications, list) and isinstance(classifications[0], dict):
                         segment = classifications[0].get("segment", {})
                         if isinstance(segment, dict) and segment.get("name"):
-                            category_val = str(segment.get("name"))
+                            raw_segment = str(segment.get("name"))
+                    category_val = _normalize_event_category(raw_segment, name)
 
                     date_str = ""
                     time_str = "19:00"
@@ -246,6 +399,8 @@ def _fetch_ticketmaster_events(
                     venue_name = "Various Venues"
                     country_code = "US"
                     city_name = city
+                    venue_lat: float | None = None
+                    venue_lon: float | None = None
 
                     ven_emb = raw.get("_embedded", {})
                     if isinstance(ven_emb, dict):
@@ -257,6 +412,15 @@ def _fetch_ticketmaster_events(
                                 country_code = str(v0.get("country").get("countryCode") or "US")
                             if v0.get("city") and isinstance(v0.get("city"), dict):
                                 city_name = str(v0.get("city").get("name") or city)
+                            loc = v0.get("location")
+                            if isinstance(loc, dict):
+                                try:
+                                    if loc.get("latitude") is not None:
+                                        venue_lat = float(loc["latitude"])
+                                    if loc.get("longitude") is not None:
+                                        venue_lon = float(loc["longitude"])
+                                except (TypeError, ValueError):
+                                    pass
 
                     price_min = None
                     price_max = None
@@ -268,6 +432,16 @@ def _fetch_ticketmaster_events(
                             price_max = float(p0.get("max")) if p0.get("max") is not None else None
                         except (TypeError, ValueError):
                             pass
+
+                    status_val: str | None = None
+                    availability_val: str | None = None
+                    if isinstance(dates, dict):
+                        status_obj = dates.get("status")
+                        if isinstance(status_obj, dict):
+                            code = str(status_obj.get("code") or "").lower()
+                            if status_obj.get("soldOut") is True or code in ("offsale", "sold_out", "soldout"):
+                                status_val = "sold_out"
+                                availability_val = "sold_out"
 
                     events.append({
                         "id": eid,
@@ -282,6 +456,10 @@ def _fetch_ticketmaster_events(
                         "ticket_url": url,
                         "price_min": price_min,
                         "price_max": price_max,
+                        "status": status_val,
+                        "availability": availability_val,
+                        "venue_lat": venue_lat,
+                        "venue_lon": venue_lon,
                         "source": "ticketmaster",
                     })
         return events
@@ -770,19 +948,113 @@ def _fetch_apify_instagram_events(city: str, limit: int = 100) -> list[dict[str,
         return []
 
 
+def _is_sold_out(event: dict[str, Any]) -> bool:
+    status = str(event.get("status") or "").lower()
+    availability = str(event.get("availability") or "").lower()
+    return status == "sold_out" or availability == "sold_out"
+
+
+def _format_event_price(event: dict[str, Any]) -> str:
+    """Priority: Sold Out > Free > price range > See pricing."""
+    if _is_sold_out(event):
+        return "Sold Out"
+    price_min = event.get("price_min")
+    price_max = event.get("price_max")
+    if price_min == 0 and price_max == 0:
+        return "Free"
+    if price_min is not None and price_max is not None and price_max > price_min:
+        return f"${round(price_min)} – ${round(price_max)}"
+    if price_min is not None:
+        return f"From ${round(price_min)}"
+    return "See pricing"
+
+
+def _normalize_event_category(raw: str, name: str) -> str:
+    """Map Ticketmaster segments and weak labels to consumer-friendly tags."""
+    import re
+
+    name_l = (name or "").lower()
+    if re.search(r"\btour\b", name_l) and re.search(r"\b(stadium|arena)\b", name_l):
+        return "Experience"
+    if re.search(r"\bvs\.?\b", name_l):
+        return "Sports"
+    if "comedy" in name_l:
+        return "Comedy"
+    if any(kw in name_l for kw in ("ballet", "orchestra", "symphony", "theatre", "theater")):
+        return "Arts"
+
+    key = (raw or "").strip().lower()
+    weak = {"", "undefined", "miscellaneous", "misc", "all", "other", "general"}
+    segment_map = {
+        "music": "Music",
+        "sports": "Sports",
+        "arts & theatre": "Arts",
+        "arts": "Arts",
+        "theatre": "Arts",
+        "film": "Festival",
+        "family": "Family",
+        "food & drink": "Food",
+        "food": "Food",
+    }
+    if key not in weak:
+        return segment_map.get(key, raw.strip().title())
+
+    if any(x in name_l for x in (" vs ", " vs. ", "game", "sox", "cubs", "bulls", "bears", "twins", "mlb", "nba", "nfl")):
+        return "Sports"
+    if any(x in name_l for x in ("concert", " tour", "live ", "dj ", "festival")):
+        return "Music"
+    if any(x in name_l for x in ("theatre", "theater", "broadway", "play")):
+        return "Arts"
+    if any(x in name_l for x in ("food", "wine", "dinner", "brunch", "tasting")):
+        return "Food"
+    if any(x in name_l for x in ("cruise", "museum", "architecture", "walking")):
+        return "Experience"
+    if any(x in name_l for x in ("club", "night", "18+", "21+")):
+        return "Nightlife"
+    return "Experience"
+
+
+def _series_dedupe_key(name: str, venue: str) -> tuple[str, str]:
+    """Collapse recurring series (same show, many dates) to one card per venue."""
+    import re
+
+    n = (name or "").strip().lower()
+    n = re.sub(r"\s*\([^)]*\)\s*", " ", n)
+    n = re.sub(
+        r"\s*[-–—]\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday).*$",
+        "",
+        n,
+        flags=re.I,
+    )
+    n = re.sub(r"\s*[-–—]\s*\d{1,2}/\d{1,2}.*$", "", n)
+    n = re.sub(r"\s+", " ", n).strip()
+    v = (venue or "").strip().lower()
+    return (n, v)
+
+
 def _dedupe_and_sort_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    seen: set[tuple[str, str]] = set()
+    seen_ids: set[str] = set()
+    seen_series: set[tuple[str, str]] = set()
     deduped_events: list[dict[str, Any]] = []
     for ev in events:
-        dedupe_key = (ev["name"].strip().lower(), ev.get("date") or "")
-        if dedupe_key not in seen:
-            seen.add(dedupe_key)
-            deduped_events.append(ev)
+        eid = str(ev.get("id") or "").strip()
+        if eid and eid in seen_ids:
+            continue
+        series_key = _series_dedupe_key(str(ev.get("name") or ""), str(ev.get("venue") or ""))
+        if series_key[0] and series_key in seen_series:
+            continue
+        if eid:
+            seen_ids.add(eid)
+        if series_key[0]:
+            seen_series.add(series_key)
+        deduped_events.append(ev)
 
-    def sort_key(x: dict[str, Any]) -> tuple[str, str]:
+    def sort_key(x: dict[str, Any]) -> tuple[float, str, str]:
+        dist = x.get("distance_miles")
+        dist_val = float(dist) if dist is not None else 9999.0
         d = x.get("date") or ""
         t = x.get("time") or ""
-        return (d if d else "9999-12-31", t if t else "23:59")
+        return (dist_val, d if d else "9999-12-31", t if t else "23:59")
 
     deduped_events.sort(key=sort_key)
     return deduped_events
@@ -860,6 +1132,9 @@ def _events_cache_key(
     category: str,
     date_from: str | None,
     date_to: str | None,
+    lat: float | None = None,
+    lon: float | None = None,
+    radius_miles: int | None = None,
 ) -> str:
     key = city.strip().lower()
     key += f"_{category.strip().lower()}"
@@ -867,7 +1142,36 @@ def _events_cache_key(
         key += f"_{date_from}"
     if date_to:
         key += f"_{date_to}"
+    if lat is not None and lon is not None:
+        key += f"_{round(lat, 2)}_{round(lon, 2)}"
+        if radius_miles:
+            key += f"_{radius_miles}mi"
     return key
+
+
+def _fetch_ticketmaster_geo_expanded(
+    city: str,
+    category: str,
+    date_from: str | None,
+    date_to: str | None,
+    lat: float,
+    lon: float,
+) -> tuple[list[dict[str, Any]], int]:
+    """Try geo search at 200 → 300 → 500 mi; return first non-empty result."""
+    for radius in GEO_SEARCH_RADII:
+        events = _fetch_ticketmaster_events(
+            city, category, date_from, date_to, lat, lon, radius
+        )
+        logger.info(
+            "Ticketmaster geo fetch for (%s, %s) r=%smi returned %d events",
+            lat,
+            lon,
+            radius,
+            len(events),
+        )
+        if events:
+            return events, radius
+    return [], GEO_SEARCH_RADII[-1]
 
 
 def _fetch_ticketmaster_only(
@@ -875,11 +1179,52 @@ def _fetch_ticketmaster_only(
     category: str,
     date_from: str | None,
     date_to: str | None,
-) -> list[dict[str, Any]]:
-    """Fetch Ticketmaster only — used for synchronous cache fill."""
-    return _dedupe_and_sort_events(
-        _fetch_ticketmaster_events(city, category, date_from, date_to)
-    )
+    lat: float | None = None,
+    lon: float | None = None,
+    radius_miles: int = EXPLORE_RADIUS_MILES,
+) -> dict[str, Any]:
+    """
+    Fetch Ticketmaster events.
+    With GPS: latlong + expanding radius (200 → 300 → 500 mi) until events are found.
+    """
+    display_city = (city or "").strip().split(",")[0].strip()
+    meta: dict[str, Any] = {
+        "display_city": display_city,
+        "fetch_mode": "city",
+        "radius_used": None,
+    }
+
+    if lat is not None and lon is not None:
+        meta["fetch_mode"] = "geo"
+        all_events, radius_used = _fetch_ticketmaster_geo_expanded(
+            city, category, date_from, date_to, lat, lon
+        )
+        meta["radius_used"] = radius_used
+
+        all_events = _annotate_event_distances(all_events, lat, lon)
+        all_events = [
+            e for e in all_events
+            if e.get("distance_miles") is None or e.get("distance_miles", 999) <= radius_used
+        ]
+        all_events.sort(
+            key=lambda e: (
+                e.get("distance_miles") if e.get("distance_miles") is not None else 9999,
+                e.get("date") or "9999-12-31",
+            )
+        )
+        display_city = _resolve_geo_display_city(city, lat, lon, all_events)
+        return {
+            **meta,
+            "display_city": display_city,
+            "events": _dedupe_and_sort_events(all_events),
+        }
+
+    return {
+        **meta,
+        "events": _dedupe_and_sort_events(
+            _fetch_ticketmaster_events(display_city, category, date_from, date_to)
+        ),
+    }
 
 
 def _get_fresh_cached_events(db: Session, cache_key: str) -> list[dict[str, Any]] | None:
@@ -912,6 +1257,427 @@ def _paginate_events(
     }
 
 
+def _explore_content_to_event_dict(
+    row: Any,
+    *,
+    distance_miles: float | None = None,
+    rating: float | None = None,
+    popularity_score: float | None = None,
+) -> dict[str, Any]:
+    start_date = getattr(row, "start_date", None)
+    if start_date and hasattr(start_date, "strftime"):
+        date_str = start_date.strftime("%Y-%m-%d")
+    else:
+        date_str = str(start_date or "")[:10]
+
+    ev: dict[str, Any] = {
+        "id": getattr(row, "event_id", None) or str(getattr(row, "id", "")),
+        "name": getattr(row, "title", None) or "Event",
+        "category": getattr(row, "category", None) or "Experience",
+        "date": date_str,
+        "time": getattr(row, "start_time", None) or "19:00",
+        "venue": getattr(row, "venue_name", None) or "Various Venues",
+        "city": getattr(row, "city", None) or "US",
+        "state": getattr(row, "state", None) or "",
+        "country": "US",
+        "image_url": getattr(row, "image_url", None),
+        "ticket_url": getattr(row, "ticket_url", None) or "",
+        "price_min": getattr(row, "price_min", None),
+        "price_max": getattr(row, "price_max", None),
+        "status": None,
+        "availability": None,
+        "venue_lat": getattr(row, "venue_lat", None),
+        "venue_lon": getattr(row, "venue_lon", None),
+        "source": getattr(row, "source", None) or "ticketmaster",
+    }
+    if distance_miles is not None:
+        ev["distance_miles"] = round(float(distance_miles), 1)
+    if rating is not None:
+        ev["rating"] = rating
+    if popularity_score is not None:
+        ev["popularity_score"] = popularity_score
+    return ev
+
+
+def _stored_rating(row: ExploreContent) -> float | None:
+    stored = getattr(row, "rating", None)
+    if stored is not None:
+        try:
+            return float(stored)
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def _stored_popularity_score(row: ExploreContent) -> float | None:
+    stored = getattr(row, "popularity_score", None)
+    if stored is not None:
+        try:
+            return float(stored)
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def _compute_national_rating(row: ExploreContent) -> float:
+    stored = _stored_rating(row)
+    if stored is not None:
+        return stored
+
+    title = (row.title or "").strip()
+    venue = (row.venue_name or "").lower()
+    category = (row.category or "").lower()
+    score = 3.5
+    h = int(hashlib.md5(title.encode("utf-8")).hexdigest(), 16)
+    score += (h % 15) / 10.0
+
+    if any(keyword in venue for keyword in _MAJOR_VENUE_KEYWORDS):
+        score += 0.25
+    if row.price_max is not None and row.price_max >= 75:
+        score += 0.15
+    if category in {"sports", "music"}:
+        score += 0.1
+    if any(token in title.lower() for token in ("championship", " finals", "world tour", "all-star")):
+        score += 0.1
+    return min(round(score, 2), 5.0)
+
+
+def _compute_national_popularity_score(row: ExploreContent) -> float:
+    stored = _stored_popularity_score(row)
+    if stored is not None:
+        return stored
+
+    score = 0.0
+    city = (row.city or "").lower()
+    venue = (row.venue_name or "").lower()
+    title = (row.title or "").lower()
+    category = (row.category or "").lower()
+
+    if city in _MAJOR_METRO_CITIES:
+        score += 30.0
+    if any(keyword in venue for keyword in _MAJOR_VENUE_KEYWORDS):
+        score += 25.0
+    if row.price_max is not None:
+        score += min(float(row.price_max) / 8.0, 25.0)
+    if category in {"sports", "music"}:
+        score += 10.0
+    if any(token in title for token in ("tour", "festival", " vs ", " vs. ")):
+        score += 8.0
+    if row.image_url:
+        score += 2.0
+    return round(score, 2)
+
+
+def get_national_picks(
+    db: Session,
+    limit: int = 20,
+    *,
+    lat: float | None = None,
+    lon: float | None = None,
+    radius_miles: float = EXPLORE_RADIUS_MILES,
+) -> list[dict[str, Any]]:
+    """
+    Top-rated upcoming US events outside the user's local radius.
+    Same national concept for all users: everything beyond radius_miles.
+    """
+    from datetime import date
+    from sqlalchemy import func
+
+    today = date.today()
+    total_rows = db.scalar(select(func.count()).select_from(ExploreContent)) or 0
+    upcoming_rows = db.scalar(
+        select(func.count())
+        .select_from(ExploreContent)
+        .where(
+            ExploreContent.start_date.isnot(None),
+            ExploreContent.start_date >= today,
+        )
+    ) or 0
+    logger.info(
+        "[national_picks] explore_contents total=%d upcoming(start_date>=%s)=%d",
+        total_rows,
+        today.isoformat(),
+        upcoming_rows,
+    )
+    if total_rows == 0:
+        logger.warning("[national_picks] explore_contents is empty — daily fetch may not have run")
+    elif upcoming_rows == 0:
+        logger.warning(
+            "[national_picks] %d rows in table but 0 with start_date>=%s — check date population",
+            total_rows,
+            today.isoformat(),
+        )
+
+    picks = _national_picks_from_db(
+        db,
+        limit=limit,
+        lat=lat,
+        lon=lon,
+        radius_miles=radius_miles,
+    )
+    if picks:
+        return picks
+
+    if lat is not None and lon is not None:
+        tm_picks = _national_picks_from_ticketmaster(
+            lat,
+            lon,
+            radius_miles=radius_miles,
+            limit=limit,
+        )
+        if tm_picks:
+            logger.info(
+                "[national_picks] DB returned 0; Ticketmaster fallback returned %d picks",
+                len(tm_picks),
+            )
+            return tm_picks
+
+    logger.warning("[national_picks] no events found outside %s miles", radius_miles)
+    return []
+
+
+def _rank_national_events(
+    rows: list[Any],
+    *,
+    lat: float | None = None,
+    lon: float | None = None,
+) -> list[dict[str, Any]]:
+    ranked: list[tuple[float, float, dict[str, Any]]] = []
+    for row in rows:
+        if isinstance(row, dict):
+            rating = float(
+                row.get("rating") or _compute_national_rating_from_dict(row)
+            )
+            popularity = float(
+                row.get("popularity_score") or _compute_national_popularity_from_dict(row)
+            )
+            ev = dict(row)
+            ev["rating"] = rating
+            ev["popularity_score"] = popularity
+        else:
+            if not (getattr(row, "event_id", None) or getattr(row, "title", None)):
+                continue
+            rating = _compute_national_rating(row)
+            popularity = _compute_national_popularity_score(row)
+            dist = getattr(row, "distance_miles", None)
+            ev = _explore_content_to_event_dict(
+                row,
+                distance_miles=float(dist) if dist is not None else None,
+                rating=rating,
+                popularity_score=popularity,
+            )
+
+        if lat is not None and lon is not None and ev.get("distance_miles") is None:
+            v_lat = ev.get("venue_lat")
+            v_lon = ev.get("venue_lon")
+            if v_lat is not None and v_lon is not None:
+                ev["distance_miles"] = round(
+                    _haversine_miles(lat, lon, float(v_lat), float(v_lon)),
+                    1,
+                )
+
+        ranked.append((rating, popularity, ev))
+
+    ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    return [ev for _, _, ev in ranked]
+
+
+def _compute_national_rating_from_dict(ev: dict[str, Any]) -> float:
+    class _Row:
+        title = ev.get("name") or ev.get("title")
+        venue_name = ev.get("venue")
+        category = ev.get("category")
+        price_max = ev.get("price_max")
+
+    return _compute_national_rating(_Row())  # type: ignore[arg-type]
+
+
+def _compute_national_popularity_from_dict(ev: dict[str, Any]) -> float:
+    class _Row:
+        city = ev.get("city")
+        venue_name = ev.get("venue")
+        title = ev.get("name") or ev.get("title")
+        category = ev.get("category")
+        price_max = ev.get("price_max")
+        image_url = ev.get("image_url")
+
+    return _compute_national_popularity_score(_Row())  # type: ignore[arg-type]
+
+
+def _national_picks_from_db(
+    db: Session,
+    *,
+    limit: int,
+    lat: float | None,
+    lon: float | None,
+    radius_miles: float,
+) -> list[dict[str, Any]]:
+    from datetime import date
+    from sqlalchemy import text
+
+    today = date.today()
+    params: dict[str, Any] = {"today": today}
+
+    if lat is not None and lon is not None:
+        params["lat"] = lat
+        params["lon"] = lon
+        params["radius"] = float(radius_miles)
+        query_str = """
+            SELECT *,
+              (3959 * acos(
+                cos(radians(:lat)) * cos(radians(venue_lat)) *
+                cos(radians(venue_lon) - radians(:lon)) +
+                sin(radians(:lat)) * sin(radians(venue_lat))
+              )) AS distance_miles
+            FROM explore_contents
+            WHERE start_date IS NOT NULL
+              AND start_date >= :today
+              AND venue_lat IS NOT NULL
+              AND venue_lon IS NOT NULL
+        """
+        full_sql = f"""
+            SELECT * FROM (
+                {query_str}
+            ) AS subq
+            WHERE distance_miles > :radius
+        """
+        try:
+            result_set = db.execute(text(full_sql), params).fetchall()
+            logger.info(
+                "[national_picks] found %d DB rows outside %.0f mi before ranking",
+                len(result_set),
+                radius_miles,
+            )
+            ranked = _rank_national_events(result_set, lat=lat, lon=lon)
+            return ranked[:limit]
+        except Exception as exc:
+            logger.exception("Failed to query national picks from DB: %s", exc)
+            return []
+
+    stmt = (
+        select(ExploreContent)
+        .where(
+            ExploreContent.start_date.isnot(None),
+            ExploreContent.start_date >= date.today(),
+        )
+    )
+    rows = db.scalars(stmt).all()
+    eligible_rows = [row for row in rows if row.event_id or row.title]
+    logger.info(
+        "[national_picks] found %d eligible DB rows (no geo filter) before ranking",
+        len(eligible_rows),
+    )
+    return _rank_national_events(eligible_rows)[:limit]
+
+
+def _national_picks_from_ticketmaster(
+    lat: float,
+    lon: float,
+    *,
+    radius_miles: float,
+    limit: int,
+) -> list[dict[str, Any]]:
+    """Fallback: fetch a wide TM radius and keep events outside the local zone."""
+    wide_radius = max(int(radius_miles), GEO_SEARCH_RADII[-1])
+    events = _fetch_ticketmaster_events("", "all", None, None, lat, lon, wide_radius)
+    if not events:
+        return []
+
+    events = _annotate_event_distances(events, lat, lon)
+    outside = [
+        ev for ev in events
+        if ev.get("distance_miles") is not None and float(ev["distance_miles"]) > radius_miles
+    ]
+    logger.info(
+        "[national_picks] Ticketmaster wide search r=%smi returned %d; %d outside local radius",
+        wide_radius,
+        len(events),
+        len(outside),
+    )
+    return _rank_national_events(outside, lat=lat, lon=lon)[:limit]
+
+
+def _query_db_events_haversine(
+    db: Session,
+    lat: float,
+    lon: float,
+    radius_miles: float,
+    *,
+    category: str = "all",
+    date_from: str | None = None,
+    date_to: str | None = None,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
+    """Return ticketmaster_event and osm_place rows from explore_contents within radius_miles."""
+    from sqlalchemy import text
+    from datetime import date
+
+    today_str = date.today().strftime("%Y-%m-%d")
+    lat_delta = float(radius_miles) / 69.0
+    lon_delta = float(radius_miles) / (
+        69.0 * max(abs(math.cos(math.radians(lat))), 1e-6)
+    )
+    query_str = """
+        SELECT *,
+          (3959 * acos(
+            cos(radians(:lat)) * cos(radians(venue_lat)) *
+            cos(radians(venue_lon) - radians(:lon)) +
+            sin(radians(:lat)) * sin(radians(venue_lat))
+          )) AS distance_miles
+        FROM explore_contents
+        WHERE content_type IN ('ticketmaster_event', 'osm_place')
+          AND (content_type = 'osm_place' OR start_date >= :today)
+          AND venue_lat IS NOT NULL
+          AND venue_lon IS NOT NULL
+          AND venue_lat BETWEEN :lat_min AND :lat_max
+          AND venue_lon BETWEEN :lon_min AND :lon_max
+    """
+    params: dict[str, Any] = {
+        "lat": lat,
+        "lon": lon,
+        "today": today_str,
+        "radius": float(radius_miles),
+        "lat_min": lat - lat_delta,
+        "lat_max": lat + lat_delta,
+        "lon_min": lon - lon_delta,
+        "lon_max": lon + lon_delta,
+    }
+    cat = (category or "all").strip()
+    if cat.lower() != "all":
+        query_str += " AND LOWER(category) = LOWER(:category)"
+        params["category"] = cat
+    if date_from:
+        query_str += " AND (content_type = 'osm_place' OR start_date >= :date_from)"
+        params["date_from"] = date_from
+    if date_to:
+        query_str += " AND (content_type = 'osm_place' OR start_date <= :date_to)"
+        params["date_to"] = date_to
+
+    full_sql = f"""
+        SELECT * FROM (
+            {query_str}
+        ) AS subq
+        WHERE distance_miles <= :radius
+        ORDER BY distance_miles ASC
+    """
+    if limit is not None and limit > 0:
+        full_sql += "\n        LIMIT :row_limit"
+        params["row_limit"] = int(limit)
+    db_events: list[dict[str, Any]] = []
+    try:
+        result_set = db.execute(text(full_sql), params).fetchall()
+        for r in result_set:
+            db_events.append(
+                _explore_content_to_event_dict(
+                    r,
+                    distance_miles=float(r.distance_miles),
+                )
+            )
+    except Exception as exc:
+        logger.exception("Failed to query explore_contents via haversine: %s", exc)
+    return db_events
+
+
 def search_events_extended(
     db: Session,
     city: str,
@@ -920,22 +1686,141 @@ def search_events_extended(
     date_to: str | None = None,
     page: int = 1,
     per_page: int = 20,
+    lat: float | None = None,
+    lon: float | None = None,
+    radius_miles: int = EXPLORE_RADIUS_MILES,
+    return_all: bool = False,
+    pool_limit: int | None = None,
 ) -> dict[str, Any]:
     """
     Serve Ticketmaster immediately; never block on Instagram/Apify.
-    Instagram runs in a production-only background thread after cache fill.
+    When lat/lon provided, fetch events within radius_miles (default 200) of user GPS.
+    Prioritize querying local explore_contents via haversine distance.
+    Set return_all=True to get the full cached list (for section splitting on Explore hub).
     """
-    city = (city or "Chicago").strip()
+    city = (city or "").strip()
     cat = category or "all"
-    cache_key = _events_cache_key(city, cat, date_from, date_to)
+    geo_search = lat is not None and lon is not None
+
+    if geo_search:
+        expand_radii: list[int] = []
+        for r in (radius_miles, 300, 500):
+            ri = int(r)
+            if ri not in expand_radii:
+                expand_radii.append(ri)
+
+        db_events: list[dict[str, Any]] = []
+        radius_used_db = radius_miles
+        for try_radius in expand_radii:
+            db_events = _query_db_events_haversine(
+                db,
+                lat,
+                lon,
+                try_radius,
+                category=cat,
+                date_from=date_from,
+                date_to=date_to,
+                limit=pool_limit,
+            )
+            radius_used_db = try_radius
+            logger.info(
+                "Local database event discovery returned %d events within %s miles.",
+                len(db_events),
+                try_radius,
+            )
+            if len(db_events) >= 10:
+                break
+
+        if db_events:
+            # We got local events! Return them with zero Ticketmaster API calls.
+            display_city = _resolve_geo_display_city(city, lat, lon, db_events)
+
+            if return_all:
+                res = {
+                    "city": city,
+                    "total": len(db_events),
+                    "page": 1,
+                    "per_page": len(db_events),
+                    "events": db_events,
+                }
+            else:
+                res = _paginate_events(db_events, city, page, per_page)
+
+            res["radius_miles"] = radius_used_db
+            res["radius_used"] = radius_used_db
+            res["user_lat"] = lat
+            res["user_lon"] = lon
+            res["display_city"] = display_city
+            res["fetch_mode"] = "local_db"
+            res["section_titles"] = geo_section_titles(display_city, radius_used_db)
+            return res
+
+    # Fallback to cache / live API search if not geo_search or if DB returned 0 results
+    cache_key = _events_cache_key(
+        city,
+        cat,
+        date_from,
+        date_to,
+        lat,
+        lon,
+        None if geo_search else radius_miles,
+    )
 
     cached = _get_fresh_cached_events(db, cache_key)
-    if cached is not None:
-        return _paginate_events(cached, city, page, per_page)
+    fetch_meta: dict[str, Any] = {
+        "display_city": city.split(",")[0].strip(),
+        "fetch_mode": "cache" if cached else None,
+        "radius_used": None,
+    }
 
-    events = _fetch_ticketmaster_only(city, cat, date_from, date_to)
-    _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=events)
+    if cached:
+        all_events = cached
+    else:
+        fetched = _fetch_ticketmaster_only(
+            city, cat, date_from, date_to, lat, lon, radius_miles
+        )
+        all_events = fetched["events"]
+        fetch_meta["display_city"] = fetched.get("display_city") or fetch_meta["display_city"]
+        fetch_meta["fetch_mode"] = fetched.get("fetch_mode")
+        fetch_meta["radius_used"] = fetched.get("radius_used")
+        _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=all_events)
+        _maybe_start_background_instagram(city)
 
-    _maybe_start_background_instagram(city)
+    if return_all:
+        result: dict[str, Any] = {
+            "city": city,
+            "total": len(all_events),
+            "page": 1,
+            "per_page": len(all_events),
+            "events": all_events,
+        }
+    else:
+        result = _paginate_events(all_events, city, page, per_page)
 
-    return _paginate_events(events, city, page, per_page)
+    if pool_limit is not None and pool_limit > 0 and return_all:
+        capped = result["events"][:pool_limit]
+        result["events"] = capped
+        result["total"] = len(capped)
+        result["per_page"] = len(capped)
+
+    if geo_search:
+        radius_used = fetch_meta.get("radius_used") or GEO_SEARCH_RADII[0]
+        if not (fetch_meta.get("display_city") or "").strip():
+            fetch_meta["display_city"] = _resolve_geo_display_city(
+                city, lat, lon, all_events
+            )
+        result["radius_miles"] = radius_used
+        result["radius_used"] = radius_used
+        result["user_lat"] = lat
+        result["user_lon"] = lon
+        result["display_city"] = fetch_meta["display_city"]
+        result["fetch_mode"] = fetch_meta.get("fetch_mode")
+        result["section_titles"] = geo_section_titles(
+            fetch_meta["display_city"],
+            radius_used,
+        )
+    else:
+        result["display_city"] = fetch_meta["display_city"]
+
+    return result
+

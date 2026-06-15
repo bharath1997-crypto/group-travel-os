@@ -2,20 +2,44 @@
 
 import { AIAssistantSidecar } from "@/components/ai/AIAssistantSidecar";
 import { LoungeDock } from "@/components/LoungeDock";
+import { emitOpenLounge } from "@/lib/open-lounge";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, MoreVertical, X as LucideX, Calendar, Users as LucideUsers, Bot, MessageSquare, DollarSign } from "lucide-react";
+import {
+  MoreVertical,
+  Calendar,
+  Users as LucideUsers,
+  Bot,
+  MessageSquare,
+  DollarSign,
+  Compass,
+  Map,
+  Bell,
+  User,
+  Activity,
+  CloudSun,
+  Plane,
+  Building2,
+  Route,
+  Bus,
+  Heart,
+  LayoutDashboard,
+  ShoppingCart,
+  type LucideIcon,
+} from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
 import { IconBell, IconCheck, IconLogout } from "@/components/icons";
 
+import { LiveModal } from "@/components/live/LiveModal";
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { VerificationBanner } from "@/components/VerificationBanner";
 import { RovvyLogo, RovvyIcon } from "@/components/RovvyLogo";
 import BrandedLoading from "@/components/BrandedLoading";
 import ConnectionStatusBanner from "@/components/ConnectionStatusBanner";
+import { HeaderSearchBar } from "@/components/HeaderSearchBar";
 import {
   DashboardUserProvider,
   useDashboardUser,
@@ -30,59 +54,66 @@ const MUTED = "#94A3B8";
 
 const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
 
-type SubNavItem = { href: string; label: string };
+type SubNavItem = { href: string; label: string; Icon?: LucideIcon };
 
 type NavSectionDef = {
-  id: "home" | "plan" | "explore" | "group" | "profile";
+  id: "explore" | "trips" | "live" | "split-activities" | "profile";
   href: string;
   label: string;
-  emoji: string;
+  Icon: LucideIcon | null;
   subs: SubNavItem[];
+  mobileLabel?: string;
 };
 
 const NAV_SECTIONS: NavSectionDef[] = [
-  { id: "home", href: "/dashboard", label: "Home", emoji: "🏠", subs: [] },
-  {
-    id: "plan",
-    href: "/plan",
-    label: "Plan",
-    emoji: "🗓️",
-    subs: [
-      { href: "/flights", label: "Flights" },
-      { href: "/hotels", label: "Hotels" },
-      { href: "/routes", label: "Routes" },
-      { href: "/buses", label: "Buses" },
-      { href: "/trip-space", label: "Trip Space" },
-    ],
-  },
   {
     id: "explore",
     href: "/explore",
     label: "Explore",
-    emoji: "🔍",
+    Icon: Compass,
     subs: [
-      { href: "/activities", label: "Activities" },
-      { href: "/explore/events", label: "Events" },
-      { href: "/weather", label: "Weather" },
-      { href: "/map", label: "Interactive Map" },
+      { href: "/explore/activities", label: "Activities", Icon: Activity },
+      { href: "/explore/events",     label: "Events",     Icon: Calendar },
+      { href: "/weather",            label: "Weather",    Icon: CloudSun },
+      { href: "/explore/map",        label: "Map View",   Icon: Map },
     ],
   },
   {
-    id: "group",
-    href: "/group",
-    label: "Group",
-    emoji: "👥",
+    id: "trips",
+    href: "/trips",
+    label: "Trips",
+    Icon: Map,
     subs: [
-      { href: "/buddy", label: "Buddy Trips" },
-      { href: "/travel-hub", label: "Rovvy Lounge" },
-      { href: "/live", label: "Live" },
+      { href: "/trip-space",  label: "Trip Space",  Icon: Map },
+      { href: "/flights",     label: "Flights",     Icon: Plane },
+      { href: "/hotels",      label: "Hotels",      Icon: Building2 },
+      { href: "/routes",      label: "Routes",      Icon: Route },
+      { href: "/buses",       label: "Buses",       Icon: Bus },
+      { href: "/group",       label: "Groups",      Icon: LucideUsers },
+      { href: "/buddy",       label: "Buddy Trips", Icon: Heart },
     ],
+  },
+  {
+    id: "live",
+    href: "/trip-live",
+    label: "LIVE",
+    Icon: null,   // replaced by pulsing dot
+    subs: [],
+    mobileLabel: "Live",
+  },
+  {
+    id: "split-activities",
+    href: "/split-activities",
+    label: "Split Activities",
+    mobileLabel: "Split",
+    Icon: DollarSign,
+    subs: [],
   },
   {
     id: "profile",
     href: "/profile",
     label: "Profile",
-    emoji: "👤",
+    Icon: User,
     subs: [],
   },
 ];
@@ -166,35 +197,40 @@ function isProfileFullyComplete(
 }
 
 function sectionActive(pathname: string, section: NavSectionDef): boolean {
-  if (section.id === "home") return pathname === "/dashboard";
-  if (section.id === "plan") {
-    return (
-      pathname === "/plan" ||
-      pathname.startsWith("/flights") ||
-      pathname.startsWith("/hotels") ||
-      pathname.startsWith("/routes") ||
-      pathname.startsWith("/buses") ||
-      pathname.startsWith("/trip-space")
-    );
-  }
   if (section.id === "explore") {
     return (
       pathname === "/explore" ||
       pathname.startsWith("/explore/") ||
-      pathname.startsWith("/activities") ||
-      pathname.startsWith("/weather")
+      pathname.startsWith("/weather") ||
+      pathname === "/map"
     );
   }
-  if (section.id === "group") {
+  if (section.id === "trips") {
     return (
-      pathname === "/group" ||
-      pathname.startsWith("/buddy") ||
-      pathname.startsWith("/travel-hub") ||
-      pathname.startsWith("/live")
+      pathname === "/trips" ||
+      pathname.startsWith("/trips/") ||
+      pathname.startsWith("/trip-space") ||
+      pathname.startsWith("/flights") ||
+      pathname.startsWith("/hotels") ||
+      pathname.startsWith("/routes") ||
+      pathname.startsWith("/buses") ||
+      pathname.startsWith("/group") ||
+      pathname.startsWith("/buddy")
     );
+  }
+  if (section.id === "live") {
+    return pathname.startsWith("/trip-live") || pathname === "/live";
+  }
+  if (section.id === "split-activities") {
+    return pathname.startsWith("/split-activities");
   }
   if (section.id === "profile") {
-    return pathname === "/profile" || pathname.startsWith("/profile/");
+    return (
+      pathname === "/profile" ||
+      pathname.startsWith("/profile/") ||
+      pathname.startsWith("/settings") ||
+      pathname.startsWith("/stats")
+    );
   }
   return false;
 }
@@ -320,49 +356,38 @@ function SidebarNavSection({
   pathname: string;
 }) {
   const active = sectionActive(pathname, section);
-  const showSubs = section.subs.length > 0;
+  const isLive = section.id === "live";
 
   return (
-    <div className="flex flex-col gap-0.5">
-      <Link
-        href={section.href}
-        className={[
-          "flex items-center gap-2 xl:gap-2.5 rounded-lg px-3 py-2 xl:py-2.5 text-[13px] font-medium transition-colors",
-          active
-            ? "bg-[rgba(204,251,241,0.1)] text-[#F8FAFC] shadow-[inset_0_0_0_1px_rgba(15,118,110,0.35)]"
-            : "text-[#94A3B8] hover:bg-[rgba(248,250,252,0.06)] hover:text-[#F8FAFC]",
-        ].join(" ")}
-      >
-        <span
-          className="flex h-5 w-5 shrink-0 items-center justify-center text-base leading-none"
-          aria-hidden
-          style={{ opacity: active ? 1 : 0.85 }}
-        >
-          {section.emoji}
+    <Link
+      href={section.href}
+      className={[
+        "flex items-center gap-2 xl:gap-2.5 rounded-lg px-3 py-2 xl:py-2.5 text-[13px] font-medium transition-colors",
+        active
+          ? "bg-[rgba(204,251,241,0.1)] text-[#F8FAFC] shadow-[inset_0_0_0_1px_rgba(15,118,110,0.35)]"
+          : "text-[#94A3B8] hover:bg-[rgba(248,250,252,0.06)] hover:text-[#F8FAFC]",
+      ].join(" ")}
+    >
+      {isLive ? (
+        <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+          <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-400" />
         </span>
-        <span className="min-w-0 flex-1 truncate">{section.label}</span>
-      </Link>
-      {showSubs ? (
-        <div className="ml-2 flex flex-col gap-0.5 border-l border-[#334155] py-0.5 pl-3">
-          {section.subs.map((sub) => {
-            const subIsActive = subActive(pathname, sub.href);
-            return (
-              <Link
-                key={sub.href}
-                href={sub.href}
-                className={
-                  subIsActive
-                    ? "rounded-md px-2 py-1 xl:py-1.5 text-[12px] font-medium text-[#CCFBF1]"
-                    : "rounded-md px-2 py-1 xl:py-1.5 text-[12px] font-normal text-[#94A3B8] hover:text-[#F8FAFC]"
-                }
-              >
-                {sub.label}
-              </Link>
-            );
-          })}
-        </div>
+      ) : section.Icon ? (
+        <section.Icon
+          size={18}
+          strokeWidth={2}
+          className={`h-5 w-5 shrink-0 ${active ? "text-[#CCFBF1]" : "text-[#94A3B8]"}`}
+          aria-hidden
+        />
       ) : null}
-    </div>
+      <span className="min-w-0 flex-1 truncate">{section.label}</span>
+      {isLive && (
+        <span className="ml-auto rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-emerald-400">
+          Live
+        </span>
+      )}
+    </Link>
   );
 }
 
@@ -389,13 +414,61 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     pathname === "/buses" ||
     isTripSpacePage;
 
+  const isMapPage = pathname === "/map" || pathname === "/explore/map";
+  const isLivePage = pathname === "/live" || pathname.startsWith("/trip-live");
+  const isExplorerEventsShell = pathname.startsWith("/explore/events");
+  const isExploreShortsShell = pathname.startsWith("/explore/shorts");
+  const isFlightsPage = pathname.startsWith("/flights");
+  const isRoutesPage = pathname.startsWith("/routes");
+  const isActivitiesPage = pathname.startsWith("/activities");
+  const isHotelsPage = pathname.startsWith("/hotels");
+  const isBuddyPage = pathname.startsWith("/buddy");
+  const isTripSpacePage = pathname.startsWith("/trip-space");
+  const isDarkHub =
+    pathname === "/plan" ||
+    pathname === "/group" ||
+    pathname === "/explore" ||
+    pathname === "/buses" ||
+    isTripSpacePage;
+
   const [isMdUp, setIsMdUp] = useState(false);
   const [sidebarMe, setSidebarMe] = useState<SidebarAuthMe | null>(null);
   const [sidebarProfileLoading, setSidebarProfileLoading] = useState(true);
   const [notifCount, setNotifCount] = useState(0);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [liveModalOpen, setLiveModalOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    if (loading || !user) return;
+    let c = false;
+    (async () => {
+      try {
+        const data = await apiFetch<{ count: number }>("/cart/count");
+        if (c) return;
+        setCartCount(Math.max(0, Math.floor(data.count)));
+      } catch {
+        /* keep count */
+      }
+    })();
+    return () => {
+      c = true;
+    };
+  }, [loading, user]);
+
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      (async () => {
+        try {
+          const data = await apiFetch<{ count: number }>("/cart/count");
+          setCartCount(Math.max(0, Math.floor(data.count)));
+        } catch {}
+      })();
+    };
+    window.addEventListener("gt-cart-updated", handleCartUpdate);
+    return () => window.removeEventListener("gt-cart-updated", handleCartUpdate);
+  }, []);
+
 
   useEffect(() => {
     let c = false;
@@ -512,258 +585,242 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
   const MOBILE_TABS = NAV_SECTIONS.map((s) => ({
     href: s.href,
-    label: s.label,
-    emoji: s.emoji,
+    label: s.mobileLabel ?? s.label,
+    Icon: s.Icon,
     id: s.id,
   }));
+
+  // Compute sub-nav for current section
+  const activeSection = NAV_SECTIONS.find((s) => sectionActive(pathname, s));
+  const activeSubs = activeSection?.subs ?? [];
+  const hasSubNav = activeSubs.length > 0;
+
+  // Header height: 56px primary row + 44px sub-nav row when present
+  const headerPx = hasSubNav ? 108 : 64;
 
   return (
     <div className="min-h-screen min-h-[100dvh] bg-[#F8F9FA]">
       <ConnectionStatusBanner />
-      {/* Desktop / tablet sidebar */}
-      <aside
-        className="fixed left-0 top-0 z-40 hidden h-full min-h-screen w-[200px] xl:w-[240px] flex-col border-r border-[#1E293B] md:flex"
-        style={{ backgroundColor: NAV_BG }}
-      >
-        <div className="shrink-0 border-b border-[rgba(248,250,252,0.08)] px-4 py-4 xl:py-5">
+
+      {/* ═══════════════════════════════════════════════════
+          FIXED TOP HEADER — never hides on scroll
+      ═══════════════════════════════════════════════════ */}
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-stone-200 shadow-sm select-none">
+        <div className="flex h-16 items-center gap-2 px-3 md:gap-3 md:px-6">
+          {/* Logo */}
           <Link
-            href="/dashboard"
-            className="flex items-center gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#CCFBF1]/40"
+            href="/explore"
+            className="flex shrink-0 items-center focus-visible:outline-none"
           >
-            <RovvyLogo variant="dark" size="md" />
+            <RovvyLogo variant="primary" size="sm" className="hidden xl:block" />
+            <RovvyIcon size={26} className="xl:hidden" />
           </Link>
-        </div>
 
-        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden px-3 py-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#334155] [scrollbar-color:#334155_transparent] [scrollbar-width:thin]">
-          {NAV_SECTIONS.map((section) => (
-            <SidebarNavSection
-              key={section.id}
-              section={section}
-              pathname={pathname}
-            />
-          ))}
-        </nav>
-
-        <div className="shrink-0 space-y-1.5 xl:space-y-2 border-t border-[rgba(248,250,252,0.08)] p-2.5 xl:p-3">
-          <div className="flex items-center gap-1.5 xl:gap-2 rounded-lg p-0.5 xl:p-1">
-            <div
-              role="button"
-              tabIndex={0}
-              title={!profileComplete ? "Complete profile" : undefined}
-              className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 xl:gap-2 rounded-lg p-0.5 xl:p-1 transition-colors hover:bg-[rgba(248,250,252,0.06)]"
-              onClick={() => router.push(profileTarget)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  router.push(profileTarget);
-                }
-              }}
-            >
-              <SidebarProfileAvatar
-                key={sidebarPicUrl ?? "no-photo"}
-                profilePicUrl={sidebarPicUrl}
-                displayName={sidebarDisplayName}
-                profileComplete={profileComplete}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-bold text-[#F8FAFC]">
-                  {sidebarPrimaryLabel}
-                </p>
-                <div className="mt-0.5">
-                  <SidebarTierLine
-                    loading={sidebarProfileLoading}
-                    subscriptionTier={sidebarMe?.subscription_tier}
-                  />
-                </div>
-              </div>
-            </div>
-            <button
-              type="button"
-              title="Sign out"
-              onClick={handleLogout}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#94A3B8] transition-colors hover:bg-[rgba(248,250,252,0.06)] hover:text-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#CCFBF1]/40"
-              aria-label="Sign out"
-            >
-              <IconLogout size={20} darkBg />
-            </button>
+          {/* Search — Google-style pill, centered in header */}
+          <div className="hidden min-w-0 flex-1 items-center justify-center px-3 md:flex lg:px-6">
+            <HeaderSearchBar />
           </div>
-        </div>
-      </aside>
 
-      <div
-        className={
-          isMapPage
-            ? "flex min-h-screen min-h-[100dvh] flex-col transition-all duration-300 ease-in-out max-md:ml-0 md:ml-[200px] xl:ml-[240px]"
-            : "flex min-h-screen min-h-[100dvh] flex-col pb-[calc(56px+env(safe-area-inset-bottom,0px))] transition-all duration-300 ease-in-out max-md:ml-0 max-md:pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:ml-[200px] xl:ml-[240px] md:pb-0"
-        }
-      >
-        <header className="fixed top-0 left-0 right-0 z-30 md:left-[200px] xl:left-[240px] flex h-[52px] shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white px-3 md:px-6 shadow-sm select-none">
-          {searchOpen ? (
-            <div className="flex items-center w-full gap-2 px-1">
-              <input
-                type="text"
-                placeholder="I'm looking for..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && searchQuery.trim()) {
-                    router.push(`/explore?q=${encodeURIComponent(searchQuery)}`);
-                    setSearchOpen(false);
-                  }
-                }}
-                className="flex-1 text-sm border border-stone-200 px-3 py-1.5 rounded-full outline-none focus:border-[#0F766E] text-stone-850"
-                autoFocus
-              />
+          {/* Navigation + Notifications + Overflow Menu */}
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 md:ml-0 md:gap-3">
+            {/* Primary nav tabs — desktop only */}
+            <nav className="hidden md:flex items-center gap-0.5 xl:gap-1" aria-label="Primary">
+              {NAV_SECTIONS.map((section) => {
+                const active = sectionActive(pathname, section);
+                const isLive = section.id === "live";
+                if (isLive) {
+                  return (
+                    <button
+                      key={section.id}
+                      type="button"
+                      onClick={() => setLiveModalOpen(true)}
+                      className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-all ${
+                        active
+                          ? "text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200"
+                          : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
+                      }`}
+                      title={section.label}
+                    >
+                      <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                      </span>
+                      <span className="hidden xl:inline">{section.label}</span>
+                    </button>
+                  );
+                }
+                return (
+                  <Link
+                    key={section.id}
+                    href={section.href}
+                    className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-all ${
+                      active
+                        ? "text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
+                        : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
+                    }`}
+                    title={section.label}
+                  >
+                    {section.Icon ? (
+                      <section.Icon size={15} strokeWidth={2} aria-hidden />
+                    ) : null}
+                    <span className="hidden xl:inline">{section.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="hidden md:block h-6 w-px bg-stone-200" />
+
+            {/* Travel Cart */}
+            <Link
+              href="/cart"
+              className="relative p-2 text-stone-500 hover:text-stone-800 rounded-lg hover:bg-stone-100 transition-colors"
+              aria-label="Travel Cart"
+            >
+              <ShoppingCart size={20} />
+              {cartCount > 0 ? (
+                <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-teal-600 px-1 text-[8px] font-bold text-white ring-2 ring-white">
+                  {cartCount > 99 ? "99" : cartCount}
+                </span>
+              ) : null}
+            </Link>
+
+            {/* Notifications */}
+            <Link
+              href="/notifications"
+              className="relative p-2 text-stone-500 hover:text-stone-800 rounded-lg hover:bg-stone-100 transition-colors"
+              aria-label="Notifications"
+            >
+              <IconBell size={20} />
+              {notifCount > 0 ? (
+                <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold text-white ring-2 ring-white">
+                  {notifCount > 99 ? "99" : notifCount}
+                </span>
+              ) : null}
+            </Link>
+
+            {/* Overflow menu */}
+            <div className="relative">
               <button
                 type="button"
-                onClick={() => setSearchOpen(false)}
-                className="p-1 text-stone-500 hover:text-stone-800"
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="p-2 text-stone-500 hover:text-stone-800 rounded-lg hover:bg-stone-100 transition-colors"
+                aria-label="More options"
               >
-                <LucideX size={18} />
+                <MoreVertical size={20} />
               </button>
+
+              {menuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40 bg-transparent"
+                    onClick={() => setMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 mt-1.5 w-48 rounded-xl bg-white border border-stone-200 shadow-xl py-1.5 z-50 text-[12px] font-medium text-stone-700">
+                    <button
+                      type="button"
+                      onClick={() => { router.push("/trips/plan"); setMenuOpen(false); }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                    >
+                      <Calendar size={14} className="text-[#0F766E]" />
+                      <span>Plan a Trip</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        emitOpenLounge();
+                        setMenuOpen(false);
+                      }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                    >
+                      <MessageSquare size={14} className="text-[#0F766E]" />
+                      <span>Rovvy Lounge</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { router.push("/dashboard"); setMenuOpen(false); }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                    >
+                      <LayoutDashboard size={14} className="text-[#0F766E]" />
+                      <span>Dashboard</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { router.push("/stats"); setMenuOpen(false); }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                    >
+                      <MoreVertical size={14} className="text-stone-500" />
+                      <span>My Stats</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { router.push("/settings"); setMenuOpen(false); }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                    >
+                      <MoreVertical size={14} className="text-stone-500" />
+                      <span>Settings</span>
+                    </button>
+                    <div className="mx-3 my-1 border-t border-stone-100" />
+                    <button
+                      type="button"
+                      onClick={() => { const e = new CustomEvent("open-ai-sidecar"); window.dispatchEvent(e); setMenuOpen(false); }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                    >
+                      <Bot size={14} className="text-teal-600" />
+                      <span>Ask AI Assistant</span>
+                    </button>
+                    <div className="mx-3 my-1 border-t border-stone-100" />
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="w-full text-left px-3.5 py-2 hover:bg-red-50 flex items-center gap-2 text-red-500"
+                    >
+                      <MoreVertical size={14} />
+                      <span>Sign out</span>
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-1.5 min-w-0">
-                {!isMdUp ? (
-                  <Link href="/dashboard" className="flex items-center gap-1.5 min-w-0">
-                    <RovvyIcon size={26} />
-                    <span className="text-[15px] font-bold text-[#0F766E] tracking-tight">Rovvy</span>
-                  </Link>
-                ) : (
-                  <span className="text-[14px] font-bold text-stone-700 capitalize tracking-tight">
-                    {pathname === "/dashboard" ? "Dashboard" : pathname.replace(/^\//, "").split("/")[0]}
-                  </span>
-                )}
-              </div>
-              
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setSearchOpen(true)}
-                  className="p-2 text-stone-600 hover:text-stone-800 rounded-lg hover:bg-stone-50 transition-colors"
-                  aria-label="Search"
-                >
-                  <Search size={20} />
-                </button>
+          </div>
+        </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    const event = new CustomEvent("toggle-rovvy-lounge");
-                    window.dispatchEvent(event);
-                  }}
-                  className="relative p-2 text-stone-600 hover:text-[#0F766E] rounded-lg hover:bg-stone-50 transition-colors flex items-center justify-center"
-                  aria-label="Rovvy Lounge"
-                  title="Open Rovvy Lounge"
-                >
-                  <MessageSquare size={20} />
-                  <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                </button>
-
+        {/* ── Sub-nav strip — fixed below primary row, always visible ── */}
+        {hasSubNav && (
+          <div className="flex items-center gap-1.5 px-4 md:px-6 py-2 border-t border-stone-100 overflow-x-auto no-scrollbar bg-white">
+            {activeSubs.map(({ href, label, Icon }) => {
+              const active = pathname === href || pathname.startsWith(`${href}/`);
+              return (
                 <Link
-                  href="/notifications"
-                  className="relative p-2 text-stone-600 hover:text-stone-800 rounded-lg hover:bg-stone-50 transition-colors"
-                  aria-label="Notifications"
+                  key={href}
+                  href={href}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-semibold transition-all ${
+                    active
+                      ? "bg-[#0F766E] text-white shadow-sm"
+                      : "text-stone-500 hover:bg-stone-100 hover:text-stone-800"
+                  }`}
                 >
-                  <IconBell size={20} />
-                  {notifCount > 0 ? (
-                    <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold text-white ring-2 ring-white">
-                      {notifCount > 99 ? "99" : notifCount}
-                    </span>
-                  ) : null}
+                  {Icon && <Icon size={13} strokeWidth={2} aria-hidden />}
+                  {label}
                 </Link>
+              );
+            })}
+          </div>
+        )}
+      </header>
 
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setMenuOpen(!menuOpen)}
-                    className="p-2 text-stone-600 hover:text-stone-800 rounded-lg hover:bg-stone-50 transition-colors"
-                    aria-label="Menu"
-                  >
-                    <MoreVertical size={20} />
-                  </button>
-
-                  {menuOpen && (
-                    <>
-                      <div 
-                        className="fixed inset-0 z-40 bg-transparent"
-                        onClick={() => setMenuOpen(false)}
-                      />
-                      <div className="absolute right-0 mt-1.5 w-44 rounded-xl bg-white border border-stone-200 shadow-xl py-1.5 z-50 animate-fade-in text-[12px] font-medium text-stone-700">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            router.push("/trips/plan");
-                            setMenuOpen(false);
-                          }}
-                          className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
-                        >
-                          <Calendar size={14} className="text-[#0F766E]" />
-                          <span>Plan a Trip</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            router.push("/groups/new");
-                            setMenuOpen(false);
-                          }}
-                          className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
-                        >
-                          <LucideUsers size={14} className="text-[#0F766E]" />
-                          <span>Create Group</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            router.push("/travel-hub");
-                            setMenuOpen(false);
-                          }}
-                          className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
-                        >
-                          <MessageSquare size={14} className="text-[#0F766E]" />
-                          <span>Rovvy Lounge</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            router.push("/split-activities");
-                            setMenuOpen(false);
-                          }}
-                          className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
-                        >
-                          <DollarSign size={14} className="text-[#0F766E]" />
-                          <span>Split Activities</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const e = new CustomEvent("open-ai-sidecar");
-                            window.dispatchEvent(e);
-                            setMenuOpen(false);
-                          }}
-                          className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
-                        >
-                          <Bot size={14} className="text-teal-600" />
-                          <span>Ask AI Assistant</span>
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </header>
-
+      {/* ═══════════════════════════════════════════════════
+          MAIN CONTENT — padded to clear the fixed header
+      ═══════════════════════════════════════════════════ */}
+      <div
+        className="flex min-h-screen min-h-[100dvh] w-full flex-col pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0"
+        style={{ paddingTop: `${headerPx}px` }}
+      >
         <main
           className={
             needsZeroOuterPadding
-              ? "flex min-h-0 flex-1 flex-col overflow-hidden p-0 pt-[52px]"
-              : "min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-4 xl:p-5 pt-[64px] md:pt-[68px] xl:pt-[72px]"
+              ? "flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+              : "min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-4 xl:p-5"
           }
         >
           {isMapPage ? (
@@ -781,8 +838,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             <div
               className={
                 useFullWidthInner
-                  ? "flex w-full max-w-none flex-col gap-0"
-                  : "mx-auto flex w-full max-w-6xl flex-col gap-5"
+                  ? "flex w-full min-w-0 max-w-none flex-col gap-0"
+                  : "mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-5"
               }
             >
               <PresenceHeartbeat />
@@ -793,40 +850,64 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           )}
         </main>
 
+        {/* ═══════════════════════════════════════════════════
+            MOBILE BOTTOM NAV — fixed, dark bar
+        ═══════════════════════════════════════════════════ */}
         <nav
-          className="fixed bottom-0 left-0 right-0 z-30 flex min-h-14 border-t border-[#E2E8F0] bg-white pb-[env(safe-area-inset-bottom,0px)] pt-0 md:hidden"
+          className="fixed bottom-0 left-0 right-0 z-30 flex items-end border-t border-[#1E293B] bg-[#0F172A] pb-[env(safe-area-inset-bottom,0px)] md:hidden"
           aria-label="Primary"
         >
           <div className="mx-auto flex h-14 w-full max-w-lg items-stretch justify-between px-1">
-            {MOBILE_TABS.map(({ href, label, emoji, id }) => {
+            {MOBILE_TABS.map(({ href, label, Icon, id }, idx) => {
               const def = NAV_SECTIONS.find((s) => s.id === id)!;
               const active = sectionActive(pathname, def);
+              const isCenter = idx === 2;
+
+              if (isCenter) {
+                return (
+                  <button
+                    key={href}
+                    type="button"
+                    onClick={() => setLiveModalOpen(true)}
+                    className="flex flex-1 flex-col items-center justify-start -mt-5"
+                    aria-label="LIVE mode"
+                  >
+                    <span
+                      className={`flex h-14 w-14 items-center justify-center rounded-full border-4 border-[#0F172A] shadow-xl transition-all ${
+                        active ? "bg-emerald-500 shadow-emerald-500/40" : "bg-[#0F766E] shadow-[#0F766E]/30"
+                      }`}
+                    >
+                      <span className="relative flex h-5 w-5 items-center justify-center">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-50" />
+                        <span className="relative inline-flex h-3 w-3 rounded-full bg-white" />
+                      </span>
+                    </span>
+                    <span className={`mt-1 text-[9px] font-black uppercase tracking-widest pb-1 ${
+                      active ? "text-emerald-400" : "text-slate-400"
+                    }`}>
+                      Live
+                    </span>
+                  </button>
+                );
+              }
+
               return (
                 <Link
                   key={href}
                   href={href}
                   className="relative flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-1"
                 >
-                  {id === "group" ? (
-                    <span
-                      className="absolute right-[20%] top-1 h-2 w-2 rounded-full bg-[#0F766E] ring-2 ring-white"
+                  {Icon && (
+                    <Icon
+                      size={20}
+                      strokeWidth={2}
+                      className={active ? "text-[#0F766E]" : "text-[#94A3B8]"}
                       aria-hidden
-                      title="Updates"
                     />
-                  ) : null}
-                  <span
-                    className="text-lg leading-none"
-                    aria-hidden
-                    style={{
-                      filter: active ? "none" : "grayscale(1)",
-                      opacity: active ? 1 : 0.55,
-                    }}
-                  >
-                    {emoji}
-                  </span>
+                  )}
                   <span
                     className={`max-w-full truncate text-[10px] font-semibold ${
-                      active ? "text-[#0F766E]" : "text-[#94A3B8]"
+                      active ? "text-[#0F766E]" : "text-[#64748B]"
                     }`}
                   >
                     {label}
@@ -861,6 +942,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         />
       ) : null}
       {user && <LoungeDock />}
+      <LiveModal open={liveModalOpen} onClose={() => setLiveModalOpen(false)} />
     </div>
   );
 }
@@ -872,3 +954,4 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     </DashboardUserProvider>
   );
 }
+

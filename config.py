@@ -114,6 +114,32 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="FOURSQUARE_API_KEY",
     )
+    viator_api_key: str = Field(
+        default="",
+        validation_alias="VIATOR_API_KEY",
+    )
+    viator_partner_id: str = Field(
+        default="P00305012",
+        validation_alias="VIATOR_PARTNER_ID",
+    )
+
+    @field_validator("foursquare_api_key", mode="before")
+    @classmethod
+    def _normalize_foursquare_api_key(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        key = str(value).strip()
+        if not key:
+            return None
+        if (key.startswith('"') and key.endswith('"')) or (
+            key.startswith("'") and key.endswith("'")
+        ):
+            key = key[1:-1].strip()
+        if key.lower().startswith("bearer "):
+            key = key[7:].strip()
+        if " " in key and "+" not in key:
+            key = key.replace(" ", "+")
+        return key or None
     geoapify_api_key: str | None = Field(
         default=None,
         validation_alias="GEOAPIFY_API_KEY",

@@ -39,7 +39,7 @@ export function DashboardUserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
-    const me = await apiFetch<DashboardUser>("/auth/me");
+    const me = await apiFetch<DashboardUser>("/auth/me", {}, 30000);
     setUser(me);
   }, []);
 
@@ -53,7 +53,7 @@ export function DashboardUserProvider({ children }: { children: ReactNode }) {
     let c = false;
     (async () => {
       try {
-        const me = await apiFetch<DashboardUser>("/auth/me");
+        const me = await apiFetch<DashboardUser>("/auth/me", {}, 30000);
         if (!c) {
           setUser(me);
           syncLocalProfileCache(me);

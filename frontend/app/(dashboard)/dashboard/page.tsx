@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { OpenLoungeButton } from "@/components/lounge/OpenLoungeButton";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -65,7 +66,6 @@ const DASHBOARD_ROUTES = {
   tripsPlan: "/trips/plan",
   tripsList: "/trips",
   /** Travel Hub is the live group-chat workspace (browse groups, messages, calls). */
-  travelHub: "/travel-hub",
   /** Dedicated group-creation entry; redirects into Travel Hub create modal. */
   groupsNew: "/groups/new",
   plan: "/plan",
@@ -1818,13 +1818,12 @@ export default function DashboardPage() {
                   })}
                 </ul>
               )}
-              <Link
-                href={DASHBOARD_ROUTES.travelHub}
+              <OpenLoungeButton
                 className="mt-4 inline-block text-xs font-semibold hover:underline"
                 style={{ color: LINK }}
               >
                 Open Rovvy Lounge →
-              </Link>
+              </OpenLoungeButton>
             </div>
           </section>
 
@@ -1844,7 +1843,7 @@ export default function DashboardPage() {
                   className="overflow-hidden rounded-xl border shadow-sm"
                   style={{ borderColor: BORDER, backgroundColor: CARD }}
                 >
-                  <div className="space-y-3 p-4" style={{ backgroundColor: NAVY }}>
+                  <div className="space-y-3 p-4" style={{ backgroundColor: BRAND }}>
                     <Shimmer height={24} width="60%" />
                     <Shimmer height={14} width="90%" />
                     <div className="mt-4 flex gap-2">
@@ -1861,7 +1860,7 @@ export default function DashboardPage() {
                   className="overflow-hidden rounded-xl border shadow-sm"
                   style={{ borderColor: BORDER, backgroundColor: CARD }}
                 >
-                  <div className="p-4 text-white" style={{ backgroundColor: NAVY }}>
+                  <div className="p-4 text-white" style={{ backgroundColor: BRAND }}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-[#A5C9FF]">
@@ -1875,7 +1874,7 @@ export default function DashboardPage() {
                       </div>
                       <Link
                         href={tripWorkspaceHref(smartTrip.id)}
-                        className="shrink-0 rounded-full bg-[#1E293B] px-3 py-1.5 text-xs font-bold text-white transition hover:opacity-90"
+                        className="shrink-0 rounded-full bg-white/20 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/30"
                       >
                         Open trip →
                       </Link>
@@ -2447,13 +2446,12 @@ export default function DashboardPage() {
                       })}
                     </ul>
                   )}
-                  <Link
-                    href={DASHBOARD_ROUTES.travelHub}
+                  <OpenLoungeButton
                     className="mt-4 inline-block text-sm font-semibold"
                     style={{ color: LINK }}
                   >
                     Open Rovvy Lounge →
-                  </Link>
+                  </OpenLoungeButton>
                 </div>
               )}
             </div>

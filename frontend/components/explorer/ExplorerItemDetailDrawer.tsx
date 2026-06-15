@@ -34,6 +34,43 @@ export function ExplorerItemDetailDrawer({
   const [tripId, setTripId] = useState("");
   const [pendingAction, setPendingAction] = useState<"save" | "vote" | null>(null);
   const [busy, setBusy] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+
+  const handleAddToCart = async () => {
+    if (!item) return;
+    setAddingToCart(true);
+    try {
+      await apiFetch("/cart", {
+        method: "POST",
+        body: JSON.stringify({
+          item_type: "activity",
+          item_id: item.id,
+          item_name: item.title,
+          item_image: item.imageUrl || null,
+          item_category: item.source,
+          place_name: item.venue || item.city,
+          full_address: item.venue || item.city,
+          lat: (item as any).latitude || 0.0,
+          lng: (item as any).longitude || 0.0,
+          price_range: item.priceLabel || null,
+          rating: null,
+          source: item.source || "explore",
+          source_url: item.sourceUrl || null,
+        }),
+      });
+      onToast?.("Added to Travel Cart");
+      window.dispatchEvent(new CustomEvent("gt-cart-updated"));
+    } catch (err: any) {
+      if (err.message && err.message.includes("409")) {
+        onToast?.("Item is already in your travel cart!");
+      } else {
+        onToast?.("Failed to add to cart");
+      }
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
 
   useEffect(() => {
     if (!item) return;
@@ -186,7 +223,15 @@ export function ExplorerItemDetailDrawer({
                 </>
               ) : null}
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={addingToCart}
+                  className="rounded-2xl bg-teal-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-600 disabled:opacity-50"
+                >
+                  {addingToCart ? "Adding..." : "Add to Cart"}
+                </button>
                 <button
                   type="button"
                   onClick={() => openTripModal("save")}
