@@ -361,14 +361,8 @@ function RegisterPageInner() {
     setOauthAlert(null);
     setError(null);
     try {
-      const openedNewTab = await startGoogleOAuth("signup");
-      if (openedNewTab) {
-        setOauthBusy(false);
-        setOauthAlert({
-          variant: "info",
-          body: "Complete Google sign-up in the new browser tab that just opened.",
-        });
-      }
+      await startGoogleOAuth("signup");
+      // same-tab redirect: page is navigating — no further state update needed
     } catch (err) {
       setOauthBusy(false);
       setOauthAlert({
@@ -384,14 +378,8 @@ function RegisterPageInner() {
     setOauthAlert(null);
     setError(null);
     try {
-      const openedNewTab = await startFacebookOAuth("signup");
-      if (openedNewTab) {
-        setOauthBusy(false);
-        setOauthAlert({
-          variant: "info",
-          body: "Complete Facebook sign-up in the new browser tab that just opened.",
-        });
-      }
+      await startFacebookOAuth("signup");
+      // same-tab redirect: page is navigating — no further state update needed
     } catch (err) {
       setOauthBusy(false);
       setOauthAlert({
