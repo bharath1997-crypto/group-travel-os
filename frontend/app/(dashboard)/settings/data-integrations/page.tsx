@@ -18,10 +18,10 @@ export default function DataIntegrationsPage() {
           sublabel="Request an archive of your account data"
         />
         <SettingsHubRow
+          href="/settings/data-integrations/export-trips"
           icon={FileDown}
           label="Export Trips"
-          sublabel="Download trips as PDF or CSV"
-          badge="Coming Soon"
+          sublabel="Download trips as JSON or Calendar (.ics)"
         />
         <SettingsHubRow
           icon={Package}

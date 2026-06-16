@@ -5,12 +5,25 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class ExportRequestIn(BaseModel):
     export_type: str = "full"   # full | trips | maps
+
+
+class ExportTripsIn(BaseModel):
+    trip_ids: list[uuid.UUID]
+    format: Literal["json", "ics"] = "json"
+
+    @field_validator("trip_ids")
+    @classmethod
+    def trip_ids_not_empty(cls, v: list[uuid.UUID]) -> list[uuid.UUID]:
+        if not v:
+            raise ValueError("trip_ids cannot be empty")
+        return v
 
 
 class ExportStatusOut(BaseModel):

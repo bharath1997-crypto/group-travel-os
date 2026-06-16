@@ -1,9 +1,10 @@
 """
 app/routes/data_export.py — Data export endpoints
 
-POST   /api/v1/data/export                     — Request a new export
-GET    /api/v1/data/export/history             — List past exports
-GET    /api/v1/data/export/{request_id}        — Poll export status
+POST   /api/v1/data/export                       — Request a full account export
+POST   /api/v1/data/export/trips                 — Request a trip export (JSON or ICS)
+GET    /api/v1/data/export/history               — List past exports
+GET    /api/v1/data/export/{request_id}          — Poll export status
 GET    /api/v1/data/export/{request_id}/download — Stream local export file
 """
 from __future__ import annotations
@@ -11,12 +12,18 @@ from __future__ import annotations
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Response
+from fastapi import APIRouter, BackgroundTasks, Depends
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from app.schemas.data_export import ExportHistoryOut, ExportRequestIn, ExportStatusOut
+from app.schemas.data_export import (
+    ExportHistoryOut,
+    ExportRequestIn,
+    ExportStatusOut,
+    ExportTripsIn,
+)
 from app.services import data_export_service as svc
+from app.services import trip_export_service as trip_svc
 from app.utils.auth import get_current_user
 from app.utils.database import get_db
 from app.utils.exceptions import AppException
@@ -38,6 +45,25 @@ def request_export(
 ) -> ExportStatusOut:
     req = svc.create_export_request(db, current_user.id, body.export_type)
     background_tasks.add_task(svc.process_export, str(req.id))
+    return ExportStatusOut.model_validate(req)
+
+
+@router.post(
+    "/export/trips",
+    response_model=ExportStatusOut,
+    status_code=202,
+    summary="Request an export of selected trips (JSON or ICS)",
+)
+def request_trip_export(
+    body: ExportTripsIn,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+) -> ExportStatusOut:
+    req = trip_svc.create_trip_export_request(
+        db, current_user.id, body.trip_ids, body.format
+    )
+    background_tasks.add_task(trip_svc.process_trip_export, str(req.id))
     return ExportStatusOut.model_validate(req)
 
 
