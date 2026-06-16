@@ -50,10 +50,10 @@ export default function DataIntegrationsPage() {
       <div className="bg-white">
         <SettingsSectionTitle>Connected services</SettingsSectionTitle>
         <SettingsHubRow
+          href="/settings/data-integrations/google-calendar"
           icon={CalendarDays}
           label="Google Calendar Sync"
           sublabel="Sync your trips to Google Calendar"
-          badge="Coming Soon"
         />
         <SettingsHubRow
           icon={Import}

@@ -45,9 +45,10 @@ def sqlite_create_explorer_events_table() -> None:
     from app.models.wayra import WayraPersonalMemory
     from app.models.data_export import DataExportRequest
     from app.models.data_import import DataImportRequest
+    from app.models.user_integration import UserIntegration
 
     # Override JSONB → JSON for SQLite compatibility in CI
-    for model in (ExploreContent, DataExportRequest, DataImportRequest):
+    for model in (ExploreContent, DataExportRequest, DataImportRequest, UserIntegration):
         for col in model.__table__.columns:
             if isinstance(col.type, JSONB):
                 col.type = sa.JSON()
@@ -72,6 +73,7 @@ def sqlite_create_explorer_events_table() -> None:
         TripRoster.__table__,
         DataExportRequest.__table__,
         DataImportRequest.__table__,
+        UserIntegration.__table__,
     ]
     Base.metadata.create_all(bind=engine, tables=tables_to_create, checkfirst=True)
 
