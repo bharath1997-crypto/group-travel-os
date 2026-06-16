@@ -56,10 +56,10 @@ export default function DataIntegrationsPage() {
           sublabel="Sync your trips to Google Calendar"
         />
         <SettingsHubRow
+          href="/settings/data-integrations/google"
           icon={Import}
           label="Google Integration"
-          sublabel="Maps, Drive, and Gmail"
-          badge="Coming Soon"
+          sublabel="Calendar, Drive, and more"
         />
         <SettingsHubRow
           icon={Apple}

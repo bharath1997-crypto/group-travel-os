@@ -18,6 +18,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.services import google_calendar_service as gcal
+from app.services import google_drive_service as gdrive
 from app.utils.auth import get_current_user
 from app.utils.database import get_db
 from config import settings
@@ -108,3 +109,60 @@ def sync_trip_to_calendar(
     current_user=Depends(get_current_user),
 ) -> dict[str, Any]:
     return gcal.sync_trip(db, current_user.id, trip_id)
+
+
+# ── Google Drive — connect ────────────────────────────────────────────────────
+
+@router.get(
+    "/google-drive/connect",
+    summary="Start Google Drive OAuth — redirects to Google consent screen",
+)
+def google_drive_connect(
+    current_user=Depends(get_current_user),
+) -> RedirectResponse:
+    url = gdrive.build_connect_url(current_user.id)
+    return RedirectResponse(url, status_code=302)
+
+
+@router.get(
+    "/google-drive/callback",
+    summary="Google Drive OAuth callback",
+    include_in_schema=False,
+)
+def google_drive_callback(
+    code: str = Query(...),
+    state: str = Query(...),
+    db: Session = Depends(get_db),
+) -> RedirectResponse:
+    gdrive.handle_callback(db, code, state)
+    frontend_url = settings.FRONTEND_URL
+    return RedirectResponse(
+        f"{frontend_url}/settings/data-integrations/google-drive?connected=1",
+        status_code=302,
+    )
+
+
+@router.post(
+    "/google-drive/disconnect",
+    summary="Disconnect Google Drive integration",
+)
+def google_drive_disconnect(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+) -> dict[str, str]:
+    gdrive.disconnect(db, current_user.id)
+    return {"status": "disconnected"}
+
+
+# ── Google Drive — backup export ──────────────────────────────────────────────
+
+@router.post(
+    "/google-drive/backup-export/{export_request_id}",
+    summary="Upload a ready export file to Google Drive",
+)
+def backup_export_to_drive(
+    export_request_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+) -> dict[str, Any]:
+    return gdrive.backup_export(db, current_user.id, export_request_id)

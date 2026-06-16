@@ -239,6 +239,11 @@ class Settings(BaseSettings):
         default="http://localhost:8000/api/v1/integrations/google-calendar/callback",
         validation_alias="GOOGLE_CALENDAR_REDIRECT_URI",
     )
+    # Drive-specific OAuth redirect
+    GOOGLE_DRIVE_REDIRECT_URI: str = Field(
+        default="http://localhost:8000/api/v1/integrations/google-drive/callback",
+        validation_alias="GOOGLE_DRIVE_REDIRECT_URI",
+    )
     # Fernet key for encrypting OAuth tokens at rest — generate with: Fernet.generate_key()
     INTEGRATION_TOKEN_ENCRYPTION_KEY: str = Field(
         default="",
