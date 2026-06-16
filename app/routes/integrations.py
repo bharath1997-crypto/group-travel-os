@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.services import google_calendar_service as gcal
 from app.services import google_drive_service as gdrive
+from app.services import microsoft_calendar_service as mscal
 from app.utils.auth import get_current_user
 from app.utils.database import get_db
 from config import settings
@@ -166,3 +167,58 @@ def backup_export_to_drive(
     current_user=Depends(get_current_user),
 ) -> dict[str, Any]:
     return gdrive.backup_export(db, current_user.id, export_request_id)
+
+
+# ── Microsoft Calendar — connect ──────────────────────────────────────────────
+
+@router.get(
+    "/microsoft-calendar/connect",
+    summary="Start Microsoft Calendar OAuth — redirects to Microsoft consent screen",
+)
+def microsoft_calendar_connect(
+    current_user=Depends(get_current_user),
+) -> RedirectResponse:
+    url = mscal.build_connect_url(current_user.id)
+    return RedirectResponse(url, status_code=302)
+
+
+@router.get(
+    "/microsoft-calendar/callback",
+    summary="Microsoft OAuth callback",
+    include_in_schema=False,
+)
+def microsoft_calendar_callback(
+    code: str = Query(...),
+    state: str = Query(...),
+    db: Session = Depends(get_db),
+) -> RedirectResponse:
+    mscal.handle_callback(db, code, state)
+    frontend_url = settings.FRONTEND_URL
+    return RedirectResponse(
+        f"{frontend_url}/settings/data-integrations/outlook-calendar?connected=1",
+        status_code=302,
+    )
+
+
+@router.post(
+    "/microsoft-calendar/disconnect",
+    summary="Disconnect Microsoft Calendar integration",
+)
+def microsoft_calendar_disconnect(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+) -> dict[str, str]:
+    mscal.disconnect(db, current_user.id)
+    return {"status": "disconnected"}
+
+
+@router.post(
+    "/microsoft-calendar/sync-trip/{trip_id}",
+    summary="Create or update an Outlook Calendar event for a trip",
+)
+def sync_trip_to_outlook(
+    trip_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+) -> dict[str, Any]:
+    return mscal.sync_trip(db, current_user.id, trip_id)

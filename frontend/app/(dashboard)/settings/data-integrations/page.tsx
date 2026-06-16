@@ -1,6 +1,6 @@
 "use client";
 
-import { Apple, CalendarDays, Download, FileDown, Import, Map, Package, Upload } from "lucide-react";
+import { Apple, CalendarDays, Download, FileDown, Import, Mail, Map, Package, Upload } from "lucide-react";
 
 import { SettingsHubRow, SettingsScreenHeader, SettingsSectionTitle } from "../_components";
 
@@ -66,6 +66,12 @@ export default function DataIntegrationsPage() {
           icon={Apple}
           label="Apple Integration"
           sublabel="Apple Maps and Calendar"
+        />
+        <SettingsHubRow
+          href="/settings/data-integrations/outlook-calendar"
+          icon={Mail}
+          label="Outlook Calendar Sync"
+          sublabel="Sync your trips to Microsoft Outlook Calendar"
         />
       </div>
     </>
