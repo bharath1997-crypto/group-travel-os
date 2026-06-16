@@ -12,7 +12,7 @@ export default function DataIntegrationsPage() {
       <div className="bg-white">
         <SettingsSectionTitle>Export your data</SettingsSectionTitle>
         <SettingsHubRow
-          href="/settings/support-legal#my-data"
+          href="/settings/data-integrations/export"
           icon={Download}
           label="Download My Data"
           sublabel="Request an archive of your account data"
