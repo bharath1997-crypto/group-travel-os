@@ -394,6 +394,10 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(data_export_router, prefix="/api/v1")
 
+    from app.routes.data_import import router as data_import_router
+
+    app.include_router(data_import_router, prefix="/api/v1")
+
 
 
 # ── App instance ──────────────────────────────────────────────────────────────

@@ -40,10 +40,10 @@ export default function DataIntegrationsPage() {
       <div className="bg-white">
         <SettingsSectionTitle>Import data</SettingsSectionTitle>
         <SettingsHubRow
+          href="/settings/data-integrations/import-data"
           icon={Upload}
           label="Import Data"
-          sublabel="Bring in trips from other services"
-          badge="Coming Soon"
+          sublabel="Import places and trips from GeoJSON, GPX, or CSV"
         />
       </div>
 
