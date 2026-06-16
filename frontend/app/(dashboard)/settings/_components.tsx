@@ -6,23 +6,53 @@ import { IconArrowLeft, IconChevronRight, IconSearch, type IconComponent } from 
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-// ── Accent colour palette ────────────────────────────────────────────────────
-// Use string keys so hub pages can pass e.g. accentColor="teal".
-// Actual CSS values are used via inline styles so Tailwind purging is never an issue.
-const ACCENT = {
-  teal:   { bg: "#F0FDFA", fg: "#0F766E" },
-  blue:   { bg: "#EFF6FF", fg: "#2563EB" },
-  purple: { bg: "#F5F3FF", fg: "#7C3AED" },
-  green:  { bg: "#F0FDF4", fg: "#16A34A" },
-  orange: { bg: "#FFF7ED", fg: "#EA580C" },
-  indigo: { bg: "#EEF2FF", fg: "#4338CA" },
-  amber:  { bg: "#FFFBEB", fg: "#D97706" },
-  slate:  { bg: "#F8FAFC", fg: "#475569" },
-  pink:   { bg: "#FDF2F8", fg: "#DB2777" },
-  red:    { bg: "#FEF2F2", fg: "#DC2626" },
+// ── Accent styles for SettingsHubRow icon containers ─────────────────────────
+// All class names are hardcoded as complete string literals so Tailwind's static
+// analyser can always find them — no dynamic class construction anywhere.
+const ACCENT_STYLES = {
+  teal: {
+    active:   "bg-teal-50 text-teal-700 border border-teal-100",
+    disabled: "bg-teal-50 text-teal-400 border border-teal-100",
+  },
+  blue: {
+    active:   "bg-blue-50 text-blue-700 border border-blue-100",
+    disabled: "bg-blue-50 text-blue-400 border border-blue-100",
+  },
+  purple: {
+    active:   "bg-purple-50 text-purple-700 border border-purple-100",
+    disabled: "bg-purple-50 text-purple-400 border border-purple-100",
+  },
+  green: {
+    active:   "bg-green-50 text-green-700 border border-green-100",
+    disabled: "bg-green-50 text-green-400 border border-green-100",
+  },
+  orange: {
+    active:   "bg-orange-50 text-orange-700 border border-orange-100",
+    disabled: "bg-orange-50 text-orange-400 border border-orange-100",
+  },
+  indigo: {
+    active:   "bg-indigo-50 text-indigo-700 border border-indigo-100",
+    disabled: "bg-indigo-50 text-indigo-400 border border-indigo-100",
+  },
+  amber: {
+    active:   "bg-amber-50 text-amber-700 border border-amber-100",
+    disabled: "bg-amber-50 text-amber-400 border border-amber-100",
+  },
+  slate: {
+    active:   "bg-slate-100 text-slate-700 border border-slate-200",
+    disabled: "bg-slate-100 text-slate-400 border border-slate-200",
+  },
+  pink: {
+    active:   "bg-pink-50 text-pink-700 border border-pink-100",
+    disabled: "bg-pink-50 text-pink-400 border border-pink-100",
+  },
+  red: {
+    active:   "bg-red-50 text-red-600 border border-red-100",
+    disabled: "bg-red-50 text-red-400 border border-red-100",
+  },
 } as const;
 
-export type AccentColor = keyof typeof ACCENT;
+export type AccentColor = keyof typeof ACCENT_STYLES;
 
 // ── SettingsScreenHeader ──────────────────────────────────────────────────────
 export function SettingsScreenHeader({
@@ -246,19 +276,21 @@ export function SettingsHubRow({
   danger?: boolean;
   accentColor?: AccentColor;
 }) {
-  // Resolve icon container & icon tint colours
-  const iconBg  = danger ? ACCENT.red.bg  : accentColor ? ACCENT[accentColor].bg  : "#F3F4F6";
-  const iconFg  = danger ? ACCENT.red.fg  : accentColor ? ACCENT[accentColor].fg  : "#6B7280";
+  // Resolve icon-container classes from the static map (no inline styles → Tailwind purge-safe)
+  const isDisabled = badge === "Coming Soon";
+  const colorKey   = danger ? "red" as const : accentColor ?? null;
+  const iconWrapCls = colorKey
+    ? ACCENT_STYLES[colorKey][isDisabled ? "disabled" : "active"]
+    : isDisabled
+      ? "bg-stone-100 text-stone-400 border border-stone-100"
+      : "bg-stone-100 text-stone-600 border border-stone-100";
 
   const inner = (
     <>
       <div className="flex min-w-0 flex-1 items-center gap-3.5">
         {Icon && (
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-            style={{ background: iconBg }}
-          >
-            <Icon size={16} strokeWidth={1.8} style={{ color: iconFg }} />
+          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${iconWrapCls}`}>
+            <Icon size={16} strokeWidth={1.8} />
           </div>
         )}
         <div className="min-w-0">
