@@ -582,7 +582,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const headerPx = hasSubNav ? 108 : 64;
 
   return (
-    <div className="h-screen overflow-hidden bg-[#F8F9FA]">
+    <div className="min-h-screen min-h-[100dvh] bg-[#F8F9FA]">
       <ConnectionStatusBanner />
 
       {/* ═══════════════════════════════════════════════════
@@ -796,7 +796,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           MAIN CONTENT — padded to clear the fixed header
       ═══════════════════════════════════════════════════ */}
       <div
-        className="flex min-h-screen min-h-[100dvh] w-full flex-col pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0"
+        className="flex h-screen h-[100dvh] w-full flex-col overflow-y-auto pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0"
         style={{ paddingTop: `${headerPx}px` }}
       >
         <main

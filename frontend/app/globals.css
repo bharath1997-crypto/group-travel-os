@@ -36,11 +36,6 @@
 html,
 body {
   height: 100%;
-}
-
-/* Dashboard shell locks the viewport so its own inner panes scroll independently.
-   All other pages (terms, auth, landing, etc.) keep normal document scroll. */
-.dashboard-shell {
   overflow: hidden;
 }
 
