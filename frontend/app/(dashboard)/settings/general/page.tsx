@@ -14,13 +14,22 @@ import {
   SettingsToggleRow,
 } from "../_components";
 
+const EMPTY_PREFS: AppPreferences = {};
+
 export default function SettingsGeneralPage() {
-  const [prefs, setPrefs] = useState<AppPreferences | null>(null);
+  const [prefs, setPrefs] = useState<AppPreferences>(EMPTY_PREFS);
+  const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const b = await fetchAppSettings();
-    setPrefs(b.preferences);
+    try {
+      const b = await fetchAppSettings();
+      setPrefs(b.preferences);
+    } catch {
+      // Backend unavailable — render with default prefs
+    } finally {
+      setLoaded(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -28,6 +37,7 @@ export default function SettingsGeneralPage() {
   }, [load]);
 
   useEffect(() => {
+    if (!loaded) return;
     const id = window.location.hash.replace("#", "");
     if (id) {
       window.requestAnimationFrame(() =>
@@ -46,7 +56,7 @@ export default function SettingsGeneralPage() {
     }
   }
 
-  if (!prefs) {
+  if (!loaded) {
     return (
       <>
         <SettingsScreenHeader title="General" backHref="/settings" />
