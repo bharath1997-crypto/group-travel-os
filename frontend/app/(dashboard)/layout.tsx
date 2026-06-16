@@ -581,7 +581,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const headerPx = hasSubNav ? 108 : 64;
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-[#F8F9FA]">
+    <div className="h-screen overflow-hidden bg-[#F8F9FA]">
       <ConnectionStatusBanner />
 
       {/* ═══════════════════════════════════════════════════
