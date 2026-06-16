@@ -1,512 +1,139 @@
 "use client";
 
-import { LogOut } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-
 import {
-  IconAccessibility,
-  IconActivity,
-  IconAlertCircle,
-  IconArchive,
-  IconAtSign,
-  IconBan,
-  IconBarChart3,
-  IconBell,
-  IconBellOff,
-  IconBookmark,
-  IconClock,
-  IconCrown,
-  IconDownload,
-  IconEye,
-  IconFileText,
-  IconGrid,
-  IconHeartCrack,
-  IconImage,
-  IconGlobe,
-  IconLifeBuoy,
-  IconLock,
-  IconMessageCircle,
-  IconMessageSquare,
-  IconScale,
-  IconShare,
-  IconShield,
-  IconShieldOff,
-  IconSmartphone,
-  IconStar,
-  IconTablet,
-  IconTv,
-  IconType,
-  IconUserCircle,
-  IconUserPlus,
-  IconUserX,
-  IconUsers,
-  type IconComponent,
-} from "@/components/icons";
+  Bell, Bot, Compass, Database,
+  LogOut, Map, Plane, Settings, ShieldCheck, Lock,
+} from "lucide-react";
+import { useCallback, useState } from "react";
 
-import {
-  fetchAppSettings,
-  type AppSettingsBundle,
-  type SettingsCounts,
-} from "@/lib/app-settings";
-import { OpenLoungeButton } from "@/components/lounge/OpenLoungeButton";
-import {
-  SettingsLinkRow,
-  SettingsSearchInput,
-  SettingsScreenHeader,
-  SettingsSectionTitle,
-} from "./_components";
+import { SettingsHubCard, SettingsSearchInput } from "./_components";
 
-type HubItem = {
-  label: string;
-  href?: string;
-  openLounge?: boolean;
-  icon: IconComponent;
-  sublabel?: string;
-  countKey?: keyof SettingsCounts;
-  keywords?: string;
-};
-
-type HubSection = { title: string; items: HubItem[] };
-
-const HUB: HubSection[] = [
+const HUBS = [
   {
-    title: "Your account",
-    items: [
-      {
-        label: "Accounts center",
-        sublabel:
-          "Password, security, personal details, connected experiences, preferences",
-        href: "/settings/account",
-        icon: IconUserCircle,
-        keywords: "meta accounts center password",
-      },
-    ],
+    href: "/settings/account-security",
+    icon: ShieldCheck,
+    iconBg: "#0F766E",
+    title: "Account & Security",
+    description: "Password, sign-in, devices, 2FA, connected accounts",
   },
   {
-    title: "General account",
-    items: [
-      {
-        label: "Close friends",
-        href: "/settings/general#close-friends",
-        icon: IconStar,
-        countKey: "close_friends",
-        keywords: "favorite inner circle",
-      },
-      {
-        label: "Crossposting",
-        href: "/settings/general#crosspost",
-        icon: IconGrid,
-        keywords: "share external",
-      },
-      {
-        label: "Blocked",
-        href: "/settings/blocked",
-        icon: IconBan,
-        countKey: "blocked",
-        keywords: "block list",
-      },
-      {
-        label: "Story, live and location",
-        href: "/settings/general#story-location",
-        icon: IconShieldOff,
-        keywords: "privacy location stories",
-      },
-      {
-        label: "Activity in Friends tab",
-        href: "/settings/general#activity-friends",
-        icon: IconUsers,
-        keywords: "friends activity",
-      },
-    ],
+    href: "/settings/privacy-safety",
+    icon: Lock,
+    iconBg: "#1E40AF",
+    title: "Privacy & Safety",
+    description: "Blocked users, message permissions, safety center",
   },
   {
-    title: "How others interact with you",
-    items: [
-      {
-        label: "Messages and story replies",
-        href: "/settings/interactions#messages",
-        icon: IconMessageCircle,
-        keywords: "dm chat replies",
-      },
-      {
-        label: "Tags and mentions",
-        href: "/settings/interactions#tags",
-        icon: IconAtSign,
-        keywords: "mention tag",
-      },
-      {
-        label: "Comments",
-        href: "/settings/interactions#comments",
-        icon: IconMessageSquare,
-        keywords: "comment moderation",
-      },
-      {
-        label: "Sharing",
-        href: "/settings/interactions#sharing",
-        icon: IconShare,
-        keywords: "reshare repost",
-      },
-      {
-        label: "Restricted",
-        href: "/settings/interactions#restricted",
-        icon: IconUserX,
-        countKey: "restricted",
-        keywords: "restrict limited",
-      },
-      {
-        label: "Limit interactions",
-        href: "/settings/interactions#limit",
-        icon: IconAlertCircle,
-        keywords: "spam limit",
-      },
-      {
-        label: "Hidden words",
-        href: "/settings/interactions#hidden",
-        icon: IconType,
-        keywords: "filter moderation",
-      },
-    ],
+    href: "/settings/trips-travel",
+    icon: Plane,
+    iconBg: "#7C3AED",
+    title: "Trips & Travel",
+    description: "Group permissions, travel docs, loyalty programs, driver mode",
   },
   {
-    title: "How you use Rovvy",
-    items: [
-      {
-        label: "Saved",
-        href: "/explore",
-        icon: IconBookmark,
-        keywords: "bookmarks trips pins",
-      },
-      {
-        label: "Archive",
-        href: "/settings/usage#archive",
-        icon: IconArchive,
-        keywords: "history archive",
-      },
-      {
-        label: "Your activity",
-        href: "/settings/usage#activity",
-        icon: IconActivity,
-        keywords: "history stats",
-      },
-      {
-        label: "Notifications",
-        href: "/notifications",
-        icon: IconBell,
-        keywords: "alerts push email",
-      },
-      {
-        label: "Time management",
-        href: "/settings/usage#time",
-        icon: IconClock,
-        keywords: "reminders screen time",
-      },
-      {
-        label: "Rovvy for tablets",
-        href: "/settings/usage#tablet",
-        icon: IconTablet,
-        keywords: "ipad layout",
-      },
-      {
-        label: "Rovvy for TV",
-        href: "/settings/usage#tv",
-        icon: IconTv,
-        keywords: "cast television",
-      },
-    ],
+    href: "/settings/maps-trip-live",
+    icon: Map,
+    iconBg: "#065F46",
+    title: "Maps & Trip LIVE",
+    description: "Saved places, offline maps, location sharing, LIVE settings",
   },
   {
-    title: "Who can see your content",
-    items: [
-      {
-        label: "Account privacy",
-        href: "/settings/edit-profile",
-        icon: IconLock,
-        keywords: "private public profile",
-      },
-      {
-        label: "Follow and invite friends",
-        openLounge: true,
-        icon: IconUserPlus,
-        keywords: "invite connect",
-      },
-    ],
+    href: "/settings/content-discovery",
+    icon: Compass,
+    iconBg: "#9A3412",
+    title: "Content & Discovery",
+    description: "Travel interests, event preferences, feed, avatar",
   },
   {
-    title: "What you see",
-    items: [
-      {
-        label: "Favorites",
-        href: "/settings/content#favorites",
-        icon: IconStar,
-        countKey: "favorites",
-        keywords: "favorite people",
-      },
-      {
-        label: "Muted accounts",
-        href: "/settings/content#muted",
-        icon: IconBellOff,
-        countKey: "muted",
-        keywords: "mute silence",
-      },
-      {
-        label: "Content preferences",
-        href: "/settings/content#preferences",
-        icon: IconImage,
-        keywords: "algorithm feed",
-      },
-      {
-        label: "Like and share counts",
-        href: "/settings/content#counts",
-        icon: IconHeartCrack,
-        keywords: "hide counts vanity",
-      },
-      {
-        label: "Creator subscriptions",
-        href: "/settings/content#creators",
-        icon: IconCrown,
-        keywords: "premium creators",
-      },
-    ],
+    href: "/settings/wayra-ai",
+    icon: Bot,
+    iconBg: "#4338CA",
+    title: "Wayra AI",
+    description: "AI personalization, memory, history, data controls",
+    badge: "Beta" as const,
   },
   {
-    title: "Your app and media",
-    items: [
-      {
-        label: "Device permissions",
-        href: "/settings/app-media#permissions",
-        icon: IconSmartphone,
-        keywords: "camera microphone location",
-      },
-      {
-        label: "Archiving and downloading",
-        href: "/settings/app-media#archiving",
-        icon: IconDownload,
-        keywords: "export backup",
-      },
-      {
-        label: "Accessibility",
-        href: "/settings/app-media#accessibility",
-        icon: IconAccessibility,
-        keywords: "a11y large text",
-      },
-      {
-        label: "Language and translations",
-        href: "/settings/app-media#language",
-        icon: IconGlobe,
-        keywords: "locale i18n",
-      },
-      {
-        label: "Data usage and media quality",
-        href: "/settings/app-media#data",
-        icon: IconBarChart3,
-        keywords: "wifi cellular quality",
-      },
-    ],
+    href: "/settings/messages-notifications",
+    icon: Bell,
+    iconBg: "#B45309",
+    title: "Messages & Notifications",
+    description: "Lounge, push notifications, price alerts, group alerts",
   },
   {
-    title: "Support and information",
-    items: [
-      {
-        label: "Travel streak help",
-        href: "/settings/support#streak",
-        icon: IconLifeBuoy,
-        keywords: "lost streak snap",
-      },
-      {
-        label: "Bugs and suggestions",
-        href: "/settings/support#bugs",
-        icon: IconMessageSquare,
-        keywords: "feedback report",
-      },
-      {
-        label: "Safety and privacy overview",
-        href: "/settings/support#safety",
-        icon: IconShield,
-        keywords: "trust safety",
-      },
-      {
-        label: "Help center",
-        href: "/settings/support#help",
-        icon: IconLifeBuoy,
-        keywords: "faq support",
-      },
-      {
-        label: "Privacy policy",
-        href: "/settings/support#privacy",
-        icon: IconFileText,
-        keywords: "legal",
-      },
-      {
-        label: "Terms of service",
-        href: "/settings/support#terms",
-        icon: IconScale,
-        keywords: "legal",
-      },
-      {
-        label: "Regional privacy choices",
-        href: "/settings/support#regional-privacy",
-        icon: IconEye,
-        keywords: "california florida ccpa",
-      },
-      {
-        label: "My data",
-        href: "/settings/support#my-data",
-        icon: IconDownload,
-        keywords: "export gdpr",
-      },
-    ],
+    href: "/settings/data-integrations",
+    icon: Database,
+    iconBg: "#0369A1",
+    title: "Data & Integrations",
+    description: "Export trips, Google & Apple sync, import data",
   },
   {
-    title: "Security & account actions",
-    items: [
-      {
-        label: "Password & sign-in",
-        href: "/settings/security#password",
-        icon: IconLock,
-        keywords: "password 2fa session",
-      },
-    ],
+    href: "/settings/app-preferences",
+    icon: Settings,
+    iconBg: "#374151",
+    title: "App Preferences",
+    description: "Language, currency, units, theme, accessibility",
   },
-];
+  {
+    href: "/settings/support-legal",
+    icon: ShieldCheck,
+    iconBg: "#BE185D",
+    title: "Support & Legal",
+    description: "Help center, privacy policy, terms, delete account",
+  },
+] as const;
 
 export default function SettingsHubPage() {
   const [q, setQ] = useState("");
-  const [bundle, setBundle] = useState<AppSettingsBundle | null>(null);
-  const [loadErr, setLoadErr] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoadErr(null);
-    try {
-      setBundle(await fetchAppSettings());
-    } catch (e) {
-      setLoadErr(e instanceof Error ? e.message : "Could not load settings");
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const privacyLabel = useMemo(() => {
-    if (!bundle?.account) return "—";
-    return bundle.account.profile_public ? "Public" : "Private";
-  }, [bundle]);
-
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    if (!needle) return HUB;
-    return HUB.map((sec) => ({
-      ...sec,
-      items: sec.items.filter((it) => {
-        const hay = `${it.label} ${it.sublabel ?? ""} ${it.keywords ?? ""}`.toLowerCase();
-        return hay.includes(needle);
-      }),
-    })).filter((sec) => sec.items.length > 0);
-  }, [q]);
+  const filtered = q.trim()
+    ? HUBS.filter((h) =>
+        `${h.title} ${h.description}`.toLowerCase().includes(q.trim().toLowerCase()),
+      )
+    : HUBS;
 
   const handleSignOut = useCallback(() => {
-    const confirmed = window.confirm(
-      "Are you sure you want to sign out?",
-    );
-    if (!confirmed) return;
+    if (!window.confirm("Are you sure you want to sign out?")) return;
     localStorage.removeItem("gt_token");
     localStorage.removeItem("user");
-    localStorage.removeItem("travello_user");
     window.location.href = "/login";
   }, []);
 
   return (
-    <>
-      <SettingsScreenHeader title="Settings and activity" backHref="/explore" />
+    <div className="mx-auto max-w-2xl px-3 pb-10 pt-1">
+      {/* Page title */}
+      <div className="px-1 pb-4 pt-5">
+        <h1 className="text-[22px] font-bold text-neutral-900">Settings</h1>
+        <p className="mt-0.5 text-sm text-stone-500">Manage your Rovvy experience</p>
+      </div>
+
+      {/* Search */}
       <SettingsSearchInput value={q} onChange={setQ} />
-      {loadErr ? (
-        <div className="mx-3 mt-2 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5">
-          <p className="text-xs text-amber-700">
-            Some settings counters could not be loaded.{" "}
-            <button
-              type="button"
-              className="font-semibold underline underline-offset-2 hover:text-amber-900"
-              onClick={() => void load()}
-            >
-              Retry
-            </button>
-          </p>
-        </div>
-      ) : null}
 
-      {filtered.map((sec) => (
-        <section key={sec.title}>
-          <SettingsSectionTitle>{sec.title}</SettingsSectionTitle>
-          <div className="bg-white">
-            {sec.items.map((it) => {
-              const count =
-                it.countKey != null && bundle
-                  ? bundle.counts[it.countKey]
-                  : undefined;
-              const sub =
-                it.label === "Account privacy" ? privacyLabel : it.sublabel;
-              if (it.openLounge) {
-                return (
-                  <OpenLoungeButton
-                    key={it.label}
-                    className="flex w-full items-center gap-3 border-b border-stone-100 px-4 py-3.5 text-left hover:bg-stone-50"
-                  >
-                    <it.icon className="h-5 w-5 shrink-0 text-stone-700" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium text-stone-900">
-                        {it.label}
-                      </span>
-                      {sub ? (
-                        <span className="block text-xs text-stone-500">{sub}</span>
-                      ) : null}
-                    </span>
-                  </OpenLoungeButton>
-                );
-              }
-              return (
-                <SettingsLinkRow
-                  key={it.label + it.href}
-                  href={it.href!}
-                  icon={it.icon}
-                  label={it.label}
-                  sublabel={sub}
-                  trailing={
-                    count != null && count > 0 ? (
-                      <span className="text-sm text-stone-500">{count}</span>
-                    ) : it.label === "Limit interactions" && bundle ? (
-                      <span className="text-sm text-stone-500">
-                        {Boolean(
-                          (
-                            bundle.preferences.interactions as
-                              | { limit_interactions?: boolean }
-                              | undefined
-                          )?.limit_interactions,
-                        )
-                          ? "On"
-                          : "Off"}
-                      </span>
-                    ) : null
-                  }
-                />
-              );
-            })}
-          </div>
-        </section>
-      ))}
+      {/* Hub grid */}
+      <div className="mt-3 space-y-2.5">
+        {filtered.map((hub) => (
+          <SettingsHubCard key={hub.href} {...hub} />
+        ))}
+        {filtered.length === 0 && (
+          <p className="py-10 text-center text-sm text-stone-400">No settings matching "{q}"</p>
+        )}
+      </div>
 
-      <div className="mt-8 border-t border-[#E9ECEF] pt-6">
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[#6C757D]">
-          Account
-        </p>
+      {/* Sign out */}
+      <div className="mt-8 border-t border-stone-100 pt-6">
         <button
           type="button"
           onClick={handleSignOut}
-          className="flex w-full items-center gap-3 rounded-xl border border-[#E9ECEF] bg-white px-4 py-3 text-[#E94560] transition-colors hover:bg-red-50"
+          className="flex w-full items-center gap-3 rounded-2xl border border-red-100 bg-white px-4 py-3.5 text-left text-red-600 transition-colors hover:bg-red-50"
         >
-          <LogOut size={18} />
-          <span className="text-sm font-medium">Sign out</span>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50">
+            <LogOut size={18} className="text-red-500" />
+          </div>
+          <span className="text-[15px] font-medium">Sign out</span>
         </button>
       </div>
-    </>
+
+      <p className="mt-6 text-center text-[11px] text-stone-400">Rovvy · Version 2.0</p>
+    </div>
   );
 }
