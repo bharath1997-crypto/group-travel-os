@@ -62,10 +62,10 @@ export default function DataIntegrationsPage() {
           sublabel="Calendar, Drive, and more"
         />
         <SettingsHubRow
+          href="/settings/data-integrations/apple"
           icon={Apple}
           label="Apple Integration"
-          sublabel="Apple Maps, Calendar, and iCloud"
-          badge="Coming Soon"
+          sublabel="Apple Maps and Calendar"
         />
       </div>
     </>
