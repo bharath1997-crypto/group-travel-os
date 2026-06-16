@@ -6,6 +6,21 @@ import { IconArrowLeft, IconChevronRight, IconSearch, type IconComponent } from 
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+// ── Coming Soon badge — hub-tinted Tailwind class strings ────────────────────
+// Full strings so Tailwind's static analyser always detects them.
+const ACCENT_BADGE = {
+  teal:   "bg-teal-50 text-teal-600",
+  blue:   "bg-blue-50 text-blue-600",
+  purple: "bg-purple-50 text-purple-600",
+  green:  "bg-green-50 text-green-600",
+  orange: "bg-orange-50 text-orange-600",
+  indigo: "bg-indigo-50 text-indigo-600",
+  amber:  "bg-amber-50 text-amber-700",
+  slate:  "bg-slate-100 text-slate-500",
+  pink:   "bg-pink-50 text-pink-600",
+  red:    "bg-red-50 text-red-500",
+} as const;
+
 // ── Accent styles for SettingsHubRow icon containers ─────────────────────────
 // All class names are hardcoded as complete string literals so Tailwind's static
 // analyser can always find them — no dynamic class construction anywhere.
@@ -277,8 +292,9 @@ export function SettingsHubRow({
   accentColor?: AccentColor;
 }) {
   // Resolve icon-container classes from the static map (no inline styles → Tailwind purge-safe)
-  const isDisabled = badge === "Coming Soon";
-  const colorKey   = danger ? "red" as const : accentColor ?? null;
+  const isDisabled      = badge === "Coming Soon";
+  const colorKey        = danger ? "red" as const : accentColor ?? null;
+  const comingSoonBadge = accentColor ? ACCENT_BADGE[accentColor] : "bg-slate-100 text-slate-500";
   const iconWrapCls = colorKey
     ? ACCENT_STYLES[colorKey][isDisabled ? "disabled" : "active"]
     : isDisabled
@@ -304,18 +320,24 @@ export function SettingsHubRow({
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {badge ? (
-          <span
-            className="rounded-full px-2.5 py-0.5 text-[11px] font-medium"
-            style={
-              badge === "Beta"
-                ? { background: "#FFF7ED", color: "#C2410C" }
-                : badge === "New"
-                ? { background: "#F0FDF4", color: "#166534" }
-                : { background: "#F1F5F9", color: "#94A3B8" }
-            }
-          >
-            {badge}
-          </span>
+          badge === "Coming Soon" ? (
+            /* Hub-tinted Coming Soon badge — readable and intentional, not washed-out gray */
+            <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${comingSoonBadge}`}>
+              {badge}
+            </span>
+          ) : (
+            /* Beta / New keep their existing inline-style pills */
+            <span
+              className="rounded-full px-2.5 py-0.5 text-[11px] font-medium"
+              style={
+                badge === "Beta"
+                  ? { background: "#FFF7ED", color: "#C2410C" }
+                  : { background: "#F0FDF4", color: "#166534" }
+              }
+            >
+              {badge}
+            </span>
+          )
         ) : (
           !danger && (
             <ChevronRight
@@ -334,7 +356,7 @@ export function SettingsHubRow({
   if (badge === "Coming Soon") {
     return (
       <div
-        className={`${baseClass} cursor-default opacity-50`}
+        className={`${baseClass} cursor-default select-none opacity-80 pointer-events-none`}
         role="presentation"
         aria-hidden="true"
       >
