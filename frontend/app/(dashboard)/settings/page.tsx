@@ -48,7 +48,6 @@ import {
   type AppSettingsBundle,
   type SettingsCounts,
 } from "@/lib/app-settings";
-import { API_BASE } from "@/lib/api";
 import { OpenLoungeButton } from "@/components/lounge/OpenLoungeButton";
 import {
   SettingsLinkRow,
@@ -169,7 +168,7 @@ const HUB: HubSection[] = [
     ],
   },
   {
-    title: "How you use Group Travel",
+    title: "How you use Rovvy",
     items: [
       {
         label: "Saved",
@@ -202,13 +201,13 @@ const HUB: HubSection[] = [
         keywords: "reminders screen time",
       },
       {
-        label: "Group Travel for tablets",
+        label: "Rovvy for tablets",
         href: "/settings/usage#tablet",
         icon: IconTablet,
         keywords: "ipad layout",
       },
       {
-        label: "Group Travel for TV",
+        label: "Rovvy for TV",
         href: "/settings/usage#tv",
         icon: IconTv,
         keywords: "cast television",
@@ -421,85 +420,79 @@ export default function SettingsHubPage() {
       <SettingsScreenHeader title="Settings and activity" backHref="/explore" />
       <SettingsSearchInput value={q} onChange={setQ} />
       {loadErr ? (
-        <div className="mx-3 mt-2 rounded-xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-red-900">
-          <p className="whitespace-pre-wrap leading-snug">{loadErr}</p>
-          <p className="mt-2 font-mono text-[11px] text-red-800/90">
-            NEXT_PUBLIC_API_URL → {API_BASE}
+        <div className="mx-3 mt-2 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5">
+          <p className="text-xs text-amber-700">
+            Some settings counters could not be loaded.{" "}
+            <button
+              type="button"
+              className="font-semibold underline underline-offset-2 hover:text-amber-900"
+              onClick={() => void load()}
+            >
+              Retry
+            </button>
           </p>
-          <button
-            type="button"
-            className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
-            onClick={() => void load()}
-          >
-            Retry
-          </button>
-        </div>
-      ) : null}
-      {!bundle && !loadErr ? (
-        <div className="flex justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-[#E94560]" />
         </div>
       ) : null}
 
-      {bundle
-        ? filtered.map((sec) => (
-            <section key={sec.title}>
-              <SettingsSectionTitle>{sec.title}</SettingsSectionTitle>
-              <div className="bg-white">
-                {sec.items.map((it) => {
-                  const count =
-                    it.countKey != null ? bundle.counts[it.countKey] : undefined;
-                  const sub =
-                    it.label === "Account privacy" ? privacyLabel : it.sublabel;
-                  if (it.openLounge) {
-                    return (
-                      <OpenLoungeButton
-                        key={it.label}
-                        className="flex w-full items-center gap-3 border-b border-stone-100 px-4 py-3.5 text-left hover:bg-stone-50"
-                      >
-                        <it.icon className="h-5 w-5 shrink-0 text-stone-700" />
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-medium text-stone-900">
-                            {it.label}
-                          </span>
-                          {sub ? (
-                            <span className="block text-xs text-stone-500">{sub}</span>
-                          ) : null}
-                        </span>
-                      </OpenLoungeButton>
-                    );
+      {filtered.map((sec) => (
+        <section key={sec.title}>
+          <SettingsSectionTitle>{sec.title}</SettingsSectionTitle>
+          <div className="bg-white">
+            {sec.items.map((it) => {
+              const count =
+                it.countKey != null && bundle
+                  ? bundle.counts[it.countKey]
+                  : undefined;
+              const sub =
+                it.label === "Account privacy" ? privacyLabel : it.sublabel;
+              if (it.openLounge) {
+                return (
+                  <OpenLoungeButton
+                    key={it.label}
+                    className="flex w-full items-center gap-3 border-b border-stone-100 px-4 py-3.5 text-left hover:bg-stone-50"
+                  >
+                    <it.icon className="h-5 w-5 shrink-0 text-stone-700" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium text-stone-900">
+                        {it.label}
+                      </span>
+                      {sub ? (
+                        <span className="block text-xs text-stone-500">{sub}</span>
+                      ) : null}
+                    </span>
+                  </OpenLoungeButton>
+                );
+              }
+              return (
+                <SettingsLinkRow
+                  key={it.label + it.href}
+                  href={it.href!}
+                  icon={it.icon}
+                  label={it.label}
+                  sublabel={sub}
+                  trailing={
+                    count != null && count > 0 ? (
+                      <span className="text-sm text-stone-500">{count}</span>
+                    ) : it.label === "Limit interactions" && bundle ? (
+                      <span className="text-sm text-stone-500">
+                        {Boolean(
+                          (
+                            bundle.preferences.interactions as
+                              | { limit_interactions?: boolean }
+                              | undefined
+                          )?.limit_interactions,
+                        )
+                          ? "On"
+                          : "Off"}
+                      </span>
+                    ) : null
                   }
-                  return (
-                    <SettingsLinkRow
-                      key={it.label + it.href}
-                      href={it.href!}
-                      icon={it.icon}
-                      label={it.label}
-                      sublabel={sub}
-                      trailing={
-                        count != null && count > 0 ? (
-                          <span className="text-sm text-stone-500">{count}</span>
-                        ) : it.label === "Limit interactions" ? (
-                          <span className="text-sm text-stone-500">
-                            {Boolean(
-                              (
-                                bundle.preferences.interactions as
-                                  | { limit_interactions?: boolean }
-                                  | undefined
-                              )?.limit_interactions,
-                            )
-                              ? "On"
-                              : "Off"}
-                          </span>
-                        ) : null
-                      }
-                    />
-                  );
-                })}
-              </div>
-            </section>
-          ))
-        : null}
+                />
+              );
+            })}
+          </div>
+        </section>
+      ))}
 
       <div className="mt-8 border-t border-[#E9ECEF] pt-6">
         <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[#6C757D]">
