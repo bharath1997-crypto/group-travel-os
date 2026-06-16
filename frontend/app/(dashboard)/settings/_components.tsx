@@ -141,6 +141,7 @@ export function SettingsHubCard({
   iconBg,
   title,
   description,
+  count,
   badge,
 }: {
   href: string;
@@ -148,15 +149,24 @@ export function SettingsHubCard({
   iconBg: string;
   title: string;
   description: string;
+  count?: number;
   badge?: "Coming Soon" | "Beta" | "New";
 }) {
   return (
     <Link
       href={href}
-      className="group flex items-center gap-4 rounded-2xl border border-stone-100 bg-white px-4 py-4 shadow-sm transition-all hover:border-stone-200 hover:shadow-md active:scale-[0.98]"
+      aria-label={`${title} — ${description}`}
+      className={[
+        "group flex items-center gap-4 rounded-2xl border bg-white px-4 py-4",
+        "shadow-sm transition-all duration-200",
+        "hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-lg",
+        "active:scale-[0.98] active:shadow-sm",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2",
+        "border-stone-100",
+      ].join(" ")}
     >
       <div
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105"
         style={{ background: iconBg }}
       >
         <Icon size={22} className="text-white" strokeWidth={1.8} />
@@ -171,7 +181,7 @@ export function SettingsHubCard({
                 badge === "Beta"
                   ? { background: "#FFF7ED", color: "#C2410C" }
                   : badge === "New"
-                  ? { background: "#F0FDF4", color: "#166534" }
+                  ? { background: "#ECFDF5", color: "#065F46" }
                   : { background: "#F1F5F9", color: "#64748B" }
               }
             >
@@ -180,8 +190,16 @@ export function SettingsHubCard({
           )}
         </div>
         <p className="mt-0.5 truncate text-xs text-stone-500">{description}</p>
+        {count !== undefined && (
+          <p className="mt-1 text-[11px] text-stone-400">
+            {count} settings
+          </p>
+        )}
       </div>
-      <ChevronRight size={18} className="shrink-0 text-stone-300 transition-colors group-hover:text-stone-400" />
+      <ChevronRight
+        size={18}
+        className="shrink-0 text-stone-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-teal-400"
+      />
     </Link>
   );
 }
@@ -247,13 +265,30 @@ export function SettingsHubRow({
   }`;
 
   if (badge === "Coming Soon") {
-    return <div className={cls}>{inner}</div>;
+    return (
+      <div className={cls} role="presentation" aria-hidden="true">
+        {inner}
+      </div>
+    );
   }
   if (href) {
-    return <Link href={href} className={cls}>{inner}</Link>;
+    return (
+      <Link
+        href={href}
+        className={`${cls} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-500`}
+      >
+        {inner}
+      </Link>
+    );
   }
   return (
-    <button type="button" className={cls} onClick={onClick}>{inner}</button>
+    <button
+      type="button"
+      className={`${cls} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-500`}
+      onClick={onClick}
+    >
+      {inner}
+    </button>
   );
 }
 
