@@ -24,6 +24,7 @@ import {
   SettingsScreenHeader,
   SettingsSectionTitle,
 } from "../../_components";
+import { SettingsBreadcrumb, dataCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -329,6 +330,7 @@ export default function DownloadMyDataPage() {
   return (
     <>
       <SettingsScreenHeader title="Download My Data" backHref="/settings/data-integrations" />
+      <SettingsBreadcrumb crumbs={dataCrumbs("Download My Data")} />
 
       {/* Error banner */}
       {toastError && (

@@ -6,11 +6,13 @@ import {
 } from "lucide-react";
 
 import { SettingsHubRow, SettingsScreenHeader, SettingsSectionTitle } from "../_components";
+import { SettingsBreadcrumb, hubCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function MapsTripLivePage() {
   return (
     <>
       <SettingsScreenHeader title="Maps & Trip LIVE" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={hubCrumbs("maps-trip-live")} />
 
       <div className="bg-white">
         <SettingsSectionTitle>Your maps</SettingsSectionTitle>

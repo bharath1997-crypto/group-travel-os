@@ -6,11 +6,13 @@ import {
 } from "lucide-react";
 
 import { SettingsHubRow, SettingsScreenHeader, SettingsSectionTitle } from "../_components";
+import { SettingsBreadcrumb, hubCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function TripsTravelPage() {
   return (
     <>
       <SettingsScreenHeader title="Trips & Travel" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={hubCrumbs("trips-travel")} />
 
       <div className="bg-white">
         <SettingsSectionTitle>Group settings</SettingsSectionTitle>

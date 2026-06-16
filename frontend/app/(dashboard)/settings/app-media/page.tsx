@@ -6,6 +6,7 @@ import type { AppPreferences } from "@/lib/app-settings";
 import { fetchAppSettings, patchAppSettings, prefSection } from "@/lib/app-settings";
 
 import { SettingsScreenHeader, SettingsSectionTitle, SettingsToggleRow } from "../_components";
+import { SettingsBreadcrumb, nestedCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 const EMPTY_PREFS: AppPreferences = {};
 
@@ -67,6 +68,7 @@ export default function SettingsAppMediaPage() {
   return (
     <>
       <SettingsScreenHeader title="App & media" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={nestedCrumbs("app-preferences", "App & Media")} />
       <div id="permissions" className="scroll-mt-16">
         <SettingsSectionTitle>Device permissions</SettingsSectionTitle>
         <p className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600">

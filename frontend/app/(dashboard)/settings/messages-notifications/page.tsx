@@ -4,11 +4,13 @@ import { Bell, BellRing, DollarSign, Mail, MessageCircle, MessageSquare, Users }
 import Link from "next/link";
 
 import { SettingsHubRow, SettingsScreenHeader, SettingsSectionTitle } from "../_components";
+import { SettingsBreadcrumb, hubCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function MessagesNotificationsPage() {
   return (
     <>
       <SettingsScreenHeader title="Messages & Notifications" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={hubCrumbs("messages-notifications")} />
 
       <div className="bg-white">
         <SettingsSectionTitle>Messaging</SettingsSectionTitle>

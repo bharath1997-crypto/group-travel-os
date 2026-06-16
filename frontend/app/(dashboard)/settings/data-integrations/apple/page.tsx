@@ -20,6 +20,7 @@ import {
   SettingsScreenHeader,
   SettingsSectionTitle,
 } from "../../_components";
+import { SettingsBreadcrumb, dataCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -90,6 +91,7 @@ export default function AppleIntegrationPage() {
   return (
     <>
       <SettingsScreenHeader title="Apple Integration" backHref="/settings/data-integrations" />
+      <SettingsBreadcrumb crumbs={dataCrumbs("Apple Integration")} />
 
       {/* ── 1. Apple Calendar ── */}
       <div className="mt-3 bg-white">

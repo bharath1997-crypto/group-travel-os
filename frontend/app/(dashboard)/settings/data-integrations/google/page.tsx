@@ -3,11 +3,13 @@
 import { CalendarDays, HardDrive, Mail, Image } from "lucide-react";
 
 import { SettingsHubRow, SettingsScreenHeader, SettingsSectionTitle } from "../../_components";
+import { SettingsBreadcrumb, dataCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function GoogleIntegrationPage() {
   return (
     <>
       <SettingsScreenHeader title="Google Integration" backHref="/settings/data-integrations" />
+      <SettingsBreadcrumb crumbs={dataCrumbs("Google Integration")} />
 
       <div className="mt-3 bg-white">
         <SettingsSectionTitle>Available</SettingsSectionTitle>

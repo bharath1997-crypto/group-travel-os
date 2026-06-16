@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { RovvyLogo } from "@/components/RovvyLogo";
+import { SettingsBreadcrumb, legalCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function TermsPage() {
   const [reachedBottom, setReachedBottom] = useState(false);
@@ -58,7 +59,8 @@ export default function TermsPage() {
 
       {/* Scrollable body */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <main className="mx-auto max-w-[800px] px-10 pt-16 pb-12">
+        <SettingsBreadcrumb crumbs={legalCrumbs("Terms of Service")} />
+        <main className="mx-auto max-w-[800px] px-10 pt-10 pb-12">
 
           {/* Title block */}
           <div className="mb-12">

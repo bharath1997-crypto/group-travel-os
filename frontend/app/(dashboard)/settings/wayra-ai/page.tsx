@@ -3,11 +3,13 @@
 import { Bot, Brain, Clock, Database, History, Sliders, Trash2 } from "lucide-react";
 
 import { SettingsHubRow, SettingsScreenHeader, SettingsSectionTitle } from "../_components";
+import { SettingsBreadcrumb, hubCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function WayraAIPage() {
   return (
     <>
       <SettingsScreenHeader title="Wayra AI" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={hubCrumbs("wayra-ai")} />
 
       {/* Beta notice */}
       <div className="mx-3 mt-3 rounded-xl border border-orange-100 bg-orange-50 px-4 py-3">

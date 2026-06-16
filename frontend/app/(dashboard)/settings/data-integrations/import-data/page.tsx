@@ -17,6 +17,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { SettingsScreenHeader, SettingsSectionTitle } from "../../_components";
+import { SettingsBreadcrumb, dataCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -247,6 +248,7 @@ export default function ImportDataPage() {
   return (
     <>
       <SettingsScreenHeader title="Import Data" backHref="/settings/data-integrations" />
+      <SettingsBreadcrumb crumbs={dataCrumbs("Import Data")} />
 
       {/* Error banner */}
       {error && (

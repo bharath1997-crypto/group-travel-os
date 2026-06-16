@@ -3,11 +3,13 @@
 import { Accessibility, BarChart2, DollarSign, Globe, Map, Moon, Ruler, Smartphone } from "lucide-react";
 
 import { SettingsHubRow, SettingsScreenHeader, SettingsSectionTitle } from "../_components";
+import { SettingsBreadcrumb, hubCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function AppPreferencesPage() {
   return (
     <>
       <SettingsScreenHeader title="App Preferences" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={hubCrumbs("app-preferences")} />
 
       <div className="bg-white">
         <SettingsSectionTitle>Language & region</SettingsSectionTitle>

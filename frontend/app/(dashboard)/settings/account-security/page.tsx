@@ -7,6 +7,7 @@ import {
 import { useCallback } from "react";
 
 import { SettingsHubRow, SettingsScreenHeader, SettingsSectionTitle } from "../_components";
+import { SettingsBreadcrumb, hubCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function AccountSecurityPage() {
   const handleSignOut = useCallback(() => {
@@ -19,6 +20,7 @@ export default function AccountSecurityPage() {
   return (
     <>
       <SettingsScreenHeader title="Account & Security" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={hubCrumbs("account-security")} />
 
       <div className="bg-white">
         <SettingsSectionTitle>Your profile</SettingsSectionTitle>

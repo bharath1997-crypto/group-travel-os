@@ -7,6 +7,7 @@ import {
 import { useCallback, useMemo, useState } from "react";
 
 import { SettingsHubCard, SettingsSearchInput } from "./_components";
+import { SettingsBreadcrumb, CRUMBS_SETTINGS } from "@/components/settings/SettingsBreadcrumb";
 
 const HUBS = [
   {
@@ -123,8 +124,9 @@ export default function SettingsHubPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-3 pb-10 pt-1">
+      <SettingsBreadcrumb crumbs={CRUMBS_SETTINGS} className="px-0 pt-3" />
       {/* Page title */}
-      <div className="px-1 pb-4 pt-5">
+      <div className="px-1 pb-4 pt-2">
         <h1 className="text-[22px] font-bold text-neutral-900">Settings</h1>
         <p className="mt-0.5 text-sm text-stone-500">Manage your Rovvy experience</p>
       </div>

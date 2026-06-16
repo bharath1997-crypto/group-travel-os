@@ -13,6 +13,7 @@ import {
   SettingsSectionTitle,
   SettingsToggleRow,
 } from "../_components";
+import { SettingsBreadcrumb, nestedCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function SettingsSecurityPage() {
   const router = useRouter();
@@ -108,6 +109,7 @@ export default function SettingsSecurityPage() {
   return (
     <>
       <SettingsScreenHeader title="Security" backHref="/settings/account" />
+      <SettingsBreadcrumb crumbs={nestedCrumbs("account", "Security")} />
       <div id="password" className="scroll-mt-16 px-4 py-4">
         <SettingsSectionTitle>Password</SettingsSectionTitle>
         <form onSubmit={submitPassword} className="mt-2 space-y-3">

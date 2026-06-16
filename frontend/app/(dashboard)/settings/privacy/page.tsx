@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { IconArrowLeft } from "@/components/icons";
 import { Eye, Shield, MessageSquare } from "lucide-react";
+import { SettingsBreadcrumb, nestedCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function PrivacyPage() {
   const [profileVisibility, setProfileVisibility] = useState("everyone"); // everyone, friends, only_me
@@ -26,7 +27,8 @@ export default function PrivacyPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-2xl px-4 mt-6 space-y-6">
+      <SettingsBreadcrumb crumbs={nestedCrumbs("privacy-safety", "Privacy Settings")} />
+      <div className="mx-auto max-w-2xl px-4 mt-4 space-y-6">
         {/* Section 1: Visibility */}
         <div className="bg-white rounded-2xl border border-stone-100 p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">

@@ -3,11 +3,13 @@
 import { Apple, CalendarDays, Download, FileDown, Import, Mail, Map, Package, Upload } from "lucide-react";
 
 import { SettingsHubRow, SettingsScreenHeader, SettingsSectionTitle } from "../_components";
+import { SettingsBreadcrumb, hubCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function DataIntegrationsPage() {
   return (
     <>
       <SettingsScreenHeader title="Data & Integrations" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={hubCrumbs("data-integrations")} />
 
       <div className="bg-white">
         <SettingsSectionTitle>Export your data</SettingsSectionTitle>

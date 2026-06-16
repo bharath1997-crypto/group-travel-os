@@ -13,6 +13,7 @@ import {
   SettingsSectionTitle,
   SettingsToggleRow,
 } from "../_components";
+import { SettingsBreadcrumb, settingsSubCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 const EMPTY_PREFS: AppPreferences = {};
 
@@ -75,6 +76,7 @@ export default function SettingsGeneralPage() {
   return (
     <>
       <SettingsScreenHeader title="General" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={settingsSubCrumbs("General")} />
       <div id="close-friends" className="scroll-mt-16">
         <SettingsSectionTitle>Close friends</SettingsSectionTitle>
         <div className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600">

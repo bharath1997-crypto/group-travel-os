@@ -6,11 +6,13 @@ import {
 } from "lucide-react";
 
 import { SettingsHubRow, SettingsScreenHeader, SettingsSectionTitle } from "../_components";
+import { SettingsBreadcrumb, hubCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function ContentDiscoveryPage() {
   return (
     <>
       <SettingsScreenHeader title="Content & Discovery" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={hubCrumbs("content-discovery")} />
 
       <div className="bg-white">
         <SettingsSectionTitle>Your interests</SettingsSectionTitle>

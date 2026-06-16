@@ -6,11 +6,13 @@ import {
 } from "lucide-react";
 
 import { SettingsHubRow, SettingsScreenHeader, SettingsSectionTitle } from "../_components";
+import { SettingsBreadcrumb, hubCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function PrivacySafetyPage() {
   return (
     <>
       <SettingsScreenHeader title="Privacy & Safety" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={hubCrumbs("privacy-safety")} />
 
       <div className="bg-white">
         <SettingsSectionTitle>Account privacy</SettingsSectionTitle>

@@ -17,6 +17,7 @@ import {
   SettingsScreenHeader,
   SettingsSectionTitle,
 } from "../_components";
+import { SettingsBreadcrumb, hubCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function SettingsAccountCenterPage() {
   const [bundle, setBundle] = useState<AppSettingsBundle | null>(null);
@@ -40,6 +41,7 @@ export default function SettingsAccountCenterPage() {
   return (
     <>
       <SettingsScreenHeader title="Accounts center" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={hubCrumbs("account")} />
       {err ? <p className="px-4 py-3 text-sm text-red-600">{err}</p> : null}
       {!bundle ? (
         <div className="flex justify-center py-16">

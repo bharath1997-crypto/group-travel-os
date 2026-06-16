@@ -20,6 +20,7 @@ import {
   SettingsScreenHeader,
   SettingsSectionTitle,
 } from "../../_components";
+import { SettingsBreadcrumb, dataCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -176,6 +177,7 @@ export default function OutlookCalendarPage() {
   return (
     <>
       <SettingsScreenHeader title="Outlook Calendar" backHref="/settings/data-integrations" />
+      <SettingsBreadcrumb crumbs={dataCrumbs("Outlook Calendar")} />
 
       {error && (
         <div className="mx-4 mt-3 flex items-start gap-2.5 rounded-xl border border-red-100 bg-red-50 px-3.5 py-3">

@@ -4,6 +4,7 @@ import { BookOpen, Cookie, FileText, HelpCircle, Mail, Scale, Shield, Trash2, Us
 import { useCallback } from "react";
 
 import { SettingsHubRow, SettingsScreenHeader, SettingsSectionTitle } from "../_components";
+import { SettingsBreadcrumb, hubCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function SupportLegalPage() {
   const handleDeleteAccount = useCallback(() => {
@@ -13,6 +14,7 @@ export default function SupportLegalPage() {
   return (
     <>
       <SettingsScreenHeader title="Support & Legal" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={hubCrumbs("support-legal")} />
 
       <div className="bg-white">
         <SettingsSectionTitle>Help</SettingsSectionTitle>
@@ -51,10 +53,10 @@ export default function SupportLegalPage() {
           sublabel="How we use cookies and tracking technologies"
         />
         <SettingsHubRow
+          href="/community-guidelines"
           icon={Users2}
           label="Community Guidelines"
           sublabel="Standards for the Rovvy community"
-          badge="Coming Soon"
         />
         <SettingsHubRow
           icon={BookOpen}

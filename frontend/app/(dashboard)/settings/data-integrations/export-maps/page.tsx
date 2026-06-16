@@ -19,6 +19,7 @@ import {
   SettingsScreenHeader,
   SettingsSectionTitle,
 } from "../../_components";
+import { SettingsBreadcrumb, dataCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -288,6 +289,7 @@ export default function ExportMapsPage() {
   return (
     <>
       <SettingsScreenHeader title="Export Maps" backHref="/settings/data-integrations" />
+      <SettingsBreadcrumb crumbs={dataCrumbs("Export Maps")} />
 
       {/* Error banner */}
       {toastError && (
