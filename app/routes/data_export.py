@@ -18,11 +18,13 @@ from sqlalchemy.orm import Session
 
 from app.schemas.data_export import (
     ExportHistoryOut,
+    ExportMapsIn,
     ExportRequestIn,
     ExportStatusOut,
     ExportTripsIn,
 )
 from app.services import data_export_service as svc
+from app.services import maps_export_service as maps_svc
 from app.services import trip_export_service as trip_svc
 from app.utils.auth import get_current_user
 from app.utils.database import get_db
@@ -64,6 +66,23 @@ def request_trip_export(
         db, current_user.id, body.trip_ids, body.format
     )
     background_tasks.add_task(trip_svc.process_trip_export, str(req.id))
+    return ExportStatusOut.model_validate(req)
+
+
+@router.post(
+    "/export/maps",
+    response_model=ExportStatusOut,
+    status_code=202,
+    summary="Request an export of saved places as GeoJSON",
+)
+def request_maps_export(
+    body: ExportMapsIn,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+) -> ExportStatusOut:
+    req = maps_svc.create_maps_export_request(db, current_user.id)
+    background_tasks.add_task(maps_svc.process_maps_export, str(req.id))
     return ExportStatusOut.model_validate(req)
 
 

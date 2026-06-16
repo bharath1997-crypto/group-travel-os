@@ -30,10 +30,10 @@ export default function DataIntegrationsPage() {
           badge="Coming Soon"
         />
         <SettingsHubRow
+          href="/settings/data-integrations/export-maps"
           icon={Map}
           label="Export Maps"
-          sublabel="Download saved maps as KML/GPX"
-          badge="Coming Soon"
+          sublabel="Download saved places as GeoJSON"
         />
       </div>
 

@@ -26,6 +26,10 @@ class ExportTripsIn(BaseModel):
         return v
 
 
+class ExportMapsIn(BaseModel):
+    format: Literal["geojson"] = "geojson"
+
+
 class ExportStatusOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
