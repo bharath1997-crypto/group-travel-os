@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import type { AppPreferences } from "@/lib/app-settings";
@@ -7,13 +8,22 @@ import { fetchAppSettings, patchAppSettings, prefSection } from "@/lib/app-setti
 
 import { SettingsScreenHeader, SettingsSectionTitle, SettingsToggleRow } from "../_components";
 
+const EMPTY_PREFS: AppPreferences = {};
+
 export default function SettingsSupportPage() {
-  const [prefs, setPrefs] = useState<AppPreferences | null>(null);
+  const [prefs, setPrefs] = useState<AppPreferences>(EMPTY_PREFS);
+  const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const b = await fetchAppSettings();
-    setPrefs(b.preferences);
+    try {
+      const b = await fetchAppSettings();
+      setPrefs(b.preferences);
+    } catch {
+      // Backend unavailable — render static content with default prefs
+    } finally {
+      setLoaded(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -21,30 +31,33 @@ export default function SettingsSupportPage() {
   }, [load]);
 
   useEffect(() => {
+    if (!loaded) return;
     const id = window.location.hash.replace("#", "");
     if (id) {
       window.requestAnimationFrame(() =>
         document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }),
       );
     }
-  }, [prefs]);
+  }, [loaded]);
 
   async function merge(patch: AppPreferences) {
     setBusy(true);
     try {
       const b = await patchAppSettings(patch);
       setPrefs(b.preferences);
+    } catch {
+      // Ignore save errors when backend is unavailable
     } finally {
       setBusy(false);
     }
   }
 
-  if (!prefs) {
+  if (!loaded) {
     return (
       <>
-        <SettingsScreenHeader title="Support" backHref="/settings" />
+        <SettingsScreenHeader title="Support & legal" backHref="/settings" />
         <div className="flex justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-[#E94560]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-stone-400" />
         </div>
       </>
     );
@@ -56,11 +69,15 @@ export default function SettingsSupportPage() {
   return (
     <>
       <SettingsScreenHeader title="Support & legal" backHref="/settings" />
+
       <div id="streak" className="scroll-mt-16">
         <SettingsSectionTitle>Travel streak help</SettingsSectionTitle>
         <p className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600">
-          Lost a check-in streak? Email support@grouptravel.test with your
-          username — we will verify group activity logs.
+          Lost a check-in streak? Email{" "}
+          <a href="mailto:support@rovvy.app" className="text-[#0F766E] underline underline-offset-2">
+            support@rovvy.app
+          </a>{" "}
+          with your username — we will verify group activity logs.
         </p>
         <SettingsToggleRow
           label="I have read streak guidance"
@@ -71,47 +88,63 @@ export default function SettingsSupportPage() {
           }
         />
       </div>
+
       <div id="bugs" className="scroll-mt-16">
         <SettingsSectionTitle>Bugs &amp; suggestions</SettingsSectionTitle>
         <p className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600">
-          Send screenshots to bugs@grouptravel.test — include browser, trip
-          link, and approximate time.
+          Found a bug or have a feature idea? Email{" "}
+          <a href="mailto:support@rovvy.app" className="text-[#0F766E] underline underline-offset-2">
+            support@rovvy.app
+          </a>{" "}
+          — include your browser, a description of what happened, and the approximate time.
         </p>
       </div>
+
       <div id="safety" className="scroll-mt-16">
         <SettingsSectionTitle>Safety &amp; privacy overview</SettingsSectionTitle>
         <p className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600">
-          Group Travel is built for coordinated trips — share itinerary links
-          only with people you trust. Use blocked accounts for abusive behavior.
+          Rovvy is built for coordinated trips — share itinerary links only with
+          people you trust. Use the blocked accounts feature for abusive behavior.
+          Location sharing is always opt-in and can be disabled at any time.
         </p>
       </div>
+
       <div id="help" className="scroll-mt-16">
         <SettingsSectionTitle>Help center</SettingsSectionTitle>
         <p className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600">
-          Guides for expenses, polls, and map pins live in the dashboard sidebar
-          under each feature. Ask the AI sidecar for quick tips.
+          Guides for expenses, polls, and map features live in the dashboard
+          under each feature. Use Wayra (the AI assistant) for quick tips and
+          travel recommendations.
         </p>
       </div>
+
       <div id="privacy" className="scroll-mt-16">
         <SettingsSectionTitle>Privacy policy</SettingsSectionTitle>
         <p className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600">
-          High level: we store trip coordination data you create, power real-time
-          features with your consent, and delete on account closure. Full legal
-          text will live at /legal/privacy when your counsel publishes it.
+          We store trip coordination data you create, power real-time features
+          with your explicit consent, and delete your data on account closure.{" "}
+          <Link href="/privacy" className="text-[#0F766E] underline underline-offset-2">
+            Read the full Privacy Policy →
+          </Link>
         </p>
       </div>
+
       <div id="terms" className="scroll-mt-16">
         <SettingsSectionTitle>Terms of service</SettingsSectionTitle>
         <p className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600">
-          Beta travelers agree not to scrape the API, spam invitations, or
-          upload illegal content. Formal terms URL TBD.
+          By using Rovvy you agree not to scrape the API, spam invitations, or
+          upload illegal content.{" "}
+          <Link href="/terms" className="text-[#0F766E] underline underline-offset-2">
+            Read the full Terms of Service →
+          </Link>
         </p>
       </div>
+
       <div id="regional-privacy" className="scroll-mt-16">
         <SettingsSectionTitle>Regional privacy choices</SettingsSectionTitle>
         <SettingsToggleRow
           label="California privacy choices"
-          sublabel="Limit sale/share of personal data (CPRA-style)"
+          sublabel="Limit sale/share of personal data (CPRA)"
           checked={Boolean(p.california_privacy)}
           busy={busy}
           onToggle={(v) =>
@@ -128,11 +161,12 @@ export default function SettingsSupportPage() {
           }
         />
       </div>
+
       <div id="my-data" className="scroll-mt-16">
         <SettingsSectionTitle>Generative AI</SettingsSectionTitle>
         <SettingsToggleRow
           label="AI-assisted suggestions"
-          sublabel="Allow the assistant to personalize tips from your trips"
+          sublabel="Allow Wayra to personalise recommendations from your trips"
           checked={Boolean(p.generative_ai_features)}
           busy={busy}
           onToggle={(v) =>
@@ -142,7 +176,7 @@ export default function SettingsSupportPage() {
         <SettingsSectionTitle>My data</SettingsSectionTitle>
         <SettingsToggleRow
           label="Request data export"
-          sublabel="We will email an archive within 30 days (pilot)"
+          sublabel="We will email an archive of your data within 30 days"
           checked={Boolean(p.my_data_export_requested)}
           busy={busy}
           onToggle={(v) =>

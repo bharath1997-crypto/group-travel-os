@@ -7,13 +7,22 @@ import { fetchAppSettings, patchAppSettings, prefSection } from "@/lib/app-setti
 
 import { SettingsScreenHeader, SettingsSectionTitle, SettingsToggleRow } from "../_components";
 
+const EMPTY_PREFS: AppPreferences = {};
+
 export default function SettingsAppMediaPage() {
-  const [prefs, setPrefs] = useState<AppPreferences | null>(null);
+  const [prefs, setPrefs] = useState<AppPreferences>(EMPTY_PREFS);
+  const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const b = await fetchAppSettings();
-    setPrefs(b.preferences);
+    try {
+      const b = await fetchAppSettings();
+      setPrefs(b.preferences);
+    } catch {
+      // Backend unavailable — render with default prefs
+    } finally {
+      setLoaded(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -21,13 +30,14 @@ export default function SettingsAppMediaPage() {
   }, [load]);
 
   useEffect(() => {
+    if (!loaded) return;
     const id = window.location.hash.replace("#", "");
     if (id) {
       window.requestAnimationFrame(() =>
         document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }),
       );
     }
-  }, [prefs]);
+  }, [loaded]);
 
   async function merge(patch: AppPreferences) {
     setBusy(true);
@@ -39,7 +49,7 @@ export default function SettingsAppMediaPage() {
     }
   }
 
-  if (!prefs) {
+  if (!loaded) {
     return (
       <>
         <SettingsScreenHeader title="App & media" backHref="/settings" />
