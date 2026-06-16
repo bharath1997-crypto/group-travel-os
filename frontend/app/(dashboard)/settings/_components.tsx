@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { IconArrowLeft, IconChevronRight, IconSearch, type IconComponent } from "@/components/icons";
+import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 export function SettingsScreenHeader({
@@ -129,6 +131,129 @@ export function SettingsToggleRow({
         />
       </button>
     </div>
+  );
+}
+
+// ── Hub card used on the main /settings page ─────────────────────────────────
+export function SettingsHubCard({
+  href,
+  icon: Icon,
+  iconBg,
+  title,
+  description,
+  badge,
+}: {
+  href: string;
+  icon: LucideIcon;
+  iconBg: string;
+  title: string;
+  description: string;
+  badge?: "Coming Soon" | "Beta" | "New";
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-center gap-4 rounded-2xl border border-stone-100 bg-white px-4 py-4 shadow-sm transition-all hover:border-stone-200 hover:shadow-md active:scale-[0.98]"
+    >
+      <div
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+        style={{ background: iconBg }}
+      >
+        <Icon size={22} className="text-white" strokeWidth={1.8} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="text-[15px] font-semibold text-neutral-900">{title}</p>
+          {badge && (
+            <span
+              className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+              style={
+                badge === "Beta"
+                  ? { background: "#FFF7ED", color: "#C2410C" }
+                  : badge === "New"
+                  ? { background: "#F0FDF4", color: "#166534" }
+                  : { background: "#F1F5F9", color: "#64748B" }
+              }
+            >
+              {badge}
+            </span>
+          )}
+        </div>
+        <p className="mt-0.5 truncate text-xs text-stone-500">{description}</p>
+      </div>
+      <ChevronRight size={18} className="shrink-0 text-stone-300 transition-colors group-hover:text-stone-400" />
+    </Link>
+  );
+}
+
+// ── Row used inside hub subpages ──────────────────────────────────────────────
+export function SettingsHubRow({
+  href,
+  onClick,
+  icon: Icon,
+  label,
+  sublabel,
+  badge,
+  danger,
+}: {
+  href?: string;
+  onClick?: () => void;
+  icon?: LucideIcon;
+  label: string;
+  sublabel?: string;
+  badge?: "Coming Soon" | "Beta" | "New";
+  danger?: boolean;
+}) {
+  const inner = (
+    <>
+      <div className="flex min-w-0 flex-1 items-center gap-3.5">
+        {Icon && (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-stone-100">
+            <Icon size={16} className={danger ? "text-red-500" : "text-stone-600"} strokeWidth={1.8} />
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className={`text-[14px] leading-snug ${danger ? "text-red-600" : "text-neutral-900"}`}>{label}</p>
+          {sublabel && (
+            <p className="mt-0.5 text-xs leading-snug text-stone-400">{sublabel}</p>
+          )}
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        {badge ? (
+          <span
+            className="rounded-full px-2.5 py-0.5 text-[11px] font-medium"
+            style={
+              badge === "Beta"
+                ? { background: "#FFF7ED", color: "#C2410C" }
+                : badge === "New"
+                ? { background: "#F0FDF4", color: "#166534" }
+                : { background: "#F1F5F9", color: "#94A3B8" }
+            }
+          >
+            {badge}
+          </span>
+        ) : (
+          !danger && <ChevronRight size={16} className="text-stone-300" />
+        )}
+      </div>
+    </>
+  );
+
+  const cls = `flex w-full items-center gap-2 border-b border-stone-100 px-4 py-3.5 text-left transition-colors ${
+    badge === "Coming Soon"
+      ? "cursor-default opacity-60"
+      : "hover:bg-stone-50 active:bg-stone-100"
+  }`;
+
+  if (badge === "Coming Soon") {
+    return <div className={cls}>{inner}</div>;
+  }
+  if (href) {
+    return <Link href={href} className={cls}>{inner}</Link>;
+  }
+  return (
+    <button type="button" className={cls} onClick={onClick}>{inner}</button>
   );
 }
 
