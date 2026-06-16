@@ -2,7 +2,7 @@
 
 import { CalendarDays, HardDrive, Mail, Image } from "lucide-react";
 
-import { SettingsHubRow, SettingsScreenHeader, SettingsSectionTitle } from "../../_components";
+import { SettingsHubRow, SettingsPageFooter, SettingsScreenHeader, SettingsSectionTitle } from "../../_components";
 import { SettingsBreadcrumb, dataCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function GoogleIntegrationPage() {
@@ -18,12 +18,14 @@ export default function GoogleIntegrationPage() {
           icon={CalendarDays}
           label="Google Calendar Sync"
           sublabel="Sync your Rovvy trips to Google Calendar"
+          accentColor="blue"
         />
         <SettingsHubRow
           href="/settings/data-integrations/google-drive"
           icon={HardDrive}
           label="Google Drive Backup"
           sublabel="Back up your Rovvy exports to Google Drive"
+          accentColor="blue"
         />
       </div>
 
@@ -34,14 +36,18 @@ export default function GoogleIntegrationPage() {
           label="Gmail"
           sublabel="Trip confirmations and travel emails"
           badge="Coming Soon"
+          accentColor="blue"
         />
         <SettingsHubRow
           icon={Image}
           label="Google Photos"
           sublabel="Trip memories and travel photos"
           badge="Coming Soon"
+          accentColor="blue"
         />
       </div>
+
+      <SettingsPageFooter />
     </>
   );
 }

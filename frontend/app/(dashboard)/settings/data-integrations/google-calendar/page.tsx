@@ -17,6 +17,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import {
   SettingsHubRow,
+  SettingsPageFooter,
   SettingsScreenHeader,
   SettingsSectionTitle,
 } from "../../_components";
@@ -245,6 +246,7 @@ export default function GoogleCalendarPage() {
             label="Connect Google Calendar"
             sublabel="Sync your Rovvy trips to Google Calendar"
             onClick={handleConnect}
+            accentColor="blue"
           />
         )}
       </div>
@@ -355,6 +357,8 @@ export default function GoogleCalendarPage() {
           </a>
         </p>
       </div>
+
+      <SettingsPageFooter />
     </>
   );
 }

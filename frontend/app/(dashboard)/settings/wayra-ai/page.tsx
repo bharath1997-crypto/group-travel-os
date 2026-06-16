@@ -2,7 +2,7 @@
 
 import { Bot, Brain, Clock, Database, History, Sliders, Trash2 } from "lucide-react";
 
-import { SettingsHubRow, SettingsScreenHeader, SettingsSectionTitle } from "../_components";
+import { SettingsHubRow, SettingsPageFooter, SettingsScreenHeader, SettingsSectionTitle } from "../_components";
 import { SettingsBreadcrumb, hubCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function WayraAIPage() {
@@ -29,34 +29,39 @@ export default function WayraAIPage() {
           label="AI Assistant Settings"
           sublabel="Response style, language, behaviour"
           badge="Coming Soon"
+          accentColor="indigo"
         />
         <SettingsHubRow
           icon={Brain}
           label="Personalization"
           sublabel="How Wayra adapts to your travel style"
           badge="Coming Soon"
+          accentColor="indigo"
         />
         <SettingsHubRow
           icon={Database}
           label="AI Memory"
           sublabel="What Wayra remembers about you"
           badge="Coming Soon"
+          accentColor="indigo"
         />
       </div>
 
       <div className="bg-white">
-        <SettingsSectionTitle>History & data</SettingsSectionTitle>
+        <SettingsSectionTitle>History &amp; data</SettingsSectionTitle>
         <SettingsHubRow
           icon={History}
           label="AI History"
           sublabel="View past conversations with Wayra"
           badge="Coming Soon"
+          accentColor="indigo"
         />
         <SettingsHubRow
           icon={Clock}
           label="AI Data Controls"
           sublabel="Manage how your data trains the model"
           badge="Coming Soon"
+          accentColor="indigo"
         />
         <SettingsHubRow
           icon={Trash2}
@@ -66,6 +71,8 @@ export default function WayraAIPage() {
           danger
         />
       </div>
+
+      <SettingsPageFooter />
     </>
   );
 }

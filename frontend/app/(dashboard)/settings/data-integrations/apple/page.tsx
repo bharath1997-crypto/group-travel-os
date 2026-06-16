@@ -17,6 +17,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import {
   SettingsHubRow,
+  SettingsPageFooter,
   SettingsScreenHeader,
   SettingsSectionTitle,
 } from "../../_components";
@@ -102,6 +103,7 @@ export default function AppleIntegrationPage() {
           icon={Calendar}
           label="Export Trips as .ics"
           sublabel="Download your trips as a Calendar file and import into Apple Calendar"
+          accentColor="blue"
         />
 
         {/* Instructions */}
@@ -206,6 +208,7 @@ export default function AppleIntegrationPage() {
           label="Apple Account"
           sublabel="Sign in with your Apple ID"
           badge="Coming Soon"
+          accentColor="blue"
         />
       </div>
 
@@ -241,6 +244,8 @@ export default function AppleIntegrationPage() {
           </a>
         </p>
       </div>
+
+      <SettingsPageFooter />
     </>
   );
 }

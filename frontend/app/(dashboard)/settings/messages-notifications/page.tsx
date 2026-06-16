@@ -3,7 +3,7 @@
 import { Bell, BellRing, DollarSign, Mail, MessageCircle, MessageSquare, Users } from "lucide-react";
 import Link from "next/link";
 
-import { SettingsHubRow, SettingsScreenHeader, SettingsSectionTitle } from "../_components";
+import { SettingsHubRow, SettingsPageFooter, SettingsScreenHeader, SettingsSectionTitle } from "../_components";
 import { SettingsBreadcrumb, hubCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function MessagesNotificationsPage() {
@@ -19,12 +19,14 @@ export default function MessagesNotificationsPage() {
           icon={MessageCircle}
           label="Rovvy Lounge"
           sublabel="Group chat and direct messages"
+          accentColor="amber"
         />
         <SettingsHubRow
           href="/settings/interactions#messages"
           icon={MessageSquare}
           label="Message Requests"
           sublabel="Who can message you directly"
+          accentColor="amber"
         />
       </div>
 
@@ -35,18 +37,21 @@ export default function MessagesNotificationsPage() {
           label="Push Notifications"
           sublabel="Trip updates, messages, invites"
           badge="Coming Soon"
+          accentColor="amber"
         />
         <SettingsHubRow
           icon={Mail}
           label="Email Notifications"
           sublabel="Summaries, alerts, marketing"
           badge="Coming Soon"
+          accentColor="amber"
         />
         <SettingsHubRow
           icon={Users}
           label="Group Alerts"
           sublabel="New members, votes, plan changes"
           badge="Coming Soon"
+          accentColor="amber"
         />
       </div>
 
@@ -57,12 +62,14 @@ export default function MessagesNotificationsPage() {
           label="Price Alerts"
           sublabel="Notify when flight or hotel prices drop"
           badge="Coming Soon"
+          accentColor="amber"
         />
         <SettingsHubRow
           icon={BellRing}
           label="Event Alerts"
           sublabel="Events near your saved destinations"
           badge="Coming Soon"
+          accentColor="amber"
         />
       </div>
 
@@ -74,6 +81,8 @@ export default function MessagesNotificationsPage() {
           </Link>
         </p>
       </div>
+
+      <SettingsPageFooter />
     </>
   );
 }

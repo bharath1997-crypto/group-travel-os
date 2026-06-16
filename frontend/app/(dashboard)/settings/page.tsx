@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
-import { SettingsHubCard, SettingsSearchInput } from "./_components";
+import { SettingsHubCard, SettingsPageFooter, SettingsSearchInput } from "./_components";
 import { SettingsBreadcrumb, CRUMBS_SETTINGS } from "@/components/settings/SettingsBreadcrumb";
 
 const HUBS = [
@@ -180,9 +180,7 @@ export default function SettingsHubPage() {
         </button>
       </div>
 
-      <p className="mt-6 text-center text-[11px] text-stone-400">
-        Rovvy v2.0 &bull; Group Travel OS
-      </p>
+      <SettingsPageFooter />
     </div>
   );
 }

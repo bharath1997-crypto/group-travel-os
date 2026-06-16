@@ -16,6 +16,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import {
   SettingsHubRow,
+  SettingsPageFooter,
   SettingsScreenHeader,
   SettingsSectionTitle,
 } from "../../_components";
@@ -324,6 +325,7 @@ export default function ExportMapsPage() {
               : "Export your saved places and map pins as GeoJSON"
           }
           onClick={!activeExport ? () => setShowModal(true) : undefined}
+          accentColor="blue"
         />
       </div>
 
@@ -398,6 +400,8 @@ export default function ExportMapsPage() {
           loading={requesting}
         />
       )}
+
+      <SettingsPageFooter />
     </>
   );
 }

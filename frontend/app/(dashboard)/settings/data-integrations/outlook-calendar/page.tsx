@@ -17,6 +17,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import {
   SettingsHubRow,
+  SettingsPageFooter,
   SettingsScreenHeader,
   SettingsSectionTitle,
 } from "../../_components";
@@ -224,6 +225,7 @@ export default function OutlookCalendarPage() {
             label="Connect Outlook Calendar"
             sublabel="Sync your Rovvy trips to Microsoft Outlook Calendar"
             onClick={handleConnect}
+            accentColor="blue"
           />
         )}
       </div>
@@ -322,17 +324,7 @@ export default function OutlookCalendarPage() {
         />
       </div>
 
-      <div className="pb-10 pt-4 text-center">
-        <p className="text-[12px] text-stone-400">
-          Questions?{" "}
-          <a
-            href="mailto:privacy@rovvy.app"
-            className="text-[#0F766E] underline-offset-2 hover:underline"
-          >
-            privacy@rovvy.app
-          </a>
-        </p>
-      </div>
+      <SettingsPageFooter />
     </>
   );
 }

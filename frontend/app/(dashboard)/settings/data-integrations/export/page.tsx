@@ -21,6 +21,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import {
   SettingsHubRow,
+  SettingsPageFooter,
   SettingsScreenHeader,
   SettingsSectionTitle,
 } from "../../_components";
@@ -362,12 +363,14 @@ export default function DownloadMyDataPage() {
           sublabel="Profile, trips, expenses, saved places, and AI history"
           onClick={canRequest ? () => setShowModal(true) : undefined}
           badge={activeExport ? undefined : undefined}
+          accentColor="blue"
         />
         <SettingsHubRow
           icon={List}
           label="Export History"
           sublabel="View previous export requests and downloads"
           onClick={scrollToHistory}
+          accentColor="blue"
         />
       </div>
 
@@ -468,6 +471,8 @@ export default function DownloadMyDataPage() {
           loading={requesting}
         />
       )}
+
+      <SettingsPageFooter />
     </>
   );
 }

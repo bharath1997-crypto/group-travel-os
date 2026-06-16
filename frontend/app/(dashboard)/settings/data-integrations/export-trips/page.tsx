@@ -16,6 +16,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import {
   SettingsHubRow,
+  SettingsPageFooter,
   SettingsScreenHeader,
   SettingsSectionTitle,
 } from "../../_components";
@@ -476,6 +477,7 @@ export default function ExportTripsPage() {
               : `${selected.size} trip${selected.size !== 1 ? "s" : ""} · ${format === "ics" ? "Calendar (.ics)" : "JSON"}`
           }
           onClick={canGenerate ? () => setShowModal(true) : undefined}
+          accentColor="blue"
         />
       </div>
 
@@ -522,6 +524,8 @@ export default function ExportTripsPage() {
           loading={requesting}
         />
       )}
+
+      <SettingsPageFooter />
     </>
   );
 }
