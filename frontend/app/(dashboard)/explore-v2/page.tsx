@@ -361,7 +361,7 @@ export default function ExploreV2Page() {
   );
 
   return (
-    <main className="min-h-screen bg-white text-slate-800 p-6 md:p-10">
+    <main className="bg-white text-slate-800 p-6 pb-20 md:p-10">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header Hero Section */}
         <header className="relative rounded-2xl overflow-hidden mb-2" style={{ background: "linear-gradient(135deg, #0F766E 0%, #134E4A 100%)" }}>
