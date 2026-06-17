@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Star, MapPin, Camera, Compass, Gamepad2, FerrisWheel, Utensils, Trees, Moon, Activity, ShoppingBag } from "lucide-react";
+import { Star, MapPin, Heart, Camera, Compass, Gamepad2, FerrisWheel, Utensils, Trees, Moon, Activity, ShoppingBag } from "lucide-react";
 
 export type ExplorePlace = {
   id: string;
@@ -61,29 +61,27 @@ function getCategoryIcon(category?: string | null, subcategory?: string | null) 
 export function ExploreV2Card({ place, showDistance }: ExploreV2CardProps) {
   const { name, photo_url, distance_m, price_min, rating, rating_count, category, subcategory } = place;
 
-  // Convert distance in meters to miles
   const distanceMiles = distance_m ? distance_m / 1609.344 : null;
   const distanceText = distanceMiles !== null ? `${distanceMiles.toFixed(1)} mi` : null;
 
-  // Venue label
   let venueLabel = subcategory || category || "Activity";
   if (place.address?.city) {
     venueLabel = `${venueLabel} · ${place.address.city}`;
   }
 
-  // Handle image load error
   const [imgError, setImgError] = React.useState(false);
+  const [saved, setSaved] = React.useState(false);
 
   return (
-    <article className="group flex flex-col h-full bg-white border-[0.5px] border-slate-200 rounded-[12px] overflow-hidden shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#0F766E] hover:shadow-md">
+    <article className="group flex flex-col h-full bg-white border border-slate-200 rounded-[14px] overflow-hidden shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-[#0F766E] hover:shadow-lg">
       {/* Image / Icon Area */}
-      <div className="relative h-[120px] bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+      <div className="relative h-[150px] bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
         {photo_url && !imgError ? (
           <img
             src={photo_url}
             alt={name}
             onError={() => setImgError(true)}
-            className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
           <div className="flex items-center justify-center p-4">
@@ -91,49 +89,60 @@ export function ExploreV2Card({ place, showDistance }: ExploreV2CardProps) {
           </div>
         )}
 
-        {/* Top-left Badge */}
-        {showDistance && distanceText ? (
-          <span className="absolute left-3 top-3 rounded-lg bg-[#0F766E] px-2 py-0.5 text-[9px] font-semibold text-white shadow-sm">
-            {distanceText}
-          </span>
-        ) : place.is_free ? (
-          <span className="absolute left-3 top-3 rounded-lg bg-[#0F766E] px-2 py-0.5 text-[9px] font-semibold text-white shadow-sm">
-            Free
-          </span>
-        ) : null}
+        {/* Top-left: category badge */}
+        <span className="absolute left-3 top-3 rounded-full bg-[#0F766E] px-2.5 py-0.5 text-[9px] font-semibold text-white shadow-sm">
+          {category || "Activity"}
+        </span>
 
-        {/* Bottom-right Price Badge */}
-        {price_min !== undefined && price_min !== null && (
-          <span className="absolute right-3 top-3 rounded-lg bg-black/60 px-2 py-0.5 text-[9px] font-semibold text-white backdrop-blur-sm">
-            ${price_min}+
-          </span>
-        )}
+        {/* Top-right: save / heart button */}
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSaved((v) => !v); }}
+          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur transition hover:scale-110"
+          aria-label="Save"
+        >
+          <Heart
+            className={`h-3.5 w-3.5 transition-colors ${saved ? "fill-rose-500 text-rose-500" : "text-slate-400"}`}
+          />
+        </button>
       </div>
 
       {/* Card Body */}
       <div className="p-3 flex flex-col justify-between flex-1 min-w-0">
         <div>
-          {/* Title */}
-          <h3 className="text-[13px] font-semibold text-slate-900 truncate group-hover:text-[#0F766E]" title={name}>
+          <h3 className="text-[14px] font-bold text-slate-900 truncate group-hover:text-[#0F766E]" title={name}>
             {name}
           </h3>
 
-          {/* Star Rating (only if real rating exists) */}
           {rating !== undefined && rating !== null && rating > 0 && (
-            <div className="flex items-center gap-1 mt-1 text-[12px] text-amber-500">
-              <Star className="h-3.5 w-3.5 fill-current" />
+            <div className="flex items-center gap-1 mt-0.5 text-[11px] text-amber-500">
+              <Star className="h-3 w-3 fill-current" />
               <span className="font-semibold text-slate-800">{rating.toFixed(1)}</span>
               {rating_count !== undefined && rating_count !== null && (
                 <span className="text-slate-400">({rating_count})</span>
               )}
             </div>
           )}
+
+          <p className="mt-1 text-[12px] text-slate-500 truncate">{venueLabel}</p>
         </div>
 
-        {/* Location / Venue */}
-        <div className="flex items-center gap-1.5 mt-2 text-[12px] text-slate-500 min-w-0">
-          <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-          <span className="truncate">{venueLabel}</span>
+        {/* Bottom row: distance + Explore CTA */}
+        <div className="mt-3 flex items-center justify-between gap-2">
+          {showDistance && distanceText ? (
+            <span className="flex items-center gap-1 text-[11px] text-slate-400">
+              <MapPin className="h-3 w-3 shrink-0" />
+              {distanceText}
+            </span>
+          ) : place.is_free ? (
+            <span className="text-[11px] font-semibold text-emerald-600">Free</span>
+          ) : price_min !== undefined && price_min !== null ? (
+            <span className="text-[11px] text-slate-400">${price_min}+</span>
+          ) : (
+            <span />
+          )}
+          <span className="text-[11px] font-semibold text-[#0F766E] group-hover:underline shrink-0">
+            Explore →
+          </span>
         </div>
       </div>
     </article>
