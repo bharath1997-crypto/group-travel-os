@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AlertCircle,
   Award,
@@ -272,19 +272,104 @@ function Skeleton({ className }: { className?: string }) {
 }
 
 // ─────────────────────────────────────────────
+// Retry-aware fetch (up to 3 attempts, 1.5 s apart)
+// ─────────────────────────────────────────────
+async function fetchWithRetry<T>(
+  url: string,
+  maxAttempts = 3,
+  delayMs = 1500,
+): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return (await apiFetch(url)) as T;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < maxAttempts - 1) {
+        await new Promise((res) => setTimeout(res, delayMs * (attempt + 1)));
+      }
+    }
+  }
+  throw lastErr;
+}
+
+// ─────────────────────────────────────────────
+// Error card with retry button
+// ─────────────────────────────────────────────
+function ErrorCard({
+  message,
+  isTimeout,
+  onRetry,
+  retrying,
+}: {
+  message: string;
+  isTimeout: boolean;
+  onRetry: () => void;
+  retrying: boolean;
+}) {
+  return (
+    <div className="mx-3 mt-3 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-4">
+      <div className="flex items-start gap-3">
+        <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-500" />
+        <div className="flex-1">
+          <p className="text-[13px] font-semibold text-amber-800">
+            {isTimeout ? "Connection slow" : "Could not load account data"}
+          </p>
+          <p className="mt-0.5 text-xs leading-snug text-amber-700">
+            {isTimeout
+              ? "The server is waking up or experiencing high latency. Your data is safe — this is temporary."
+              : message}
+          </p>
+          <button
+            onClick={onRetry}
+            disabled={retrying}
+            className="mt-3 flex items-center gap-1.5 rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+          >
+            {retrying ? (
+              <>
+                <svg className="h-3.5 w-3.5 animate-spin text-amber-600" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
+                </svg>
+                Retrying…
+              </>
+            ) : (
+              "Try again"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // Page
 // ─────────────────────────────────────────────
 export default function AccountStatusPage() {
-  const [user, setUser]       = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState("");
+  const [user, setUser]         = useState<UserProfile | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [retrying, setRetrying] = useState(false);
+  const [error, setError]       = useState("");
+  const [isTimeout, setIsTimeout] = useState(false);
 
-  useEffect(() => {
-    apiFetch("/api/v1/auth/me")
-      .then((data) => setUser(data as UserProfile))
-      .catch(() => setError("Could not load account data."))
-      .finally(() => setLoading(false));
+  const load = useCallback(async (isRetry = false) => {
+    if (isRetry) setRetrying(true);
+    setError("");
+    try {
+      const data = await fetchWithRetry<UserProfile>("/api/v1/auth/me");
+      setUser(data);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Could not load account data.";
+      setIsTimeout(msg.toLowerCase().includes("timed out") || msg.toLowerCase().includes("latency"));
+      setError(msg);
+    } finally {
+      setLoading(false);
+      setRetrying(false);
+    }
   }, []);
+
+  useEffect(() => { void load(false); }, [load]);
 
   return (
     <>
@@ -296,13 +381,16 @@ export default function AccountStatusPage() {
         crumbs={nestedCrumbs("account-security", "Account Status")}
       />
 
-      {/* Standing banner */}
+      {/* Standing banner / error card */}
       {loading ? (
-        <div className="mx-3 mt-3 h-[62px] rounded-2xl bg-stone-100 animate-pulse" />
+        <div className="mx-3 mt-3 h-[62px] animate-pulse rounded-2xl bg-stone-100" />
       ) : error ? (
-        <div className="mx-3 mt-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
-          <p className="text-xs text-red-600">{error}</p>
-        </div>
+        <ErrorCard
+          message={error}
+          isTimeout={isTimeout}
+          onRetry={() => load(true)}
+          retrying={retrying}
+        />
       ) : user ? (
         <StandingBanner active={user.is_active} />
       ) : null}
