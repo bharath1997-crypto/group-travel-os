@@ -43,7 +43,7 @@ export default function AccountSecurityPage() {
       <div className="bg-white">
         <SettingsSectionTitle>Sign-in &amp; security</SettingsSectionTitle>
         <SettingsHubRow
-          href="/settings/security"
+          href="/settings/account-security/password-signin"
           icon={KeyRound}
           label="Password & Sign-In"
           sublabel="Update password, manage sessions"
