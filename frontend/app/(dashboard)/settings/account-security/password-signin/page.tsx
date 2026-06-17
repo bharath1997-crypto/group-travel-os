@@ -196,9 +196,9 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
     setStatus("loading");
     setApiError("");
     try {
-      await apiFetch("/api/v1/users/me/password", {
-        method: "PATCH",
-        body: JSON.stringify({ current_password: current, new_password: next }),
+      await apiFetch("/api/v1/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({ old_password: current, new_password: next }),
       });
       setStatus("success");
     } catch (err: unknown) {

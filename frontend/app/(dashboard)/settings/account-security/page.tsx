@@ -32,7 +32,7 @@ export default function AccountSecurityPage() {
           accentColor="teal"
         />
         <SettingsHubRow
-          href="/settings/account"
+          href="/settings/account-security/account-status"
           icon={CheckCircle2}
           label="Account Status"
           sublabel="Verification level, badges, standing"
