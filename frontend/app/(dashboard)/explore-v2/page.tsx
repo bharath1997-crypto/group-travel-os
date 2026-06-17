@@ -18,6 +18,7 @@ import {
   Activity,
   ShoppingBag,
   Search,
+  Star,
   Map,
 } from "lucide-react";
 import { getToken } from "@/lib/auth";
@@ -27,37 +28,27 @@ import { ExploreV2EventCard, ExploreEventV2 } from "@/components/explore/Explore
 import { ExploreV2Section } from "@/components/explore/ExploreV2Section";
 
 const CATEGORIES = [
-  { id: "all", label: "All", icon: "🗺️" },
-  { id: "events", label: "Events", icon: "🎪" },
-  { id: "activities", label: "Activities", icon: "🏄" },
-  { id: "sports", label: "Sports", icon: "⚽" },
-  { id: "restaurant", label: "Food", icon: "🍽️" },
-  { id: "nightlife", label: "Nightlife", icon: "🎵" },
-  { id: "shopping", label: "Shopping", icon: "🛍️" },
-  { id: "park", label: "Parks", icon: "🌿" },
-  { id: "gaming", label: "Gaming", icon: "🎮" },
-  { id: "amusement", label: "Amusement", icon: "🎡" },
-  { id: "trekking", label: "Trekking", icon: "🥾" },
-  { id: "landmark", label: "Landmarks", icon: "🏛️" },
+  { id: "All", label: "All", icon: "🗺️" },
+  { id: "Events", label: "Events", icon: "🎪" },
+  { id: "Landmarks", label: "Landmarks", icon: "🏛️" },
+  { id: "Trekking", label: "Trekking", icon: "🥾" },
+  { id: "Gaming", label: "Gaming", icon: "🎮" },
+  { id: "Amusement", label: "Amusement", icon: "🎡" },
+  { id: "Restaurants", label: "Food", icon: "🍽️" },
+  { id: "Parks", label: "Parks", icon: "🌿" },
+  { id: "Nightlife", label: "Nightlife", icon: "🎵" },
+  { id: "Sports", label: "Sports", icon: "⚽" },
+  { id: "Shopping", label: "Shopping", icon: "🛍️" },
 ];
 
 const TOP_CITIES = [
-  { name: "Chicago", state: "IL", emoji: "🏙️", activities: "2,400+" },
-  { name: "New York", state: "NY", emoji: "🗽", activities: "4,200+" },
-  { name: "Los Angeles", state: "CA", emoji: "🎬", activities: "3,800+" },
-  { name: "Miami", state: "FL", emoji: "🏖️", activities: "1,900+" },
-  { name: "Las Vegas", state: "NV", emoji: "🎰", activities: "1,600+" },
-  { name: "Austin", state: "TX", emoji: "🎸", activities: "1,200+" },
+  { name: "Chicago", state: "IL", emoji: "🏙️", count: "2,400+" },
+  { name: "New York", state: "NY", emoji: "🗽", count: "4,200+" },
+  { name: "Los Angeles", state: "CA", emoji: "🎬", count: "3,800+" },
+  { name: "Miami", state: "FL", emoji: "🏖️", count: "1,900+" },
+  { name: "Las Vegas", state: "NV", emoji: "🎰", count: "1,600+" },
+  { name: "Austin", state: "TX", emoji: "🎸", count: "1,200+" },
 ];
-
-const CITY_COORDS: Record<string, { lat: number; lng: number; country: string }> = {
-  "Chicago": { lat: 41.8781, lng: -87.6298, country: "United States" },
-  "New York": { lat: 40.7128, lng: -74.0060, country: "United States" },
-  "Los Angeles": { lat: 34.0522, lng: -118.2437, country: "United States" },
-  "Miami": { lat: 25.7617, lng: -80.1918, country: "United States" },
-  "Las Vegas": { lat: 36.1716, lng: -115.1398, country: "United States" },
-  "Austin": { lat: 30.2672, lng: -97.7431, country: "United States" },
-};
 
 interface SectionsData {
   activities: ExplorePlace[];
@@ -85,7 +76,7 @@ export default function ExploreV2Page() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState<"any" | "today" | "weekend">("any");
   const [showDateDropdown, setShowDateDropdown] = useState(false);
-  const [activeCategory, setActiveCategory] = useState("all");
+  const [activeCategory, setActiveCategory] = useState("All");
 
   const [sections, setSections] = useState<SectionsData>({
     activities: [],
@@ -260,7 +251,7 @@ export default function ExploreV2Page() {
           setLng(newLng);
           setCity(resolvedCity);
           setCountry(resolvedCountry);
-          
+
           await loadData(newLat, newLng);
         } else {
           alert("City not found. Please try another name.");
@@ -276,17 +267,12 @@ export default function ExploreV2Page() {
     }
   };
 
-  const handleCategoryClick = (catId: string) => {
-    setActiveCategory(catId);
-    if (catId === "all") {
+  const handleCategoryClick = (cat: string) => {
+    setActiveCategory(cat);
+    if (cat === "All") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      let sectionName = catId;
-      if (catId === "restaurant") sectionName = "restaurants";
-      if (catId === "landmark") sectionName = "landmarks";
-      if (catId === "park") sectionName = "parks";
-      
-      const id = `section-${sectionName}`;
+      const id = `section-${cat.toLowerCase()}`;
       const el = document.getElementById(id);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -309,7 +295,7 @@ export default function ExploreV2Page() {
         );
       }
       if (dateFilter === "weekend") {
-        const day = d.getDay();
+        const day = d.getDay(); // 0 is Sunday, 5 is Friday, 6 is Saturday
         return day === 0 || day === 5 || day === 6;
       }
       return true;
@@ -342,6 +328,7 @@ export default function ExploreV2Page() {
   const filteredSports = filterItems(sections.sports);
   const filteredShopping = filterItems(sections.shopping);
 
+  // Total places count for map strip banner
   const totalPlacesCount =
     filteredActivities.length +
     filteredLandmarks.length +
@@ -355,7 +342,7 @@ export default function ExploreV2Page() {
     filteredShopping.length;
 
   const SkeletonCard = () => (
-    <div className="bg-white border-[0.5px] border-slate-200 rounded-[12px] overflow-hidden p-3 animate-pulse shrink-0 w-[240px] md:w-auto">
+    <div className="bg-white border-[0.5px] border-slate-200 rounded-[12px] overflow-hidden p-3 animate-pulse">
       <div className="h-[120px] bg-slate-100 rounded-lg mb-3" />
       <div className="h-4 bg-slate-100 rounded w-3/4 mb-2" />
       <div className="h-3 bg-slate-100 rounded w-1/2" />
@@ -363,7 +350,7 @@ export default function ExploreV2Page() {
   );
 
   const SkeletonEventCard = () => (
-    <div className="flex items-center gap-3 bg-white border-[0.5px] border-slate-200 rounded-[12px] p-2 animate-pulse shrink-0 w-[280px] md:w-auto">
+    <div className="flex items-center gap-3 bg-white border-[0.5px] border-slate-200 rounded-[12px] p-2 animate-pulse">
       <div className="w-[76px] h-[76px] rounded-lg bg-slate-100 shrink-0" />
       <div className="flex-1 space-y-2">
         <div className="h-4 bg-slate-100 rounded w-3/4" />
@@ -374,49 +361,55 @@ export default function ExploreV2Page() {
   );
 
   return (
-    <div className="bg-white text-slate-800 p-6 pb-20 md:p-10">
-      <div className="max-w-7xl mx-auto">
-        {/* 2. HERO SECTION */}
-        <div style={{
-          background: 'linear-gradient(135deg, #0F766E 0%, #134E4A 100%)',
-          borderRadius: '16px',
-          padding: '40px 32px',
-          marginBottom: '32px',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          {/* Background pattern */}
+    <main className="min-h-screen bg-white text-slate-800 p-6 md:p-10">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header Hero Section */}
+        <header className="relative rounded-2xl overflow-hidden mb-2" style={{ background: "linear-gradient(135deg, #0F766E 0%, #134E4A 100%)" }}>
+          {/* Dot pattern overlay */}
           <div style={{
-            position: 'absolute', inset: 0, opacity: 0.1,
-            backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)',
-            backgroundSize: '30px 30px'
+            position: "absolute", inset: 0, opacity: 0.07,
+            backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
           }} />
-          
-          <h1 style={{
-            color: '#FFFFFF', fontSize: '28px', fontWeight: 700,
-            marginBottom: '8px', position: 'relative'
-          }}>
-            Discover experiences near you
-          </h1>
-          
-          {/* Geocoding City display and edit button */}
-          <div style={{
-            color: 'rgba(255,255,255,0.8)', fontSize: '15px',
-            marginBottom: '24px', position: 'relative', display: 'flex',
-            alignItems: 'center', gap: '8px', flexWrap: 'wrap'
-          }}>
-            <span>Explore near you · within 250 miles of</span>
+          <div className="relative p-6 md:p-8">
+            <h1 className="text-[22px] md:text-[26px] font-bold text-white leading-tight mb-1">
+              Discover experiences near you
+            </h1>
+            <p className="text-[13px] text-teal-100 flex items-center gap-1 mb-5">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              Explore near you · {city}, {country}
+            </p>
+            {/* Search bar inside hero */}
+            <div
+              className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 max-w-xl"
+              style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.15)" }}
+            >
+              <Search className="h-4 w-4 text-slate-400 shrink-0" />
+              <input
+                type="text"
+                placeholder="Search activities, landmarks, events..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 text-sm text-slate-800 bg-transparent outline-none placeholder:text-slate-400"
+              />
+              <button className="bg-[#0F766E] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-teal-700 transition shrink-0">
+                Search
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Compact filter row — location · date · map */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Location Pill */}
+          <div className="flex items-center">
             {isEditingLocation ? (
-              <form onSubmit={handleLocationSubmit} style={{ display: 'inline-block' }}>
+              <form onSubmit={handleLocationSubmit} className="relative z-10">
                 <input
                   type="text"
                   value={locationInput}
                   onChange={(e) => setLocationInput(e.target.value)}
-                  style={{
-                    border: 'none', outline: 'none', fontSize: '14px',
-                    padding: '4px 10px', borderRadius: '6px', color: '#0F172A',
-                    background: '#FFFFFF', width: '140px'
-                  }}
+                  className="px-3 py-2 text-xs border border-[#0F766E] rounded-full focus:outline-none focus:ring-1 focus:ring-[#0F766E] text-slate-800 w-36"
                   placeholder="Type city name..."
                   autoFocus
                   onBlur={() => setTimeout(() => setIsEditingLocation(false), 200)}
@@ -428,142 +421,24 @@ export default function ExploreV2Page() {
                   setIsEditingLocation(true);
                   setLocationInput(city);
                 }}
-                style={{
-                  border: 'none', outline: 'none', background: 'rgba(255,255,255,0.15)',
-                  color: '#FFFFFF', padding: '4px 10px', borderRadius: '6px',
-                  cursor: 'pointer', fontSize: '14px', fontWeight: 600,
-                  display: 'flex', alignItems: 'center', gap: '6px'
-                }}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#0F766E] hover:bg-teal-700 text-white rounded-full text-xs font-semibold shadow-sm transition shrink-0"
               >
-                <span>{city}, {country}</span>
-                <span>✏️</span>
+                <Navigation className="h-3.5 w-3.5" />
+                <span>{city}</span>
               </button>
             )}
           </div>
-          
-          {/* Search bar */}
-          <div style={{
-            background: '#FFFFFF', borderRadius: '12px',
-            padding: '12px 16px', display: 'flex', alignItems: 'center',
-            gap: '12px', maxWidth: '600px', position: 'relative',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
-          }}>
-            <span style={{fontSize: '18px'}}>🔍</span>
-            <input
-              placeholder="Search activities, landmarks, events..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                border: 'none', outline: 'none', fontSize: '15px',
-                flex: 1, color: '#0F172A', background: 'transparent'
-              }}
-            />
-            <div style={{
-              background: '#0F766E', color: '#fff', padding: '8px 20px',
-              borderRadius: '8px', fontSize: '14px', fontWeight: 600,
-              cursor: 'pointer', whiteSpace: 'nowrap'
-            }}>
-              Search
-            </div>
-          </div>
-        </div>
 
-        {/* 5. CITY DESTINATION GRID */}
-        <section style={{marginBottom: '40px'}}>
-          <div style={{
-            display: 'flex', justifyContent: 'space-between',
-            alignItems: 'center', marginBottom: '16px'
-          }}>
-            <h2 style={{fontSize: '20px', fontWeight: 700, color: '#0F172A'}}>
-              Where to next?
-            </h2>
-            <a style={{fontSize: '14px', color: '#0F766E', cursor: 'pointer'}}>
-              See more →
-            </a>
-          </div>
-          
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-            gap: '12px'
-          }}>
-            {TOP_CITIES.map(city => (
-              <div key={city.name} style={{
-                borderRadius: '12px', overflow: 'hidden',
-                background: 'linear-gradient(135deg, #0F766E, #134E4A)',
-                padding: '20px 16px', cursor: 'pointer',
-                transition: 'transform 0.2s',
-                position: 'relative'
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-              onClick={async () => {
-                const coords = CITY_COORDS[city.name];
-                if (coords) {
-                  setLat(coords.lat);
-                  setLng(coords.lng);
-                  setCity(city.name);
-                  setCountry(coords.country);
-                  await loadData(coords.lat, coords.lng);
-                }
-              }}
-              >
-                <div style={{fontSize: '28px', marginBottom: '8px'}}>
-                  {city.emoji}
-                </div>
-                <div style={{
-                  fontSize: '15px', fontWeight: 700,
-                  color: '#FFFFFF', marginBottom: '2px'
-                }}>{city.name}</div>
-                <div style={{fontSize: '11px', color: 'rgba(255,255,255,0.7)'}}>
-                  {city.activities} activities
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 3. CATEGORY ICON STRIP */}
-        <div style={{
-          display: 'flex', gap: '8px', overflowX: 'auto',
-          padding: '4px 0 12px', marginBottom: '24px',
-          scrollbarWidth: 'thin', scrollbarColor: '#CBD5E1 transparent'
-        }} className="[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => handleCategoryClick(cat.id)}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center',
-                gap: '4px', padding: '10px 16px', borderRadius: '12px',
-                border: activeCategory === cat.id 
-                  ? '2px solid #0F766E' : '2px solid #E2E8F0',
-                background: activeCategory === cat.id ? '#F0FDF4' : '#FFFFFF',
-                cursor: 'pointer', whiteSpace: 'nowrap', minWidth: '70px',
-                transition: 'all 0.2s'
-              }}
-            >
-              <span style={{fontSize: '22px'}}>{cat.icon}</span>
-              <span style={{
-                fontSize: '11px', fontWeight: 500,
-                color: activeCategory === cat.id ? '#0F766E' : '#64748B'
-              }}>{cat.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Filters and Actions Row (Date, Map View) */}
-        <div className="flex items-center gap-3 justify-between flex-wrap mb-10">
-          {/* Date Filter dropdown */}
+          {/* Date Filter Pill */}
           <div className="relative">
             <button
               onClick={() => setShowDateDropdown(!showDateDropdown)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-200 hover:border-slate-350 rounded-full text-xs font-semibold bg-white text-slate-700 shadow-sm transition shrink-0"
+              className="inline-flex items-center gap-1 px-4 py-2 border border-slate-200 hover:border-slate-300 rounded-full text-xs font-medium bg-white text-slate-700 shadow-sm transition shrink-0"
             >
               <span>
-                {dateFilter === "any" && "📅 Any date"}
-                {dateFilter === "today" && "📅 Today"}
-                {dateFilter === "weekend" && "📅 This weekend"}
+                {dateFilter === "any" && "Any date"}
+                {dateFilter === "today" && "Today"}
+                {dateFilter === "weekend" && "This weekend"}
               </span>
               <ChevronDown className="h-3 w-3 text-slate-400" />
             </button>
@@ -585,31 +460,82 @@ export default function ExploreV2Page() {
             )}
           </div>
 
-          {/* Map View Link */}
+          {/* Map View */}
           <Link
-            href={`/explore/map?lat=${lat}&lng=${lng}`}
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#0F766E] hover:bg-teal-700 text-white rounded-full font-bold text-xs shadow-sm transition"
+            href="/explore/map"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200 hover:border-[#0F766E] text-slate-600 hover:text-[#0F766E] rounded-full font-medium text-xs bg-white shadow-sm transition shrink-0"
           >
             <Map className="h-3.5 w-3.5" />
             <span>Map view</span>
           </Link>
         </div>
 
+        {/* Category Chips Scroll Row — icon + label Klook style */}
+        <div className="overflow-x-auto pb-2 -mx-6 px-6 scrollbar-hide">
+          <div className="flex gap-2 min-w-max">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => handleCategoryClick(cat.id)}
+                className="flex flex-col items-center gap-1 transition"
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: "14px",
+                  border: activeCategory === cat.id ? "2px solid #0F766E" : "2px solid #E2E8F0",
+                  background: activeCategory === cat.id ? "#F0FDF9" : "#FFFFFF",
+                  cursor: "pointer",
+                  minWidth: "68px",
+                }}
+              >
+                <span style={{ fontSize: "20px", lineHeight: 1 }}>{cat.icon}</span>
+                <span style={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  color: activeCategory === cat.id ? "#0F766E" : "#64748B",
+                  whiteSpace: "nowrap",
+                }}>{cat.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Where to next? city grid */}
+        <section className="space-y-3">
+          <div className="flex justify-between items-center">
+            <h2 className="text-[16px] font-bold text-slate-900">Where to next?</h2>
+            <span className="text-[13px] text-[#0F766E] font-medium cursor-pointer">See more →</span>
+          </div>
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+            {TOP_CITIES.map((topCity) => (
+              <button
+                key={topCity.name}
+                onClick={() => setLocationInput(topCity.name + ", " + topCity.state)}
+                className="rounded-2xl p-4 text-left transition hover:scale-105 cursor-pointer"
+                style={{ background: "linear-gradient(135deg, #0F766E, #134E4A)", border: "none" }}
+              >
+                <div style={{ fontSize: "26px", marginBottom: "6px" }}>{topCity.emoji}</div>
+                <div className="text-white font-bold text-[13px]">{topCity.name}</div>
+                <div className="text-teal-200 text-[10px] mt-0.5">{topCity.count} places</div>
+              </button>
+            ))}
+          </div>
+        </section>
+
         {/* Sections Feed */}
         {loading ? (
           <div className="space-y-10">
             <section className="space-y-4">
               <div className="h-6 bg-slate-100 rounded w-48 animate-pulse" />
-              <div className="flex overflow-x-auto gap-4 pb-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <SkeletonCard key={i} />
                 ))}
               </div>
             </section>
-            
+
             <section className="space-y-4">
               <div className="h-6 bg-slate-100 rounded w-48 animate-pulse" />
-              <div className="flex overflow-x-auto gap-4 pb-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[1, 2, 3, 4].map((i) => (
                   <SkeletonEventCard key={i} />
                 ))}
@@ -817,6 +743,6 @@ export default function ExploreV2Page() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }
