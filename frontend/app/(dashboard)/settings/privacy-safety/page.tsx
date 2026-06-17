@@ -17,7 +17,7 @@ export default function PrivacySafetyPage() {
       <div className="bg-white">
         <SettingsSectionTitle>Account privacy</SettingsSectionTitle>
         <SettingsHubRow
-          href="/settings/privacy"
+          href="/settings/privacy-safety/account-privacy"
           icon={Lock}
           label="Account Privacy"
           sublabel="Control who can see your profile and trips"
