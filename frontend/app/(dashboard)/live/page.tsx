@@ -652,7 +652,7 @@ export default function LivePage() {
         method: "POST",
         body: JSON.stringify({
           name: `${adHocTripName} Crew`,
-          group_type: "casual",
+          group_type: "travel",
           default_currency: "USD"
         }),
         headers: {
