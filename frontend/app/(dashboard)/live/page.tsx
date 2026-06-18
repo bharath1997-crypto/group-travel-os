@@ -84,6 +84,19 @@ function fmtDate(iso: string | null): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
+const LIVE_API_TIMEOUT = 30000;
+
+function liveFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  return apiFetch<T>(path, options, LIVE_API_TIMEOUT);
+}
+
+/** Rough driving ETA at 40 km/h → clock time string e.g. "11:22" */
+function etaClockFromDistanceMeters(distM: number): string {
+  const minutes = Math.max(1, Math.round(distM / 666.67));
+  const arrival = new Date(Date.now() + minutes * 60_000);
+  return arrival.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
 export default function LivePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -185,7 +198,7 @@ export default function LivePage() {
     setLoadErr(null);
     try {
       const token = getToken();
-      const trips = await apiFetch<UpcomingTrip[]>("/live/upcoming-trips", {
+      const trips = await liveFetch<UpcomingTrip[]>("/live/upcoming-trips", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -204,7 +217,7 @@ export default function LivePage() {
 
   const hydrateSessionForTrip = useCallback(async (tripId: string, metaHint?: UpcomingTrip | null) => {
     try {
-      const s = await apiFetch<LiveSession | null>(`/live/trips/${tripId}/session`);
+      const s = await liveFetch<LiveSession | null>(`/live/trips/${tripId}/session`);
       if (!s) {
         setSession(null);
         setActiveTripMeta(null);
@@ -235,7 +248,7 @@ export default function LivePage() {
     let cancelled = false;
     (async () => {
       try {
-        const rows = await apiFetch<
+        const rows = await liveFetch<
           { user_id: string; full_name: string | null; avatar_url: string | null }[]
         >(`/live/sessions/${session.id}/checklist`);
         if (!cancelled) {
@@ -258,7 +271,7 @@ export default function LivePage() {
   const fetchLivePlan = useCallback(async () => {
     if (!session?.trip_id) return;
     try {
-      const res = await apiFetch<any[]>(`/trips/${session.trip_id}/live-plan`);
+      const res = await liveFetch<any[]>(`/trips/${session.trip_id}/live-plan`);
       setLivePlan(res || []);
     } catch (err) {
       console.error("Failed to fetch live plan:", err);
@@ -280,7 +293,7 @@ export default function LivePage() {
       }
       try {
         setLoadErr(null);
-        const joined = await apiFetch<LiveSession>(`/live/sessions/join-by-code`, {
+        const joined = await liveFetch<LiveSession>(`/live/sessions/join-by-code`, {
           method: "POST",
           body: JSON.stringify({ session_code: code }),
         });
@@ -489,7 +502,7 @@ export default function LivePage() {
 
   async function beginSession(trip: UpcomingTrip) {
     try {
-      const s = await apiFetch<LiveSession>(`/live/sessions`, {
+      const s = await liveFetch<LiveSession>(`/live/sessions`, {
         method: "POST",
         body: JSON.stringify({ trip_id: trip.trip_id }),
       });
@@ -507,7 +520,7 @@ export default function LivePage() {
         ? window.prompt?.("Meet point name", suggested) ?? suggested
         : suggested;
     try {
-      await apiFetch(`/live/trips/${session!.trip_id}/meet-point`, {
+      await liveFetch(`/live/trips/${session!.trip_id}/meet-point`, {
         method: "POST",
         body: JSON.stringify({ lat, lng, name }),
       });
@@ -519,7 +532,7 @@ export default function LivePage() {
   async function startTimerMinutes(minutesRaw: string) {
     const minutes = Math.max(1, Math.floor(Number(minutesRaw)));
     try {
-      await apiFetch(`/trips/${session!.trip_id}/timer`, {
+      await liveFetch(`/trips/${session!.trip_id}/timer`, {
         method: "POST",
         body: JSON.stringify({ duration_seconds: Math.max(minutes * 60, 30) }),
       });
@@ -570,7 +583,7 @@ export default function LivePage() {
     setGroupTogether(true);
     formationNotifiedRef.current = true;
     try {
-      await apiFetch(`/live/sessions/${session.id}/group-formed`, {
+      await liveFetch(`/live/sessions/${session.id}/group-formed`, {
         method: "POST",
       });
     } catch {
@@ -587,7 +600,7 @@ export default function LivePage() {
   async function finishSession() {
     if (!session) return;
     try {
-      await apiFetch(`/live/sessions/${session.id}/end`, { method: "POST" });
+      await liveFetch(`/live/sessions/${session.id}/end`, { method: "POST" });
       setSession(null);
       setFbStatus(null);
       setActiveTripMeta(null);
@@ -635,7 +648,7 @@ export default function LivePage() {
       const token = getToken();
 
       // 1. Create a default casual group
-      const group = await apiFetch<any>("/groups", {
+      const group = await liveFetch<any>("/groups", {
         method: "POST",
         body: JSON.stringify({
           name: `${adHocTripName} Crew`,
@@ -648,7 +661,7 @@ export default function LivePage() {
       });
 
       // 2. Create the trip inside group
-      const trip = await apiFetch<any>(`/groups/${group.id}/trips`, {
+      const trip = await liveFetch<any>(`/groups/${group.id}/trips`, {
         method: "POST",
         body: JSON.stringify({
           title: adHocTripName,
@@ -660,7 +673,7 @@ export default function LivePage() {
       });
 
       // 3. Start Live Session with mode selection
-      const s = await apiFetch<LiveSession>("/live/sessions", {
+      const s = await liveFetch<LiveSession>("/live/sessions", {
         method: "POST",
         body: JSON.stringify({
           trip_id: trip.id,
@@ -697,7 +710,7 @@ export default function LivePage() {
         setDestinationSearch(adHocDestination);
         // Geocode the destination hint
         try {
-          const res = await apiFetch<any[]>(`/geocoding/search?q=${encodeURIComponent(adHocDestination)}`);
+          const res = await liveFetch<any[]>(`/geocoding/search?q=${encodeURIComponent(adHocDestination)}`);
           if (res && res.length > 0) {
             handleSelectDestination(res[0]);
           }
@@ -723,7 +736,7 @@ export default function LivePage() {
       return;
     }
     try {
-      const res = await apiFetch<any[]>(`/geocoding/search?q=${encodeURIComponent(q)}`);
+      const res = await liveFetch<any[]>(`/geocoding/search?q=${encodeURIComponent(q)}`);
       setDestSearchResults(res || []);
     } catch (err) {
       console.error("Destination search failed:", err);
@@ -793,12 +806,12 @@ export default function LivePage() {
 
     setIsSendingSos(true);
     try {
-      await apiFetch(`/trips/${session.trip_id}/sos`, {
+      await liveFetch(`/trips/${session.trip_id}/sos`, {
         method: "POST",
         body: JSON.stringify({ latitude, longitude }),
       });
       const memberCount = stripMembers.length || 1;
-      showToast(`Emergency alert broadcast to ${memberCount} group members!`);
+      showToast(`SOS sent to ${memberCount} member${memberCount !== 1 ? "s" : ""}`);
       setShowSosConfirm(false);
     } catch (err: any) {
       console.error("SOS trigger failed:", err);
@@ -825,7 +838,7 @@ export default function LivePage() {
       firstDay.activities.sort((a: any, b: any) => (a.time || "").localeCompare(b.time || ""));
       days[0] = firstDay;
 
-      await apiFetch(`/trips/${session.trip_id}/live-plan`, {
+      await liveFetch(`/trips/${session.trip_id}/live-plan`, {
         method: "POST",
         body: JSON.stringify({ days }),
       });
@@ -911,6 +924,7 @@ export default function LivePage() {
 
         if (isStale) {
           const mins = Math.max(1, Math.round(elapsed / 60));
+          etaStr = "Offline";
           distStr = `Last seen ${mins}m ago`;
         } else {
           // Calculate distance to meet point
@@ -918,16 +932,15 @@ export default function LivePage() {
             const dist = haversineM(loc.lat, loc.lng, meetPoint.lat, meetPoint.lng);
             if (dist <= 100) {
               etaStr = "Arrived";
+              distStr = "At meet point";
             } else {
-              const minutes = Math.round(dist / 666.67); // 40km/h driving
-              etaStr = `ETA ${minutes}m`;
+              etaStr = `ETA ${etaClockFromDistanceMeters(dist)}`;
+              distStr = `${(dist / 1000).toFixed(1)}km`;
             }
-            distStr = `${(dist / 1000).toFixed(1)} km`;
           } else if (groupCentroid) {
-            // Distance to group centroid
             const dist = haversineM(loc.lat, loc.lng, groupCentroid.lat, groupCentroid.lng);
-            etaStr = `${Math.round(dist / 666.67)}m to centroid`;
-            distStr = `${(dist / 1000).toFixed(1)} km`;
+            etaStr = `ETA ${etaClockFromDistanceMeters(dist)}`;
+            distStr = `${(dist / 1000).toFixed(1)}km`;
           }
         }
       } else {
@@ -948,6 +961,18 @@ export default function LivePage() {
   }, [stripMembers, membersLocs, meetPoint, groupCentroid]);
 
   // Flat list of stops sorted by time
+  const mapMembers = useMemo(() => {
+    if (isSoloMode && currentUserId) {
+      return membersWithEta.filter((m) => m.user_id === currentUserId);
+    }
+    return membersWithEta;
+  }, [isSoloMode, currentUserId, membersWithEta]);
+
+  const soloMeetPoint = useMemo(
+    () => (isSoloMode ? { lat: null, lng: null, name: null } : meetPoint),
+    [isSoloMode, meetPoint],
+  );
+
   const timelineStops = useMemo(() => {
     if (livePlan.length === 0) return [];
     // Accumulate all activities from all days
@@ -1109,14 +1134,14 @@ export default function LivePage() {
 
       {/* 2. Fullscreen Active Coordination Experience */}
       {viewingSession && (
-        <div className="relative h-screen w-full overflow-hidden select-none">
+        <div className="fixed inset-0 z-[200] h-[100dvh] w-full overflow-hidden select-none">
           {/* Main Fullscreen Map Background */}
           <div className="absolute inset-0 z-0">
             <LiveMap
               tripId={session!.trip_id}
               firebaseDb={fb.db}
-              members={viewingActive ? membersWithEta : []}
-              meetPoint={meetPoint}
+              members={viewingActive ? mapMembers : []}
+              meetPoint={soloMeetPoint}
               pickingMeetPoint={pickingMeetPoint}
               currentUserId={currentUserId}
               style={mapStyle}
@@ -1153,7 +1178,7 @@ export default function LivePage() {
                   Live
                 </span>
                 <h2 className="text-xs font-black truncate text-slate-100">
-                  {isSoloMode ? `Solo: ${activeTripMeta!.title}` : activeTripMeta!.title}
+                  {isSoloMode ? "Solo Trip" : activeTripMeta!.title}
                 </h2>
               </div>
 
@@ -1235,6 +1260,18 @@ export default function LivePage() {
             </div>
           )}
 
+          {/* Map style switcher — top right */}
+          {viewingActive && (
+            <button
+              type="button"
+              onClick={cycleMapStyle}
+              className="fixed top-20 right-4 z-[4000] flex h-10 w-10 items-center justify-center rounded-full bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-white shadow-lg backdrop-blur-md transition-all cursor-pointer"
+              title="Change Map Style"
+            >
+              <Layers size={18} />
+            </button>
+          )}
+
           {/* E. Floating Action Button Stack (Right Side) */}
           {viewingActive && (
             <div className="fixed bottom-36 right-4 z-[3500] flex flex-col gap-3">
@@ -1246,16 +1283,6 @@ export default function LivePage() {
                 title="Emergency SOS"
               >
                 <AlertOctagon size={24} className="animate-pulse" />
-              </button>
-
-              {/* Map Style Switcher */}
-              <button
-                type="button"
-                onClick={cycleMapStyle}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-white shadow-lg backdrop-blur-md transition-all cursor-pointer"
-                title="Change Map Style"
-              >
-                <Layers size={18} />
               </button>
 
               {/* Meet Point Pin (Group Mode Only) */}
@@ -1525,7 +1552,9 @@ export default function LivePage() {
                                   </span>
                                   <div>
                                     <h4 className="text-xs font-bold text-slate-200">{m.full_name || "Traveler"}</h4>
-                                    <p className="text-[10px] text-slate-500">{m.quick_status || "On Track"}</p>
+                                    <p className="text-[10px] text-slate-500">
+                                      {m.isStale ? "Offline" : m.quick_status || "On my way"}
+                                    </p>
                                   </div>
                                 </div>
 
@@ -1552,7 +1581,7 @@ export default function LivePage() {
                       {/* Stops Timeline List */}
                       {timelineStops.length === 0 ? (
                         <div className="text-center py-8 space-y-2">
-                          <p className="text-xs text-slate-500">No stops scheduled in the timeline yet.</p>
+                          <p className="text-xs text-slate-500">No itinerary — add stops</p>
                         </div>
                       ) : (
                         <div className="space-y-4 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-850">
@@ -1656,9 +1685,9 @@ export default function LivePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-lg font-black text-slate-100 uppercase tracking-wide">Confirm SOS broadcast</h3>
+                  <h3 className="text-lg font-black text-slate-100 uppercase tracking-wide">Confirm SOS</h3>
                   <p className="text-xs text-slate-400 leading-normal">
-                    This will send a priority emergency alert containing your current GPS location to all crew members and emergency contacts.
+                    Send SOS to all group members and emergency contacts?
                   </p>
                 </div>
 
@@ -1685,12 +1714,19 @@ export default function LivePage() {
         </div>
       )}
 
-      {/* 3. Ad-hoc Live Session Creation Modal */}
+      {/* 3. Start New Live Trip — bottom sheet */}
       {showAdHocModal && (
-        <div className="fixed inset-0 z-[5200] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-[5200] flex flex-col justify-end bg-slate-950/60 backdrop-blur-sm">
+          <button
+            type="button"
+            className="flex-1 cursor-default"
+            aria-label="Close"
+            onClick={() => setShowAdHocModal(false)}
+          />
+          <div className="w-full max-h-[85vh] overflow-y-auto rounded-t-[28px] border-t border-slate-800 bg-slate-950/96 backdrop-blur-lg p-6 shadow-2xl space-y-5">
+            <div className="mx-auto mb-1 h-1.5 w-12 rounded-full bg-slate-700" />
             <div className="flex justify-between items-center">
-              <h3 className="text-sm font-black uppercase tracking-widest text-teal-500">Go Live Directly</h3>
+              <h3 className="text-sm font-black uppercase tracking-widest text-teal-500">Start New Live Trip</h3>
               <button
                 type="button"
                 onClick={() => setShowAdHocModal(false)}
@@ -1752,6 +1788,9 @@ export default function LivePage() {
                     <Users size={18} />
                     <h4 className="text-xs font-bold">Group Mode</h4>
                     <p className="text-[10px] text-slate-500 leading-tight">Sync checkpoints & map crew</p>
+                    {adHocMode === "GROUP" ? (
+                      <p className="text-[9px] text-teal-500/80 pt-1">QR invite shown after you go live</p>
+                    ) : null}
                   </button>
                 </div>
               </div>
@@ -1764,7 +1803,7 @@ export default function LivePage() {
                 disabled={isCreatingAdHoc}
                 className="w-full rounded-full bg-teal-600 hover:bg-teal-500 disabled:opacity-50 py-3 text-xs font-black uppercase tracking-wider text-white transition-all shadow-md shadow-teal-950/50"
               >
-                {isCreatingAdHoc ? "Initializing Live..." : "Go Live Now"}
+                {isCreatingAdHoc ? "Initializing Live..." : "Go Live"}
               </button>
             </div>
           </div>
