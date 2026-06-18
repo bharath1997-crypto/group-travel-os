@@ -27,6 +27,10 @@ const Marker = dynamic(
   () => import("react-leaflet").then((m) => m.Marker),
   { ssr: false },
 );
+const Polyline = dynamic(
+  () => import("react-leaflet").then((m) => m.Polyline),
+  { ssr: false },
+);
 
 const MapController = dynamic(
   () =>
@@ -34,9 +38,11 @@ const MapController = dynamic(
       function Inner({
         mapRef,
         fitKey,
+        centerOverride,
       }: {
         mapRef: MutableRefObject<L.Map | null>;
         fitKey: string;
+        centerOverride?: [number, number];
       }) {
         const map = mod.useMap();
         useEffect(() => {
@@ -56,6 +62,12 @@ const MapController = dynamic(
             window.removeEventListener("resize", fix);
           };
         }, [map, fitKey]);
+
+        useEffect(() => {
+          if (centerOverride) {
+            map.setView(centerOverride, 16);
+          }
+        }, [map, centerOverride]);
 
         return null;
       }
@@ -183,6 +195,9 @@ export function LiveMap(props: {
   onMapPick?: (lat: number, lng: number) => void;
   currentUserId: string | null;
   pulseUserId?: string | null;
+  style?: "standard" | "satellite" | "night";
+  routeLine?: [number, number][];
+  centerOverride?: [number, number];
 }) {
   const mapRef = useRef<L.Map | null>(null);
   const [locs, setLocs] = useState<
@@ -277,6 +292,12 @@ export function LiveMap(props: {
     );
   }
 
+  const tileUrls = {
+    standard: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    satellite: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    night: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+  };
+
   return (
     <>
       <style jsx global>{`
@@ -305,10 +326,10 @@ export function LiveMap(props: {
           scrollWheelZoom
         >
           <TileLayer
-            attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/rastermaps/voyager/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+            url={tileUrls[props.style || "standard"]}
           />
-          <MapController mapRef={mapRef} fitKey={fitKey} />
+          <MapController mapRef={mapRef} fitKey={fitKey} centerOverride={props.centerOverride} />
           <FitBoundsWatcher mapRef={mapRef} points={fitPoints} />
           <MapPickHandler
             picking={Boolean(props.pickingMeetPoint)}
@@ -350,6 +371,15 @@ export function LiveMap(props: {
               />
             );
           })}
+
+          {props.routeLine && props.routeLine.length > 1 ? (
+            <Polyline
+              positions={props.routeLine}
+              color="#0F766E"
+              dashArray="6, 6"
+              weight={4}
+            />
+          ) : null}
         </MapContainer>
       </div>
     </>

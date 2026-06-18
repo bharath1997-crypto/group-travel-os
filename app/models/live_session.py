@@ -6,11 +6,18 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.utils.database import Base
+
+if TYPE_CHECKING:
+    from app.models.trip import Trip
+    from app.models.user import User
+    from app.models.live_checklist import LiveChecklist
 
 
 class LiveSession(Base):
@@ -38,6 +45,7 @@ class LiveSession(Base):
     meet_radius_meters: Mapped[int] = mapped_column(Integer, nullable=False, default=200)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    mode: Mapped[str] = mapped_column(String(10), nullable=False, default="GROUP")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

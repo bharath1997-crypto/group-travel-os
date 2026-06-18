@@ -21,23 +21,30 @@ export default function TripLiveIndexRedirect() {
 
   useEffect(() => {
     async function resolveLiveTrip() {
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("gt_token") : null;
+      if (!token) {
+        router.replace("/login?redirect=/trip-live");
+        return;
+      }
+
       try {
         // 1. Check if there is a running active session
-        const activeRes = await apiFetch<ActiveSessionResponse>("/live/my-active-session");
+        const activeRes = await apiFetch<ActiveSessionResponse>("/live/my-active-session", {}, 30000);
         if (activeRes && activeRes.active && activeRes.trip_id) {
           router.replace(`/trip-live/${activeRes.trip_id}`);
           return;
         }
 
         // 2. Fallback: Check for upcoming or recent trips to direct the user to
-        const upcomingRes = await apiFetch<UpcomingTrip[]>("/live/upcoming-trips");
+        const upcomingRes = await apiFetch<UpcomingTrip[]>("/live/upcoming-trips", {}, 30000);
         if (Array.isArray(upcomingRes) && upcomingRes.length > 0) {
           router.replace(`/trip-live/${upcomingRes[0].trip_id}`);
           return;
         }
 
         // 3. Absolute Fallback: Find any trip from /trips (if no upcoming live trips)
-        const allTrips = await apiFetch<any[]>("/trips");
+        const allTrips = await apiFetch<{ id: string }[]>("/trips", {}, 30000);
         if (Array.isArray(allTrips) && allTrips.length > 0) {
           router.replace(`/trip-live/${allTrips[0].id}`);
           return;
@@ -45,9 +52,19 @@ export default function TripLiveIndexRedirect() {
 
         // No trips at all
         router.replace("/trips");
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Redirect resolution failed:", err);
-        setError("Failed to locate your active trip session. Please make sure you are logged in.");
+        const message =
+          err instanceof Error ? err.message : "Failed to locate your active trip session.";
+        const isNetwork =
+          /Network error calling|Could not reach|Failed to fetch|NetworkError/i.test(message);
+        setError(
+          isNetwork
+            ? "Cannot reach the Rovvy API. Start FastAPI on port 8000 (uvicorn app.main:app --reload), then retry. If the server is running, confirm NEXT_PUBLIC_API_URL includes /api/v1 (e.g. http://localhost:8000/api/v1)."
+            : message.includes("Not authenticated") || message.includes("401")
+              ? "Please log in to access Trip LIVE."
+              : message,
+        );
       }
     }
 

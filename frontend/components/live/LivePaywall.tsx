@@ -41,7 +41,7 @@ export function LivePaywall({ tripId, onAccessGranted }: LivePaywallProps) {
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 text-slate-800">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
         <div className="bg-[#0F172A] p-8 text-center flex flex-col items-center gap-4">
-          <RovvyLogo className="h-8 w-auto text-white" />
+          <RovvyLogo variant="dark" size="md" />
           <h2 className="text-2xl font-bold text-white tracking-tight mt-2">
             Trip LIVE Access
           </h2>

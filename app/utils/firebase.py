@@ -55,6 +55,10 @@ def delete_rtdb(path: str) -> None:
     get_rtdb_ref(path).delete()
 
 
+def push_rtdb(path: str, data: dict) -> None:
+    get_rtdb_ref(path).push(data)
+
+
 def get_rtdb(path: str) -> dict | None:
     value = get_rtdb_ref(path).get()
     if value is None:

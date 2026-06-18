@@ -11,6 +11,8 @@ type ExplorerHorizontalRailProps = {
   rightSlot?: ReactNode;
   children: ReactNode;
   className?: string;
+  /** Extra classes forwarded to the inner scroll container (e.g. light scrollbar overrides) */
+  scrollClassName?: string;
 };
 
 export function ExplorerHorizontalRail({
@@ -21,6 +23,7 @@ export function ExplorerHorizontalRail({
   rightSlot,
   children,
   className = "",
+  scrollClassName = "",
 }: ExplorerHorizontalRailProps) {
   const ref = useRef<HTMLDivElement>(null);
   const scroll = (dir: -1 | 1) => {
@@ -75,7 +78,7 @@ export function ExplorerHorizontalRail({
         />
         <div
           ref={ref}
-          className="flex gap-4 overflow-x-auto pb-2 pl-0.5 pr-1 pt-9 [-ms-overflow-style:none] [scrollbar-color:#1e4976_#0B192E] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#1e4976] [&::-webkit-scrollbar-track]:bg-[#0B192E]"
+          className={`flex gap-4 overflow-x-auto pb-2 pl-0.5 pr-1 pt-9 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full ${scrollClassName || "[scrollbar-color:#1e4976_#0B192E] [&::-webkit-scrollbar-thumb]:bg-[#1e4976] [&::-webkit-scrollbar-track]:bg-[#0B192E]"}`}
         >
           {children}
         </div>

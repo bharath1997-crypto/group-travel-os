@@ -35,8 +35,6 @@ import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
 import { VerificationBanner } from "@/components/VerificationBanner";
 import { useDashboardUser } from "@/contexts/dashboard-user-context";
-import { clearToken } from "@/lib/auth";
-import { clearLocalProfileCache } from "@/lib/profileCache";
 
 /* ─── Sub-nav config ─────────────────────────────────────────────────────── */
 const EXPLORE_SUBNAV = [
@@ -214,9 +212,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const activeTab = getPrimaryTab(pathname);
 
   function handleLogout() {
-    clearToken();
-    clearLocalProfileCache();
-    router.replace("/login");
+    router.push("/logout");
   }
 
   if (loading) {

@@ -11,6 +11,7 @@ from app.models.group import MemberRole
 
 class LiveSessionCreate(BaseModel):
     trip_id: UUID
+    mode: str = "GROUP"
 
 
 class LiveChecklistItemOut(BaseModel):
@@ -34,6 +35,7 @@ class LiveSessionOut(BaseModel):
     meet_radius_meters: int
     started_at: datetime | None
     ended_at: datetime | None
+    mode: str
     created_at: datetime
 
 
