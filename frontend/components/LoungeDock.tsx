@@ -1298,23 +1298,23 @@ export function LoungeDock() {
     showSettingsOverlay && settingsScreen === "settings";
 
   return (
-    <div className="fixed bottom-0 right-2 sm:right-[40px] z-[80] pointer-events-none select-none">
-      <div className="flex flex-row-reverse items-end gap-3">
+    <div className="fixed bottom-0 right-2 sm:right-[40px] z-[80] pointer-events-none select-none max-md:inset-x-0 max-md:top-0 max-md:bottom-auto max-md:right-0 max-md:left-0">
+      <div className="flex flex-row-reverse items-end gap-3 max-md:flex-col max-md:items-stretch">
       {/* MAIN DOCK WIDGET — always shows chat list when open */}
       <div
-        className={`bg-slate-900 text-white shadow-2xl rounded-t-xl flex flex-col border border-slate-700/50 pointer-events-auto select-text overflow-hidden transition-all duration-300 ease-in-out ${
+        className={`bg-slate-900 text-white shadow-2xl rounded-t-xl flex flex-col border border-slate-700/50 pointer-events-auto select-text overflow-hidden transition-all duration-300 ease-in-out max-md:fixed max-md:top-0 max-md:left-0 max-md:right-0 max-md:w-full max-md:rounded-none max-md:rounded-b-2xl max-md:border-x-0 max-md:border-t-0 max-md:transition-transform max-md:duration-300 max-md:ease-out ${
           isOpen
-            ? `w-[340px] md:w-[360px] ${
+            ? `w-[340px] md:w-[360px] max-md:translate-y-0 ${
                 dockSettingsOpen
                   ? "h-[min(90vh,720px)]"
-                  : "h-[480px] md:h-[500px]"
+                  : "h-[480px] md:h-[500px] max-md:h-[min(88vh,640px)]"
               }`
-            : "w-[290px] h-11"
+            : "w-[290px] h-11 max-md:-translate-y-[calc(100%-2.75rem)]"
         }`}
       >
         {!isOpen ? (
           <div
-            className="h-11 shrink-0 px-4 bg-slate-900 text-white flex items-center justify-between cursor-pointer border-b border-slate-800/80 hover:bg-slate-800 w-full"
+            className="h-11 shrink-0 px-4 bg-slate-900 text-white flex items-center justify-between cursor-pointer border-b border-slate-800/80 hover:bg-slate-800 w-full max-md:border-b-0"
             onClick={() => setIsOpen(true)}
           >
             <div className="flex items-center gap-2">
@@ -1326,7 +1326,8 @@ export function LoungeDock() {
                 Rovvy Lounge
               </span>
             </div>
-            <ChevronUp size={16} />
+            <ChevronUp size={16} className="max-md:hidden" />
+            <ChevronDown size={16} className="hidden max-md:block" />
           </div>
         ) : (
           <div className="h-14 shrink-0 px-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800/80">
@@ -1375,7 +1376,8 @@ export function LoungeDock() {
                 onClick={() => setIsOpen(false)}
                 className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
               >
-                <ChevronDown size={16} />
+                <ChevronDown size={16} className="max-md:hidden" />
+                <ChevronUp size={16} className="hidden max-md:block" />
               </button>
             </div>
           </div>

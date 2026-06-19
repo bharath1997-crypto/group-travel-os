@@ -395,6 +395,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, loading } = useDashboardUser();
   const hideAssistantSidecar = pathname.startsWith("/travel-hub");
+  const hideBottomNav = pathname.includes("trip-live");
 
   const isMapPage = pathname === "/map" || pathname === "/explore/map";
   const isLivePage = pathname === "/live" || pathname.startsWith("/trip-live");
@@ -793,7 +794,9 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           MAIN CONTENT — padded to clear the fixed header
       ═══════════════════════════════════════════════════ */}
       <div
-        className="flex h-screen h-[100dvh] w-full flex-col overflow-y-auto pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0"
+        className={`flex h-screen h-[100dvh] w-full flex-col overflow-y-auto md:pb-0 ${
+          hideBottomNav ? "pb-0" : "pb-[calc(56px+env(safe-area-inset-bottom,0px))]"
+        }`}
         style={{ paddingTop: `${headerPx}px` }}
       >
         <main
@@ -834,7 +837,9 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             MOBILE BOTTOM NAV — fixed, dark bar
         ═══════════════════════════════════════════════════ */}
         <nav
-          className="fixed bottom-0 left-0 right-0 z-30 flex items-end border-t border-[#1E293B] bg-[#0F172A] pb-[env(safe-area-inset-bottom,0px)] md:hidden"
+          className={`fixed bottom-0 left-0 right-0 z-30 flex items-end border-t border-[#1E293B] bg-[#0F172A] pb-[env(safe-area-inset-bottom,0px)] md:hidden ${
+            hideBottomNav ? "hidden" : ""
+          }`}
           aria-label="Primary"
         >
           <div className="mx-auto flex h-14 w-full max-w-lg items-stretch justify-between px-1">
