@@ -94,7 +94,7 @@ const NAV_SECTIONS: NavSectionDef[] = [
   },
   {
     id: "live",
-    href: "/trip-live",
+    href: "/live",
     label: "LIVE",
     Icon: null,   // replaced by pulsing dot
     subs: [],
