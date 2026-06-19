@@ -926,7 +926,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           className="!z-[40] max-md:!bottom-[72px] max-md:!left-0 max-md:!p-0 [&>div]:max-md:!pb-0 [&>div]:max-md:!pl-4"
         />
       ) : null}
-      {user && <LoungeDock />}
+      {user && !hideBottomNav && <LoungeDock />}
       <LiveModal open={liveModalOpen} onClose={() => setLiveModalOpen(false)} />
     </div>
   );
