@@ -36,7 +36,7 @@ import { LiveModal } from "@/components/live/LiveModal";
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { VerificationBanner } from "@/components/VerificationBanner";
-import { RovvyLogo, RovvyIcon } from "@/components/RovvyLogo";
+import { RovvyLogo } from "@/components/RovvyLogo";
 import BrandedLoading from "@/components/BrandedLoading";
 import ConnectionStatusBanner from "@/components/ConnectionStatusBanner";
 import { HeaderSearchBar } from "@/components/HeaderSearchBar";
@@ -45,7 +45,6 @@ import {
   useDashboardUser,
 } from "@/contexts/dashboard-user-context";
 import { API_BASE, apiFetch } from "@/lib/api";
-import { clearToken } from "@/lib/auth";
 
 const CORAL = "#E94560";
 
@@ -495,8 +494,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   }, []);
 
   function handleLogout() {
-    clearToken();
-    router.push("/login");
+    router.push("/logout");
   }
 
   const profileComplete = isProfileFullyComplete(user);
@@ -595,8 +593,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             href="/explore"
             className="flex shrink-0 items-center focus-visible:outline-none"
           >
-            <RovvyLogo variant="primary" size="sm" className="hidden xl:block" />
-            <RovvyIcon size={26} className="xl:hidden" />
+            <RovvyLogo variant="primary" size="sm" />
           </Link>
 
           {/* Search — Google-style pill, centered in header */}

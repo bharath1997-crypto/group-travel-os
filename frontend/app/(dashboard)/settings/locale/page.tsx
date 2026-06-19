@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api";
 import { applyLocaleToLocalStorage } from "@/lib/user-locale";
 
 import { SettingsScreenHeader, SettingsSectionTitle } from "../_components";
+import { SettingsBreadcrumb, nestedCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 type CurrencyRow = { code: string; name: string; symbol: string };
 
@@ -92,6 +93,7 @@ export default function SettingsLocalePage() {
   return (
     <>
       <SettingsScreenHeader title="Currency & time zone" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={nestedCrumbs("app-preferences", "Currency & Time Zone")} />
       <div className="px-4 py-3 text-sm text-stone-600">
         Trip expenses still require a currency on each receipt; this is your
         default for Split activities and trip expense forms. Time zone is used

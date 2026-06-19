@@ -2,7 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 
 interface ExploreV2SectionProps {
   title: string;
@@ -20,29 +19,40 @@ export function ExploreV2Section({
   children,
 }: ExploreV2SectionProps) {
   return (
-    <section className="mb-8">
+    <section style={{ marginBottom: "40px" }}>
       {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {/* Icon Box */}
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-[#0F766E]">
-            {icon}
-          </div>
-          <h2 className="text-base font-bold text-slate-900">{title}</h2>
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: "16px"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ fontSize: "20px", display: "flex", alignItems: "center" }}>{icon}</div>
+          <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#0F172A", margin: 0 }}>
+            {title}
+          </h2>
         </div>
-        
-        {/* See All */}
-        <Link
-          href={seeAllHref}
-          className="inline-flex items-center gap-0.5 text-xs font-semibold text-[#0F766E] transition hover:text-teal-700"
-        >
-          See all
-          <ChevronRight className="h-4 w-4" />
+        <Link href={seeAllHref} style={{
+          fontSize: "13px",
+          color: "#0F766E",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontWeight: 500,
+          textDecoration: "none"
+        }}>
+          See all →
         </Link>
       </div>
 
-      {/* Grid Content */}
-      <div className={isEvents ? "grid grid-cols-1 md:grid-cols-4 gap-4" : "grid grid-cols-2 md:grid-cols-5 gap-4"}>
+      {/* Grid Content: horizontal scroll on mobile, grid on desktop */}
+      <div 
+        className="flex md:grid overflow-x-auto md:overflow-x-visible pb-4 md:pb-0 gap-4 scrollbar-none"
+        style={{
+          gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+        }}
+      >
         {children}
       </div>
     </section>

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
 import { SettingsScreenHeader } from "../_components";
+import { SettingsBreadcrumb, nestedCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 type BlockedUser = {
   id: string;
@@ -47,6 +48,7 @@ export default function SettingsBlockedPage() {
   return (
     <>
       <SettingsScreenHeader title="Blocked" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={nestedCrumbs("privacy-safety", "Blocked")} />
       {err ? <p className="px-4 py-2 text-sm text-red-600">{err}</p> : null}
       {!rows ? (
         <div className="flex justify-center py-16">

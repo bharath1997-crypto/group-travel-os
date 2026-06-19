@@ -7,6 +7,7 @@ import type { AppPreferences } from "@/lib/app-settings";
 import { fetchAppSettings, patchAppSettings, prefSection } from "@/lib/app-settings";
 
 import { SettingsScreenHeader, SettingsSectionTitle, SettingsToggleRow } from "../_components";
+import { SettingsBreadcrumb, nestedCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 const EMPTY_PREFS: AppPreferences = {};
 
@@ -69,6 +70,7 @@ export default function SettingsSupportPage() {
   return (
     <>
       <SettingsScreenHeader title="Support & legal" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={nestedCrumbs("support-legal", "Support & Legal")} />
 
       <div id="streak" className="scroll-mt-16">
         <SettingsSectionTitle>Travel streak help</SettingsSectionTitle>

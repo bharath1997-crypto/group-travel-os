@@ -6,6 +6,7 @@ import type { AppPreferences } from "@/lib/app-settings";
 import { fetchAppSettings, patchAppSettings, prefSection } from "@/lib/app-settings";
 
 import { SettingsScreenHeader, SettingsSectionTitle, SettingsToggleRow } from "../_components";
+import { SettingsBreadcrumb, nestedCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 const EMPTY_PREFS: AppPreferences = {};
 
@@ -65,6 +66,7 @@ export default function SettingsContentPage() {
   return (
     <>
       <SettingsScreenHeader title="What you see" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={nestedCrumbs("content-discovery", "What You See")} />
       <div id="favorites" className="scroll-mt-16">
         <SettingsSectionTitle>Favorites</SettingsSectionTitle>
         <p className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600">

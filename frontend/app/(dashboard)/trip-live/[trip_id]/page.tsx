@@ -27,6 +27,10 @@ import {
   MapPin,
   Bot,
   Send,
+  ClipboardList,
+  CheckCircle2,
+  Circle,
+  X,
 } from "lucide-react";
 import WayraIcon from "@/components/ui/WayraIcon";
 import { emitOpenWayra } from "@/lib/open-wayra";
@@ -199,6 +203,49 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
   const [error, setError] = useState(false);
   const [fetchAttempt, setFetchAttempt] = useState(1);
 
+  const [checklistReadiness, setChecklistReadiness] = useState<MemberReadiness[]>([]);
+
+  // Floating Checklist & Permission states
+  const ITEMS = useMemo(() => [
+    "I am ready to share my location coordinates",
+    "I have verified the meeting point location",
+    "My phone battery is charged above 20%",
+    "I have reviewed the daily itinerary plans",
+  ], []);
+
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState<boolean | null>(null);
+  const [showChecklistFloating, setShowChecklistFloating] = useState(false);
+  const [checkedItems, setCheckedItems] = useState<boolean[]>(Array(4).fill(false));
+  const [submittingChecklist, setSubmittingChecklist] = useState(false);
+
+  const toggleChecklistItem = (index: number) => {
+    setCheckedItems((prev) => {
+      const next = [...prev];
+      next[index] = !next[index];
+      return next;
+    });
+  };
+
+  const isAllChecked = checkedItems.every(Boolean);
+  const isUserAccepted = checklistReadiness.find((r) => r.user_id === currentUserId)?.is_accepted || false;
+
+  const handleAcceptChecklist = async () => {
+    if (!isAllChecked || submittingChecklist || !session) return;
+    setSubmittingChecklist(true);
+    try {
+      await apiFetch(`/live/sessions/${session.id}/checklist/accept`, {
+        method: "POST",
+      });
+      setChecklistReadiness((prev) =>
+        prev.map((m) => (m.user_id === currentUserId ? { ...m, is_accepted: true } : m))
+      );
+    } catch (err) {
+      console.error("Failed to accept checklist:", err);
+    } finally {
+      setSubmittingChecklist(false);
+    }
+  };
+
   // Live Sync states
   const [fbStatus, setFbStatus] = useState<string | null>(null);
   const [timerState, setTimerState] = useState<{
@@ -218,7 +265,6 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
 
   const [pickingMeetPoint, setPickingMeetPoint] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, { full_name: string | null; avatar_url: string | null }>>({});
-  const [checklistReadiness, setChecklistReadiness] = useState<MemberReadiness[]>([]);
   const [activeTab, setActiveTab] = useState<"map" | "members" | "chat" | "plan" | "safety" | "activity">("map");
 
   // Footer Duration clock
@@ -231,6 +277,24 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
     setCurrentUserId(parseJwtUserId(t));
     const ready = initFirebase();
     setFirebase({ ok: ready.ok, db: ready.db });
+  }, []);
+
+  // Request location permission on mount
+  useEffect(() => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setLocationPermissionGranted(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocationPermissionGranted(true);
+      },
+      (err) => {
+        console.warn("Location permission request failed/denied:", err);
+        setLocationPermissionGranted(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   }, []);
 
   // Timer for footer duration
@@ -265,7 +329,22 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
             my_role: userRole,
           });
 
-          const sessionRes = await apiFetch<LiveSession | null>(`/live/trips/${tripId}/session`);
+          let sessionRes = await apiFetch<LiveSession | null>(`/live/trips/${tripId}/session`);
+
+          if (!sessionRes && locationPermissionGranted === true) {
+            try {
+              sessionRes = await apiFetch<LiveSession>("/live/sessions", {
+                method: "POST",
+                body: JSON.stringify({
+                  trip_id: tripId,
+                  mode: isSoloMode ? "SOLO" : "GROUP",
+                }),
+              });
+            } catch (err) {
+              console.warn("Auto-creating session failed:", err);
+            }
+          }
+
           setSession(sessionRes);
 
           if (sessionRes?.id) {
@@ -296,7 +375,7 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
     } finally {
       setLoading(false);
     }
-  }, [tripId]);
+  }, [tripId, locationPermissionGranted, isSoloMode]);
 
   useEffect(() => {
     loadPageContext();
@@ -350,11 +429,24 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
       setTimerState(snap.val());
     });
 
+    const checklistRef = ref(firebase.db, `trips/${tripId}/live_session/checklist`);
+    const unsubscribeChecklist = onValue(checklistRef, (snap) => {
+      const val = snap.val() as Record<string, { accepted?: boolean }> | null;
+      if (!val) return;
+      setChecklistReadiness((prev) =>
+        prev.map((m) => ({
+          ...m,
+          is_accepted: !!val[m.user_id]?.accepted,
+        }))
+      );
+    });
+
     return () => {
       unsubscribeStatus();
       unsubscribeLocs();
       unsubscribeMp();
       unsubscribeTimer();
+      unsubscribeChecklist();
     };
   }, [firebase.db, tripId]);
 
@@ -512,71 +604,7 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
     );
   }
 
-  // If no session exists
-  if (!session) {
-    const isOwner = tripMeta?.my_role === "admin" || tripMeta?.my_role === "coordinator";
-    const canStart = isSoloMode || isOwner;
-    return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 text-slate-800">
-        <div className="max-w-md w-full bg-white border border-slate-200 shadow-xl rounded-3xl p-8 text-center flex flex-col items-center gap-6">
-          <div className={`h-16 w-16 rounded-full flex items-center justify-center shadow-inner ${
-            isSoloMode ? "bg-violet-50 text-[#8B5CF6]" : "bg-teal-50 text-[#0F766E]"
-          }`}>
-            {isSoloMode ? <Bot className="h-8 w-8" /> : <MapIcon className="h-8 w-8" />}
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
-              {isSoloMode ? "Ready for Solo LIVE?" : "Ready to Roam Together?"}
-            </h2>
-            <p className="text-sm text-slate-500 mt-2">
-              {isSoloMode
-                ? "Start a solo live session with Wayra watching your location, personal timers, and safety alerts."
-                : "Start a live session to activate real-time GPS coordinate synchronization, meeting point pins, group timers, and Wayra coordination."}
-            </p>
-          </div>
-
-          {canStart ? (
-            <button
-              onClick={handleStartSession}
-              className={`w-full py-4 text-white rounded-xl font-bold transition shadow-lg ${
-                isSoloMode
-                  ? "bg-[#8B5CF6] hover:bg-[#7C3AED] shadow-violet-100"
-                  : "bg-[#0F766E] hover:bg-[#0D635C] shadow-teal-100"
-              }`}
-            >
-              {isSoloMode ? "Start Solo LIVE" : "Start Live Coordination"}
-            </button>
-          ) : (
-            <div className="p-3 bg-amber-50 border border-amber-100 text-amber-600 rounded-xl text-xs font-semibold">
-              Waiting for trip coordinator or group admin to initiate the live session.
-            </div>
-          )}
-
-          <button
-            onClick={() => router.push("/live")}
-            className="text-xs text-slate-500 hover:text-slate-800 underline flex items-center gap-1 mt-2"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" /> Back to Live Hub
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Pre-live checklist overlay (group mode only)
-  if (effectiveStatus === "pre_live" && !isSoloMode) {
-    return (
-      <ChecklistOverlay
-        tripId={tripId}
-        sessionId={session.id}
-        firebaseDb={firebase.db}
-        isAdmin={tripMeta?.my_role === "admin" || tripMeta?.my_role === "coordinator"}
-        onGoLive={handleGoLiveManual}
-        currentUserId={currentUserId}
-        initialReadiness={checklistReadiness}
-      />
-    );
-  }
+  // Gating screens completely bypassed as requested
 
   // Active Live state
   const activeMembersList = Object.keys(profiles).map((uid) => {
@@ -738,15 +766,109 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
 
         <div className="w-full h-full p-4 overflow-hidden">
           {activeTab === "map" && (
-            <GroupMap
-              tripId={tripId}
-              firebaseDb={firebase.db}
-              currentUserId={currentUserId}
-              meetPoint={isSoloMode ? { lat: null, lng: null, name: null } : meetPoint}
-              pickingMeetPoint={isSoloMode ? false : pickingMeetPoint}
-              onMapPick={isSoloMode ? () => {} : handleMapPickPoint}
-              members={mapMembers}
-            />
+            <div className="relative w-full h-full">
+              <GroupMap
+                tripId={tripId}
+                firebaseDb={firebase.db}
+                currentUserId={currentUserId}
+                meetPoint={isSoloMode ? { lat: null, lng: null, name: null } : meetPoint}
+                pickingMeetPoint={isSoloMode ? false : pickingMeetPoint}
+                onMapPick={isSoloMode ? () => {} : handleMapPickPoint}
+                members={mapMembers}
+              />
+
+              {/* Floating Location Permission Prompt Overlay */}
+              {!session && (
+                <div className="absolute inset-0 bg-[#0F172A]/50 backdrop-blur-[2px] z-20 flex items-center justify-center p-4">
+                  <div className="bg-slate-900 border border-slate-800 text-slate-100 p-5 rounded-2xl shadow-xl max-w-xs w-full text-center flex flex-col items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-teal-500/10 text-teal-400 flex items-center justify-center">
+                      <MapIcon className="h-5 w-5 animate-pulse" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm">Location Required</h3>
+                      <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                        Please grant location permissions to automatically start and sync the live coordination map.
+                      </p>
+                    </div>
+                    {locationPermissionGranted === false && (
+                      <button
+                        onClick={() => {
+                          navigator.geolocation.getCurrentPosition(
+                            () => setLocationPermissionGranted(true),
+                            () => setLocationPermissionGranted(false),
+                            { enableHighAccuracy: true }
+                          );
+                        }}
+                        className="w-full py-2.5 bg-[#0F766E] hover:bg-[#0D635C] text-white rounded-xl text-xs font-bold transition shadow-lg"
+                      >
+                        Allow GPS Tracking
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Collapsible Floating Checklist Toggle Button */}
+              {!isSoloMode && session && (
+                <button
+                  onClick={() => setShowChecklistFloating((v) => !v)}
+                  className="absolute top-3 left-3 z-20 h-9 w-9 bg-white border border-slate-200 text-slate-700 hover:text-slate-900 rounded-xl shadow-lg flex items-center justify-center transition hover:bg-slate-50"
+                  title="Toggle Live Checklist"
+                >
+                  <ClipboardList size={16} />
+                </button>
+              )}
+
+              {/* Collapsible Floating Checklist Panel */}
+              {!isSoloMode && session && showChecklistFloating && (
+                <div className="absolute top-14 left-3 z-20 bg-slate-950/95 border border-slate-800 rounded-2xl shadow-xl max-w-[280px] w-full p-3.5 backdrop-blur-md text-slate-200">
+                  <div className="flex justify-between items-center mb-2.5">
+                    <span className="text-xs font-black uppercase text-teal-400 tracking-wider">Live Checklist</span>
+                    <button
+                      onClick={() => setShowChecklistFloating(false)}
+                      className="p-1 text-slate-400 hover:text-white transition rounded-lg hover:bg-slate-800"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {ITEMS.map((item, idx) => {
+                      const isChecked = checkedItems[idx];
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => toggleChecklistItem(idx)}
+                          className="w-full flex items-start gap-2 text-left hover:bg-slate-900/60 p-1 rounded-lg transition"
+                        >
+                          {isChecked ? (
+                            <CheckCircle2 className="h-4 w-4 text-teal-500 shrink-0 mt-0.5" />
+                          ) : (
+                            <Circle className="h-4 w-4 text-slate-600 shrink-0 mt-0.5" />
+                          )}
+                          <span className="text-[11px] text-slate-350 leading-tight">{item}</span>
+                        </button>
+                      );
+                    })}
+                    
+                    {!isUserAccepted ? (
+                      <button
+                        disabled={!isAllChecked || submittingChecklist}
+                        onClick={handleAcceptChecklist}
+                        className="w-full mt-2.5 py-2 bg-[#0F766E] hover:bg-[#0D635C] disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5"
+                      >
+                        {submittingChecklist && <Loader2 className="h-3 w-3 animate-spin" />}
+                        Confirm Ready
+                      </button>
+                    ) : (
+                      <div className="mt-2.5 p-2 bg-emerald-950/40 border border-emerald-900/60 text-emerald-400 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        <span>Ready Status Synced</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {activeTab === "members" && (

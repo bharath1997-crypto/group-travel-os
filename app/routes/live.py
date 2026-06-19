@@ -71,7 +71,7 @@ def create_live_session(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return LiveSessionService.create_session(db, data.trip_id, current_user.id)
+    return LiveSessionService.create_session(db, data.trip_id, current_user.id, data.mode)
 
 
 @router.get("/trips/{trip_id}/session", response_model=LiveSessionOut | None)

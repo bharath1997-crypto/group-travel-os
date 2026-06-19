@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { RovvyLogo } from "@/components/RovvyLogo";
+import { SettingsBreadcrumb, legalCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 export default function PrivacyPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -23,7 +24,8 @@ export default function PrivacyPage() {
 
       {/* Scrollable body */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <main className="mx-auto max-w-[800px] px-10 pt-16 pb-12">
+        <SettingsBreadcrumb crumbs={legalCrumbs("Privacy Policy")} />
+        <main className="mx-auto max-w-[800px] px-10 pt-10 pb-12">
 
           {/* Title block */}
           <div className="mb-12">

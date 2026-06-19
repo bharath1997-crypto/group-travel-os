@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import { useDashboardUser } from "@/contexts/dashboard-user-context";
 
 import { SettingsScreenHeader, SettingsSectionTitle } from "../_components";
+import { SettingsBreadcrumb, nestedCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 type Me = {
   email: string;
@@ -109,6 +110,7 @@ export default function EditProfileSettingsPage() {
   return (
     <>
       <SettingsScreenHeader title="Personal details" backHref="/settings/account" />
+      <SettingsBreadcrumb crumbs={nestedCrumbs("account", "Personal Details")} />
       <div className="mx-auto max-w-lg px-4 py-4">
         <p className="text-sm text-stone-600">
           Updates here sync with your Group Travel profile and trip link previews.

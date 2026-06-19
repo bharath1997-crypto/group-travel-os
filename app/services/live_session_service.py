@@ -105,6 +105,7 @@ class LiveSessionService:
         session_code: str,
         status: str,
         checklist_user_ids: list[uuid.UUID],
+        mode: str = "GROUP",
     ) -> None:
         checklist = {str(uid): {"accepted": False} for uid in checklist_user_ids}
         LiveSessionService._firebase_set(
@@ -113,27 +114,34 @@ class LiveSessionService:
                 "status": status,
                 "session_code": session_code,
                 "checklist": checklist,
+                "mode": mode,
             },
         )
 
     # ── public API ─────────────────────────────────────────────────────────
 
     @staticmethod
-    def create_session(db: Session, trip_id: uuid.UUID, user_id: uuid.UUID) -> LiveSession:
+    def create_session(
+        db: Session,
+        trip_id: uuid.UUID,
+        user_id: uuid.UUID,
+        mode: str = "GROUP",
+    ) -> LiveSession:
         trip, gm = LiveSessionService._member_row(db, trip_id, user_id)
-        if not LiveSessionService._can_start_or_end_live(gm.role):
-            AppException.forbidden("Only a group admin or coordinator can start a live session")
 
         LiveSessionService._end_open_sessions_on_trip(db, trip_id)
         db.flush()
 
         code = LiveSessionService._generate_unique_session_code(db)
+        now = datetime.now(timezone.utc)
         session = LiveSession(
             trip_id=trip_id,
             started_by=user_id,
             session_code=code,
-            status="pre_live",
+            status="active",
             meet_radius_meters=200,
+            mode=mode,
+            started_at=now,
         )
         db.add(session)
         db.flush()
@@ -147,7 +155,8 @@ class LiveSessionService:
                 LiveChecklist(
                     session_id=session.id,
                     user_id=uid,
-                    is_accepted=False,
+                    is_accepted=True if (mode == "SOLO" or uid == user_id) else False,
+                    accepted_at=now if (mode == "SOLO" or uid == user_id) else None,
                 )
             )
         db.commit()
@@ -156,8 +165,9 @@ class LiveSessionService:
         LiveSessionService._write_live_session_firebase(
             trip_id,
             code,
-            "pre_live",
+            "active",
             member_ids,
+            mode,
         )
 
         try:
@@ -475,6 +485,15 @@ class LiveSessionService:
             {"lat": lat, "lng": lng, "name": name},
         )
         try:
+            from app.utils.firebase import push_rtdb
+            push_rtdb(f"trips/{trip_id}/activity_feed", {
+                "text": f"Meet point moved to {name}" if name else "Meet point moved",
+                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000)
+            })
+        except Exception as exc:
+            logger.warning("Activity feed meet point push skipped: %s", exc)
+
+        try:
             from app.services.notification_service import NotificationService
 
             NotificationService.notify_live_meet_point_set(db, trip_id, user_id, name)
@@ -489,6 +508,16 @@ class LiveSessionService:
             f"trips/{trip_id}/locations/{user_id}",
             {"quick_status": status.strip(), "updated_at": now_ts},
         )
+        user = db.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
+        username = user.full_name if user and user.full_name else "Someone"
+        try:
+            from app.utils.firebase import push_rtdb
+            push_rtdb(f"trips/{trip_id}/activity_feed", {
+                "text": f"{username} updated status: {status.strip()}",
+                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000)
+            })
+        except Exception as exc:
+            logger.warning("Activity feed status push skipped: %s", exc)
 
     @staticmethod
     def notify_timer_ended(db: Session, trip_id: uuid.UUID, user_id: uuid.UUID) -> None:

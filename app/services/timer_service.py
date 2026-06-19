@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.models.group import GroupMember
 from app.models.trip import Trip
+from app.models.user import User
 from app.utils.exceptions import AppException
 from app.utils.firebase import delete_rtdb, get_rtdb, set_rtdb
 
@@ -58,6 +59,17 @@ class TimerService:
             "is_active": True,
         }
         set_rtdb(f"trips/{trip_id}/timer", timer_data)
+
+        user = db.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
+        username = user.full_name if user and user.full_name else "Someone"
+        try:
+            from app.utils.firebase import push_rtdb
+            push_rtdb(f"trips/{trip_id}/activity_feed", {
+                "text": f"Timer started: {duration_seconds // 60} mins",
+                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000)
+            })
+        except Exception as exc:
+            logger.warning("Activity feed timer start push failed: %s", exc)
 
         try:
             from app.services.notification_service import NotificationService

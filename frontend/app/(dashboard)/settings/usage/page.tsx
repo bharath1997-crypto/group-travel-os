@@ -6,6 +6,7 @@ import type { AppPreferences } from "@/lib/app-settings";
 import { fetchAppSettings, patchAppSettings, prefSection } from "@/lib/app-settings";
 
 import { SettingsScreenHeader, SettingsSectionTitle, SettingsToggleRow } from "../_components";
+import { SettingsBreadcrumb, settingsSubCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 const EMPTY_PREFS: AppPreferences = {};
 
@@ -65,6 +66,7 @@ export default function SettingsUsagePage() {
   return (
     <>
       <SettingsScreenHeader title="How you use Group Travel" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={settingsSubCrumbs("How You Use Rovvy")} />
       <div id="archive" className="scroll-mt-16">
         <SettingsSectionTitle>Archive</SettingsSectionTitle>
         <p className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600">

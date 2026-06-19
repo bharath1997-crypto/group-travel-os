@@ -1,117 +1,9 @@
 "use client";
 
-import type { MutableRefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import dynamic from "next/dynamic";
-import L from "leaflet";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { onValue, ref, type Database } from "firebase/database";
-
-import "leaflet/dist/leaflet.css";
-
-delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: string })._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
-
-const MapContainer = dynamic(
-  () => import("react-leaflet").then((m) => m.MapContainer),
-  { ssr: false },
-);
-const TileLayer = dynamic(
-  () => import("react-leaflet").then((m) => m.TileLayer),
-  { ssr: false },
-);
-const Marker = dynamic(
-  () => import("react-leaflet").then((m) => m.Marker),
-  { ssr: false },
-);
-
-const MapController = dynamic(
-  () =>
-    import("react-leaflet").then((mod) => {
-      function Inner({
-        mapRef,
-        fitKey,
-      }: {
-        mapRef: MutableRefObject<L.Map | null>;
-        fitKey: string;
-      }) {
-        const map = mod.useMap();
-        useEffect(() => {
-          mapRef.current = map;
-        }, [map, mapRef]);
-
-        useEffect(() => {
-          const fix = () => map.invalidateSize();
-          fix();
-          const id = requestAnimationFrame(fix);
-          const t = window.setTimeout(fix, 150);
-          window.addEventListener("resize", fix);
-          void fitKey;
-          return () => {
-            cancelAnimationFrame(id);
-            window.clearTimeout(t);
-            window.removeEventListener("resize", fix);
-          };
-        }, [map, fitKey]);
-
-        return null;
-      }
-      return Inner;
-    }),
-  { ssr: false },
-);
-
-const FitBoundsWatcher = dynamic(
-  () =>
-    import("react-leaflet").then((mod) => {
-      function Inner({
-        mapRef,
-        points,
-      }: {
-        mapRef: MutableRefObject<L.Map | null>;
-        points: [number, number][];
-      }) {
-        const map = mod.useMap();
-        useEffect(() => {
-          window.setTimeout(() => {
-            if (!mapRef.current) return;
-            if (points.length === 0)
-              mapRef.current.setView([20, 0], 2);
-            else mapRef.current.fitBounds(points, { padding: [48, 48], maxZoom: 16 });
-          }, 50);
-        }, [map, mapRef, points]);
-        return null;
-      }
-      return Inner;
-    }),
-  { ssr: false },
-);
-
-const MapPickHandler = dynamic(
-  () =>
-    import("react-leaflet").then((mod) => {
-      function Inner({
-        picking,
-        onPick,
-      }: {
-        picking: boolean;
-        onPick: (lat: number, lng: number) => void;
-      }) {
-        mod.useMapEvents({
-          click(e) {
-            if (!picking) return;
-            onPick(e.latlng.lat, e.latlng.lng);
-          },
-        });
-        return null;
-      }
-      return Inner;
-    }),
-  { ssr: false },
-);
 
 export type MapMemberLite = {
   user_id: string;
@@ -131,6 +23,7 @@ type LocRow = {
 };
 
 const COLORS = ["#DC2626", "#6366f1", "#f59e0b", "#10b981", "#a855f7", "#eab308"];
+const NIGHT_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 
 function readLoc(row: LocRow | null): {
   lat: number | null;
@@ -158,20 +51,83 @@ function readLoc(row: LocRow | null): {
       : typeof row.timestamp === "number"
         ? row.timestamp
         : null;
-  if (
-    lat === null &&
-    typeof row.lat === "string" &&
-    !Number.isNaN(Number(row.lat))
-  )
+  if (lat === null && typeof row.lat === "string" && !Number.isNaN(Number(row.lat))) {
     lat = Number(row.lat);
-  if (
-    lng === null &&
-    typeof row.lng === "string" &&
-    !Number.isNaN(Number(row.lng))
-  )
+  }
+  if (lng === null && typeof row.lng === "string" && !Number.isNaN(Number(row.lng))) {
     lng = Number(row.lng);
-
+  }
   return { lat: lat ?? null, lng: lng ?? null, updated_at: updated };
+}
+
+function buildStandardStyle(): maplibregl.StyleSpecification {
+  return {
+    version: 8,
+    glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+    sources: {
+      osm: {
+        type: "raster",
+        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        tileSize: 256,
+        attribution: "© OpenStreetMap contributors",
+      },
+    },
+    layers: [{ id: "osm", type: "raster", source: "osm" }],
+  };
+}
+
+function buildSatelliteStyle(): maplibregl.StyleSpecification {
+  return {
+    version: 8,
+    glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+    sources: {
+      satellite: {
+        type: "raster",
+        tiles: [
+          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        ],
+        tileSize: 256,
+        attribution: "© Esri",
+      },
+    },
+    layers: [{ id: "satellite", type: "raster", source: "satellite" }],
+  };
+}
+
+function createMemberMarkerEl(color: string, pulse: boolean, img?: string | null): HTMLDivElement {
+  const el = document.createElement("div");
+  el.style.cssText = [
+    "display:flex",
+    "align-items:center",
+    "justify-content:center",
+    "width:42px",
+    "height:42px",
+    "border-radius:999px",
+    `border:${pulse ? "3px solid #50d493" : `2px solid ${color}`}`,
+    `background:${img ? "transparent" : color}`,
+    pulse ? "animation:livePulse 1.35s infinite" : "",
+    "box-shadow:0 2px 8px rgba(0,0,0,.45)",
+  ].join(";");
+  if (img && img.startsWith("http")) {
+    const image = document.createElement("img");
+    image.src = img;
+    image.alt = "";
+    image.style.cssText = "width:38px;height:38px;border-radius:999px;object-fit:cover";
+    el.appendChild(image);
+  } else {
+    el.textContent = "?";
+    el.style.color = "#fff";
+    el.style.fontWeight = "700";
+    el.style.fontSize = "12px";
+  }
+  return el;
+}
+
+function createMeetMarkerEl(): HTMLDivElement {
+  const el = document.createElement("div");
+  el.textContent = "🚩";
+  el.style.cssText = "font-size:24px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,.65)";
+  return el;
 }
 
 export function LiveMap(props: {
@@ -183,11 +139,19 @@ export function LiveMap(props: {
   onMapPick?: (lat: number, lng: number) => void;
   currentUserId: string | null;
   pulseUserId?: string | null;
+  style?: "standard" | "satellite" | "night";
+  routeLine?: [number, number][];
+  centerOverride?: [number, number];
 }) {
-  const mapRef = useRef<L.Map | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const memberMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const meetMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const pickHandlerRef = useRef<((e: maplibregl.MapMouseEvent) => void) | null>(null);
   const [locs, setLocs] = useState<
     Record<string, { lat: number; lng: number; updated_at: number | null }>
   >({});
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     if (!props.firebaseDb || !props.tripId) return undefined;
@@ -214,7 +178,7 @@ export function LiveMap(props: {
     const pts: [number, number][] = [];
     props.members.forEach((mem) => {
       const g = locs[mem.user_id];
-      if (g?.lat != null && g?.lng != null) pts.push([g.lat, g.lng]);
+      if (g?.lat != null && g?.lng != null) pts.push([g.lng, g.lat]);
     });
     if (
       props.meetPoint.lat !== null &&
@@ -222,56 +186,208 @@ export function LiveMap(props: {
       !Number.isNaN(props.meetPoint.lat) &&
       !Number.isNaN(props.meetPoint.lng)
     ) {
-      pts.push([props.meetPoint.lat, props.meetPoint.lng]);
+      pts.push([props.meetPoint.lng, props.meetPoint.lat]);
     }
     return pts;
-  }, [
-    locs,
-    props.meetPoint.lat,
-    props.meetPoint.lng,
-    props.members,
-  ]);
+  }, [locs, props.meetPoint.lat, props.meetPoint.lng, props.members]);
 
-  const center = useMemo((): [number, number] => {
-    if (fitPoints.length === 0) return [20.0, 0.0];
+  const defaultCenter = useMemo((): [number, number] => {
+    if (fitPoints.length === 0) return [0, 20];
     let slat = 0;
     let slng = 0;
-    fitPoints.forEach(([lat, lng]) => {
+    fitPoints.forEach(([lng, lat]) => {
       slat += lat;
       slng += lng;
     });
-    return [slat / fitPoints.length, slng / fitPoints.length];
+    return [slng / fitPoints.length, slat / fitPoints.length];
   }, [fitPoints]);
 
-  const fitKey = useMemo(() => JSON.stringify(fitPoints), [fitPoints]);
-
-  const makeIcon = useCallback((color: string, pulse: boolean, img?: string | null) => {
-    const border = pulse ? `3px solid #50d493` : `2px solid ${color}`;
-    const inner =
-      img && img.startsWith?.("http")
-        ? `<img src="${encodeURI(img)}" alt="" width="38" height="38" style="width:38px;height:38px;border-radius:999px;object-fit:cover"/>`
-        : `<span style="font-size:12px;color:#fff;font-weight:700">?</span>`;
-    return L.divIcon({
-      html: `
-        <div style="animation:${
-          pulse ? "pulse 1.35s infinite" : "none"
-        };position:relative;display:flex;width:42px;height:42px;border-radius:999px;align-items:center;justify-content:center;background:${
-          img ? "transparent" : color
-        };border:${border}">
-          ${inner}
-        </div>`,
-      className: "live-member-marker",
-      iconSize: [42, 42],
-      iconAnchor: [21, 42],
-      popupAnchor: [0, -36],
+  const ensureRouteLayer = useCallback((map: maplibregl.Map) => {
+    if (map.getSource("route-line")) return;
+    map.addSource("route-line", {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    });
+    map.addLayer({
+      id: "route-line-layer",
+      type: "line",
+      source: "route-line",
+      paint: {
+        "line-color": "#0F766E",
+        "line-width": 4,
+        "line-dasharray": [2, 2],
+      },
     });
   }, []);
 
-  const pulseId = props.pulseUserId || props.currentUserId;
+  const applyMapStyle = useCallback((map: maplibregl.Map, styleName: "standard" | "satellite" | "night") => {
+    if (styleName === "night") {
+      map.setStyle(NIGHT_STYLE);
+      return;
+    }
+    map.setStyle(styleName === "satellite" ? buildSatelliteStyle() : buildStandardStyle());
+  }, []);
+
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return undefined;
+
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: props.style === "night" ? NIGHT_STYLE : props.style === "satellite" ? buildSatelliteStyle() : buildStandardStyle(),
+      center: defaultCenter,
+      zoom: fitPoints.length ? 13 : 2,
+      attributionControl: false,
+    });
+
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-left");
+    map.on("load", () => {
+      ensureRouteLayer(map);
+      setMapReady(true);
+      map.resize();
+    });
+    map.on("styledata", () => {
+      if (!map.isStyleLoaded()) return;
+      ensureRouteLayer(map);
+    });
+
+    mapRef.current = map;
+
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(containerRef.current);
+
+    return () => {
+      ro.disconnect();
+      memberMarkersRef.current.forEach((m) => m.remove());
+      memberMarkersRef.current = [];
+      meetMarkerRef.current?.remove();
+      meetMarkerRef.current = null;
+      map.remove();
+      mapRef.current = null;
+      setMapReady(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    applyMapStyle(map, props.style || "standard");
+  }, [applyMapStyle, mapReady, props.style]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    memberMarkersRef.current.forEach((m) => m.remove());
+    memberMarkersRef.current = [];
+
+    const pulseId = props.pulseUserId || props.currentUserId;
+    props.members.forEach((m, idx) => {
+      const row = locs[m.user_id];
+      if (!row || Number.isNaN(row.lat) || Number.isNaN(row.lng)) return;
+      const col = COLORS[idx % COLORS.length]!;
+      const pulse = pulseId !== null && m.user_id === pulseId;
+      const marker = new maplibregl.Marker({
+        element: createMemberMarkerEl(col, pulse, m.avatar_url),
+        anchor: "bottom",
+      })
+        .setLngLat([row.lng, row.lat])
+        .addTo(map);
+      memberMarkersRef.current.push(marker);
+    });
+  }, [locs, mapReady, props.currentUserId, props.members, props.pulseUserId]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    meetMarkerRef.current?.remove();
+    meetMarkerRef.current = null;
+
+    if (
+      props.meetPoint.lat !== null &&
+      props.meetPoint.lng !== null &&
+      !Number.isNaN(props.meetPoint.lat) &&
+      !Number.isNaN(props.meetPoint.lng)
+    ) {
+      meetMarkerRef.current = new maplibregl.Marker({
+        element: createMeetMarkerEl(),
+        anchor: "bottom",
+      })
+        .setLngLat([props.meetPoint.lng, props.meetPoint.lat])
+        .addTo(map);
+    }
+  }, [mapReady, props.meetPoint.lat, props.meetPoint.lng]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const source = map.getSource("route-line") as maplibregl.GeoJSONSource | undefined;
+    if (!source) return;
+
+    if (props.routeLine && props.routeLine.length > 1) {
+      source.setData({
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "LineString",
+          coordinates: props.routeLine.map(([lat, lng]) => [lng, lat]),
+        },
+      });
+    } else {
+      source.setData({ type: "FeatureCollection", features: [] });
+    }
+  }, [mapReady, props.routeLine]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || props.centerOverride) return;
+    if (fitPoints.length === 0) return;
+
+    const bounds = new maplibregl.LngLatBounds();
+    fitPoints.forEach(([lng, lat]) => bounds.extend([lng, lat]));
+    map.fitBounds(bounds, { padding: 48, maxZoom: 16, duration: 600 });
+  }, [fitPoints, mapReady, props.centerOverride]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || !props.centerOverride) return;
+    map.flyTo({ center: [props.centerOverride[1], props.centerOverride[0]], zoom: 16, duration: 800 });
+  }, [mapReady, props.centerOverride]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    if (pickHandlerRef.current) {
+      map.off("click", pickHandlerRef.current);
+      pickHandlerRef.current = null;
+    }
+
+    if (!props.pickingMeetPoint || !props.onMapPick) {
+      map.getCanvas().style.cursor = "";
+      return;
+    }
+
+    map.getCanvas().style.cursor = "crosshair";
+    const handler = (e: maplibregl.MapMouseEvent) => {
+      props.onMapPick?.(e.lngLat.lat, e.lngLat.lng);
+    };
+    pickHandlerRef.current = handler;
+    map.on("click", handler);
+
+    return () => {
+      if (pickHandlerRef.current) {
+        map.off("click", pickHandlerRef.current);
+        pickHandlerRef.current = null;
+      }
+      map.getCanvas().style.cursor = "";
+    };
+  }, [mapReady, props.onMapPick, props.pickingMeetPoint]);
 
   if (!props.firebaseDb) {
     return (
-      <div className="flex min-h-[360px] w-full items-center justify-center rounded-2xl border border-dashed border-amber-500/65 bg-[#1a0505]/85 px-5 text-center text-sm text-amber-100">
+      <div className="flex h-full w-full items-center justify-center bg-[#090f1d] px-5 text-center text-sm text-amber-100">
         Firebase client unavailable — pins need NEXT_PUBLIC_FIREBASE_DATABASE_URL configured.
       </div>
     );
@@ -280,78 +396,22 @@ export function LiveMap(props: {
   return (
     <>
       <style jsx global>{`
-        @keyframes pulse {
+        @keyframes livePulse {
           0% {
-            transform: translateY(-2px) scale(1);
+            transform: scale(1);
             filter: brightness(1);
           }
           70% {
-            transform: translateY(-2px) scale(1.08);
+            transform: scale(1.08);
             filter: brightness(1.15);
           }
           100% {
-            transform: translateY(-2px) scale(1);
+            transform: scale(1);
             filter: brightness(1);
           }
         }
       `}</style>
-
-      <div className="flex h-full min-h-[320px] w-full overflow-hidden rounded-2xl border border-[#1f3a61]/80 [&_.leaflet-tile-pane]:brightness-[0.92] [&_.leaflet-container]:rounded-2xl">
-        <MapContainer
-          center={center}
-          zoom={13}
-          className="h-full w-full [&_.leaflet-attribution-flag]:hidden"
-          style={{ minHeight: "100%", width: "100%" }}
-          scrollWheelZoom
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/rastermaps/voyager/{z}/{x}/{y}.png"
-          />
-          <MapController mapRef={mapRef} fitKey={fitKey} />
-          <FitBoundsWatcher mapRef={mapRef} points={fitPoints} />
-          <MapPickHandler
-            picking={Boolean(props.pickingMeetPoint)}
-            onPick={props.onMapPick ?? (() => {})}
-          />
-
-          {props.meetPoint.lat !== null &&
-          props.meetPoint.lng !== null &&
-          !Number.isNaN(props.meetPoint.lat) &&
-          !Number.isNaN(props.meetPoint.lng) ? (
-            <Marker
-              position={[props.meetPoint.lat, props.meetPoint.lng]}
-              icon={L.divIcon({
-                html: `<div title="meet" style="font-size:24px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,.65)">🚩</div>`,
-                className: "",
-                iconSize: [36, 36],
-                iconAnchor: [18, 34],
-              })}
-            />
-          ) : null}
-
-          {props.members.map((m, idx) => {
-            const row = locs[m.user_id];
-            if (
-              row?.lat === undefined ||
-              row?.lng === undefined ||
-              Number.isNaN(row.lat) ||
-              Number.isNaN(row.lng)
-            )
-              return null;
-
-            const col = COLORS[idx % COLORS.length]!;
-            const pulse = pulseId !== null && m.user_id === pulseId;
-            return (
-              <Marker
-                key={m.user_id}
-                position={[row.lat, row.lng]}
-                icon={makeIcon(col, pulse, m.avatar_url)}
-              />
-            );
-          })}
-        </MapContainer>
-      </div>
+      <div ref={containerRef} className="h-full w-full" />
     </>
   );
 }

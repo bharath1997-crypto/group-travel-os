@@ -13,6 +13,7 @@ interface Member {
   lat: number | null;
   lng: number | null;
   updated_at?: number | null;
+  is_accepted?: boolean;
 }
 
 interface MemberPanelProps {
@@ -267,12 +268,17 @@ export function MemberPanel({
                   />
                 </div>
                 <div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-xs font-bold text-slate-200 truncate max-w-[120px]">
                       {m.full_name || "Traveler"}
                     </span>
                     {m.user_id === currentUserId && (
                       <span className="text-[8px] bg-teal-500/20 text-teal-400 px-1 py-0.2 rounded font-black">YOU</span>
+                    )}
+                    {m.is_accepted ? (
+                      <span className="text-[8px] font-black text-emerald-400 bg-emerald-500/10 px-1 py-0.2 rounded border border-emerald-500/20">READY</span>
+                    ) : (
+                      <span className="text-[8px] font-black text-amber-400 bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/20">WAITING</span>
                     )}
                   </div>
                   <span className="text-[10px] text-slate-500 block">

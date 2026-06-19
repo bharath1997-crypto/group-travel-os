@@ -124,3 +124,13 @@ Surface: #1E293B
 Font: Inter + Outfit (Google Fonts)
 Logo component: @/components/RovvyLogo
 NEVER hardcode "Travello" — always "Rovvy"
+
+## Logo & Brand Assets (CRITICAL)
+- NEVER generate, AI-create, draw, or invent logos/icons
+- NEVER use inline SVG logos or code-rendered logos
+- ONLY use official PNG assets from repo root `brand/` folder
+- Frontend served copies: `frontend/public/brand/` (sync from `brand/` when updating)
+- ALWAYS use `RovvyLogo` or `RovvyIcon` from `@/components/RovvyLogo`
+- Do NOT add, replace, or create logo files without explicit user confirmation
+- Do NOT reintroduce `frontend/public/rovvy-logo.png` or any non-brand logo assets
+- variant="primary" → light backgrounds; variant="dark" or "white" → dark backgrounds

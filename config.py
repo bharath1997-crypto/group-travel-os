@@ -234,6 +234,29 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str | None = Field(
         default=None, validation_alias="GOOGLE_CLIENT_SECRET"
     )
+    # Calendar-specific OAuth redirect (separate from sign-in redirect)
+    GOOGLE_CALENDAR_REDIRECT_URI: str = Field(
+        default="http://localhost:8000/api/v1/integrations/google-calendar/callback",
+        validation_alias="GOOGLE_CALENDAR_REDIRECT_URI",
+    )
+    # Drive-specific OAuth redirect
+    GOOGLE_DRIVE_REDIRECT_URI: str = Field(
+        default="http://localhost:8000/api/v1/integrations/google-drive/callback",
+        validation_alias="GOOGLE_DRIVE_REDIRECT_URI",
+    )
+
+    # ── Microsoft (Outlook Calendar) ──────────────────────────────────────────
+    MICROSOFT_CLIENT_ID: str = Field(default="", validation_alias="MICROSOFT_CLIENT_ID")
+    MICROSOFT_CLIENT_SECRET: str = Field(default="", validation_alias="MICROSOFT_CLIENT_SECRET")
+    MICROSOFT_REDIRECT_URI: str = Field(
+        default="http://localhost:8000/api/v1/integrations/microsoft-calendar/callback",
+        validation_alias="MICROSOFT_REDIRECT_URI",
+    )
+    # Fernet key for encrypting OAuth tokens at rest — generate with: Fernet.generate_key()
+    INTEGRATION_TOKEN_ENCRYPTION_KEY: str = Field(
+        default="",
+        validation_alias="INTEGRATION_TOKEN_ENCRYPTION_KEY",
+    )
     FACEBOOK_APP_ID: str | None = Field(default=None, validation_alias="FACEBOOK_APP_ID")
     FACEBOOK_APP_SECRET: str | None = Field(
         default=None, validation_alias="FACEBOOK_APP_SECRET"

@@ -6,6 +6,7 @@ import type { AppPreferences } from "@/lib/app-settings";
 import { fetchAppSettings, patchAppSettings, prefSection } from "@/lib/app-settings";
 
 import { SettingsScreenHeader, SettingsSectionTitle, SettingsToggleRow } from "../_components";
+import { SettingsBreadcrumb, nestedCrumbs } from "@/components/settings/SettingsBreadcrumb";
 
 const EMPTY_PREFS: AppPreferences = {};
 
@@ -67,6 +68,7 @@ export default function SettingsInteractionsPage() {
   return (
     <>
       <SettingsScreenHeader title="Interactions" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={nestedCrumbs("privacy-safety", "Interactions")} />
       <div id="messages" className="scroll-mt-16">
         <SettingsSectionTitle>Messages &amp; replies</SettingsSectionTitle>
         <p className="px-4 pb-2 text-xs text-stone-500">

@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Star, MapPin, Camera, Compass, Gamepad2, FerrisWheel, Utensils, Trees, Moon, Activity, ShoppingBag } from "lucide-react";
 
 export type ExplorePlace = {
   id: string;
@@ -24,118 +23,152 @@ interface ExploreV2CardProps {
   showDistance?: boolean;
 }
 
-function getCategoryIcon(category?: string | null, subcategory?: string | null) {
-  const cat = (category || "").toLowerCase();
-  const sub = (subcategory || "").toLowerCase();
-  
-  if (cat.includes("landmark") || cat.includes("photo") || sub.includes("landmark") || sub.includes("monument")) {
-    return <Camera className="h-8 w-8 text-slate-400" />;
-  }
-  if (cat.includes("trekking") || cat.includes("nature") || cat.includes("adventure") || sub.includes("trail") || sub.includes("hiking")) {
-    return <Compass className="h-8 w-8 text-slate-400" />;
-  }
-  if (cat.includes("gaming") || cat.includes("game") || sub.includes("arcade") || sub.includes("esports")) {
-    return <Gamepad2 className="h-8 w-8 text-slate-400" />;
-  }
-  if (cat.includes("amusement") || cat.includes("theme park") || sub.includes("amusement") || sub.includes("theme_park")) {
-    return <FerrisWheel className="h-8 w-8 text-slate-400" />;
-  }
-  if (cat.includes("restaurant") || cat.includes("food") || cat.includes("dining") || sub.includes("restaurant") || sub.includes("cafe")) {
-    return <Utensils className="h-8 w-8 text-slate-400" />;
-  }
-  if (cat.includes("park") || cat.includes("outdoor") || sub.includes("park") || sub.includes("garden")) {
-    return <Trees className="h-8 w-8 text-slate-400" />;
-  }
-  if (cat.includes("nightlife") || cat.includes("bar") || cat.includes("club") || sub.includes("bar") || sub.includes("pub") || sub.includes("nightclub")) {
-    return <Moon className="h-8 w-8 text-slate-400" />;
-  }
-  if (cat.includes("sports") || cat.includes("fitness") || sub.includes("stadium") || sub.includes("gym")) {
-    return <Activity className="h-8 w-8 text-slate-400" />;
-  }
-  if (cat.includes("shopping") || cat.includes("store") || sub.includes("mall") || sub.includes("shop")) {
-    return <ShoppingBag className="h-8 w-8 text-slate-400" />;
-  }
-  return <Compass className="h-8 w-8 text-slate-400" />;
-}
-
 export function ExploreV2Card({ place, showDistance }: ExploreV2CardProps) {
-  const { name, photo_url, distance_m, price_min, rating, rating_count, category, subcategory } = place;
+  const distanceMiles = place.distance_m 
+    ? (place.distance_m / 1609.34).toFixed(1) 
+    : null;
 
-  // Convert distance in meters to miles
-  const distanceMiles = distance_m ? distance_m / 1609.344 : null;
-  const distanceText = distanceMiles !== null ? `${distanceMiles.toFixed(1)} mi` : null;
-
-  // Venue label
-  let venueLabel = subcategory || category || "Activity";
-  if (place.address?.city) {
-    venueLabel = `${venueLabel} · ${place.address.city}`;
-  }
-
-  // Handle image load error
   const [imgError, setImgError] = React.useState(false);
 
   return (
-    <article className="group flex flex-col h-full bg-white border-[0.5px] border-slate-200 rounded-[12px] overflow-hidden shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#0F766E] hover:shadow-md">
-      {/* Image / Icon Area */}
-      <div className="relative h-[120px] bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
-        {photo_url && !imgError ? (
-          <img
-            src={photo_url}
-            alt={name}
-            onError={() => setImgError(true)}
-            className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex items-center justify-center p-4">
-            {getCategoryIcon(category, subcategory)}
+    <div
+      className="w-[240px] md:w-auto shrink-0 md:shrink transition-all duration-200"
+      style={{
+        borderRadius: "12px",
+        overflow: "hidden",
+        background: "#FFFFFF",
+        cursor: "pointer",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+        border: "1px solid #F1F5F9",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-4px)";
+        e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.12)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)";
+      }}
+    >
+      {/* Photo */}
+      <div style={{ position: "relative", height: "160px", backgroundColor: "#F8FAFC" }}>
+        <img
+          src={(!imgError && place.photo_url) ? place.photo_url : "/placeholder.jpg"}
+          alt={place.name}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+          onError={() => {
+            setImgError(true);
+          }}
+        />
+        {/* Category badge */}
+        {place.category && (
+          <div style={{
+            position: "absolute",
+            top: "10px",
+            left: "10px",
+            background: "rgba(15,118,110,0.9)",
+            color: "#fff",
+            padding: "3px 8px",
+            borderRadius: "6px",
+            fontSize: "11px",
+            fontWeight: 600,
+            textTransform: "capitalize",
+          }}>
+            {place.category}
           </div>
         )}
+        {/* Save button */}
+        <button style={{
+          position: "absolute",
+          top: "8px",
+          right: "8px",
+          background: "rgba(255,255,255,0.9)",
+          border: "none",
+          borderRadius: "50%",
+          width: "32px",
+          height: "32px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          fontSize: "16px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+        }}>♡</button>
+      </div>
 
-        {/* Top-left Badge */}
-        {showDistance && distanceText ? (
-          <span className="absolute left-3 top-3 rounded-lg bg-[#0F766E] px-2 py-0.5 text-[9px] font-semibold text-white shadow-sm">
-            {distanceText}
-          </span>
-        ) : place.is_free ? (
-          <span className="absolute left-3 top-3 rounded-lg bg-[#0F766E] px-2 py-0.5 text-[9px] font-semibold text-white shadow-sm">
-            Free
-          </span>
-        ) : null}
-
-        {/* Bottom-right Price Badge */}
-        {price_min !== undefined && price_min !== null && (
-          <span className="absolute right-3 top-3 rounded-lg bg-black/60 px-2 py-0.5 text-[9px] font-semibold text-white backdrop-blur-sm">
-            ${price_min}+
-          </span>
+      {/* Content */}
+      <div style={{ padding: "12px" }}>
+        <h3 style={{
+          fontSize: "14px",
+          fontWeight: 600,
+          color: "#0F172A",
+          marginBottom: "4px",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }} title={place.name}>{place.name}</h3>
+        
+        {/* Subcategory */}
+        {place.subcategory && (
+          <p style={{
+            fontSize: "12px",
+            color: "#64748B",
+            marginBottom: "6px",
+            textTransform: "capitalize",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}>{place.subcategory}</p>
         )}
-      </div>
 
-      {/* Card Body */}
-      <div className="p-3 flex flex-col justify-between flex-1 min-w-0">
-        <div>
-          {/* Title */}
-          <h3 className="text-[13px] font-semibold text-slate-900 truncate group-hover:text-[#0F766E]" title={name}>
-            {name}
-          </h3>
+        {/* Rating row */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          marginBottom: "8px",
+        }}>
+          <span style={{ color: "#F59E0B", fontSize: "12px" }}>
+            ★ {place.rating ? place.rating.toFixed(1) : "4.5"}
+          </span>
+          <span style={{ fontSize: "12px", color: "#64748B" }}>
+            {place.address?.city || "Nearby"}
+          </span>
+        </div>
 
-          {/* Star Rating (only if real rating exists) */}
-          {rating !== undefined && rating !== null && rating > 0 && (
-            <div className="flex items-center gap-1 mt-1 text-[12px] text-amber-500">
-              <Star className="h-3.5 w-3.5 fill-current" />
-              <span className="font-semibold text-slate-800">{rating.toFixed(1)}</span>
-              {rating_count !== undefined && rating_count !== null && (
-                <span className="text-slate-400">({rating_count})</span>
-              )}
-            </div>
+        {/* Distance + CTA */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}>
+          {distanceMiles ? (
+            <span style={{ fontSize: "12px", color: "#0F766E", fontWeight: 500 }}>
+              📍 {distanceMiles} mi away
+            </span>
+          ) : (
+            <span style={{ fontSize: "12px", color: "#64748B" }}>
+              📍 Nearby
+            </span>
           )}
-        </div>
-
-        {/* Location / Venue */}
-        <div className="flex items-center gap-1.5 mt-2 text-[12px] text-slate-500 min-w-0">
-          <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-          <span className="truncate">{venueLabel}</span>
+          <button style={{
+            background: "#0F766E",
+            color: "#fff",
+            border: "none",
+            borderRadius: "8px",
+            padding: "6px 14px",
+            fontSize: "12px",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}>
+            Explore →
+          </button>
         </div>
       </div>
-    </article>
+    </div>
   );
 }

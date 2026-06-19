@@ -50,6 +50,12 @@ class Trip(Base):
         ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,
     )
+    google_calendar_event_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
+    microsoft_calendar_event_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

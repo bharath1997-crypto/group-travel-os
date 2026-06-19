@@ -28,17 +28,26 @@ import { ExploreV2EventCard, ExploreEventV2 } from "@/components/explore/Explore
 import { ExploreV2Section } from "@/components/explore/ExploreV2Section";
 
 const CATEGORIES = [
-  "All",
-  "Events",
-  "Landmarks",
-  "Trekking",
-  "Gaming",
-  "Amusement",
-  "Restaurants",
-  "Parks",
-  "Nightlife",
-  "Sports",
-  "Shopping",
+  { id: "All", label: "All", icon: "🗺️" },
+  { id: "Events", label: "Events", icon: "🎪" },
+  { id: "Landmarks", label: "Landmarks", icon: "🏛️" },
+  { id: "Trekking", label: "Trekking", icon: "🥾" },
+  { id: "Gaming", label: "Gaming", icon: "🎮" },
+  { id: "Amusement", label: "Amusement", icon: "🎡" },
+  { id: "Restaurants", label: "Food", icon: "🍽️" },
+  { id: "Parks", label: "Parks", icon: "🌿" },
+  { id: "Nightlife", label: "Nightlife", icon: "🎵" },
+  { id: "Sports", label: "Sports", icon: "⚽" },
+  { id: "Shopping", label: "Shopping", icon: "🛍️" },
+];
+
+const TOP_CITIES = [
+  { name: "Chicago", state: "IL", emoji: "🏙️", count: "2,400+" },
+  { name: "New York", state: "NY", emoji: "🗽", count: "4,200+" },
+  { name: "Los Angeles", state: "CA", emoji: "🎬", count: "3,800+" },
+  { name: "Miami", state: "FL", emoji: "🏖️", count: "1,900+" },
+  { name: "Las Vegas", state: "NV", emoji: "🎰", count: "1,600+" },
+  { name: "Austin", state: "TX", emoji: "🎸", count: "1,200+" },
 ];
 
 interface SectionsData {
@@ -242,7 +251,7 @@ export default function ExploreV2Page() {
           setLng(newLng);
           setCity(resolvedCity);
           setCountry(resolvedCountry);
-          
+
           await loadData(newLat, newLng);
         } else {
           alert("City not found. Please try another name.");
@@ -352,33 +361,46 @@ export default function ExploreV2Page() {
   );
 
   return (
-    <main className="min-h-screen bg-white text-slate-800 p-6 md:p-10">
+    <main className="bg-white text-slate-800 p-6 pb-20 md:p-10">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header Hero Section */}
-        <header className="space-y-1">
-          <h1 className="text-[20px] font-medium text-slate-900 leading-tight">
-            Discover experiences near you
-          </h1>
-          <p className="text-[13px] text-slate-500 flex items-center gap-1 font-normal">
-            <MapPin className="h-4 w-4 text-[#0F766E] shrink-0" />
-            <span>{city}, {country}</span>
-          </p>
+        <header className="relative rounded-2xl overflow-hidden mb-2" style={{ background: "linear-gradient(135deg, #0F766E 0%, #134E4A 100%)" }}>
+          {/* Dot pattern overlay */}
+          <div style={{
+            position: "absolute", inset: 0, opacity: 0.07,
+            backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }} />
+          <div className="relative p-6 md:p-8">
+            <h1 className="text-[22px] md:text-[26px] font-bold text-white leading-tight mb-1">
+              Discover experiences near you
+            </h1>
+            <p className="text-[13px] text-teal-100 flex items-center gap-1 mb-5">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              Explore near you · {city}, {country}
+            </p>
+            {/* Search bar inside hero */}
+            <div
+              className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 max-w-xl"
+              style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.15)" }}
+            >
+              <Search className="h-4 w-4 text-slate-400 shrink-0" />
+              <input
+                type="text"
+                placeholder="Search activities, landmarks, events..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 text-sm text-slate-800 bg-transparent outline-none placeholder:text-slate-400"
+              />
+              <button className="bg-[#0F766E] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-teal-700 transition shrink-0">
+                Search
+              </button>
+            </div>
+          </div>
         </header>
 
-        {/* Search & Filter Row */}
-        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
-          {/* Search Input */}
-          <div className="flex-1 relative flex items-center">
-            <Search className="absolute left-3.5 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search activities, landmarks, events…"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50/50 focus:outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] transition"
-            />
-          </div>
-
+        {/* Compact filter row — location · date · map */}
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Location Pill */}
           <div className="flex items-center">
             {isEditingLocation ? (
@@ -420,74 +442,84 @@ export default function ExploreV2Page() {
               </span>
               <ChevronDown className="h-3 w-3 text-slate-400" />
             </button>
-            
             {showDateDropdown && (
-              <div className="absolute right-0 mt-1.5 w-36 bg-white border border-slate-100 rounded-xl shadow-lg py-1 z-20">
+              <div className="absolute left-0 mt-1.5 w-36 bg-white border border-slate-100 rounded-xl shadow-lg py-1 z-20">
                 <button
-                  onClick={() => {
-                    setDateFilter("any");
-                    setShowDateDropdown(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition ${
-                    dateFilter === "any" ? "text-[#0F766E] font-semibold" : "text-slate-600"
-                  }`}
-                >
-                  Any date
-                </button>
+                  onClick={() => { setDateFilter("any"); setShowDateDropdown(false); }}
+                  className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition ${dateFilter === "any" ? "text-[#0F766E] font-semibold" : "text-slate-600"}`}
+                >Any date</button>
                 <button
-                  onClick={() => {
-                    setDateFilter("today");
-                    setShowDateDropdown(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition ${
-                    dateFilter === "today" ? "text-[#0F766E] font-semibold" : "text-slate-600"
-                  }`}
-                >
-                  Today
-                </button>
+                  onClick={() => { setDateFilter("today"); setShowDateDropdown(false); }}
+                  className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition ${dateFilter === "today" ? "text-[#0F766E] font-semibold" : "text-slate-600"}`}
+                >Today</button>
                 <button
-                  onClick={() => {
-                    setDateFilter("weekend");
-                    setShowDateDropdown(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition ${
-                    dateFilter === "weekend" ? "text-[#0F766E] font-semibold" : "text-slate-600"
-                  }`}
-                >
-                  This weekend
-                </button>
+                  onClick={() => { setDateFilter("weekend"); setShowDateDropdown(false); }}
+                  className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition ${dateFilter === "weekend" ? "text-[#0F766E] font-semibold" : "text-slate-600"}`}
+                >This weekend</button>
               </div>
             )}
           </div>
 
-          {/* Map View Button */}
+          {/* Map View */}
           <Link
             href="/explore/map"
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#0F766E] hover:bg-teal-700 text-white rounded-full font-medium text-xs shadow-sm transition shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200 hover:border-[#0F766E] text-slate-600 hover:text-[#0F766E] rounded-full font-medium text-xs bg-white shadow-sm transition shrink-0"
           >
             <Map className="h-3.5 w-3.5" />
             <span>Map view</span>
           </Link>
         </div>
 
-        {/* Category Chips Scroll Row */}
-        <div className="overflow-x-auto pb-4 -mx-6 px-6 scrollbar-hide">
+        {/* Category Chips Scroll Row — icon + label Klook style */}
+        <div className="overflow-x-auto pb-2 -mx-6 px-6 scrollbar-hide">
           <div className="flex gap-2 min-w-max">
             {CATEGORIES.map((cat) => (
               <button
-                key={cat}
-                onClick={() => handleCategoryClick(cat)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition ${
-                  activeCategory === cat
-                    ? "border-[#0F766E] text-[#0F766E] bg-teal-50/20"
-                    : "border-slate-200 text-slate-600 bg-white hover:border-slate-300"
-                }`}
+                key={cat.id}
+                onClick={() => handleCategoryClick(cat.id)}
+                className="flex flex-col items-center gap-1 transition"
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: "14px",
+                  border: activeCategory === cat.id ? "2px solid #0F766E" : "2px solid #E2E8F0",
+                  background: activeCategory === cat.id ? "#F0FDF9" : "#FFFFFF",
+                  cursor: "pointer",
+                  minWidth: "68px",
+                }}
               >
-                {cat}
+                <span style={{ fontSize: "20px", lineHeight: 1 }}>{cat.icon}</span>
+                <span style={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  color: activeCategory === cat.id ? "#0F766E" : "#64748B",
+                  whiteSpace: "nowrap",
+                }}>{cat.label}</span>
               </button>
             ))}
           </div>
         </div>
+
+        {/* Where to next? city grid */}
+        <section className="space-y-3">
+          <div className="flex justify-between items-center">
+            <h2 className="text-[16px] font-bold text-slate-900">Where to next?</h2>
+            <span className="text-[13px] text-[#0F766E] font-medium cursor-pointer">See more →</span>
+          </div>
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+            {TOP_CITIES.map((topCity) => (
+              <button
+                key={topCity.name}
+                onClick={() => setLocationInput(topCity.name + ", " + topCity.state)}
+                className="rounded-2xl p-4 text-left transition hover:scale-105 cursor-pointer"
+                style={{ background: "linear-gradient(135deg, #0F766E, #134E4A)", border: "none" }}
+              >
+                <div style={{ fontSize: "26px", marginBottom: "6px" }}>{topCity.emoji}</div>
+                <div className="text-white font-bold text-[13px]">{topCity.name}</div>
+                <div className="text-teal-200 text-[10px] mt-0.5">{topCity.count} places</div>
+              </button>
+            ))}
+          </div>
+        </section>
 
         {/* Sections Feed */}
         {loading ? (
@@ -500,7 +532,7 @@ export default function ExploreV2Page() {
                 ))}
               </div>
             </section>
-            
+
             <section className="space-y-4">
               <div className="h-6 bg-slate-100 rounded w-48 animate-pulse" />
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

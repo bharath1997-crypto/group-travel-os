@@ -31,6 +31,9 @@ from app.models.trip_plan import TripPlan
 from app.models.lounge import LoungeChat, LoungeMember, LoungeDriveSync
 from app.models.cart import TravelCart
 from app.models.wayra import WayraPersonalMemory, WayraGroupSettings, WayraGroupMemory
+from app.models.data_export import DataExportRequest
+from app.models.data_import import DataImportRequest
+from app.models.user_integration import UserIntegration
 
 __all__: list[str] = [
     "User",
@@ -81,5 +84,8 @@ __all__: list[str] = [
     "WayraPersonalMemory",
     "WayraGroupSettings",
     "WayraGroupMemory",
+    "DataExportRequest",
+    "DataImportRequest",
+    "UserIntegration",
 ]
 

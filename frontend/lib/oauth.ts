@@ -40,7 +40,7 @@ export async function startGoogleOAuth(
   intent: OAuthIntent = "login",
 ): Promise<boolean> {
   const q = intentQuery(intent);
-  const data = await apiFetch<{ url: string }>(`/auth/oauth/google/start${q}`);
+  const data = await apiFetch<{ url: string }>(`/auth/oauth/google/start${q}`, {}, 30000);
   if (!data?.url) throw new Error("No OAuth URL returned by server");
   return navigateToOAuth(data.url);
 }
@@ -50,7 +50,7 @@ export async function startFacebookOAuth(
   intent: OAuthIntent = "login",
 ): Promise<boolean> {
   const q = intentQuery(intent);
-  const data = await apiFetch<{ url: string }>(`/auth/oauth/facebook/start${q}`);
+  const data = await apiFetch<{ url: string }>(`/auth/oauth/facebook/start${q}`, {}, 30000);
   if (!data?.url) throw new Error("No OAuth URL returned by server");
   return navigateToOAuth(data.url);
 }

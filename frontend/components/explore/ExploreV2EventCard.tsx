@@ -58,7 +58,7 @@ export function ExploreV2EventCard({ event }: ExploreV2EventCardProps) {
   return (
     <CardWrapper
       {...wrapperProps}
-      className="flex items-center gap-3 bg-white border-[0.5px] border-slate-200 rounded-[12px] p-2 hover:border-[#0F766E] hover:shadow-md transition-all duration-200 cursor-pointer min-w-0"
+      className="w-[280px] md:w-auto shrink-0 md:shrink flex items-center gap-3 bg-white border-[0.5px] border-slate-200 rounded-[12px] p-2 hover:border-[#0F766E] hover:shadow-md transition-all duration-200 cursor-pointer min-w-0"
     >
       {/* 76px Image Area Left */}
       <div className="w-[76px] h-[76px] rounded-lg bg-teal-50 flex items-center justify-center shrink-0 text-[#0F766E]">
