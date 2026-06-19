@@ -163,7 +163,11 @@ export function GroupMap({
   useEffect(() => {
     const fetchWayraContext = async () => {
       try {
-        const res = await apiFetch<{ alert: string | null }>(`/wayra/live-context/${tripId}`);
+        const res = await apiFetch<{ alert: string | null }>(
+          `/wayra/live-context/${tripId}`,
+          {},
+          30000
+        );
         if (res?.alert) {
           setWayraAlert(res.alert);
           setShowWayraAlert(true);

@@ -235,7 +235,7 @@ export default function TripLivePage({ params }: { params: Promise<{ trip_id: st
     try {
       await apiFetch(`/live/sessions/${session.id}/checklist/accept`, {
         method: "POST",
-      });
+      }, 30000);
       setChecklistReadiness((prev) =>
         prev.map((m) => (m.user_id === currentUserId ? { ...m, is_accepted: true } : m))
       );

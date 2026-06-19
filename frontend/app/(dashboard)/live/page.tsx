@@ -201,7 +201,7 @@ export default function LivePage() {
     try {
       await apiFetch(`/live/sessions/${session.id}/checklist/accept`, {
         method: "POST",
-      });
+      }, 30000);
       setChecklistReadiness((prev) =>
         prev.map((m) => (m.user_id === currentUserId ? { ...m, is_accepted: true } : m))
       );
