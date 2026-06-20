@@ -25,6 +25,19 @@ export type RoadReport = {
   created_at: string;
 };
 
+export type TrafficDensityPoint = {
+  lat: number;
+  lng: number;
+  count: number;
+  level: "low" | "medium" | "high";
+};
+
+export type LiveWeather = {
+  precipitation: number;
+  weathercode: number;
+  windspeed_10m: number;
+};
+
 export const REPORT_CONFIG: Record<
   ReportType,
   { emoji: string; color: string; label: string }

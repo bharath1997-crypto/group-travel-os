@@ -13,12 +13,16 @@ from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.schemas.live import (
+    GuestWayraBody,
+    GuestWayraOut,
     LiveSessionCreate,
     LiveSessionOut,
     NearbyReportsQuery,
     ReportConfirmBody,
     RoadReportCreate,
     RoadReportOut,
+    TrafficDensityPoint,
+    TrafficDensityQuery,
 )
 from app.services.live_service import LiveService
 from app.utils.auth import get_current_user, get_current_user_optional
@@ -110,4 +114,36 @@ def confirm_road_report(
         current_user.id,
         report_id,
         body.action,
+    )
+
+
+@router.post(
+    "/wayra/guest",
+    response_model=GuestWayraOut,
+    status_code=status.HTTP_200_OK,
+    summary="Guest Wayra chat (rate limited, no auth)",
+)
+def guest_wayra_chat(
+    body: GuestWayraBody,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    return LiveService.guest_wayra_chat(body.message, body.session_key)
+
+
+@router.get(
+    "/traffic/density",
+    response_model=list[TrafficDensityPoint],
+    status_code=status.HTTP_200_OK,
+    summary="Traffic density grid from active road reports",
+)
+def get_traffic_density(
+    query: TrafficDensityQuery = Depends(),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    return LiveService.get_traffic_density(
+        db,
+        query.lat,
+        query.lng,
+        query.radius_km,
     )

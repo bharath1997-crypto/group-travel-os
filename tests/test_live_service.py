@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
 import pytest
 from fastapi import HTTPException
@@ -255,3 +256,73 @@ def test_dismiss_report_auto_deactivate(db, mock_user):
     updated = LiveService.confirm_report(db, mock_user.id, report_id, "dismiss")
     assert updated.dismissed_count == 3
     assert updated.is_active is False
+
+
+def test_guest_wayra_success():
+    from app.services import live_service
+
+    live_service.guest_wayra_counts.clear()
+    with patch(
+        "app.services.live_service._call_guest_wayra_gemini",
+        return_value="Traffic is light right now.",
+    ):
+        result = LiveService.guest_wayra_chat("How is traffic?", "svc-session-1")
+    assert result["reply"] == "Traffic is light right now."
+    assert result["remaining"] == 2
+
+
+def test_guest_wayra_limit():
+    from app.services import live_service
+
+    live_service.guest_wayra_counts.clear()
+    live_service.guest_wayra_counts["svc-session-limit"] = 3
+    with pytest.raises(HTTPException) as exc:
+        LiveService.guest_wayra_chat("Fourth message", "svc-session-limit")
+    assert exc.value.status_code == 400
+    assert exc.value.detail == "Guest message limit reached"
+
+
+def test_traffic_density_success(db, mock_user):
+    now = datetime.now(timezone.utc)
+    reports = [
+        RoadReport(
+            id=uuid.uuid4(),
+            reporter_id=mock_user.id,
+            report_type=ReportType.traffic,
+            lat=41.8781,
+            lng=-87.6298,
+            city="Chicago",
+            description=None,
+            confirmed_count=0,
+            dismissed_count=0,
+            is_active=True,
+            expires_at=now + timedelta(hours=1),
+            created_at=now,
+        ),
+        RoadReport(
+            id=uuid.uuid4(),
+            reporter_id=mock_user.id,
+            report_type=ReportType.accident,
+            lat=41.8782,
+            lng=-87.6299,
+            city="Chicago",
+            description=None,
+            confirmed_count=0,
+            dismissed_count=0,
+            is_active=True,
+            expires_at=now + timedelta(hours=1),
+            created_at=now,
+        ),
+    ]
+    db.execute.return_value = exec_result(scalars_all=reports)
+
+    points = LiveService.get_traffic_density(db, 41.8781, -87.6298, 10.0)
+    assert len(points) == 1
+    assert points[0].count == 2
+    assert points[0].level == "medium"
+
+
+def test_traffic_density_empty(db):
+    db.execute.return_value = exec_result(scalars_all=[])
+    points = LiveService.get_traffic_density(db, 41.8781, -87.6298, 10.0)
+    assert points == []

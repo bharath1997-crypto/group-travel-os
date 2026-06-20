@@ -47,3 +47,26 @@ class NearbyReportsQuery(BaseModel):
 
 class ReportConfirmBody(BaseModel):
     action: Literal["confirm", "dismiss"]
+
+
+class GuestWayraBody(BaseModel):
+    message: str = Field(..., min_length=1, max_length=200)
+    session_key: str = Field(..., min_length=1, max_length=64)
+
+
+class GuestWayraOut(BaseModel):
+    reply: str
+    remaining: int
+
+
+class TrafficDensityQuery(BaseModel):
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+    radius_km: float = Field(default=10.0, ge=0.5, le=50.0)
+
+
+class TrafficDensityPoint(BaseModel):
+    lat: float
+    lng: float
+    count: int
+    level: Literal["low", "medium", "high"]

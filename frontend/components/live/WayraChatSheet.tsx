@@ -2,7 +2,7 @@
 
 import { Loader2, MessageCircle, Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchPublic } from "@/lib/api";
 
 type ChatMessage = {
   id: string;
@@ -10,30 +10,30 @@ type ChatMessage = {
   text: string;
 };
 
+const WAYRA_SESSION_KEY = "live-wayra-session-key";
+
+function getOrCreateSessionKey(): string {
+  const existing = sessionStorage.getItem(WAYRA_SESSION_KEY);
+  if (existing) return existing;
+  const key = crypto.randomUUID();
+  sessionStorage.setItem(WAYRA_SESSION_KEY, key);
+  return key;
+}
+
 type WayraChatSheetProps = {
   isGuest: boolean;
-  messageCount: number;
+  guestRemaining: number;
   guestLimit: number;
-  onMessageSent: () => void;
+  onGuestRemainingChange: (remaining: number) => void;
   onGuestLimit: () => void;
   onClose: () => void;
 };
 
-const GUEST_RESPONSES = [
-  "I'm Wayra. For live traffic nearby, watch the map pins and hazard banner.",
-  "I can help with route planning once you sign in. For now, tap a report pin for details.",
-  "Create a free account for unlimited Wayra access and personalized travel help.",
-];
-
-function guestReply(index: number): string {
-  return GUEST_RESPONSES[Math.min(index, GUEST_RESPONSES.length - 1)]!;
-}
-
 export function WayraChatSheet({
   isGuest,
-  messageCount,
+  guestRemaining,
   guestLimit,
-  onMessageSent,
+  onGuestRemainingChange,
   onGuestLimit,
   onClose,
 }: WayraChatSheetProps) {
@@ -47,6 +47,11 @@ export function WayraChatSheet({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const sessionKeyRef = useRef<string>("");
+
+  useEffect(() => {
+    sessionKeyRef.current = getOrCreateSessionKey();
+  }, []);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -56,7 +61,7 @@ export function WayraChatSheet({
     const text = input.trim();
     if (!text || loading) return;
 
-    if (isGuest && messageCount >= guestLimit) {
+    if (isGuest && guestRemaining <= 0) {
       onGuestLimit();
       return;
     }
@@ -69,14 +74,23 @@ export function WayraChatSheet({
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setLoading(true);
-    onMessageSent();
 
     try {
       if (isGuest) {
-        const reply = guestReply(messageCount);
+        const res = await apiFetchPublic<{ reply: string; remaining: number }>(
+          "/live/wayra/guest",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              message: text,
+              session_key: sessionKeyRef.current,
+            }),
+          },
+        );
+        onGuestRemainingChange(res.remaining);
         setMessages((prev) => [
           ...prev,
-          { id: `${Date.now()}-wayra`, sender: "wayra", text: reply },
+          { id: `${Date.now()}-wayra`, sender: "wayra", text: res.reply },
         ]);
       } else {
         const res = await apiFetch<{ response: string }>("/wayra/chat", {
@@ -92,7 +106,16 @@ export function WayraChatSheet({
           },
         ]);
       }
-    } catch {
+    } catch (error) {
+      if (
+        isGuest &&
+        error instanceof Error &&
+        /Guest message limit reached/i.test(error.message)
+      ) {
+        onGuestRemainingChange(0);
+        onGuestLimit();
+        return;
+      }
       setMessages((prev) => [
         ...prev,
         {
@@ -105,6 +128,8 @@ export function WayraChatSheet({
       setLoading(false);
     }
   };
+
+  const guestUsed = Math.min(guestLimit, guestLimit - guestRemaining);
 
   return (
     <div className="fixed inset-0 z-[120] flex items-end justify-center bg-black/40">
@@ -124,7 +149,7 @@ export function WayraChatSheet({
               <h2 className="text-sm font-semibold text-stone-900">Wayra</h2>
               {isGuest ? (
                 <p className="text-xs text-stone-500">
-                  {Math.min(messageCount, guestLimit)}/{guestLimit} guest messages
+                  {guestUsed}/{guestLimit} guest messages
                 </p>
               ) : null}
             </div>

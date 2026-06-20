@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -79,3 +80,82 @@ class TestNearbyReportsPublic:
         )
         assert resp.status_code == 200
         assert len(resp.json()) == 1
+
+
+class TestGuestWayra:
+    def setup_method(self):
+        from app.services import live_service
+
+        live_service.guest_wayra_counts.clear()
+
+    @patch("app.routes.live.LiveService.guest_wayra_chat")
+    def test_guest_wayra_success(self, mock_chat):
+        mock_chat.return_value = {
+            "reply": "I-55 can be busy during rush hour.",
+            "remaining": 2,
+        }
+        client = TestClient(app, raise_server_exceptions=True)
+        resp = client.post(
+            "/api/v1/live/wayra/guest",
+            json={
+                "message": "Is I-55 usually busy?",
+                "session_key": "test-session-1",
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["reply"] == "I-55 can be busy during rush hour."
+        assert body["remaining"] == 2
+        mock_chat.assert_called_once_with("Is I-55 usually busy?", "test-session-1")
+
+    @patch("app.routes.live.LiveService.guest_wayra_chat")
+    def test_guest_wayra_limit(self, mock_chat):
+        mock_chat.side_effect = HTTPException(
+            status_code=400,
+            detail="Guest message limit reached",
+        )
+        client = TestClient(app, raise_server_exceptions=True)
+        resp = client.post(
+            "/api/v1/live/wayra/guest",
+            json={
+                "message": "Fourth message",
+                "session_key": "test-session-limit",
+            },
+        )
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "Guest message limit reached"
+
+
+class TestTrafficDensity:
+    @patch("app.routes.live.LiveService.get_traffic_density")
+    def test_traffic_density_success(self, mock_density):
+        mock_density.return_value = [
+            {
+                "lat": 41.88,
+                "lng": -87.63,
+                "count": 3,
+                "level": "medium",
+            }
+        ]
+        client = TestClient(app, raise_server_exceptions=True)
+        resp = client.get(
+            "/api/v1/live/traffic/density",
+            params={"lat": 41.8781, "lng": -87.6298, "radius_km": 10},
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body) == 1
+        assert body[0]["level"] == "medium"
+        mock_density.assert_called_once()
+
+    @patch("app.routes.live.LiveService.get_traffic_density")
+    def test_traffic_density_empty(self, mock_density):
+        mock_density.return_value = []
+        client = TestClient(app, raise_server_exceptions=True)
+        resp = client.get(
+            "/api/v1/live/traffic/density",
+            params={"lat": 41.8781, "lng": -87.6298},
+        )
+        assert resp.status_code == 200
+        assert resp.json() == []
+        mock_density.assert_called_once()
