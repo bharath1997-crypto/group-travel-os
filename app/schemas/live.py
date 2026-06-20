@@ -94,3 +94,30 @@ class RouteOut(BaseModel):
     steps: list[RouteStepOut]
     total_distance_m: float
     total_duration_s: float
+
+
+class ReportChatMessage(BaseModel):
+    text: str = Field(..., min_length=1, max_length=200)
+
+
+class ReportChatMessageOut(BaseModel):
+    message_id: str
+    sent_at: datetime
+    text: str
+    sender_label: str
+
+
+class ReportChatItemOut(BaseModel):
+    id: str
+    text: str
+    sender_label: str
+    sent_at: str
+
+
+class ReportChatCountOut(BaseModel):
+    count: int
+
+
+class ReportChatFlagOut(BaseModel):
+    flagged: bool
+    removed: bool

@@ -357,6 +357,7 @@ export default function LivePage() {
   const sunCoordsRef = useRef({ lat: 41.8781, lng: -87.6298 });
   const userPositionRef = useRef<{ lat: number; lng: number } | null>(null);
   const reportsRef = useRef<RoadReport[]>([]);
+  const reportChatCountsRef = useRef<Record<string, number>>({});
   const hazardTimerRef = useRef<number | null>(null);
   const openReportRef = useRef<(report: RoadReport) => void>(() => {});
 
@@ -388,6 +389,9 @@ export default function LivePage() {
   const [arrivalBanner, setArrivalBanner] = useState(false);
   const [routeHazardBanner, setRouteHazardBanner] = useState<HazardBanner | null>(
     null,
+  );
+  const [reportChatCounts, setReportChatCounts] = useState<Record<string, number>>(
+    {},
   );
 
   openReportRef.current = (report: RoadReport) => setSelectedReport(report);
@@ -620,6 +624,28 @@ export default function LivePage() {
     [fetchRoute, isGuest, showToastMessage],
   );
 
+  useEffect(() => {
+    reportChatCountsRef.current = reportChatCounts;
+  }, [reportChatCounts]);
+
+  const fetchReportChatCounts = useCallback(async (items: RoadReport[]) => {
+    const entries = await Promise.all(
+      items.map(async (report) => {
+        try {
+          const data = await apiFetchPublic<{ count: number }>(
+            `/live/reports/${report.id}/chat/count`,
+          );
+          return [report.id, data.count] as const;
+        } catch {
+          return [report.id, 0] as const;
+        }
+      }),
+    );
+    const counts = Object.fromEntries(entries);
+    setReportChatCounts(counts);
+    reportChatCountsRef.current = counts;
+  }, []);
+
   const fetchNearbyReports = useCallback(async (lat: number, lng: number) => {
     try {
       const params = new URLSearchParams({
@@ -632,10 +658,11 @@ export default function LivePage() {
       );
       setReports(data);
       checkRouteHazards(data);
+      void fetchReportChatCounts(data);
     } catch {
       // Map works without pins; avoid noisy console errors on transient network/API issues.
     }
-  }, [checkRouteHazards]);
+  }, [checkRouteHazards, fetchReportChatCounts]);
 
   const fetchTrafficDensity = useCallback(async (lat: number, lng: number) => {
     const map = mapRef.current;
@@ -783,9 +810,13 @@ export default function LivePage() {
     reportMarkersRef.current = [];
 
     for (const report of items) {
-      const element = createReportPinElement(report.report_type, () => {
-        openReportRef.current(report);
-      });
+      const element = createReportPinElement(
+        report.report_type,
+        () => {
+          openReportRef.current(report);
+        },
+        (reportChatCountsRef.current[report.id] ?? 0) > 0,
+      );
       const marker = new maplibregl.Marker({ element, anchor: "center" })
         .setLngLat([report.lng, report.lat])
         .addTo(map);
@@ -946,7 +977,7 @@ export default function LivePage() {
     const map = mapRef.current;
     if (!map) return;
     syncReportMarkers(map, reports);
-  }, [reports, syncReportMarkers]);
+  }, [reportChatCounts, reports, syncReportMarkers]);
 
   useEffect(() => {
     const pos = userPositionRef.current;
@@ -1305,7 +1336,7 @@ export default function LivePage() {
           onClose={() => setSelectedReport(null)}
           onConfirm={() => void handleConfirmReport("confirm")}
           onDismiss={() => void handleConfirmReport("dismiss")}
-          onChat={() => showToastMessage("Route chat coming soon")}
+          onToast={showToastMessage}
           onGuestAction={setGuestPrompt}
         />
       ) : null}

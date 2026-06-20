@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import logging
 import math
+import re
+import time
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Literal
@@ -27,11 +29,70 @@ from app.schemas.live import RoadReportCreate, TrafficDensityPoint
 from app.services.trip_service import TripService
 from app.services.wayra_service import _GEMINI_URL, _gemini_key
 from app.utils.exceptions import AppException
+from app.utils.firebase import delete_rtdb, get_rtdb, set_rtdb, update_rtdb
 
 logger = logging.getLogger(__name__)
 
 GUEST_WAYRA_LIMIT = 3
 guest_wayra_counts: dict[str, int] = {}
+
+_chat_rate: dict[str, list[float]] = {}
+
+BLOCKED_PATTERNS = [
+    re.compile(r"\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b"),
+    re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
+    re.compile(r"https?://\S+", re.IGNORECASE),
+    re.compile(r"www\.\S+", re.IGNORECASE),
+    re.compile(r"@[a-zA-Z0-9_]+"),
+]
+
+PROFANITY_LIST = frozenset(
+    {
+        "asshole",
+        "bastard",
+        "bitch",
+        "bollocks",
+        "bullshit",
+        "cock",
+        "crap",
+        "cunt",
+        "damn",
+        "dick",
+        "douche",
+        "fuck",
+        "fucker",
+        "fucking",
+        "goddamn",
+        "hell",
+        "jackass",
+        "jerk",
+        "motherfucker",
+        "piss",
+        "prick",
+        "pussy",
+        "shit",
+        "slut",
+        "twat",
+        "wanker",
+        "whore",
+        "ass",
+        "arse",
+        "bloody",
+        "bugger",
+        "chink",
+        "coon",
+        "dyke",
+        "fag",
+        "faggot",
+        "kike",
+        "nazi",
+        "nigger",
+        "retard",
+        "spic",
+        "tranny",
+        "wetback",
+    }
+)
 
 _GUEST_WAYRA_SYSTEM = (
     "You are Wayra, Rovvy's travel AI. You help travelers with road conditions, "
@@ -339,6 +400,139 @@ class LiveService:
             "total_distance_m": float(route.get("distance") or 0),
             "total_duration_s": float(route.get("duration") or 0),
         }
+
+    @staticmethod
+    def send_report_chat(
+        db: Session,
+        user_id: uuid.UUID,
+        report_id: uuid.UUID,
+        text: str,
+    ) -> dict:
+        report = _get_active_report_for_chat(db, report_id)
+        _check_rate_limit(user_id)
+        filtered_text = _filter_message(text)
+
+        message_id = str(uuid.uuid4())
+        sent_at = datetime.now(timezone.utc)
+        expires_at = _report_expires_at_utc(report)
+        message_data = {
+            "id": message_id,
+            "text": filtered_text,
+            "sender_label": "Traveler nearby",
+            "sent_at": sent_at.isoformat(),
+            "expires_at": expires_at.isoformat(),
+        }
+        set_rtdb(f"live_reports/{report_id}/chat/{message_id}", message_data)
+        return {
+            "message_id": message_id,
+            "sent_at": sent_at,
+            "text": filtered_text,
+            "sender_label": "Traveler nearby",
+        }
+
+    @staticmethod
+    def get_report_chat(db: Session, report_id: uuid.UUID) -> list[dict]:
+        _get_active_report_for_chat(db, report_id)
+        raw = get_rtdb(f"live_reports/{report_id}/chat")
+        if not raw:
+            return []
+
+        messages: list[dict] = []
+        for message_id, payload in raw.items():
+            if not isinstance(payload, dict):
+                continue
+            messages.append(
+                {
+                    "id": payload.get("id") or message_id,
+                    "text": payload.get("text") or "",
+                    "sender_label": payload.get("sender_label") or "Traveler nearby",
+                    "sent_at": payload.get("sent_at") or "",
+                }
+            )
+        messages.sort(key=lambda item: item.get("sent_at") or "")
+        return messages
+
+    @staticmethod
+    def get_report_chat_count(db: Session, report_id: uuid.UUID) -> int:
+        report = db.execute(
+            select(RoadReport).where(RoadReport.id == report_id)
+        ).scalar_one_or_none()
+        if not report or not report.is_active:
+            return 0
+        now = datetime.now(timezone.utc)
+        expires_at = _report_expires_at_utc(report)
+        if expires_at <= now:
+            return 0
+
+        raw = get_rtdb(f"live_reports/{report_id}/chat")
+        if not raw:
+            return 0
+        return len(raw)
+
+    @staticmethod
+    def flag_chat_message(
+        db: Session,
+        report_id: uuid.UUID,
+        message_id: str,
+    ) -> dict[str, bool]:
+        _get_active_report_for_chat(db, report_id)
+        path = f"live_reports/{report_id}/chat/{message_id}"
+        message = get_rtdb(path)
+        if not message:
+            AppException.not_found("Message not found")
+
+        flag_count = int(message.get("flag_count") or 0) + 1
+        if flag_count >= 2:
+            delete_rtdb(path)
+            return {"flagged": True, "removed": True}
+
+        update_rtdb(path, {"flag_count": flag_count})
+        return {"flagged": True, "removed": False}
+
+
+def _check_rate_limit(user_id: uuid.UUID) -> None:
+    now = time.time()
+    key = str(user_id)
+    timestamps = _chat_rate.get(key, [])
+    timestamps = [stamp for stamp in timestamps if now - stamp < 60]
+    if len(timestamps) >= 10:
+        AppException.bad_request("Too many messages. Slow down.")
+    timestamps.append(now)
+    _chat_rate[key] = timestamps
+
+
+def _filter_message(text: str) -> str:
+    cleaned = text.strip()
+    if not cleaned:
+        AppException.bad_request("Message is required")
+    for pattern in BLOCKED_PATTERNS:
+        if pattern.search(cleaned):
+            AppException.bad_request("Message contains blocked content")
+    lower = cleaned.lower()
+    for word in PROFANITY_LIST:
+        if word in lower:
+            AppException.bad_request("Message contains inappropriate content")
+    return cleaned
+
+
+def _report_expires_at_utc(report: RoadReport) -> datetime:
+    expires_at = report.expires_at
+    if expires_at.tzinfo is None:
+        return expires_at.replace(tzinfo=timezone.utc)
+    return expires_at
+
+
+def _get_active_report_for_chat(db: Session, report_id: uuid.UUID) -> RoadReport:
+    report = db.execute(
+        select(RoadReport).where(RoadReport.id == report_id)
+    ).scalar_one_or_none()
+    if not report or not report.is_active:
+        AppException.not_found("Report not found or expired")
+
+    now = datetime.now(timezone.utc)
+    if _report_expires_at_utc(report) <= now:
+        AppException.bad_request("This report has expired")
+    return report
 
 
 def _osrm_maneuver_type(maneuver: dict) -> str:

@@ -110,6 +110,15 @@ async def lifespan(app: FastAPI):
         id="viator_sync",
         replace_existing=True,
     )
+    from app.jobs.live_chat_cleanup import cleanup_expired_report_chats
+
+    scheduler.add_job(
+        cleanup_expired_report_chats,
+        trigger="interval",
+        minutes=5,
+        id="live_chat_cleanup",
+        replace_existing=True,
+    )
 
     yield
 

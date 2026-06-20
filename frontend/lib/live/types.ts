@@ -98,6 +98,7 @@ export function formatDistance(meters: number): string {
 export function createReportPinElement(
   reportType: ReportType,
   onClick: () => void,
+  hasUnread = false,
 ): HTMLButtonElement {
   const config = REPORT_CONFIG[reportType];
   const btn = document.createElement("button");
@@ -106,6 +107,12 @@ export function createReportPinElement(
   btn.setAttribute("aria-label", config.label);
   btn.style.backgroundColor = config.color;
   btn.textContent = config.emoji;
+  if (hasUnread) {
+    const badge = document.createElement("span");
+    badge.className = "live-report-pin-badge";
+    badge.setAttribute("aria-hidden", "true");
+    btn.appendChild(badge);
+  }
   btn.addEventListener("click", (event) => {
     event.stopPropagation();
     onClick();

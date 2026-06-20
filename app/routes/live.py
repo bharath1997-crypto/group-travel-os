@@ -25,6 +25,11 @@ from app.schemas.live import (
     TrafficDensityQuery,
     RouteOut,
     RouteQuery,
+    ReportChatCountOut,
+    ReportChatFlagOut,
+    ReportChatItemOut,
+    ReportChatMessage,
+    ReportChatMessageOut,
 )
 from app.services.live_service import LiveService
 from app.utils.auth import get_current_user, get_current_user_optional
@@ -167,3 +172,66 @@ def get_live_route(
         query.end_lat,
         query.end_lng,
     )
+
+
+@router.post(
+    "/reports/{report_id}/chat",
+    response_model=ReportChatMessageOut,
+    status_code=status.HTTP_200_OK,
+    summary="Send anonymous chat message for a road report",
+)
+def send_report_chat_message(
+    report_id: uuid.UUID,
+    body: ReportChatMessage,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.send_report_chat(
+        db,
+        current_user.id,
+        report_id,
+        body.text,
+    )
+
+
+@router.get(
+    "/reports/{report_id}/chat",
+    response_model=list[ReportChatItemOut],
+    status_code=status.HTTP_200_OK,
+    summary="Get chat messages for a road report",
+)
+def get_report_chat_messages(
+    report_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.get_report_chat(db, report_id)
+
+
+@router.get(
+    "/reports/{report_id}/chat/count",
+    response_model=ReportChatCountOut,
+    status_code=status.HTTP_200_OK,
+    summary="Get chat message count for a road report",
+)
+def get_report_chat_message_count(
+    report_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    return {"count": LiveService.get_report_chat_count(db, report_id)}
+
+
+@router.post(
+    "/reports/{report_id}/chat/{message_id}/flag",
+    response_model=ReportChatFlagOut,
+    status_code=status.HTTP_200_OK,
+    summary="Flag an abusive chat message",
+)
+def flag_report_chat_message(
+    report_id: uuid.UUID,
+    message_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.flag_chat_message(db, report_id, message_id)
