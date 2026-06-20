@@ -22,8 +22,6 @@ from app.models.explore_content import ExploreContent
 from app.models.explorer_cache import ExplorerCache
 from app.models.imported_short import ImportedShort
 from app.models.location_hashtag import LocationHashtag
-from app.models.live_checklist import LiveChecklist
-from app.models.live_session import LiveSession
 from app.models.saved_pin import SavedPin
 from app.models.buddy_trip import BuddyJoinRequest, BuddyTrip
 from app.models.sos_event import SOSEvent
@@ -71,8 +69,6 @@ __all__: list[str] = [
     "ExplorerCache",
     "ImportedShort",
     "LocationHashtag",
-    "LiveChecklist",
-    "LiveSession",
     "BuddyTrip",
     "BuddyJoinRequest",
     "SOSEvent",

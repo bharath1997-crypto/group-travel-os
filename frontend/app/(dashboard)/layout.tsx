@@ -32,7 +32,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import { IconBell, IconCheck, IconLogout } from "@/components/icons";
 
-import { LiveModal } from "@/components/live/LiveModal";
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { VerificationBanner } from "@/components/VerificationBanner";
@@ -56,7 +55,7 @@ const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
 type SubNavItem = { href: string; label: string; Icon?: LucideIcon };
 
 type NavSectionDef = {
-  id: "explore" | "trips" | "live" | "split-activities" | "profile";
+  id: "explore" | "trips" | "split-activities" | "profile";
   href: string;
   label: string;
   Icon: LucideIcon | null;
@@ -91,14 +90,6 @@ const NAV_SECTIONS: NavSectionDef[] = [
       { href: "/group",       label: "Groups",      Icon: LucideUsers },
       { href: "/buddy",       label: "Buddy Trips", Icon: Heart },
     ],
-  },
-  {
-    id: "live",
-    href: "/live",
-    label: "LIVE",
-    Icon: null,   // replaced by pulsing dot
-    subs: [],
-    mobileLabel: "Live",
   },
   {
     id: "split-activities",
@@ -216,9 +207,6 @@ function sectionActive(pathname: string, section: NavSectionDef): boolean {
       pathname.startsWith("/group") ||
       pathname.startsWith("/buddy")
     );
-  }
-  if (section.id === "live") {
-    return pathname.startsWith("/trip-live") || pathname === "/live";
   }
   if (section.id === "split-activities") {
     return pathname.startsWith("/split-activities");
@@ -355,7 +343,6 @@ function SidebarNavSection({
   pathname: string;
 }) {
   const active = sectionActive(pathname, section);
-  const isLive = section.id === "live";
 
   return (
     <Link
@@ -367,12 +354,7 @@ function SidebarNavSection({
           : "text-[#94A3B8] hover:bg-[rgba(248,250,252,0.06)] hover:text-[#F8FAFC]",
       ].join(" ")}
     >
-      {isLive ? (
-        <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-          <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-400" />
-        </span>
-      ) : section.Icon ? (
+      {section.Icon ? (
         <section.Icon
           size={18}
           strokeWidth={2}
@@ -381,11 +363,6 @@ function SidebarNavSection({
         />
       ) : null}
       <span className="min-w-0 flex-1 truncate">{section.label}</span>
-      {isLive && (
-        <span className="ml-auto rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-emerald-400">
-          Live
-        </span>
-      )}
     </Link>
   );
 }
@@ -395,10 +372,9 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, loading } = useDashboardUser();
   const hideAssistantSidecar = pathname.startsWith("/travel-hub");
-  const hideBottomNav = pathname.includes("trip-live");
+  const hideBottomNav = false;
 
   const isMapPage = pathname === "/map" || pathname === "/explore/map";
-  const isLivePage = pathname === "/live" || pathname.startsWith("/trip-live");
   const isExplorerEventsShell = pathname.startsWith("/explore/events");
   const isExploreShortsShell = pathname.startsWith("/explore/shorts");
   const isFlightsPage = pathname.startsWith("/flights");
@@ -419,7 +395,6 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const [sidebarProfileLoading, setSidebarProfileLoading] = useState(true);
   const [notifCount, setNotifCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [liveModalOpen, setLiveModalOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
@@ -516,12 +491,10 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     isMapPage ||
     isExplorerEventsShell ||
     isExploreShortsShell ||
-    isLivePage ||
     pathname.startsWith("/profile");
 
   const useFullWidthInner =
     isMapPage ||
-    isLivePage ||
     isExplorerEventsShell ||
     isExploreShortsShell ||
     isFlightsPage ||
@@ -608,28 +581,6 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             <nav className="hidden md:flex items-center gap-0.5 xl:gap-1" aria-label="Primary">
               {NAV_SECTIONS.map((section) => {
                 const active = sectionActive(pathname, section);
-                const isLive = section.id === "live";
-                if (isLive) {
-                  return (
-                    <button
-                      key={section.id}
-                      type="button"
-                      onClick={() => setLiveModalOpen(true)}
-                      className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-all ${
-                        active
-                          ? "text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200"
-                          : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
-                      }`}
-                      title={section.label}
-                    >
-                      <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                      </span>
-                      <span className="hidden xl:inline">{section.label}</span>
-                    </button>
-                  );
-                }
                 return (
                   <Link
                     key={section.id}
@@ -843,38 +794,9 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           aria-label="Primary"
         >
           <div className="mx-auto flex h-14 w-full max-w-lg items-stretch justify-between px-1">
-            {MOBILE_TABS.map(({ href, label, Icon, id }, idx) => {
+            {MOBILE_TABS.map(({ href, label, Icon, id }) => {
               const def = NAV_SECTIONS.find((s) => s.id === id)!;
               const active = sectionActive(pathname, def);
-              const isCenter = idx === 2;
-
-              if (isCenter) {
-                return (
-                  <button
-                    key={href}
-                    type="button"
-                    onClick={() => setLiveModalOpen(true)}
-                    className="flex flex-1 flex-col items-center justify-start -mt-5"
-                    aria-label="LIVE mode"
-                  >
-                    <span
-                      className={`flex h-14 w-14 items-center justify-center rounded-full border-4 border-[#0F172A] shadow-xl transition-all ${
-                        active ? "bg-emerald-500 shadow-emerald-500/40" : "bg-[#0F766E] shadow-[#0F766E]/30"
-                      }`}
-                    >
-                      <span className="relative flex h-5 w-5 items-center justify-center">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-50" />
-                        <span className="relative inline-flex h-3 w-3 rounded-full bg-white" />
-                      </span>
-                    </span>
-                    <span className={`mt-1 text-[9px] font-black uppercase tracking-widest pb-1 ${
-                      active ? "text-emerald-400" : "text-slate-400"
-                    }`}>
-                      Live
-                    </span>
-                  </button>
-                );
-              }
 
               return (
                 <Link
@@ -927,7 +849,6 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         />
       ) : null}
       {user && !hideBottomNav && <LoungeDock />}
-      <LiveModal open={liveModalOpen} onClose={() => setLiveModalOpen(false)} />
     </div>
   );
 }
