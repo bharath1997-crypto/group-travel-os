@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 from uuid import UUID
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal, Optional, Any
 from app.models.live_session import LiveMode
 from app.models.road_report import ReportType
 
@@ -237,3 +237,34 @@ class BatteryUpdate(BaseModel):
 class BatteryUpdateOut(BaseModel):
     battery_level: int
     alert_sent: bool
+
+
+class WayraLiveRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=500)
+    context: dict[str, Any] = Field(default_factory=dict)
+
+
+class WayraLiveOut(BaseModel):
+    reply: str
+    action: Optional[
+        Literal["open_poi_search", "open_navigation", "call_sos"]
+    ] = None
+
+
+class WayraAnalyzeRequest(BaseModel):
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+    speed_mph: float = Field(default=0, ge=0)
+    trip_id: Optional[str] = None
+    member_positions: Optional[list[dict[str, Any]]] = None
+    active_reports: Optional[list[str]] = None
+    nearby_reports: Optional[list[dict[str, Any]]] = None
+    weather_code: Optional[int] = None
+    route_geometry: Optional[dict[str, Any]] = None
+
+
+class WayraAnalyzeOut(BaseModel):
+    alert_type: Optional[str] = None
+    message: Optional[str] = None
+    severity: Optional[Literal["info", "warning", "danger"]] = None
+    action: Optional[str] = None

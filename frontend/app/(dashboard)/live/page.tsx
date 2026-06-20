@@ -153,6 +153,13 @@ type SafetyBanner = {
   tone: "amber" | "red";
 };
 
+type WayraAlert = {
+  alert_type: string;
+  message: string;
+  severity: "info" | "warning" | "danger";
+  action?: string | null;
+};
+
 type HazardBanner = {
   report: RoadReport;
   distanceM: number;
@@ -503,6 +510,7 @@ export default function LivePage() {
   const deadZoneAlertedRef = useRef<Set<string>>(new Set());
   const safetyBannerTimerRef = useRef<number | null>(null);
   const emergencyContactsPromptedRef = useRef(false);
+  const wayraAlertTimerRef = useRef<number | null>(null);
 
   const [isGuest, setIsGuest] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -567,8 +575,19 @@ export default function LivePage() {
   const [geofenceBusy, setGeofenceBusy] = useState(false);
   const [settingGeofence, setSettingGeofence] = useState(false);
   const [safetyBanner, setSafetyBanner] = useState<SafetyBanner | null>(null);
+  const [wayraAlert, setWayraAlert] = useState<WayraAlert | null>(null);
+  const [wayraUnread, setWayraUnread] = useState(false);
+  const [showWayraTooltip, setShowWayraTooltip] = useState(false);
   const currentUserId = dashboardUser?.id ?? null;
   const currentUserName = dashboardUser?.full_name ?? "You";
+
+  const validTripId =
+    tripId &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      tripId,
+    )
+      ? tripId
+      : null;
 
   openReportRef.current = (report: RoadReport) => setSelectedReport(report);
 
@@ -576,6 +595,12 @@ export default function LivePage() {
     const token =
       typeof window !== "undefined" ? localStorage.getItem("gt_token") : null;
     setIsGuest(!token);
+  }, []);
+
+  useEffect(() => {
+    setShowWayraTooltip(true);
+    const timer = window.setTimeout(() => setShowWayraTooltip(false), 3000);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -651,13 +676,76 @@ export default function LivePage() {
     }, 10_000);
   }, []);
 
-  const validTripId =
-    tripId &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      tripId,
-    )
-      ? tripId
-      : null;
+  const getMemberPositions = useCallback(() => {
+    return tripMembers
+      .map((member) => ({
+        user_id: member.user_id,
+        display_name: member.display_name,
+        lat: memberLive[member.user_id]?.lat,
+        lng: memberLive[member.user_id]?.lng,
+        status: memberStatuses[member.user_id],
+      }))
+      .filter(
+        (item): item is typeof item & { lat: number; lng: number } =>
+          item.lat != null && item.lng != null,
+      );
+  }, [memberLive, memberStatuses, tripMembers]);
+
+  const buildWayraContext = useCallback(() => {
+    const pos = userPositionRef.current;
+    return {
+      lat: pos?.lat ?? null,
+      lng: pos?.lng ?? null,
+      speed_mph: speedMph,
+      trip_id: validTripId,
+      active_reports: reports.map((report) => report.report_type),
+      weather_code: weather?.weathercode ?? null,
+      members: tripMembers.map((member) => ({
+        user_id: member.user_id,
+        status: memberStatuses[member.user_id] ?? null,
+      })),
+      route_destination: destination?.name ?? null,
+    };
+  }, [
+    destination?.name,
+    reports,
+    speedMph,
+    tripMembers,
+    memberStatuses,
+    validTripId,
+    weather?.weathercode,
+  ]);
+
+  const showWayraAlert = useCallback((alert: WayraAlert) => {
+    setWayraAlert(alert);
+    if (!showWayra) {
+      setWayraUnread(true);
+    }
+    if (wayraAlertTimerRef.current != null) {
+      window.clearTimeout(wayraAlertTimerRef.current);
+      wayraAlertTimerRef.current = null;
+    }
+    if (alert.severity === "info") {
+      wayraAlertTimerRef.current = window.setTimeout(() => {
+        setWayraAlert(null);
+        wayraAlertTimerRef.current = null;
+      }, 8000);
+    } else if (alert.severity === "warning") {
+      wayraAlertTimerRef.current = window.setTimeout(() => {
+        setWayraAlert(null);
+        wayraAlertTimerRef.current = null;
+      }, 12000);
+    }
+  }, [showWayra]);
+
+  const openWayraChat = useCallback(() => {
+    if (isGuest && guestWayraRemaining <= 0) {
+      setGuestPrompt("Create free account for unlimited Wayra access");
+      return;
+    }
+    setWayraUnread(false);
+    setShowWayra(true);
+  }, [guestWayraRemaining, isGuest]);
 
   const clearMemberMarkers = useCallback(() => {
     memberMarkersRef.current.forEach((entry) => entry.marker.remove());
@@ -1167,6 +1255,21 @@ export default function LivePage() {
     setSosResponse(null);
   }, [validTripId]);
 
+  const handleWayraAction = useCallback(
+    (action: "open_poi_search" | "open_navigation" | "call_sos") => {
+      if (action === "open_poi_search") {
+        setShowPoiSearch(true);
+        return;
+      }
+      if (action === "open_navigation") {
+        setShowDestinationSheet(true);
+        return;
+      }
+      void triggerSOS();
+    },
+    [triggerSOS],
+  );
+
   const checkMeetingArrival = useCallback(
     (lat: number, lng: number) => {
       const point = meetingPointRef.current;
@@ -1443,6 +1546,69 @@ export default function LivePage() {
     }, 5 * 60 * 1000);
     return () => window.clearInterval(interval);
   }, [checkBattery, groupMode, validTripId]);
+
+  useEffect(() => {
+    if (isGuest) return;
+
+    const runAnalyze = async () => {
+      const pos = userPositionRef.current;
+      if (!pos) return;
+
+      try {
+        const data = await apiFetch<{
+          alert_type: string | null;
+          message: string | null;
+          severity?: "info" | "warning" | "danger";
+          action?: string | null;
+        }>("/live/wayra/analyze", {
+          method: "POST",
+          body: JSON.stringify({
+            lat: pos.lat,
+            lng: pos.lng,
+            speed_mph: speedMph,
+            trip_id: validTripId,
+            member_positions: groupMode ? getMemberPositions() : null,
+            active_reports: reports.map((report) => report.report_type),
+            nearby_reports: reports.map((report) => ({
+              lat: report.lat,
+              lng: report.lng,
+              report_type: report.report_type,
+            })),
+            weather_code: weather?.weathercode ?? null,
+            route_geometry: route?.geometry ?? null,
+          }),
+        });
+
+        if (data.alert_type && data.message && data.severity) {
+          showWayraAlert({
+            alert_type: data.alert_type,
+            message: data.message,
+            severity: data.severity,
+            action: data.action,
+          });
+        }
+      } catch {
+        // Proactive alerts are optional.
+      }
+    };
+
+    void runAnalyze();
+    const interval = window.setInterval(() => {
+      void runAnalyze();
+    }, 120_000);
+
+    return () => window.clearInterval(interval);
+  }, [
+    getMemberPositions,
+    groupMode,
+    isGuest,
+    reports,
+    route?.geometry,
+    showWayraAlert,
+    speedMph,
+    validTripId,
+    weather?.weathercode,
+  ]);
 
   useEffect(() => {
     if (isGuest || emergencyContactsPromptedRef.current) return;
@@ -1772,6 +1938,9 @@ export default function LivePage() {
       }
       if (sosTimerRef.current != null) {
         window.clearInterval(sosTimerRef.current);
+      }
+      if (wayraAlertTimerRef.current != null) {
+        window.clearTimeout(wayraAlertTimerRef.current);
       }
       if (routeHazardTimerRef.current != null) {
         window.clearTimeout(routeHazardTimerRef.current);
@@ -2149,6 +2318,55 @@ export default function LivePage() {
           </div>
         ) : null}
 
+        {wayraAlert ? (
+          <div className="pointer-events-auto absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+9.5rem)] z-[130]">
+            <div
+              className={`flex items-start gap-3 rounded-xl px-4 py-3 text-white shadow-lg ${
+                wayraAlert.severity === "danger"
+                  ? "bg-red-600"
+                  : wayraAlert.severity === "warning"
+                    ? "bg-amber-500"
+                    : "bg-[#0F766E]"
+              }`}
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm font-bold">
+                W
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">{wayraAlert.message}</p>
+                {wayraAlert.action ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (wayraAlert.action === "open_navigation") {
+                        setShowDestinationSheet(true);
+                      } else if (wayraAlert.action === "open_poi_search") {
+                        setShowPoiSearch(true);
+                      }
+                      setWayraAlert(null);
+                    }}
+                    className="mt-2 rounded-lg bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30"
+                  >
+                    {wayraAlert.action === "open_navigation"
+                      ? "Open navigation"
+                      : "Search nearby"}
+                  </button>
+                ) : null}
+              </div>
+              {wayraAlert.severity === "danger" ? (
+                <button
+                  type="button"
+                  aria-label="Dismiss alert"
+                  onClick={() => setWayraAlert(null)}
+                  className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold hover:bg-white/20"
+                >
+                  Dismiss
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         {convoyBanner ? (
           <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
             <div className="rounded-xl bg-[#0F766E] px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
@@ -2293,22 +2511,28 @@ export default function LivePage() {
           </div>
         ) : null}
 
-        <button
-          type="button"
-          onClick={() => {
-            if (isGuest && guestWayraRemaining <= 0) {
-              setGuestPrompt("Create free account for unlimited Wayra access");
-              return;
-            }
-            setShowWayra(true);
-          }}
-          className={`pointer-events-auto absolute bottom-24 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-[#0F766E] text-white shadow-lg transition hover:bg-[#0d655c] ${
+        <div
+          className={`pointer-events-auto absolute bottom-24 z-20 ${
             groupMode ? "right-20" : "right-4"
           }`}
-          aria-label="Open Wayra chat"
         >
-          <MessageCircle size={22} />
-        </button>
+          {showWayraTooltip ? (
+            <div className="pointer-events-none absolute bottom-full right-0 mb-2 whitespace-nowrap rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white shadow-lg">
+              Ask Wayra
+            </div>
+          ) : null}
+          <button
+            type="button"
+            onClick={openWayraChat}
+            className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[#0F766E] text-white shadow-lg transition hover:bg-[#0d655c]"
+            aria-label="Open Wayra chat"
+          >
+            <MessageCircle size={22} />
+            {wayraUnread ? (
+              <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full border-2 border-[#0F766E] bg-red-500" />
+            ) : null}
+          </button>
+        </div>
 
         {groupMode && firebaseDb && validTripId && currentUserId ? (
           <GroupLiveChatButton onClick={() => setShowGroupChat(true)} />
@@ -2388,6 +2612,9 @@ export default function LivePage() {
             setShowWayra(false);
             setGuestPrompt("Create free account for unlimited Wayra access");
           }}
+          buildContext={buildWayraContext}
+          onAction={handleWayraAction}
+          onToast={showToastMessage}
           onClose={() => setShowWayra(false)}
         />
       ) : null}

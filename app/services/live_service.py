@@ -103,6 +103,28 @@ _GUEST_WAYRA_SYSTEM = (
     "directions, and travel tips. Keep responses under 100 words. Be friendly."
 )
 
+WAYRA_LIVE_SYSTEM_PROMPT = """
+You are Wayra, Rovvy's real-time travel AI assistant.
+You are helping a traveler who is currently on the road.
+
+Current context:
+- Location: {lat:.4f}, {lng:.4f}
+- Speed: {speed_mph:.0f} mph
+- Nearby hazards: {active_reports}
+- Weather: {weather_description}
+- Group members: {member_count} traveling together
+- Destination: {route_destination}
+
+Your role:
+- Give SHORT responses (max 2 sentences)
+- Be direct and actionable
+- Focus on safety and navigation
+- For "find X near me" requests: suggest they use the POI search (tap search icon)
+- For navigation requests: suggest they use the search bar
+- Never make up specific addresses or business names
+- Always prioritize safety over convenience
+"""
+
 
 def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     radius_km = 6371.0
@@ -893,6 +915,175 @@ class LiveService:
 
         return {"battery_level": level, "alert_sent": alert_sent}
 
+    @staticmethod
+    def wayra_live_chat(message: str, context: dict) -> dict[str, str | None]:
+        msg = message.strip()
+        if not msg:
+            AppException.bad_request("message is required")
+        if len(msg) > 500:
+            AppException.bad_request("message too long")
+
+        ctx = context or {}
+        lat = float(ctx.get("lat") or 0)
+        lng = float(ctx.get("lng") or 0)
+        speed_mph = float(ctx.get("speed_mph") or 0)
+        active_reports = ctx.get("active_reports") or []
+        if not isinstance(active_reports, list):
+            active_reports = []
+        weather_code = ctx.get("weather_code")
+        members = ctx.get("members") or []
+        if not isinstance(members, list):
+            members = []
+        route_destination = ctx.get("route_destination") or "None"
+
+        system_prompt = WAYRA_LIVE_SYSTEM_PROMPT.format(
+            lat=lat,
+            lng=lng,
+            speed_mph=speed_mph,
+            active_reports=", ".join(str(item) for item in active_reports) or "none",
+            weather_description=_weather_description(
+                weather_code if isinstance(weather_code, int) else None
+            ),
+            member_count=len(members) if members else 1,
+            route_destination=route_destination,
+        )
+        reply = _call_wayra_live_gemini(system_prompt, msg)
+        action = _detect_wayra_live_action(msg, reply)
+        return {"reply": reply, "action": action}
+
+    @staticmethod
+    def wayra_analyze(payload: dict) -> dict[str, str | None]:
+        lat = float(payload.get("lat") or 0)
+        lng = float(payload.get("lng") or 0)
+        speed_mph = float(payload.get("speed_mph") or 0)
+        member_positions = payload.get("member_positions") or []
+        active_reports = payload.get("active_reports") or []
+        nearby_reports = payload.get("nearby_reports") or []
+        weather_code = payload.get("weather_code")
+        route_geometry = payload.get("route_geometry")
+
+        if not isinstance(member_positions, list):
+            member_positions = []
+        if not isinstance(active_reports, list):
+            active_reports = []
+        if not isinstance(nearby_reports, list):
+            nearby_reports = []
+
+        no_alert = {"alert_type": None, "message": None, "severity": None, "action": None}
+
+        # CHECK 1 — Group split
+        valid_members = [
+            item
+            for item in member_positions
+            if isinstance(item, dict)
+            and item.get("lat") is not None
+            and item.get("lng") is not None
+        ]
+        if len(valid_members) >= 3:
+            centroid_lat = sum(float(item["lat"]) for item in valid_members) / len(
+                valid_members
+            )
+            centroid_lng = sum(float(item["lng"]) for item in valid_members) / len(
+                valid_members
+            )
+            farthest = max(
+                valid_members,
+                key=lambda item: _haversine_km(
+                    float(item["lat"]),
+                    float(item["lng"]),
+                    centroid_lat,
+                    centroid_lng,
+                ),
+            )
+            distance_km = _haversine_km(
+                float(farthest["lat"]),
+                float(farthest["lng"]),
+                centroid_lat,
+                centroid_lng,
+            )
+            if distance_km > 2.0:
+                name = str(farthest.get("display_name") or "A member")
+                return {
+                    "alert_type": "group_split",
+                    "message": (
+                        f"{name} is {distance_km:.1f}km behind the group. "
+                        "Consider waiting at the next stop."
+                    ),
+                    "severity": "warning",
+                    "action": None,
+                }
+
+        # CHECK 2 — Hazard on route
+        hazard_types = {"accident", "closure"}
+        report_types = {str(item).lower() for item in active_reports}
+        if route_geometry and isinstance(route_geometry, dict):
+            report_points = [
+                item
+                for item in nearby_reports
+                if isinstance(item, dict)
+                and str(item.get("report_type", "")).lower() in hazard_types
+            ]
+            if not report_points and report_types.intersection(hazard_types):
+                report_points = [
+                    {"report_type": item}
+                    for item in active_reports
+                    if str(item).lower() in hazard_types
+                ]
+            for report in report_points:
+                report_lat = report.get("lat")
+                report_lng = report.get("lng")
+                if report_lat is None or report_lng is None:
+                    continue
+                distance_m = _distance_to_route_line(
+                    float(report_lat),
+                    float(report_lng),
+                    route_geometry,
+                )
+                if distance_m <= 300:
+                    report_type = str(report.get("report_type") or "hazard")
+                    return {
+                        "alert_type": "hazard_on_route",
+                        "message": (
+                            f"There's a reported {report_type} on your route ahead. "
+                            "Consider an alternate path."
+                        ),
+                        "severity": "warning",
+                        "action": "open_navigation",
+                    }
+
+        # CHECK 3 — Weather reroute
+        if isinstance(weather_code, int):
+            if 95 <= weather_code <= 99:
+                return {
+                    "alert_type": "weather_severe",
+                    "message": (
+                        "Severe storm detected on your route. "
+                        "Find shelter or take an alternate route."
+                    ),
+                    "severity": "danger",
+                    "action": None,
+                }
+            if 51 <= weather_code <= 82 and speed_mph > 60:
+                return {
+                    "alert_type": "weather_rain_speed",
+                    "message": "Rain detected. Reduce speed for safety.",
+                    "severity": "info",
+                    "action": None,
+                }
+
+        # CHECK 4 — Speeding advisory
+        if speed_mph > 80:
+            return {
+                "alert_type": "speed_advisory",
+                "message": (
+                    "You're traveling fast. Stay alert and maintain safe following distance."
+                ),
+                "severity": "info",
+                "action": None,
+            }
+
+        return no_alert
+
 
 def _check_rate_limit(user_id: uuid.UUID) -> None:
     now = time.time()
@@ -948,6 +1139,166 @@ def _osrm_maneuver_type(maneuver: dict) -> str:
             return f"{maneuver_type}-{normalized}" if maneuver_type == "turn" else normalized
         return normalized
     return maneuver_type
+
+
+def _weather_description(code: int | None) -> str:
+    if code is None:
+        return "Unknown"
+    if code == 0:
+        return "Clear"
+    if 1 <= code <= 3:
+        return "Partly cloudy"
+    if code in (45, 48):
+        return "Foggy"
+    if 51 <= code <= 67:
+        return "Rain"
+    if 71 <= code <= 77:
+        return "Snow"
+    if 80 <= code <= 82:
+        return "Showers"
+    if 95 <= code <= 99:
+        return "Thunderstorm"
+    return "Mixed conditions"
+
+
+def _detect_wayra_live_action(message: str, reply: str) -> str | None:
+    combined = f"{message} {reply}".lower()
+    if any(
+        phrase in combined
+        for phrase in (
+            "sos",
+            "emergency",
+            "call for help",
+            "need help now",
+            "trigger sos",
+        )
+    ):
+        return "call_sos"
+    if any(
+        phrase in combined
+        for phrase in (
+            "poi search",
+            "search icon",
+            "find near me",
+            "nearby",
+            "restaurant",
+            "gas station",
+            "food near",
+            "coffee near",
+            "bathroom",
+            "parking near",
+        )
+    ):
+        return "open_poi_search"
+    if any(
+        phrase in combined
+        for phrase in (
+            "search bar",
+            "navigation",
+            "directions",
+            "route to",
+            "drive to",
+            "navigate to",
+        )
+    ):
+        return "open_navigation"
+    return None
+
+
+def _extract_gemini_text(data: dict) -> str:
+    candidates = data.get("candidates")
+    if not isinstance(candidates, list) or not candidates:
+        return ""
+    first = candidates[0]
+    if not isinstance(first, dict):
+        return ""
+    content = first.get("content")
+    if not isinstance(content, dict):
+        return ""
+    parts = content.get("parts")
+    if not isinstance(parts, list):
+        return ""
+    chunks: list[str] = []
+    for part in parts:
+        if isinstance(part, dict) and isinstance(part.get("text"), str):
+            chunks.append(part["text"])
+    return "".join(chunks).strip()
+
+
+def _call_wayra_live_gemini(system_prompt: str, message: str) -> str:
+    api_key = _gemini_key()
+    if not api_key:
+        return "Wayra is temporarily unavailable. Please try again later."
+
+    body = {
+        "systemInstruction": {"parts": [{"text": system_prompt.strip()}]},
+        "contents": [{"role": "user", "parts": [{"text": message}]}],
+        "generationConfig": {
+            "temperature": 0.4,
+            "maxOutputTokens": 256,
+        },
+    }
+    try:
+        with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
+            response = client.post(_GEMINI_URL, params={"key": api_key}, json=body)
+        if response.status_code != 200:
+            logger.debug(
+                "Wayra live Gemini HTTP %s: %s",
+                response.status_code,
+                response.text[:300],
+            )
+            return "I couldn't respond right now. Please try again."
+        text = _extract_gemini_text(response.json())
+        return text or "I couldn't process that right now. Please try again."
+    except Exception as exc:
+        logger.debug("Wayra live Gemini failed: %s", exc)
+        return "Wayra is temporarily offline. Please try again."
+
+
+def _haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    return _haversine_km(lat1, lng1, lat2, lng2) * 1000.0
+
+
+def _point_to_segment_distance_m(
+    lat: float,
+    lng: float,
+    a: tuple[float, float],
+    b: tuple[float, float],
+) -> float:
+    lng1, lat1 = a
+    lng2, lat2 = b
+    dx = lng2 - lng1
+    dy = lat2 - lat1
+    if dx == 0 and dy == 0:
+        return _haversine_m(lat, lng, lat1, lng1)
+    t = max(0.0, min(1.0, ((lng - lng1) * dx + (lat - lat1) * dy) / (dx * dx + dy * dy)))
+    proj_lat = lat1 + t * dy
+    proj_lng = lng1 + t * dx
+    return _haversine_m(lat, lng, proj_lat, proj_lng)
+
+
+def _distance_to_route_line(
+    lat: float,
+    lng: float,
+    geometry: dict,
+) -> float:
+    coords = geometry.get("coordinates")
+    if not isinstance(coords, list) or len(coords) < 2:
+        return float("inf")
+    min_dist = float("inf")
+    for index in range(len(coords) - 1):
+        a_raw = coords[index]
+        b_raw = coords[index + 1]
+        if not isinstance(a_raw, list) or not isinstance(b_raw, list):
+            continue
+        if len(a_raw) < 2 or len(b_raw) < 2:
+            continue
+        a = (float(a_raw[0]), float(a_raw[1]))
+        b = (float(b_raw[0]), float(b_raw[1]))
+        distance_m = _point_to_segment_distance_m(lat, lng, a, b)
+        if distance_m < min_dist:
+            min_dist = distance_m
+    return min_dist
 
 
 def _call_guest_wayra_gemini(message: str) -> str:

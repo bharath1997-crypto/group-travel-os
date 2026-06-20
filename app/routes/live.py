@@ -45,6 +45,10 @@ from app.schemas.live import (
     GeofenceOut,
     BatteryUpdate,
     BatteryUpdateOut,
+    WayraLiveRequest,
+    WayraLiveOut,
+    WayraAnalyzeRequest,
+    WayraAnalyzeOut,
 )
 from app.services.live_service import LiveService
 from app.utils.auth import get_current_user, get_current_user_optional
@@ -150,6 +154,32 @@ def guest_wayra_chat(
     current_user: Optional[User] = Depends(get_current_user_optional),
 ):
     return LiveService.guest_wayra_chat(body.message, body.session_key)
+
+
+@router.post(
+    "/wayra",
+    response_model=WayraLiveOut,
+    status_code=status.HTTP_200_OK,
+    summary="Wayra live chat with travel context (auth required)",
+)
+def wayra_live_chat(
+    body: WayraLiveRequest,
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.wayra_live_chat(body.message, body.context)
+
+
+@router.post(
+    "/wayra/analyze",
+    response_model=WayraAnalyzeOut,
+    status_code=status.HTTP_200_OK,
+    summary="Proactive Wayra alerts (rule-based, auth required)",
+)
+def wayra_analyze(
+    body: WayraAnalyzeRequest,
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.wayra_analyze(body.model_dump())
 
 
 @router.get(
