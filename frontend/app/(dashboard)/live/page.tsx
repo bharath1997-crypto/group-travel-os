@@ -13,6 +13,7 @@ import { PoiSearchSheet, type PoiCategory } from "@/components/live/PoiSearchShe
 import { ReportSheet } from "@/components/live/ReportSheet";
 import { ReportTypeSheet } from "@/components/live/ReportTypeSheet";
 import { SOSConfirmSheet } from "@/components/live/SOSConfirmSheet";
+import { TravelerChatSheet } from "@/components/live/TravelerChatSheet";
 import { WayraChatSheet } from "@/components/live/WayraChatSheet";
 import { apiFetch, apiFetchPublic } from "@/lib/api";
 import { useDashboardUser } from "@/contexts/dashboard-user-context";
@@ -38,10 +39,18 @@ import {
   haversineMeters,
   minutesAgo,
   type LiveWeather,
+  type NearbyTraveler,
   type ReportType,
   type RoadReport,
+  type RouteAlertItem,
   type TrafficDensityPoint,
 } from "@/lib/live/types";
+import {
+  cancelSpeech,
+  isVoiceMuted,
+  setVoiceMuted,
+  speakWayra,
+} from "@/lib/live/wayra-voice";
 import {
   distanceToRouteLine,
   routeBounds,
@@ -55,6 +64,8 @@ import {
   MessageCircle,
   Search,
   MapPin,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import maplibregl, { type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -148,6 +159,11 @@ type MemberMarkerEntry = {
   setLowBattery: (show: boolean) => void;
 };
 
+type TravelerMarkerEntry = {
+  marker: maplibregl.Marker;
+  setBearing: (bearing: number | null) => void;
+};
+
 type SafetyBanner = {
   message: string;
   tone: "amber" | "red";
@@ -212,6 +228,43 @@ function createMemberMarker(color: string, label: string): {
   };
 
   return { element: root, setBearing, setOpacity, setLowBattery };
+}
+
+function createTravelerMarker(
+  travelerId: string,
+  onTap: (id: string) => void,
+): {
+  element: HTMLButtonElement;
+  setBearing: (bearing: number | null) => void;
+} {
+  const root = document.createElement("button");
+  root.type = "button";
+  root.className = "live-traveler-marker";
+  root.setAttribute("aria-label", "Nearby traveler");
+  root.addEventListener("click", (event) => {
+    event.stopPropagation();
+    onTap(travelerId);
+  });
+
+  const cone = document.createElement("div");
+  cone.className = "live-traveler-cone is-hidden";
+
+  const dot = document.createElement("div");
+  dot.className = "live-traveler-dot";
+
+  root.appendChild(cone);
+  root.appendChild(dot);
+
+  const setBearing = (bearing: number | null) => {
+    if (bearing == null || Number.isNaN(bearing)) {
+      cone.classList.add("is-hidden");
+      return;
+    }
+    cone.classList.remove("is-hidden");
+    cone.style.transform = `translateX(-50%) rotate(${bearing}deg)`;
+  };
+
+  return { element: root, setBearing };
 }
 
 function getSunTimes(lat: number, lng: number): { sunrise: number; sunset: number } {
@@ -489,6 +542,7 @@ export default function LivePage() {
   const hazardTimerRef = useRef<number | null>(null);
   const openReportRef = useRef<(report: RoadReport) => void>(() => {});
   const memberMarkersRef = useRef<Map<string, MemberMarkerEntry>>(new Map());
+  const travelerMarkersRef = useRef<Map<string, TravelerMarkerEntry>>(new Map());
   const meetingPointMarkerRef = useRef<maplibregl.Marker | null>(null);
   const firebaseDbRef = useRef<Database | null>(null);
   const groupModeRef = useRef(false);
@@ -511,6 +565,13 @@ export default function LivePage() {
   const safetyBannerTimerRef = useRef<number | null>(null);
   const emergencyContactsPromptedRef = useRef(false);
   const wayraAlertTimerRef = useRef<number | null>(null);
+  const routeAlertTimerRef = useRef<number | null>(null);
+  const spokenRouteAlertsRef = useRef<Set<string>>(new Set());
+  const speedOverspeedSpokenRef = useRef(false);
+  const continuousListeningActive = useRef(false);
+  const continuousRecognitionRef = useRef<{ stop: () => void } | null>(null);
+  const helpAlertSpokenRef = useRef<Set<string>>(new Set());
+  const nearbyTravelersRef = useRef<NearbyTraveler[]>([]);
 
   const [isGuest, setIsGuest] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -578,6 +639,15 @@ export default function LivePage() {
   const [wayraAlert, setWayraAlert] = useState<WayraAlert | null>(null);
   const [wayraUnread, setWayraUnread] = useState(false);
   const [showWayraTooltip, setShowWayraTooltip] = useState(false);
+  const [speedLimitMph, setSpeedLimitMph] = useState<number | null>(null);
+  const [roadName, setRoadName] = useState<string | null>(null);
+  const [routeAlert, setRouteAlert] = useState<RouteAlertItem | null>(null);
+  const [nearbyTravelers, setNearbyTravelers] = useState<NearbyTraveler[]>([]);
+  const [selectedTraveler, setSelectedTraveler] = useState<NearbyTraveler | null>(
+    null,
+  );
+  const [voiceMuted, setVoiceMutedState] = useState(false);
+  const [continuousVoiceActive, setContinuousVoiceActive] = useState(false);
   const currentUserId = dashboardUser?.id ?? null;
   const currentUserName = dashboardUser?.full_name ?? "You";
 
@@ -601,6 +671,14 @@ export default function LivePage() {
     setShowWayraTooltip(true);
     const timer = window.setTimeout(() => setShowWayraTooltip(false), 3000);
     return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    nearbyTravelersRef.current = nearbyTravelers;
+  }, [nearbyTravelers]);
+
+  useEffect(() => {
+    setVoiceMutedState(isVoiceMuted());
   }, []);
 
   useEffect(() => {
@@ -746,6 +824,158 @@ export default function LivePage() {
     setWayraUnread(false);
     setShowWayra(true);
   }, [guestWayraRemaining, isGuest]);
+
+  const broadcastSoloLocation = useCallback(
+    (lat: number, lng: number, bearing: number | null, speed: number) => {
+      const db = firebaseDbRef.current;
+      if (!currentUserId || !db) return;
+      const locationRef = ref(db, `live_locations/${currentUserId}`);
+      void set(locationRef, {
+        lat,
+        lng,
+        bearing: bearing || 0,
+        speed_mph: speed,
+        last_seen: new Date().toISOString(),
+      });
+    },
+    [currentUserId],
+  );
+
+  const fetchSpeedLimit = useCallback(async (lat: number, lng: number) => {
+    try {
+      const params = new URLSearchParams({
+        lat: lat.toString(),
+        lng: lng.toString(),
+      });
+      const data = await apiFetch<{
+        speed_limit_mph: number | null;
+        road_name: string | null;
+      }>(`/live/speed-limit?${params.toString()}`);
+      setSpeedLimitMph(data.speed_limit_mph);
+      setRoadName(data.road_name);
+    } catch {
+      // Speed limit overlay is optional.
+    }
+  }, []);
+
+  const showRouteAlertBanner = useCallback((alert: RouteAlertItem) => {
+    setRouteAlert(alert);
+    if (routeAlertTimerRef.current != null) {
+      window.clearTimeout(routeAlertTimerRef.current);
+      routeAlertTimerRef.current = null;
+    }
+    if (!spokenRouteAlertsRef.current.has(alert.alert_id)) {
+      spokenRouteAlertsRef.current.add(alert.alert_id);
+      speakWayra(alert.message, alert.tier === "immediate" ? "urgent" : "normal");
+    }
+    if (alert.tier === "advance") {
+      routeAlertTimerRef.current = window.setTimeout(() => {
+        setRouteAlert(null);
+        routeAlertTimerRef.current = null;
+      }, 20_000);
+    } else if (alert.tier === "soon") {
+      routeAlertTimerRef.current = window.setTimeout(() => {
+        setRouteAlert(null);
+        routeAlertTimerRef.current = null;
+      }, 15_000);
+    }
+  }, []);
+
+  const fetchRouteAlerts = useCallback(async () => {
+    const pos = userPositionRef.current;
+    if (!pos) return;
+    try {
+      const params = new URLSearchParams({
+        lat: pos.lat.toString(),
+        lng: pos.lng.toString(),
+        bearing: String(bearingRef.current ?? 0),
+        speed_mph: speedMph.toString(),
+      });
+      const data = await apiFetch<{ alerts: RouteAlertItem[] }>(
+        `/live/route-alerts?${params.toString()}`,
+      );
+      const priority = { immediate: 0, soon: 1, advance: 2 };
+      const next = [...data.alerts].sort(
+        (a, b) =>
+          priority[a.tier] - priority[b.tier] || a.distance_miles - b.distance_miles,
+      )[0];
+      if (next) {
+        showRouteAlertBanner(next);
+      } else {
+        setRouteAlert(null);
+      }
+    } catch {
+      // Route alerts are optional.
+    }
+  }, [showRouteAlertBanner, speedMph]);
+
+  const updateTravelerDots = useCallback((travelers: NearbyTraveler[]) => {
+    const map = mapRef.current;
+    if (!map || isGuest) return;
+
+    const seen = new Set<string>();
+    travelers.forEach((traveler) => {
+      seen.add(traveler.traveler_id);
+      let entry = travelerMarkersRef.current.get(traveler.traveler_id);
+      if (!entry) {
+        const { element, setBearing } = createTravelerMarker(
+          traveler.traveler_id,
+          (travelerId) => {
+            const match = nearbyTravelersRef.current.find(
+              (item) => item.traveler_id === travelerId,
+            );
+            if (match) setSelectedTraveler(match);
+          },
+        );
+        const marker = new maplibregl.Marker({ element, anchor: "center" })
+          .setLngLat([traveler.lng, traveler.lat])
+          .addTo(map);
+        entry = { marker, setBearing };
+        travelerMarkersRef.current.set(traveler.traveler_id, entry);
+      } else {
+        entry.marker.setLngLat([traveler.lng, traveler.lat]);
+      }
+      entry.setBearing(
+        traveler.bearing != null && !Number.isNaN(traveler.bearing)
+          ? traveler.bearing
+          : null,
+      );
+    });
+
+    travelerMarkersRef.current.forEach((entry, travelerId) => {
+      if (!seen.has(travelerId)) {
+        entry.marker.remove();
+        travelerMarkersRef.current.delete(travelerId);
+      }
+    });
+  }, [isGuest]);
+
+  const fetchNearbyTravelers = useCallback(async () => {
+    const pos = userPositionRef.current;
+    if (!pos || isGuest) return;
+    try {
+      const data = await apiFetch<NearbyTraveler[]>("/live/travelers/nearby", {
+        method: "POST",
+        body: JSON.stringify({
+          lat: pos.lat,
+          lng: pos.lng,
+          bearing: bearingRef.current ?? 0,
+          speed_mph: speedMph,
+        }),
+      });
+      setNearbyTravelers(data);
+      updateTravelerDots(data);
+    } catch {
+      // Traveler dots are optional.
+    }
+  }, [isGuest, speedMph, updateTravelerDots]);
+
+  const toggleVoiceMute = useCallback(() => {
+    const next = !isVoiceMuted();
+    setVoiceMuted(next);
+    setVoiceMutedState(next);
+    if (next) cancelSpeech();
+  }, []);
 
   const clearMemberMarkers = useCallback(() => {
     memberMarkersRef.current.forEach((entry) => entry.marker.remove());
@@ -985,8 +1215,12 @@ export default function LivePage() {
   );
 
   const handleArrival = useCallback(() => {
+    const destName = destinationRef.current?.name;
     clearNavigation();
     setArrivalBanner(true);
+    if (destName) {
+      speakWayra(`You have arrived at ${destName}.`, "normal");
+    }
     if (arrivalTimerRef.current != null) {
       window.clearTimeout(arrivalTimerRef.current);
     }
@@ -1206,6 +1440,7 @@ export default function LivePage() {
 
       setSosResponse({ ...result, sms_template: smsTemplate });
       setShowSosConfirm(true);
+      speakWayra("SOS activated. Sending alerts to your group.", "urgent");
       localStorage.setItem(
         "rovvy_last_position",
         JSON.stringify({ lat, lng, ts: new Date().toISOString() }),
@@ -1268,6 +1503,35 @@ export default function LivePage() {
       void triggerSOS();
     },
     [triggerSOS],
+  );
+
+  const sendToWayra = useCallback(
+    async (command: string) => {
+      if (isGuest) return;
+      try {
+        const result = await apiFetch<{ reply: string; action?: string | null }>(
+          "/live/wayra",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              message: command,
+              context: buildWayraContext(),
+            }),
+          },
+        );
+        speakWayra(result.reply);
+        if (result.action === "open_poi_search") {
+          setShowPoiSearch(true);
+        } else if (result.action === "open_navigation") {
+          setShowDestinationSheet(true);
+        } else if (result.action === "call_sos") {
+          void triggerSOS();
+        }
+      } catch {
+        // Voice command fallback is silent.
+      }
+    },
+    [buildWayraContext, isGuest, triggerSOS],
   );
 
   const checkMeetingArrival = useCallback(
@@ -1546,6 +1810,122 @@ export default function LivePage() {
     }, 5 * 60 * 1000);
     return () => window.clearInterval(interval);
   }, [checkBattery, groupMode, validTripId]);
+
+  useEffect(() => {
+    if (isGuest) return;
+    const pos = userPositionRef.current;
+    if (pos) {
+      void fetchSpeedLimit(pos.lat, pos.lng);
+      void fetchRouteAlerts();
+      void fetchNearbyTravelers();
+    }
+    const interval = window.setInterval(() => {
+      const current = userPositionRef.current;
+      if (!current) return;
+      void fetchSpeedLimit(current.lat, current.lng);
+      void fetchRouteAlerts();
+      void fetchNearbyTravelers();
+    }, 30_000);
+    return () => window.clearInterval(interval);
+  }, [fetchNearbyTravelers, fetchRouteAlerts, fetchSpeedLimit, isGuest]);
+
+  useEffect(() => {
+    if (!speedLimitMph || speedMph <= speedLimitMph) {
+      speedOverspeedSpokenRef.current = false;
+      return;
+    }
+    if (!speedOverspeedSpokenRef.current) {
+      speakWayra(`Speed advisory. Limit is ${speedLimitMph} miles per hour.`);
+      speedOverspeedSpokenRef.current = true;
+    }
+  }, [speedLimitMph, speedMph]);
+
+  useEffect(() => {
+    if (!groupMode) return;
+    tripMembers.forEach((member) => {
+      if (
+        memberStatuses[member.user_id] === "need_help" &&
+        !helpAlertSpokenRef.current.has(member.user_id)
+      ) {
+        helpAlertSpokenRef.current.add(member.user_id);
+        speakWayra(`Alert. ${firstName(member.display_name)} needs help.`, "urgent");
+      }
+      if (memberStatuses[member.user_id] !== "need_help") {
+        helpAlertSpokenRef.current.delete(member.user_id);
+      }
+    });
+  }, [groupMode, memberStatuses, tripMembers]);
+
+  useEffect(() => {
+    if (isGuest || gpsState !== "granted") return;
+
+    type SpeechRecognitionCtor = new () => {
+      continuous: boolean;
+      interimResults: boolean;
+      lang: string;
+      onresult: ((event: { results: { length: number; [index: number]: { 0: { transcript: string } } } }) => void) | null;
+      onend: (() => void) | null;
+      start: () => void;
+      stop: () => void;
+    };
+
+    const windowWithSpeech = window as Window & {
+      webkitSpeechRecognition?: SpeechRecognitionCtor;
+    };
+    const SpeechRecognition = windowWithSpeech.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[event.results.length - 1][0].transcript
+        .toLowerCase()
+        .trim();
+      if (transcript.includes("wayra") || transcript.includes("hey rovvy")) {
+        const command = transcript
+          .replace(/hey wayra|wayra|hey rovvy/gi, "")
+          .trim();
+        if (command.length > 2) {
+          void sendToWayra(command);
+          speakWayra("Got it.");
+        } else {
+          speakWayra("Yes? What do you need?");
+          openWayraChat();
+        }
+      }
+    };
+
+    recognition.onend = () => {
+      setContinuousVoiceActive(false);
+      if (continuousListeningActive.current) {
+        try {
+          recognition.start();
+          setContinuousVoiceActive(true);
+        } catch {
+          // Mic may be unavailable.
+        }
+      }
+    };
+
+    try {
+      continuousListeningActive.current = true;
+      recognition.start();
+      setContinuousVoiceActive(true);
+      continuousRecognitionRef.current = recognition;
+    } catch {
+      // Mic permission denied — skip silently.
+    }
+
+    return () => {
+      continuousListeningActive.current = false;
+      recognition.stop();
+      continuousRecognitionRef.current = null;
+      setContinuousVoiceActive(false);
+    };
+  }, [gpsState, isGuest, openWayraChat, sendToWayra]);
 
   useEffect(() => {
     if (isGuest) return;
@@ -1942,6 +2322,12 @@ export default function LivePage() {
       if (wayraAlertTimerRef.current != null) {
         window.clearTimeout(wayraAlertTimerRef.current);
       }
+      if (routeAlertTimerRef.current != null) {
+        window.clearTimeout(routeAlertTimerRef.current);
+      }
+      continuousListeningActive.current = false;
+      continuousRecognitionRef.current?.stop();
+      cancelSpeech();
       if (routeHazardTimerRef.current != null) {
         window.clearTimeout(routeHazardTimerRef.current);
       }
@@ -1960,9 +2346,14 @@ export default function LivePage() {
       meetingPointMarkerRef.current = null;
       geofenceLabelMarkerRef.current?.remove();
       geofenceLabelMarkerRef.current = null;
+      travelerMarkersRef.current.forEach((entry) => entry.marker.remove());
+      travelerMarkersRef.current.clear();
       const db = firebaseDbRef.current;
       const trip = validTripId;
       const userId = dashboardUser?.id;
+      if (db && userId) {
+        void remove(ref(db, `live_locations/${userId}`));
+      }
       if (groupModeRef.current && db && trip && userId) {
         void remove(ref(db, `trips/${trip}/live/members/${userId}`));
       }
@@ -2103,6 +2494,7 @@ export default function LivePage() {
 
         syncMarker(map, lat, lng, bearing, true);
         writeUserLocation(lat, lng, bearing, mph);
+        broadcastSoloLocation(lat, lng, bearing, mph);
         void fetchNearbyReports(lat, lng);
         void fetchTrafficDensity(lat, lng);
         processNavigationUpdate(lat, lng);
@@ -2144,7 +2536,7 @@ export default function LivePage() {
         watchIdRef.current = null;
       }
     };
-  }, [applyMapStyle, checkGeofence, checkMeetingArrival, fetchNearbyReports, fetchTrafficDensity, fetchWeather, processNavigationUpdate, startLiveSession, syncMarker, writeUserLocation]);
+  }, [applyMapStyle, broadcastSoloLocation, checkGeofence, checkMeetingArrival, fetchNearbyReports, fetchTrafficDensity, fetchWeather, processNavigationUpdate, startLiveSession, syncMarker, writeUserLocation]);
 
   useEffect(() => {
     if (!navigationActive) return;
@@ -2273,14 +2665,30 @@ export default function LivePage() {
             <span className="text-[#5EEAD4]">LIVE</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setShowPoiSearch(true)}
-            className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(15,23,42,0.82)] text-white shadow-lg backdrop-blur-sm transition hover:bg-[rgba(15,23,42,0.92)]"
-            aria-label="Search nearby places"
-          >
-            <Search size={18} />
-          </button>
+          <div className="pointer-events-auto flex items-center gap-2">
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${
+                continuousVoiceActive ? "bg-green-500" : "bg-stone-500"
+              }`}
+              aria-hidden
+            />
+            <button
+              type="button"
+              onClick={toggleVoiceMute}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(15,23,42,0.82)] text-white shadow-lg backdrop-blur-sm transition hover:bg-[rgba(15,23,42,0.92)]"
+              aria-label={voiceMuted ? "Unmute Wayra voice" : "Mute Wayra voice"}
+            >
+              {voiceMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowPoiSearch(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(15,23,42,0.82)] text-white shadow-lg backdrop-blur-sm transition hover:bg-[rgba(15,23,42,0.92)]"
+              aria-label="Search nearby places"
+            >
+              <Search size={18} />
+            </button>
+          </div>
         </div>
 
         {groupMode ? (
@@ -2449,6 +2857,24 @@ export default function LivePage() {
           </div>
         ) : null}
 
+        {routeAlert ? (
+          <div
+            className={`pointer-events-none absolute left-3 right-3 z-[125] ${
+              hazardBanner ? "top-[calc(max(0.75rem,env(safe-area-inset-top))+12rem)]" : "top-[calc(max(0.75rem,env(safe-area-inset-top))+9rem)]"
+            }`}
+          >
+            <div
+              className={`rounded-xl px-4 py-3 text-white shadow-lg ${
+                routeAlert.tier === "immediate"
+                  ? "bg-red-600"
+                  : "bg-amber-500"
+              }`}
+            >
+              <p className="text-sm font-semibold">{routeAlert.message}</p>
+            </div>
+          </div>
+        ) : null}
+
         {routeHazardBanner && routeHazardConfig ? (
           <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+9rem)]">
             <div className="rounded-xl bg-amber-500 px-4 py-3 text-white shadow-lg">
@@ -2540,12 +2966,25 @@ export default function LivePage() {
 
         {gpsState === "granted" ? (
           <div className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-3">
+            {roadName ? (
+              <p className="mb-1 max-w-[140px] truncate text-xs font-semibold text-white drop-shadow">
+                {roadName}
+              </p>
+            ) : null}
             <div className="rounded-2xl bg-white px-4 py-3 shadow-lg ring-1 ring-stone-200/80">
-              <p className="text-3xl font-bold leading-none tabular-nums text-stone-900">
+              <p
+                className={`text-3xl font-bold leading-none tabular-nums ${
+                  speedLimitMph != null && speedMph > speedLimitMph
+                    ? "text-red-600"
+                    : speedLimitMph != null && speedMph >= speedLimitMph - 5
+                      ? "text-amber-600"
+                      : "text-stone-900"
+                }`}
+              >
                 {speedMph}
               </p>
               <p className="mt-1 text-xs font-medium uppercase tracking-wide text-stone-500">
-                mph
+                mph{speedLimitMph != null ? ` · limit ${speedLimitMph}` : ""}
               </p>
             </div>
           </div>
@@ -2616,6 +3055,15 @@ export default function LivePage() {
           onAction={handleWayraAction}
           onToast={showToastMessage}
           onClose={() => setShowWayra(false)}
+        />
+      ) : null}
+
+      {selectedTraveler ? (
+        <TravelerChatSheet
+          travelerId={selectedTraveler.traveler_id}
+          travelerLabel={selectedTraveler.label}
+          onClose={() => setSelectedTraveler(null)}
+          onToast={showToastMessage}
         />
       ) : null}
 

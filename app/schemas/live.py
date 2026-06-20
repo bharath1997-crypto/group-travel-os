@@ -268,3 +268,73 @@ class WayraAnalyzeOut(BaseModel):
     message: Optional[str] = None
     severity: Optional[Literal["info", "warning", "danger"]] = None
     action: Optional[str] = None
+
+
+class SpeedLimitQuery(BaseModel):
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+
+
+class SpeedLimitOut(BaseModel):
+    speed_limit_mph: Optional[int] = None
+    road_name: Optional[str] = None
+
+
+class RouteAlertsQuery(BaseModel):
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+    bearing: float = Field(default=0, ge=0, le=360)
+    speed_mph: float = Field(default=0, ge=0)
+
+
+class RouteAlertItem(BaseModel):
+    alert_id: str
+    report_type: str
+    tier: Literal["advance", "soon", "immediate"]
+    distance_miles: float
+    minutes_away: Optional[float] = None
+    message: str
+
+
+class RouteAlertsOut(BaseModel):
+    alerts: list[RouteAlertItem]
+
+
+class NearbyTravelersRequest(BaseModel):
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+    bearing: float = Field(default=0, ge=0, le=360)
+    speed_mph: float = Field(default=0, ge=0)
+
+
+class NearbyTravelerOut(BaseModel):
+    traveler_id: str
+    distance_miles: float
+    label: str
+    lat: float
+    lng: float
+    bearing: Optional[float] = None
+
+
+class TravelerChatSend(BaseModel):
+    text: str = Field(..., min_length=1, max_length=200)
+    sender_session_key: str = Field(..., min_length=1, max_length=64)
+
+
+class TravelerChatSendOut(BaseModel):
+    message_id: str
+    sent_at: datetime
+    text: str
+    sender_label: str
+
+
+class TravelerChatItemOut(BaseModel):
+    id: str
+    text: str
+    sender_label: str
+    sent_at: str
+
+
+class TravelerChatFlagOut(BaseModel):
+    flagged: bool
+    removed: bool

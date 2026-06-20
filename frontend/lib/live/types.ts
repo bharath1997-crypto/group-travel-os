@@ -38,6 +38,24 @@ export type LiveWeather = {
   windspeed_10m: number;
 };
 
+export type RouteAlertItem = {
+  alert_id: string;
+  report_type: ReportType;
+  tier: "advance" | "soon" | "immediate";
+  distance_miles: number;
+  minutes_away: number | null;
+  message: string;
+};
+
+export type NearbyTraveler = {
+  traveler_id: string;
+  distance_miles: number;
+  label: string;
+  lat: number;
+  lng: number;
+  bearing: number | null;
+};
+
 export const REPORT_CONFIG: Record<
   ReportType,
   { emoji: string; color: string; label: string }

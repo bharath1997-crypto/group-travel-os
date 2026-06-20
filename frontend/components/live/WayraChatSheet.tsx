@@ -3,6 +3,7 @@
 import { Loader2, MessageCircle, Mic, Send, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch, apiFetchPublic } from "@/lib/api";
+import { speakWayra } from "@/lib/live/wayra-voice";
 
 type ChatMessage = {
   id: string;
@@ -136,10 +137,11 @@ export function WayraChatSheet({
               context: buildContext(),
             }),
           });
-          appendMessages([
-            { id: `${Date.now()}-wayra`, sender: "wayra", text: res.reply },
-          ]);
-          if (res.action && onAction) {
+      appendMessages([
+        { id: `${Date.now()}-wayra`, sender: "wayra", text: res.reply },
+      ]);
+      speakWayra(res.reply);
+      if (res.action && onAction) {
             onAction(res.action);
           }
         }

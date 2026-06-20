@@ -8,7 +8,7 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.models.user import User
@@ -49,6 +49,16 @@ from app.schemas.live import (
     WayraLiveOut,
     WayraAnalyzeRequest,
     WayraAnalyzeOut,
+    SpeedLimitQuery,
+    SpeedLimitOut,
+    RouteAlertsQuery,
+    RouteAlertsOut,
+    NearbyTravelersRequest,
+    NearbyTravelerOut,
+    TravelerChatSend,
+    TravelerChatSendOut,
+    TravelerChatItemOut,
+    TravelerChatFlagOut,
 )
 from app.services.live_service import LiveService
 from app.utils.auth import get_current_user, get_current_user_optional
@@ -180,6 +190,113 @@ def wayra_analyze(
     current_user: User = Depends(get_current_user),
 ):
     return LiveService.wayra_analyze(body.model_dump())
+
+
+@router.get(
+    "/speed-limit",
+    response_model=SpeedLimitOut,
+    status_code=status.HTTP_200_OK,
+    summary="Get posted speed limit and road name from OpenStreetMap",
+)
+def get_speed_limit(
+    query: SpeedLimitQuery = Depends(),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    return LiveService.get_speed_limit(query.lat, query.lng)
+
+
+@router.get(
+    "/route-alerts",
+    response_model=RouteAlertsOut,
+    status_code=status.HTTP_200_OK,
+    summary="Get bearing-aware route alerts from active road reports",
+)
+def get_route_alerts(
+    query: RouteAlertsQuery = Depends(),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    return LiveService.get_route_alerts(
+        db,
+        query.lat,
+        query.lng,
+        query.bearing,
+        query.speed_mph,
+    )
+
+
+@router.post(
+    "/travelers/nearby",
+    response_model=list[NearbyTravelerOut],
+    status_code=status.HTTP_200_OK,
+    summary="Find anonymous same-route travelers nearby",
+)
+def get_nearby_travelers(
+    body: NearbyTravelersRequest,
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.get_nearby_travelers(
+        current_user.id,
+        body.lat,
+        body.lng,
+        body.bearing,
+        body.speed_mph,
+    )
+
+
+@router.get(
+    "/travelers/{traveler_id}/chat",
+    response_model=list[TravelerChatItemOut],
+    status_code=status.HTTP_200_OK,
+    summary="Get anonymous traveler chat messages",
+)
+def get_traveler_chat_messages(
+    traveler_id: str,
+    sender_session_key: str = Query(..., min_length=1, max_length=64),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.get_traveler_chat(
+        current_user.id,
+        traveler_id,
+        sender_session_key,
+    )
+
+
+@router.post(
+    "/travelers/{traveler_id}/chat",
+    response_model=TravelerChatSendOut,
+    status_code=status.HTTP_200_OK,
+    summary="Send anonymous traveler chat message",
+)
+def send_traveler_chat_message(
+    traveler_id: str,
+    body: TravelerChatSend,
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.send_traveler_chat(
+        current_user.id,
+        traveler_id,
+        body.text,
+        body.sender_session_key,
+    )
+
+
+@router.post(
+    "/travelers/{traveler_id}/chat/{message_id}/flag",
+    response_model=TravelerChatFlagOut,
+    status_code=status.HTTP_200_OK,
+    summary="Flag an abusive traveler chat message",
+)
+def flag_traveler_chat_message(
+    traveler_id: str,
+    message_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.flag_traveler_chat_message(
+        current_user.id,
+        traveler_id,
+        message_id,
+    )
 
 
 @router.get(

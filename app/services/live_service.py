@@ -8,6 +8,7 @@ Rules:
 """
 from __future__ import annotations
 
+import hashlib
 import logging
 import math
 import re
@@ -41,6 +42,7 @@ GUEST_WAYRA_LIMIT = 3
 guest_wayra_counts: dict[str, int] = {}
 
 _chat_rate: dict[str, list[float]] = {}
+_traveler_chat_rate: dict[str, list[float]] = {}
 
 BLOCKED_PATTERNS = [
     re.compile(r"\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b"),
@@ -137,6 +139,162 @@ def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
         + math.cos(phi1) * math.cos(phi2) * math.sin(d_lng / 2) ** 2
     )
     return radius_km * 2 * math.atan2(math.sqrt(a), math.sqrt(max(0.0, 1.0 - a)))
+
+
+def _bearing_degrees(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    d_lng = math.radians(lng2 - lng1)
+    y = math.sin(d_lng) * math.cos(phi2)
+    x = math.cos(phi1) * math.sin(phi2) - math.sin(phi1) * math.cos(phi2) * math.cos(d_lng)
+    bearing = math.degrees(math.atan2(y, x))
+    return (bearing + 360) % 360
+
+
+def _bearing_delta(a: float, b: float) -> float:
+    diff = abs(a - b) % 360
+    return diff if diff <= 180 else 360 - diff
+
+
+def _is_ahead(user_bearing: float, target_bearing: float, tolerance: float = 45.0) -> bool:
+    return _bearing_delta(user_bearing, target_bearing) <= tolerance
+
+
+def _is_same_direction(
+    user_bearing: float,
+    other_bearing: float,
+    to_traveler_bearing: float,
+) -> bool:
+    if not _is_ahead(user_bearing, to_traveler_bearing):
+        return False
+    return _bearing_delta(user_bearing, other_bearing) <= 45.0
+
+
+def _route_alert_tier(distance_miles: float) -> str | None:
+    if distance_miles < 2.0:
+        return "immediate"
+    if distance_miles < 5.0:
+        return "soon"
+    if distance_miles <= 8.0:
+        return "advance"
+    return None
+
+
+def _route_alert_message(
+    report_type: str,
+    distance_miles: float,
+    minutes_away: float | None,
+) -> str:
+    miles_text = f"{distance_miles:.1f}"
+    if report_type == "police":
+        if minutes_away is not None:
+            return (
+                f"Police ahead in {miles_text} miles. "
+                f"{minutes_away:.0f} minutes away."
+            )
+        return f"Police ahead in {miles_text} miles."
+    if report_type == "accident":
+        return f"Accident reported on your route, {miles_text} miles ahead."
+    return f"{report_type.replace('_', ' ').title()} reported on your route, {miles_text} miles ahead."
+
+
+def _traveler_id(viewer_id: uuid.UUID, target_id: uuid.UUID) -> str:
+    raw = f"{viewer_id}:{target_id}".encode()
+    return hashlib.sha256(raw).hexdigest()[:16]
+
+
+def _resolve_traveler_target(user_id: uuid.UUID, traveler_id: str) -> uuid.UUID | None:
+    raw = get_rtdb("live_locations") or {}
+    if not isinstance(raw, dict):
+        return None
+    for other_id in raw:
+        if other_id == str(user_id):
+            continue
+        try:
+            target_id = uuid.UUID(str(other_id))
+        except ValueError:
+            continue
+        if _traveler_id(user_id, target_id) == traveler_id:
+            return target_id
+    return None
+
+
+def _check_traveler_chat_rate(session_key: str) -> None:
+    now = time.time()
+    key = session_key.strip()
+    timestamps = _traveler_chat_rate.get(key, [])
+    timestamps = [stamp for stamp in timestamps if now - stamp < 60]
+    if len(timestamps) >= 10:
+        AppException.bad_request("Too many messages. Slow down.")
+    timestamps.append(now)
+    _traveler_chat_rate[key] = timestamps
+
+
+def _parse_maxspeed_mph(raw: str) -> int | None:
+    value = raw.strip().lower()
+    if not value:
+        return None
+    if "mph" in value:
+        try:
+            return int(float(value.replace("mph", "").strip()))
+        except ValueError:
+            return None
+    if "km/h" in value or "kph" in value:
+        try:
+            numeric = float(value.replace("km/h", "").replace("kph", "").strip())
+            return int(round(numeric * 0.621371))
+        except ValueError:
+            return None
+    try:
+        numeric = float(value)
+        return int(round(numeric * 0.621371)) if numeric > 120 else int(numeric)
+    except ValueError:
+        return None
+
+
+def _fetch_speed_limit_from_overpass(lat: float, lng: float) -> dict[str, int | str | None]:
+    query = (
+        f'[out:json][timeout:10];'
+        f'way(around:40,{lat},{lng})["highway"]["maxspeed"];'
+        f'out tags;'
+    )
+    try:
+        with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
+            response = client.get(
+                "https://overpass-api.de/api/interpreter",
+                params={"data": query},
+            )
+        if response.status_code != 200:
+            return {"speed_limit_mph": None, "road_name": None}
+
+        data = response.json()
+        elements = data.get("elements")
+        if not isinstance(elements, list):
+            return {"speed_limit_mph": None, "road_name": None}
+
+        speed_limit: int | None = None
+        road_name: str | None = None
+        for element in elements:
+            if not isinstance(element, dict):
+                continue
+            tags = element.get("tags")
+            if not isinstance(tags, dict):
+                continue
+            if speed_limit is None and isinstance(tags.get("maxspeed"), str):
+                speed_limit = _parse_maxspeed_mph(tags["maxspeed"])
+            if road_name is None:
+                for key in ("name", "ref"):
+                    tag_value = tags.get(key)
+                    if isinstance(tag_value, str) and tag_value.strip():
+                        road_name = tag_value.strip()
+                        break
+            if speed_limit is not None and road_name is not None:
+                break
+
+        return {"speed_limit_mph": speed_limit, "road_name": road_name}
+    except Exception as exc:
+        logger.debug("Overpass speed limit lookup failed: %s", exc)
+        return {"speed_limit_mph": None, "road_name": None}
 
 
 class LiveService:
@@ -503,6 +661,236 @@ class LiveService:
     ) -> dict[str, bool]:
         _get_active_report_for_chat(db, report_id)
         path = f"live_reports/{report_id}/chat/{message_id}"
+        message = get_rtdb(path)
+        if not message:
+            AppException.not_found("Message not found")
+
+        flag_count = int(message.get("flag_count") or 0) + 1
+        if flag_count >= 2:
+            delete_rtdb(path)
+            return {"flagged": True, "removed": True}
+
+        update_rtdb(path, {"flag_count": flag_count})
+        return {"flagged": True, "removed": False}
+
+    @staticmethod
+    def get_speed_limit(lat: float, lng: float) -> dict[str, int | str | None]:
+        return _fetch_speed_limit_from_overpass(lat, lng)
+
+    @staticmethod
+    def get_route_alerts(
+        db: Session,
+        lat: float,
+        lng: float,
+        bearing: float,
+        speed_mph: float,
+    ) -> dict[str, list[dict]]:
+        now = datetime.now(timezone.utc)
+        reports = db.execute(
+            select(RoadReport).where(
+                RoadReport.is_active.is_(True),
+                RoadReport.expires_at > now,
+                RoadReport.report_type.in_(
+                    [ReportType.police, ReportType.accident, ReportType.closure]
+                ),
+            )
+        ).scalars().all()
+
+        alerts: list[dict] = []
+        for report in reports:
+            distance_km = _haversine_km(lat, lng, report.lat, report.lng)
+            distance_miles = distance_km * 0.621371
+            if distance_miles > 8.0:
+                continue
+
+            report_bearing = _bearing_degrees(lat, lng, report.lat, report.lng)
+            if not _is_ahead(bearing, report_bearing):
+                continue
+
+            tier = _route_alert_tier(distance_miles)
+            if tier is None:
+                continue
+
+            minutes_away = None
+            if speed_mph > 5:
+                minutes_away = round((distance_miles / speed_mph) * 60, 1)
+
+            message = _route_alert_message(
+                report.report_type.value,
+                distance_miles,
+                minutes_away,
+            )
+            alerts.append(
+                {
+                    "alert_id": f"{report.id}:{tier}",
+                    "report_type": report.report_type.value,
+                    "tier": tier,
+                    "distance_miles": round(distance_miles, 1),
+                    "minutes_away": minutes_away,
+                    "message": message,
+                }
+            )
+
+        alerts.sort(key=lambda item: item["distance_miles"])
+        return {"alerts": alerts}
+
+    @staticmethod
+    def get_nearby_travelers(
+        user_id: uuid.UUID,
+        lat: float,
+        lng: float,
+        bearing: float,
+        speed_mph: float,
+    ) -> list[dict]:
+        raw = get_rtdb("live_locations") or {}
+        if not isinstance(raw, dict):
+            return []
+
+        now = datetime.now(timezone.utc)
+        travelers: list[dict] = []
+        for other_id, payload in raw.items():
+            if other_id == str(user_id) or not isinstance(payload, dict):
+                continue
+
+            last_seen_raw = payload.get("last_seen")
+            if not last_seen_raw:
+                continue
+            try:
+                last_seen = datetime.fromisoformat(str(last_seen_raw))
+                if last_seen.tzinfo is None:
+                    last_seen = last_seen.replace(tzinfo=timezone.utc)
+            except ValueError:
+                continue
+            if (now - last_seen).total_seconds() > 600:
+                continue
+
+            other_lat = payload.get("lat")
+            other_lng = payload.get("lng")
+            if other_lat is None or other_lng is None:
+                continue
+
+            distance_km = _haversine_km(lat, lng, float(other_lat), float(other_lng))
+            distance_miles = distance_km * 0.621371
+            if distance_miles > 5.0:
+                continue
+
+            other_bearing = float(payload.get("bearing") or 0)
+            traveler_bearing = _bearing_degrees(
+                lat, lng, float(other_lat), float(other_lng)
+            )
+            if not _is_same_direction(bearing, other_bearing, traveler_bearing):
+                continue
+
+            try:
+                target_id = uuid.UUID(str(other_id))
+            except ValueError:
+                continue
+
+            traveler_id = _traveler_id(user_id, target_id)
+            ahead = _is_ahead(bearing, traveler_bearing)
+            direction = "ahead" if ahead else "nearby"
+            travelers.append(
+                {
+                    "traveler_id": traveler_id,
+                    "distance_miles": round(distance_miles, 1),
+                    "label": f"Traveler {distance_miles:.1f} mi {direction}",
+                    "lat": float(other_lat),
+                    "lng": float(other_lng),
+                    "bearing": other_bearing if payload.get("bearing") is not None else None,
+                }
+            )
+
+        travelers.sort(key=lambda item: item["distance_miles"])
+        return travelers
+
+    @staticmethod
+    def send_traveler_chat(
+        user_id: uuid.UUID,
+        traveler_id: str,
+        text: str,
+        sender_session_key: str,
+    ) -> dict:
+        target_id = _resolve_traveler_target(user_id, traveler_id)
+        if not target_id:
+            AppException.not_found("Traveler not found")
+
+        _check_traveler_chat_rate(sender_session_key)
+        filtered_text = _filter_message(text)
+
+        message_id = str(uuid.uuid4())
+        sent_at = datetime.now(timezone.utc)
+        expires_at = sent_at + timedelta(hours=2)
+        message_data = {
+            "id": message_id,
+            "text": filtered_text,
+            "sender_session_key": sender_session_key.strip(),
+            "sender_label": "You",
+            "sent_at": sent_at.isoformat(),
+            "expires_at": expires_at.isoformat(),
+        }
+        set_rtdb(
+            f"live_traveler_chats/{traveler_id}/messages/{message_id}",
+            message_data,
+        )
+        return {
+            "message_id": message_id,
+            "sent_at": sent_at,
+            "text": filtered_text,
+            "sender_label": "You",
+        }
+
+    @staticmethod
+    def get_traveler_chat(
+        user_id: uuid.UUID,
+        traveler_id: str,
+        sender_session_key: str,
+    ) -> list[dict]:
+        if not _resolve_traveler_target(user_id, traveler_id):
+            AppException.not_found("Traveler not found")
+
+        raw = get_rtdb(f"live_traveler_chats/{traveler_id}/messages")
+        if not raw:
+            return []
+
+        now = datetime.now(timezone.utc)
+        session_key = sender_session_key.strip()
+        messages: list[dict] = []
+        for message_id, payload in raw.items():
+            if not isinstance(payload, dict):
+                continue
+            expires_raw = payload.get("expires_at")
+            if expires_raw:
+                try:
+                    expires_at = datetime.fromisoformat(str(expires_raw))
+                    if expires_at.tzinfo is None:
+                        expires_at = expires_at.replace(tzinfo=timezone.utc)
+                    if expires_at <= now:
+                        continue
+                except ValueError:
+                    pass
+
+            own = payload.get("sender_session_key") == session_key
+            messages.append(
+                {
+                    "id": payload.get("id") or message_id,
+                    "text": payload.get("text") or "",
+                    "sender_label": "You" if own else "Traveler nearby",
+                    "sent_at": payload.get("sent_at") or "",
+                }
+            )
+        messages.sort(key=lambda item: item.get("sent_at") or "")
+        return messages
+
+    @staticmethod
+    def flag_traveler_chat_message(
+        user_id: uuid.UUID,
+        traveler_id: str,
+        message_id: str,
+    ) -> dict[str, bool]:
+        if not _resolve_traveler_target(user_id, traveler_id):
+            AppException.not_found("Traveler not found")
+
+        path = f"live_traveler_chats/{traveler_id}/messages/{message_id}"
         message = get_rtdb(path)
         if not message:
             AppException.not_found("Message not found")
