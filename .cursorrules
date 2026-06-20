@@ -5,7 +5,8 @@
 Name: Rovvy (formerly Group Travel OS)
 Type: Group travel coordination platform
 Tagline: Roam together
-Branch: Production-main (always push here)
+Branch: Production-main (always push here, NEVER to main)
+Project root: D:\group travel os
 
 ## Stack
 Backend: FastAPI (Python 3.13)
@@ -17,6 +18,8 @@ Deployment: Cloud Run (backend) + Vercel (frontend)
 Real-time: Firebase RTDB
 Email: Brevo SMTP via fastapi-mail
 Auth: JWT stored as 'gt_token' in localStorage
+Background jobs: APScheduler
+Maps: MapLibre GL JS + OpenStreetMap tiles (NOT Google Maps)
 
 ## CRITICAL — NEVER DO THESE
 - NEVER modify frontend/lib/api.ts
@@ -29,6 +32,10 @@ Auth: JWT stored as 'gt_token' in localStorage
 - NEVER push to main (only Production-main)
 - NEVER store vote counts as columns
 - NEVER write to Firebase for permanent data
+- NEVER invent routes, services, or models — check existing list first
+- NEVER run Alembic autogenerate without reviewing for destructive DROP operations
+- NEVER store Google Maps or external geocoding coordinates in DB
+- NEVER generate, AI-create, or invent logos/icons
 
 ## Architecture Rules
 Routes → Services → Models (strict layering)
@@ -63,17 +70,18 @@ raise AppException.unauthorized("message")
 - RovvyLogo from @/components/RovvyLogo
 - BRAND from @/lib/brand for colors/names
 - Tailwind CSS only — no inline styles
-- Dark navy theme: bg-[#0F172A]
+- Content pages: bg-white or bg-[#F8FAFC] — WHITE/LIGHT ONLY
+- Dark navy bg-[#0F172A]: SIDEBAR ONLY — never on content pages
 - Teal accent: text-[#0F766E] bg-[#0F766E]
 
 ## Testing Rules
 - Mock ALL external APIs in tests
 - Never make real HTTP calls in tests
-- Every new endpoint needs at minimum:
+- Every new endpoint needs minimum:
   * 200 success test
   * 401 unauthorized test
   * 422 validation error test
-- Run: pytest -q (expect 154+ passing)
+- Run: .venv\Scripts\python -m pytest -q
 
 ## Git Rules
 - Always: git push origin Production-main
@@ -84,15 +92,14 @@ raise AppException.unauthorized("message")
 ## Environment Configuration Rule
 NEVER modify, check, or suggest changes to:
 - frontend/.env.local
-- frontend/.env.production  
+- frontend/.env.production
 - .env (root)
 - Any environment variable files
 
-For ALL environment configuration issues (CORS, OAuth, API URLs, secrets):
+For ALL environment configuration issues:
 - Backend env vars → Claude decides → gcloud CLI commands only
 - Frontend env vars → Claude decides → Vercel dashboard only
-
-Do NOT touch production or local frontend/backend configs without explicit Claude approval.
+Do NOT touch any config without explicit Claude approval.
 
 ## Existing Services (DO NOT recreate)
 app/services/flight_service.py
@@ -109,17 +116,18 @@ app/services/notification_service.py
 /api/v1/users/* — user management
 /api/v1/groups/* — groups
 /api/v1/trips/* — trips
-/api/v1/flights/search — Kiwi.com
+/api/v1/flights/search — Travelpayouts widget
 /api/v1/routes/search — Google Routes
 /api/v1/activities/search — GetYourGuide
 /api/v1/hotels/search — Agoda
 /api/v1/buddy/* — Buddy Trips
 /api/v1/weather/* — weather
-/api/v1/explore/* — events
+/api/v1/explore/* — events + destinations
 
 ## Brand
 Primary color: #0F766E (teal)
-Background: #0F172A (navy)
+Background (sidebar only): #0F172A (navy)
+Content pages: #FFFFFF or #F8FAFC (WHITE/LIGHT ONLY)
 Surface: #1E293B
 Font: Inter + Outfit (Google Fonts)
 Logo component: @/components/RovvyLogo
@@ -128,9 +136,48 @@ NEVER hardcode "Travello" — always "Rovvy"
 ## Logo & Brand Assets (CRITICAL)
 - NEVER generate, AI-create, draw, or invent logos/icons
 - NEVER use inline SVG logos or code-rendered logos
-- ONLY use official PNG assets from repo root `brand/` folder
-- Frontend served copies: `frontend/public/brand/` (sync from `brand/` when updating)
-- ALWAYS use `RovvyLogo` or `RovvyIcon` from `@/components/RovvyLogo`
-- Do NOT add, replace, or create logo files without explicit user confirmation
-- Do NOT reintroduce `frontend/public/rovvy-logo.png` or any non-brand logo assets
+- ONLY use official PNG assets from repo root brand/ folder
+- Frontend served copies: frontend/public/brand/
+- ALWAYS use RovvyLogo or RovvyIcon from @/components/RovvyLogo
 - variant="primary" → light backgrounds; variant="dark" or "white" → dark backgrounds
+
+---
+
+## Feature Registry (Auto-Updated by Cursor)
+After every feature change, update this section in .cursorrules:
+- If feature already listed → modify existing entry, update status + date. NO duplicate.
+- If new feature → append to list.
+- Never delete entries — change status to "Modified" or "Deprecated" instead.
+
+| Page / Feature | Status | Last Updated |
+|---|---|---|
+| Auth (JWT + OTP + Google OAuth) | Complete | 2025-06 |
+| Flights page (Travelpayouts widget) | Complete | 2025-06 |
+| Hotels page (Agoda) | Complete | 2025-06 |
+| Routes search | Complete | 2025-06 |
+| Activities (GetYourGuide) | Complete | 2025-06 |
+| Deal Scanner | Complete | 2025-06 |
+| Buddy Trips | Complete | 2025-06 |
+| Email Verification | Complete | 2025-06 |
+| Welcome Email | Complete | 2025-06 |
+| Explore page (destinations + events) | Complete | 2025-06 |
+| Live Trip Mode (MapLibre) | In Progress | 2025-06 |
+| Buses page | Pending | — |
+
+---
+
+## Test Registry (Auto-Updated by Cursor)
+After every pytest run, update this section in .cursorrules:
+- If module already listed → update timestamp + count only. NO duplicate.
+- If new module → append to list.
+- Never delete entries.
+
+| Test Module | Test Count | Last Run |
+|---|---|---|
+| tests/test_auth.py | — | — |
+| tests/test_flights.py | — | — |
+| tests/test_hotels.py | — | — |
+| tests/test_routes.py | — | — |
+| tests/test_activities.py | — | — |
+| tests/test_buddy.py | — | — |
+| tests/test_explore.py | — | — |

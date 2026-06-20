@@ -240,7 +240,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     },
     {
       id: "live" as PrimaryTab,
-      href: "/trip-live",
+      href: "/live",
       label: "LIVE",
       Icon: null, // replaced with LiveDot
     },

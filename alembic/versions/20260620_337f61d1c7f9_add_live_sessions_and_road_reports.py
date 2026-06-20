@@ -22,8 +22,17 @@ def upgrade() -> None:
     bind = op.get_bind()
     inspector = sa.inspect(bind)
     existing = set(inspector.get_table_names())
-    if "live_sessions" in existing:
-        op.drop_table("live_sessions")
+
+    # Legacy live tables may still exist if drop_live_tables_20260620 partially applied.
+    for legacy_table in (
+        "report_confirmations",
+        "live_checklists",
+        "trip_live_plans",
+        "live_sessions",
+        "road_reports",
+    ):
+        if legacy_table in existing:
+            op.execute(f"DROP TABLE IF EXISTS {legacy_table} CASCADE")
 
     op.create_table(
         "live_sessions",

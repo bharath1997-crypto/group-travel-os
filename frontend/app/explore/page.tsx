@@ -277,7 +277,7 @@ export default function ExplorePage() {
               <span>Trips</span>
             </Link>
             <Link
-              href="/trip-live"
+              href="/live"
               className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 lg:px-3 text-xs lg:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
             >
               <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">

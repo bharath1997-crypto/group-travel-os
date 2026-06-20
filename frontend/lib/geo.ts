@@ -15,3 +15,33 @@ export function haversineM(
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0, 1 - a)));
   return r * c;
 }
+
+/** Returns a user-facing message when geolocation cannot be used, or null if OK to call. */
+export function geolocationUnavailableMessage(): string | null {
+  if (typeof navigator === "undefined") return "GPS not supported in this browser";
+  if (!navigator.geolocation) return "GPS not supported in this browser";
+  if (typeof window !== "undefined") {
+    const { protocol, hostname } = window.location;
+    const local =
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "[::1]";
+    if (protocol !== "https:" && !local) {
+      return "GPS requires HTTPS — use https://rovvy.app or a secure local origin";
+    }
+  }
+  return null;
+}
+
+export function geolocationErrorMessage(err: GeolocationPositionError): string {
+  if (err.code === 1) {
+    return "Enable location permission in browser settings";
+  }
+  if (err.code === 2) {
+    return "GPS position unavailable — try again with a clearer signal";
+  }
+  if (err.code === 3) {
+    return "GPS request timed out — check permissions and try again";
+  }
+  return err.message || "GPS error — check browser location settings";
+}

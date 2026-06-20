@@ -4,7 +4,7 @@ import { GuestPrompt } from "@/components/live/GuestPrompt";
 import { ReportSheet } from "@/components/live/ReportSheet";
 import { ReportTypeSheet } from "@/components/live/ReportTypeSheet";
 import { WayraChatSheet } from "@/components/live/WayraChatSheet";
-import { API_BASE, apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchPublic } from "@/lib/api";
 import {
   REPORT_CONFIG,
   createReportPinElement,
@@ -239,19 +239,12 @@ export default function LivePage() {
         lng: lng.toString(),
         radius_km: "5",
       });
-      const headers: Record<string, string> = {};
-      const token =
-        typeof window !== "undefined" ? localStorage.getItem("gt_token") : null;
-      if (token) headers.Authorization = `Bearer ${token}`;
-
-      const res = await fetch(`${API_BASE}/live/reports/nearby?${params}`, {
-        headers,
-      });
-      if (!res.ok) return;
-      const data = (await res.json()) as RoadReport[];
+      const data = await apiFetchPublic<RoadReport[]>(
+        `/live/reports/nearby?${params}`,
+      );
       setReports(data);
-    } catch (error) {
-      console.error("Failed to fetch reports", error);
+    } catch {
+      // Map works without pins; avoid noisy console errors on transient network/API issues.
     }
   }, []);
 
