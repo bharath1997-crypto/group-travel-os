@@ -1,86 +1,49 @@
-"""Pydantic models for Live coordination endpoints."""
-from __future__ import annotations
-
-from datetime import date, datetime
-from uuid import UUID
-
 from pydantic import BaseModel, ConfigDict, Field
-
-from app.models.group import MemberRole
-
+from uuid import UUID
+from datetime import datetime
+from typing import Literal, Optional
+from app.models.live_session import LiveMode
+from app.models.road_report import ReportType
 
 class LiveSessionCreate(BaseModel):
-    trip_id: UUID
-    mode: str = "GROUP"
-
-
-class LiveChecklistItemOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    user_id: UUID
-    is_accepted: bool
-    accepted_at: datetime | None
-    full_name: str | None = None
-    avatar_url: str | None = None
-
+    trip_id: Optional[UUID] = None
+    mode: LiveMode = LiveMode.solo
 
 class LiveSessionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: UUID
-    trip_id: UUID
+    trip_id: Optional[UUID]
     started_by: UUID
-    session_code: str
-    status: str
-    meet_radius_meters: int
-    started_at: datetime | None
-    ended_at: datetime | None
-    mode: str
-    created_at: datetime
+    mode: LiveMode
+    is_active: bool
+    started_at: datetime
 
+class RoadReportCreate(BaseModel):
+    report_type: ReportType
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+    city: Optional[str] = Field(None, max_length=120)
+    description: Optional[str] = Field(None, max_length=200)
 
-class AssignCoordinatorBody(BaseModel):
-    user_id: UUID = Field(..., description="Trip group member receiving coordinator role")
-
-
-class LiveMeetPointBody(BaseModel):
+class RoadReportOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    reporter_id: UUID
+    report_type: ReportType
     lat: float
     lng: float
-    name: str = Field(..., max_length=200)
+    city: Optional[str]
+    description: Optional[str]
+    confirmed_count: int
+    dismissed_count: int
+    is_active: bool
+    expires_at: datetime
+    created_at: datetime
 
+class NearbyReportsQuery(BaseModel):
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+    radius_km: float = Field(default=5.0, ge=0.5, le=50.0)
 
-class QuickStatusBody(BaseModel):
-    status: str = Field(..., max_length=80)
-
-
-class UpcomingTripMemberOut(BaseModel):
-    user_id: UUID
-    avatar_url: str | None
-
-
-class UpcomingTripOut(BaseModel):
-    trip_id: UUID
-    title: str
-    destination_hint: str | None
-    start_date: date | None
-    end_date: date | None
-    group_id: UUID
-    member_count: int
-    members_preview: list[UpcomingTripMemberOut]
-    my_role: MemberRole
-
-
-class MyActiveLiveOut(BaseModel):
-    active: bool
-    session_id: UUID | None = None
-    trip_id: UUID | None = None
-    status: str | None = None
-    member_count: int = 0
-
-
-class SOSRequest(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    latitude: float
-    longitude: float
-
+class ReportConfirmBody(BaseModel):
+    action: Literal["confirm", "dismiss"]
