@@ -13,6 +13,7 @@ import { PoiSearchSheet, type PoiCategory } from "@/components/live/PoiSearchShe
 import { ReportSheet } from "@/components/live/ReportSheet";
 import { ReportTypeSheet } from "@/components/live/ReportTypeSheet";
 import { SOSConfirmSheet } from "@/components/live/SOSConfirmSheet";
+import { DriverModeOverlay } from "@/components/live/DriverModeOverlay";
 import { TravelerChatSheet } from "@/components/live/TravelerChatSheet";
 import { WayraChatSheet } from "@/components/live/WayraChatSheet";
 import { apiFetch, apiFetchPublic } from "@/lib/api";
@@ -53,6 +54,7 @@ import {
 } from "@/lib/live/wayra-voice";
 import {
   distanceToRouteLine,
+  formatETA,
   routeBounds,
   type Destination,
   type RouteData,
@@ -569,9 +571,14 @@ export default function LivePage() {
   const spokenRouteAlertsRef = useRef<Set<string>>(new Set());
   const speedOverspeedSpokenRef = useRef(false);
   const continuousListeningActive = useRef(false);
-  const continuousRecognitionRef = useRef<{ stop: () => void } | null>(null);
+  const continuousRecognitionRef = useRef<{ start: () => void; stop: () => void } | null>(
+    null,
+  );
   const helpAlertSpokenRef = useRef<Set<string>>(new Set());
   const nearbyTravelersRef = useRef<NearbyTraveler[]>([]);
+  const driverModeRef = useRef(false);
+  const prevDriverModeRef = useRef(false);
+  const driverRecognitionRef = useRef<{ stop: () => void } | null>(null);
 
   const [isGuest, setIsGuest] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -648,6 +655,10 @@ export default function LivePage() {
   );
   const [voiceMuted, setVoiceMutedState] = useState(false);
   const [continuousVoiceActive, setContinuousVoiceActive] = useState(false);
+  const [driverMode, setDriverMode] = useState(false);
+  const [driverModeBanner, setDriverModeBanner] = useState(false);
+  const [distanceToNextTurn, setDistanceToNextTurn] = useState(0);
+  const [driverWayraListening, setDriverWayraListening] = useState(false);
   const currentUserId = dashboardUser?.id ?? null;
   const currentUserName = dashboardUser?.full_name ?? "You";
 
@@ -724,6 +735,10 @@ export default function LivePage() {
   useEffect(() => {
     convoyRef.current = convoy;
   }, [convoy]);
+
+  useEffect(() => {
+    driverModeRef.current = driverMode;
+  }, [driverMode]);
 
   useEffect(() => {
     geofenceRef.current = geofence;
@@ -1281,6 +1296,7 @@ export default function LivePage() {
 
       if (currentStep) {
         const distToStep = haversineMeters(lat, lng, currentStep.lat, currentStep.lng);
+        setDistanceToNextTurn(distToStep);
         if (distToStep < STEP_ADVANCE_M && stepIndex < currentRoute.steps.length - 1) {
           const nextIndex = stepIndex + 1;
           setActiveStepIndex(nextIndex);
@@ -1533,6 +1549,71 @@ export default function LivePage() {
     },
     [buildWayraContext, isGuest, triggerSOS],
   );
+
+  const handleDriverModeWayra = useCallback(() => {
+    if (isGuest || driverWayraListening) return;
+
+    type SpeechRecognitionCtor = new () => {
+      continuous: boolean;
+      interimResults: boolean;
+      lang: string;
+      onresult:
+        | ((event: {
+            results: { length: number; [index: number]: { 0: { transcript: string } } };
+          }) => void)
+        | null;
+      onend: (() => void) | null;
+      onerror: (() => void) | null;
+      start: () => void;
+      stop: () => void;
+    };
+
+    const windowWithSpeech = window as Window & {
+      SpeechRecognition?: SpeechRecognitionCtor;
+      webkitSpeechRecognition?: SpeechRecognitionCtor;
+    };
+    const SpeechRecognition =
+      windowWithSpeech.SpeechRecognition || windowWithSpeech.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    continuousListeningActive.current = false;
+    continuousRecognitionRef.current?.stop();
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0]?.[0]?.transcript?.trim() ?? "";
+      if (transcript) {
+        void sendToWayra(transcript);
+      }
+    };
+
+    recognition.onerror = () => {
+      setDriverWayraListening(false);
+      driverRecognitionRef.current = null;
+    };
+
+    recognition.onend = () => {
+      setDriverWayraListening(false);
+      driverRecognitionRef.current = null;
+      if (driverModeRef.current) {
+        continuousListeningActive.current = true;
+        try {
+          continuousRecognitionRef.current?.start();
+          setContinuousVoiceActive(true);
+        } catch {
+          // Mic may be unavailable.
+        }
+      }
+    };
+
+    driverRecognitionRef.current = recognition;
+    setDriverWayraListening(true);
+    recognition.start();
+  }, [driverWayraListening, isGuest, sendToWayra]);
 
   const checkMeetingArrival = useCallback(
     (lat: number, lng: number) => {
@@ -1926,6 +2007,100 @@ export default function LivePage() {
       setContinuousVoiceActive(false);
     };
   }, [gpsState, isGuest, openWayraChat, sendToWayra]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const wasActive = prevDriverModeRef.current;
+    prevDriverModeRef.current = driverMode;
+    if (!map) return;
+
+    if (driverMode && !wasActive) {
+      map.dragPan.disable();
+      map.scrollZoom.disable();
+      map.touchZoomRotate.disable();
+      map.setPitch(45);
+      map.setZoom(16);
+      const pos = userPositionRef.current;
+      const bearing = bearingRef.current ?? 0;
+      if (pos) {
+        map.easeTo({
+          center: [pos.lng, pos.lat],
+          bearing,
+          pitch: 45,
+          zoom: 16,
+        });
+      }
+      speakWayra(
+        "Driver mode on. Stay focused on the road. Say Hey Wayra for assistance.",
+      );
+      setDriverModeBanner(true);
+      const bannerTimer = window.setTimeout(() => setDriverModeBanner(false), 3000);
+      continuousListeningActive.current = true;
+      try {
+        continuousRecognitionRef.current?.start();
+        setContinuousVoiceActive(true);
+      } catch {
+        // Mic may be unavailable.
+      }
+      return () => window.clearTimeout(bannerTimer);
+    }
+
+    if (!driverMode && wasActive) {
+      map.dragPan.enable();
+      map.scrollZoom.enable();
+      map.touchZoomRotate.enable();
+      cancelSpeech();
+      speakWayra("Driver mode off.");
+      const pos = userPositionRef.current;
+      map.easeTo({
+        center: pos ? [pos.lng, pos.lat] : map.getCenter(),
+        bearing: 0,
+        pitch: 0,
+        zoom: 14,
+        duration: 800,
+      });
+      driverRecognitionRef.current?.stop();
+      setDriverWayraListening(false);
+      return;
+    }
+
+    if (driverMode) {
+      map.dragPan.disable();
+      map.scrollZoom.disable();
+      map.touchZoomRotate.disable();
+    }
+  }, [driverMode]);
+
+  useEffect(() => {
+    if (!driverMode) return;
+
+    let wakeLock: WakeLockSentinel | null = null;
+
+    const requestWakeLock = async () => {
+      try {
+        if ("wakeLock" in navigator) {
+          wakeLock = await navigator.wakeLock.request("screen");
+        }
+      } catch {
+        // Silent fail — not all browsers support this.
+      }
+    };
+
+    void requestWakeLock();
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void requestWakeLock();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      void wakeLock?.release();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [driverMode]);
 
   useEffect(() => {
     if (isGuest) return;
@@ -2498,6 +2673,15 @@ export default function LivePage() {
         void fetchNearbyReports(lat, lng);
         void fetchTrafficDensity(lat, lng);
         processNavigationUpdate(lat, lng);
+        if (driverModeRef.current) {
+          map.easeTo({
+            center: [lng, lat],
+            bearing: bearing ?? 0,
+            pitch: 45,
+            zoom: 16,
+            duration: 300,
+          });
+        }
         if (groupModeRef.current) {
           checkMeetingArrival(lat, lng);
           checkGeofence(lat, lng);
@@ -2653,7 +2837,41 @@ export default function LivePage() {
     <div className="fixed inset-0 z-[100] h-[100dvh] w-full overflow-hidden bg-stone-900">
       <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" />
 
+      {driverMode ? (
+        <DriverModeOverlay
+          currentStep={route?.steps[activeStepIndex] ?? null}
+          nextStep={route?.steps[activeStepIndex + 1] ?? null}
+          distanceToNextTurn={distanceToNextTurn}
+          currentSpeed={speedMph}
+          speedLimit={speedLimitMph}
+          roadName={roadName}
+          activeAlert={routeAlert}
+          destination={destination}
+          navigationActive={navigationActive}
+          eta={route ? formatETA(route.total_duration_s) : null}
+          arrived={arrivalBanner}
+          voiceMuted={voiceMuted}
+          onToggleMute={toggleVoiceMute}
+          wayraListening={driverWayraListening}
+          onExitDriverMode={() => setDriverMode(false)}
+          onWayraTap={handleDriverModeWayra}
+          onSOSPressStart={handleSOSPressStart}
+          onSOSPressEnd={handleSOSPressEnd}
+          sosHoldProgress={sosHoldProgress}
+        />
+      ) : null}
+
+      {driverModeBanner ? (
+        <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.25rem)] z-[150]">
+          <div className="rounded-xl bg-green-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+            Driver mode — hands-free active
+          </div>
+        </div>
+      ) : null}
+
       <div className="pointer-events-none absolute inset-0 z-10">
+        {!driverMode ? (
+          <>
         <div className="pointer-events-none absolute left-3 right-3 top-[max(0.75rem,env(safe-area-inset-top))] flex items-center justify-between gap-3">
           <button
             type="button"
@@ -2666,6 +2884,13 @@ export default function LivePage() {
           </button>
 
           <div className="pointer-events-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setDriverMode(true)}
+              className="rounded-full bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition hover:bg-[#0d655c]"
+            >
+              Drive
+            </button>
             <span
               className={`h-2.5 w-2.5 rounded-full ${
                 continuousVoiceActive ? "bg-green-500" : "bg-stone-500"
@@ -2997,6 +3222,8 @@ export default function LivePage() {
             </div>
           </div>
         ) : null}
+          </>
+        ) : null}
       </div>
 
       {toast ? (
@@ -3101,7 +3328,7 @@ export default function LivePage() {
         />
       ) : null}
 
-      {route && destination ? (
+      {route && destination && !driverMode ? (
         <NavigationSheet
           destinationName={destination.name}
           route={route}
