@@ -338,3 +338,40 @@ class TravelerChatItemOut(BaseModel):
 class TravelerChatFlagOut(BaseModel):
     flagged: bool
     removed: bool
+
+
+class SpeedCamerasQuery(BaseModel):
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+    radius_m: int = Field(default=5000, ge=500, le=15000)
+
+
+class SpeedCameraItem(BaseModel):
+    camera_id: str
+    lat: float
+    lng: float
+    max_speed_mph: Optional[int] = None
+    direction: Optional[str] = None
+
+
+class SpeedCamerasOut(BaseModel):
+    cameras: list[SpeedCameraItem]
+
+
+class SpeedCameraRouteAlertQuery(BaseModel):
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+    bearing: float = Field(default=0, ge=0, le=360)
+    speed_mph: float = Field(default=0, ge=0)
+    radius_m: int = Field(default=5000, ge=500, le=15000)
+
+
+class SpeedCameraRouteAlertOut(BaseModel):
+    camera_id: Optional[str] = None
+    tier: Optional[Literal["advisory", "warning", "immediate"]] = None
+    distance_miles: Optional[float] = None
+    max_speed_mph: Optional[int] = None
+    over_limit: bool = False
+    message: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None

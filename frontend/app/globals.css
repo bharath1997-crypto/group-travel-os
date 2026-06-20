@@ -613,3 +613,51 @@ body.live-mode {
 .live-traveler-cone.is-hidden {
   display: none;
 }
+
+.live-camera-marker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.live-camera-icon {
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(107, 114, 128, 0.92);
+  font-size: 0.95rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.live-camera-speed-badge {
+  margin-top: 0.15rem;
+  border-radius: 9999px;
+  background: #dc2626;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.live-camera-banner-flash {
+  animation: live-camera-flash 0.8s ease-in-out infinite;
+}
+
+@keyframes live-camera-flash {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}

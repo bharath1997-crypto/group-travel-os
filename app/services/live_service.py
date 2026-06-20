@@ -297,6 +297,113 @@ def _fetch_speed_limit_from_overpass(lat: float, lng: float) -> dict[str, int | 
         return {"speed_limit_mph": None, "road_name": None}
 
 
+_speed_camera_cache: dict[str, tuple[float, list[dict]]] = {}
+_SPEED_CAMERA_CACHE_TTL = 3600
+
+
+def _speed_camera_cache_key(lat: float, lng: float, radius_m: int) -> str:
+    return f"{round(lat, 2)}:{round(lng, 2)}:{radius_m}"
+
+
+def _camera_alert_tier(distance_miles: float) -> str | None:
+    if distance_miles < 0.1:
+        return "immediate"
+    if distance_miles < 0.3:
+        return "warning"
+    if distance_miles <= 1.0:
+        return "advisory"
+    return None
+
+
+def _camera_alert_message(
+    tier: str,
+    distance_miles: float,
+    max_speed_mph: int | None,
+    over_limit: bool,
+) -> str:
+    miles_text = f"{distance_miles:.1f}"
+    limit_text = f"{max_speed_mph} mph" if max_speed_mph is not None else "speed limit"
+    if tier == "immediate":
+        base = f"Speed camera now — {limit_text} zone."
+    elif tier == "warning":
+        base = f"Speed camera in {miles_text} mi — slow down."
+    else:
+        base = f"Speed camera ahead in {miles_text} mi."
+        if max_speed_mph is not None:
+            base = f"Speed camera ahead in {miles_text} mi — limit {max_speed_mph} mph."
+    if over_limit:
+        base = f"{base} Reduce speed now."
+    return base
+
+
+def _fetch_speed_cameras_from_overpass(
+    lat: float,
+    lng: float,
+    radius_m: int,
+) -> list[dict]:
+    query = (
+        f"[out:json][timeout:15];("
+        f'node(around:{radius_m},{lat},{lng})["highway"="speed_camera"];'
+        f'node(around:{radius_m},{lat},{lng})["enforcement"="maxspeed"];'
+        f'node(around:{radius_m},{lat},{lng})["man_made"="surveillance"]["surveillance"="public"];'
+        f");out body;"
+    )
+    cameras: list[dict] = []
+    seen_ids: set[str] = set()
+    try:
+        with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
+            response = client.get(
+                "https://overpass-api.de/api/interpreter",
+                params={"data": query},
+            )
+        if response.status_code != 200:
+            return cameras
+
+        data = response.json()
+        elements = data.get("elements")
+        if not isinstance(elements, list):
+            return cameras
+
+        for element in elements:
+            if not isinstance(element, dict):
+                continue
+            if element.get("type") != "node":
+                continue
+            osm_id = element.get("id")
+            node_lat = element.get("lat")
+            node_lng = element.get("lon")
+            if osm_id is None or node_lat is None or node_lng is None:
+                continue
+            camera_id = f"osm-{osm_id}"
+            if camera_id in seen_ids:
+                continue
+            seen_ids.add(camera_id)
+
+            tags = element.get("tags")
+            max_speed_mph: int | None = None
+            direction: str | None = None
+            if isinstance(tags, dict):
+                raw_speed = tags.get("maxspeed")
+                if isinstance(raw_speed, str):
+                    max_speed_mph = _parse_maxspeed_mph(raw_speed)
+                raw_direction = tags.get("direction")
+                if isinstance(raw_direction, str) and raw_direction.strip():
+                    direction = raw_direction.strip()
+
+            cameras.append(
+                {
+                    "camera_id": camera_id,
+                    "lat": float(node_lat),
+                    "lng": float(node_lng),
+                    "max_speed_mph": max_speed_mph,
+                    "direction": direction,
+                }
+            )
+    except Exception as exc:
+        logger.debug("Overpass speed camera lookup failed: %s", exc)
+    return cameras
+
+
 class LiveService:
 
     @staticmethod
@@ -676,6 +783,62 @@ class LiveService:
     @staticmethod
     def get_speed_limit(lat: float, lng: float) -> dict[str, int | str | None]:
         return _fetch_speed_limit_from_overpass(lat, lng)
+
+    @staticmethod
+    def get_speed_cameras(lat: float, lng: float, radius_m: int = 5000) -> dict[str, list[dict]]:
+        key = _speed_camera_cache_key(lat, lng, radius_m)
+        now = time.time()
+        cached = _speed_camera_cache.get(key)
+        if cached and now - cached[0] < _SPEED_CAMERA_CACHE_TTL:
+            return {"cameras": cached[1]}
+
+        cameras = _fetch_speed_cameras_from_overpass(lat, lng, radius_m)
+        _speed_camera_cache[key] = (now, cameras)
+        return {"cameras": cameras}
+
+    @staticmethod
+    def get_speed_camera_route_alert(
+        lat: float,
+        lng: float,
+        bearing: float,
+        speed_mph: float,
+        radius_m: int = 5000,
+    ) -> dict:
+        empty = {
+            "camera_id": None,
+            "tier": None,
+            "distance_miles": None,
+            "max_speed_mph": None,
+            "over_limit": False,
+            "message": None,
+            "lat": None,
+            "lng": None,
+        }
+        cameras = LiveService.get_speed_cameras(lat, lng, radius_m)["cameras"]
+        best: dict | None = None
+        for camera in cameras:
+            distance_miles = _haversine_km(lat, lng, camera["lat"], camera["lng"]) * 0.621371
+            camera_bearing = _bearing_degrees(lat, lng, camera["lat"], camera["lng"])
+            if not _is_ahead(bearing, camera_bearing):
+                continue
+            tier = _camera_alert_tier(distance_miles)
+            if tier is None:
+                continue
+            max_speed = camera.get("max_speed_mph")
+            over_limit = max_speed is not None and speed_mph > max_speed
+            candidate = {
+                "camera_id": camera["camera_id"],
+                "tier": tier,
+                "distance_miles": round(distance_miles, 2),
+                "max_speed_mph": max_speed,
+                "over_limit": over_limit,
+                "message": _camera_alert_message(tier, distance_miles, max_speed, over_limit),
+                "lat": camera["lat"],
+                "lng": camera["lng"],
+            }
+            if best is None or candidate["distance_miles"] < best["distance_miles"]:
+                best = candidate
+        return best if best is not None else empty
 
     @staticmethod
     def get_route_alerts(

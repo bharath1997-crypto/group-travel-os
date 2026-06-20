@@ -47,6 +47,25 @@ export type RouteAlertItem = {
   message: string;
 };
 
+export type SpeedCameraItem = {
+  camera_id: string;
+  lat: number;
+  lng: number;
+  max_speed_mph: number | null;
+  direction?: string | null;
+};
+
+export type CameraAlertItem = {
+  camera_id: string;
+  tier: "advisory" | "warning" | "immediate";
+  distance_miles: number;
+  max_speed_mph: number | null;
+  over_limit: boolean;
+  message: string;
+  lat: number;
+  lng: number;
+};
+
 export type NearbyTraveler = {
   traveler_id: string;
   distance_miles: number;
@@ -111,6 +130,34 @@ export function minutesAgo(iso: string): number {
 export function formatDistance(meters: number): string {
   if (meters < 1000) return `${Math.round(meters)} m`;
   return `${(meters / 1000).toFixed(1)} km`;
+}
+
+export function createSpeedCameraMarker(
+  camera: SpeedCameraItem,
+  onTap: (camera: SpeedCameraItem) => void,
+): HTMLButtonElement {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "live-camera-marker";
+  btn.setAttribute("aria-label", "Speed camera");
+  btn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    onTap(camera);
+  });
+
+  const icon = document.createElement("span");
+  icon.className = "live-camera-icon";
+  icon.textContent = "📷";
+  btn.appendChild(icon);
+
+  if (camera.max_speed_mph != null) {
+    const badge = document.createElement("span");
+    badge.className = "live-camera-speed-badge";
+    badge.textContent = String(camera.max_speed_mph);
+    btn.appendChild(badge);
+  }
+
+  return btn;
 }
 
 export function createReportPinElement(

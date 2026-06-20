@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, Mic, Volume2, VolumeX } from "lucide-react";
-import type { RouteAlertItem } from "@/lib/live/types";
+import type { CameraAlertItem, RouteAlertItem } from "@/lib/live/types";
 import {
   formatInstruction,
   formatNavDistance,
@@ -19,6 +19,7 @@ export type DriverModeProps = {
   speedLimit: number | null;
   roadName: string | null;
   activeAlert: RouteAlertItem | null;
+  cameraAlert: CameraAlertItem | null;
   destination: { name: string } | null;
   onExitDriverMode: () => void;
   onWayraTap: () => void;
@@ -42,7 +43,7 @@ function maneuverSymbol(maneuverType: string | undefined): string {
   return "↑";
 }
 
-function alertLabel(alert: RouteAlertItem): string {
+function routeAlertLabel(alert: RouteAlertItem): string {
   const miles = `${alert.distance_miles.toFixed(1)} mi`;
   if (alert.report_type === "police") {
     if (alert.minutes_away != null) {
@@ -59,6 +60,28 @@ function alertLabel(alert: RouteAlertItem): string {
   return alert.message;
 }
 
+function alertBarClass(
+  camera: CameraAlertItem | null,
+  route: RouteAlertItem | null,
+): string {
+  if (camera) {
+    if (camera.tier === "immediate" || camera.over_limit) {
+      return "bg-red-600/95";
+    }
+    if (camera.tier === "warning") {
+      return "bg-amber-500/95";
+    }
+    return "bg-stone-600/95";
+  }
+  if (route) {
+    if (route.tier === "immediate" || route.report_type === "closure") {
+      return "bg-red-600/95";
+    }
+    return "bg-amber-500/95";
+  }
+  return "";
+}
+
 export function DriverModeOverlay({
   currentStep,
   nextStep,
@@ -67,6 +90,7 @@ export function DriverModeOverlay({
   speedLimit,
   roadName,
   activeAlert,
+  cameraAlert,
   destination,
   onExitDriverMode,
   onWayraTap,
@@ -95,6 +119,13 @@ export function DriverModeOverlay({
     : eta
       ? `ETA ${eta}`
       : "Driving";
+
+  const alertLabel = cameraAlert
+    ? `📷 ${cameraAlert.message}`
+    : activeAlert
+      ? routeAlertLabel(activeAlert)
+      : "";
+  const alertMessage = cameraAlert?.message ?? activeAlert?.message ?? "";
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[145] flex flex-col">
@@ -202,18 +233,18 @@ export function DriverModeOverlay({
         </div>
 
         {/* Alert bar — 48px */}
-        {activeAlert ? (
+        {cameraAlert || activeAlert ? (
           <button
             type="button"
-            onClick={() => speakWayra(activeAlert.message)}
-            className={`flex h-12 w-full items-center justify-center px-4 text-sm font-semibold text-white ${
-              activeAlert.tier === "immediate" ||
-              activeAlert.report_type === "closure"
-                ? "bg-red-600/95"
-                : "bg-amber-500/95"
-            }`}
+            onClick={() => {
+              if (alertMessage) speakWayra(alertMessage);
+            }}
+            className={`flex h-12 w-full items-center justify-center px-4 text-sm font-semibold text-white ${alertBarClass(
+              cameraAlert,
+              activeAlert,
+            )} ${cameraAlert?.over_limit ? "live-camera-banner-flash" : ""}`}
           >
-            {alertLabel(activeAlert)}
+            {alertLabel}
           </button>
         ) : (
           <div className="h-0" />

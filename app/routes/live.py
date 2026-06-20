@@ -53,6 +53,10 @@ from app.schemas.live import (
     SpeedLimitOut,
     RouteAlertsQuery,
     RouteAlertsOut,
+    SpeedCamerasQuery,
+    SpeedCamerasOut,
+    SpeedCameraRouteAlertQuery,
+    SpeedCameraRouteAlertOut,
     NearbyTravelersRequest,
     NearbyTravelerOut,
     TravelerChatSend,
@@ -222,6 +226,38 @@ def get_route_alerts(
         query.lng,
         query.bearing,
         query.speed_mph,
+    )
+
+
+@router.get(
+    "/speed-cameras",
+    response_model=SpeedCamerasOut,
+    status_code=status.HTTP_200_OK,
+    summary="Get speed cameras near a location from OpenStreetMap",
+)
+def get_speed_cameras(
+    query: SpeedCamerasQuery = Depends(),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    return LiveService.get_speed_cameras(query.lat, query.lng, query.radius_m)
+
+
+@router.get(
+    "/speed-cameras/route-alert",
+    response_model=SpeedCameraRouteAlertOut,
+    status_code=status.HTTP_200_OK,
+    summary="Get bearing-aware speed camera alert ahead on route",
+)
+def get_speed_camera_route_alert(
+    query: SpeedCameraRouteAlertQuery = Depends(),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    return LiveService.get_speed_camera_route_alert(
+        query.lat,
+        query.lng,
+        query.bearing,
+        query.speed_mph,
+        query.radius_m,
     )
 
 

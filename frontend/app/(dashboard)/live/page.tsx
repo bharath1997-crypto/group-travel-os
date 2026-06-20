@@ -36,14 +36,17 @@ import {
 import {
   REPORT_CONFIG,
   createReportPinElement,
+  createSpeedCameraMarker,
   formatDistance,
   haversineMeters,
   minutesAgo,
+  type CameraAlertItem,
   type LiveWeather,
   type NearbyTraveler,
   type ReportType,
   type RoadReport,
   type RouteAlertItem,
+  type SpeedCameraItem,
   type TrafficDensityPoint,
 } from "@/lib/live/types";
 import {
@@ -75,6 +78,8 @@ import { off, onValue, ref, remove, set, type Database } from "firebase/database
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+const OSM_MAX_ZOOM = 19;
+
 const OSM_STYLE_LIGHT: StyleSpecification = {
   version: 8,
   sources: {
@@ -82,6 +87,7 @@ const OSM_STYLE_LIGHT: StyleSpecification = {
       type: "raster",
       tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
       tileSize: 256,
+      maxzoom: OSM_MAX_ZOOM,
       attribution: "© OpenStreetMap contributors",
     },
   },
@@ -95,6 +101,7 @@ const OSM_STYLE_DARK: StyleSpecification = {
       type: "raster",
       tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
       tileSize: 256,
+      maxzoom: OSM_MAX_ZOOM,
       attribution: "© OpenStreetMap contributors",
     },
   },
@@ -568,7 +575,10 @@ export default function LivePage() {
   const emergencyContactsPromptedRef = useRef(false);
   const wayraAlertTimerRef = useRef<number | null>(null);
   const routeAlertTimerRef = useRef<number | null>(null);
+  const cameraAlertTimerRef = useRef<number | null>(null);
   const spokenRouteAlertsRef = useRef<Set<string>>(new Set());
+  const spokenCameraAlertsRef = useRef<Set<string>>(new Set());
+  const cameraMarkersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
   const speedOverspeedSpokenRef = useRef(false);
   const continuousListeningActive = useRef(false);
   const continuousRecognitionRef = useRef<{ start: () => void; stop: () => void } | null>(
@@ -576,6 +586,7 @@ export default function LivePage() {
   );
   const helpAlertSpokenRef = useRef<Set<string>>(new Set());
   const nearbyTravelersRef = useRef<NearbyTraveler[]>([]);
+  const speedCamerasRef = useRef<SpeedCameraItem[]>([]);
   const driverModeRef = useRef(false);
   const prevDriverModeRef = useRef(false);
   const driverRecognitionRef = useRef<{ stop: () => void } | null>(null);
@@ -649,6 +660,9 @@ export default function LivePage() {
   const [speedLimitMph, setSpeedLimitMph] = useState<number | null>(null);
   const [roadName, setRoadName] = useState<string | null>(null);
   const [routeAlert, setRouteAlert] = useState<RouteAlertItem | null>(null);
+  const [speedCameras, setSpeedCameras] = useState<SpeedCameraItem[]>([]);
+  const [cameraAlert, setCameraAlert] = useState<CameraAlertItem | null>(null);
+  const [selectedCamera, setSelectedCamera] = useState<SpeedCameraItem | null>(null);
   const [nearbyTravelers, setNearbyTravelers] = useState<NearbyTraveler[]>([]);
   const [selectedTraveler, setSelectedTraveler] = useState<NearbyTraveler | null>(
     null,
@@ -687,6 +701,10 @@ export default function LivePage() {
   useEffect(() => {
     nearbyTravelersRef.current = nearbyTravelers;
   }, [nearbyTravelers]);
+
+  useEffect(() => {
+    speedCamerasRef.current = speedCameras;
+  }, [speedCameras]);
 
   useEffect(() => {
     setVoiceMutedState(isVoiceMuted());
@@ -895,6 +913,126 @@ export default function LivePage() {
       }, 15_000);
     }
   }, []);
+
+  const showCameraAlertBanner = useCallback((alert: CameraAlertItem) => {
+    setCameraAlert(alert);
+    if (cameraAlertTimerRef.current != null) {
+      window.clearTimeout(cameraAlertTimerRef.current);
+      cameraAlertTimerRef.current = null;
+    }
+    const alertKey = `${alert.camera_id}:${alert.tier}`;
+    if (!spokenCameraAlertsRef.current.has(alertKey)) {
+      spokenCameraAlertsRef.current.add(alertKey);
+      speakWayra(
+        alert.message,
+        alert.tier === "immediate" || alert.over_limit ? "urgent" : "normal",
+      );
+    }
+    if (alert.tier === "advisory") {
+      cameraAlertTimerRef.current = window.setTimeout(() => {
+        setCameraAlert(null);
+        cameraAlertTimerRef.current = null;
+      }, 15_000);
+    } else if (alert.tier === "warning") {
+      cameraAlertTimerRef.current = window.setTimeout(() => {
+        setCameraAlert(null);
+        cameraAlertTimerRef.current = null;
+      }, 10_000);
+    }
+  }, []);
+
+  const syncCameraMarkers = useCallback((map: maplibregl.Map, cameras: SpeedCameraItem[]) => {
+    const seen = new Set<string>();
+    cameras.forEach((camera) => {
+      seen.add(camera.camera_id);
+      let marker = cameraMarkersRef.current.get(camera.camera_id);
+      if (!marker) {
+        const element = createSpeedCameraMarker(camera, (selected) => {
+          setSelectedCamera(selected);
+        });
+        marker = new maplibregl.Marker({ element, anchor: "center" })
+          .setLngLat([camera.lng, camera.lat])
+          .addTo(map);
+        cameraMarkersRef.current.set(camera.camera_id, marker);
+      } else {
+        marker.setLngLat([camera.lng, camera.lat]);
+      }
+    });
+    cameraMarkersRef.current.forEach((marker, cameraId) => {
+      if (!seen.has(cameraId)) {
+        marker.remove();
+        cameraMarkersRef.current.delete(cameraId);
+      }
+    });
+  }, []);
+
+  const fetchSpeedCameras = useCallback(async () => {
+    const pos = userPositionRef.current;
+    if (!pos) return;
+    try {
+      const params = new URLSearchParams({
+        lat: pos.lat.toString(),
+        lng: pos.lng.toString(),
+        radius_m: "5000",
+      });
+      const data = await apiFetch<{ cameras: SpeedCameraItem[] }>(
+        `/live/speed-cameras?${params.toString()}`,
+      );
+      setSpeedCameras(data.cameras);
+      const map = mapRef.current;
+      if (map) {
+        syncCameraMarkers(map, data.cameras);
+      }
+    } catch {
+      // Speed camera pins are optional.
+    }
+  }, [syncCameraMarkers]);
+
+  const fetchCameraRouteAlert = useCallback(async () => {
+    const pos = userPositionRef.current;
+    if (!pos) return;
+    try {
+      const params = new URLSearchParams({
+        lat: pos.lat.toString(),
+        lng: pos.lng.toString(),
+        bearing: String(bearingRef.current ?? 0),
+        speed_mph: speedMph.toString(),
+        radius_m: "5000",
+      });
+      const data = await apiFetch<{
+        camera_id: string | null;
+        tier: CameraAlertItem["tier"] | null;
+        distance_miles: number | null;
+        max_speed_mph: number | null;
+        over_limit: boolean;
+        message: string | null;
+        lat: number | null;
+        lng: number | null;
+      }>(`/live/speed-cameras/route-alert?${params.toString()}`);
+      if (
+        data.camera_id &&
+        data.message &&
+        data.tier &&
+        data.lat != null &&
+        data.lng != null
+      ) {
+        showCameraAlertBanner({
+          camera_id: data.camera_id,
+          tier: data.tier,
+          distance_miles: data.distance_miles ?? 0,
+          max_speed_mph: data.max_speed_mph,
+          over_limit: data.over_limit,
+          message: data.message,
+          lat: data.lat,
+          lng: data.lng,
+        });
+      } else {
+        setCameraAlert(null);
+      }
+    } catch {
+      // Camera route alerts are optional.
+    }
+  }, [showCameraAlertBanner, speedMph]);
 
   const fetchRouteAlerts = useCallback(async () => {
     const pos = userPositionRef.current;
@@ -1898,6 +2036,8 @@ export default function LivePage() {
     if (pos) {
       void fetchSpeedLimit(pos.lat, pos.lng);
       void fetchRouteAlerts();
+      void fetchSpeedCameras();
+      void fetchCameraRouteAlert();
       void fetchNearbyTravelers();
     }
     const interval = window.setInterval(() => {
@@ -1905,10 +2045,19 @@ export default function LivePage() {
       if (!current) return;
       void fetchSpeedLimit(current.lat, current.lng);
       void fetchRouteAlerts();
+      void fetchSpeedCameras();
+      void fetchCameraRouteAlert();
       void fetchNearbyTravelers();
     }, 30_000);
     return () => window.clearInterval(interval);
-  }, [fetchNearbyTravelers, fetchRouteAlerts, fetchSpeedLimit, isGuest]);
+  }, [
+    fetchCameraRouteAlert,
+    fetchNearbyTravelers,
+    fetchRouteAlerts,
+    fetchSpeedCameras,
+    fetchSpeedLimit,
+    isGuest,
+  ]);
 
   useEffect(() => {
     if (!speedLimitMph || speedMph <= speedLimitMph) {
@@ -2500,6 +2649,9 @@ export default function LivePage() {
       if (routeAlertTimerRef.current != null) {
         window.clearTimeout(routeAlertTimerRef.current);
       }
+      if (cameraAlertTimerRef.current != null) {
+        window.clearTimeout(cameraAlertTimerRef.current);
+      }
       continuousListeningActive.current = false;
       continuousRecognitionRef.current?.stop();
       cancelSpeech();
@@ -2523,6 +2675,8 @@ export default function LivePage() {
       geofenceLabelMarkerRef.current = null;
       travelerMarkersRef.current.forEach((entry) => entry.marker.remove());
       travelerMarkersRef.current.clear();
+      cameraMarkersRef.current.forEach((marker) => marker.remove());
+      cameraMarkersRef.current.clear();
       const db = firebaseDbRef.current;
       const trip = validTripId;
       const userId = dashboardUser?.id;
@@ -2550,6 +2704,7 @@ export default function LivePage() {
       style: initialDark ? OSM_STYLE_DARK : OSM_STYLE_LIGHT,
       center: [sunCoordsRef.current.lng, sunCoordsRef.current.lat],
       zoom: 14,
+      maxZoom: OSM_MAX_ZOOM,
       attributionControl: false,
     });
 
@@ -2563,6 +2718,7 @@ export default function LivePage() {
     map.on("style.load", () => {
       syncReportMarkers(map, reportsRef.current);
       ensureTrafficLayer(map, trafficGeoJson(trafficDataRef.current));
+      syncCameraMarkers(map, speedCamerasRef.current);
       if (routeRef.current && destinationRef.current) {
         ensureRouteLayer(map, routeRef.current.geometry);
         const dest = destinationRef.current;
@@ -2846,6 +3002,7 @@ export default function LivePage() {
           speedLimit={speedLimitMph}
           roadName={roadName}
           activeAlert={routeAlert}
+          cameraAlert={cameraAlert}
           destination={destination}
           navigationActive={navigationActive}
           eta={route ? formatETA(route.total_duration_s) : null}
@@ -3082,6 +3239,26 @@ export default function LivePage() {
           </div>
         ) : null}
 
+        {cameraAlert ? (
+          <div
+            className={`pointer-events-none absolute left-3 right-3 z-[125] ${
+              hazardBanner ? "top-[calc(max(0.75rem,env(safe-area-inset-top))+12rem)]" : "top-[calc(max(0.75rem,env(safe-area-inset-top))+9rem)]"
+            }`}
+          >
+            <div
+              className={`rounded-xl px-4 py-3 text-white shadow-lg ${
+                cameraAlert.tier === "immediate"
+                  ? "bg-red-600"
+                  : cameraAlert.tier === "warning"
+                    ? "bg-amber-500"
+                    : "bg-stone-600"
+              } ${cameraAlert.over_limit ? "live-camera-banner-flash" : ""}`}
+            >
+              <p className="text-sm font-semibold">📷 {cameraAlert.message}</p>
+            </div>
+          </div>
+        ) : null}
+
         {routeAlert ? (
           <div
             className={`pointer-events-none absolute left-3 right-3 z-[125] ${
@@ -3187,6 +3364,25 @@ export default function LivePage() {
 
         {groupMode && firebaseDb && validTripId && currentUserId ? (
           <GroupLiveChatButton onClick={() => setShowGroupChat(true)} />
+        ) : null}
+
+        {selectedCamera ? (
+          <div className="pointer-events-auto absolute bottom-40 left-1/2 z-30 w-[min(90%,20rem)] -translate-x-1/2 rounded-xl bg-[rgba(15,23,42,0.92)] px-4 py-3 text-white shadow-lg">
+            <p className="text-sm font-semibold">📷 Speed camera</p>
+            <p className="mt-1 text-xs text-white/80">
+              {selectedCamera.max_speed_mph != null
+                ? `Limit ${selectedCamera.max_speed_mph} mph`
+                : "Fixed speed enforcement"}
+              {selectedCamera.direction ? ` · ${selectedCamera.direction}` : ""}
+            </p>
+            <button
+              type="button"
+              onClick={() => setSelectedCamera(null)}
+              className="mt-2 text-xs font-semibold text-[#5EEAD4]"
+            >
+              Close
+            </button>
+          </div>
         ) : null}
 
         {gpsState === "granted" ? (
