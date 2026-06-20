@@ -33,13 +33,17 @@ if not _driver.startswith("sqlite"):
             # Drop and re-test stale connections before handing to a request.
             # Prevents "server closed connection unexpectedly" after idle periods.
             "pool_pre_ping": True,
+            # Recycle connections before Supabase/pooler closes idle sockets (~30–60 min).
+            "pool_recycle": 1800,
             # Connections kept open in the pool at all times.
             "pool_size": 10,
             # Extra connections allowed above pool_size under load, then discarded.
             "max_overflow": 20,
+            # Max seconds to wait for a free pooled connection.
+            "pool_timeout": 30,
             # Timeout for connecting to the database (in seconds).
-            # Prevents hanging indefinitely if Supabase is paused or slow.
-            "connect_args": {"connect_timeout": 5},
+            # Allows Supabase wake-from-pause without hanging forever.
+            "connect_args": {"connect_timeout": 15},
         },
     )
 # SQLite + Starlette TestClient: requests run in a thread pool on Linux; without this,
@@ -88,6 +92,10 @@ def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db
+    except Exception:
+        # Release row/table locks if a route or service failed mid-transaction.
+        db.rollback()
+        raise
     finally:
         db.close()
 

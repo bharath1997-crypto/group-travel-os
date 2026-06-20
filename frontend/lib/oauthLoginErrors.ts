@@ -43,6 +43,14 @@ export function oauthErrorToAlert(raw: string): OauthLoginAlert {
     };
   }
 
+  if (err === "db_busy" || err.includes("db_busy")) {
+    return {
+      variant: "error",
+      body:
+        "The database is busy or waking up. Wait a moment and try again, or use email and password. In dev, open http://localhost:8000/health/db to see blockers.",
+    };
+  }
+
   if (err.includes("missing_token")) {
     return {
       variant: "error",

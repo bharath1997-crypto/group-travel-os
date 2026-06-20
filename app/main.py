@@ -9,10 +9,13 @@ Import the app instance via: from app.main import app
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 
-from app.utils.database import check_db_connection
+from app.utils.database import check_db_connection, get_db
+from app.utils.db_diagnostics import collect_db_diagnostics, dev_diagnostics_enabled
+from app.utils.exceptions import AppException
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -200,6 +203,17 @@ def _register_routes(app: FastAPI) -> None:
             "environment": settings.ENVIRONMENT,
             "database": "connected" if db_ok else "unreachable",
         }
+
+    @app.get("/health/db", tags=["Health"])
+    def health_db_diagnostics(db: Session = Depends(get_db)):
+        """
+        Development-only: pool stats, Postgres blockers, timeout settings.
+        Use when login/OAuth hangs or fails after idle periods.
+        """
+        if not dev_diagnostics_enabled():
+            AppException.not_found("Not found")
+
+        return collect_db_diagnostics(db)
 
     # ── Feature routers ───────────────────────────────────────────────────────
     # Uncomment each block as you complete the corresponding build step.
