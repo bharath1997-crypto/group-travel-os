@@ -560,7 +560,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
       {/* ═══════════════════════════════════════════════════
           FIXED TOP HEADER — never hides on scroll
       ═══════════════════════════════════════════════════ */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-stone-200 shadow-sm select-none">
+      <header className="dashboard-header fixed top-0 left-0 right-0 z-40 bg-white border-b border-stone-200 shadow-sm select-none">
         <div className="flex h-16 items-center gap-2 px-3 md:gap-3 md:px-6">
           {/* Logo */}
           <Link
@@ -788,7 +788,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             MOBILE BOTTOM NAV — fixed, dark bar
         ═══════════════════════════════════════════════════ */}
         <nav
-          className={`fixed bottom-0 left-0 right-0 z-30 flex items-end border-t border-[#1E293B] bg-[#0F172A] pb-[env(safe-area-inset-bottom,0px)] md:hidden ${
+          className={`bottom-tab-bar fixed bottom-0 left-0 right-0 z-30 flex items-end border-t border-[#1E293B] bg-[#0F172A] pb-[env(safe-area-inset-bottom,0px)] md:hidden ${
             hideBottomNav ? "hidden" : ""
           }`}
           aria-label="Primary"
