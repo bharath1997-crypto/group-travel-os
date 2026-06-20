@@ -37,6 +37,14 @@ from app.schemas.live import (
     ReportChatItemOut,
     ReportChatMessage,
     ReportChatMessageOut,
+    EmergencyContactCreate,
+    EmergencyContactOut,
+    SOSRequest,
+    SOSResponse,
+    GeofenceSet,
+    GeofenceOut,
+    BatteryUpdate,
+    BatteryUpdateOut,
 )
 from app.services.live_service import LiveService
 from app.utils.auth import get_current_user, get_current_user_optional
@@ -348,3 +356,133 @@ def end_group_convoy(
 ):
     LiveService.end_convoy(db, current_user.id, trip_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get(
+    "/emergency-contacts",
+    response_model=list[EmergencyContactOut],
+    status_code=status.HTTP_200_OK,
+    summary="List current user's emergency contacts",
+)
+def list_emergency_contacts(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.get_emergency_contacts(db, current_user.id)
+
+
+@router.post(
+    "/emergency-contacts",
+    response_model=EmergencyContactOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add an emergency contact",
+)
+def create_emergency_contact(
+    body: EmergencyContactCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.add_emergency_contact(
+        db,
+        current_user.id,
+        body.name,
+        body.phone,
+    )
+
+
+@router.delete(
+    "/emergency-contacts/{contact_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete an emergency contact",
+)
+def remove_emergency_contact(
+    contact_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    LiveService.delete_emergency_contact(db, current_user.id, contact_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/sos",
+    response_model=SOSResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Trigger SOS alert (FCM to group + SMS template for device)",
+)
+def trigger_sos(
+    body: SOSRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    trip_uuid: uuid.UUID | None = None
+    if body.trip_id:
+        try:
+            trip_uuid = uuid.UUID(body.trip_id)
+        except ValueError:
+            trip_uuid = None
+    return LiveService.trigger_sos(
+        db,
+        current_user.id,
+        body.lat,
+        body.lng,
+        trip_uuid,
+        body.message,
+    )
+
+
+@router.post(
+    "/group/{trip_id}/geofence",
+    response_model=GeofenceOut,
+    status_code=status.HTTP_200_OK,
+    summary="Set group geofence safe zone (admin only)",
+)
+def set_group_geofence(
+    trip_id: uuid.UUID,
+    body: GeofenceSet,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.set_geofence(
+        db,
+        current_user.id,
+        trip_id,
+        body.center_lat,
+        body.center_lng,
+        body.radius_m,
+        body.label,
+    )
+
+
+@router.delete(
+    "/group/{trip_id}/geofence",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Clear group geofence (admin only)",
+)
+def delete_group_geofence(
+    trip_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    LiveService.delete_geofence(db, current_user.id, trip_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/group/{trip_id}/battery",
+    response_model=BatteryUpdateOut,
+    status_code=status.HTTP_200_OK,
+    summary="Update member battery level in group live",
+)
+def update_group_battery(
+    trip_id: uuid.UUID,
+    body: BatteryUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.update_battery_level(
+        db,
+        current_user.id,
+        trip_id,
+        body.level,
+    )

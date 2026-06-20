@@ -17,11 +17,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 import httpx
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.api_limits import API_TIMEOUT_SECONDS
+from app.models.emergency_contact import EmergencyContact
 from app.models.group import GroupMember, MemberRole
 from app.models.live_session import LiveMode, LiveSession
 from app.models.road_report import EXPIRY_MINUTES, ReportConfirmation, ReportType, RoadReport
@@ -699,6 +700,198 @@ class LiveService:
             "Convoy ended",
             "live_convoy_ended",
         )
+
+    _MAX_EMERGENCY_CONTACTS = 5
+
+    @staticmethod
+    def get_emergency_contacts(db: Session, user_id: uuid.UUID) -> list[EmergencyContact]:
+        return list(
+            db.execute(
+                select(EmergencyContact)
+                .where(EmergencyContact.user_id == user_id)
+                .order_by(EmergencyContact.name.asc())
+            )
+            .scalars()
+            .all()
+        )
+
+    @staticmethod
+    def add_emergency_contact(
+        db: Session,
+        user_id: uuid.UUID,
+        name: str,
+        phone: str,
+    ) -> EmergencyContact:
+        count = db.execute(
+            select(func.count())
+            .select_from(EmergencyContact)
+            .where(EmergencyContact.user_id == user_id)
+        ).scalar_one()
+        if int(count) >= LiveService._MAX_EMERGENCY_CONTACTS:
+            AppException.bad_request("Maximum 5 emergency contacts")
+
+        contact = EmergencyContact(
+            user_id=user_id,
+            name=name.strip(),
+            phone=phone.strip(),
+        )
+        db.add(contact)
+        db.commit()
+        db.refresh(contact)
+        return contact
+
+    @staticmethod
+    def delete_emergency_contact(
+        db: Session,
+        user_id: uuid.UUID,
+        contact_id: uuid.UUID,
+    ) -> None:
+        contact = db.execute(
+            select(EmergencyContact).where(EmergencyContact.id == contact_id)
+        ).scalar_one_or_none()
+        if not contact:
+            AppException.not_found("Emergency contact not found")
+        if contact.user_id != user_id:
+            AppException.forbidden("You do not own this emergency contact")
+        db.delete(contact)
+        db.commit()
+
+    @staticmethod
+    def trigger_sos(
+        db: Session,
+        user_id: uuid.UUID,
+        lat: float,
+        lng: float,
+        trip_id: uuid.UUID | None,
+        message: str,
+    ) -> dict:
+        user = db.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
+        if not user:
+            AppException.not_found("User not found")
+
+        contacts = LiveService.get_emergency_contacts(db, user_id)
+        user_name = user.full_name or "Traveler"
+        maps_url = f"https://maps.google.com/?q={lat},{lng}"
+        sms_template = (
+            f"🆘 EMERGENCY: {user_name} needs help. "
+            f"Last known location: {maps_url} — Sent via Rovvy"
+        )
+
+        fcm_sent = 0
+        if trip_id is not None:
+            trip = db.execute(select(Trip).where(Trip.id == trip_id)).scalar_one_or_none()
+            if trip:
+                TripService._verify_membership(db, trip.group_id, user_id)
+                members = NotificationService._group_members_with_fcm_tokens(
+                    db,
+                    trip.group_id,
+                )
+                title = f"🆘 SOS — {user_name} needs help"
+                body = f"Last location: {lat:.4f}, {lng:.4f}"
+                payload = {
+                    "type": "sos",
+                    "lat": str(lat),
+                    "lng": str(lng),
+                    "user_id": str(user_id),
+                    "trip_id": str(trip_id),
+                }
+                for member in members:
+                    try:
+                        if NotificationService.send_to_token(
+                            member.fcm_token or "",
+                            title,
+                            body,
+                            payload,
+                        ):
+                            fcm_sent += 1
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning("FCM SOS failed: %s", exc)
+
+                set_rtdb(
+                    f"trips/{trip_id}/live/sos",
+                    {
+                        "user_id": str(user_id),
+                        "user_name": user_name,
+                        "lat": lat,
+                        "lng": lng,
+                        "message": message,
+                        "triggered_at": datetime.now(timezone.utc).isoformat(),
+                    },
+                )
+
+        return {
+            "sos_triggered": True,
+            "fcm_sent_to": fcm_sent,
+            "emergency_contacts": [
+                {"name": contact.name, "phone": contact.phone} for contact in contacts
+            ],
+            "sms_template": sms_template,
+            "google_maps_url": maps_url,
+        }
+
+    @staticmethod
+    def set_geofence(
+        db: Session,
+        user_id: uuid.UUID,
+        trip_id: uuid.UUID,
+        center_lat: float,
+        center_lng: float,
+        radius_m: float,
+        label: str,
+    ) -> dict:
+        trip = LiveService._get_trip_for_member(db, user_id, trip_id)
+        LiveService._require_trip_admin(db, trip, user_id)
+        set_at = datetime.now(timezone.utc).isoformat()
+        data = {
+            "center_lat": center_lat,
+            "center_lng": center_lng,
+            "radius_m": radius_m,
+            "label": label,
+            "set_by": str(user_id),
+            "set_at": set_at,
+        }
+        set_rtdb(f"trips/{trip_id}/live/geofence", data)
+        return data
+
+    @staticmethod
+    def delete_geofence(
+        db: Session,
+        user_id: uuid.UUID,
+        trip_id: uuid.UUID,
+    ) -> None:
+        trip = LiveService._get_trip_for_member(db, user_id, trip_id)
+        LiveService._require_trip_admin(db, trip, user_id)
+        delete_rtdb(f"trips/{trip_id}/live/geofence")
+
+    @staticmethod
+    def update_battery_level(
+        db: Session,
+        user_id: uuid.UUID,
+        trip_id: uuid.UUID,
+        level: int,
+    ) -> dict:
+        trip = LiveService._get_trip_for_member(db, user_id, trip_id)
+        update_rtdb(
+            f"trips/{trip_id}/live/members/{user_id}",
+            {"battery_level": level},
+        )
+
+        alert_sent = False
+        if level <= 20:
+            user = db.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
+            user_name = user.full_name if user else "A member"
+            alert_sent = (
+                LiveService._send_fcm_to_trip_members(
+                    db,
+                    trip,
+                    "🔋 Low battery",
+                    f"{user_name}'s battery is at {level}%",
+                    "live_low_battery",
+                )
+                > 0
+            )
+
+        return {"battery_level": level, "alert_sent": alert_sent}
 
 
 def _check_rate_limit(user_id: uuid.UUID) -> None:

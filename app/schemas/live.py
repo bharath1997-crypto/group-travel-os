@@ -177,3 +177,63 @@ class ConvoyOut(BaseModel):
     destination_name: str
     route_geometry: dict
     started_at: str
+
+
+class EmergencyContactCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    phone: str = Field(..., min_length=1, max_length=20)
+
+
+class EmergencyContactOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    name: str
+    phone: str
+
+
+class SOSRequest(BaseModel):
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+    trip_id: Optional[str] = None
+    message: str = Field(
+        default="I need help. This is my last known location.",
+        max_length=500,
+    )
+
+
+class SOSEmergencyContactOut(BaseModel):
+    name: str
+    phone: str
+
+
+class SOSResponse(BaseModel):
+    sos_triggered: bool
+    fcm_sent_to: int
+    emergency_contacts: list[SOSEmergencyContactOut]
+    sms_template: str
+    google_maps_url: str
+
+
+class GeofenceSet(BaseModel):
+    center_lat: float = Field(..., ge=-90, le=90)
+    center_lng: float = Field(..., ge=-180, le=180)
+    radius_m: float = Field(default=500, ge=100, le=5000)
+    label: str = Field(default="Safe Zone", max_length=50)
+
+
+class GeofenceOut(BaseModel):
+    center_lat: float
+    center_lng: float
+    radius_m: float
+    label: str
+    set_by: str
+    set_at: str
+
+
+class BatteryUpdate(BaseModel):
+    level: int = Field(..., ge=0, le=100)
+
+
+class BatteryUpdateOut(BaseModel):
+    battery_level: int
+    alert_sent: bool

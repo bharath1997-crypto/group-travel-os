@@ -42,7 +42,31 @@ export type MemberLiveData = {
   bearing?: number | null;
   speed_mph?: number;
   last_seen?: string;
+  battery_level?: number;
   status?: QuickStatus | { status?: QuickStatus; updated_at?: string };
+};
+
+export type GeofenceData = {
+  center_lat: number;
+  center_lng: number;
+  radius_m: number;
+  label: string;
+  set_by: string;
+  set_at: string;
+};
+
+export type EmergencyContact = {
+  id: string;
+  name: string;
+  phone: string;
+};
+
+export type SOSResponse = {
+  sos_triggered: boolean;
+  fcm_sent_to: number;
+  emergency_contacts: { name: string; phone: string }[];
+  sms_template: string;
+  google_maps_url: string;
 };
 
 export const MEMBER_DOT_COLORS = ["#7c3aed", "#d97706", "#f97316", "#2563eb"];
@@ -103,4 +127,35 @@ export function etaMinutesToPoint(
 
 export function memberColorForIndex(index: number): string {
   return MEMBER_DOT_COLORS[index % MEMBER_DOT_COLORS.length];
+}
+
+export function geofenceCircleGeoJson(
+  centerLat: number,
+  centerLng: number,
+  radiusM: number,
+  points = 64,
+): GeoJSON.FeatureCollection {
+  const coords: [number, number][] = [];
+  const earthRadiusM = 6371000;
+  for (let i = 0; i <= points; i += 1) {
+    const angle = (i / points) * 2 * Math.PI;
+    const dx = radiusM * Math.cos(angle);
+    const dy = radiusM * Math.sin(angle);
+    const lat = centerLat + (dy / earthRadiusM) * (180 / Math.PI);
+    const lng =
+      centerLng +
+      (dx / (earthRadiusM * Math.cos((centerLat * Math.PI) / 180))) *
+        (180 / Math.PI);
+    coords.push([lng, lat]);
+  }
+  return {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        geometry: { type: "Polygon", coordinates: [coords] },
+        properties: {},
+      },
+    ],
+  };
 }

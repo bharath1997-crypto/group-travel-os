@@ -10,6 +10,7 @@ import {
   STATUS_BADGE_CLASSES,
   STATUS_LABELS,
   type ConvoyData,
+  type GeofenceData,
   type MeetingPoint,
   type MemberLiveData,
   type QuickStatus,
@@ -24,6 +25,7 @@ type GroupPanelProps = {
   memberStatuses: Record<string, QuickStatus>;
   meetingPoint: MeetingPoint | null;
   convoy: ConvoyData | null;
+  geofence: GeofenceData | null;
   isGroupAdmin: boolean;
   currentUserId: string | null;
   currentUserSpeedMph: number;
@@ -33,6 +35,8 @@ type GroupPanelProps = {
   onClearMeetingPoint: () => void;
   onStartConvoy: () => void;
   onEndConvoy: () => void;
+  onSetGeofence: () => void;
+  onClearGeofence: () => void;
   onQuickStatus: (status: QuickStatus) => void;
 };
 
@@ -52,6 +56,7 @@ export function GroupPanel({
   memberStatuses,
   meetingPoint,
   convoy,
+  geofence,
   isGroupAdmin,
   currentUserId,
   currentUserSpeedMph,
@@ -61,6 +66,8 @@ export function GroupPanel({
   onClearMeetingPoint,
   onStartConvoy,
   onEndConvoy,
+  onSetGeofence,
+  onClearGeofence,
   onQuickStatus,
 }: GroupPanelProps) {
   return (
@@ -190,6 +197,22 @@ export function GroupPanel({
                     End convoy
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={onSetGeofence}
+                  className="rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800 hover:bg-teal-100"
+                >
+                  Set safe zone
+                </button>
+                {geofence ? (
+                  <button
+                    type="button"
+                    onClick={onClearGeofence}
+                    className="rounded-xl border border-stone-200 px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+                  >
+                    Clear safe zone
+                  </button>
+                ) : null}
               </div>
             </section>
           ) : null}

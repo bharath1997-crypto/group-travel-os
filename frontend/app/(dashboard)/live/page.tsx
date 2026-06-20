@@ -2,6 +2,8 @@
 
 import { ConvoySheet } from "@/components/live/ConvoySheet";
 import { DestinationSheet } from "@/components/live/DestinationSheet";
+import { EmergencyContactsSheet } from "@/components/live/EmergencyContactsSheet";
+import { GeofenceSetupSheet } from "@/components/live/GeofenceSetupSheet";
 import { GroupLiveChatButton, GroupLiveChatSheet } from "@/components/live/GroupLiveChatSheet";
 import { GroupPanel, GroupPanelToggle } from "@/components/live/GroupPanel";
 import { GuestPrompt } from "@/components/live/GuestPrompt";
@@ -10,18 +12,23 @@ import { PoiDetailSheet, type PoiPlace } from "@/components/live/PoiDetailSheet"
 import { PoiSearchSheet, type PoiCategory } from "@/components/live/PoiSearchSheet";
 import { ReportSheet } from "@/components/live/ReportSheet";
 import { ReportTypeSheet } from "@/components/live/ReportTypeSheet";
+import { SOSConfirmSheet } from "@/components/live/SOSConfirmSheet";
 import { WayraChatSheet } from "@/components/live/WayraChatSheet";
 import { apiFetch, apiFetchPublic } from "@/lib/api";
 import { useDashboardUser } from "@/contexts/dashboard-user-context";
 import { initFirebase } from "@/lib/firebase-client";
 import {
   firstName,
+  geofenceCircleGeoJson,
   memberStatusValue,
   type ConvoyData,
+  type EmergencyContact,
+  type GeofenceData,
   type GroupValidateResponse,
   type MeetingPoint,
   type MemberLiveData,
   type QuickStatus,
+  type SOSResponse,
   type TripMember,
 } from "@/lib/live/group";
 import {
@@ -138,6 +145,12 @@ type MemberMarkerEntry = {
   marker: maplibregl.Marker;
   setBearing: (bearing: number | null) => void;
   setOpacity: (opacity: number) => void;
+  setLowBattery: (show: boolean) => void;
+};
+
+type SafetyBanner = {
+  message: string;
+  tone: "amber" | "red";
 };
 
 type HazardBanner = {
@@ -149,6 +162,7 @@ function createMemberMarker(color: string, label: string): {
   element: HTMLDivElement;
   setBearing: (bearing: number | null) => void;
   setOpacity: (opacity: number) => void;
+  setLowBattery: (show: boolean) => void;
 } {
   const root = document.createElement("div");
   root.className = "live-member-marker";
@@ -160,12 +174,17 @@ function createMemberMarker(color: string, label: string): {
   dot.className = "live-member-dot";
   dot.style.backgroundColor = color;
 
+  const battery = document.createElement("div");
+  battery.className = "live-member-battery is-hidden";
+  battery.textContent = "🔋";
+
   const name = document.createElement("div");
   name.className = "live-member-label";
   name.textContent = label;
 
   root.appendChild(cone);
   root.appendChild(dot);
+  root.appendChild(battery);
   root.appendChild(name);
 
   const setBearing = (bearing: number | null) => {
@@ -181,7 +200,11 @@ function createMemberMarker(color: string, label: string): {
     root.style.opacity = String(opacity);
   };
 
-  return { element: root, setBearing, setOpacity };
+  const setLowBattery = (show: boolean) => {
+    battery.classList.toggle("is-hidden", !show);
+  };
+
+  return { element: root, setBearing, setOpacity, setLowBattery };
 }
 
 function getSunTimes(lat: number, lng: number): { sunrise: number; sunset: number } {
@@ -391,6 +414,40 @@ function clearRouteLayer(map: maplibregl.Map) {
   if (map.getSource("route-line")) map.removeSource("route-line");
 }
 
+function ensureGeofenceLayer(map: maplibregl.Map, data: GeoJSON.FeatureCollection) {
+  const existing = map.getSource("geofence-area") as maplibregl.GeoJSONSource | undefined;
+  if (existing) {
+    existing.setData(data);
+    return;
+  }
+
+  map.addSource("geofence-area", { type: "geojson", data });
+  map.addLayer({
+    id: "geofence-fill",
+    type: "fill",
+    source: "geofence-area",
+    paint: {
+      "fill-color": "#14b8a6",
+      "fill-opacity": 0.1,
+    },
+  });
+  map.addLayer({
+    id: "geofence-border",
+    type: "line",
+    source: "geofence-area",
+    paint: {
+      "line-color": "#14b8a6",
+      "line-width": 2,
+    },
+  });
+}
+
+function clearGeofenceLayer(map: maplibregl.Map) {
+  if (map.getLayer("geofence-border")) map.removeLayer("geofence-border");
+  if (map.getLayer("geofence-fill")) map.removeLayer("geofence-fill");
+  if (map.getSource("geofence-area")) map.removeSource("geofence-area");
+}
+
 export default function LivePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -437,6 +494,15 @@ export default function LivePage() {
   const mapClickHandlerRef = useRef<((event: maplibregl.MapMouseEvent) => void) | null>(
     null,
   );
+  const geofenceRef = useRef<GeofenceData | null>(null);
+  const geofenceInsideRef = useRef<boolean | null>(null);
+  const geofenceLabelMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const lastBatteryLevelRef = useRef(-1);
+  const sosTimerRef = useRef<number | null>(null);
+  const sosHoldProgressRef = useRef(0);
+  const deadZoneAlertedRef = useRef<Set<string>>(new Set());
+  const safetyBannerTimerRef = useRef<number | null>(null);
+  const emergencyContactsPromptedRef = useRef(false);
 
   const [isGuest, setIsGuest] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -488,6 +554,19 @@ export default function LivePage() {
   const [meetingArrivalBanner, setMeetingArrivalBanner] = useState<string | null>(null);
   const [everyoneArrivedBanner, setEveryoneArrivedBanner] = useState(false);
   const [firebaseDb, setFirebaseDb] = useState<Database | null>(null);
+  const [geofence, setGeofence] = useState<GeofenceData | null>(null);
+  const [showEmergencyContacts, setShowEmergencyContacts] = useState(false);
+  const [showSosConfirm, setShowSosConfirm] = useState(false);
+  const [sosResponse, setSosResponse] = useState<SOSResponse | null>(null);
+  const [sosHoldProgress, setSosHoldProgress] = useState(0);
+  const [showGeofenceSetup, setShowGeofenceSetup] = useState(false);
+  const [geofenceSetupCenter, setGeofenceSetupCenter] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [geofenceBusy, setGeofenceBusy] = useState(false);
+  const [settingGeofence, setSettingGeofence] = useState(false);
+  const [safetyBanner, setSafetyBanner] = useState<SafetyBanner | null>(null);
   const currentUserId = dashboardUser?.id ?? null;
   const currentUserName = dashboardUser?.full_name ?? "You";
 
@@ -544,6 +623,11 @@ export default function LivePage() {
   }, [convoy]);
 
   useEffect(() => {
+    geofenceRef.current = geofence;
+    geofenceInsideRef.current = null;
+  }, [geofence]);
+
+  useEffect(() => {
     const fb = initFirebase();
     if (fb.ok && fb.db) {
       firebaseDbRef.current = fb.db;
@@ -554,6 +638,17 @@ export default function LivePage() {
   const showToastMessage = useCallback((message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  const showBanner = useCallback((message: string, tone: "amber" | "red") => {
+    setSafetyBanner({ message, tone });
+    if (safetyBannerTimerRef.current != null) {
+      window.clearTimeout(safetyBannerTimerRef.current);
+    }
+    safetyBannerTimerRef.current = window.setTimeout(() => {
+      setSafetyBanner(null);
+      safetyBannerTimerRef.current = null;
+    }, 10_000);
   }, []);
 
   const validTripId =
@@ -567,6 +662,35 @@ export default function LivePage() {
   const clearMemberMarkers = useCallback(() => {
     memberMarkersRef.current.forEach((entry) => entry.marker.remove());
     memberMarkersRef.current.clear();
+  }, []);
+
+  const syncGeofenceOnMap = useCallback((fence: GeofenceData | null) => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    geofenceLabelMarkerRef.current?.remove();
+    geofenceLabelMarkerRef.current = null;
+
+    if (!fence) {
+      clearGeofenceLayer(map);
+      return;
+    }
+
+    ensureGeofenceLayer(
+      map,
+      geofenceCircleGeoJson(fence.center_lat, fence.center_lng, fence.radius_m),
+    );
+
+    const label = document.createElement("div");
+    label.className = "live-geofence-label";
+    label.textContent = fence.label;
+
+    geofenceLabelMarkerRef.current = new maplibregl.Marker({
+      element: label,
+      anchor: "center",
+    })
+      .setLngLat([fence.center_lng, fence.center_lat])
+      .addTo(map);
   }, []);
 
   const syncMeetingPointMarker = useCallback((point: MeetingPoint | null) => {
@@ -607,14 +731,14 @@ export default function LivePage() {
 
         let entry = memberMarkersRef.current.get(member.user_id);
         if (!entry) {
-          const { element, setBearing, setOpacity } = createMemberMarker(
+          const { element, setBearing, setOpacity, setLowBattery } = createMemberMarker(
             color,
             firstName(member.display_name),
           );
           const marker = new maplibregl.Marker({ element, anchor: "center" })
             .setLngLat([live.lng, live.lat])
             .addTo(map);
-          entry = { marker, setBearing, setOpacity };
+          entry = { marker, setBearing, setOpacity, setLowBattery };
           memberMarkersRef.current.set(member.user_id, entry);
         } else {
           entry.marker.setLngLat([live.lng, live.lat]);
@@ -624,6 +748,9 @@ export default function LivePage() {
           live.bearing != null && !Number.isNaN(live.bearing) ? live.bearing : null,
         );
         entry.setOpacity(offline ? 0.5 : 1);
+        entry.setLowBattery(
+          live.battery_level != null && live.battery_level <= 20,
+        );
       });
 
       memberMarkersRef.current.forEach((entry, userId) => {
@@ -672,6 +799,7 @@ export default function LivePage() {
       map.getCanvas().style.cursor = "";
     }
     setSettingMeetingPoint(false);
+    setSettingGeofence(false);
   }, []);
 
   const clearRouteFromMap = useCallback(() => {
@@ -899,6 +1027,146 @@ export default function LivePage() {
     [currentUserId, showToastMessage, validTripId],
   );
 
+  const checkGeofence = useCallback(
+    (userLat: number, userLng: number) => {
+      const fence = geofenceRef.current;
+      if (!fence) return;
+
+      const dist = haversineMeters(userLat, userLng, fence.center_lat, fence.center_lng);
+      const wasInside = geofenceInsideRef.current;
+      const isInside = dist <= fence.radius_m;
+
+      if (wasInside == null) {
+        geofenceInsideRef.current = isInside;
+        return;
+      }
+
+      if (wasInside && !isInside) {
+        showBanner(`⚠️ You left the ${fence.label}`, "amber");
+        void postQuickStatus("on_my_way");
+      }
+
+      geofenceInsideRef.current = isInside;
+    },
+    [postQuickStatus, showBanner],
+  );
+
+  const checkBattery = useCallback(async () => {
+    if (!groupModeRef.current || !validTripId) return;
+    const nav = navigator as Navigator & {
+      getBattery?: () => Promise<{ level: number }>;
+    };
+    if (!("getBattery" in nav) || typeof nav.getBattery !== "function") return;
+
+    try {
+      const battery = await nav.getBattery();
+      const level = Math.round(battery.level * 100);
+      if (Math.abs(level - lastBatteryLevelRef.current) >= 5) {
+        await apiFetch(`/live/group/${validTripId}/battery`, {
+          method: "POST",
+          body: JSON.stringify({ level }),
+        });
+        lastBatteryLevelRef.current = level;
+      }
+    } catch {
+      // Battery API is optional.
+    }
+  }, [validTripId]);
+
+  const triggerSOS = useCallback(async () => {
+    let lat = userPositionRef.current?.lat;
+    let lng = userPositionRef.current?.lng;
+    let usedCache = false;
+
+    if (lat == null || lng == null) {
+      try {
+        const cached = JSON.parse(
+          localStorage.getItem("rovvy_last_position") || "null",
+        ) as { lat?: number; lng?: number } | null;
+        if (cached?.lat != null && cached?.lng != null) {
+          lat = cached.lat;
+          lng = cached.lng;
+          usedCache = true;
+        }
+      } catch {
+        // Ignore invalid cache.
+      }
+    }
+
+    if (lat == null || lng == null) {
+      showToastMessage("Location unavailable for SOS");
+      return;
+    }
+
+    try {
+      const result = await apiFetch<SOSResponse>("/live/sos", {
+        method: "POST",
+        body: JSON.stringify({
+          lat,
+          lng,
+          trip_id: validTripId,
+        }),
+      });
+
+      let smsTemplate = result.sms_template;
+      if (usedCache && !smsTemplate.includes("(last known)")) {
+        smsTemplate = smsTemplate.replace(
+          "Last known location:",
+          "Last known location (last known):",
+        );
+      }
+
+      setSosResponse({ ...result, sms_template: smsTemplate });
+      setShowSosConfirm(true);
+      localStorage.setItem(
+        "rovvy_last_position",
+        JSON.stringify({ lat, lng, ts: new Date().toISOString() }),
+      );
+    } catch {
+      showToastMessage("Could not trigger SOS. Try again.");
+    }
+  }, [showToastMessage, validTripId]);
+
+  const handleSOSPressStart = useCallback(() => {
+    let progress = 0;
+    sosTimerRef.current = window.setInterval(() => {
+      progress += 100 / 30;
+      const next = Math.min(progress, 100);
+      sosHoldProgressRef.current = next;
+      setSosHoldProgress(next);
+      if (progress >= 100) {
+        if (sosTimerRef.current != null) {
+          window.clearInterval(sosTimerRef.current);
+          sosTimerRef.current = null;
+        }
+        sosHoldProgressRef.current = 0;
+        setSosHoldProgress(0);
+        void triggerSOS();
+      }
+    }, 100);
+  }, [triggerSOS]);
+
+  const handleSOSPressEnd = useCallback(() => {
+    if (sosTimerRef.current != null) {
+      window.clearInterval(sosTimerRef.current);
+      sosTimerRef.current = null;
+    }
+    if (sosHoldProgressRef.current >= 20 && sosHoldProgressRef.current < 100) {
+      setShowEmergencyContacts(true);
+    }
+    sosHoldProgressRef.current = 0;
+    setSosHoldProgress(0);
+  }, []);
+
+  const handleCancelSos = useCallback(async () => {
+    const db = firebaseDbRef.current;
+    if (db && validTripId) {
+      await remove(ref(db, `trips/${validTripId}/live/sos`));
+    }
+    setShowSosConfirm(false);
+    setSosResponse(null);
+  }, [validTripId]);
+
   const checkMeetingArrival = useCallback(
     (lat: number, lng: number) => {
       const point = meetingPointRef.current;
@@ -960,6 +1228,60 @@ export default function LivePage() {
       showToastMessage("Meeting point cleared");
     } catch {
       showToastMessage("Could not clear meeting point");
+    }
+  }, [showToastMessage, validTripId]);
+
+  const handleSetGeofenceMode = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !validTripId) return;
+    stopMeetingPointPlacement();
+    setSettingGeofence(true);
+    map.getCanvas().style.cursor = "crosshair";
+    showToastMessage("Tap anywhere on the map to set safe zone center");
+
+    const onClick = (event: maplibregl.MapMouseEvent) => {
+      stopMeetingPointPlacement();
+      setGeofenceSetupCenter({ lat: event.lngLat.lat, lng: event.lngLat.lng });
+      setShowGeofenceSetup(true);
+    };
+
+    mapClickHandlerRef.current = onClick;
+    map.once("click", onClick);
+  }, [showToastMessage, stopMeetingPointPlacement, validTripId]);
+
+  const handleConfirmGeofence = useCallback(
+    async (radiusM: number, label: string) => {
+      if (!validTripId || !geofenceSetupCenter) return;
+      setGeofenceBusy(true);
+      try {
+        await apiFetch(`/live/group/${validTripId}/geofence`, {
+          method: "POST",
+          body: JSON.stringify({
+            center_lat: geofenceSetupCenter.lat,
+            center_lng: geofenceSetupCenter.lng,
+            radius_m: radiusM,
+            label,
+          }),
+        });
+        setShowGeofenceSetup(false);
+        setGeofenceSetupCenter(null);
+        showToastMessage("Safe zone set");
+      } catch {
+        showToastMessage("Could not set safe zone");
+      } finally {
+        setGeofenceBusy(false);
+      }
+    },
+    [geofenceSetupCenter, showToastMessage, validTripId],
+  );
+
+  const handleClearGeofence = useCallback(async () => {
+    if (!validTripId) return;
+    try {
+      await apiFetch(`/live/group/${validTripId}/geofence`, { method: "DELETE" });
+      showToastMessage("Safe zone cleared");
+    } catch {
+      showToastMessage("Could not clear safe zone");
     }
   }, [showToastMessage, validTripId]);
 
@@ -1068,6 +1390,74 @@ export default function LivePage() {
     });
     return () => off(convoyRefPath, "value", unsubscribe);
   }, [firebaseDb, groupMode, validTripId]);
+
+  useEffect(() => {
+    const db = firebaseDb;
+    if (!groupMode || !validTripId || !db) return;
+
+    const geofenceRefPath = ref(db, `trips/${validTripId}/live/geofence`);
+    const unsubscribe = onValue(geofenceRefPath, (snapshot) => {
+      const value = snapshot.val() as GeofenceData | null;
+      setGeofence(value);
+      syncGeofenceOnMap(value);
+    });
+    return () => off(geofenceRefPath, "value", unsubscribe);
+  }, [firebaseDb, groupMode, syncGeofenceOnMap, validTripId]);
+
+  useEffect(() => {
+    if (!groupMode || !validTripId || !firebaseDb) return;
+
+    const membersRef = ref(firebaseDb, `trips/${validTripId}/live/members`);
+    const handler = (snapshot: { val: () => Record<string, MemberLiveData> | null }) => {
+      const members = snapshot.val() || {};
+      const now = Date.now();
+      Object.entries(members).forEach(([userId, data]) => {
+        if (userId === currentUserId) return;
+        const lastSeen = data.last_seen ? new Date(data.last_seen).getTime() : 0;
+        const minutesAgo = (now - lastSeen) / 60000;
+        if (minutesAgo > 30) {
+          if (deadZoneAlertedRef.current.has(userId)) return;
+          deadZoneAlertedRef.current.add(userId);
+          const memberName =
+            tripMembers.find((member) => member.user_id === userId)?.display_name ||
+            "A member";
+          showBanner(
+            `⚠️ ${firstName(memberName)} hasn't updated in ${Math.round(minutesAgo)} min`,
+            "red",
+          );
+        } else {
+          deadZoneAlertedRef.current.delete(userId);
+        }
+      });
+    };
+
+    onValue(membersRef, handler);
+    return () => off(membersRef, "value", handler);
+  }, [currentUserId, firebaseDb, groupMode, showBanner, tripMembers, validTripId]);
+
+  useEffect(() => {
+    if (!groupMode || !validTripId) return;
+    void checkBattery();
+    const interval = window.setInterval(() => {
+      void checkBattery();
+    }, 5 * 60 * 1000);
+    return () => window.clearInterval(interval);
+  }, [checkBattery, groupMode, validTripId]);
+
+  useEffect(() => {
+    if (isGuest || emergencyContactsPromptedRef.current) return;
+    emergencyContactsPromptedRef.current = true;
+    void (async () => {
+      try {
+        const contacts = await apiFetch<EmergencyContact[]>("/live/emergency-contacts");
+        if (contacts.length === 0) {
+          setShowEmergencyContacts(true);
+        }
+      } catch {
+        // Optional onboarding prompt.
+      }
+    })();
+  }, [isGuest]);
 
   useEffect(() => {
     if (!meetingPoint || convoy?.active) {
@@ -1377,6 +1767,12 @@ export default function LivePage() {
       if (hazardTimerRef.current != null) {
         window.clearTimeout(hazardTimerRef.current);
       }
+      if (safetyBannerTimerRef.current != null) {
+        window.clearTimeout(safetyBannerTimerRef.current);
+      }
+      if (sosTimerRef.current != null) {
+        window.clearInterval(sosTimerRef.current);
+      }
       if (routeHazardTimerRef.current != null) {
         window.clearTimeout(routeHazardTimerRef.current);
       }
@@ -1393,6 +1789,8 @@ export default function LivePage() {
       clearMemberMarkers();
       meetingPointMarkerRef.current?.remove();
       meetingPointMarkerRef.current = null;
+      geofenceLabelMarkerRef.current?.remove();
+      geofenceLabelMarkerRef.current = null;
       const db = firebaseDbRef.current;
       const trip = validTripId;
       const userId = dashboardUser?.id;
@@ -1449,6 +1847,9 @@ export default function LivePage() {
       if (!pos || gpsStateRef.current !== "granted") return;
       markerRef.current = null;
       syncMarker(map, pos.lat, pos.lng, bearingRef.current, true);
+      if (geofenceRef.current) {
+        syncGeofenceOnMap(geofenceRef.current);
+      }
     });
 
     const resizeObserver = new ResizeObserver(() => {
@@ -1476,7 +1877,7 @@ export default function LivePage() {
       map.remove();
       mapRef.current = null;
     };
-  }, [applyMapStyle, clearPoiMarkers, clearRouteFromMap, syncMarker, syncReportMarkers]);
+  }, [applyMapStyle, clearPoiMarkers, clearRouteFromMap, syncGeofenceOnMap, syncMarker, syncReportMarkers]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1516,6 +1917,11 @@ export default function LivePage() {
         sunCoordsRef.current = { lat, lng };
         userPositionRef.current = { lat, lng };
 
+        localStorage.setItem(
+          "rovvy_last_position",
+          JSON.stringify({ lat, lng, ts: new Date().toISOString() }),
+        );
+
         const mph = calcSpeedMph(
           previousSampleRef.current,
           lat,
@@ -1533,6 +1939,7 @@ export default function LivePage() {
         processNavigationUpdate(lat, lng);
         if (groupModeRef.current) {
           checkMeetingArrival(lat, lng);
+          checkGeofence(lat, lng);
         }
 
         if (!hasCenteredRef.current) {
@@ -1568,7 +1975,7 @@ export default function LivePage() {
         watchIdRef.current = null;
       }
     };
-  }, [applyMapStyle, checkMeetingArrival, fetchNearbyReports, fetchTrafficDensity, fetchWeather, processNavigationUpdate, startLiveSession, syncMarker, writeUserLocation]);
+  }, [applyMapStyle, checkGeofence, checkMeetingArrival, fetchNearbyReports, fetchTrafficDensity, fetchWeather, processNavigationUpdate, startLiveSession, syncMarker, writeUserLocation]);
 
   useEffect(() => {
     if (!navigationActive) return;
@@ -1722,6 +2129,26 @@ export default function LivePage() {
           </div>
         ) : null}
 
+        {settingGeofence ? (
+          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
+            <div className="rounded-xl bg-teal-700 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+              Tap anywhere on the map to set safe zone center
+            </div>
+          </div>
+        ) : null}
+
+        {safetyBanner ? (
+          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
+            <div
+              className={`rounded-xl px-4 py-3 text-center text-sm font-semibold text-white shadow-lg ${
+                safetyBanner.tone === "red" ? "bg-red-600" : "bg-amber-500"
+              }`}
+            >
+              {safetyBanner.message}
+            </div>
+          </div>
+        ) : null}
+
         {convoyBanner ? (
           <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
             <div className="rounded-xl bg-[#0F766E] px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
@@ -1823,6 +2250,48 @@ export default function LivePage() {
           <AlertCircle className="h-4 w-4 text-white" aria-hidden />
           <span className="text-sm font-medium text-white">Report</span>
         </button>
+
+        {!isGuest ? (
+          <div
+            className={`pointer-events-auto absolute z-20 ${
+              groupMode ? "bottom-[14.5rem] right-4" : "bottom-[10.5rem] right-4"
+            }`}
+          >
+            <button
+              type="button"
+              aria-label="Hold for 3 seconds to trigger SOS"
+              onPointerDown={handleSOSPressStart}
+              onPointerUp={handleSOSPressEnd}
+              onPointerLeave={handleSOSPressEnd}
+              onPointerCancel={handleSOSPressEnd}
+              className={`live-sos-button ${groupMode ? "live-sos-button--group" : ""}`}
+            >
+              <svg className="live-sos-progress" viewBox="0 0 64 64" aria-hidden>
+                <circle
+                  cx="32"
+                  cy="32"
+                  r="28"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.35)"
+                  strokeWidth="3"
+                />
+                <circle
+                  cx="32"
+                  cy="32"
+                  r="28"
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeDasharray={175.93}
+                  strokeDashoffset={175.93 - (175.93 * sosHoldProgress) / 100}
+                  transform="rotate(-90 32 32)"
+                />
+              </svg>
+              <span className="live-sos-label">SOS</span>
+            </button>
+          </div>
+        ) : null}
 
         <button
           type="button"
@@ -1985,6 +2454,7 @@ export default function LivePage() {
           memberStatuses={memberStatuses}
           meetingPoint={meetingPoint}
           convoy={convoy}
+          geofence={geofence}
           isGroupAdmin={isGroupAdmin}
           currentUserId={currentUserId}
           currentUserSpeedMph={speedMph}
@@ -1994,6 +2464,8 @@ export default function LivePage() {
           onClearMeetingPoint={() => void handleClearMeetingPoint()}
           onStartConvoy={() => setShowConvoySheet(true)}
           onEndConvoy={() => void handleEndConvoy()}
+          onSetGeofence={handleSetGeofenceMode}
+          onClearGeofence={() => void handleClearGeofence()}
           onQuickStatus={(status) => void postQuickStatus(status)}
         />
       ) : null}
@@ -2013,6 +2485,39 @@ export default function LivePage() {
           currentUserId={currentUserId}
           currentUserName={currentUserName}
           onClose={() => setShowGroupChat(false)}
+        />
+      ) : null}
+
+      {showEmergencyContacts && !isGuest ? (
+        <EmergencyContactsSheet
+          onClose={() => setShowEmergencyContacts(false)}
+          onSkip={() => setShowEmergencyContacts(false)}
+        />
+      ) : null}
+
+      {showSosConfirm && sosResponse ? (
+        <SOSConfirmSheet
+          fcmSentTo={sosResponse.fcm_sent_to}
+          groupMode={groupMode}
+          emergencyContacts={sosResponse.emergency_contacts}
+          smsTemplate={sosResponse.sms_template}
+          googleMapsUrl={sosResponse.google_maps_url}
+          onCancelSos={() => void handleCancelSos()}
+          onAddContacts={() => setShowEmergencyContacts(true)}
+        />
+      ) : null}
+
+      {showGeofenceSetup && geofenceSetupCenter ? (
+        <GeofenceSetupSheet
+          label="Safe Zone"
+          centerLat={geofenceSetupCenter.lat}
+          centerLng={geofenceSetupCenter.lng}
+          busy={geofenceBusy}
+          onClose={() => {
+            setShowGeofenceSetup(false);
+            setGeofenceSetupCenter(null);
+          }}
+          onConfirm={(radiusM, label) => void handleConfirmGeofence(radiusM, label)}
         />
       ) : null}
     </div>

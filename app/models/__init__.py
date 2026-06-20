@@ -34,6 +34,7 @@ from app.models.data_import import DataImportRequest
 from app.models.user_integration import UserIntegration
 from app.models.live_session import LiveSession, LiveMode
 from app.models.road_report import RoadReport, ReportConfirmation, ReportType
+from app.models.emergency_contact import EmergencyContact
 
 __all__: list[str] = [
     "User",
@@ -90,5 +91,6 @@ __all__: list[str] = [
     "RoadReport",
     "ReportConfirmation",
     "ReportType",
+    "EmergencyContact",
 ]
 
