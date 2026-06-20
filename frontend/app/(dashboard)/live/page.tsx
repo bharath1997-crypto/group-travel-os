@@ -1,6 +1,25 @@
 "use client";
 
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { GuestPrompt } from "@/components/live/GuestPrompt";
+import { ReportSheet } from "@/components/live/ReportSheet";
+import { ReportTypeSheet } from "@/components/live/ReportTypeSheet";
+import { WayraChatSheet } from "@/components/live/WayraChatSheet";
+import { API_BASE, apiFetch } from "@/lib/api";
+import {
+  REPORT_CONFIG,
+  createReportPinElement,
+  formatDistance,
+  haversineMeters,
+  minutesAgo,
+  type ReportType,
+  type RoadReport,
+} from "@/lib/live/types";
+import {
+  AlertCircle,
+  ChevronLeft,
+  Loader2,
+  MessageCircle,
+} from "lucide-react";
 import maplibregl, { type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useRouter } from "next/navigation";
@@ -44,6 +63,11 @@ const OSM_STYLE_DARK: StyleSpecification = {
   ],
 };
 
+const WAYRA_GUEST_LIMIT = 3;
+const WAYRA_COUNT_KEY = "live-wayra-guest-count";
+const HAZARD_RADIUS_M = 500;
+const HAZARD_BANNER_MS = 10_000;
+
 type GpsPermissionState = "pending" | "granted" | "denied";
 
 type PositionSample = {
@@ -55,6 +79,11 @@ type PositionSample = {
 type LiveUserMarker = {
   marker: maplibregl.Marker;
   setBearing: (bearing: number | null) => void;
+};
+
+type HazardBanner = {
+  report: RoadReport;
+  distanceM: number;
 };
 
 function getSunTimes(lat: number, lng: number): { sunrise: number; sunset: number } {
@@ -84,23 +113,6 @@ function isNightMode(lat: number, lng: number): boolean {
   const { sunrise, sunset } = getSunTimes(lat, lng);
   const hour = currentHourDecimal();
   return hour < sunrise || hour > sunset;
-}
-
-function haversineMeters(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number,
-): number {
-  const radiusM = 6371000;
-  const phi1 = (lat1 * Math.PI) / 180;
-  const phi2 = (lat2 * Math.PI) / 180;
-  const dPhi = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dPhi / 2) ** 2 +
-    Math.cos(phi1) * Math.cos(phi2) * Math.sin(dLng / 2) ** 2;
-  return radiusM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0, 1 - a)));
 }
 
 function calcSpeedMph(
@@ -153,21 +165,126 @@ function createLiveUserMarker(): {
   return { element: root, setBearing };
 }
 
+function closestHazard(
+  reports: RoadReport[],
+  lat: number,
+  lng: number,
+): HazardBanner | null {
+  let closest: HazardBanner | null = null;
+  for (const report of reports) {
+    const distanceM = haversineMeters(lat, lng, report.lat, report.lng);
+    if (distanceM > HAZARD_RADIUS_M) continue;
+    if (!closest || distanceM < closest.distanceM) {
+      closest = { report, distanceM };
+    }
+  }
+  return closest;
+}
+
 export default function LivePage() {
   const router = useRouter();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const markerRef = useRef<LiveUserMarker | null>(null);
+  const reportMarkersRef = useRef<maplibregl.Marker[]>([]);
   const previousSampleRef = useRef<PositionSample | null>(null);
   const bearingRef = useRef<number | null>(null);
   const gpsStateRef = useRef<GpsPermissionState>("pending");
   const hasCenteredRef = useRef(false);
   const isDarkRef = useRef<boolean | null>(null);
   const sunCoordsRef = useRef({ lat: 41.8781, lng: -87.6298 });
+  const userPositionRef = useRef<{ lat: number; lng: number } | null>(null);
+  const reportsRef = useRef<RoadReport[]>([]);
+  const hazardTimerRef = useRef<number | null>(null);
+  const openReportRef = useRef<(report: RoadReport) => void>(() => {});
 
+  const [isGuest, setIsGuest] = useState(true);
   const [gpsState, setGpsState] = useState<GpsPermissionState>("pending");
   const [speedMph, setSpeedMph] = useState(0);
+  const [reports, setReports] = useState<RoadReport[]>([]);
+  const [selectedReport, setSelectedReport] = useState<RoadReport | null>(null);
+  const [showReportTypes, setShowReportTypes] = useState(false);
+  const [showWayra, setShowWayra] = useState(false);
+  const [guestPrompt, setGuestPrompt] = useState<string | null>(null);
+  const [reportBusy, setReportBusy] = useState(false);
+  const [submittingReport, setSubmittingReport] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [hazardBanner, setHazardBanner] = useState<HazardBanner | null>(null);
+  const [wayraMessageCount, setWayraMessageCount] = useState(0);
+
+  openReportRef.current = (report: RoadReport) => setSelectedReport(report);
+
+  useEffect(() => {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("gt_token") : null;
+    setIsGuest(!token);
+    const stored = sessionStorage.getItem(WAYRA_COUNT_KEY);
+    if (stored) setWayraMessageCount(Number.parseInt(stored, 10) || 0);
+  }, []);
+
+  useEffect(() => {
+    reportsRef.current = reports;
+  }, [reports]);
+
+  const showToastMessage = useCallback((message: string) => {
+    setToast(message);
+    window.setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  const fetchNearbyReports = useCallback(async (lat: number, lng: number) => {
+    try {
+      const params = new URLSearchParams({
+        lat: lat.toString(),
+        lng: lng.toString(),
+        radius_km: "5",
+      });
+      const headers: Record<string, string> = {};
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("gt_token") : null;
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const res = await fetch(`${API_BASE}/live/reports/nearby?${params}`, {
+        headers,
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as RoadReport[];
+      setReports(data);
+    } catch (error) {
+      console.error("Failed to fetch reports", error);
+    }
+  }, []);
+
+  const syncReportMarkers = useCallback((map: maplibregl.Map, items: RoadReport[]) => {
+    reportMarkersRef.current.forEach((marker) => marker.remove());
+    reportMarkersRef.current = [];
+
+    for (const report of items) {
+      const element = createReportPinElement(report.report_type, () => {
+        openReportRef.current(report);
+      });
+      const marker = new maplibregl.Marker({ element, anchor: "center" })
+        .setLngLat([report.lng, report.lat])
+        .addTo(map);
+      reportMarkersRef.current.push(marker);
+    }
+  }, []);
+
+  const updateHazardBanner = useCallback((lat: number, lng: number, items: RoadReport[]) => {
+    const hazard = closestHazard(items, lat, lng);
+    if (!hazard) {
+      setHazardBanner(null);
+      return;
+    }
+    setHazardBanner(hazard);
+    if (hazardTimerRef.current != null) {
+      window.clearTimeout(hazardTimerRef.current);
+    }
+    hazardTimerRef.current = window.setTimeout(() => {
+      setHazardBanner(null);
+      hazardTimerRef.current = null;
+    }, HAZARD_BANNER_MS);
+  }, []);
 
   const applyMapStyle = useCallback((map: maplibregl.Map, dark: boolean) => {
     map.setStyle(dark ? OSM_STYLE_DARK : OSM_STYLE_LIGHT);
@@ -208,6 +325,9 @@ export default function LivePage() {
     document.body.classList.add("live-mode");
     return () => {
       document.body.classList.remove("live-mode");
+      if (hazardTimerRef.current != null) {
+        window.clearTimeout(hazardTimerRef.current);
+      }
     };
   }, []);
 
@@ -237,6 +357,7 @@ export default function LivePage() {
     mapRef.current = map;
 
     map.on("style.load", () => {
+      syncReportMarkers(map, reportsRef.current);
       const pos = previousSampleRef.current;
       if (!pos || gpsStateRef.current !== "granted") return;
       markerRef.current = null;
@@ -259,12 +380,26 @@ export default function LivePage() {
     return () => {
       window.clearInterval(styleCheck);
       resizeObserver.disconnect();
+      reportMarkersRef.current.forEach((marker) => marker.remove());
+      reportMarkersRef.current = [];
       markerRef.current?.marker.remove();
       markerRef.current = null;
       map.remove();
       mapRef.current = null;
     };
-  }, [applyMapStyle, syncMarker]);
+  }, [applyMapStyle, syncMarker, syncReportMarkers]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    syncReportMarkers(map, reports);
+  }, [reports, syncReportMarkers]);
+
+  useEffect(() => {
+    const pos = userPositionRef.current;
+    if (!pos) return;
+    updateHazardBanner(pos.lat, pos.lng, reports);
+  }, [reports, updateHazardBanner]);
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -290,6 +425,7 @@ export default function LivePage() {
         bearingRef.current = bearing;
 
         sunCoordsRef.current = { lat, lng };
+        userPositionRef.current = { lat, lng };
 
         const mph = calcSpeedMph(
           previousSampleRef.current,
@@ -302,6 +438,7 @@ export default function LivePage() {
         setSpeedMph(mph);
 
         syncMarker(map, lat, lng, bearing, true);
+        void fetchNearbyReports(lat, lng);
 
         if (!hasCenteredRef.current) {
           map.jumpTo({ center: [lng, lat], zoom: 15 });
@@ -334,7 +471,91 @@ export default function LivePage() {
         watchIdRef.current = null;
       }
     };
-  }, [applyMapStyle, syncMarker]);
+  }, [applyMapStyle, fetchNearbyReports, syncMarker]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      const pos = userPositionRef.current;
+      if (!pos) return;
+      void fetchNearbyReports(pos.lat, pos.lng);
+    }, 30_000);
+    return () => window.clearInterval(interval);
+  }, [fetchNearbyReports]);
+
+  const handleReportButton = () => {
+    if (isGuest) {
+      setGuestPrompt("Sign in to report road hazards");
+      return;
+    }
+    setShowReportTypes(true);
+  };
+
+  const handleSubmitReport = async (reportType: ReportType) => {
+    const pos = userPositionRef.current;
+    if (!pos) {
+      showToastMessage("Waiting for GPS position…");
+      return;
+    }
+
+    setSubmittingReport(true);
+    try {
+      await apiFetch("/live/reports", {
+        method: "POST",
+        body: JSON.stringify({
+          report_type: reportType,
+          lat: pos.lat,
+          lng: pos.lng,
+          city: null,
+          description: null,
+        }),
+      });
+      setShowReportTypes(false);
+      showToastMessage("Report submitted. Thanks!");
+      await fetchNearbyReports(pos.lat, pos.lng);
+    } catch {
+      showToastMessage("Failed to submit. Try again.");
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
+  const handleConfirmReport = async (action: "confirm" | "dismiss") => {
+    if (!selectedReport) return;
+    setReportBusy(true);
+    try {
+      const updated = await apiFetch<RoadReport>(
+        `/live/reports/${selectedReport.id}/confirm`,
+        {
+          method: "POST",
+          body: JSON.stringify({ action }),
+        },
+      );
+      setSelectedReport(updated);
+      setReports((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item)),
+      );
+      showToastMessage(
+        action === "confirm" ? "Thanks for confirming." : "Report dismissed.",
+      );
+    } catch {
+      showToastMessage("Could not update report. Try again.");
+    } finally {
+      setReportBusy(false);
+    }
+  };
+
+  const handleWayraMessageSent = () => {
+    if (!isGuest) return;
+    setWayraMessageCount((prev) => {
+      const next = prev + 1;
+      sessionStorage.setItem(WAYRA_COUNT_KEY, String(next));
+      return next;
+    });
+  };
+
+  const hazardConfig = hazardBanner
+    ? REPORT_CONFIG[hazardBanner.report.report_type]
+    : null;
 
   return (
     <div className="fixed inset-0 z-[100] h-[100dvh] w-full overflow-hidden bg-stone-900">
@@ -352,6 +573,44 @@ export default function LivePage() {
             <span className="text-[#5EEAD4]">LIVE</span>
           </button>
         </div>
+
+        {hazardBanner && hazardConfig ? (
+          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.5rem)]">
+            <div className="rounded-xl bg-gradient-to-r from-orange-600 to-red-600 px-4 py-3 text-white shadow-lg">
+              <p className="text-sm font-semibold">
+                {hazardConfig.emoji} {hazardConfig.label} ·{" "}
+                {formatDistance(hazardBanner.distanceM)} ·{" "}
+                {minutesAgo(hazardBanner.report.created_at) === 0
+                  ? "just now"
+                  : `${minutesAgo(hazardBanner.report.created_at)} min ago`}
+              </p>
+            </div>
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={handleReportButton}
+          className="pointer-events-auto absolute bottom-36 left-4 z-20 flex items-center gap-2 rounded-full bg-[#0F766E] px-4 py-2 shadow-lg transition hover:bg-[#0d655c]"
+        >
+          <AlertCircle className="h-4 w-4 text-white" aria-hidden />
+          <span className="text-sm font-medium text-white">Report</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            if (isGuest && wayraMessageCount >= WAYRA_GUEST_LIMIT) {
+              setGuestPrompt("Create free account for unlimited Wayra access");
+              return;
+            }
+            setShowWayra(true);
+          }}
+          className="pointer-events-auto absolute bottom-24 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-[#0F766E] text-white shadow-lg transition hover:bg-[#0d655c]"
+          aria-label="Open Wayra chat"
+        >
+          <MessageCircle size={22} />
+        </button>
 
         {gpsState === "granted" ? (
           <div className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-3">
@@ -375,6 +634,12 @@ export default function LivePage() {
         ) : null}
       </div>
 
+      {toast ? (
+        <div className="pointer-events-none absolute left-1/2 top-[max(5rem,env(safe-area-inset-top))] z-[140] -translate-x-1/2 rounded-full bg-stone-900/90 px-4 py-2 text-sm font-medium text-white shadow-lg">
+          {toast}
+        </div>
+      ) : null}
+
       {gpsState === "pending" ? (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-stone-900/25">
           <div className="flex flex-col items-center gap-3 rounded-2xl bg-white/95 px-6 py-5 shadow-xl">
@@ -388,6 +653,48 @@ export default function LivePage() {
             </p>
           </div>
         </div>
+      ) : null}
+
+      {selectedReport ? (
+        <ReportSheet
+          report={selectedReport}
+          isGuest={isGuest}
+          busy={reportBusy}
+          onClose={() => setSelectedReport(null)}
+          onConfirm={() => void handleConfirmReport("confirm")}
+          onDismiss={() => void handleConfirmReport("dismiss")}
+          onChat={() => showToastMessage("Route chat coming soon")}
+          onGuestAction={setGuestPrompt}
+        />
+      ) : null}
+
+      {showReportTypes ? (
+        <ReportTypeSheet
+          submitting={submittingReport}
+          onClose={() => setShowReportTypes(false)}
+          onSelect={(type) => void handleSubmitReport(type)}
+        />
+      ) : null}
+
+      {showWayra ? (
+        <WayraChatSheet
+          isGuest={isGuest}
+          messageCount={wayraMessageCount}
+          guestLimit={WAYRA_GUEST_LIMIT}
+          onMessageSent={handleWayraMessageSent}
+          onGuestLimit={() => {
+            setShowWayra(false);
+            setGuestPrompt("Create free account for unlimited Wayra access");
+          }}
+          onClose={() => setShowWayra(false)}
+        />
+      ) : null}
+
+      {guestPrompt ? (
+        <GuestPrompt
+          message={guestPrompt}
+          onDismiss={() => setGuestPrompt(null)}
+        />
       ) : null}
     </div>
   );

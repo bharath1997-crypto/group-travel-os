@@ -342,3 +342,17 @@ body.live-mode {
 .live-user-cone.is-hidden {
   display: none;
 }
+
+.live-report-pin {
+  display: flex;
+  height: 36px;
+  width: 36px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+  font-size: 16px;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+}

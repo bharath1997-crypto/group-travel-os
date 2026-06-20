@@ -3,7 +3,10 @@ app/routes/live.py — Live session and road report endpoints
 
 Routes are thin: accept request, call service, return response.
 """
+from __future__ import annotations
+
 import uuid
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
@@ -18,7 +21,7 @@ from app.schemas.live import (
     RoadReportOut,
 )
 from app.services.live_service import LiveService
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, get_current_user_optional
 from app.utils.database import get_db
 
 router = APIRouter(prefix="/live", tags=["Live"])
@@ -80,7 +83,7 @@ def submit_road_report(
 def get_nearby_road_reports(
     query: NearbyReportsQuery = Depends(),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ):
     return LiveService.get_nearby_reports(
         db,
