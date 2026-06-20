@@ -23,6 +23,8 @@ from app.schemas.live import (
     RoadReportOut,
     TrafficDensityPoint,
     TrafficDensityQuery,
+    RouteOut,
+    RouteQuery,
 )
 from app.services.live_service import LiveService
 from app.utils.auth import get_current_user, get_current_user_optional
@@ -146,4 +148,22 @@ def get_traffic_density(
         query.lat,
         query.lng,
         query.radius_km,
+    )
+
+
+@router.get(
+    "/route",
+    response_model=RouteOut,
+    status_code=status.HTTP_200_OK,
+    summary="Get driving route from OSRM",
+)
+def get_live_route(
+    query: RouteQuery = Depends(),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    return LiveService.get_route(
+        query.start_lat,
+        query.start_lng,
+        query.end_lat,
+        query.end_lng,
     )

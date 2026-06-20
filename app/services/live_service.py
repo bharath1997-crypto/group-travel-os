@@ -249,6 +249,108 @@ class LiveService:
         points.sort(key=lambda item: item.count, reverse=True)
         return points
 
+    @staticmethod
+    def get_route(
+        start_lat: float,
+        start_lng: float,
+        end_lat: float,
+        end_lng: float,
+    ) -> dict:
+        url = (
+            "http://router.project-osrm.org/route/v1/driving/"
+            f"{start_lng},{start_lat};{end_lng},{end_lat}"
+        )
+        params = {
+            "overview": "full",
+            "geometries": "geojson",
+            "steps": "true",
+        }
+        try:
+            with httpx.Client(timeout=15.0) as client:
+                response = client.get(url, params=params)
+            if response.status_code != 200:
+                AppException.bad_request("Routing unavailable")
+            payload = response.json()
+        except Exception as exc:
+            logger.debug("OSRM route request failed: %s", exc)
+            AppException.bad_request("Routing unavailable")
+
+        if payload.get("code") != "Ok":
+            AppException.bad_request("Routing unavailable")
+
+        routes = payload.get("routes")
+        if not isinstance(routes, list) or not routes:
+            AppException.bad_request("Routing unavailable")
+
+        route = routes[0]
+        if not isinstance(route, dict):
+            AppException.bad_request("Routing unavailable")
+
+        geometry = route.get("geometry")
+        legs = route.get("legs")
+        if not isinstance(geometry, dict) or not isinstance(legs, list) or not legs:
+            AppException.bad_request("Routing unavailable")
+
+        first_leg = legs[0]
+        if not isinstance(first_leg, dict):
+            AppException.bad_request("Routing unavailable")
+
+        raw_steps = first_leg.get("steps")
+        if not isinstance(raw_steps, list):
+            AppException.bad_request("Routing unavailable")
+
+        steps: list[dict] = []
+        for step in raw_steps:
+            if not isinstance(step, dict):
+                continue
+            maneuver = step.get("maneuver")
+            if not isinstance(maneuver, dict):
+                continue
+            location = maneuver.get("location")
+            if (
+                not isinstance(location, list)
+                or len(location) < 2
+                or not isinstance(location[0], (int, float))
+                or not isinstance(location[1], (int, float))
+            ):
+                continue
+
+            maneuver_type = _osrm_maneuver_type(maneuver)
+            name = step.get("name")
+            instruction = step.get("name") or ""
+            if isinstance(name, str) and name.strip():
+                instruction = name.strip()
+
+            steps.append(
+                {
+                    "instruction": instruction,
+                    "distance": float(step.get("distance") or 0),
+                    "duration": float(step.get("duration") or 0),
+                    "maneuver_type": maneuver_type,
+                    "name": name if isinstance(name, str) else None,
+                    "lat": float(location[1]),
+                    "lng": float(location[0]),
+                }
+            )
+
+        return {
+            "geometry": geometry,
+            "steps": steps,
+            "total_distance_m": float(route.get("distance") or 0),
+            "total_duration_s": float(route.get("duration") or 0),
+        }
+
+
+def _osrm_maneuver_type(maneuver: dict) -> str:
+    maneuver_type = str(maneuver.get("type") or "straight")
+    modifier = maneuver.get("modifier")
+    if isinstance(modifier, str) and modifier.strip():
+        normalized = modifier.strip().replace(" ", "-")
+        if maneuver_type in ("turn", "end of road", "fork", "off ramp", "on ramp"):
+            return f"{maneuver_type}-{normalized}" if maneuver_type == "turn" else normalized
+        return normalized
+    return maneuver_type
+
 
 def _call_guest_wayra_gemini(message: str) -> str:
     api_key = _gemini_key()

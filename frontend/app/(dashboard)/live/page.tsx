@@ -1,6 +1,8 @@
 "use client";
 
+import { DestinationSheet } from "@/components/live/DestinationSheet";
 import { GuestPrompt } from "@/components/live/GuestPrompt";
+import { NavigationSheet } from "@/components/live/NavigationSheet";
 import { PoiDetailSheet, type PoiPlace } from "@/components/live/PoiDetailSheet";
 import { PoiSearchSheet, type PoiCategory } from "@/components/live/PoiSearchSheet";
 import { ReportSheet } from "@/components/live/ReportSheet";
@@ -19,11 +21,18 @@ import {
   type TrafficDensityPoint,
 } from "@/lib/live/types";
 import {
+  distanceToRouteLine,
+  routeBounds,
+  type Destination,
+  type RouteData,
+} from "@/lib/live/navigation";
+import {
   AlertCircle,
   ChevronLeft,
   Loader2,
   MessageCircle,
   Search,
+  MapPin,
 } from "lucide-react";
 import maplibregl, { type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -73,6 +82,13 @@ const HAZARD_RADIUS_M = 500;
 const HAZARD_BANNER_MS = 10_000;
 const TRAFFIC_FETCH_MS = 60_000;
 const WEATHER_FETCH_MS = 600_000;
+const ROUTE_REFETCH_MS = 30_000;
+const STEP_ADVANCE_M = 30;
+const ARRIVAL_M = 50;
+const DEVIATION_M = 100;
+const HAZARD_ON_ROUTE_M = 200;
+const HAZARD_ON_ROUTE_BANNER_MS = 15_000;
+const ARRIVAL_BANNER_MS = 5_000;
 
 const TRAFFIC_RADIUS_M: Record<TrafficDensityPoint["level"], number> = {
   low: 300,
@@ -280,6 +296,38 @@ function ensureTrafficLayer(
   });
 }
 
+function ensureRouteLayer(map: maplibregl.Map, geometry: GeoJSON.LineString) {
+  const data: GeoJSON.FeatureCollection = {
+    type: "FeatureCollection",
+    features: [{ type: "Feature", geometry, properties: {} }],
+  };
+  const existing = map.getSource("route-line") as maplibregl.GeoJSONSource | undefined;
+  if (existing) {
+    existing.setData(data);
+    return;
+  }
+  map.addSource("route-line", { type: "geojson", data });
+  map.addLayer({
+    id: "route-layer",
+    type: "line",
+    source: "route-line",
+    paint: {
+      "line-color": "#0F766E",
+      "line-width": 5,
+      "line-opacity": 0.85,
+    },
+    layout: {
+      "line-cap": "round",
+      "line-join": "round",
+    },
+  });
+}
+
+function clearRouteLayer(map: maplibregl.Map) {
+  if (map.getLayer("route-layer")) map.removeLayer("route-layer");
+  if (map.getSource("route-line")) map.removeSource("route-line");
+}
+
 export default function LivePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -290,6 +338,14 @@ export default function LivePage() {
   const markerRef = useRef<LiveUserMarker | null>(null);
   const reportMarkersRef = useRef<maplibregl.Marker[]>([]);
   const poiMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const destinationMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const destinationRef = useRef<Destination | null>(null);
+  const routeRef = useRef<RouteData | null>(null);
+  const navigationActiveRef = useRef(false);
+  const activeStepIndexRef = useRef(0);
+  const recalculatingRef = useRef(false);
+  const routeHazardTimerRef = useRef<number | null>(null);
+  const arrivalTimerRef = useRef<number | null>(null);
   const previousSampleRef = useRef<PositionSample | null>(null);
   const bearingRef = useRef<number | null>(null);
   const gpsStateRef = useRef<GpsPermissionState>("pending");
@@ -322,6 +378,17 @@ export default function LivePage() {
   const [toast, setToast] = useState<string | null>(null);
   const [hazardBanner, setHazardBanner] = useState<HazardBanner | null>(null);
   const [guestWayraRemaining, setGuestWayraRemaining] = useState(WAYRA_GUEST_LIMIT);
+  const [destination, setDestination] = useState<Destination | null>(null);
+  const [route, setRoute] = useState<RouteData | null>(null);
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
+  const [navigationActive, setNavigationActive] = useState(false);
+  const [showDestinationSheet, setShowDestinationSheet] = useState(false);
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [recalculatingBanner, setRecalculatingBanner] = useState(false);
+  const [arrivalBanner, setArrivalBanner] = useState(false);
+  const [routeHazardBanner, setRouteHazardBanner] = useState<HazardBanner | null>(
+    null,
+  );
 
   openReportRef.current = (report: RoadReport) => setSelectedReport(report);
 
@@ -339,10 +406,219 @@ export default function LivePage() {
     reportsRef.current = reports;
   }, [reports]);
 
+  useEffect(() => {
+    destinationRef.current = destination;
+  }, [destination]);
+
+  useEffect(() => {
+    routeRef.current = route;
+  }, [route]);
+
+  useEffect(() => {
+    navigationActiveRef.current = navigationActive;
+  }, [navigationActive]);
+
+  useEffect(() => {
+    activeStepIndexRef.current = activeStepIndex;
+  }, [activeStepIndex]);
+
   const showToastMessage = useCallback((message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(null), 3000);
   }, []);
+
+  const clearRouteFromMap = useCallback(() => {
+    const map = mapRef.current;
+    if (map) clearRouteLayer(map);
+    destinationMarkerRef.current?.remove();
+    destinationMarkerRef.current = null;
+  }, []);
+
+  const clearNavigation = useCallback(() => {
+    clearRouteFromMap();
+    setDestination(null);
+    setRoute(null);
+    setNavigationActive(false);
+    setActiveStepIndex(0);
+    setRouteHazardBanner(null);
+    setRecalculatingBanner(false);
+    recalculatingRef.current = false;
+    destinationRef.current = null;
+    routeRef.current = null;
+    navigationActiveRef.current = false;
+    activeStepIndexRef.current = 0;
+    if (routeHazardTimerRef.current != null) {
+      window.clearTimeout(routeHazardTimerRef.current);
+      routeHazardTimerRef.current = null;
+    }
+    const pos = userPositionRef.current;
+    const map = mapRef.current;
+    if (pos && map) {
+      map.jumpTo({ center: [pos.lng, pos.lat], zoom: 15 });
+    }
+  }, [clearRouteFromMap]);
+
+  const drawRouteOnMap = useCallback(
+    (geometry: GeoJSON.LineString, dest: Destination, fitBounds = true) => {
+      const map = mapRef.current;
+      if (!map) return;
+
+      ensureRouteLayer(map, geometry);
+      destinationMarkerRef.current?.remove();
+
+      const label = document.createElement("div");
+      label.className =
+        "max-w-[140px] truncate rounded-full bg-red-600 px-2 py-1 text-center text-xs font-semibold text-white shadow-lg";
+      label.textContent = dest.name.slice(0, 20);
+
+      destinationMarkerRef.current = new maplibregl.Marker({
+        element: label,
+        anchor: "bottom",
+      })
+        .setLngLat([dest.lng, dest.lat])
+        .addTo(map);
+
+      if (fitBounds) {
+        const bounds = routeBounds(geometry);
+        if (bounds) {
+          map.fitBounds(bounds, { padding: 80, duration: 800 });
+        }
+      }
+    },
+    [],
+  );
+
+  const fetchRoute = useCallback(
+    async (
+      userLat: number,
+      userLng: number,
+      dest: Destination,
+      options?: { fitBounds?: boolean; resetStep?: boolean },
+    ) => {
+      setRouteLoading(true);
+      try {
+        const params = new URLSearchParams({
+          start_lat: userLat.toString(),
+          start_lng: userLng.toString(),
+          end_lat: dest.lat.toString(),
+          end_lng: dest.lng.toString(),
+        });
+        const data = await apiFetchPublic<RouteData>(`/live/route?${params}`);
+        setRoute(data);
+        routeRef.current = data;
+        drawRouteOnMap(data.geometry, dest, options?.fitBounds ?? true);
+        if (options?.resetStep) {
+          setActiveStepIndex(0);
+          activeStepIndexRef.current = 0;
+        }
+      } catch {
+        showToastMessage("Routing unavailable. Try again.");
+        if (!routeRef.current) clearNavigation();
+      } finally {
+        setRouteLoading(false);
+      }
+    },
+    [clearNavigation, drawRouteOnMap, showToastMessage],
+  );
+
+  const handleArrival = useCallback(() => {
+    clearNavigation();
+    setArrivalBanner(true);
+    if (arrivalTimerRef.current != null) {
+      window.clearTimeout(arrivalTimerRef.current);
+    }
+    arrivalTimerRef.current = window.setTimeout(() => {
+      setArrivalBanner(false);
+      arrivalTimerRef.current = null;
+    }, ARRIVAL_BANNER_MS);
+  }, [clearNavigation]);
+
+  const checkRouteHazards = useCallback((items: RoadReport[]) => {
+    if (!navigationActiveRef.current || !routeRef.current) return;
+    let closest: HazardBanner | null = null;
+    for (const report of items) {
+      const distanceM = distanceToRouteLine(
+        report.lat,
+        report.lng,
+        routeRef.current.geometry,
+      );
+      if (distanceM > HAZARD_ON_ROUTE_M) continue;
+      if (!closest || distanceM < closest.distanceM) {
+        closest = { report, distanceM };
+      }
+    }
+    if (!closest) return;
+    setRouteHazardBanner(closest);
+    if (routeHazardTimerRef.current != null) {
+      window.clearTimeout(routeHazardTimerRef.current);
+    }
+    routeHazardTimerRef.current = window.setTimeout(() => {
+      setRouteHazardBanner(null);
+      routeHazardTimerRef.current = null;
+    }, HAZARD_ON_ROUTE_BANNER_MS);
+  }, []);
+
+  const processNavigationUpdate = useCallback(
+    (lat: number, lng: number) => {
+      if (!navigationActiveRef.current || !routeRef.current || !destinationRef.current) {
+        return;
+      }
+
+      const currentRoute = routeRef.current;
+      const dest = destinationRef.current;
+      const stepIndex = activeStepIndexRef.current;
+      const currentStep = currentRoute.steps[stepIndex];
+      const distToRoute = distanceToRouteLine(lat, lng, currentRoute.geometry);
+
+      if (distToRoute > DEVIATION_M && !recalculatingRef.current) {
+        recalculatingRef.current = true;
+        setRecalculatingBanner(true);
+        void fetchRoute(lat, lng, dest, { fitBounds: false, resetStep: true }).finally(
+          () => {
+            recalculatingRef.current = false;
+            setRecalculatingBanner(false);
+          },
+        );
+        return;
+      }
+
+      if (currentStep) {
+        const distToStep = haversineMeters(lat, lng, currentStep.lat, currentStep.lng);
+        if (distToStep < STEP_ADVANCE_M && stepIndex < currentRoute.steps.length - 1) {
+          const nextIndex = stepIndex + 1;
+          setActiveStepIndex(nextIndex);
+          activeStepIndexRef.current = nextIndex;
+        }
+      }
+
+      const distToDest = haversineMeters(lat, lng, dest.lat, dest.lng);
+      if (distToDest < ARRIVAL_M) {
+        handleArrival();
+      }
+    },
+    [fetchRoute, handleArrival],
+  );
+
+  const handleDestinationSelect = useCallback(
+    (place: Destination) => {
+      setShowDestinationSheet(false);
+      if (isGuest) {
+        setGuestPrompt("Sign in to get turn-by-turn directions");
+        return;
+      }
+      const pos = userPositionRef.current;
+      if (!pos) {
+        showToastMessage("Waiting for GPS position…");
+        return;
+      }
+      setDestination(place);
+      destinationRef.current = place;
+      setNavigationActive(false);
+      setActiveStepIndex(0);
+      void fetchRoute(pos.lat, pos.lng, place, { fitBounds: true, resetStep: true });
+    },
+    [fetchRoute, isGuest, showToastMessage],
+  );
 
   const fetchNearbyReports = useCallback(async (lat: number, lng: number) => {
     try {
@@ -355,10 +631,11 @@ export default function LivePage() {
         `/live/reports/nearby?${params}`,
       );
       setReports(data);
+      checkRouteHazards(data);
     } catch {
       // Map works without pins; avoid noisy console errors on transient network/API issues.
     }
-  }, []);
+  }, [checkRouteHazards]);
 
   const fetchTrafficDensity = useCallback(async (lat: number, lng: number) => {
     const map = mapRef.current;
@@ -574,6 +851,12 @@ export default function LivePage() {
       if (hazardTimerRef.current != null) {
         window.clearTimeout(hazardTimerRef.current);
       }
+      if (routeHazardTimerRef.current != null) {
+        window.clearTimeout(routeHazardTimerRef.current);
+      }
+      if (arrivalTimerRef.current != null) {
+        window.clearTimeout(arrivalTimerRef.current);
+      }
       const id = sessionIdRef.current;
       const token =
         typeof window !== "undefined" ? localStorage.getItem("gt_token") : null;
@@ -611,6 +894,21 @@ export default function LivePage() {
     map.on("style.load", () => {
       syncReportMarkers(map, reportsRef.current);
       ensureTrafficLayer(map, trafficGeoJson(trafficDataRef.current));
+      if (routeRef.current && destinationRef.current) {
+        ensureRouteLayer(map, routeRef.current.geometry);
+        const dest = destinationRef.current;
+        destinationMarkerRef.current?.remove();
+        const label = document.createElement("div");
+        label.className =
+          "max-w-[140px] truncate rounded-full bg-red-600 px-2 py-1 text-center text-xs font-semibold text-white shadow-lg";
+        label.textContent = dest.name.slice(0, 20);
+        destinationMarkerRef.current = new maplibregl.Marker({
+          element: label,
+          anchor: "bottom",
+        })
+          .setLngLat([dest.lng, dest.lat])
+          .addTo(map);
+      }
       const pos = previousSampleRef.current;
       if (!pos || gpsStateRef.current !== "granted") return;
       markerRef.current = null;
@@ -636,12 +934,13 @@ export default function LivePage() {
       reportMarkersRef.current.forEach((marker) => marker.remove());
       reportMarkersRef.current = [];
       clearPoiMarkers();
+      clearRouteFromMap();
       markerRef.current?.marker.remove();
       markerRef.current = null;
       map.remove();
       mapRef.current = null;
     };
-  }, [applyMapStyle, clearPoiMarkers, syncMarker, syncReportMarkers]);
+  }, [applyMapStyle, clearPoiMarkers, clearRouteFromMap, syncMarker, syncReportMarkers]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -694,6 +993,7 @@ export default function LivePage() {
         syncMarker(map, lat, lng, bearing, true);
         void fetchNearbyReports(lat, lng);
         void fetchTrafficDensity(lat, lng);
+        processNavigationUpdate(lat, lng);
 
         if (!hasCenteredRef.current) {
           map.jumpTo({ center: [lng, lat], zoom: 15 });
@@ -728,7 +1028,21 @@ export default function LivePage() {
         watchIdRef.current = null;
       }
     };
-  }, [applyMapStyle, fetchNearbyReports, fetchTrafficDensity, fetchWeather, startLiveSession, syncMarker]);
+  }, [applyMapStyle, fetchNearbyReports, fetchTrafficDensity, fetchWeather, processNavigationUpdate, startLiveSession, syncMarker]);
+
+  useEffect(() => {
+    if (!navigationActive) return;
+    const interval = window.setInterval(() => {
+      const pos = userPositionRef.current;
+      const dest = destinationRef.current;
+      if (!pos || !dest) return;
+      void fetchRoute(pos.lat, pos.lng, dest, {
+        fitBounds: false,
+        resetStep: false,
+      });
+    }, ROUTE_REFETCH_MS);
+    return () => window.clearInterval(interval);
+  }, [fetchRoute, navigationActive]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -823,6 +1137,9 @@ export default function LivePage() {
   const hazardConfig = hazardBanner
     ? REPORT_CONFIG[hazardBanner.report.report_type]
     : null;
+  const routeHazardConfig = routeHazardBanner
+    ? REPORT_CONFIG[routeHazardBanner.report.report_type]
+    : null;
 
   return (
     <div className="fixed inset-0 z-[100] h-[100dvh] w-full overflow-hidden bg-stone-900">
@@ -850,8 +1167,38 @@ export default function LivePage() {
           </button>
         </div>
 
+        <button
+          type="button"
+          onClick={() => setShowDestinationSheet(true)}
+          className="pointer-events-auto absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.25rem)] flex items-center gap-2 rounded-full bg-[rgba(15,23,42,0.82)] px-4 py-2.5 text-left text-sm text-white shadow-lg backdrop-blur-sm transition hover:bg-[rgba(15,23,42,0.92)]"
+        >
+          <MapPin size={16} className="shrink-0 text-[#5EEAD4]" />
+          <span className={`truncate ${destination ? "font-medium" : "text-white/70"}`}>
+            {destination?.name || "Search destination..."}
+          </span>
+          {routeLoading ? (
+            <Loader2 size={14} className="ml-auto animate-spin text-[#5EEAD4]" />
+          ) : null}
+        </button>
+
+        {arrivalBanner ? (
+          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
+            <div className="rounded-xl bg-green-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+              You have arrived!
+            </div>
+          </div>
+        ) : null}
+
+        {recalculatingBanner ? (
+          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
+            <div className="rounded-xl bg-amber-500 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+              Recalculating…
+            </div>
+          </div>
+        ) : null}
+
         {weatherLabel ? (
-          <div className="pointer-events-none absolute right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.5rem)]">
+          <div className="pointer-events-none absolute right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)]">
             <div className="rounded-full bg-[rgba(15,23,42,0.82)] px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur-sm">
               {weatherLabel}
             </div>
@@ -859,7 +1206,7 @@ export default function LivePage() {
         ) : null}
 
         {hazardBanner && hazardConfig ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.5rem)]">
+          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+9rem)]">
             <div className="rounded-xl bg-gradient-to-r from-orange-600 to-red-600 px-4 py-3 text-white shadow-lg">
               <p className="text-sm font-semibold">
                 {hazardConfig.emoji} {hazardConfig.label} ·{" "}
@@ -867,6 +1214,17 @@ export default function LivePage() {
                 {minutesAgo(hazardBanner.report.created_at) === 0
                   ? "just now"
                   : `${minutesAgo(hazardBanner.report.created_at)} min ago`}
+              </p>
+            </div>
+          </div>
+        ) : null}
+
+        {routeHazardBanner && routeHazardConfig ? (
+          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+9rem)]">
+            <div className="rounded-xl bg-amber-500 px-4 py-3 text-white shadow-lg">
+              <p className="text-sm font-semibold">
+                {routeHazardConfig.emoji} {routeHazardConfig.label} ahead on your route —{" "}
+                {formatDistance(routeHazardBanner.distanceM)} away
               </p>
             </div>
           </div>
@@ -998,6 +1356,25 @@ export default function LivePage() {
           place={selectedPoi}
           onClose={() => setSelectedPoi(null)}
           onNavigate={() => showToastMessage("Navigation coming soon")}
+        />
+      ) : null}
+
+      {showDestinationSheet ? (
+        <DestinationSheet
+          onClose={() => setShowDestinationSheet(false)}
+          onSelect={handleDestinationSelect}
+        />
+      ) : null}
+
+      {route && destination ? (
+        <NavigationSheet
+          destinationName={destination.name}
+          route={route}
+          activeStepIndex={activeStepIndex}
+          navigationActive={navigationActive}
+          onStart={() => setNavigationActive(true)}
+          onCancel={clearNavigation}
+          onEnd={clearNavigation}
         />
       ) : null}
 

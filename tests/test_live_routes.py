@@ -12,7 +12,6 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.models.road_report import ReportType
 from app.utils.auth import get_current_user
-from app.utils.exceptions import AppException
 
 _USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 _REPORT_ID = uuid.UUID("00000000-0000-0000-0000-000000000030")
@@ -159,3 +158,62 @@ class TestTrafficDensity:
         assert resp.status_code == 200
         assert resp.json() == []
         mock_density.assert_called_once()
+
+
+class TestLiveRoute:
+    @patch("app.routes.live.LiveService.get_route")
+    def test_get_route_success(self, mock_route):
+        mock_route.return_value = {
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [[-87.6298, 41.8781], [-89.6501, 39.7817]],
+            },
+            "steps": [
+                {
+                    "instruction": "Head east",
+                    "distance": 1000.0,
+                    "duration": 60.0,
+                    "maneuver_type": "depart",
+                    "name": "Main St",
+                    "lat": 41.8781,
+                    "lng": -87.6298,
+                }
+            ],
+            "total_distance_m": 250000.0,
+            "total_duration_s": 9000.0,
+        }
+        client = TestClient(app, raise_server_exceptions=True)
+        resp = client.get(
+            "/api/v1/live/route",
+            params={
+                "start_lat": 41.8781,
+                "start_lng": -87.6298,
+                "end_lat": 39.7817,
+                "end_lng": -89.6501,
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["geometry"]["type"] == "LineString"
+        assert len(body["steps"]) == 1
+        assert body["total_distance_m"] == 250000.0
+        mock_route.assert_called_once()
+
+    @patch("app.routes.live.LiveService.get_route")
+    def test_get_route_osrm_failure(self, mock_route):
+        mock_route.side_effect = HTTPException(
+            status_code=400,
+            detail="Routing unavailable",
+        )
+        client = TestClient(app, raise_server_exceptions=True)
+        resp = client.get(
+            "/api/v1/live/route",
+            params={
+                "start_lat": 41.8781,
+                "start_lng": -87.6298,
+                "end_lat": 39.7817,
+                "end_lng": -89.6501,
+            },
+        )
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "Routing unavailable"

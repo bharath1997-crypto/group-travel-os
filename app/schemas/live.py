@@ -70,3 +70,27 @@ class TrafficDensityPoint(BaseModel):
     lng: float
     count: int
     level: Literal["low", "medium", "high"]
+
+
+class RouteQuery(BaseModel):
+    start_lat: float = Field(..., ge=-90, le=90)
+    start_lng: float = Field(..., ge=-180, le=180)
+    end_lat: float = Field(..., ge=-90, le=90)
+    end_lng: float = Field(..., ge=-180, le=180)
+
+
+class RouteStepOut(BaseModel):
+    instruction: str
+    distance: float
+    duration: float
+    maneuver_type: str
+    name: str | None = None
+    lat: float
+    lng: float
+
+
+class RouteOut(BaseModel):
+    geometry: dict
+    steps: list[RouteStepOut]
+    total_distance_m: float
+    total_duration_s: float
