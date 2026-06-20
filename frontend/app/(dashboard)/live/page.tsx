@@ -1,6 +1,9 @@
 "use client";
 
+import { ConvoySheet } from "@/components/live/ConvoySheet";
 import { DestinationSheet } from "@/components/live/DestinationSheet";
+import { GroupLiveChatButton, GroupLiveChatSheet } from "@/components/live/GroupLiveChatSheet";
+import { GroupPanel, GroupPanelToggle } from "@/components/live/GroupPanel";
 import { GuestPrompt } from "@/components/live/GuestPrompt";
 import { NavigationSheet } from "@/components/live/NavigationSheet";
 import { PoiDetailSheet, type PoiPlace } from "@/components/live/PoiDetailSheet";
@@ -9,6 +12,18 @@ import { ReportSheet } from "@/components/live/ReportSheet";
 import { ReportTypeSheet } from "@/components/live/ReportTypeSheet";
 import { WayraChatSheet } from "@/components/live/WayraChatSheet";
 import { apiFetch, apiFetchPublic } from "@/lib/api";
+import { useDashboardUser } from "@/contexts/dashboard-user-context";
+import { initFirebase } from "@/lib/firebase-client";
+import {
+  firstName,
+  memberStatusValue,
+  type ConvoyData,
+  type GroupValidateResponse,
+  type MeetingPoint,
+  type MemberLiveData,
+  type QuickStatus,
+  type TripMember,
+} from "@/lib/live/group";
 import {
   REPORT_CONFIG,
   createReportPinElement,
@@ -36,6 +51,7 @@ import {
 } from "lucide-react";
 import maplibregl, { type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { off, onValue, ref, remove, set, type Database } from "firebase/database";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -116,10 +132,57 @@ type LiveUserMarker = {
   setBearing: (bearing: number | null) => void;
 };
 
+const MEETING_ARRIVAL_M = 50;
+
+type MemberMarkerEntry = {
+  marker: maplibregl.Marker;
+  setBearing: (bearing: number | null) => void;
+  setOpacity: (opacity: number) => void;
+};
+
 type HazardBanner = {
   report: RoadReport;
   distanceM: number;
 };
+
+function createMemberMarker(color: string, label: string): {
+  element: HTMLDivElement;
+  setBearing: (bearing: number | null) => void;
+  setOpacity: (opacity: number) => void;
+} {
+  const root = document.createElement("div");
+  root.className = "live-member-marker";
+
+  const cone = document.createElement("div");
+  cone.className = "live-member-cone is-hidden";
+
+  const dot = document.createElement("div");
+  dot.className = "live-member-dot";
+  dot.style.backgroundColor = color;
+
+  const name = document.createElement("div");
+  name.className = "live-member-label";
+  name.textContent = label;
+
+  root.appendChild(cone);
+  root.appendChild(dot);
+  root.appendChild(name);
+
+  const setBearing = (bearing: number | null) => {
+    if (bearing == null || Number.isNaN(bearing)) {
+      cone.classList.add("is-hidden");
+      return;
+    }
+    cone.classList.remove("is-hidden");
+    cone.style.transform = `translateX(-50%) rotate(${bearing}deg)`;
+  };
+
+  const setOpacity = (opacity: number) => {
+    root.style.opacity = String(opacity);
+  };
+
+  return { element: root, setBearing, setOpacity };
+}
 
 function getSunTimes(lat: number, lng: number): { sunrise: number; sunset: number } {
   const now = new Date();
@@ -331,6 +394,7 @@ function clearRouteLayer(map: maplibregl.Map) {
 export default function LivePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user: dashboardUser } = useDashboardUser();
   const tripId = searchParams.get("trip_id") || null;
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -360,6 +424,19 @@ export default function LivePage() {
   const reportChatCountsRef = useRef<Record<string, number>>({});
   const hazardTimerRef = useRef<number | null>(null);
   const openReportRef = useRef<(report: RoadReport) => void>(() => {});
+  const memberMarkersRef = useRef<Map<string, MemberMarkerEntry>>(new Map());
+  const meetingPointMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const firebaseDbRef = useRef<Database | null>(null);
+  const groupModeRef = useRef(false);
+  const memberLiveRef = useRef<Record<string, MemberLiveData>>({});
+  const memberStatusesRef = useRef<Record<string, QuickStatus>>({});
+  const meetingPointRef = useRef<MeetingPoint | null>(null);
+  const convoyRef = useRef<ConvoyData | null>(null);
+  const meetingArrivalSentRef = useRef(false);
+  const convoyEndedSeenRef = useRef(false);
+  const mapClickHandlerRef = useRef<((event: maplibregl.MapMouseEvent) => void) | null>(
+    null,
+  );
 
   const [isGuest, setIsGuest] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -393,6 +470,26 @@ export default function LivePage() {
   const [reportChatCounts, setReportChatCounts] = useState<Record<string, number>>(
     {},
   );
+  const [groupMode, setGroupMode] = useState(false);
+  const [tripMembers, setTripMembers] = useState<TripMember[]>([]);
+  const [tripName, setTripName] = useState("");
+  const [isGroupAdmin, setIsGroupAdmin] = useState(false);
+  const [meetingPoint, setMeetingPoint] = useState<MeetingPoint | null>(null);
+  const [convoy, setConvoy] = useState<ConvoyData | null>(null);
+  const [memberStatuses, setMemberStatuses] = useState<Record<string, QuickStatus>>({});
+  const [memberLive, setMemberLive] = useState<Record<string, MemberLiveData>>({});
+  const [groupPanelOpen, setGroupPanelOpen] = useState(false);
+  const [showConvoySheet, setShowConvoySheet] = useState(false);
+  const [showGroupChat, setShowGroupChat] = useState(false);
+  const [settingMeetingPoint, setSettingMeetingPoint] = useState(false);
+  const [groupStatusBusy, setGroupStatusBusy] = useState(false);
+  const [convoyBusy, setConvoyBusy] = useState(false);
+  const [convoyBanner, setConvoyBanner] = useState<string | null>(null);
+  const [meetingArrivalBanner, setMeetingArrivalBanner] = useState<string | null>(null);
+  const [everyoneArrivedBanner, setEveryoneArrivedBanner] = useState(false);
+  const [firebaseDb, setFirebaseDb] = useState<Database | null>(null);
+  const currentUserId = dashboardUser?.id ?? null;
+  const currentUserName = dashboardUser?.full_name ?? "You";
 
   openReportRef.current = (report: RoadReport) => setSelectedReport(report);
 
@@ -426,9 +523,155 @@ export default function LivePage() {
     activeStepIndexRef.current = activeStepIndex;
   }, [activeStepIndex]);
 
+  useEffect(() => {
+    groupModeRef.current = groupMode;
+  }, [groupMode]);
+
+  useEffect(() => {
+    memberStatusesRef.current = memberStatuses;
+  }, [memberStatuses]);
+
+  useEffect(() => {
+    memberLiveRef.current = memberLive;
+  }, [memberLive]);
+
+  useEffect(() => {
+    meetingPointRef.current = meetingPoint;
+  }, [meetingPoint]);
+
+  useEffect(() => {
+    convoyRef.current = convoy;
+  }, [convoy]);
+
+  useEffect(() => {
+    const fb = initFirebase();
+    if (fb.ok && fb.db) {
+      firebaseDbRef.current = fb.db;
+      setFirebaseDb(fb.db);
+    }
+  }, []);
+
   const showToastMessage = useCallback((message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  const validTripId =
+    tripId &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      tripId,
+    )
+      ? tripId
+      : null;
+
+  const clearMemberMarkers = useCallback(() => {
+    memberMarkersRef.current.forEach((entry) => entry.marker.remove());
+    memberMarkersRef.current.clear();
+  }, []);
+
+  const syncMeetingPointMarker = useCallback((point: MeetingPoint | null) => {
+    const map = mapRef.current;
+    if (!map) return;
+    meetingPointMarkerRef.current?.remove();
+    meetingPointMarkerRef.current = null;
+    if (!point) return;
+
+    const element = document.createElement("div");
+    element.className = "live-meeting-point-marker";
+    element.innerHTML = `<span class="live-meeting-point-star">★</span><span class="live-meeting-point-label">${point.label}</span>`;
+
+    meetingPointMarkerRef.current = new maplibregl.Marker({
+      element,
+      anchor: "bottom",
+    })
+      .setLngLat([point.lng, point.lat])
+      .addTo(map);
+  }, []);
+
+  const updateMemberDots = useCallback(
+    (data: Record<string, MemberLiveData>) => {
+      const map = mapRef.current;
+      if (!map || !groupModeRef.current) return;
+
+      const seen = new Set<string>();
+      tripMembers.forEach((member, index) => {
+        if (member.user_id === currentUserId) return;
+        const live = data[member.user_id];
+        if (!live || live.lat == null || live.lng == null) return;
+
+        seen.add(member.user_id);
+        const color = ["#7c3aed", "#d97706", "#f97316", "#2563eb"][index % 4];
+        const offline =
+          live.last_seen != null &&
+          Date.now() - new Date(live.last_seen).getTime() > 5 * 60 * 1000;
+
+        let entry = memberMarkersRef.current.get(member.user_id);
+        if (!entry) {
+          const { element, setBearing, setOpacity } = createMemberMarker(
+            color,
+            firstName(member.display_name),
+          );
+          const marker = new maplibregl.Marker({ element, anchor: "center" })
+            .setLngLat([live.lng, live.lat])
+            .addTo(map);
+          entry = { marker, setBearing, setOpacity };
+          memberMarkersRef.current.set(member.user_id, entry);
+        } else {
+          entry.marker.setLngLat([live.lng, live.lat]);
+        }
+
+        entry.setBearing(
+          live.bearing != null && !Number.isNaN(live.bearing) ? live.bearing : null,
+        );
+        entry.setOpacity(offline ? 0.5 : 1);
+      });
+
+      memberMarkersRef.current.forEach((entry, userId) => {
+        if (!seen.has(userId)) {
+          entry.marker.remove();
+          memberMarkersRef.current.delete(userId);
+        }
+      });
+    },
+    [currentUserId, tripMembers],
+  );
+
+  const updateMemberStatusesFromLive = useCallback((data: Record<string, MemberLiveData>) => {
+    const next: Record<string, QuickStatus> = {};
+    for (const [userId, live] of Object.entries(data)) {
+      const status = memberStatusValue(live);
+      if (status) next[userId] = status;
+    }
+    setMemberStatuses((prev) => ({ ...prev, ...next }));
+  }, []);
+
+  const writeUserLocation = useCallback(
+    (lat: number, lng: number, bearing: number | null, speed: number) => {
+      const db = firebaseDbRef.current;
+      if (!groupModeRef.current || !validTripId || !currentUserId || !db) return;
+      const locationRef = ref(db, `trips/${validTripId}/live/members/${currentUserId}`);
+      void set(locationRef, {
+        lat,
+        lng,
+        bearing,
+        speed_mph: speed,
+        last_seen: new Date().toISOString(),
+        status: memberStatusesRef.current[currentUserId] || "on_my_way",
+      });
+    },
+    [currentUserId, validTripId],
+  );
+
+  const stopMeetingPointPlacement = useCallback(() => {
+    const map = mapRef.current;
+    if (map && mapClickHandlerRef.current) {
+      map.off("click", mapClickHandlerRef.current);
+      mapClickHandlerRef.current = null;
+    }
+    if (map) {
+      map.getCanvas().style.cursor = "";
+    }
+    setSettingMeetingPoint(false);
   }, []);
 
   const clearRouteFromMap = useCallback(() => {
@@ -610,6 +853,10 @@ export default function LivePage() {
         setGuestPrompt("Sign in to get turn-by-turn directions");
         return;
       }
+      if (groupMode && convoy?.active && !isGroupAdmin) {
+        showToastMessage("Convoy is active — follow the group route");
+        return;
+      }
       const pos = userPositionRef.current;
       if (!pos) {
         showToastMessage("Waiting for GPS position…");
@@ -621,8 +868,256 @@ export default function LivePage() {
       setActiveStepIndex(0);
       void fetchRoute(pos.lat, pos.lng, place, { fitBounds: true, resetStep: true });
     },
-    [fetchRoute, isGuest, showToastMessage],
+    [convoy?.active, fetchRoute, groupMode, isGroupAdmin, isGuest, showToastMessage],
   );
+
+  const postQuickStatus = useCallback(
+    async (status: QuickStatus) => {
+      if (!validTripId) return;
+      setGroupStatusBusy(true);
+      try {
+        const result = await apiFetch<{ status: QuickStatus; updated_at: string }>(
+          `/live/group/${validTripId}/status`,
+          {
+            method: "POST",
+            body: JSON.stringify({ status }),
+          },
+        );
+        setMemberStatuses((prev) => ({
+          ...prev,
+          ...(currentUserId ? { [currentUserId]: result.status } : {}),
+        }));
+        if (status === "need_help") {
+          showToastMessage("Help request sent to the group");
+        }
+      } catch {
+        showToastMessage("Could not update status. Try again.");
+      } finally {
+        setGroupStatusBusy(false);
+      }
+    },
+    [currentUserId, showToastMessage, validTripId],
+  );
+
+  const checkMeetingArrival = useCallback(
+    (lat: number, lng: number) => {
+      const point = meetingPointRef.current;
+      if (!point || meetingArrivalSentRef.current) return;
+
+      const distanceM = haversineMeters(lat, lng, point.lat, point.lng);
+      if (distanceM >= MEETING_ARRIVAL_M) return;
+
+      meetingArrivalSentRef.current = true;
+      setMeetingArrivalBanner(`You arrived at ${point.label}!`);
+      void postQuickStatus("at_the_spot");
+      clearNavigation();
+      window.setTimeout(() => setMeetingArrivalBanner(null), ARRIVAL_BANNER_MS);
+    },
+    [clearNavigation, postQuickStatus],
+  );
+
+  const checkEveryoneArrived = useCallback(() => {
+    if (!isGroupAdmin || tripMembers.length === 0) return;
+    const allArrived = tripMembers.every(
+      (member) => memberStatuses[member.user_id] === "at_the_spot",
+    );
+    setEveryoneArrivedBanner(allArrived);
+  }, [isGroupAdmin, memberStatuses, tripMembers]);
+
+  const handleSetMeetingPointMode = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    setSettingMeetingPoint(true);
+    map.getCanvas().style.cursor = "crosshair";
+    showToastMessage("Tap anywhere on the map to set meeting point");
+
+    const onClick = async (event: maplibregl.MapMouseEvent) => {
+      if (!validTripId) return;
+      stopMeetingPointPlacement();
+      try {
+        await apiFetch(`/live/group/${validTripId}/meeting-point`, {
+          method: "POST",
+          body: JSON.stringify({
+            lat: event.lngLat.lat,
+            lng: event.lngLat.lng,
+            label: "Meeting Point",
+          }),
+        });
+        showToastMessage("Meeting point set");
+      } catch {
+        showToastMessage("Could not set meeting point");
+      }
+    };
+
+    mapClickHandlerRef.current = onClick;
+    map.once("click", onClick);
+  }, [showToastMessage, stopMeetingPointPlacement, validTripId]);
+
+  const handleClearMeetingPoint = useCallback(async () => {
+    if (!validTripId) return;
+    try {
+      await apiFetch(`/live/group/${validTripId}/meeting-point`, { method: "DELETE" });
+      showToastMessage("Meeting point cleared");
+    } catch {
+      showToastMessage("Could not clear meeting point");
+    }
+  }, [showToastMessage, validTripId]);
+
+  const handleStartConvoy = useCallback(
+    async (place: { lat: number; lng: number; name: string }) => {
+      if (!validTripId) return;
+      setConvoyBusy(true);
+      try {
+        await apiFetch(`/live/group/${validTripId}/convoy`, {
+          method: "POST",
+          body: JSON.stringify({
+            destination_lat: place.lat,
+            destination_lng: place.lng,
+            destination_name: place.name,
+          }),
+        });
+        setShowConvoySheet(false);
+        showToastMessage("Convoy started");
+      } catch {
+        showToastMessage("Could not start convoy");
+      } finally {
+        setConvoyBusy(false);
+      }
+    },
+    [showToastMessage, validTripId],
+  );
+
+  const handleEndConvoy = useCallback(async () => {
+    if (!validTripId) return;
+    try {
+      await apiFetch(`/live/group/${validTripId}/convoy`, { method: "DELETE" });
+    } catch {
+      showToastMessage("Could not end convoy");
+    }
+  }, [showToastMessage, validTripId]);
+
+  useEffect(() => {
+    checkEveryoneArrived();
+  }, [checkEveryoneArrived, memberStatuses]);
+
+  useEffect(() => {
+    if (!validTripId || isGuest) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const data = await apiFetch<GroupValidateResponse>(
+          `/live/group/${validTripId}/validate`,
+        );
+        if (cancelled) return;
+        setGroupMode(true);
+        setGroupPanelOpen(true);
+        setTripMembers(data.members);
+        setTripName(data.trip_name);
+        setIsGroupAdmin(data.is_admin);
+      } catch (error) {
+        if (cancelled) return;
+        const message = error instanceof Error ? error.message : "";
+        if (message.toLowerCase().includes("not a trip member")) {
+          showToastMessage("You are not a member of this trip");
+          router.push("/trips");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isGuest, router, showToastMessage, validTripId]);
+
+  useEffect(() => {
+    const db = firebaseDb;
+    if (!groupMode || !validTripId || !db) return;
+
+    const membersRef = ref(db, `trips/${validTripId}/live/members`);
+    const unsubscribe = onValue(membersRef, (snapshot) => {
+      const data = (snapshot.val() ?? {}) as Record<string, MemberLiveData>;
+      setMemberLive(data);
+      updateMemberDots(data);
+      updateMemberStatusesFromLive(data);
+    });
+    return () => off(membersRef, "value", unsubscribe);
+  }, [firebaseDb, groupMode, updateMemberDots, updateMemberStatusesFromLive, validTripId]);
+
+  useEffect(() => {
+    const db = firebaseDb;
+    if (!groupMode || !validTripId || !db) return;
+
+    const mpRef = ref(db, `trips/${validTripId}/live/meeting_point`);
+    const unsubscribe = onValue(mpRef, (snapshot) => {
+      const value = snapshot.val() as MeetingPoint | null;
+      setMeetingPoint(value);
+      syncMeetingPointMarker(value);
+    });
+    return () => off(mpRef, "value", unsubscribe);
+  }, [firebaseDb, groupMode, syncMeetingPointMarker, validTripId]);
+
+  useEffect(() => {
+    const db = firebaseDb;
+    if (!groupMode || !validTripId || !db) return;
+
+    const convoyRefPath = ref(db, `trips/${validTripId}/live/convoy`);
+    const unsubscribe = onValue(convoyRefPath, (snapshot) => {
+      const value = snapshot.val() as ConvoyData | null;
+      setConvoy(value);
+    });
+    return () => off(convoyRefPath, "value", unsubscribe);
+  }, [firebaseDb, groupMode, validTripId]);
+
+  useEffect(() => {
+    if (!meetingPoint || convoy?.active) {
+      if (!meetingPoint) meetingArrivalSentRef.current = false;
+      return;
+    }
+    const pos = userPositionRef.current;
+    if (!pos || navigationActiveRef.current) return;
+    const dest = {
+      lat: meetingPoint.lat,
+      lng: meetingPoint.lng,
+      name: meetingPoint.label,
+    };
+    setDestination(dest);
+    destinationRef.current = dest;
+    void fetchRoute(pos.lat, pos.lng, dest, { fitBounds: true, resetStep: true }).then(
+      () => {
+        setNavigationActive(true);
+        navigationActiveRef.current = true;
+      },
+    );
+  }, [convoy?.active, fetchRoute, meetingPoint]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !convoy?.active || !convoy.route_geometry) return;
+
+    ensureRouteLayer(map, convoy.route_geometry);
+    if (!isGroupAdmin) {
+      const leader = tripMembers.find((member) => member.user_id === convoy.leader_id);
+      setConvoyBanner(
+        `Convoy active · Following ${firstName(leader?.display_name ?? "leader")} to ${convoy.destination_name}`,
+      );
+    } else {
+      setConvoyBanner(null);
+    }
+    convoyEndedSeenRef.current = true;
+  }, [convoy, isGroupAdmin, tripMembers]);
+
+  useEffect(() => {
+    if (convoy) return;
+    if (convoyEndedSeenRef.current) {
+      showToastMessage("Convoy ended");
+      convoyEndedSeenRef.current = false;
+      setConvoyBanner(null);
+      if (!meetingPointRef.current) {
+        clearRouteFromMap();
+      }
+    }
+  }, [clearRouteFromMap, convoy, showToastMessage]);
 
   useEffect(() => {
     reportChatCountsRef.current = reportChatCounts;
@@ -894,8 +1389,18 @@ export default function LivePage() {
       if (id && token) {
         void apiFetch(`/live/session/${id}/end`, { method: "POST" });
       }
+      stopMeetingPointPlacement();
+      clearMemberMarkers();
+      meetingPointMarkerRef.current?.remove();
+      meetingPointMarkerRef.current = null;
+      const db = firebaseDbRef.current;
+      const trip = validTripId;
+      const userId = dashboardUser?.id;
+      if (groupModeRef.current && db && trip && userId) {
+        void remove(ref(db, `trips/${trip}/live/members/${userId}`));
+      }
     };
-  }, []);
+  }, [clearMemberMarkers, dashboardUser?.id, stopMeetingPointPlacement, validTripId]);
 
   useEffect(() => {
     const container = mapContainerRef.current;
@@ -1022,9 +1527,13 @@ export default function LivePage() {
         setSpeedMph(mph);
 
         syncMarker(map, lat, lng, bearing, true);
+        writeUserLocation(lat, lng, bearing, mph);
         void fetchNearbyReports(lat, lng);
         void fetchTrafficDensity(lat, lng);
         processNavigationUpdate(lat, lng);
+        if (groupModeRef.current) {
+          checkMeetingArrival(lat, lng);
+        }
 
         if (!hasCenteredRef.current) {
           map.jumpTo({ center: [lng, lat], zoom: 15 });
@@ -1059,7 +1568,7 @@ export default function LivePage() {
         watchIdRef.current = null;
       }
     };
-  }, [applyMapStyle, fetchNearbyReports, fetchTrafficDensity, fetchWeather, processNavigationUpdate, startLiveSession, syncMarker]);
+  }, [applyMapStyle, checkMeetingArrival, fetchNearbyReports, fetchTrafficDensity, fetchWeather, processNavigationUpdate, startLiveSession, syncMarker, writeUserLocation]);
 
   useEffect(() => {
     if (!navigationActive) return;
@@ -1198,9 +1707,54 @@ export default function LivePage() {
           </button>
         </div>
 
+        {groupMode ? (
+          <GroupPanelToggle
+            active={groupPanelOpen}
+            onClick={() => setGroupPanelOpen((open) => !open)}
+          />
+        ) : null}
+
+        {settingMeetingPoint ? (
+          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
+            <div className="rounded-xl bg-teal-700 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+              Tap anywhere on the map to set meeting point
+            </div>
+          </div>
+        ) : null}
+
+        {convoyBanner ? (
+          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
+            <div className="rounded-xl bg-[#0F766E] px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+              {convoyBanner}
+            </div>
+          </div>
+        ) : null}
+
+        {meetingArrivalBanner ? (
+          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
+            <div className="rounded-xl bg-green-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+              {meetingArrivalBanner}
+            </div>
+          </div>
+        ) : null}
+
+        {everyoneArrivedBanner ? (
+          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+9rem)] z-[130]">
+            <div className="rounded-xl bg-green-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+              Everyone has arrived! 🎉
+            </div>
+          </div>
+        ) : null}
+
         <button
           type="button"
-          onClick={() => setShowDestinationSheet(true)}
+          onClick={() => {
+            if (groupMode && convoy?.active && !isGroupAdmin) {
+              showToastMessage("Convoy is active — follow the group route");
+              return;
+            }
+            setShowDestinationSheet(true);
+          }}
           className="pointer-events-auto absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.25rem)] flex items-center gap-2 rounded-full bg-[rgba(15,23,42,0.82)] px-4 py-2.5 text-left text-sm text-white shadow-lg backdrop-blur-sm transition hover:bg-[rgba(15,23,42,0.92)]"
         >
           <MapPin size={16} className="shrink-0 text-[#5EEAD4]" />
@@ -1279,11 +1833,17 @@ export default function LivePage() {
             }
             setShowWayra(true);
           }}
-          className="pointer-events-auto absolute bottom-24 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-[#0F766E] text-white shadow-lg transition hover:bg-[#0d655c]"
+          className={`pointer-events-auto absolute bottom-24 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-[#0F766E] text-white shadow-lg transition hover:bg-[#0d655c] ${
+            groupMode ? "right-20" : "right-4"
+          }`}
           aria-label="Open Wayra chat"
         >
           <MessageCircle size={22} />
         </button>
+
+        {groupMode && firebaseDb && validTripId && currentUserId ? (
+          <GroupLiveChatButton onClick={() => setShowGroupChat(true)} />
+        ) : null}
 
         {gpsState === "granted" ? (
           <div className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-3">
@@ -1413,6 +1973,46 @@ export default function LivePage() {
         <GuestPrompt
           message={guestPrompt}
           onDismiss={() => setGuestPrompt(null)}
+        />
+      ) : null}
+
+      {groupMode ? (
+        <GroupPanel
+          open={groupPanelOpen}
+          tripName={tripName}
+          members={tripMembers}
+          memberLive={memberLive}
+          memberStatuses={memberStatuses}
+          meetingPoint={meetingPoint}
+          convoy={convoy}
+          isGroupAdmin={isGroupAdmin}
+          currentUserId={currentUserId}
+          currentUserSpeedMph={speedMph}
+          statusBusy={groupStatusBusy}
+          onClose={() => setGroupPanelOpen(false)}
+          onSetMeetingPoint={handleSetMeetingPointMode}
+          onClearMeetingPoint={() => void handleClearMeetingPoint()}
+          onStartConvoy={() => setShowConvoySheet(true)}
+          onEndConvoy={() => void handleEndConvoy()}
+          onQuickStatus={(status) => void postQuickStatus(status)}
+        />
+      ) : null}
+
+      {showConvoySheet ? (
+        <ConvoySheet
+          busy={convoyBusy}
+          onClose={() => setShowConvoySheet(false)}
+          onStart={(place) => void handleStartConvoy(place)}
+        />
+      ) : null}
+
+      {showGroupChat && firebaseDb && validTripId && currentUserId ? (
+        <GroupLiveChatSheet
+          tripId={validTripId}
+          db={firebaseDb}
+          currentUserId={currentUserId}
+          currentUserName={currentUserName}
+          onClose={() => setShowGroupChat(false)}
         />
       ) : null}
     </div>

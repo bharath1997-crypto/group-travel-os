@@ -14,7 +14,7 @@ type DestinationSheetProps = {
   onSelect: (place: { lat: number; lng: number; name: string }) => void;
 };
 
-async function searchPlaces(query: string): Promise<NominatimPlace[]> {
+export async function searchPlaces(query: string): Promise<NominatimPlace[]> {
   const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&countrycodes=us`;
   const res = await fetch(url, {
     headers: {

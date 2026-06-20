@@ -15,9 +15,16 @@ from app.models.user import User
 from app.schemas.live import (
     GuestWayraBody,
     GuestWayraOut,
+    GroupValidateOut,
+    ConvoyOut,
+    ConvoyStart,
     LiveSessionCreate,
     LiveSessionOut,
+    MeetingPointOut,
+    MeetingPointSet,
     NearbyReportsQuery,
+    QuickStatus,
+    QuickStatusOut,
     ReportConfirmBody,
     RoadReportCreate,
     RoadReportOut,
@@ -235,3 +242,109 @@ def flag_report_chat_message(
     current_user: User = Depends(get_current_user),
 ):
     return LiveService.flag_chat_message(db, report_id, message_id)
+
+
+@router.get(
+    "/group/{trip_id}/validate",
+    response_model=GroupValidateOut,
+    status_code=status.HTTP_200_OK,
+    summary="Validate trip membership for group live mode",
+)
+def validate_group_live(
+    trip_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.validate_group_member(db, current_user.id, trip_id)
+
+
+@router.post(
+    "/group/{trip_id}/meeting-point",
+    response_model=MeetingPointOut,
+    status_code=status.HTTP_200_OK,
+    summary="Set group meeting point (admin only)",
+)
+def set_group_meeting_point(
+    trip_id: uuid.UUID,
+    body: MeetingPointSet,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.set_meeting_point(
+        db,
+        current_user.id,
+        trip_id,
+        body.lat,
+        body.lng,
+        body.label,
+    )
+
+
+@router.delete(
+    "/group/{trip_id}/meeting-point",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Clear group meeting point (admin only)",
+)
+def delete_group_meeting_point(
+    trip_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    LiveService.delete_meeting_point(db, current_user.id, trip_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/group/{trip_id}/status",
+    response_model=QuickStatusOut,
+    status_code=status.HTTP_200_OK,
+    summary="Set quick member status for group live",
+)
+def set_group_member_status(
+    trip_id: uuid.UUID,
+    body: QuickStatus,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.set_member_status(
+        db,
+        current_user.id,
+        trip_id,
+        body.status,
+    )
+
+
+@router.post(
+    "/group/{trip_id}/convoy",
+    response_model=ConvoyOut,
+    status_code=status.HTTP_200_OK,
+    summary="Start convoy mode (admin only)",
+)
+def start_group_convoy(
+    trip_id: uuid.UUID,
+    body: ConvoyStart,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.start_convoy(
+        db,
+        current_user.id,
+        trip_id,
+        body.destination_lat,
+        body.destination_lng,
+        body.destination_name,
+    )
+
+
+@router.delete(
+    "/group/{trip_id}/convoy",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="End convoy mode (admin only)",
+)
+def end_group_convoy(
+    trip_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    LiveService.end_convoy(db, current_user.id, trip_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

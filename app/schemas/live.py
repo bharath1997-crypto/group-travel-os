@@ -121,3 +121,59 @@ class ReportChatCountOut(BaseModel):
 class ReportChatFlagOut(BaseModel):
     flagged: bool
     removed: bool
+
+
+class GroupMemberValidateOut(BaseModel):
+    user_id: UUID
+    display_name: str
+    is_admin: bool
+
+
+class GroupValidateOut(BaseModel):
+    trip_id: UUID
+    trip_name: str
+    member_count: int
+    members: list[GroupMemberValidateOut]
+    is_admin: bool
+
+
+class MeetingPointSet(BaseModel):
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+    label: str = Field(default="Meeting Point", max_length=50)
+
+
+class MeetingPointOut(BaseModel):
+    lat: float
+    lng: float
+    label: str
+    set_by: str
+    set_at: str
+
+
+class QuickStatus(BaseModel):
+    status: str = Field(
+        ...,
+        pattern="^(on_my_way|wait_for_me|at_the_spot|need_help)$",
+    )
+
+
+class QuickStatusOut(BaseModel):
+    status: str
+    updated_at: str
+
+
+class ConvoyStart(BaseModel):
+    destination_lat: float = Field(..., ge=-90, le=90)
+    destination_lng: float = Field(..., ge=-180, le=180)
+    destination_name: str = Field(default="Destination", max_length=100)
+
+
+class ConvoyOut(BaseModel):
+    active: bool
+    leader_id: str
+    destination_lat: float
+    destination_lng: float
+    destination_name: str
+    route_geometry: dict
+    started_at: str

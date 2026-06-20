@@ -119,6 +119,15 @@ async def lifespan(app: FastAPI):
         id="live_chat_cleanup",
         replace_existing=True,
     )
+    from app.jobs.dead_zone_detection import detect_dead_zones
+
+    scheduler.add_job(
+        detect_dead_zones,
+        trigger="interval",
+        minutes=5,
+        id="detect_dead_zones",
+        replace_existing=True,
+    )
 
     yield
 

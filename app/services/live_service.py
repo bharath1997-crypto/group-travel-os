@@ -22,10 +22,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.api_limits import API_TIMEOUT_SECONDS
+from app.models.group import GroupMember, MemberRole
 from app.models.live_session import LiveMode, LiveSession
 from app.models.road_report import EXPIRY_MINUTES, ReportConfirmation, ReportType, RoadReport
 from app.models.trip import Trip
+from app.models.user import User
 from app.schemas.live import RoadReportCreate, TrafficDensityPoint
+from app.services.notification_service import NotificationService
 from app.services.trip_service import TripService
 from app.services.wayra_service import _GEMINI_URL, _gemini_key
 from app.utils.exceptions import AppException
@@ -488,6 +491,214 @@ class LiveService:
 
         update_rtdb(path, {"flag_count": flag_count})
         return {"flagged": True, "removed": False}
+
+    @staticmethod
+    def validate_group_member(
+        db: Session,
+        user_id: uuid.UUID,
+        trip_id: uuid.UUID,
+    ) -> dict:
+        trip = db.execute(select(Trip).where(Trip.id == trip_id)).scalar_one_or_none()
+        if not trip:
+            AppException.not_found("Trip not found")
+        member = db.execute(
+            select(GroupMember).where(
+                GroupMember.group_id == trip.group_id,
+                GroupMember.user_id == user_id,
+            )
+        ).scalar_one_or_none()
+        if not member:
+            AppException.forbidden("Not a trip member")
+
+        rows = db.execute(
+            select(GroupMember, User)
+            .join(User, User.id == GroupMember.user_id)
+            .where(GroupMember.group_id == trip.group_id)
+            .order_by(GroupMember.joined_at.asc())
+        ).all()
+
+        members: list[dict] = []
+        for _member, user in rows:
+            members.append(
+                {
+                    "user_id": user.id,
+                    "display_name": user.full_name,
+                    "is_admin": TripService._is_creator_or_admin(db, trip, user.id),
+                }
+            )
+
+        return {
+            "trip_id": trip.id,
+            "trip_name": trip.title,
+            "member_count": len(members),
+            "members": members,
+            "is_admin": TripService._is_creator_or_admin(db, trip, user_id),
+        }
+
+    @staticmethod
+    def _require_trip_admin(db: Session, trip: Trip, user_id: uuid.UUID) -> None:
+        if not TripService._is_creator_or_admin(db, trip, user_id):
+            AppException.forbidden("Admin access required")
+
+    @staticmethod
+    def _get_trip_for_member(
+        db: Session,
+        user_id: uuid.UUID,
+        trip_id: uuid.UUID,
+    ) -> Trip:
+        trip = db.execute(select(Trip).where(Trip.id == trip_id)).scalar_one_or_none()
+        if not trip:
+            AppException.not_found("Trip not found")
+        TripService._verify_membership(db, trip.group_id, user_id)
+        return trip
+
+    @staticmethod
+    def _send_fcm_to_trip_members(
+        db: Session,
+        trip: Trip,
+        title: str,
+        body: str,
+        notification_type: str,
+    ) -> int:
+        users = NotificationService._group_members_with_fcm_tokens(db, trip.group_id)
+        payload = {"trip_id": str(trip.id), "type": notification_type}
+        ok = 0
+        for user in users:
+            try:
+                if NotificationService.send_to_token(
+                    user.fcm_token or "",
+                    title,
+                    body,
+                    payload,
+                ):
+                    ok += 1
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("FCM to trip members failed: %s", exc)
+        return ok
+
+    @staticmethod
+    def set_meeting_point(
+        db: Session,
+        user_id: uuid.UUID,
+        trip_id: uuid.UUID,
+        lat: float,
+        lng: float,
+        label: str,
+    ) -> dict:
+        trip = LiveService._get_trip_for_member(db, user_id, trip_id)
+        LiveService._require_trip_admin(db, trip, user_id)
+
+        user = db.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
+        admin_name = user.full_name if user else "Trip admin"
+        set_at = datetime.now(timezone.utc).isoformat()
+        data = {
+            "lat": lat,
+            "lng": lng,
+            "label": label,
+            "set_by": str(user_id),
+            "set_at": set_at,
+        }
+        set_rtdb(f"trips/{trip_id}/live/meeting_point", data)
+        LiveService._send_fcm_to_trip_members(
+            db,
+            trip,
+            "Meeting point set",
+            f"{admin_name} set a meeting point",
+            "live_meeting_point",
+        )
+        return data
+
+    @staticmethod
+    def delete_meeting_point(
+        db: Session,
+        user_id: uuid.UUID,
+        trip_id: uuid.UUID,
+    ) -> None:
+        trip = LiveService._get_trip_for_member(db, user_id, trip_id)
+        LiveService._require_trip_admin(db, trip, user_id)
+        delete_rtdb(f"trips/{trip_id}/live/meeting_point")
+
+    @staticmethod
+    def set_member_status(
+        db: Session,
+        user_id: uuid.UUID,
+        trip_id: uuid.UUID,
+        status: str,
+    ) -> dict:
+        trip = LiveService._get_trip_for_member(db, user_id, trip_id)
+        updated_at = datetime.now(timezone.utc).isoformat()
+        data = {"status": status, "updated_at": updated_at}
+        set_rtdb(f"trips/{trip_id}/live/members/{user_id}/status", data)
+
+        if status == "need_help":
+            user = db.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
+            user_name = user.full_name if user else "A member"
+            LiveService._send_fcm_to_trip_members(
+                db,
+                trip,
+                "⚠️ Someone needs help",
+                f"{user_name} needs help",
+                "live_need_help",
+            )
+        return {"status": status, "updated_at": updated_at}
+
+    @staticmethod
+    def start_convoy(
+        db: Session,
+        user_id: uuid.UUID,
+        trip_id: uuid.UUID,
+        destination_lat: float,
+        destination_lng: float,
+        destination_name: str,
+    ) -> dict:
+        trip = LiveService._get_trip_for_member(db, user_id, trip_id)
+        LiveService._require_trip_admin(db, trip, user_id)
+
+        leader_loc = get_rtdb(f"trips/{trip_id}/live/members/{user_id}")
+        if not leader_loc or leader_loc.get("lat") is None or leader_loc.get("lng") is None:
+            AppException.bad_request("Leader location unavailable")
+
+        route = LiveService.get_route(
+            float(leader_loc["lat"]),
+            float(leader_loc["lng"]),
+            destination_lat,
+            destination_lng,
+        )
+
+        user = db.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
+        leader_name = user.full_name if user else "Trip admin"
+        started_at = datetime.now(timezone.utc).isoformat()
+        data = {
+            "active": True,
+            "leader_id": str(user_id),
+            "destination_lat": destination_lat,
+            "destination_lng": destination_lng,
+            "destination_name": destination_name,
+            "route_geometry": route["geometry"],
+            "started_at": started_at,
+        }
+        set_rtdb(f"trips/{trip_id}/live/convoy", data)
+        LiveService._send_fcm_to_trip_members(
+            db,
+            trip,
+            "Convoy started",
+            f"Follow {leader_name} to {destination_name}",
+            "live_convoy_started",
+        )
+        return data
+
+    @staticmethod
+    def end_convoy(db: Session, user_id: uuid.UUID, trip_id: uuid.UUID) -> None:
+        trip = LiveService._get_trip_for_member(db, user_id, trip_id)
+        LiveService._require_trip_admin(db, trip, user_id)
+        delete_rtdb(f"trips/{trip_id}/live/convoy")
+        LiveService._send_fcm_to_trip_members(
+            db,
+            trip,
+            "Convoy ended",
+            "Convoy ended",
+            "live_convoy_ended",
+        )
 
 
 def _check_rate_limit(user_id: uuid.UUID) -> None:
