@@ -2,6 +2,7 @@
 
 import { ArrowLeft, Loader2, Send } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AnchoredLivePopover } from "@/components/live/AnchoredLivePopover";
 import { apiFetch } from "@/lib/api";
 import { minutesAgo } from "@/lib/live/types";
 
@@ -31,6 +32,7 @@ function timeAgo(iso: string): string {
 interface ChatSlidePanelProps {
   chatOpen: boolean;
   chatTarget: { id: string; label: string; type: "traveler" | "report" } | null;
+  anchorEl: HTMLElement | null;
   onBack: () => void;
   onToast?: (message: string) => void;
 }
@@ -38,6 +40,7 @@ interface ChatSlidePanelProps {
 export function ChatSlidePanel({
   chatOpen,
   chatTarget,
+  anchorEl,
   onBack,
   onToast,
 }: ChatSlidePanelProps) {
@@ -163,80 +166,33 @@ export function ChatSlidePanel({
   };
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: 0,
-        right: 68,
-        bottom: 0,
-        width: 300,
-        background: "white",
-        zIndex: 23,
-        transform: chatOpen ? "translateX(0)" : "translateX(calc(100% + 68px))",
-        transition: "transform 0.25s ease",
-        display: "flex",
-        flexDirection: "column",
-        pointerEvents: chatOpen ? "auto" : "none",
-        borderLeft: "0.5px solid #e2e8f0",
-      }}
-    >
-      {chatOpen && chatTarget ? (
+    <AnchoredLivePopover isOpen={chatOpen && Boolean(chatTarget)} anchorEl={chatOpen ? anchorEl : null}>
+      {chatTarget ? (
         <>
-          <div
-            style={{
-              padding: "14px 16px 10px",
-              borderBottom: "0.5px solid #f1f5f9",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              flexShrink: 0,
-            }}
-          >
+          <div className="flex items-center gap-2 border-b border-white/8 px-3 py-3">
             <button
               type="button"
               onClick={onBack}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+              className="text-white/50 transition-colors hover:text-white/80"
               aria-label="Back"
             >
-              <ArrowLeft size={18} color="#64748b" />
+              <ArrowLeft size={16} />
             </button>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p
-                style={{
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: "#0f172a",
-                  margin: 0,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {chatTarget.label}
-              </p>
-              <p style={{ fontSize: 10, color: "#94a3b8", margin: "2px 0 0" }}>Anonymous</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[12px] font-medium text-white/90">{chatTarget.label}</p>
+              <p className="mt-0.5 text-[10px] text-white/35">Anonymous</p>
             </div>
           </div>
 
-          <div
-            style={{
-              flex: 1,
-              overflowY: "auto",
-              padding: "12px",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
+          <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-3 py-3">
             {loading ? (
-              <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
-                <Loader2 size={20} className="animate-spin" color="#0F766E" />
+              <div className="flex justify-center py-6">
+                <Loader2 size={20} className="animate-spin text-emerald-400" />
               </div>
             ) : null}
 
             {!loading && messages.length === 0 ? (
-              <p style={{ fontSize: 13, color: "#94a3b8", textAlign: "center", padding: 24 }}>
-                No messages yet
-              </p>
+              <p className="py-6 text-center text-sm text-white/35">No messages yet</p>
             ) : null}
 
             {messages.map((message) => {
@@ -244,26 +200,19 @@ export function ChatSlidePanel({
               return (
                 <div
                   key={message.id}
-                  style={{
-                    maxWidth: "75%",
-                    padding: "8px 12px",
-                    borderRadius: myMessage ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
-                    background: myMessage ? "#0F766E" : "#f1f5f9",
-                    color: myMessage ? "#fff" : "#0f172a",
-                    fontSize: 13,
-                    lineHeight: 1.4,
-                    alignSelf: myMessage ? "flex-end" : "flex-start",
-                    marginBottom: 6,
-                  }}
+                  className={[
+                    "max-w-[80%] rounded-2xl px-3 py-2 text-[12px] leading-relaxed",
+                    myMessage
+                      ? "self-end rounded-br-sm bg-[#0F766E] text-white"
+                      : "self-start rounded-bl-sm bg-white/10 text-white/85",
+                  ].join(" ")}
                 >
                   {message.text}
                   <div
-                    style={{
-                      fontSize: 10,
-                      color: myMessage ? "rgba(255,255,255,0.6)" : "#94a3b8",
-                      marginTop: 3,
-                      textAlign: "right",
-                    }}
+                    className={[
+                      "mt-1 text-right text-[9px]",
+                      myMessage ? "text-white/50" : "text-white/30",
+                    ].join(" ")}
                   >
                     {timeAgo(message.sent_at)}
                   </div>
@@ -273,29 +222,13 @@ export function ChatSlidePanel({
             <div ref={endRef} />
           </div>
 
-          <div style={{ position: "relative", flexShrink: 0 }}>
+          <div className="relative shrink-0">
             {input.length >= 150 ? (
-              <span
-                style={{
-                  position: "absolute",
-                  top: -14,
-                  right: 16,
-                  fontSize: 10,
-                  color: "#ef4444",
-                }}
-              >
+              <span className="absolute -top-3.5 right-4 text-[10px] text-red-400">
                 {input.length}/200
               </span>
             ) : null}
-            <div
-              style={{
-                padding: "8px 12px",
-                borderTop: "0.5px solid #e2e8f0",
-                display: "flex",
-                gap: 8,
-                alignItems: "center",
-              }}
-            >
+            <div className="flex items-center gap-2 border-t border-white/8 px-3 py-2">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -304,49 +237,24 @@ export function ChatSlidePanel({
                 }}
                 placeholder="Message..."
                 maxLength={200}
-                style={{
-                  flex: 1,
-                  borderRadius: 20,
-                  padding: "8px 12px",
-                  fontSize: 13,
-                  border: "0.5px solid #e2e8f0",
-                  outline: "none",
-                }}
+                className="flex-1 rounded-xl border border-white/6 bg-white/6 px-3 py-2 text-[12px] text-white/80 outline-none placeholder:text-white/25"
               />
               <button
                 type="button"
                 onClick={() => void handleSend()}
                 disabled={sending || !input.trim()}
-                style={{
-                  background: "#0F766E",
-                  border: "none",
-                  borderRadius: "50%",
-                  width: 34,
-                  height: 34,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: sending || !input.trim() ? "not-allowed" : "pointer",
-                  opacity: sending || !input.trim() ? 0.6 : 1,
-                }}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0F766E] transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Send message"
               >
-                <Send size={15} color="#fff" />
+                <Send size={14} className="text-white" />
               </button>
             </div>
-            <p
-              style={{
-                fontSize: 10,
-                color: "#94a3b8",
-                textAlign: "center",
-                margin: "4px 0 8px",
-              }}
-            >
+            <p className="pb-2 text-center text-[10px] text-white/30">
               Anonymous · text only · expires with report
             </p>
           </div>
         </>
       ) : null}
-    </div>
+    </AnchoredLivePopover>
   );
 }

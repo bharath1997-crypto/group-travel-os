@@ -7,8 +7,9 @@ import { GeofenceSetupSheet } from "@/components/live/GeofenceSetupSheet";
 import { GroupLiveChatButton, GroupLiveChatSheet } from "@/components/live/GroupLiveChatSheet";
 import { FamilyPanel } from "@/components/live/FamilyPanel";
 import { ChatSlidePanel } from "@/components/live/ChatSlidePanel";
+import { LiveControlRail, type LiveRailButtonId } from "@/components/live/LiveControlRail";
+import { LoungePanel } from "@/components/live/LoungePanel";
 import { RightPanel, buildAlertItems, type WeatherDetail } from "@/components/live/RightPanel";
-import { RightToolbar, type ExtendedWeather } from "@/components/live/RightToolbar";
 import { GuestPrompt } from "@/components/live/GuestPrompt";
 import { NavigationSheet } from "@/components/live/NavigationSheet";
 import { PoiDetailSheet, type PoiPlace } from "@/components/live/PoiDetailSheet";
@@ -43,6 +44,7 @@ import {
   formatDistance,
   haversineMeters,
   minutesAgo,
+  type LiveWeather,
   type CameraAlertItem,
   type NearbyTraveler,
   type ReportType,
@@ -208,6 +210,10 @@ const SHEET_TRANSLATE: Record<SheetHeight, string> = {
   peek: "translateY(calc(100% - 110px))",
   half: "translateY(45%)",
   full: "translateY(0)",
+};
+
+type ExtendedWeather = LiveWeather & {
+  temperature_2m?: number;
 };
 
 type PinOut = {
@@ -675,6 +681,8 @@ export default function LivePage() {
   const [pinsLoading, setPinsLoading] = useState(false);
   const [wayraListening, setWayraListening] = useState(false);
   const [sosBanner, setSosBanner] = useState(false);
+  const [unreadLounge, setUnreadLounge] = useState(3);
+  const railButtonRefs = useRef<Partial<Record<LiveRailButtonId, HTMLDivElement | null>>>({});
   const wayraRecognitionRef = useRef<{ stop: () => void } | null>(null);
   const sheetTouchStartYRef = useRef<number | null>(null);
   const [showConvoySheet, setShowConvoySheet] = useState(false);
@@ -1922,10 +1930,11 @@ export default function LivePage() {
   }, [isGuest, sendToWayra, wayraListening]);
 
   const handleToolbarTap = useCallback(
-    (id: string) => {
+    (id: LiveRailButtonId) => {
       if (id === "battery") return;
       setActivePanel((prev) => (prev === id ? null : id));
       if (id === "wayra") toggleVoiceListening();
+      if (id === "lounge") setUnreadLounge(0);
     },
     [toggleVoiceListening],
   );
@@ -4088,6 +4097,11 @@ export default function LivePage() {
         <>
           <RightPanel
             activePanel={activePanel}
+            anchorEl={
+              activePanel && activePanel !== "lounge"
+                ? (railButtonRefs.current[activePanel as LiveRailButtonId] ?? null)
+                : null
+            }
             setActivePanel={setActivePanel}
             weatherDetail={weatherDetail}
             weatherLoading={weatherDetailLoading}
@@ -4106,30 +4120,32 @@ export default function LivePage() {
             pinsLoading={pinsLoading}
             onNavigateToPin={handleNavigateToPin}
             onSaveCurrentLocation={() => void handleSaveCurrentLocation()}
-            userLat={userPositionRef.current?.lat ?? null}
-            userLng={userPositionRef.current?.lng ?? null}
+          />
+          <LoungePanel
+            isOpen={activePanel === "lounge"}
+            onClose={() => setActivePanel(null)}
+            anchorEl={railButtonRefs.current.lounge ?? null}
           />
           <div className="pointer-events-auto absolute inset-0">
-            <RightToolbar
-              weather={weather}
+            <LiveControlRail
+              activePanel={activePanel}
+              weatherTemp={weather?.temperature_2m ?? null}
               batteryLevel={deviceBatteryLevel}
               connectivityCount={nearbyTravelers.length}
               unreadAlerts={unreadAlerts}
+              unreadLounge={unreadLounge}
               isListening={wayraListening}
-              onWeatherTap={() => handleToolbarTap("weather")}
-              onNotificationsTap={() => handleToolbarTap("notifications")}
-              onWayraTap={() => handleToolbarTap("wayra")}
-              onConnectivityTap={() => handleToolbarTap("connectivity")}
-              onSavedPinsTap={() => handleToolbarTap("pins")}
+              onToolbarTap={handleToolbarTap}
               onZoomIn={() => mapRef.current?.zoomIn()}
               onZoomOut={() => mapRef.current?.zoomOut()}
               onStyleTap={cycleMapStyle}
-              activePanel={activePanel}
+              buttonRefs={railButtonRefs}
             />
           </div>
           <ChatSlidePanel
             chatOpen={chatOpen}
             chatTarget={chatTarget}
+            anchorEl={railButtonRefs.current.connectivity ?? null}
             onBack={() => {
               setChatOpen(false);
               setChatTarget(null);

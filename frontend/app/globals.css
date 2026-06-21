@@ -272,20 +272,31 @@ input[type="date"]::-webkit-outer-spin-button {
 }
 
 /* Live tab — fullscreen map hides dashboard chrome */
-body.live-mode .dashboard-sidebar,
-body.live-mode .bottom-tab-bar,
-body.live-mode .dashboard-header {
-  display: none !important;
-}
-
 body.live-mode {
   overflow: hidden;
   width: 100vw;
 }
 
-body.live-mode .main-content,
+body.live-mode .dashboard-sidebar,
+body.live-mode .bottom-tab-bar,
+body.live-mode .dashboard-header,
+body.live-mode nav {
+  display: none !important;
+}
+
 body.live-mode main,
+body.live-mode [class*="ml-"],
+body.live-mode [class*="pl-"],
+body.live-mode [class*="lg:ml-"],
+body.live-mode [class*="lg:pl-"] {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+}
+
 body.live-mode .dashboard-content-shell,
+body.live-mode .main-content,
 body.live-mode .dashboard-main-live,
 body.live-mode .live-page-shell {
   margin-left: 0 !important;
