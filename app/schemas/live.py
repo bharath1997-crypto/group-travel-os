@@ -375,3 +375,52 @@ class SpeedCameraRouteAlertOut(BaseModel):
     message: Optional[str] = None
     lat: Optional[float] = None
     lng: Optional[float] = None
+
+
+class TrackPointIn(BaseModel):
+    session_id: UUID
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+    speed_mph: float = Field(default=0, ge=0)
+    bearing: float = Field(default=0, ge=0, le=360)
+    ts: str
+
+
+class TrackPointOut(BaseModel):
+    recorded: bool
+    point_count: int
+
+
+class TrackEndIn(BaseModel):
+    session_id: UUID
+    reports_encountered: int = 0
+    cameras_passed: int = 0
+
+
+class TripTrackOut(BaseModel):
+    id: UUID
+    session_id: UUID
+    trip_id: Optional[UUID] = None
+    track_points: list[dict[str, Any]]
+    total_distance_m: Optional[float] = None
+    total_duration_s: Optional[int] = None
+    max_speed_mph: Optional[float] = None
+    avg_speed_mph: Optional[float] = None
+    reports_encountered: int = 0
+    cameras_passed: int = 0
+    started_at: datetime
+    ended_at: Optional[datetime] = None
+    created_at: datetime
+
+
+class TripTrackSummaryOut(BaseModel):
+    id: UUID
+    session_id: UUID
+    total_distance_m: Optional[float] = None
+    total_duration_s: Optional[int] = None
+    max_speed_mph: Optional[float] = None
+    avg_speed_mph: Optional[float] = None
+    started_at: datetime
+    ended_at: Optional[datetime] = None
+    reports_encountered: int = 0
+    cameras_passed: int = 0

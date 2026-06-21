@@ -57,6 +57,11 @@ from app.schemas.live import (
     SpeedCamerasOut,
     SpeedCameraRouteAlertQuery,
     SpeedCameraRouteAlertOut,
+    TrackPointIn,
+    TrackPointOut,
+    TrackEndIn,
+    TripTrackOut,
+    TripTrackSummaryOut,
     NearbyTravelersRequest,
     NearbyTravelerOut,
     TravelerChatSend,
@@ -259,6 +264,76 @@ def get_speed_camera_route_alert(
         query.speed_mph,
         query.radius_m,
     )
+
+
+@router.post(
+    "/track/point",
+    response_model=TrackPointOut,
+    status_code=status.HTTP_200_OK,
+    summary="Record a GPS track point for the active live session",
+)
+def record_track_point(
+    body: TrackPointIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.record_track_point(
+        db,
+        current_user.id,
+        body.session_id,
+        body.lat,
+        body.lng,
+        body.speed_mph,
+        body.bearing,
+        body.ts,
+    )
+
+
+@router.post(
+    "/track/end",
+    response_model=TripTrackOut,
+    status_code=status.HTTP_200_OK,
+    summary="End trip track recording and calculate summary stats",
+)
+def end_track(
+    body: TrackEndIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.end_track(
+        db,
+        current_user.id,
+        body.session_id,
+        body.reports_encountered,
+        body.cameras_passed,
+    )
+
+
+@router.get(
+    "/track/history",
+    response_model=list[TripTrackSummaryOut],
+    status_code=status.HTTP_200_OK,
+    summary="Get recent trip track summaries for the current user",
+)
+def get_track_history(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.get_track_history(db, current_user.id)
+
+
+@router.get(
+    "/track/{session_id}",
+    response_model=TripTrackOut,
+    status_code=status.HTTP_200_OK,
+    summary="Get full trip track for replay",
+)
+def get_track(
+    session_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.get_track(db, current_user.id, session_id)
 
 
 @router.post(

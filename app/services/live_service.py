@@ -28,6 +28,7 @@ from app.models.group import GroupMember, MemberRole
 from app.models.live_session import LiveMode, LiveSession
 from app.models.road_report import EXPIRY_MINUTES, ReportConfirmation, ReportType, RoadReport
 from app.models.trip import Trip
+from app.models.trip_track import TripTrack
 from app.models.user import User
 from app.schemas.live import RoadReportCreate, TrafficDensityPoint
 from app.services.notification_service import NotificationService
@@ -402,6 +403,95 @@ def _fetch_speed_cameras_from_overpass(
     except Exception as exc:
         logger.debug("Overpass speed camera lookup failed: %s", exc)
     return cameras
+
+
+MAX_TRACK_POINTS = 2160
+
+
+def _parse_track_ts(raw: str) -> datetime:
+    dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def _haversine_meters(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    return _haversine_km(lat1, lng1, lat2, lng2) * 1000.0
+
+
+def _trip_track_to_dict(track: TripTrack) -> dict:
+    return {
+        "id": track.id,
+        "session_id": track.session_id,
+        "trip_id": track.trip_id,
+        "track_points": list(track.track_points or []),
+        "total_distance_m": track.total_distance_m,
+        "total_duration_s": track.total_duration_s,
+        "max_speed_mph": track.max_speed_mph,
+        "avg_speed_mph": track.avg_speed_mph,
+        "reports_encountered": track.reports_encountered or 0,
+        "cameras_passed": track.cameras_passed or 0,
+        "started_at": track.started_at,
+        "ended_at": track.ended_at,
+        "created_at": track.created_at,
+    }
+
+
+def _trip_track_summary_dict(track: TripTrack) -> dict:
+    return {
+        "id": track.id,
+        "session_id": track.session_id,
+        "total_distance_m": track.total_distance_m,
+        "total_duration_s": track.total_duration_s,
+        "max_speed_mph": track.max_speed_mph,
+        "avg_speed_mph": track.avg_speed_mph,
+        "started_at": track.started_at,
+        "ended_at": track.ended_at,
+        "reports_encountered": track.reports_encountered or 0,
+        "cameras_passed": track.cameras_passed or 0,
+    }
+
+
+def _calculate_track_stats(points: list[dict]) -> dict[str, float | int | None]:
+    if not points:
+        return {
+            "total_distance_m": 0.0,
+            "total_duration_s": 0,
+            "max_speed_mph": None,
+            "avg_speed_mph": None,
+        }
+
+    total_distance_m = 0.0
+    speeds: list[float] = []
+    for index, point in enumerate(points):
+        speed = float(point.get("speed_mph") or 0)
+        if speed > 0:
+            speeds.append(speed)
+        if index == 0:
+            continue
+        prev = points[index - 1]
+        total_distance_m += _haversine_meters(
+            float(prev["lat"]),
+            float(prev["lng"]),
+            float(point["lat"]),
+            float(point["lng"]),
+        )
+
+    try:
+        first_ts = _parse_track_ts(str(points[0]["ts"]))
+        last_ts = _parse_track_ts(str(points[-1]["ts"]))
+        total_duration_s = max(0, int((last_ts - first_ts).total_seconds()))
+    except (KeyError, ValueError, TypeError):
+        total_duration_s = 0
+
+    max_speed_mph = max(speeds) if speeds else None
+    avg_speed_mph = round(sum(speeds) / len(speeds), 1) if speeds else None
+    return {
+        "total_distance_m": round(total_distance_m, 1),
+        "total_duration_s": total_duration_s,
+        "max_speed_mph": max_speed_mph,
+        "avg_speed_mph": avg_speed_mph,
+    }
 
 
 class LiveService:
@@ -839,6 +929,113 @@ class LiveService:
             if best is None or candidate["distance_miles"] < best["distance_miles"]:
                 best = candidate
         return best if best is not None else empty
+
+    @staticmethod
+    def record_track_point(
+        db: Session,
+        user_id: uuid.UUID,
+        session_id: uuid.UUID,
+        lat: float,
+        lng: float,
+        speed_mph: float,
+        bearing: float,
+        ts: str,
+    ) -> dict[str, int | bool]:
+        track = db.execute(
+            select(TripTrack).where(
+                TripTrack.session_id == session_id,
+                TripTrack.user_id == user_id,
+            )
+        ).scalar_one_or_none()
+
+        if track is None:
+            session = db.execute(
+                select(LiveSession).where(LiveSession.id == session_id)
+            ).scalar_one_or_none()
+            if not session:
+                AppException.not_found("Live session not found")
+            if session.started_by != user_id:
+                AppException.forbidden("You do not own this live session")
+            track = TripTrack(
+                user_id=user_id,
+                session_id=session_id,
+                trip_id=session.trip_id,
+                track_points=[],
+                started_at=datetime.now(timezone.utc),
+            )
+            db.add(track)
+
+        points = list(track.track_points or [])
+        points.append(
+            {
+                "lat": lat,
+                "lng": lng,
+                "speed_mph": speed_mph,
+                "bearing": bearing,
+                "ts": ts,
+            }
+        )
+        if len(points) > MAX_TRACK_POINTS:
+            points = points[-MAX_TRACK_POINTS:]
+        track.track_points = points
+        db.commit()
+        db.refresh(track)
+        return {"recorded": True, "point_count": len(points)}
+
+    @staticmethod
+    def end_track(
+        db: Session,
+        user_id: uuid.UUID,
+        session_id: uuid.UUID,
+        reports_encountered: int,
+        cameras_passed: int,
+    ) -> dict:
+        track = db.execute(
+            select(TripTrack).where(
+                TripTrack.session_id == session_id,
+                TripTrack.user_id == user_id,
+            )
+        ).scalar_one_or_none()
+        if not track:
+            AppException.not_found("Trip track not found")
+
+        points = list(track.track_points or [])
+        stats = _calculate_track_stats(points)
+        track.total_distance_m = stats["total_distance_m"]
+        track.total_duration_s = stats["total_duration_s"]
+        track.max_speed_mph = stats["max_speed_mph"]
+        track.avg_speed_mph = stats["avg_speed_mph"]
+        track.reports_encountered = reports_encountered
+        track.cameras_passed = cameras_passed
+        track.ended_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(track)
+        return _trip_track_to_dict(track)
+
+    @staticmethod
+    def get_track(
+        db: Session,
+        user_id: uuid.UUID,
+        session_id: uuid.UUID,
+    ) -> dict:
+        track = db.execute(
+            select(TripTrack).where(TripTrack.session_id == session_id)
+        ).scalar_one_or_none()
+        if not track:
+            AppException.not_found("Trip track not found")
+        if track.user_id != user_id:
+            AppException.forbidden("You do not have access to this trip track")
+        return _trip_track_to_dict(track)
+
+    @staticmethod
+    def get_track_history(db: Session, user_id: uuid.UUID) -> list[dict]:
+        tracks = db.execute(
+            select(TripTrack)
+            .where(TripTrack.user_id == user_id)
+            .order_by(TripTrack.created_at.desc())
+            .limit(10)
+        ).scalars().all()
+        return [_trip_track_summary_dict(track) for track in tracks]
 
     @staticmethod
     def get_route_alerts(

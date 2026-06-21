@@ -14,6 +14,7 @@ import { ReportSheet } from "@/components/live/ReportSheet";
 import { ReportTypeSheet } from "@/components/live/ReportTypeSheet";
 import { SOSConfirmSheet } from "@/components/live/SOSConfirmSheet";
 import { DriverModeOverlay } from "@/components/live/DriverModeOverlay";
+import { TripSummarySheet } from "@/components/live/TripSummarySheet";
 import { TravelerChatSheet } from "@/components/live/TravelerChatSheet";
 import { WayraChatSheet } from "@/components/live/WayraChatSheet";
 import { apiFetch, apiFetchPublic } from "@/lib/api";
@@ -62,6 +63,7 @@ import {
   type Destination,
   type RouteData,
 } from "@/lib/live/navigation";
+import type { TripTrack } from "@/lib/live/track";
 import {
   AlertCircle,
   ChevronLeft,
@@ -75,6 +77,7 @@ import {
 import maplibregl, { type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { off, onValue, ref, remove, set, type Database } from "firebase/database";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -590,6 +593,15 @@ export default function LivePage() {
   const driverModeRef = useRef(false);
   const prevDriverModeRef = useRef(false);
   const driverRecognitionRef = useRef<{ stop: () => void } | null>(null);
+  const currentLatRef = useRef<number | null>(null);
+  const currentLngRef = useRef<number | null>(null);
+  const currentSpeedRef = useRef(0);
+  const currentBearingRef = useRef<number | null>(null);
+  const trackRecordingRef = useRef<number | null>(null);
+  const trackEndedRef = useRef(false);
+  const reportsEncounteredRef = useRef(0);
+  const camerasPassedRef = useRef(0);
+  const cameraAlertsCountedRef = useRef<Set<string>>(new Set());
 
   const [isGuest, setIsGuest] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -673,6 +685,9 @@ export default function LivePage() {
   const [driverModeBanner, setDriverModeBanner] = useState(false);
   const [distanceToNextTurn, setDistanceToNextTurn] = useState(0);
   const [driverWayraListening, setDriverWayraListening] = useState(false);
+  const [summaryTrack, setSummaryTrack] = useState<TripTrack | null>(null);
+  const [showTripSummary, setShowTripSummary] = useState(false);
+  const [pendingNavigateAway, setPendingNavigateAway] = useState(false);
   const currentUserId = dashboardUser?.id ?? null;
   const currentUserName = dashboardUser?.full_name ?? "You";
 
@@ -709,6 +724,22 @@ export default function LivePage() {
   useEffect(() => {
     setVoiceMutedState(isVoiceMuted());
   }, []);
+
+  useEffect(() => {
+    const replaySessionId = searchParams.get("replay_session");
+    if (!replaySessionId || isGuest) return;
+    void (async () => {
+      try {
+        const track = await apiFetch<TripTrack>(`/live/track/${replaySessionId}`);
+        if (track.track_points.length > 0) {
+          setSummaryTrack(track);
+          setShowTripSummary(true);
+        }
+      } catch {
+        // Replay fetch is optional.
+      }
+    })();
+  }, [isGuest, searchParams]);
 
   useEffect(() => {
     sessionIdRef.current = sessionId;
@@ -927,6 +958,10 @@ export default function LivePage() {
         alert.message,
         alert.tier === "immediate" || alert.over_limit ? "urgent" : "normal",
       );
+    }
+    if (!cameraAlertsCountedRef.current.has(alert.camera_id)) {
+      cameraAlertsCountedRef.current.add(alert.camera_id);
+      camerasPassedRef.current += 1;
     }
     if (alert.tier === "advisory") {
       cameraAlertTimerRef.current = window.setTimeout(() => {
@@ -2452,6 +2487,71 @@ export default function LivePage() {
     }
   }, []);
 
+  const startTrackRecording = useCallback((activeSessionId: string) => {
+    if (trackRecordingRef.current != null) return;
+    trackRecordingRef.current = window.setInterval(() => {
+      const lat = currentLatRef.current;
+      const lng = currentLngRef.current;
+      if (lat == null || lng == null) return;
+      void apiFetch("/live/track/point", {
+        method: "POST",
+        body: JSON.stringify({
+          session_id: activeSessionId,
+          lat,
+          lng,
+          speed_mph: currentSpeedRef.current,
+          bearing: currentBearingRef.current || 0,
+          ts: new Date().toISOString(),
+        }),
+      }).catch(() => {
+        // Track recording is best-effort.
+      });
+    }, 10_000);
+  }, []);
+
+  const endTrackRecording = useCallback(async (activeSessionId: string) => {
+    if (trackEndedRef.current) return null;
+    trackEndedRef.current = true;
+    if (trackRecordingRef.current != null) {
+      window.clearInterval(trackRecordingRef.current);
+      trackRecordingRef.current = null;
+    }
+    try {
+      return await apiFetch<TripTrack>("/live/track/end", {
+        method: "POST",
+        body: JSON.stringify({
+          session_id: activeSessionId,
+          reports_encountered: reportsEncounteredRef.current,
+          cameras_passed: camerasPassedRef.current,
+        }),
+      });
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const handleLeaveLive = useCallback(async () => {
+    const id = sessionIdRef.current;
+    if (id && !isGuest) {
+      const ended = await endTrackRecording(id);
+      let track = ended;
+      if (!track) {
+        try {
+          track = await apiFetch<TripTrack>(`/live/track/${id}`);
+        } catch {
+          track = null;
+        }
+      }
+      if (track && track.track_points.length > 5) {
+        setSummaryTrack(track);
+        setShowTripSummary(true);
+        setPendingNavigateAway(true);
+        return;
+      }
+    }
+    router.back();
+  }, [endTrackRecording, isGuest, router]);
+
   const startLiveSession = useCallback(async () => {
     if (sessionStartedRef.current) return;
     const token =
@@ -2476,10 +2576,11 @@ export default function LivePage() {
       });
       setSessionId(session.id);
       sessionIdRef.current = session.id;
+      startTrackRecording(session.id);
     } catch {
       sessionStartedRef.current = false;
     }
-  }, [tripId]);
+  }, [startTrackRecording, tripId]);
 
   const clearPoiMarkers = useCallback(() => {
     poiMarkersRef.current.forEach((marker) => marker.remove());
@@ -2664,6 +2765,9 @@ export default function LivePage() {
       const id = sessionIdRef.current;
       const token =
         typeof window !== "undefined" ? localStorage.getItem("gt_token") : null;
+      if (id && token && !trackEndedRef.current) {
+        void endTrackRecording(id);
+      }
       if (id && token) {
         void apiFetch(`/live/session/${id}/end`, { method: "POST" });
       }
@@ -2687,7 +2791,7 @@ export default function LivePage() {
         void remove(ref(db, `trips/${trip}/live/members/${userId}`));
       }
     };
-  }, [clearMemberMarkers, dashboardUser?.id, stopMeetingPointPlacement, validTripId]);
+  }, [clearMemberMarkers, dashboardUser?.id, endTrackRecording, stopMeetingPointPlacement, validTripId]);
 
   useEffect(() => {
     const container = mapContainerRef.current;
@@ -2822,6 +2926,10 @@ export default function LivePage() {
         );
         previousSampleRef.current = { lat, lng, ts };
         setSpeedMph(mph);
+        currentLatRef.current = lat;
+        currentLngRef.current = lng;
+        currentSpeedRef.current = mph;
+        currentBearingRef.current = bearing;
 
         syncMarker(map, lat, lng, bearing, true);
         writeUserLocation(lat, lng, bearing, mph);
@@ -2974,6 +3082,9 @@ export default function LivePage() {
       showToastMessage(
         action === "confirm" ? "Thanks for confirming." : "Report dismissed.",
       );
+      if (action === "confirm") {
+        reportsEncounteredRef.current += 1;
+      }
     } catch {
       showToastMessage("Could not update report. Try again.");
     } finally {
@@ -3032,7 +3143,7 @@ export default function LivePage() {
         <div className="pointer-events-none absolute left-3 right-3 top-[max(0.75rem,env(safe-area-inset-top))] flex items-center justify-between gap-3">
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={() => void handleLeaveLive()}
             className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-[rgba(15,23,42,0.82)] px-3 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition hover:bg-[rgba(15,23,42,0.92)]"
             aria-label="Go back"
           >
@@ -3048,6 +3159,12 @@ export default function LivePage() {
             >
               Drive
             </button>
+            <Link
+              href="/live/history"
+              className="rounded-full bg-[rgba(15,23,42,0.82)] px-3 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition hover:bg-[rgba(15,23,42,0.92)]"
+            >
+              History
+            </Link>
             <span
               className={`h-2.5 w-2.5 rounded-full ${
                 continuousVoiceActive ? "bg-green-500" : "bg-stone-500"
@@ -3602,6 +3719,21 @@ export default function LivePage() {
           googleMapsUrl={sosResponse.google_maps_url}
           onCancelSos={() => void handleCancelSos()}
           onAddContacts={() => setShowEmergencyContacts(true)}
+        />
+      ) : null}
+
+      {showTripSummary && summaryTrack ? (
+        <TripSummarySheet
+          track={summaryTrack}
+          onToast={showToastMessage}
+          onClose={() => {
+            setShowTripSummary(false);
+            setSummaryTrack(null);
+            if (pendingNavigateAway) {
+              setPendingNavigateAway(false);
+              router.back();
+            }
+          }}
         />
       ) : null}
 
