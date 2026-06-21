@@ -5,7 +5,10 @@ import { DestinationSheet } from "@/components/live/DestinationSheet";
 import { EmergencyContactsSheet } from "@/components/live/EmergencyContactsSheet";
 import { GeofenceSetupSheet } from "@/components/live/GeofenceSetupSheet";
 import { GroupLiveChatButton, GroupLiveChatSheet } from "@/components/live/GroupLiveChatSheet";
-import { FamilyPanel, FamilyPanelToggle } from "@/components/live/FamilyPanel";
+import { FamilyPanel } from "@/components/live/FamilyPanel";
+import { ChatSlidePanel } from "@/components/live/ChatSlidePanel";
+import { RightPanel, buildAlertItems, type WeatherDetail } from "@/components/live/RightPanel";
+import { RightToolbar, type ExtendedWeather } from "@/components/live/RightToolbar";
 import { GuestPrompt } from "@/components/live/GuestPrompt";
 import { NavigationSheet } from "@/components/live/NavigationSheet";
 import { PoiDetailSheet, type PoiPlace } from "@/components/live/PoiDetailSheet";
@@ -15,7 +18,6 @@ import { ReportTypeSheet } from "@/components/live/ReportTypeSheet";
 import { SOSConfirmSheet } from "@/components/live/SOSConfirmSheet";
 import { DriverModeOverlay } from "@/components/live/DriverModeOverlay";
 import { TripSummarySheet } from "@/components/live/TripSummarySheet";
-import { TravelerChatSheet } from "@/components/live/TravelerChatSheet";
 import { WayraChatSheet } from "@/components/live/WayraChatSheet";
 import { apiFetch, apiFetchPublic } from "@/lib/api";
 import { useDashboardUser } from "@/contexts/dashboard-user-context";
@@ -42,7 +44,6 @@ import {
   haversineMeters,
   minutesAgo,
   type CameraAlertItem,
-  type LiveWeather,
   type NearbyTraveler,
   type ReportType,
   type RoadReport,
@@ -68,26 +69,13 @@ import type { SpectatorActiveCount, SpectatorInviteResponse } from "@/lib/live/s
 import {
   AlertCircle,
   ChevronLeft,
-  Cloud,
-  CloudDrizzle,
-  CloudFog,
-  CloudLightning,
-  CloudRain,
-  CloudSnow,
-  CloudSun,
-  Crosshair,
   Eye,
-  Layers,
   Loader2,
-  MessageCircle,
-  Search,
   MapPin,
+  Search,
   Share2,
   Volume2,
   VolumeX,
-  ZoomIn,
-  ZoomOut,
-  type LucideIcon,
 } from "lucide-react";
 import maplibregl, { type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -125,27 +113,22 @@ const OSM_STYLE_DARK: StyleSpecification = {
   },
   layers: [
     {
-      id: "osm-dark-base",
+      id: "osm-dark",
       type: "raster",
       source: "osm",
       paint: {
         "raster-brightness-min": 0.0,
-        "raster-brightness-max": 0.25,
+        "raster-brightness-max": 0.22,
         "raster-saturation": -1.0,
-        "raster-contrast": 0.3,
+        "raster-contrast": 0.4,
         "raster-opacity": 1.0,
-      },
-    },
-    {
-      id: "osm-dark-overlay",
-      type: "background",
-      paint: {
-        "background-color": "rgba(15, 23, 42, 0.45)",
-        "background-opacity": 1,
       },
     },
   ],
 };
+
+const OSM_STYLE_TERRAIN = OSM_STYLE_LIGHT;
+// TODO: wire real terrain tiles when ready
 
 const WAYRA_GUEST_LIMIT = 3;
 const HAZARD_RADIUS_M = 500;
@@ -217,9 +200,23 @@ type HazardBanner = {
   distanceM: number;
 };
 
-type SheetState = "peek" | "half" | "full";
+type SheetHeight = "peek" | "half" | "full";
 type SheetTab = "reports" | "route_chat" | "group" | "travelers";
-type MapStyleMode = "auto" | "light" | "dark";
+type MapStyleMode = "auto" | "light" | "dark" | "terrain";
+
+const SHEET_TRANSLATE: Record<SheetHeight, string> = {
+  peek: "translateY(calc(100% - 110px))",
+  half: "translateY(45%)",
+  full: "translateY(0)",
+};
+
+type PinOut = {
+  id: string;
+  latitude: number;
+  longitude: number;
+  name: string;
+  note: string | null;
+};
 
 function createMemberMarker(color: string, label: string): {
   element: HTMLDivElement;
@@ -400,28 +397,6 @@ function closestHazard(
     }
   }
   return closest;
-}
-
-function getWeatherLabel(code: number): string | null {
-  if (code === 0) return null;
-  if (code <= 3) return "Partly cloudy";
-  if (code <= 48) return "Foggy";
-  if (code <= 67) return "Rain";
-  if (code <= 77) return "Snow";
-  if (code <= 82) return "Showers";
-  if (code <= 99) return "Storm";
-  return null;
-}
-
-function getWeatherIcon(code: number): LucideIcon | null {
-  if (code === 0) return null;
-  if (code <= 3) return CloudSun;
-  if (code <= 48) return CloudFog;
-  if (code <= 67) return CloudRain;
-  if (code <= 77) return CloudSnow;
-  if (code <= 82) return CloudDrizzle;
-  if (code <= 99) return CloudLightning;
-  return Cloud;
 }
 
 function trafficGeoJson(
@@ -645,7 +620,7 @@ export default function LivePage() {
   const [gpsState, setGpsState] = useState<GpsPermissionState>("pending");
   const [speedMph, setSpeedMph] = useState(0);
   const [reports, setReports] = useState<RoadReport[]>([]);
-  const [weather, setWeather] = useState<LiveWeather | null>(null);
+  const [weather, setWeather] = useState<ExtendedWeather | null>(null);
   const [selectedReport, setSelectedReport] = useState<RoadReport | null>(null);
   const [selectedPoi, setSelectedPoi] = useState<PoiPlace | null>(null);
   const [showReportTypes, setShowReportTypes] = useState(false);
@@ -681,10 +656,26 @@ export default function LivePage() {
   const [memberStatuses, setMemberStatuses] = useState<Record<string, QuickStatus>>({});
   const [memberLive, setMemberLive] = useState<Record<string, MemberLiveData>>({});
   const [groupPanelOpen, setGroupPanelOpen] = useState(false);
-  const [sheetState, setSheetState] = useState<SheetState>("peek");
+  const [sheetHeight, setSheetHeight] = useState<SheetHeight>("peek");
   const [sheetTab, setSheetTab] = useState<SheetTab>("reports");
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapStyleMode, setMapStyleMode] = useState<MapStyleMode>("auto");
+  const [activePanel, setActivePanel] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatTarget, setChatTarget] = useState<{
+    id: string;
+    label: string;
+    type: "traveler" | "report";
+  } | null>(null);
+  const [weatherDetail, setWeatherDetail] = useState<WeatherDetail | null>(null);
+  const [weatherDetailLoading, setWeatherDetailLoading] = useState(false);
+  const [unreadAlerts, setUnreadAlerts] = useState(0);
+  const [deviceBatteryLevel, setDeviceBatteryLevel] = useState<number | null>(null);
+  const [savedPins, setSavedPins] = useState<PinOut[]>([]);
+  const [pinsLoading, setPinsLoading] = useState(false);
+  const [wayraListening, setWayraListening] = useState(false);
+  const [sosBanner, setSosBanner] = useState(false);
+  const wayraRecognitionRef = useRef<{ stop: () => void } | null>(null);
   const sheetTouchStartYRef = useRef<number | null>(null);
   const [showConvoySheet, setShowConvoySheet] = useState(false);
   const [showGroupChat, setShowGroupChat] = useState(false);
@@ -719,9 +710,6 @@ export default function LivePage() {
   const [cameraAlert, setCameraAlert] = useState<CameraAlertItem | null>(null);
   const [selectedCamera, setSelectedCamera] = useState<SpeedCameraItem | null>(null);
   const [nearbyTravelers, setNearbyTravelers] = useState<NearbyTraveler[]>([]);
-  const [selectedTraveler, setSelectedTraveler] = useState<NearbyTraveler | null>(
-    null,
-  );
   const [voiceMuted, setVoiceMutedState] = useState(false);
   const [continuousVoiceActive, setContinuousVoiceActive] = useState(false);
   const [driverMode, setDriverMode] = useState(false);
@@ -1182,7 +1170,14 @@ export default function LivePage() {
             const match = nearbyTravelersRef.current.find(
               (item) => item.traveler_id === travelerId,
             );
-            if (match) setSelectedTraveler(match);
+            if (match) {
+              setChatTarget({
+                id: match.traveler_id,
+                label: match.label,
+                type: "traveler",
+              });
+              setChatOpen(true);
+            }
           },
         );
         const marker = new maplibregl.Marker({ element, anchor: "center" })
@@ -1699,6 +1694,8 @@ export default function LivePage() {
 
       setSosResponse({ ...result, sms_template: smsTemplate });
       setShowSosConfirm(true);
+      setSosBanner(true);
+      window.setTimeout(() => setSosBanner(false), 5000);
       speakWayra("SOS activated. Sending alerts to your group.", "urgent");
       localStorage.setItem(
         "rovvy_last_position",
@@ -1857,6 +1854,108 @@ export default function LivePage() {
     setDriverWayraListening(true);
     recognition.start();
   }, [driverWayraListening, isGuest, sendToWayra]);
+
+  const toggleVoiceListening = useCallback(() => {
+    if (isGuest) {
+      setGuestPrompt("Create free account for unlimited Wayra access");
+      return;
+    }
+
+    if (wayraListening) {
+      wayraRecognitionRef.current?.stop();
+      wayraRecognitionRef.current = null;
+      setWayraListening(false);
+      return;
+    }
+
+    type SpeechRecognitionCtor = new () => {
+      continuous: boolean;
+      interimResults: boolean;
+      lang: string;
+      onresult:
+        | ((event: {
+            results: { length: number; [index: number]: { 0: { transcript: string } } };
+          }) => void)
+        | null;
+      onend: (() => void) | null;
+      onerror: (() => void) | null;
+      start: () => void;
+      stop: () => void;
+    };
+
+    const windowWithSpeech = window as Window & {
+      SpeechRecognition?: SpeechRecognitionCtor;
+      webkitSpeechRecognition?: SpeechRecognitionCtor;
+    };
+    const SpeechRecognition =
+      windowWithSpeech.SpeechRecognition || windowWithSpeech.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    continuousListeningActive.current = false;
+    continuousRecognitionRef.current?.stop();
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0]?.[0]?.transcript?.trim() ?? "";
+      if (transcript) {
+        void sendToWayra(transcript);
+      }
+    };
+
+    recognition.onerror = () => {
+      setWayraListening(false);
+      wayraRecognitionRef.current = null;
+    };
+
+    recognition.onend = () => {
+      setWayraListening(false);
+      wayraRecognitionRef.current = null;
+    };
+
+    wayraRecognitionRef.current = recognition;
+    setWayraListening(true);
+    recognition.start();
+  }, [isGuest, sendToWayra, wayraListening]);
+
+  const handleToolbarTap = useCallback(
+    (id: string) => {
+      if (id === "battery") return;
+      setActivePanel((prev) => (prev === id ? null : id));
+      if (id === "wayra") toggleVoiceListening();
+    },
+    [toggleVoiceListening],
+  );
+
+  const handleClearAlerts = useCallback(() => {
+    setRouteAlert(null);
+    setCameraAlert(null);
+    setWayraAlert(null);
+    setHazardBanner(null);
+    setUnreadAlerts(0);
+  }, []);
+
+  const openTravelerChat = useCallback((traveler: NearbyTraveler) => {
+    setChatTarget({
+      id: traveler.traveler_id,
+      label: traveler.label,
+      type: "traveler",
+    });
+    setChatOpen(true);
+  }, []);
+
+  const openReportChat = useCallback((report: RoadReport) => {
+    const config = REPORT_CONFIG[report.report_type];
+    setChatTarget({
+      id: report.id,
+      label: `Report chat · ${config.label}`,
+      type: "report",
+    });
+    setChatOpen(true);
+  }, []);
 
   const checkMeetingArrival = useCallback(
     (lat: number, lng: number) => {
@@ -2545,17 +2644,78 @@ export default function LivePage() {
 
   const fetchWeather = useCallback(async (lat: number, lng: number) => {
     try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=precipitation,weathercode,windspeed_10m&timezone=auto`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,precipitation,weathercode,windspeed_10m&temperature_unit=fahrenheit&timezone=auto`;
       const res = await fetch(url);
       if (!res.ok) return;
       const data = (await res.json()) as {
-        current?: LiveWeather;
+        current?: ExtendedWeather;
       };
       if (data.current) setWeather(data.current);
     } catch {
-      // Weather badge is optional.
+      // Weather is optional.
     }
   }, []);
+
+  const fetchWeatherDetail = useCallback(async (lat: number, lng: number) => {
+    setWeatherDetailLoading(true);
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weathercode,windspeed_10m&temperature_unit=fahrenheit&windspeed_unit=mph&timezone=auto`;
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = (await res.json()) as { current?: WeatherDetail };
+      if (data.current) setWeatherDetail(data.current);
+    } catch {
+      // Weather detail is optional.
+    } finally {
+      setWeatherDetailLoading(false);
+    }
+  }, []);
+
+  const fetchSavedPins = useCallback(async () => {
+    if (isGuest) return;
+    setPinsLoading(true);
+    try {
+      const data = await apiFetch<PinOut[]>("/pins");
+      setSavedPins(data);
+    } catch {
+      // Pins are optional.
+    } finally {
+      setPinsLoading(false);
+    }
+  }, [isGuest]);
+
+  const handleNavigateToPin = useCallback(
+    (pin: PinOut) => {
+      void handleDestinationSelect({
+        lat: pin.latitude,
+        lng: pin.longitude,
+        name: pin.name,
+      });
+      setActivePanel(null);
+    },
+    [handleDestinationSelect],
+  );
+
+  const handleSaveCurrentLocation = useCallback(async () => {
+    const pos = userPositionRef.current;
+    if (!pos || isGuest) return;
+    try {
+      await apiFetch("/pins", {
+        method: "POST",
+        body: JSON.stringify({
+          latitude: pos.lat,
+          longitude: pos.lng,
+          name: "Current location",
+          note: roadNameRef.current ?? null,
+          flag_type: "saved",
+        }),
+      });
+      void fetchSavedPins();
+      showToastMessage("Location saved");
+    } catch {
+      showToastMessage("Could not save location");
+    }
+  }, [fetchSavedPins, isGuest, showToastMessage]);
 
   const startTrackRecording = useCallback((activeSessionId: string) => {
     if (trackRecordingRef.current != null) return;
@@ -2795,25 +2955,25 @@ export default function LivePage() {
     }, HAZARD_BANNER_MS);
   }, []);
 
-  const applyMapStyle = useCallback((map: maplibregl.Map, dark: boolean) => {
-    map.setStyle(dark ? OSM_STYLE_DARK : OSM_STYLE_LIGHT);
-    isDarkRef.current = dark;
-  }, []);
-
-  const resolveMapDark = useCallback(
-    (lat: number, lng: number) => {
-      if (mapStyleMode === "dark") return true;
-      if (mapStyleMode === "light") return false;
-      return isNightMode(lat, lng);
-    },
-    [mapStyleMode],
-  );
+  const applyMapStyle = useCallback((map: maplibregl.Map) => {
+    const { lat, lng } = sunCoordsRef.current;
+    let style: StyleSpecification = OSM_STYLE_LIGHT;
+    if (mapStyleMode === "terrain") style = OSM_STYLE_TERRAIN;
+    else if (mapStyleMode === "dark") style = OSM_STYLE_DARK;
+    else if (mapStyleMode === "light") style = OSM_STYLE_LIGHT;
+    else style = isNightMode(lat, lng) ? OSM_STYLE_DARK : OSM_STYLE_LIGHT;
+    map.setStyle(style);
+    isDarkRef.current = style === OSM_STYLE_DARK;
+  }, [mapStyleMode]);
 
   const cycleMapStyle = useCallback(() => {
+    const { lat, lng } = sunCoordsRef.current;
     setMapStyleMode((mode) => {
-      if (mode === "auto") return "light";
-      if (mode === "light") return "dark";
-      return "auto";
+      const effective =
+        mode === "auto" ? (isNightMode(lat, lng) ? "dark" : "light") : mode;
+      if (effective === "light") return "dark";
+      if (effective === "dark") return "terrain";
+      return "light";
     });
   }, []);
 
@@ -2824,8 +2984,8 @@ export default function LivePage() {
     map.easeTo({ center: [pos.lng, pos.lat], zoom: 15, duration: 500 });
   }, []);
 
-  const cycleSheetState = useCallback(() => {
-    setSheetState((state) => {
+  const cycleSheetHeight = useCallback(() => {
+    setSheetHeight((state) => {
       if (state === "peek") return "half";
       if (state === "half") return "full";
       return "peek";
@@ -2928,7 +3088,7 @@ export default function LivePage() {
     const container = mapContainerRef.current;
     if (!container) return;
 
-    const initialDark = resolveMapDark(
+    const initialDark = isNightMode(
       sunCoordsRef.current.lat,
       sunCoordsRef.current.lng,
     );
@@ -2951,15 +3111,7 @@ export default function LivePage() {
     mapRef.current = map;
 
     map.on("load", () => {
-      const lat = sunCoordsRef.current.lat;
-      const lng = sunCoordsRef.current.lng;
-      const { sunrise, sunset } = getSunTimes(lat, lng);
-      const hour = new Date().getHours() + new Date().getMinutes() / 60;
-      const isDark = hour < sunrise || hour > sunset;
-      if (isDark && mapStyleMode === "auto") {
-        map.setStyle(OSM_STYLE_DARK);
-        isDarkRef.current = true;
-      }
+      applyMapStyle(map);
       setMapLoaded(true);
     });
 
@@ -2997,11 +3149,12 @@ export default function LivePage() {
     resizeObserver.observe(container);
 
     const styleCheck = window.setInterval(() => {
+      if (mapStyleMode !== "auto") return;
       const activeMap = mapRef.current;
       if (!activeMap) return;
-      const dark = resolveMapDark(sunCoordsRef.current.lat, sunCoordsRef.current.lng);
+      const dark = isNightMode(sunCoordsRef.current.lat, sunCoordsRef.current.lng);
       if (isDarkRef.current === dark) return;
-      applyMapStyle(activeMap, dark);
+      applyMapStyle(activeMap);
     }, 60_000);
 
     return () => {
@@ -3016,14 +3169,13 @@ export default function LivePage() {
       map.remove();
       mapRef.current = null;
     };
-  }, [applyMapStyle, clearPoiMarkers, clearRouteFromMap, mapStyleMode, resolveMapDark, syncGeofenceOnMap, syncMarker, syncReportMarkers]);
+  }, [applyMapStyle, clearPoiMarkers, clearRouteFromMap, mapStyleMode, syncGeofenceOnMap, syncMarker, syncReportMarkers]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
-    const { lat, lng } = sunCoordsRef.current;
-    applyMapStyle(map, resolveMapDark(lat, lng));
-  }, [applyMapStyle, mapLoaded, mapStyleMode, resolveMapDark]);
+    applyMapStyle(map);
+  }, [applyMapStyle, mapLoaded, mapStyleMode]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -3108,9 +3260,8 @@ export default function LivePage() {
           void fetchWeather(lat, lng);
           void startLiveSession();
 
-          const dark = resolveMapDark(lat, lng);
-          if (isDarkRef.current !== dark) {
-            applyMapStyle(map, dark);
+          if (mapStyleMode === "auto") {
+            applyMapStyle(map);
           }
         }
       },
@@ -3135,7 +3286,7 @@ export default function LivePage() {
         watchIdRef.current = null;
       }
     };
-  }, [applyMapStyle, broadcastSoloLocation, checkGeofence, checkMeetingArrival, fetchNearbyReports, fetchTrafficDensity, fetchWeather, processNavigationUpdate, resolveMapDark, startLiveSession, syncMarker, writeUserLocation]);
+  }, [applyMapStyle, broadcastSoloLocation, checkGeofence, checkMeetingArrival, fetchNearbyReports, fetchTrafficDensity, fetchWeather, mapStyleMode, processNavigationUpdate, startLiveSession, syncMarker, writeUserLocation]);
 
   useEffect(() => {
     if (!navigationActive) return;
@@ -3243,24 +3394,93 @@ export default function LivePage() {
     }
   };
 
-  const weatherLabel =
-    weather && weather.windspeed_10m > 50
-      ? "Strong wind"
-      : weather
-        ? getWeatherLabel(weather.weathercode)
-        : null;
-  const WeatherIcon =
-    weather && weather.windspeed_10m > 50
-      ? Cloud
-      : weather
-        ? getWeatherIcon(weather.weathercode)
-        : null;
-  const sheetTranslateY =
-    sheetState === "peek"
-      ? "calc(100% - 120px)"
-      : sheetState === "half"
-        ? "50%"
-        : "0";
+  useEffect(() => {
+    if (activePanel) setSheetHeight("peek");
+  }, [activePanel]);
+
+  useEffect(() => {
+    const pos = userPositionRef.current;
+    if (activePanel === "weather" && pos) {
+      void fetchWeatherDetail(pos.lat, pos.lng);
+    }
+    if (activePanel === "pins") {
+      void fetchSavedPins();
+    }
+  }, [activePanel, fetchSavedPins, fetchWeatherDetail]);
+
+  useEffect(() => {
+    let count = 0;
+    if (routeAlert) count += 1;
+    if (cameraAlert) count += 1;
+    if (wayraAlert) count += 1;
+    if (hazardBanner) count += 1;
+    setUnreadAlerts(count);
+  }, [routeAlert, cameraAlert, wayraAlert, hazardBanner]);
+
+  useEffect(() => {
+    const nav = navigator as Navigator & {
+      getBattery?: () => Promise<{
+        level: number;
+        addEventListener: (type: string, listener: () => void) => void;
+        removeEventListener: (type: string, listener: () => void) => void;
+      }>;
+    };
+    if (!nav.getBattery) return undefined;
+
+    let cleanup: (() => void) | undefined;
+    void nav.getBattery().then((battery) => {
+      const update = () => setDeviceBatteryLevel(Math.round(battery.level * 100));
+      update();
+      battery.addEventListener("levelchange", update);
+      cleanup = () => battery.removeEventListener("levelchange", update);
+    });
+    return () => cleanup?.();
+  }, []);
+
+  useEffect(() => {
+    let volumeDownPressTime: number | null = null;
+    let holdTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "AudioVolumeDown" || e.key === "VolumeDown") {
+        if (!volumeDownPressTime) {
+          volumeDownPressTime = Date.now();
+          holdTimer = setTimeout(() => {
+            void triggerSOS();
+          }, 5000);
+        }
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "AudioVolumeDown" || e.key === "VolumeDown") {
+        volumeDownPressTime = null;
+        if (holdTimer) clearTimeout(holdTimer);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      if (holdTimer) clearTimeout(holdTimer);
+    };
+  }, [triggerSOS]);
+
+  const visibleReports =
+    sheetHeight === "peek"
+      ? reports.slice(0, 1)
+      : sheetHeight === "half"
+        ? reports.slice(0, 3)
+        : reports;
+  const alertItems = buildAlertItems(
+    routeAlert,
+    cameraAlert,
+    wayraAlert,
+    hazardBanner,
+    REPORT_CONFIG,
+  );
   const hazardConfig = hazardBanner
     ? REPORT_CONFIG[hazardBanner.report.report_type]
     : null;
@@ -3374,72 +3594,22 @@ export default function LivePage() {
           </div>
         </div>
 
-        {groupMode && !driverMode ? (
-          <FamilyPanelToggle
-            memberCount={tripMembers.length}
-            open={groupPanelOpen}
-            onClick={() => setGroupPanelOpen((open) => !open)}
-          />
+        {sosBanner ? (
+          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.25rem)] z-[130]">
+            <div className="rounded-xl bg-red-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+              SOS activated — alerting your group
+            </div>
+          </div>
         ) : null}
 
-        {!driverMode ? (
-          <div
-            style={{
-              position: "absolute",
-              right: groupPanelOpen ? "292px" : "12px",
-              top: "calc(50% + 48px)",
-              transform: "translateY(-50%)",
-              zIndex: 18,
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
-              transition: "right 0.3s ease",
-            }}
+        {groupMode && !driverMode ? (
+          <button
+            type="button"
+            onClick={() => setGroupPanelOpen((open) => !open)}
+            className="pointer-events-auto absolute left-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.5rem)] z-[18] rounded-full bg-[rgba(15,23,42,0.82)] px-3 py-2 text-xs font-semibold text-white shadow-lg"
           >
-            {[
-              {
-                icon: <Layers size={16} />,
-                onClick: cycleMapStyle,
-                label: "Map style",
-              },
-              {
-                icon: <Crosshair size={16} />,
-                onClick: centerOnUser,
-                label: "My location",
-              },
-              {
-                icon: <ZoomIn size={16} />,
-                onClick: () => mapRef.current?.zoomIn(),
-                label: "Zoom in",
-              },
-              {
-                icon: <ZoomOut size={16} />,
-                onClick: () => mapRef.current?.zoomOut(),
-                label: "Zoom out",
-              },
-            ].map((btn, i) => (
-              <button
-                key={i}
-                type="button"
-                aria-label={btn.label}
-                onClick={btn.onClick}
-                style={{
-                  width: 36,
-                  height: 36,
-                  background: "rgba(15,23,42,0.82)",
-                  border: "none",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  color: "#fff",
-                }}
-              >
-                {btn.icon}
-              </button>
-            ))}
-          </div>
+            Group ({tripMembers.length})
+          </button>
         ) : null}
 
         {settingMeetingPoint ? (
@@ -3579,27 +3749,6 @@ export default function LivePage() {
           </div>
         ) : null}
 
-        {weather && weatherLabel && WeatherIcon ? (
-          <div
-            className="pointer-events-none absolute right-3 z-[18]"
-            style={{ top: "120px" }}
-          >
-            <div
-              style={{
-                background: "rgba(15,23,42,0.82)",
-                borderRadius: "20px",
-                padding: "5px 12px",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-            >
-              <WeatherIcon size={13} color="#93c5fd" />
-              <span style={{ fontSize: "12px", color: "#93c5fd" }}>{weatherLabel}</span>
-            </div>
-          </div>
-        ) : null}
-
         {hazardBanner && hazardConfig ? (
           <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+9rem)]">
             <div className="rounded-xl bg-gradient-to-r from-orange-600 to-red-600 px-4 py-3 text-white shadow-lg">
@@ -3673,69 +3822,25 @@ export default function LivePage() {
         </button>
 
         {!isGuest ? (
-          <div
-            className={`pointer-events-auto absolute z-20 ${
-              groupMode ? "bottom-[14.5rem] right-4" : "bottom-[10.5rem] right-4"
-            }`}
-          >
-            <button
-              type="button"
-              aria-label="Hold for 3 seconds to trigger SOS"
-              onPointerDown={handleSOSPressStart}
-              onPointerUp={handleSOSPressEnd}
-              onPointerLeave={handleSOSPressEnd}
-              onPointerCancel={handleSOSPressEnd}
-              className={`live-sos-button ${groupMode ? "live-sos-button--group" : ""}`}
-            >
-              <svg className="live-sos-progress" viewBox="0 0 64 64" aria-hidden>
-                <circle
-                  cx="32"
-                  cy="32"
-                  r="28"
-                  fill="none"
-                  stroke="rgba(255,255,255,0.35)"
-                  strokeWidth="3"
-                />
-                <circle
-                  cx="32"
-                  cy="32"
-                  r="28"
-                  fill="none"
-                  stroke="#ffffff"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeDasharray={175.93}
-                  strokeDashoffset={175.93 - (175.93 * sosHoldProgress) / 100}
-                  transform="rotate(-90 32 32)"
-                />
-              </svg>
-              <span className="live-sos-label">SOS</span>
-            </button>
-          </div>
-        ) : null}
-
-        <div
-          className={`pointer-events-auto absolute bottom-24 z-20 ${
-            groupMode ? "right-20" : "right-4"
-          }`}
-        >
-          {showWayraTooltip ? (
-            <div className="pointer-events-none absolute bottom-full right-0 mb-2 whitespace-nowrap rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white shadow-lg">
-              Ask Wayra
-            </div>
-          ) : null}
           <button
             type="button"
-            onClick={openWayraChat}
-            className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[#0F766E] text-white shadow-lg transition hover:bg-[#0d655c]"
-            aria-label="Open Wayra chat"
+            onClick={() => void triggerSOS()}
+            style={{
+              position: "absolute",
+              left: 12,
+              bottom: 140,
+              zIndex: 18,
+              background: "none",
+              border: "none",
+              color: "rgba(255,255,255,0.5)",
+              fontSize: 10,
+              cursor: "pointer",
+              padding: 4,
+            }}
           >
-            <MessageCircle size={22} />
-            {wayraUnread ? (
-              <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full border-2 border-[#0F766E] bg-red-500" />
-            ) : null}
+            SOS
           </button>
-        </div>
+        ) : null}
 
         {groupMode && firebaseDb && validTripId && currentUserId ? (
           <GroupLiveChatButton onClick={() => setShowGroupChat(true)} />
@@ -3805,12 +3910,14 @@ export default function LivePage() {
 
       {!driverMode && !(route && destination) ? (
         <div
-          className="pointer-events-auto absolute bottom-0 left-0 right-0 z-20 flex flex-col overflow-hidden bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.12)]"
+          className="pointer-events-auto absolute bottom-0 left-0 right-0 z-20 flex flex-col overflow-hidden"
           style={{
-            height: "80vh",
+            height: "85vh",
+            transform: SHEET_TRANSLATE[sheetHeight],
+            transition: "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+            background: "white",
             borderRadius: "16px 16px 0 0",
-            transform: `translateY(${sheetTranslateY})`,
-            transition: "transform 0.3s ease",
+            borderTop: "0.5px solid #e2e8f0",
           }}
           onTouchStart={(event) => {
             sheetTouchStartYRef.current = event.touches[0]?.clientY ?? null;
@@ -3821,18 +3928,30 @@ export default function LivePage() {
             sheetTouchStartYRef.current = null;
             if (startY == null || endY == null) return;
             const delta = startY - endY;
-            if (delta > 40) setSheetState("half");
-            else if (delta < -40) setSheetState("peek");
+            if (delta > 40) setSheetHeight("half");
+            else if (delta < -40) setSheetHeight("peek");
           }}
         >
-          <button
-            type="button"
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={cycleSheetHeight}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") cycleSheetHeight();
+            }}
+            style={{ padding: "10px 0 6px", cursor: "pointer", textAlign: "center" }}
             aria-label="Adjust bottom sheet"
-            onClick={cycleSheetState}
-            className="flex w-full justify-center py-3"
           >
-            <span className="h-1 w-10 rounded-full bg-stone-300" />
-          </button>
+            <div
+              style={{
+                width: 32,
+                height: 3,
+                background: "#cbd5e1",
+                borderRadius: 2,
+                margin: "0 auto",
+              }}
+            />
+          </div>
 
           <div className="flex gap-1 border-b border-stone-200 px-3 pb-2">
             {(
@@ -3861,13 +3980,15 @@ export default function LivePage() {
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-3">
+          <div
+            className={`flex-1 overflow-y-auto px-4 py-3 ${sheetHeight === "full" ? "" : "overflow-hidden"}`}
+          >
             {sheetTab === "reports" ? (
               reports.length === 0 ? (
                 <p className="text-sm text-stone-500">No nearby reports yet.</p>
               ) : (
                 <ul className="space-y-2">
-                  {reports.map((report) => {
+                  {visibleReports.map((report) => {
                     const config = REPORT_CONFIG[report.report_type];
                     return (
                       <li key={report.id}>
@@ -3899,9 +4020,13 @@ export default function LivePage() {
 
             {sheetTab === "route_chat" ? (
               selectedReport ? (
-                <p className="text-sm text-stone-600">
+                <button
+                  type="button"
+                  onClick={() => openReportChat(selectedReport)}
+                  className="w-full rounded-xl bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800"
+                >
                   Open chat for {REPORT_CONFIG[selectedReport.report_type].label}
-                </p>
+                </button>
               ) : (
                 <p className="text-sm text-stone-500">
                   Select a report on the map to open route chat.
@@ -3928,11 +4053,16 @@ export default function LivePage() {
                 <p className="text-sm text-stone-500">No nearby travelers.</p>
               ) : (
                 <ul className="space-y-2">
-                  {nearbyTravelers.map((traveler) => (
+                  {(sheetHeight === "peek"
+                    ? nearbyTravelers.slice(0, 1)
+                    : sheetHeight === "half"
+                      ? nearbyTravelers.slice(0, 3)
+                      : nearbyTravelers
+                  ).map((traveler) => (
                     <li key={traveler.traveler_id}>
                       <button
                         type="button"
-                        onClick={() => setSelectedTraveler(traveler)}
+                        onClick={() => openTravelerChat(traveler)}
                         className="flex w-full items-center justify-between rounded-xl bg-stone-50 px-3 py-2 text-left"
                       >
                         <span className="text-sm font-medium text-stone-900">
@@ -3949,6 +4079,61 @@ export default function LivePage() {
             ) : null}
           </div>
         </div>
+      ) : null}
+
+      {!driverMode ? (
+        <>
+          <RightPanel
+            activePanel={activePanel}
+            setActivePanel={setActivePanel}
+            weatherDetail={weatherDetail}
+            weatherLoading={weatherDetailLoading}
+            onRefreshWeather={() => {
+              const pos = userPositionRef.current;
+              if (pos) void fetchWeatherDetail(pos.lat, pos.lng);
+            }}
+            alerts={alertItems}
+            onClearAlerts={handleClearAlerts}
+            isListening={wayraListening}
+            toggleVoiceListening={toggleVoiceListening}
+            connectivityCount={nearbyTravelers.length}
+            nearbyTravelers={nearbyTravelers}
+            onTravelerTap={openTravelerChat}
+            savedPins={savedPins}
+            pinsLoading={pinsLoading}
+            onNavigateToPin={handleNavigateToPin}
+            onSaveCurrentLocation={() => void handleSaveCurrentLocation()}
+            userLat={userPositionRef.current?.lat ?? null}
+            userLng={userPositionRef.current?.lng ?? null}
+          />
+          <div className="pointer-events-auto absolute inset-0">
+            <RightToolbar
+              weather={weather}
+              batteryLevel={deviceBatteryLevel}
+              connectivityCount={nearbyTravelers.length}
+              unreadAlerts={unreadAlerts}
+              isListening={wayraListening}
+              onWeatherTap={() => handleToolbarTap("weather")}
+              onNotificationsTap={() => handleToolbarTap("notifications")}
+              onWayraTap={() => handleToolbarTap("wayra")}
+              onConnectivityTap={() => handleToolbarTap("connectivity")}
+              onSavedPinsTap={() => handleToolbarTap("pins")}
+              onZoomIn={() => mapRef.current?.zoomIn()}
+              onZoomOut={() => mapRef.current?.zoomOut()}
+              onStyleTap={cycleMapStyle}
+              activePanel={activePanel}
+            />
+          </div>
+          <ChatSlidePanel
+            chatOpen={chatOpen}
+            chatTarget={chatTarget}
+            onBack={() => {
+              setChatOpen(false);
+              setChatTarget(null);
+            }}
+            onToast={showToastMessage}
+          />
+        </>
       ) : null}
 
       {gpsState === "pending" ? (
@@ -4001,15 +4186,6 @@ export default function LivePage() {
           onAction={handleWayraAction}
           onToast={showToastMessage}
           onClose={() => setShowWayra(false)}
-        />
-      ) : null}
-
-      {selectedTraveler ? (
-        <TravelerChatSheet
-          travelerId={selectedTraveler.traveler_id}
-          travelerLabel={selectedTraveler.label}
-          onClose={() => setSelectedTraveler(null)}
-          onToast={showToastMessage}
         />
       ) : null}
 
