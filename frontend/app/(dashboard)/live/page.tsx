@@ -5,7 +5,7 @@ import { DestinationSheet } from "@/components/live/DestinationSheet";
 import { EmergencyContactsSheet } from "@/components/live/EmergencyContactsSheet";
 import { GeofenceSetupSheet } from "@/components/live/GeofenceSetupSheet";
 import { GroupLiveChatButton, GroupLiveChatSheet } from "@/components/live/GroupLiveChatSheet";
-import { GroupPanel, GroupPanelToggle } from "@/components/live/GroupPanel";
+import { FamilyPanel, FamilyPanelToggle } from "@/components/live/FamilyPanel";
 import { GuestPrompt } from "@/components/live/GuestPrompt";
 import { NavigationSheet } from "@/components/live/NavigationSheet";
 import { PoiDetailSheet, type PoiPlace } from "@/components/live/PoiDetailSheet";
@@ -68,7 +68,16 @@ import type { SpectatorActiveCount, SpectatorInviteResponse } from "@/lib/live/s
 import {
   AlertCircle,
   ChevronLeft,
+  Cloud,
+  CloudDrizzle,
+  CloudFog,
+  CloudLightning,
+  CloudRain,
+  CloudSnow,
+  CloudSun,
+  Crosshair,
   Eye,
+  Layers,
   Loader2,
   MessageCircle,
   Search,
@@ -76,6 +85,9 @@ import {
   Share2,
   Volume2,
   VolumeX,
+  ZoomIn,
+  ZoomOut,
+  type LucideIcon,
 } from "lucide-react";
 import maplibregl, { type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -113,14 +125,23 @@ const OSM_STYLE_DARK: StyleSpecification = {
   },
   layers: [
     {
-      id: "osm",
+      id: "osm-dark-base",
       type: "raster",
       source: "osm",
       paint: {
-        "raster-brightness-min": 0,
-        "raster-brightness-max": 0.3,
-        "raster-saturation": -1,
-        "raster-contrast": 0.2,
+        "raster-brightness-min": 0.0,
+        "raster-brightness-max": 0.25,
+        "raster-saturation": -1.0,
+        "raster-contrast": 0.3,
+        "raster-opacity": 1.0,
+      },
+    },
+    {
+      id: "osm-dark-overlay",
+      type: "background",
+      paint: {
+        "background-color": "rgba(15, 23, 42, 0.45)",
+        "background-opacity": 1,
       },
     },
   ],
@@ -195,6 +216,10 @@ type HazardBanner = {
   report: RoadReport;
   distanceM: number;
 };
+
+type SheetState = "peek" | "half" | "full";
+type SheetTab = "reports" | "route_chat" | "group" | "travelers";
+type MapStyleMode = "auto" | "light" | "dark";
 
 function createMemberMarker(color: string, label: string): {
   element: HTMLDivElement;
@@ -377,18 +402,26 @@ function closestHazard(
   return closest;
 }
 
-function weatherBadgeLabel(weather: LiveWeather | null): string | null {
-  if (!weather) return null;
-  if (weather.windspeed_10m > 50) return "💨 Strong wind";
-  const code = weather.weathercode;
+function getWeatherLabel(code: number): string | null {
   if (code === 0) return null;
-  if (code >= 1 && code <= 3) return "Partly cloudy";
-  if (code === 45 || code === 48) return "⚠️ Foggy";
-  if (code >= 51 && code <= 67) return "🌧️ Rain";
-  if (code >= 71 && code <= 77) return "❄️ Snow";
-  if (code >= 80 && code <= 82) return "🌧️ Showers";
-  if (code >= 95 && code <= 99) return "⛈️ Storm";
+  if (code <= 3) return "Partly cloudy";
+  if (code <= 48) return "Foggy";
+  if (code <= 67) return "Rain";
+  if (code <= 77) return "Snow";
+  if (code <= 82) return "Showers";
+  if (code <= 99) return "Storm";
   return null;
+}
+
+function getWeatherIcon(code: number): LucideIcon | null {
+  if (code === 0) return null;
+  if (code <= 3) return CloudSun;
+  if (code <= 48) return CloudFog;
+  if (code <= 67) return CloudRain;
+  if (code <= 77) return CloudSnow;
+  if (code <= 82) return CloudDrizzle;
+  if (code <= 99) return CloudLightning;
+  return Cloud;
 }
 
 function trafficGeoJson(
@@ -648,6 +681,11 @@ export default function LivePage() {
   const [memberStatuses, setMemberStatuses] = useState<Record<string, QuickStatus>>({});
   const [memberLive, setMemberLive] = useState<Record<string, MemberLiveData>>({});
   const [groupPanelOpen, setGroupPanelOpen] = useState(false);
+  const [sheetState, setSheetState] = useState<SheetState>("peek");
+  const [sheetTab, setSheetTab] = useState<SheetTab>("reports");
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapStyleMode, setMapStyleMode] = useState<MapStyleMode>("auto");
+  const sheetTouchStartYRef = useRef<number | null>(null);
   const [showConvoySheet, setShowConvoySheet] = useState(false);
   const [showGroupChat, setShowGroupChat] = useState(false);
   const [settingMeetingPoint, setSettingMeetingPoint] = useState(false);
@@ -2762,6 +2800,38 @@ export default function LivePage() {
     isDarkRef.current = dark;
   }, []);
 
+  const resolveMapDark = useCallback(
+    (lat: number, lng: number) => {
+      if (mapStyleMode === "dark") return true;
+      if (mapStyleMode === "light") return false;
+      return isNightMode(lat, lng);
+    },
+    [mapStyleMode],
+  );
+
+  const cycleMapStyle = useCallback(() => {
+    setMapStyleMode((mode) => {
+      if (mode === "auto") return "light";
+      if (mode === "light") return "dark";
+      return "auto";
+    });
+  }, []);
+
+  const centerOnUser = useCallback(() => {
+    const map = mapRef.current;
+    const pos = userPositionRef.current;
+    if (!map || !pos) return;
+    map.easeTo({ center: [pos.lng, pos.lat], zoom: 15, duration: 500 });
+  }, []);
+
+  const cycleSheetState = useCallback(() => {
+    setSheetState((state) => {
+      if (state === "peek") return "half";
+      if (state === "half") return "full";
+      return "peek";
+    });
+  }, []);
+
   const syncMarker = useCallback(
     (
       map: maplibregl.Map,
@@ -2858,7 +2928,7 @@ export default function LivePage() {
     const container = mapContainerRef.current;
     if (!container) return;
 
-    const initialDark = isNightMode(
+    const initialDark = resolveMapDark(
       sunCoordsRef.current.lat,
       sunCoordsRef.current.lng,
     );
@@ -2879,6 +2949,19 @@ export default function LivePage() {
     );
 
     mapRef.current = map;
+
+    map.on("load", () => {
+      const lat = sunCoordsRef.current.lat;
+      const lng = sunCoordsRef.current.lng;
+      const { sunrise, sunset } = getSunTimes(lat, lng);
+      const hour = new Date().getHours() + new Date().getMinutes() / 60;
+      const isDark = hour < sunrise || hour > sunset;
+      if (isDark && mapStyleMode === "auto") {
+        map.setStyle(OSM_STYLE_DARK);
+        isDarkRef.current = true;
+      }
+      setMapLoaded(true);
+    });
 
     map.on("style.load", () => {
       syncReportMarkers(map, reportsRef.current);
@@ -2916,7 +2999,7 @@ export default function LivePage() {
     const styleCheck = window.setInterval(() => {
       const activeMap = mapRef.current;
       if (!activeMap) return;
-      const dark = isNightMode(sunCoordsRef.current.lat, sunCoordsRef.current.lng);
+      const dark = resolveMapDark(sunCoordsRef.current.lat, sunCoordsRef.current.lng);
       if (isDarkRef.current === dark) return;
       applyMapStyle(activeMap, dark);
     }, 60_000);
@@ -2933,7 +3016,14 @@ export default function LivePage() {
       map.remove();
       mapRef.current = null;
     };
-  }, [applyMapStyle, clearPoiMarkers, clearRouteFromMap, syncGeofenceOnMap, syncMarker, syncReportMarkers]);
+  }, [applyMapStyle, clearPoiMarkers, clearRouteFromMap, mapStyleMode, resolveMapDark, syncGeofenceOnMap, syncMarker, syncReportMarkers]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+    const { lat, lng } = sunCoordsRef.current;
+    applyMapStyle(map, resolveMapDark(lat, lng));
+  }, [applyMapStyle, mapLoaded, mapStyleMode, resolveMapDark]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -3018,7 +3108,7 @@ export default function LivePage() {
           void fetchWeather(lat, lng);
           void startLiveSession();
 
-          const dark = isNightMode(lat, lng);
+          const dark = resolveMapDark(lat, lng);
           if (isDarkRef.current !== dark) {
             applyMapStyle(map, dark);
           }
@@ -3045,7 +3135,7 @@ export default function LivePage() {
         watchIdRef.current = null;
       }
     };
-  }, [applyMapStyle, broadcastSoloLocation, checkGeofence, checkMeetingArrival, fetchNearbyReports, fetchTrafficDensity, fetchWeather, processNavigationUpdate, startLiveSession, syncMarker, writeUserLocation]);
+  }, [applyMapStyle, broadcastSoloLocation, checkGeofence, checkMeetingArrival, fetchNearbyReports, fetchTrafficDensity, fetchWeather, processNavigationUpdate, resolveMapDark, startLiveSession, syncMarker, writeUserLocation]);
 
   useEffect(() => {
     if (!navigationActive) return;
@@ -3153,7 +3243,24 @@ export default function LivePage() {
     }
   };
 
-  const weatherLabel = weatherBadgeLabel(weather);
+  const weatherLabel =
+    weather && weather.windspeed_10m > 50
+      ? "Strong wind"
+      : weather
+        ? getWeatherLabel(weather.weathercode)
+        : null;
+  const WeatherIcon =
+    weather && weather.windspeed_10m > 50
+      ? Cloud
+      : weather
+        ? getWeatherIcon(weather.weathercode)
+        : null;
+  const sheetTranslateY =
+    sheetState === "peek"
+      ? "calc(100% - 120px)"
+      : sheetState === "half"
+        ? "50%"
+        : "0";
   const hazardConfig = hazardBanner
     ? REPORT_CONFIG[hazardBanner.report.report_type]
     : null;
@@ -3267,11 +3374,72 @@ export default function LivePage() {
           </div>
         </div>
 
-        {groupMode ? (
-          <GroupPanelToggle
-            active={groupPanelOpen}
+        {groupMode && !driverMode ? (
+          <FamilyPanelToggle
+            memberCount={tripMembers.length}
+            open={groupPanelOpen}
             onClick={() => setGroupPanelOpen((open) => !open)}
           />
+        ) : null}
+
+        {!driverMode ? (
+          <div
+            style={{
+              position: "absolute",
+              right: groupPanelOpen ? "292px" : "12px",
+              top: "calc(50% + 48px)",
+              transform: "translateY(-50%)",
+              zIndex: 18,
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              transition: "right 0.3s ease",
+            }}
+          >
+            {[
+              {
+                icon: <Layers size={16} />,
+                onClick: cycleMapStyle,
+                label: "Map style",
+              },
+              {
+                icon: <Crosshair size={16} />,
+                onClick: centerOnUser,
+                label: "My location",
+              },
+              {
+                icon: <ZoomIn size={16} />,
+                onClick: () => mapRef.current?.zoomIn(),
+                label: "Zoom in",
+              },
+              {
+                icon: <ZoomOut size={16} />,
+                onClick: () => mapRef.current?.zoomOut(),
+                label: "Zoom out",
+              },
+            ].map((btn, i) => (
+              <button
+                key={i}
+                type="button"
+                aria-label={btn.label}
+                onClick={btn.onClick}
+                style={{
+                  width: 36,
+                  height: 36,
+                  background: "rgba(15,23,42,0.82)",
+                  border: "none",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: "#fff",
+                }}
+              >
+                {btn.icon}
+              </button>
+            ))}
+          </div>
         ) : null}
 
         {settingMeetingPoint ? (
@@ -3411,10 +3579,23 @@ export default function LivePage() {
           </div>
         ) : null}
 
-        {weatherLabel ? (
-          <div className="pointer-events-none absolute right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)]">
-            <div className="rounded-full bg-[rgba(15,23,42,0.82)] px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur-sm">
-              {weatherLabel}
+        {weather && weatherLabel && WeatherIcon ? (
+          <div
+            className="pointer-events-none absolute right-3 z-[18]"
+            style={{ top: "120px" }}
+          >
+            <div
+              style={{
+                background: "rgba(15,23,42,0.82)",
+                borderRadius: "20px",
+                padding: "5px 12px",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <WeatherIcon size={13} color="#93c5fd" />
+              <span style={{ fontSize: "12px", color: "#93c5fd" }}>{weatherLabel}</span>
             </div>
           </div>
         ) : null}
@@ -3622,6 +3803,154 @@ export default function LivePage() {
         </div>
       ) : null}
 
+      {!driverMode && !(route && destination) ? (
+        <div
+          className="pointer-events-auto absolute bottom-0 left-0 right-0 z-20 flex flex-col overflow-hidden bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.12)]"
+          style={{
+            height: "80vh",
+            borderRadius: "16px 16px 0 0",
+            transform: `translateY(${sheetTranslateY})`,
+            transition: "transform 0.3s ease",
+          }}
+          onTouchStart={(event) => {
+            sheetTouchStartYRef.current = event.touches[0]?.clientY ?? null;
+          }}
+          onTouchEnd={(event) => {
+            const startY = sheetTouchStartYRef.current;
+            const endY = event.changedTouches[0]?.clientY;
+            sheetTouchStartYRef.current = null;
+            if (startY == null || endY == null) return;
+            const delta = startY - endY;
+            if (delta > 40) setSheetState("half");
+            else if (delta < -40) setSheetState("peek");
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Adjust bottom sheet"
+            onClick={cycleSheetState}
+            className="flex w-full justify-center py-3"
+          >
+            <span className="h-1 w-10 rounded-full bg-stone-300" />
+          </button>
+
+          <div className="flex gap-1 border-b border-stone-200 px-3 pb-2">
+            {(
+              [
+                ["reports", "Nearby reports"],
+                ["route_chat", "Route chat"],
+                ["group", "Group"],
+                ["travelers", "Travelers"],
+              ] as const
+            ).map(([tab, label]) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => {
+                  setSheetTab(tab);
+                  if (tab === "group" && groupMode) setGroupPanelOpen(true);
+                }}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                  sheetTab === tab
+                    ? "bg-[#0F766E] text-white"
+                    : "bg-stone-100 text-stone-600"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 py-3">
+            {sheetTab === "reports" ? (
+              reports.length === 0 ? (
+                <p className="text-sm text-stone-500">No nearby reports yet.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {reports.map((report) => {
+                    const config = REPORT_CONFIG[report.report_type];
+                    return (
+                      <li key={report.id}>
+                        <button
+                          type="button"
+                          onClick={() => openReportRef.current(report)}
+                          className="flex w-full items-center justify-between rounded-xl bg-stone-50 px-3 py-2 text-left"
+                        >
+                          <span className="text-sm font-medium text-stone-900">
+                            {config.label}
+                          </span>
+                          <span className="text-xs text-stone-500">
+                            {formatDistance(
+                              haversineMeters(
+                                userPositionRef.current?.lat ?? report.lat,
+                                userPositionRef.current?.lng ?? report.lng,
+                                report.lat,
+                                report.lng,
+                              ),
+                            )}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )
+            ) : null}
+
+            {sheetTab === "route_chat" ? (
+              selectedReport ? (
+                <p className="text-sm text-stone-600">
+                  Open chat for {REPORT_CONFIG[selectedReport.report_type].label}
+                </p>
+              ) : (
+                <p className="text-sm text-stone-500">
+                  Select a report on the map to open route chat.
+                </p>
+              )
+            ) : null}
+
+            {sheetTab === "group" ? (
+              groupMode ? (
+                <button
+                  type="button"
+                  onClick={() => setGroupPanelOpen(true)}
+                  className="w-full rounded-xl bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800"
+                >
+                  Open group panel ({tripMembers.length} members)
+                </button>
+              ) : (
+                <p className="text-sm text-stone-500">Group mode is not active.</p>
+              )
+            ) : null}
+
+            {sheetTab === "travelers" ? (
+              nearbyTravelers.length === 0 ? (
+                <p className="text-sm text-stone-500">No nearby travelers.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {nearbyTravelers.map((traveler) => (
+                    <li key={traveler.traveler_id}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTraveler(traveler)}
+                        className="flex w-full items-center justify-between rounded-xl bg-stone-50 px-3 py-2 text-left"
+                      >
+                        <span className="text-sm font-medium text-stone-900">
+                          {traveler.label}
+                        </span>
+                        <span className="text-xs text-stone-500">
+                          {traveler.distance_miles.toFixed(1)} mi
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       {gpsState === "pending" ? (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-stone-900/25">
           <div className="flex flex-col items-center gap-3 rounded-2xl bg-white/95 px-6 py-5 shadow-xl">
@@ -3737,27 +4066,19 @@ export default function LivePage() {
         />
       ) : null}
 
-      {groupMode ? (
-        <GroupPanel
+      {groupMode && !driverMode ? (
+        <FamilyPanel
           open={groupPanelOpen}
-          tripName={tripName}
-          members={tripMembers}
-          memberLive={memberLive}
+          tripMembers={tripMembers}
           memberStatuses={memberStatuses}
+          memberLive={memberLive}
           meetingPoint={meetingPoint}
-          convoy={convoy}
-          geofence={geofence}
           isGroupAdmin={isGroupAdmin}
           currentUserId={currentUserId}
           currentUserSpeedMph={speedMph}
-          statusBusy={groupStatusBusy}
           onClose={() => setGroupPanelOpen(false)}
           onSetMeetingPoint={handleSetMeetingPointMode}
-          onClearMeetingPoint={() => void handleClearMeetingPoint()}
           onStartConvoy={() => setShowConvoySheet(true)}
-          onEndConvoy={() => void handleEndConvoy()}
-          onSetGeofence={handleSetGeofenceMode}
-          onClearGeofence={() => void handleClearGeofence()}
           onQuickStatus={(status) => void postQuickStatus(status)}
         />
       ) : null}
