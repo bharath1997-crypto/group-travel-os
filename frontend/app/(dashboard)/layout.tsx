@@ -371,8 +371,10 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading } = useDashboardUser();
-  const hideAssistantSidecar = pathname.startsWith("/travel-hub");
-  const hideBottomNav = false;
+  const isLivePage = pathname === "/live";
+  const hideAssistantSidecar =
+    pathname.startsWith("/travel-hub") || isLivePage;
+  const hideBottomNav = isLivePage;
 
   const isMapPage = pathname === "/map" || pathname === "/explore/map";
   const isExplorerEventsShell = pathname.startsWith("/explore/events");
@@ -489,6 +491,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
   const needsZeroOuterPadding =
     isMapPage ||
+    isLivePage ||
     isExplorerEventsShell ||
     isExploreShortsShell ||
     pathname.startsWith("/profile");
@@ -560,7 +563,11 @@ function DashboardChrome({ children }: { children: ReactNode }) {
       {/* ═══════════════════════════════════════════════════
           FIXED TOP HEADER — never hides on scroll
       ═══════════════════════════════════════════════════ */}
-      <header className="dashboard-header fixed top-0 left-0 right-0 z-40 bg-white border-b border-stone-200 shadow-sm select-none">
+      <header
+        className={`dashboard-header fixed top-0 left-0 right-0 z-40 bg-white border-b border-stone-200 shadow-sm select-none${
+          isLivePage ? " hidden" : ""
+        }`}
+      >
         <div className="flex h-16 items-center gap-2 px-3 md:gap-3 md:px-6">
           {/* Logo */}
           <Link
@@ -745,26 +752,28 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           MAIN CONTENT — padded to clear the fixed header
       ═══════════════════════════════════════════════════ */}
       <div
-        className={`flex h-screen h-[100dvh] w-full flex-col overflow-y-auto md:pb-0 ${
+        className={`dashboard-content-shell main-content flex h-screen h-[100dvh] w-full max-w-[100vw] flex-col overflow-y-auto md:pb-0 ${
+          isLivePage ? "ml-0 pl-0 overflow-hidden" : ""
+        } ${
           hideBottomNav ? "pb-0" : "pb-[calc(56px+env(safe-area-inset-bottom,0px))]"
         }`}
-        style={{ paddingTop: `${headerPx}px` }}
+        style={{ paddingTop: isLivePage ? 0 : `${headerPx}px` }}
       >
         <main
           className={
             needsZeroOuterPadding
-              ? "flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+              ? `flex min-h-0 flex-1 flex-col overflow-hidden p-0${isLivePage ? " dashboard-main-live" : ""}`
               : "min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-4 xl:p-5"
           }
         >
-          {isMapPage ? (
+          {isMapPage || isLivePage ? (
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
               <div className="sr-only" aria-hidden>
                 <PresenceHeartbeat />
               </div>
               <PostOAuthWelcomeModal />
               <VerificationBanner />
-              <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+              <div className="live-page-shell relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
                 {children}
               </div>
             </div>
@@ -848,7 +857,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           className="!z-[40] max-md:!bottom-[72px] max-md:!left-0 max-md:!p-0 [&>div]:max-md:!pb-0 [&>div]:max-md:!pl-4"
         />
       ) : null}
-      {user && !hideBottomNav && <LoungeDock />}
+      {user && !hideBottomNav && !isLivePage ? <LoungeDock /> : null}
     </div>
   );
 }

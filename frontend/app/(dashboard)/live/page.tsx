@@ -3489,7 +3489,10 @@ export default function LivePage() {
     : null;
 
   return (
-    <div className="fixed inset-0 z-[100] h-[100dvh] w-full overflow-hidden bg-stone-900">
+    <div
+      className="fixed inset-0 left-0 top-0 z-[100] h-[100dvh] w-screen max-w-[100vw] overflow-hidden bg-stone-900"
+      style={{ margin: 0, padding: 0 }}
+    >
       <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" />
 
       {driverMode ? (
