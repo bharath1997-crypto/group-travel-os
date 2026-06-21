@@ -12,13 +12,14 @@ import hashlib
 import logging
 import math
 import re
+import secrets
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 import httpx
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -29,6 +30,7 @@ from app.models.live_session import LiveMode, LiveSession
 from app.models.road_report import EXPIRY_MINUTES, ReportConfirmation, ReportType, RoadReport
 from app.models.trip import Trip
 from app.models.trip_track import TripTrack
+from app.models.spectator_invite import SpectatorInvite
 from app.models.user import User
 from app.schemas.live import RoadReportCreate, TrafficDensityPoint
 from app.services.notification_service import NotificationService
@@ -531,6 +533,11 @@ class LiveService:
 
         session.is_active = False
         session.ended_at = datetime.now(timezone.utc)
+        db.execute(
+            update(SpectatorInvite)
+            .where(SpectatorInvite.session_id == session_id)
+            .values(is_active=False)
+        )
         db.commit()
 
     @staticmethod
@@ -1036,6 +1043,124 @@ class LiveService:
             .limit(10)
         ).scalars().all()
         return [_trip_track_summary_dict(track) for track in tracks]
+
+    @staticmethod
+    def create_spectator_invite(db: Session, user_id: uuid.UUID) -> dict:
+        session = db.execute(
+            select(LiveSession)
+            .where(
+                LiveSession.started_by == user_id,
+                LiveSession.is_active.is_(True),
+            )
+            .order_by(LiveSession.started_at.desc())
+        ).scalar_one_or_none()
+        if not session:
+            AppException.not_found("No active live session")
+
+        token = secrets.token_urlsafe(32)
+        expires_at = session.started_at + timedelta(hours=24)
+        invite = SpectatorInvite(
+            session_id=session.id,
+            host_user_id=user_id,
+            invite_token=token,
+            expires_at=expires_at,
+        )
+        db.add(invite)
+        db.commit()
+        db.refresh(invite)
+        return {
+            "invite_token": invite.invite_token,
+            "share_url": f"https://rovvy.app/live/watch/{invite.invite_token}",
+            "expires_at": invite.expires_at,
+        }
+
+    @staticmethod
+    def validate_spectator_invite(db: Session, user_id: uuid.UUID, token: str) -> dict:
+        invite = db.execute(
+            select(SpectatorInvite).where(SpectatorInvite.invite_token == token)
+        ).scalar_one_or_none()
+        if not invite:
+            AppException.not_found("Invalid invite link")
+        if not invite.is_active:
+            AppException.bad_request("This invite has expired")
+        if invite.expires_at < datetime.now(timezone.utc):
+            AppException.bad_request("This invite has expired")
+
+        session = db.execute(
+            select(LiveSession).where(LiveSession.id == invite.session_id)
+        ).scalar_one_or_none()
+        if not session or not session.is_active:
+            AppException.bad_request("This trip has ended")
+
+        host = db.execute(
+            select(User).where(User.id == invite.host_user_id)
+        ).scalar_one_or_none()
+        if not host:
+            AppException.not_found("Host not found")
+
+        return {
+            "session_id": session.id,
+            "host_name": host.full_name,
+            "host_avatar": host.avatar_url,
+            "trip_id": session.trip_id,
+            "started_at": session.started_at,
+            "firebase_path": f"live_locations/{invite.host_user_id}",
+        }
+
+    @staticmethod
+    def deactivate_spectator_invite(
+        db: Session,
+        user_id: uuid.UUID,
+        token: str,
+    ) -> None:
+        invite = db.execute(
+            select(SpectatorInvite).where(SpectatorInvite.invite_token == token)
+        ).scalar_one_or_none()
+        if not invite:
+            AppException.not_found("Invalid invite link")
+        if invite.host_user_id != user_id:
+            AppException.forbidden("Only the host can deactivate this invite")
+        invite.is_active = False
+        db.commit()
+
+    @staticmethod
+    def get_spectator_host_location(
+        db: Session,
+        viewer_user_id: uuid.UUID,
+        session_id: uuid.UUID,
+    ) -> dict:
+        session = db.execute(
+            select(LiveSession).where(LiveSession.id == session_id)
+        ).scalar_one_or_none()
+        if not session:
+            AppException.not_found("Live session not found")
+        if session.started_by == viewer_user_id:
+            AppException.forbidden("Hosts cannot use the spectator location endpoint")
+        return {"firebase_path": f"live_locations/{session.started_by}"}
+
+    @staticmethod
+    def get_spectator_active_count(
+        db: Session,
+        user_id: uuid.UUID,
+        session_id: uuid.UUID,
+    ) -> dict:
+        session = db.execute(
+            select(LiveSession).where(LiveSession.id == session_id)
+        ).scalar_one_or_none()
+        if not session:
+            AppException.not_found("Live session not found")
+        if session.started_by != user_id:
+            AppException.forbidden("Only the host can view spectator count")
+
+        count = db.execute(
+            select(func.count())
+            .select_from(SpectatorInvite)
+            .where(
+                SpectatorInvite.session_id == session_id,
+                SpectatorInvite.is_active.is_(True),
+            )
+        ).scalar_one()
+        return {"count": int(count or 0)}
 
     @staticmethod
     def get_route_alerts(

@@ -424,3 +424,26 @@ class TripTrackSummaryOut(BaseModel):
     ended_at: Optional[datetime] = None
     reports_encountered: int = 0
     cameras_passed: int = 0
+
+
+class SpectatorInviteOut(BaseModel):
+    invite_token: str
+    share_url: str
+    expires_at: datetime
+
+
+class SpectatorValidateOut(BaseModel):
+    session_id: UUID
+    host_name: str
+    host_avatar: Optional[str] = None
+    trip_id: Optional[UUID] = None
+    started_at: datetime
+    firebase_path: str
+
+
+class SpectatorHostLocationOut(BaseModel):
+    firebase_path: str
+
+
+class SpectatorActiveCountOut(BaseModel):
+    count: int

@@ -62,6 +62,10 @@ from app.schemas.live import (
     TrackEndIn,
     TripTrackOut,
     TripTrackSummaryOut,
+    SpectatorInviteOut,
+    SpectatorValidateOut,
+    SpectatorHostLocationOut,
+    SpectatorActiveCountOut,
     NearbyTravelersRequest,
     NearbyTravelerOut,
     TravelerChatSend,
@@ -320,6 +324,75 @@ def get_track_history(
     current_user: User = Depends(get_current_user),
 ):
     return LiveService.get_track_history(db, current_user.id)
+
+
+@router.post(
+    "/spectator/invite",
+    response_model=SpectatorInviteOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a spectator invite link for the active live session",
+)
+def create_spectator_invite(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.create_spectator_invite(db, current_user.id)
+
+
+@router.get(
+    "/spectator/validate/{token}",
+    response_model=SpectatorValidateOut,
+    status_code=status.HTTP_200_OK,
+    summary="Validate a spectator invite token",
+)
+def validate_spectator_invite(
+    token: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.validate_spectator_invite(db, current_user.id, token)
+
+
+@router.post(
+    "/spectator/invite/{token}/deactivate",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Deactivate a spectator invite link",
+)
+def deactivate_spectator_invite(
+    token: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    LiveService.deactivate_spectator_invite(db, current_user.id, token)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get(
+    "/spectator/active-count/{session_id}",
+    response_model=SpectatorActiveCountOut,
+    status_code=status.HTTP_200_OK,
+    summary="Get active spectator invite count for a session",
+)
+def get_spectator_active_count(
+    session_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.get_spectator_active_count(db, current_user.id, session_id)
+
+
+@router.get(
+    "/spectator/session/{session_id}/host-location",
+    response_model=SpectatorHostLocationOut,
+    status_code=status.HTTP_200_OK,
+    summary="Get Firebase path for host location during spectator viewing",
+)
+def get_spectator_host_location(
+    session_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return LiveService.get_spectator_host_location(db, current_user.id, session_id)
 
 
 @router.get(

@@ -64,13 +64,16 @@ import {
   type RouteData,
 } from "@/lib/live/navigation";
 import type { TripTrack } from "@/lib/live/track";
+import type { SpectatorActiveCount, SpectatorInviteResponse } from "@/lib/live/spectator";
 import {
   AlertCircle,
   ChevronLeft,
+  Eye,
   Loader2,
   MessageCircle,
   Search,
   MapPin,
+  Share2,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -602,6 +605,7 @@ export default function LivePage() {
   const reportsEncounteredRef = useRef(0);
   const camerasPassedRef = useRef(0);
   const cameraAlertsCountedRef = useRef<Set<string>>(new Set());
+  const roadNameRef = useRef<string | null>(null);
 
   const [isGuest, setIsGuest] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -671,6 +675,7 @@ export default function LivePage() {
   const [showWayraTooltip, setShowWayraTooltip] = useState(false);
   const [speedLimitMph, setSpeedLimitMph] = useState<number | null>(null);
   const [roadName, setRoadName] = useState<string | null>(null);
+  const [activeSpectatorCount, setActiveSpectatorCount] = useState(0);
   const [routeAlert, setRouteAlert] = useState<RouteAlertItem | null>(null);
   const [speedCameras, setSpeedCameras] = useState<SpeedCameraItem[]>([]);
   const [cameraAlert, setCameraAlert] = useState<CameraAlertItem | null>(null);
@@ -742,6 +747,10 @@ export default function LivePage() {
   }, [isGuest, searchParams]);
 
   useEffect(() => {
+    roadNameRef.current = roadName;
+  }, [roadName]);
+
+  useEffect(() => {
     sessionIdRef.current = sessionId;
   }, [sessionId]);
 
@@ -806,6 +815,28 @@ export default function LivePage() {
     setToast(message);
     window.setTimeout(() => setToast(null), 3000);
   }, []);
+
+  const shareSpectator = useCallback(async () => {
+    if (isGuest || !sessionId) return;
+    try {
+      const data = await apiFetch<SpectatorInviteResponse>("/live/spectator/invite", {
+        method: "POST",
+      });
+      const shareUrl = data.share_url;
+      if (navigator.share) {
+        await navigator.share({
+          title: "Watch my live trip on Rovvy",
+          text: "Follow along as I travel in real time!",
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        showToastMessage("Invite link copied!");
+      }
+    } catch {
+      showToastMessage("Could not create spectator invite");
+    }
+  }, [isGuest, sessionId, showToastMessage]);
 
   const showBanner = useCallback((message: string, tone: "amber" | "red") => {
     setSafetyBanner({ message, tone });
@@ -899,6 +930,7 @@ export default function LivePage() {
         lng,
         bearing: bearing || 0,
         speed_mph: speed,
+        road_name: roadNameRef.current,
         last_seen: new Date().toISOString(),
       });
     },
@@ -2582,6 +2614,35 @@ export default function LivePage() {
     }
   }, [startTrackRecording, tripId]);
 
+  useEffect(() => {
+    if (isGuest || !sessionId) {
+      setActiveSpectatorCount(0);
+      return;
+    }
+
+    let active = true;
+    const fetchCount = async () => {
+      try {
+        const data = await apiFetch<SpectatorActiveCount>(
+          `/live/spectator/active-count/${sessionId}`,
+        );
+        if (active) setActiveSpectatorCount(data.count);
+      } catch {
+        if (active) setActiveSpectatorCount(0);
+      }
+    };
+
+    void fetchCount();
+    const interval = window.setInterval(() => {
+      void fetchCount();
+    }, 30_000);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [isGuest, sessionId]);
+
   const clearPoiMarkers = useCallback(() => {
     poiMarkersRef.current.forEach((marker) => marker.remove());
     poiMarkersRef.current = [];
@@ -3165,6 +3226,12 @@ export default function LivePage() {
             >
               History
             </Link>
+            {!isGuest && sessionId && activeSpectatorCount > 0 ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(15,23,42,0.82)] px-3 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur-sm">
+                <Eye size={14} />
+                {activeSpectatorCount} watching
+              </span>
+            ) : null}
             <span
               className={`h-2.5 w-2.5 rounded-full ${
                 continuousVoiceActive ? "bg-green-500" : "bg-stone-500"
@@ -3179,6 +3246,16 @@ export default function LivePage() {
             >
               {voiceMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </button>
+            {!isGuest && sessionId ? (
+              <button
+                type="button"
+                onClick={() => void shareSpectator()}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(15,23,42,0.82)] text-white shadow-lg backdrop-blur-sm transition hover:bg-[rgba(15,23,42,0.92)]"
+                aria-label="Share live trip"
+              >
+                <Share2 size={18} />
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => setShowPoiSearch(true)}
