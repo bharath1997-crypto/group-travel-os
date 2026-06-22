@@ -65,6 +65,7 @@ import {
   routeBounds,
   type Destination,
   type RouteData,
+  type RouteStep,
 } from "@/lib/live/navigation";
 import type { TripTrack } from "@/lib/live/track";
 import type { SpectatorActiveCount, SpectatorInviteResponse } from "@/lib/live/spectator";
@@ -180,7 +181,124 @@ type MemberMarkerEntry = {
   setOpacity: (opacity: number) => void;
   setLowBattery: (show: boolean) => void;
   setLabel: (label: string) => void;
+  setTransport: (mode: "driving" | "bike" | "foot") => void;
 };
+
+function parseMaxspeed(tag: string): number | null {
+  if (!tag) return null;
+  const clean = tag.toLowerCase().trim();
+  if (clean.endsWith(" mph")) {
+    return parseInt(clean, 10);
+  }
+  if (clean.endsWith(" km/h") || clean.endsWith(" kmh")) {
+    const kmh = parseInt(clean, 10);
+    return Math.round(kmh * 0.621371);
+  }
+  const val = parseInt(clean, 10);
+  if (!isNaN(val)) {
+    if (val > 80) return Math.round(val * 0.621371);
+    return val;
+  }
+  return null;
+}
+
+function maneuverSymbol(maneuverType: string | undefined): string {
+  const type = (maneuverType || "straight").toLowerCase();
+  if (type.includes("left")) return "↰";
+  if (type.includes("right")) return "↱";
+  if (type.includes("roundabout") || type.includes("rotary")) return "↻";
+  if (type.includes("arrive")) return "⊙";
+  return "↑";
+}
+
+function formatNavDistance(meters: number): string {
+  if (meters < 1000) {
+    return `${Math.round(meters)} m`;
+  }
+  return `${(meters / 1609.34).toFixed(1)} mi`;
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function getTrafficColor(route: RouteData, reports: RoadReport[]): "green" | "yellow" | "red" {
+  let count = 0;
+  for (const r of reports) {
+    if (r.report_type === "traffic" || r.report_type === "hazard") {
+      const dist = distanceToRouteLine(r.lat, r.lng, route.geometry);
+      if (dist <= 150) {
+        count++;
+      }
+    }
+  }
+  if (count >= 3) return "red";
+  if (count >= 1) return "yellow";
+  return "green";
+}
+
+function ensureMultipleRoutesLayer(map: maplibregl.Map, routes: RouteData[], selectedIndex: number) {
+  if (map.getLayer("route-layer")) map.removeLayer("route-layer");
+  if (map.getSource("route-line")) map.removeSource("route-line");
+
+  for (let i = 0; i < 3; i++) {
+    const layerId = `route-layer-${i}`;
+    const sourceId = `route-source-${i}`;
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
+  }
+
+  const indicesOrder = Array.from({ length: routes.length }, (_, i) => i);
+  indicesOrder.sort((a, b) => {
+    if (a === selectedIndex) return 1;
+    if (b === selectedIndex) return -1;
+    return 0;
+  });
+
+  indicesOrder.forEach((i) => {
+    const r = routes[i];
+    if (!r) return;
+    const geometry = r.geometry;
+    const data: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: [{ type: "Feature", geometry, properties: {} }],
+    };
+
+    const layerId = `route-layer-${i}`;
+    const sourceId = `route-source-${i}`;
+    const isSelected = i === selectedIndex;
+
+    map.addSource(sourceId, { type: "geojson", data });
+    map.addLayer({
+      id: layerId,
+      type: "line",
+      source: sourceId,
+      paint: {
+        "line-color": isSelected ? "#0F766E" : "#94A3B8",
+        "line-width": isSelected ? 6 : 4,
+        "line-opacity": isSelected ? 0.95 : 0.45,
+      },
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+      },
+    });
+  });
+}
+
+function clearMultipleRoutesLayer(map: maplibregl.Map) {
+  if (map.getLayer("route-layer")) map.removeLayer("route-layer");
+  if (map.getSource("route-line")) map.removeSource("route-line");
+  for (let i = 0; i < 3; i++) {
+    const layerId = `route-layer-${i}`;
+    const sourceId = `route-source-${i}`;
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
+  }
+}
 
 type TravelerMarkerEntry = {
   marker: maplibregl.Marker;
@@ -233,6 +351,7 @@ function createMemberMarker(color: string, label: string): {
   setOpacity: (opacity: number) => void;
   setLowBattery: (show: boolean) => void;
   setLabel: (label: string) => void;
+  setTransport: (mode: "driving" | "bike" | "foot") => void;
 } {
   const root = document.createElement("div");
   root.className = "live-member-marker";
@@ -247,6 +366,24 @@ function createMemberMarker(color: string, label: string): {
   const dot = document.createElement("div");
   dot.className = "live-member-dot";
   dot.style.backgroundColor = color;
+  dot.style.display = "flex";
+  dot.style.alignItems = "center";
+  dot.style.justifyContent = "center";
+  dot.style.color = "#FFFFFF";
+  dot.style.fontWeight = "bold";
+  dot.style.fontSize = "10px";
+  dot.style.width = "26px";
+  dot.style.height = "26px";
+  dot.style.borderRadius = "50%";
+  dot.style.border = "2px solid #FFFFFF";
+  dot.style.boxShadow = "0 2px 4px rgba(0,0,0,0.3)";
+  dot.style.position = "relative";
+  
+  const parts = label.trim().split(/\s+/);
+  const initials = parts.length === 1 
+    ? parts[0].slice(0, 2).toUpperCase() 
+    : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  dot.textContent = initials;
 
   const battery = document.createElement("div");
   battery.className = "live-member-battery is-hidden";
@@ -256,6 +393,21 @@ function createMemberMarker(color: string, label: string): {
   name.className = "live-member-label";
   name.textContent = label;
 
+  const vehicleBadge = document.createElement("div");
+  vehicleBadge.style.position = "absolute";
+  vehicleBadge.style.bottom = "-4px";
+  vehicleBadge.style.right = "-4px";
+  vehicleBadge.style.backgroundColor = "#0F766E";
+  vehicleBadge.style.borderRadius = "50%";
+  vehicleBadge.style.padding = "2px";
+  vehicleBadge.style.display = "flex";
+  vehicleBadge.style.alignItems = "center";
+  vehicleBadge.style.justifyContent = "center";
+  vehicleBadge.style.width = "14px";
+  vehicleBadge.style.height = "14px";
+  vehicleBadge.style.border = "1px solid white";
+
+  dot.appendChild(vehicleBadge);
   root.appendChild(cone);
   root.appendChild(dot);
   root.appendChild(battery);
@@ -282,9 +434,31 @@ function createMemberMarker(color: string, label: string): {
     name.textContent = nextLabel;
     root.setAttribute("aria-label", `${nextLabel} — live location`);
     root.title = nextLabel;
+    
+    const parts2 = nextLabel.trim().split(/\s+/);
+    const initials2 = parts2.length === 1 
+      ? parts2[0].slice(0, 2).toUpperCase() 
+      : (parts2[0][0] + parts2[parts2.length - 1][0]).toUpperCase();
+    
+    const textNode = Array.from(dot.childNodes).find(n => n.nodeType === Node.TEXT_NODE);
+    if (textNode) {
+      textNode.textContent = initials2;
+    } else {
+      dot.insertBefore(document.createTextNode(initials2), dot.firstChild);
+    }
   };
 
-  return { element: root, setBearing, setOpacity, setLowBattery, setLabel };
+  const setTransport = (mode: "driving" | "bike" | "foot") => {
+    if (mode === "bike") {
+      vehicleBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" class="w-2.5 h-2.5"><path d="M15.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM5 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm0 8.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zm7-6.2c-1-.8-2.2-1.3-3.5-1.3H8v2h.5c1.4 0 2.6.7 3.5 1.7l2.8 3.1 3.5-.9-.6-2.9-2.7-3zM19 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm0 8.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5z"/></svg>`;
+    } else if (mode === "foot") {
+      vehicleBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" class="w-2.5 h-2.5"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 21.5h2.1l1.8-8.2 2.1 2v6.2h2v-7.5l-2.1-2 .6-3c1 .8 2.2 1.3 3.5 1.3h.5V8.5h-.5c-1.4 0-2.6-.7-3.5-1.7L12 5.5c-.4-.5-1-.8-1.7-.8-.7 0-1.3.3-1.7.8L6.2 8.9l1.4 1.4 2.2-1.4z"/></svg>`;
+    } else {
+      vehicleBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" class="w-2.5 h-2.5"><path d="M19 15h-1.17l-.83-2.5h-10l-.83 2.5H5c-1.1 0-2 .9-2 2v3c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-3c0-1.1-.9-2-2-2zM5.5 11h13c.75 0 1.41-.44 1.72-1.1l1.7-5.1c.21-.63-.26-1.28-.93-1.28H2.99c-.67 0-1.14.65-.93 1.28l1.7 5.1c.31.66.97 1.1 1.74 1.1z"/></svg>`;
+    }
+  };
+
+  return { element: root, setBearing, setOpacity, setLowBattery, setLabel, setTransport };
 }
 
 function createTravelerMarker(
@@ -587,6 +761,7 @@ export default function LivePage() {
   const destinationMarkerRef = useRef<maplibregl.Marker | null>(null);
   const destinationRef = useRef<Destination | null>(null);
   const routeRef = useRef<RouteData | null>(null);
+  const routeClickCleanupRef = useRef<(() => void) | null>(null);
   const navigationActiveRef = useRef(false);
   const activeStepIndexRef = useRef(0);
   const recalculatingRef = useRef(false);
@@ -683,6 +858,22 @@ export default function LivePage() {
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [navigationActive, setNavigationActive] = useState(false);
   const [showDestinationSheet, setShowDestinationSheet] = useState(false);
+  const [transportMode, setTransportMode] = useState<"driving" | "bike" | "foot">("driving");
+  const [showTransportModal, setShowTransportModal] = useState(false);
+  const [transportModeSelected, setTransportModeSelected] = useState(false);
+  const [availableRoutes, setAvailableRoutes] = useState<RouteData[]>([]);
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState<number>(0);
+  const [routeTolls, setRouteTolls] = useState<number[]>([]);
+  const [upcomingAlert, setUpcomingAlert] = useState<{ type: string; distance: number; message: string } | null>(null);
+  const [highwayExit, setHighwayExit] = useState<string | null>(null);
+  const transportModeRef = useRef<"driving" | "bike" | "foot">("driving");
+  const lastSpeedLimitQueryRef = useRef<{ lat: number; lng: number } | null>(null);
+  const lastSpeedCameraQueryRef = useRef<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    transportModeRef.current = transportMode;
+  }, [transportMode]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<NominatimPlace[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -1403,12 +1594,12 @@ export default function LivePage() {
         let entry = memberMarkersRef.current.get(member.user_id);
         const memberLabel = member.display_name?.trim() || "Trip member";
         if (!entry) {
-          const { element, setBearing, setOpacity, setLowBattery, setLabel } =
+          const { element, setBearing, setOpacity, setLowBattery, setLabel, setTransport } =
             createMemberMarker(color, memberLabel);
           const marker = new maplibregl.Marker({ element, anchor: "center" })
             .setLngLat([live.lng, live.lat])
             .addTo(map);
-          entry = { marker, setBearing, setOpacity, setLowBattery, setLabel };
+          entry = { marker, setBearing, setOpacity, setLowBattery, setLabel, setTransport };
           memberMarkersRef.current.set(member.user_id, entry);
         } else {
           entry.marker.setLngLat([live.lng, live.lat]);
@@ -1421,6 +1612,9 @@ export default function LivePage() {
         entry.setOpacity(offline ? 0.5 : 1);
         entry.setLowBattery(
           live.battery_level != null && live.battery_level <= 20,
+        );
+        entry.setTransport(
+          live.transport || "driving"
         );
       });
 
@@ -1469,6 +1663,7 @@ export default function LivePage() {
         speed_mph: speed,
         last_seen: new Date().toISOString(),
         status: memberStatusesRef.current[currentUserId] || "on_my_way",
+        transport: transportModeRef.current,
       });
     },
     [currentUserId, validTripId],
@@ -1489,7 +1684,10 @@ export default function LivePage() {
 
   const clearRouteFromMap = useCallback(() => {
     const map = mapRef.current;
-    if (map) clearRouteLayer(map);
+    if (map) {
+      clearRouteLayer(map);
+      clearMultipleRoutesLayer(map);
+    }
     destinationMarkerRef.current?.remove();
     destinationMarkerRef.current = null;
   }, []);
@@ -1498,6 +1696,9 @@ export default function LivePage() {
     clearRouteFromMap();
     setDestination(null);
     setRoute(null);
+    setAvailableRoutes([]);
+    setSelectedRouteIndex(0);
+    setRouteTolls([]);
     setNavigationActive(false);
     setActiveStepIndex(0);
     setRouteHazardBanner(null);
@@ -1548,6 +1749,91 @@ export default function LivePage() {
     [],
   );
 
+  const fetchTollsForRoute = useCallback(async (r: RouteData): Promise<number> => {
+    try {
+      const coords = r.geometry.coordinates;
+      if (coords.length === 0) return 0;
+      let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+      for (const [lng, lat] of coords) {
+        if (lng < minLng) minLng = lng;
+        if (lat < minLat) minLat = lat;
+        if (lng > maxLng) maxLng = lng;
+        if (lat > maxLat) maxLat = lat;
+      }
+      minLng -= 0.01; minLat -= 0.01; maxLng += 0.01; maxLat += 0.01;
+
+      const query = `[out:json];
+        (
+          node["barrier"="toll_booth"](${minLat},${minLng},${maxLat},${maxLng});
+          node["toll"="yes"](${minLat},${minLng},${maxLat},${maxLng});
+        );
+        out body;`;
+      const res = await fetch("https://overpass-api.de/api/interpreter", {
+        method: "POST",
+        body: `data=${encodeURIComponent(query)}`
+      });
+      if (!res.ok) return 0;
+      const data = await res.json();
+      const tollNodes = data?.elements || [];
+      
+      let count = 0;
+      for (const node of tollNodes) {
+        const dist = distanceToRouteLine(node.lat, node.lon, r.geometry);
+        if (dist <= 100) {
+          count++;
+        }
+      }
+      return count;
+    } catch {
+      return 0;
+    }
+  }, []);
+
+  const setupRouteMapClickHandlers = useCallback((map: maplibregl.Map, routesList: RouteData[]) => {
+    if (routeClickCleanupRef.current) {
+      routeClickCleanupRef.current();
+    }
+
+    const clickHandler = (e: any) => {
+      const layerIds = routesList.map((_, idx) => `route-layer-${idx}`);
+      const features = map.queryRenderedFeatures(e.point, { layers: layerIds });
+      if (features && features.length > 0) {
+        const layerId = features[0].layer.id;
+        const index = parseInt(layerId.replace("route-layer-", ""), 10);
+        if (!isNaN(index) && index >= 0 && index < routesList.length) {
+          setSelectedRouteIndex(index);
+          setRoute(routesList[index]);
+          routeRef.current = routesList[index];
+          ensureMultipleRoutesLayer(map, routesList, index);
+          showToastMessage(`Selected Alternate Route ${index + 1}`);
+        }
+      }
+    };
+
+    const mouseEnterHandler = () => {
+      map.getCanvas().style.cursor = "pointer";
+    };
+    const mouseLeaveHandler = () => {
+      map.getCanvas().style.cursor = "";
+    };
+
+    map.on("click", clickHandler);
+    routesList.forEach((_, index) => {
+      const layerId = `route-layer-${index}`;
+      map.on("mouseenter", layerId, mouseEnterHandler);
+      map.on("mouseleave", layerId, mouseLeaveHandler);
+    });
+
+    routeClickCleanupRef.current = () => {
+      map.off("click", clickHandler);
+      routesList.forEach((_, index) => {
+        const layerId = `route-layer-${index}`;
+        map.off("mouseenter", layerId, mouseEnterHandler);
+        map.off("mouseleave", layerId, mouseLeaveHandler);
+      });
+    };
+  }, [showToastMessage]);
+
   const fetchRoute = useCallback(
     async (
       userLat: number,
@@ -1557,28 +1843,91 @@ export default function LivePage() {
     ) => {
       setRouteLoading(true);
       try {
-        const params = new URLSearchParams({
-          start_lat: userLat.toString(),
-          start_lng: userLng.toString(),
-          end_lat: dest.lat.toString(),
-          end_lng: dest.lng.toString(),
+        const profile = transportModeRef.current === "bike" ? "bike" : transportModeRef.current === "foot" ? "foot" : "driving";
+        const url = `https://router.project-osrm.org/route/v1/${profile}/${userLng},${userLat};${dest.lng},${dest.lat}?alternatives=true&geometries=geojson&overview=full&steps=true`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("OSRM failed");
+        const data = await res.json();
+        const osrmRoutes = data.routes || [];
+        if (osrmRoutes.length === 0) throw new Error("No routes found");
+
+        const parsedRoutes: RouteData[] = osrmRoutes.map((r: any) => {
+          const steps: RouteStep[] = (r.legs?.[0]?.steps || []).map((step: any) => ({
+            instruction: step.maneuver?.instruction || `${step.maneuver?.type || "Continue"} on ${step.name || "road"}`,
+            distance: step.distance,
+            duration: step.duration,
+            maneuver_type: step.maneuver?.type || "straight",
+            name: step.name || null,
+            lat: step.maneuver?.location?.[1] || 0,
+            lng: step.maneuver?.location?.[0] || 0,
+            lanes: step.intersections?.[0]?.lanes || null
+          }));
+          return {
+            geometry: r.geometry,
+            steps,
+            total_distance_m: r.distance,
+            total_duration_s: r.duration,
+          };
         });
-        const data = await apiFetchPublic<RouteData>(`/live/route?${params}`);
-        setRoute(data);
-        routeRef.current = data;
-        drawRouteOnMap(data.geometry, dest, options?.fitBounds ?? true);
+
+        setAvailableRoutes(parsedRoutes);
+        setSelectedRouteIndex(0);
+
+        const firstRoute = parsedRoutes[0];
+        setRoute(firstRoute);
+        routeRef.current = firstRoute;
+
+        const map = mapRef.current;
+        if (map) {
+          ensureMultipleRoutesLayer(map, parsedRoutes, 0);
+          
+          destinationMarkerRef.current?.remove();
+          const label = document.createElement("div");
+          label.className =
+            "max-w-[140px] truncate rounded-full bg-red-600 px-2 py-1 text-center text-xs font-semibold text-white shadow-lg";
+          label.textContent = dest.name.slice(0, 20);
+
+          destinationMarkerRef.current = new maplibregl.Marker({
+            element: label,
+            anchor: "bottom",
+          })
+            .setLngLat([dest.lng, dest.lat])
+            .addTo(map);
+
+          if (options?.fitBounds ?? true) {
+            const bounds = routeBounds(firstRoute.geometry);
+            if (bounds) {
+              map.fitBounds(bounds, { padding: 80, duration: 800 });
+            }
+          }
+
+          setupRouteMapClickHandlers(map, parsedRoutes);
+        }
+
         if (options?.resetStep) {
           setActiveStepIndex(0);
           activeStepIndexRef.current = 0;
         }
-      } catch {
+
+        void (async () => {
+          try {
+            const tollPromises = parsedRoutes.map(r => fetchTollsForRoute(r));
+            const tolls = await Promise.all(tollPromises);
+            setRouteTolls(tolls);
+          } catch {
+            setRouteTolls(parsedRoutes.map(() => 0));
+          }
+        })();
+
+      } catch (err) {
+        console.error(err);
         showToastMessage("Routing unavailable. Try again.");
         if (!routeRef.current) clearNavigation();
       } finally {
         setRouteLoading(false);
       }
     },
-    [clearNavigation, drawRouteOnMap, showToastMessage],
+    [clearNavigation, showToastMessage, fetchTollsForRoute, setupRouteMapClickHandlers],
   );
 
   const handleArrival = useCallback(() => {
@@ -3422,6 +3771,58 @@ export default function LivePage() {
     updateHazardBanner(pos.lat, pos.lng, reports);
   }, [reports, updateHazardBanner]);
 
+  const fetchSpeedLimitFromOverpass = useCallback(async (lat: number, lng: number) => {
+    try {
+      const query = `[out:json];way(around:50,${lat},${lng})[maxspeed];out tags;`;
+      const res = await fetch("https://overpass-api.de/api/interpreter", {
+        method: "POST",
+        body: `data=${encodeURIComponent(query)}`
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const way = data?.elements?.[0];
+      if (way?.tags?.maxspeed) {
+        const parsed = parseMaxspeed(way.tags.maxspeed);
+        if (parsed) {
+          setSpeedLimitMph(parsed);
+        }
+      }
+      if (way?.tags?.name) {
+        setRoadName(way.tags.name);
+        roadNameRef.current = way.tags.name;
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const fetchSpeedCamerasFromOverpass = useCallback(async (lat: number, lng: number) => {
+    try {
+      const query = `[out:json];
+        (
+          node["highway"="speed_camera"](around:2000,${lat},${lng});
+          node["enforcement"="maxspeed"](around:2000,${lat},${lng});
+        );
+        out body;`;
+      const res = await fetch("https://overpass-api.de/api/interpreter", {
+        method: "POST",
+        body: `data=${encodeURIComponent(query)}`
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const cameras: SpeedCameraItem[] = (data?.elements || []).map((el: any) => ({
+        camera_id: String(el.id),
+        lat: el.lat,
+        lng: el.lon,
+        speed_limit_mph: el.tags?.maxspeed ? parseMaxspeed(el.tags.maxspeed) : 60,
+        message: `Speed camera ahead (Limit: ${el.tags?.maxspeed || "60"})`
+      }));
+      setSpeedCameras(cameras);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   useEffect(() => {
     if (!navigator.geolocation) {
       setGpsState("denied");
@@ -3473,6 +3874,28 @@ export default function LivePage() {
         void fetchNearbyReports(lat, lng);
         void fetchTrafficDensity(lat, lng);
         processNavigationUpdate(lat, lng);
+
+        if (transportModeRef.current !== "foot") {
+          const distLimit = lastSpeedLimitQueryRef.current 
+            ? haversineMeters(lat, lng, lastSpeedLimitQueryRef.current.lat, lastSpeedLimitQueryRef.current.lng)
+            : Infinity;
+          if (distLimit > 150 || !lastSpeedLimitQueryRef.current) {
+            lastSpeedLimitQueryRef.current = { lat, lng };
+            void fetchSpeedLimitFromOverpass(lat, lng);
+          }
+
+          const distCamera = lastSpeedCameraQueryRef.current
+            ? haversineMeters(lat, lng, lastSpeedCameraQueryRef.current.lat, lastSpeedCameraQueryRef.current.lng)
+            : Infinity;
+          if (distCamera > 800 || !lastSpeedCameraQueryRef.current) {
+            lastSpeedCameraQueryRef.current = { lat, lng };
+            void fetchSpeedCamerasFromOverpass(lat, lng);
+          }
+        } else {
+          setSpeedLimitMph(null);
+          setSpeedCameras([]);
+        }
+
         if (driverModeRef.current) {
           map.easeTo({
             center: [lng, lat],
@@ -3520,6 +3943,36 @@ export default function LivePage() {
       }
     };
   }, [applyMapStyle, broadcastSoloLocation, checkGeofence, checkMeetingArrival, fetchNearbyReports, fetchTrafficDensity, fetchWeather, mapStyleMode, processNavigationUpdate, startLiveSession, syncMarker, writeUserLocation]);
+
+  useEffect(() => {
+    if (!driverMode || !userPositionRef.current) {
+      setHighwayExit(null);
+      return;
+    }
+    const fetchExit = async () => {
+      try {
+        const { lat, lng } = userPositionRef.current!;
+        const query = `[out:json];node["highway"="motorway_junction"](around:200,${lat},${lng});out;`;
+        const res = await fetch("https://overpass-api.de/api/interpreter", {
+          method: "POST",
+          body: `data=${encodeURIComponent(query)}`
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const node = data?.elements?.[0];
+        if (node?.tags?.ref) {
+          setHighwayExit(node.tags.ref);
+        } else {
+          setHighwayExit(null);
+        }
+      } catch {
+        setHighwayExit(null);
+      }
+    };
+    const interval = setInterval(fetchExit, 12000);
+    fetchExit();
+    return () => clearInterval(interval);
+  }, [driverMode]);
 
   useEffect(() => {
     if (!navigationActive) return;
@@ -3701,6 +4154,107 @@ export default function LivePage() {
     };
   }, [triggerSOS]);
 
+  const [groupMessages, setGroupMessages] = useState<any[]>([]);
+  const [groupInput, setGroupInput] = useState("");
+  const [groupSending, setGroupSending] = useState(false);
+  const groupEndRef = useRef<HTMLDivElement>(null);
+  const [chatActiveTab, setChatActiveTab] = useState<"group" | "route">("group");
+
+  useEffect(() => {
+    if (!firebaseDb || !validTripId || !showGroupChat) return;
+    const chatRef = ref(firebaseDb, `trips/${validTripId}/chat`);
+    const unsubscribe = onValue(chatRef, (snapshot) => {
+      const raw = snapshot.val();
+      if (!raw || typeof raw !== "object") {
+        setGroupMessages([]);
+        return;
+      }
+      const parsed = Object.entries(raw).map(([id, value]) => {
+        const payload = value as Record<string, any>;
+        return {
+          id,
+          text: String(payload.text ?? payload.message ?? ""),
+          sender_id: String(payload.sender_id ?? ""),
+          sender_name: String(payload.sender_name ?? "Member"),
+          timestamp: Number(payload.timestamp ?? 0),
+        };
+      });
+      parsed.sort((a, b) => a.timestamp - b.timestamp);
+      setGroupMessages(parsed);
+    });
+    return () => off(chatRef, "value", unsubscribe);
+  }, [firebaseDb, validTripId, showGroupChat]);
+
+  useEffect(() => {
+    groupEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [groupMessages]);
+
+  const handleSendGroupMessage = async () => {
+    const text = groupInput.trim();
+    if (!text || groupSending || !firebaseDb || !validTripId) return;
+
+    setGroupSending(true);
+    try {
+      await set(ref(firebaseDb, `trips/${validTripId}/chat/${Math.random().toString(36).substring(2, 15)}`), {
+        sender_id: currentUserId,
+        sender_name: currentUserName,
+        text,
+        message: text,
+        timestamp: Date.now(),
+        type: "text",
+      });
+      setGroupInput("");
+    } finally {
+      setGroupSending(false);
+    }
+  };
+
+  const [routeChatMessages, setRouteChatMessages] = useState<Array<{ id: string; sender: string; text: string; ts: string }>>([]);
+  const [routeChatMessageText, setRouteChatMessageText] = useState("");
+
+  useEffect(() => {
+    if (!firebaseDb || !roadName) {
+      setRouteChatMessages([]);
+      return;
+    }
+    const roadClean = roadName.replace(/[.#$/[\]]/g, "_");
+    const chatRef = ref(firebaseDb, `route_chats/${roadClean}`);
+    
+    const unsubscribe = onValue(chatRef, (snapshot) => {
+      const val = snapshot.val();
+      if (!val) {
+        setRouteChatMessages([]);
+        return;
+      }
+      const msgs = Object.entries(val).map(([id, item]: [string, any]) => ({
+        id,
+        sender: item.sender || "Anonymous",
+        text: item.text || "",
+        ts: item.ts || new Date().toISOString()
+      }));
+      msgs.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+      setRouteChatMessages(msgs);
+    });
+
+    return () => {
+      off(chatRef, "value", unsubscribe);
+    };
+  }, [firebaseDb, roadName]);
+
+  const sendRouteChatMessage = async () => {
+    if (!firebaseDb || !roadName || !routeChatMessageText.trim()) return;
+    const roadClean = roadName.replace(/[.#$/[\]]/g, "_");
+    const msgId = Math.random().toString(36).substring(2, 15);
+    const chatMsgRef = ref(firebaseDb, `route_chats/${roadClean}/${msgId}`);
+    
+    await set(chatMsgRef, {
+      sender: currentUserName,
+      text: routeChatMessageText,
+      ts: new Date().toISOString()
+    });
+    setRouteChatMessageText("");
+  };
+
   const visibleReports =
     sheetHeight === "peek"
       ? reports.slice(0, 1)
@@ -3750,6 +4304,39 @@ export default function LivePage() {
           onSOSPressStart={handleSOSPressStart}
           onSOSPressEnd={handleSOSPressEnd}
           sosHoldProgress={sosHoldProgress}
+          highwayExit={highwayExit}
+          upcomingAlert={upcomingAlert?.message ?? null}
+          transportMode={transportMode}
+          onTransportModeChange={(mode) => {
+            setTransportMode(mode);
+            transportModeRef.current = mode;
+            writeUserLocation(
+              currentLatRef.current ?? 0,
+              currentLngRef.current ?? 0,
+              currentBearingRef.current,
+              currentSpeedRef.current
+            );
+            if (destination) {
+              void fetchRoute(
+                currentLatRef.current ?? 0,
+                currentLngRef.current ?? 0,
+                destination,
+                { fitBounds: false }
+              );
+            }
+          }}
+          availableRoutes={availableRoutes}
+          selectedRouteIndex={selectedRouteIndex}
+          onSelectRouteIndex={(index) => {
+            setSelectedRouteIndex(index);
+            setRoute(availableRoutes[index]);
+            routeRef.current = availableRoutes[index];
+            const map = mapRef.current;
+            if (map) {
+              ensureMultipleRoutesLayer(map, availableRoutes, index);
+            }
+          }}
+          routeTolls={routeTolls}
         />
       ) : null}
 
@@ -3949,100 +4536,102 @@ export default function LivePage() {
           </div>
         ) : null}
 
-        <div
-          className="pointer-events-none absolute left-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.25rem)] z-[125] flex flex-col w-[min(380px,calc(100%-1.5rem))]"
-        >
-          {showSearchDropdown ? (
-            <div
-              className="fixed inset-0 z-0 pointer-events-auto cursor-default"
-              onClick={() => setShowSearchDropdown(false)}
-            />
-          ) : null}
-          <div className="relative z-10 pointer-events-auto flex items-center gap-2 rounded-full bg-[rgba(15,23,42,0.82)] px-4 py-2 text-left text-sm text-white shadow-lg backdrop-blur-sm transition focus-within:bg-[rgba(15,23,42,0.92)]">
-            <MapPin size={16} className="shrink-0 text-[#5EEAD4]" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setShowSearchDropdown(true);
-              }}
-              onFocus={(e) => {
-                if (groupMode && convoy?.active && !isGroupAdmin) {
-                  showToastMessage("Convoy is active — follow the group route");
-                  e.target.blur();
-                  return;
-                }
-                setShowSearchDropdown(true);
-              }}
-              placeholder="Search destination..."
-              className="w-full bg-transparent text-sm text-white placeholder-white/60 outline-none"
-            />
-            {routeLoading || searchLoading ? (
-              <Loader2 size={14} className="ml-auto animate-spin text-[#5EEAD4] shrink-0" />
+        {!driverMode ? (
+          <div
+            className="pointer-events-none absolute left-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.25rem)] z-[125] flex flex-col w-[min(380px,calc(100%-1.5rem))]"
+          >
+            {showSearchDropdown ? (
+              <div
+                className="fixed inset-0 z-0 pointer-events-auto cursor-default"
+                onClick={() => setShowSearchDropdown(false)}
+              />
             ) : null}
-            {searchQuery ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery("");
-                  setSearchResults([]);
-                  setShowSearchDropdown(false);
-                  if (destination) {
-                    clearNavigation();
-                  }
+            <div className="relative z-10 pointer-events-auto flex items-center gap-2 rounded-full bg-white border border-stone-200 px-4 py-2.5 text-left text-sm text-stone-800 shadow-md transition focus-within:ring-2 focus-within:ring-[#0F766E]/20">
+              <MapPin size={16} className="shrink-0 text-[#0F766E]" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowSearchDropdown(true);
                 }}
-                className="ml-1 rounded-full p-1 text-white/60 hover:bg-white/10 hover:text-white shrink-0 transition"
-                aria-label="Clear search"
-              >
-                <X size={14} />
-              </button>
-            ) : null}
-          </div>
-
-          {showSearchDropdown && (searchQuery.trim().length >= 2 || searchResults.length > 0) ? (
-            <div className="relative z-10 mt-2 max-h-60 w-full overflow-y-auto rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-black/5 pointer-events-auto">
-              {searchLoading && searchResults.length === 0 ? (
-                <div className="flex items-center justify-center gap-2 py-4 text-xs text-stone-500">
-                  <Loader2 size={12} className="animate-spin text-[#0F766E]" />
-                  Searching…
-                </div>
+                onFocus={(e) => {
+                  if (groupMode && convoy?.active && !isGroupAdmin) {
+                    showToastMessage("Convoy is active — follow the group route");
+                    e.target.blur();
+                    return;
+                  }
+                  setShowSearchDropdown(true);
+                }}
+                placeholder="Search destination..."
+                className="w-full bg-transparent text-sm text-stone-900 placeholder-stone-400 outline-none"
+              />
+              {routeLoading || searchLoading ? (
+                <Loader2 size={14} className="ml-auto animate-spin text-[#0F766E] shrink-0" />
               ) : null}
-              {!searchLoading && searchQuery.trim().length >= 2 && searchResults.length === 0 ? (
-                <div className="px-3 py-4 text-center text-xs text-stone-500">
-                  No places found.
-                </div>
-              ) : null}
-              {searchResults.map((place) => (
+              {searchQuery ? (
                 <button
-                  key={`${place.lat}-${place.lon}-${place.display_name}`}
                   type="button"
                   onClick={() => {
-                    handleDestinationSelect({
-                      lat: Number.parseFloat(place.lat),
-                      lng: Number.parseFloat(place.lon),
-                      name: place.display_name.split(",")[0] || place.display_name,
-                    });
-                    setSearchQuery(place.display_name.split(",")[0] || place.display_name);
+                    setSearchQuery("");
+                    setSearchResults([]);
                     setShowSearchDropdown(false);
+                    if (destination) {
+                      clearNavigation();
+                    }
                   }}
-                  className="flex w-full items-start gap-2.5 rounded-xl px-3 py-2.5 text-left transition hover:bg-stone-50"
+                  className="ml-1 rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700 shrink-0 transition"
+                  aria-label="Clear search"
                 >
-                  <MapPin size={14} className="mt-0.5 shrink-0 text-[#0F766E]" />
-                  <div className="min-w-0 flex-1">
-                    <span className="block truncate text-xs font-semibold text-stone-900">
-                      {place.display_name.split(",")[0]}
-                    </span>
-                    <span className="block truncate text-[10px] text-stone-500">
-                      {place.display_name}
-                    </span>
-                  </div>
+                  <X size={14} />
                 </button>
-              ))}
+              ) : null}
             </div>
-          ) : null}
-        </div>
+
+            {showSearchDropdown && (searchQuery.trim().length >= 2 || searchResults.length > 0) ? (
+              <div className="relative z-10 mt-2 max-h-60 w-full overflow-y-auto rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-black/5 pointer-events-auto">
+                {searchLoading && searchResults.length === 0 ? (
+                  <div className="flex items-center justify-center gap-2 py-4 text-xs text-stone-500">
+                    <Loader2 size={12} className="animate-spin text-[#0F766E]" />
+                    Searching…
+                  </div>
+                ) : null}
+                {!searchLoading && searchQuery.trim().length >= 2 && searchResults.length === 0 ? (
+                  <div className="px-3 py-4 text-center text-xs text-stone-500">
+                    No places found.
+                  </div>
+                ) : null}
+                {searchResults.map((place) => (
+                  <button
+                    key={`${place.lat}-${place.lon}-${place.display_name}`}
+                    type="button"
+                    onClick={() => {
+                      handleDestinationSelect({
+                        lat: Number.parseFloat(place.lat),
+                        lng: Number.parseFloat(place.lon),
+                        name: place.display_name.split(",")[0] || place.display_name,
+                      });
+                      setSearchQuery(place.display_name.split(",")[0] || place.display_name);
+                      setShowSearchDropdown(false);
+                    }}
+                    className="flex w-full items-start gap-2.5 rounded-xl px-3 py-2.5 text-left transition hover:bg-stone-50"
+                  >
+                    <MapPin size={14} className="mt-0.5 shrink-0 text-[#0F766E]" />
+                    <div className="min-w-0 flex-1">
+                      <span className="block truncate text-xs font-semibold text-stone-900">
+                        {place.display_name.split(",")[0]}
+                      </span>
+                      <span className="block truncate text-[10px] text-stone-500">
+                        {place.display_name}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {arrivalBanner ? (
           <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
@@ -4536,6 +5125,37 @@ export default function LivePage() {
           onStart={() => setNavigationActive(true)}
           onCancel={clearNavigation}
           onEnd={clearNavigation}
+          transportMode={transportMode}
+          onTransportModeChange={(mode) => {
+            setTransportMode(mode);
+            transportModeRef.current = mode;
+            writeUserLocation(
+              currentLatRef.current ?? 0,
+              currentLngRef.current ?? 0,
+              currentBearingRef.current,
+              currentSpeedRef.current
+            );
+            if (destination) {
+              void fetchRoute(
+                currentLatRef.current ?? 0,
+                currentLngRef.current ?? 0,
+                destination,
+                { fitBounds: false }
+              );
+            }
+          }}
+          availableRoutes={availableRoutes}
+          selectedRouteIndex={selectedRouteIndex}
+          onSelectRouteIndex={(index) => {
+            setSelectedRouteIndex(index);
+            setRoute(availableRoutes[index]);
+            routeRef.current = availableRoutes[index];
+            const map = mapRef.current;
+            if (map) {
+              ensureMultipleRoutesLayer(map, availableRoutes, index);
+            }
+          }}
+          routeTolls={routeTolls}
         />
       ) : null}
 
@@ -4572,13 +5192,210 @@ export default function LivePage() {
       ) : null}
 
       {showGroupChat && firebaseDb && validTripId && currentUserId ? (
-        <GroupLiveChatSheet
-          tripId={validTripId}
-          db={firebaseDb}
-          currentUserId={currentUserId}
-          currentUserName={currentUserName}
-          onClose={() => setShowGroupChat(false)}
-        />
+        <div className="fixed inset-y-0 right-0 z-[150] w-[380px] bg-white/95 backdrop-blur-md shadow-2xl border-l border-stone-200 flex flex-col transition-all duration-300 animate-slide-in">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3 bg-stone-50">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setChatActiveTab("group")}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition ${
+                  chatActiveTab === "group"
+                    ? "bg-[#0F766E] text-white"
+                    : "text-stone-600 hover:bg-stone-200"
+                }`}
+              >
+                Group Chat
+              </button>
+              <button
+                type="button"
+                onClick={() => setChatActiveTab("route")}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition flex items-center gap-1 ${
+                  chatActiveTab === "route"
+                    ? "bg-[#0F766E] text-white"
+                    : "text-stone-600 hover:bg-stone-200"
+                }`}
+              >
+                Route Chat
+                {roadName && (
+                  <span className="max-w-[70px] truncate opacity-70">({roadName})</span>
+                )}
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowGroupChat(false)}
+              className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Messages list */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {chatActiveTab === "group" ? (
+              groupMessages.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center text-stone-400 text-xs gap-1">
+                  <span>No messages in group chat.</span>
+                  <span>Start the conversation!</span>
+                </div>
+              ) : (
+                groupMessages.map((msg) => {
+                  const isMe = msg.sender_id === currentUserId;
+                  const parts = msg.sender_name.trim().split(/\s+/);
+                  const initials = parts.length === 1
+                    ? parts[0].slice(0, 2).toUpperCase()
+                    : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex gap-2 items-end ${isMe ? "flex-row-reverse" : "flex-row"}`}
+                    >
+                      {!isMe && (
+                        <div className="w-7 h-7 rounded-full bg-stone-300 text-stone-700 font-bold text-[10px] flex items-center justify-center shrink-0">
+                          {initials}
+                        </div>
+                      )}
+                      <div
+                        className={`max-w-[75%] rounded-2xl px-3 py-2 text-xs shadow-sm ${
+                          isMe
+                            ? "bg-[#0F766E] text-white rounded-br-none"
+                            : "bg-stone-100 text-stone-800 rounded-bl-none"
+                        }`}
+                      >
+                        {!isMe && (
+                          <div className="font-bold text-[10px] text-stone-500 mb-0.5">
+                            {msg.sender_name}
+                          </div>
+                        )}
+                        <p className="break-words whitespace-pre-wrap">{msg.text}</p>
+                        <div
+                          className={`text-[9px] text-right mt-1 opacity-70 ${
+                            isMe ? "text-stone-200" : "text-stone-500"
+                          }`}
+                        >
+                          {new Date(msg.timestamp).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )
+            ) : !roadName ? (
+              <div className="flex h-full items-center justify-center text-stone-400 text-xs text-center px-4">
+                No route active. Route chat is available when driving or walking on a named road.
+              </div>
+            ) : routeChatMessages.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center text-stone-400 text-xs gap-1">
+                <span>No messages on {roadName}.</span>
+                <span>Send a local traffic or speed warning!</span>
+              </div>
+            ) : (
+              routeChatMessages.map((msg) => {
+                const isMe = msg.sender === currentUserName;
+                const parts = msg.sender.trim().split(/\s+/);
+                const initials = parts.length === 1
+                  ? parts[0].slice(0, 2).toUpperCase()
+                  : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex gap-2 items-end ${isMe ? "flex-row-reverse" : "flex-row"}`}
+                  >
+                    {!isMe && (
+                      <div className="w-7 h-7 rounded-full bg-stone-300 text-stone-700 font-bold text-[10px] flex items-center justify-center shrink-0">
+                        {initials}
+                      </div>
+                    )}
+                    <div
+                      className={`max-w-[75%] rounded-2xl px-3 py-2 text-xs shadow-sm ${
+                        isMe
+                          ? "bg-[#0F766E] text-white rounded-br-none"
+                          : "bg-stone-100 text-stone-800 rounded-bl-none"
+                      }`}
+                    >
+                      {!isMe && (
+                        <div className="font-bold text-[10px] text-stone-500 mb-0.5">
+                          {msg.sender}
+                        </div>
+                      )}
+                      <p className="break-words whitespace-pre-wrap">{msg.text}</p>
+                      <div
+                        className={`text-[9px] text-right mt-1 opacity-70 ${
+                          isMe ? "text-stone-200" : "text-stone-500"
+                        }`}
+                      >
+                        {new Date(msg.ts).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={groupEndRef} />
+          </div>
+
+          {/* Chat Input */}
+          {chatActiveTab === "group" || roadName ? (
+            <div className="p-3 border-t border-stone-200 bg-stone-50 flex gap-2 items-center">
+              <input
+                type="text"
+                value={chatActiveTab === "group" ? groupInput : routeChatMessageText}
+                onChange={(e) =>
+                  chatActiveTab === "group"
+                    ? setGroupInput(e.target.value)
+                    : setRouteChatMessageText(e.target.value)
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    if (chatActiveTab === "group") {
+                      void handleSendGroupMessage();
+                    } else {
+                      void sendRouteChatMessage();
+                    }
+                  }
+                }}
+                placeholder={
+                  chatActiveTab === "group"
+                    ? "Type message to group..."
+                    : `Post update to ${roadName}...`
+                }
+                className="flex-1 bg-white border border-stone-200 rounded-full px-4 py-2 text-xs text-stone-800 outline-none focus:ring-2 focus:ring-[#0F766E]/20"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (chatActiveTab === "group") {
+                    void handleSendGroupMessage();
+                  } else {
+                    void sendRouteChatMessage();
+                  }
+                }}
+                disabled={
+                  chatActiveTab === "group"
+                    ? !groupInput.trim() || groupSending
+                    : !routeChatMessageText.trim()
+                }
+                className="bg-[#0F766E] text-white p-2 rounded-full hover:bg-[#0D625B] disabled:opacity-50 transition shrink-0"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="w-4 h-4"
+                >
+                  <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+                </svg>
+              </button>
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
       {showEmergencyContacts && !isGuest ? (

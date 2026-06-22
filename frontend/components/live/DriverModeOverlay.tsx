@@ -32,6 +32,16 @@ export type DriverModeProps = {
   onToggleMute: () => void;
   wayraListening: boolean;
   arrived: boolean;
+  
+  // Added props:
+  highwayExit?: string | null;
+  upcomingAlert?: string | null;
+  transportMode?: "driving" | "bike" | "foot";
+  onTransportModeChange?: (mode: "driving" | "bike" | "foot") => void;
+  availableRoutes?: any[];
+  selectedRouteIndex?: number;
+  onSelectRouteIndex?: (index: number) => void;
+  routeTolls?: number[];
 };
 
 function maneuverSymbol(maneuverType: string | undefined): string {
@@ -103,6 +113,15 @@ export function DriverModeOverlay({
   onToggleMute,
   wayraListening,
   arrived,
+  
+  highwayExit,
+  upcomingAlert,
+  transportMode = "driving",
+  onTransportModeChange,
+  availableRoutes,
+  selectedRouteIndex = 0,
+  onSelectRouteIndex,
+  routeTolls,
 }: DriverModeProps) {
   const displayStep = nextStep || currentStep;
   const speedColor =
@@ -142,21 +161,86 @@ export function DriverModeOverlay({
           ← EXIT
         </button>
         <p className="max-w-[50%] truncate text-sm font-medium text-white">{centerLabel}</p>
-        <button
-          type="button"
-          onClick={onToggleMute}
-          aria-label={voiceMuted ? "Unmute voice" : "Mute voice"}
-          className="text-white"
-        >
-          {voiceMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-        </button>
+        
+        <div className="flex items-center gap-3">
+          {/* Transport Mode Toggle */}
+          <button
+            type="button"
+            onClick={() => {
+              if (onTransportModeChange) {
+                const next = transportMode === "driving" ? "bike" : transportMode === "bike" ? "foot" : "driving";
+                onTransportModeChange(next);
+              }
+            }}
+            className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white hover:bg-white/20 transition shrink-0"
+          >
+            <span>{transportMode === "bike" ? "🚲 Bike" : transportMode === "foot" ? "🚶 Walk" : "🚗 Drive"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onToggleMute}
+            aria-label={voiceMuted ? "Unmute voice" : "Mute voice"}
+            className="text-white shrink-0"
+          >
+            {voiceMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+          </button>
+        </div>
       </div>
+
+      {/* Floating highway exit shield */}
+      {highwayExit && (
+        <div className="absolute right-4 top-16 z-50 pointer-events-auto flex items-center gap-1.5 rounded-lg bg-green-700 px-3 py-1.5 text-xs font-bold text-white border border-white shadow-lg animate-bounce">
+          <span>EXIT</span>
+          <span className="bg-white text-green-800 rounded px-1.5 py-0.5">{highwayExit}</span>
+        </div>
+      )}
+
+      {/* Speed limit drops/alerts overlay */}
+      {upcomingAlert && (
+        <div className="absolute left-4 right-4 top-28 z-50 pointer-events-auto rounded-xl bg-orange-600 border border-orange-500 text-white font-semibold text-xs px-4 py-2.5 flex items-center justify-between shadow-lg animate-pulse">
+          <span className="flex items-center gap-2">🚨 {upcomingAlert}</span>
+        </div>
+      )}
 
       {/* Map window — flexible, transparent */}
       <div className="min-h-0 flex-1" />
 
       {/* Bottom panels */}
       <div className="pointer-events-auto shrink-0 pb-[max(0px,env(safe-area-inset-bottom))]">
+        {/* Alternative routes overlay selector */}
+        {availableRoutes && availableRoutes.length > 1 && !arrived && (
+          <div className="flex gap-2 overflow-x-auto px-4 py-2 bg-slate-900/90 border-b border-white/10">
+            {availableRoutes.map((r, index) => {
+              const durationMin = Math.round(r.total_duration_s / 60);
+              const distMiles = (r.total_distance_m * 0.000621371).toFixed(1);
+              const tolls = routeTolls?.[index] ?? 0;
+              const isSelected = selectedRouteIndex === index;
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => onSelectRouteIndex?.(index)}
+                  className={`flex-shrink-0 rounded-xl px-3 py-2 text-left text-xs font-semibold transition border ${
+                    isSelected
+                      ? "bg-[#0F766E] border-[#5EEAD4] text-white"
+                      : "bg-white/10 border-transparent text-white/80 hover:bg-white/15"
+                  }`}
+                >
+                  <div className="flex justify-between items-center gap-4">
+                    <span>Route {index + 1}</span>
+                    {tolls > 0 && (
+                      <span className="text-[10px] bg-amber-500 text-slate-900 rounded px-1">Toll</span>
+                    )}
+                  </div>
+                  <div className="text-sm font-bold mt-0.5">{durationMin} min</div>
+                  <div className="text-[10px] opacity-75">{distMiles} miles · {tolls} tolls</div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Next turn — 100px */}
         <div
           className="flex h-[100px] items-center gap-4 px-4"
@@ -258,8 +342,8 @@ export function DriverModeOverlay({
           <button
             type="button"
             onClick={onWayraTap}
-            className={`relative flex h-[72px] w-[44%] flex-col items-center justify-center rounded-2xl ${
-              wayraListening ? "animate-pulse bg-red-600" : "bg-[#0F766E]"
+            className={`relative flex h-[72px] w-[44%] flex-col items-center justify-center rounded-2xl transition-all ${
+              wayraListening ? "animate-pulse bg-red-600" : "bg-[#0F766E] hover:bg-[#0D625B]"
             }`}
           >
             <Mic size={32} className="text-white" />
@@ -275,7 +359,7 @@ export function DriverModeOverlay({
             onPointerUp={onSOSPressEnd}
             onPointerLeave={onSOSPressEnd}
             onPointerCancel={onSOSPressEnd}
-            className="relative flex h-[72px] w-[44%] flex-col items-center justify-center rounded-2xl bg-red-600 touch-none"
+            className="relative flex h-[72px] w-[44%] flex-col items-center justify-center rounded-2xl bg-red-600 hover:bg-red-700 touch-none transition-all"
           >
             <svg
               className="pointer-events-none absolute inset-0 h-full w-full"

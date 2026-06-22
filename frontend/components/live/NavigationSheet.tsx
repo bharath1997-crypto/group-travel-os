@@ -16,6 +16,13 @@ type NavigationSheetProps = {
   onStart: () => void;
   onCancel: () => void;
   onEnd: () => void;
+  
+  transportMode?: "driving" | "bike" | "foot";
+  onTransportModeChange?: (mode: "driving" | "bike" | "foot") => void;
+  availableRoutes?: RouteData[];
+  selectedRouteIndex?: number;
+  onSelectRouteIndex?: (index: number) => void;
+  routeTolls?: number[];
 };
 
 export function NavigationSheet({
@@ -26,6 +33,13 @@ export function NavigationSheet({
   onStart,
   onCancel,
   onEnd,
+  
+  transportMode = "driving",
+  onTransportModeChange,
+  availableRoutes,
+  selectedRouteIndex = 0,
+  onSelectRouteIndex,
+  routeTolls,
 }: NavigationSheetProps) {
   const currentStep: RouteStep | undefined = route.steps[activeStepIndex];
   const nextStep: RouteStep | undefined = route.steps[activeStepIndex + 1];
@@ -95,6 +109,26 @@ export function NavigationSheet({
   return (
     <div className="pointer-events-auto fixed inset-x-0 bottom-0 z-[115] flex max-w-lg mx-auto flex-col rounded-t-3xl bg-white shadow-2xl">
       <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
+        {/* Transport Selector tabs */}
+        <div className="flex gap-2 border-b border-stone-100 pb-3 mb-3">
+          {(["driving", "bike", "foot"] as const).map((m) => {
+            const label = m === "driving" ? "🚗 Drive" : m === "bike" ? "🚲 Bike" : "🚶 Walk";
+            const active = transportMode === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => onTransportModeChange?.(m)}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                  active ? "bg-[#0F766E] text-white" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
         <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
           Route ready
         </p>
@@ -105,10 +139,45 @@ export function NavigationSheet({
           {formatNavDistance(route.total_distance_m)} · ETA{" "}
           {formatETA(route.total_duration_s)}
         </p>
+
+        {/* Alternative Routes Selection List */}
+        {availableRoutes && availableRoutes.length > 1 && (
+          <div className="flex flex-col gap-2 my-3 max-h-40 overflow-y-auto pr-1">
+            {availableRoutes.map((r, index) => {
+              const durationMin = Math.round(r.total_duration_s / 60);
+              const distMiles = (r.total_distance_m * 0.000621371).toFixed(1);
+              const tolls = routeTolls?.[index] ?? 0;
+              const isSelected = selectedRouteIndex === index;
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => onSelectRouteIndex?.(index)}
+                  className={`flex items-center justify-between rounded-xl p-3 text-left transition border text-xs font-semibold ${
+                    isSelected
+                      ? "bg-teal-50/50 border-[#0F766E] text-[#0F766E]"
+                      : "bg-white border-stone-200 text-stone-700 hover:bg-stone-50"
+                  }`}
+                >
+                  <div>
+                    <div className="font-bold text-sm">
+                      Route {index + 1} ({durationMin} min)
+                    </div>
+                    <div className="text-stone-500 text-[10px] font-medium mt-0.5">
+                      {distMiles} miles {tolls > 0 ? `· ${tolls} tolls` : ""}
+                    </div>
+                  </div>
+                  {isSelected && <span className="text-sm">✓</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <button
           type="button"
           onClick={onStart}
-          className="mt-4 w-full rounded-xl bg-[#0F766E] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0d655c]"
+          className="mt-2 w-full rounded-xl bg-[#0F766E] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0d655c]"
         >
           Start Navigation
         </button>
