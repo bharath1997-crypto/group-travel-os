@@ -1,14 +1,13 @@
 "use client";
 
 import { ConvoySheet } from "@/components/live/ConvoySheet";
-import { DestinationSheet } from "@/components/live/DestinationSheet";
+import { DestinationSheet, searchPlaces, type NominatimPlace } from "@/components/live/DestinationSheet";
 import { EmergencyContactsSheet } from "@/components/live/EmergencyContactsSheet";
 import { GeofenceSetupSheet } from "@/components/live/GeofenceSetupSheet";
 import { GroupLiveChatButton, GroupLiveChatSheet } from "@/components/live/GroupLiveChatSheet";
 import { FamilyPanel } from "@/components/live/FamilyPanel";
 import { ChatSlidePanel } from "@/components/live/ChatSlidePanel";
 import { LiveControlRail, type LiveRailButtonId } from "@/components/live/LiveControlRail";
-import { LoungePanel } from "@/components/live/LoungePanel";
 import { RightPanel, buildAlertItems, type WeatherDetail } from "@/components/live/RightPanel";
 import { GuestPrompt } from "@/components/live/GuestPrompt";
 import { NavigationSheet } from "@/components/live/NavigationSheet";
@@ -21,6 +20,7 @@ import { DriverModeOverlay } from "@/components/live/DriverModeOverlay";
 import { TripSummarySheet } from "@/components/live/TripSummarySheet";
 import { WayraChatSheet } from "@/components/live/WayraChatSheet";
 import { apiFetch, apiFetchPublic } from "@/lib/api";
+import { toggleLounge } from "@/lib/open-lounge";
 import { useDashboardUser } from "@/contexts/dashboard-user-context";
 import { initFirebase } from "@/lib/firebase-client";
 import {
@@ -78,13 +78,14 @@ import {
   Share2,
   Volume2,
   VolumeX,
+  X,
 } from "lucide-react";
 import maplibregl, { type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { off, onValue, ref, remove, set, type Database } from "firebase/database";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const OSM_MAX_ZOOM = 19;
 
@@ -178,11 +179,13 @@ type MemberMarkerEntry = {
   setBearing: (bearing: number | null) => void;
   setOpacity: (opacity: number) => void;
   setLowBattery: (show: boolean) => void;
+  setLabel: (label: string) => void;
 };
 
 type TravelerMarkerEntry = {
   marker: maplibregl.Marker;
   setBearing: (bearing: number | null) => void;
+  setLabel: (label: string) => void;
 };
 
 type SafetyBanner = {
@@ -229,9 +232,14 @@ function createMemberMarker(color: string, label: string): {
   setBearing: (bearing: number | null) => void;
   setOpacity: (opacity: number) => void;
   setLowBattery: (show: boolean) => void;
+  setLabel: (label: string) => void;
 } {
   const root = document.createElement("div");
   root.className = "live-member-marker";
+  root.setAttribute("role", "button");
+  root.tabIndex = 0;
+  root.setAttribute("aria-label", `${label} — live location`);
+  root.title = label;
 
   const cone = document.createElement("div");
   cone.className = "live-member-cone is-hidden";
@@ -270,20 +278,29 @@ function createMemberMarker(color: string, label: string): {
     battery.classList.toggle("is-hidden", !show);
   };
 
-  return { element: root, setBearing, setOpacity, setLowBattery };
+  const setLabel = (nextLabel: string) => {
+    name.textContent = nextLabel;
+    root.setAttribute("aria-label", `${nextLabel} — live location`);
+    root.title = nextLabel;
+  };
+
+  return { element: root, setBearing, setOpacity, setLowBattery, setLabel };
 }
 
 function createTravelerMarker(
   travelerId: string,
+  label: string,
   onTap: (id: string) => void,
 ): {
   element: HTMLButtonElement;
   setBearing: (bearing: number | null) => void;
+  setLabel: (label: string) => void;
 } {
   const root = document.createElement("button");
   root.type = "button";
   root.className = "live-traveler-marker";
-  root.setAttribute("aria-label", "Nearby traveler");
+  root.setAttribute("aria-label", `${label} — nearby traveler`);
+  root.title = label;
   root.addEventListener("click", (event) => {
     event.stopPropagation();
     onTap(travelerId);
@@ -295,8 +312,13 @@ function createTravelerMarker(
   const dot = document.createElement("div");
   dot.className = "live-traveler-dot";
 
+  const name = document.createElement("div");
+  name.className = "live-traveler-label";
+  name.textContent = label;
+
   root.appendChild(cone);
   root.appendChild(dot);
+  root.appendChild(name);
 
   const setBearing = (bearing: number | null) => {
     if (bearing == null || Number.isNaN(bearing)) {
@@ -307,7 +329,13 @@ function createTravelerMarker(
     cone.style.transform = `translateX(-50%) rotate(${bearing}deg)`;
   };
 
-  return { element: root, setBearing };
+  const setLabel = (nextLabel: string) => {
+    name.textContent = nextLabel;
+    root.setAttribute("aria-label", `${nextLabel} — nearby traveler`);
+    root.title = nextLabel;
+  };
+
+  return { element: root, setBearing, setLabel };
 }
 
 function getSunTimes(lat: number, lng: number): { sunrise: number; sunset: number } {
@@ -363,6 +391,8 @@ function createLiveUserMarker(): {
 } {
   const root = document.createElement("div");
   root.className = "live-user-marker";
+  root.setAttribute("aria-label", "You — live location");
+  root.title = "You";
 
   const cone = document.createElement("div");
   cone.className = "live-user-cone is-hidden";
@@ -373,9 +403,14 @@ function createLiveUserMarker(): {
   const dot = document.createElement("div");
   dot.className = "live-user-dot";
 
+  const name = document.createElement("div");
+  name.className = "live-user-label";
+  name.textContent = "You";
+
   root.appendChild(cone);
   root.appendChild(pulse);
   root.appendChild(dot);
+  root.appendChild(name);
 
   const setBearing = (bearing: number | null) => {
     if (bearing == null || Number.isNaN(bearing)) {
@@ -542,6 +577,7 @@ export default function LivePage() {
   const searchParams = useSearchParams();
   const { user: dashboardUser } = useDashboardUser();
   const tripId = searchParams.get("trip_id") || null;
+  const replaySessionId = searchParams.get("replay_session");
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const watchIdRef = useRef<number | null>(null);
@@ -580,7 +616,10 @@ export default function LivePage() {
   const meetingPointRef = useRef<MeetingPoint | null>(null);
   const convoyRef = useRef<ConvoyData | null>(null);
   const meetingArrivalSentRef = useRef(false);
+  const meetingNavTargetRef = useRef<string | null>(null);
   const convoyEndedSeenRef = useRef(false);
+  const isGroupAdminRef = useRef(false);
+  const tripMembersRef = useRef<TripMember[]>([]);
   const mapClickHandlerRef = useRef<((event: maplibregl.MapMouseEvent) => void) | null>(
     null,
   );
@@ -644,6 +683,11 @@ export default function LivePage() {
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [navigationActive, setNavigationActive] = useState(false);
   const [showDestinationSheet, setShowDestinationSheet] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<NominatimPlace[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [recalculatingBanner, setRecalculatingBanner] = useState(false);
   const [arrivalBanner, setArrivalBanner] = useState(false);
@@ -666,7 +710,7 @@ export default function LivePage() {
   const [sheetTab, setSheetTab] = useState<SheetTab>("reports");
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapStyleMode, setMapStyleMode] = useState<MapStyleMode>("auto");
-  const [activePanel, setActivePanel] = useState<string | null>(null);
+  const [activePanel, setActivePanel] = useState<LiveRailButtonId | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatTarget, setChatTarget] = useState<{
     id: string;
@@ -675,13 +719,13 @@ export default function LivePage() {
   } | null>(null);
   const [weatherDetail, setWeatherDetail] = useState<WeatherDetail | null>(null);
   const [weatherDetailLoading, setWeatherDetailLoading] = useState(false);
-  const [unreadAlerts, setUnreadAlerts] = useState(0);
   const [deviceBatteryLevel, setDeviceBatteryLevel] = useState<number | null>(null);
   const [savedPins, setSavedPins] = useState<PinOut[]>([]);
   const [pinsLoading, setPinsLoading] = useState(false);
   const [wayraListening, setWayraListening] = useState(false);
   const [sosBanner, setSosBanner] = useState(false);
   const [unreadLounge, setUnreadLounge] = useState(3);
+  const [panelAnchorEl, setPanelAnchorEl] = useState<HTMLElement | null>(null);
   const railButtonRefs = useRef<Partial<Record<LiveRailButtonId, HTMLDivElement | null>>>({});
   const wayraRecognitionRef = useRef<{ stop: () => void } | null>(null);
   const sheetTouchStartYRef = useRef<number | null>(null);
@@ -761,11 +805,48 @@ export default function LivePage() {
   }, [speedCameras]);
 
   useEffect(() => {
+    if (destination) {
+      setSearchQuery(destination.name);
+    } else {
+      setSearchQuery("");
+    }
+  }, [destination]);
+
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    if (destination && trimmed === destination.name) {
+      setSearchResults([]);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setSearchLoading(true);
+      void searchPlaces(trimmed)
+        .then(setSearchResults)
+        .catch(() => setSearchResults([]))
+        .finally(() => setSearchLoading(false));
+    }, 400);
+
+    return () => window.clearTimeout(timer);
+  }, [searchQuery, destination]);
+
+  const focusSearchInput = useCallback(() => {
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+      setShowSearchDropdown(true);
+    }, 50);
+  }, []);
+
+  useEffect(() => {
     setVoiceMutedState(isVoiceMuted());
   }, []);
 
   useEffect(() => {
-    const replaySessionId = searchParams.get("replay_session");
     if (!replaySessionId || isGuest) return;
     void (async () => {
       try {
@@ -778,7 +859,7 @@ export default function LivePage() {
         // Replay fetch is optional.
       }
     })();
-  }, [isGuest, searchParams]);
+  }, [isGuest, replaySessionId]);
 
   useEffect(() => {
     roadNameRef.current = roadName;
@@ -811,6 +892,14 @@ export default function LivePage() {
   useEffect(() => {
     groupModeRef.current = groupMode;
   }, [groupMode]);
+
+  useEffect(() => {
+    isGroupAdminRef.current = isGroupAdmin;
+  }, [isGroupAdmin]);
+
+  useEffect(() => {
+    tripMembersRef.current = tripMembers;
+  }, [tripMembers]);
 
   useEffect(() => {
     memberStatusesRef.current = memberStatuses;
@@ -1172,13 +1261,15 @@ export default function LivePage() {
       seen.add(traveler.traveler_id);
       let entry = travelerMarkersRef.current.get(traveler.traveler_id);
       if (!entry) {
-        const { element, setBearing } = createTravelerMarker(
+        const { element, setBearing, setLabel } = createTravelerMarker(
           traveler.traveler_id,
+          traveler.label,
           (travelerId) => {
             const match = nearbyTravelersRef.current.find(
               (item) => item.traveler_id === travelerId,
             );
             if (match) {
+              setActivePanel(null);
               setChatTarget({
                 id: match.traveler_id,
                 label: match.label,
@@ -1191,10 +1282,11 @@ export default function LivePage() {
         const marker = new maplibregl.Marker({ element, anchor: "center" })
           .setLngLat([traveler.lng, traveler.lat])
           .addTo(map);
-        entry = { marker, setBearing };
+        entry = { marker, setBearing, setLabel };
         travelerMarkersRef.current.set(traveler.traveler_id, entry);
       } else {
         entry.marker.setLngLat([traveler.lng, traveler.lat]);
+        entry.setLabel(traveler.label);
       }
       entry.setBearing(
         traveler.bearing != null && !Number.isNaN(traveler.bearing)
@@ -1309,18 +1401,18 @@ export default function LivePage() {
           Date.now() - new Date(live.last_seen).getTime() > 5 * 60 * 1000;
 
         let entry = memberMarkersRef.current.get(member.user_id);
+        const memberLabel = member.display_name?.trim() || "Trip member";
         if (!entry) {
-          const { element, setBearing, setOpacity, setLowBattery } = createMemberMarker(
-            color,
-            firstName(member.display_name),
-          );
+          const { element, setBearing, setOpacity, setLowBattery, setLabel } =
+            createMemberMarker(color, memberLabel);
           const marker = new maplibregl.Marker({ element, anchor: "center" })
             .setLngLat([live.lng, live.lat])
             .addTo(map);
-          entry = { marker, setBearing, setOpacity, setLowBattery };
+          entry = { marker, setBearing, setOpacity, setLowBattery, setLabel };
           memberMarkersRef.current.set(member.user_id, entry);
         } else {
           entry.marker.setLngLat([live.lng, live.lat]);
+          entry.setLabel(memberLabel);
         }
 
         entry.setBearing(
@@ -1348,7 +1440,21 @@ export default function LivePage() {
       const status = memberStatusValue(live);
       if (status) next[userId] = status;
     }
-    setMemberStatuses((prev) => ({ ...prev, ...next }));
+    const hasChanges = Object.entries(next).some(
+      ([userId, status]) => memberStatusesRef.current[userId] !== status,
+    );
+    const merged = hasChanges
+      ? { ...memberStatusesRef.current, ...next }
+      : memberStatusesRef.current;
+    if (hasChanges) {
+      memberStatusesRef.current = merged;
+      setMemberStatuses(merged);
+    }
+    if (!isGroupAdminRef.current || tripMembersRef.current.length === 0) return;
+    const allArrived = tripMembersRef.current.every(
+      (member) => merged[member.user_id] === "at_the_spot",
+    );
+    setEveryoneArrivedBanner((prev) => (prev === allArrived ? prev : allArrived));
   }, []);
 
   const writeUserLocation = useCallback(
@@ -1560,7 +1666,7 @@ export default function LivePage() {
 
   const handleDestinationSelect = useCallback(
     (place: Destination) => {
-      setShowDestinationSheet(false);
+      setShowSearchDropdown(false);
       if (isGuest) {
         setGuestPrompt("Sign in to get turn-by-turn directions");
         return;
@@ -1595,10 +1701,20 @@ export default function LivePage() {
             body: JSON.stringify({ status }),
           },
         );
-        setMemberStatuses((prev) => ({
-          ...prev,
-          ...(currentUserId ? { [currentUserId]: result.status } : {}),
-        }));
+        if (!currentUserId) return;
+        const merged = {
+          ...memberStatusesRef.current,
+          [currentUserId]: result.status,
+        };
+        if (memberStatusesRef.current[currentUserId] === result.status) return;
+        memberStatusesRef.current = merged;
+        setMemberStatuses(merged);
+        if (isGroupAdminRef.current && tripMembersRef.current.length > 0) {
+          const allArrived = tripMembersRef.current.every(
+            (member) => merged[member.user_id] === "at_the_spot",
+          );
+          setEveryoneArrivedBanner((prev) => (prev === allArrived ? prev : allArrived));
+        }
         if (status === "need_help") {
           showToastMessage("Help request sent to the group");
         }
@@ -1761,7 +1877,7 @@ export default function LivePage() {
         return;
       }
       if (action === "open_navigation") {
-        setShowDestinationSheet(true);
+        focusSearchInput();
         return;
       }
       void triggerSOS();
@@ -1787,7 +1903,7 @@ export default function LivePage() {
         if (result.action === "open_poi_search") {
           setShowPoiSearch(true);
         } else if (result.action === "open_navigation") {
-          setShowDestinationSheet(true);
+          focusSearchInput();
         } else if (result.action === "call_sos") {
           void triggerSOS();
         }
@@ -1797,6 +1913,11 @@ export default function LivePage() {
     },
     [buildWayraContext, isGuest, triggerSOS],
   );
+
+  const sendToWayraRef = useRef(sendToWayra);
+  sendToWayraRef.current = sendToWayra;
+  const openWayraChatRef = useRef(openWayraChat);
+  openWayraChatRef.current = openWayraChat;
 
   const handleDriverModeWayra = useCallback(() => {
     if (isGuest || driverWayraListening) return;
@@ -1862,6 +1983,54 @@ export default function LivePage() {
     setDriverWayraListening(true);
     recognition.start();
   }, [driverWayraListening, isGuest, sendToWayra]);
+
+  const stopWayraIfListening = useCallback(() => {
+    wayraRecognitionRef.current?.stop();
+    wayraRecognitionRef.current = null;
+    setWayraListening(false);
+  }, []);
+
+  const closeActivePanel = useCallback(() => {
+    setActivePanel((prev) => {
+      if (prev === "wayra") stopWayraIfListening();
+      return null;
+    });
+  }, [stopWayraIfListening]);
+
+  useEffect(() => {
+    if (!activePanel) {
+      setPanelAnchorEl(null);
+      return;
+    }
+    let cancelled = false;
+    const resolveAnchor = () => {
+      if (cancelled) return;
+      const el = railButtonRefs.current[activePanel] ?? null;
+      if (el) {
+        setPanelAnchorEl(el);
+        return;
+      }
+      requestAnimationFrame(resolveAnchor);
+    };
+    requestAnimationFrame(resolveAnchor);
+    return () => {
+      cancelled = true;
+    };
+  }, [activePanel, mapLoaded]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (chatOpen) {
+        setChatOpen(false);
+        setChatTarget(null);
+        return;
+      }
+      if (activePanel) closeActivePanel();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activePanel, chatOpen, closeActivePanel]);
 
   const toggleVoiceListening = useCallback(() => {
     if (isGuest) {
@@ -1932,11 +2101,33 @@ export default function LivePage() {
   const handleToolbarTap = useCallback(
     (id: LiveRailButtonId) => {
       if (id === "battery") return;
-      setActivePanel((prev) => (prev === id ? null : id));
-      if (id === "wayra") toggleVoiceListening();
-      if (id === "lounge") setUnreadLounge(0);
+
+      if (id === "lounge") {
+        toggleLounge();
+        setUnreadLounge(0);
+        setChatOpen(false);
+        setChatTarget(null);
+        return;
+      }
+
+      let openingWayra = false;
+
+      setActivePanel((prev) => {
+        const next = prev === id ? null : id;
+        if (prev === "wayra" && next !== "wayra") {
+          stopWayraIfListening();
+        } else if (id === "wayra" && next === "wayra" && prev !== "wayra") {
+          openingWayra = true;
+        }
+        return next;
+      });
+
+      if (openingWayra) toggleVoiceListening();
+
+      setChatOpen(false);
+      setChatTarget(null);
     },
-    [toggleVoiceListening],
+    [stopWayraIfListening, toggleVoiceListening],
   );
 
   const handleClearAlerts = useCallback(() => {
@@ -1944,10 +2135,10 @@ export default function LivePage() {
     setCameraAlert(null);
     setWayraAlert(null);
     setHazardBanner(null);
-    setUnreadAlerts(0);
   }, []);
 
   const openTravelerChat = useCallback((traveler: NearbyTraveler) => {
+    setActivePanel(null);
     setChatTarget({
       id: traveler.traveler_id,
       label: traveler.label,
@@ -1957,6 +2148,7 @@ export default function LivePage() {
   }, []);
 
   const openReportChat = useCallback((report: RoadReport) => {
+    setActivePanel(null);
     const config = REPORT_CONFIG[report.report_type];
     setChatTarget({
       id: report.id,
@@ -1982,14 +2174,6 @@ export default function LivePage() {
     },
     [clearNavigation, postQuickStatus],
   );
-
-  const checkEveryoneArrived = useCallback(() => {
-    if (!isGroupAdmin || tripMembers.length === 0) return;
-    const allArrived = tripMembers.every(
-      (member) => memberStatuses[member.user_id] === "at_the_spot",
-    );
-    setEveryoneArrivedBanner(allArrived);
-  }, [isGroupAdmin, memberStatuses, tripMembers]);
 
   const handleSetMeetingPointMode = useCallback(() => {
     const map = mapRef.current;
@@ -2118,10 +2302,6 @@ export default function LivePage() {
   }, [showToastMessage, validTripId]);
 
   useEffect(() => {
-    checkEveryoneArrived();
-  }, [checkEveryoneArrived, memberStatuses]);
-
-  useEffect(() => {
     if (!validTripId || isGuest) return;
 
     let cancelled = false;
@@ -2158,7 +2338,34 @@ export default function LivePage() {
     const membersRef = ref(db, `trips/${validTripId}/live/members`);
     const unsubscribe = onValue(membersRef, (snapshot) => {
       const data = (snapshot.val() ?? {}) as Record<string, MemberLiveData>;
-      setMemberLive(data);
+      setMemberLive((prev) => {
+        const prevKeys = Object.keys(prev);
+        const nextKeys = Object.keys(data);
+        if (
+          prevKeys.length === nextKeys.length &&
+          prevKeys.every((key) => key in data)
+        ) {
+          let unchanged = true;
+          for (const userId of nextKeys) {
+            const before = prev[userId];
+            const after = data[userId];
+            if (
+              !before ||
+              before.lat !== after.lat ||
+              before.lng !== after.lng ||
+              before.last_seen !== after.last_seen ||
+              before.status !== after.status ||
+              before.speed_mph !== after.speed_mph ||
+              before.bearing !== after.bearing
+            ) {
+              unchanged = false;
+              break;
+            }
+          }
+          if (unchanged) return prev;
+        }
+        return data;
+      });
       updateMemberDots(data);
       updateMemberStatusesFromLive(data);
     });
@@ -2332,11 +2539,11 @@ export default function LivePage() {
           .replace(/hey wayra|wayra|hey rovvy/gi, "")
           .trim();
         if (command.length > 2) {
-          void sendToWayra(command);
+          void sendToWayraRef.current(command);
           speakWayra("Got it.");
         } else {
           speakWayra("Yes? What do you need?");
-          openWayraChat();
+          openWayraChatRef.current();
         }
       }
     };
@@ -2368,7 +2575,7 @@ export default function LivePage() {
       continuousRecognitionRef.current = null;
       setContinuousVoiceActive(false);
     };
-  }, [gpsState, isGuest, openWayraChat, sendToWayra]);
+  }, [gpsState, isGuest]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -2544,17 +2751,29 @@ export default function LivePage() {
 
   useEffect(() => {
     if (!meetingPoint || convoy?.active) {
-      if (!meetingPoint) meetingArrivalSentRef.current = false;
+      if (!meetingPoint) {
+        meetingArrivalSentRef.current = false;
+        meetingNavTargetRef.current = null;
+      }
       return;
     }
     const pos = userPositionRef.current;
     if (!pos || navigationActiveRef.current) return;
+
+    const targetKey = `${meetingPoint.lat},${meetingPoint.lng},${meetingPoint.label}`;
+    if (meetingNavTargetRef.current === targetKey) return;
+    meetingNavTargetRef.current = targetKey;
+
     const dest = {
       lat: meetingPoint.lat,
       lng: meetingPoint.lng,
       name: meetingPoint.label,
     };
-    setDestination(dest);
+    setDestination((prev) =>
+      prev?.lat === dest.lat && prev?.lng === dest.lng && prev?.name === dest.name
+        ? prev
+        : dest,
+    );
     destinationRef.current = dest;
     void fetchRoute(pos.lat, pos.lng, dest, { fitBounds: true, resetStep: true }).then(
       () => {
@@ -2571,11 +2790,10 @@ export default function LivePage() {
     ensureRouteLayer(map, convoy.route_geometry);
     if (!isGroupAdmin) {
       const leader = tripMembers.find((member) => member.user_id === convoy.leader_id);
-      setConvoyBanner(
-        `Convoy active · Following ${firstName(leader?.display_name ?? "leader")} to ${convoy.destination_name}`,
-      );
+      const banner = `Convoy active · Following ${firstName(leader?.display_name ?? "leader")} to ${convoy.destination_name}`;
+      setConvoyBanner((prev) => (prev === banner ? prev : banner));
     } else {
-      setConvoyBanner(null);
+      setConvoyBanner((prev) => (prev === null ? prev : null));
     }
     convoyEndedSeenRef.current = true;
   }, [convoy, isGroupAdmin, tripMembers]);
@@ -2823,7 +3041,7 @@ export default function LivePage() {
 
   useEffect(() => {
     if (isGuest || !sessionId) {
-      setActiveSpectatorCount(0);
+      setActiveSpectatorCount((prev) => (prev === 0 ? prev : 0));
       return;
     }
 
@@ -2951,10 +3169,14 @@ export default function LivePage() {
   const updateHazardBanner = useCallback((lat: number, lng: number, items: RoadReport[]) => {
     const hazard = closestHazard(items, lat, lng);
     if (!hazard) {
-      setHazardBanner(null);
+      setHazardBanner((prev) => (prev === null ? prev : null));
       return;
     }
-    setHazardBanner(hazard);
+    setHazardBanner((prev) =>
+      prev?.report.id === hazard.report.id && prev.distanceM === hazard.distanceM
+        ? prev
+        : hazard,
+    );
     if (hazardTimerRef.current != null) {
       window.clearTimeout(hazardTimerRef.current);
     }
@@ -3035,6 +3257,8 @@ export default function LivePage() {
     document.body.classList.add("live-mode");
     return () => {
       document.body.classList.remove("live-mode");
+      wayraRecognitionRef.current?.stop();
+      wayraRecognitionRef.current = null;
       if (hazardTimerRef.current != null) {
         window.clearTimeout(hazardTimerRef.current);
       }
@@ -3417,13 +3641,13 @@ export default function LivePage() {
     }
   }, [activePanel, fetchSavedPins, fetchWeatherDetail]);
 
-  useEffect(() => {
+  const unreadAlerts = useMemo(() => {
     let count = 0;
     if (routeAlert) count += 1;
     if (cameraAlert) count += 1;
     if (wayraAlert) count += 1;
     if (hazardBanner) count += 1;
-    setUnreadAlerts(count);
+    return count;
   }, [routeAlert, cameraAlert, wayraAlert, hazardBanner]);
 
   useEffect(() => {
@@ -3499,7 +3723,7 @@ export default function LivePage() {
 
   return (
     <div
-      className="fixed inset-0 left-0 top-0 z-[100] h-[100dvh] w-screen max-w-[100vw] overflow-hidden bg-stone-900"
+      className="fixed inset-0 z-[100] h-[100dvh] w-full overflow-hidden bg-stone-900"
       style={{ margin: 0, padding: 0 }}
     >
       <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" />
@@ -3673,7 +3897,7 @@ export default function LivePage() {
                     type="button"
                     onClick={() => {
                       if (wayraAlert.action === "open_navigation") {
-                        setShowDestinationSheet(true);
+                        focusSearchInput();
                       } else if (wayraAlert.action === "open_poi_search") {
                         setShowPoiSearch(true);
                       }
@@ -3725,25 +3949,100 @@ export default function LivePage() {
           </div>
         ) : null}
 
-        <button
-          type="button"
-          onClick={() => {
-            if (groupMode && convoy?.active && !isGroupAdmin) {
-              showToastMessage("Convoy is active — follow the group route");
-              return;
-            }
-            setShowDestinationSheet(true);
-          }}
-          className="pointer-events-auto absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.25rem)] flex items-center gap-2 rounded-full bg-[rgba(15,23,42,0.82)] px-4 py-2.5 text-left text-sm text-white shadow-lg backdrop-blur-sm transition hover:bg-[rgba(15,23,42,0.92)]"
+        <div
+          className="pointer-events-none absolute left-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.25rem)] z-[125] flex flex-col w-[min(380px,calc(100%-1.5rem))]"
         >
-          <MapPin size={16} className="shrink-0 text-[#5EEAD4]" />
-          <span className={`truncate ${destination ? "font-medium" : "text-white/70"}`}>
-            {destination?.name || "Search destination..."}
-          </span>
-          {routeLoading ? (
-            <Loader2 size={14} className="ml-auto animate-spin text-[#5EEAD4]" />
+          {showSearchDropdown ? (
+            <div
+              className="fixed inset-0 z-0 pointer-events-auto cursor-default"
+              onClick={() => setShowSearchDropdown(false)}
+            />
           ) : null}
-        </button>
+          <div className="relative z-10 pointer-events-auto flex items-center gap-2 rounded-full bg-[rgba(15,23,42,0.82)] px-4 py-2 text-left text-sm text-white shadow-lg backdrop-blur-sm transition focus-within:bg-[rgba(15,23,42,0.92)]">
+            <MapPin size={16} className="shrink-0 text-[#5EEAD4]" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSearchDropdown(true);
+              }}
+              onFocus={(e) => {
+                if (groupMode && convoy?.active && !isGroupAdmin) {
+                  showToastMessage("Convoy is active — follow the group route");
+                  e.target.blur();
+                  return;
+                }
+                setShowSearchDropdown(true);
+              }}
+              placeholder="Search destination..."
+              className="w-full bg-transparent text-sm text-white placeholder-white/60 outline-none"
+            />
+            {routeLoading || searchLoading ? (
+              <Loader2 size={14} className="ml-auto animate-spin text-[#5EEAD4] shrink-0" />
+            ) : null}
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSearchResults([]);
+                  setShowSearchDropdown(false);
+                  if (destination) {
+                    clearNavigation();
+                  }
+                }}
+                className="ml-1 rounded-full p-1 text-white/60 hover:bg-white/10 hover:text-white shrink-0 transition"
+                aria-label="Clear search"
+              >
+                <X size={14} />
+              </button>
+            ) : null}
+          </div>
+
+          {showSearchDropdown && (searchQuery.trim().length >= 2 || searchResults.length > 0) ? (
+            <div className="relative z-10 mt-2 max-h-60 w-full overflow-y-auto rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-black/5 pointer-events-auto">
+              {searchLoading && searchResults.length === 0 ? (
+                <div className="flex items-center justify-center gap-2 py-4 text-xs text-stone-500">
+                  <Loader2 size={12} className="animate-spin text-[#0F766E]" />
+                  Searching…
+                </div>
+              ) : null}
+              {!searchLoading && searchQuery.trim().length >= 2 && searchResults.length === 0 ? (
+                <div className="px-3 py-4 text-center text-xs text-stone-500">
+                  No places found.
+                </div>
+              ) : null}
+              {searchResults.map((place) => (
+                <button
+                  key={`${place.lat}-${place.lon}-${place.display_name}`}
+                  type="button"
+                  onClick={() => {
+                    handleDestinationSelect({
+                      lat: Number.parseFloat(place.lat),
+                      lng: Number.parseFloat(place.lon),
+                      name: place.display_name.split(",")[0] || place.display_name,
+                    });
+                    setSearchQuery(place.display_name.split(",")[0] || place.display_name);
+                    setShowSearchDropdown(false);
+                  }}
+                  className="flex w-full items-start gap-2.5 rounded-xl px-3 py-2.5 text-left transition hover:bg-stone-50"
+                >
+                  <MapPin size={14} className="mt-0.5 shrink-0 text-[#0F766E]" />
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-semibold text-stone-900">
+                      {place.display_name.split(",")[0]}
+                    </span>
+                    <span className="block truncate text-[10px] text-stone-500">
+                      {place.display_name}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
 
         {arrivalBanner ? (
           <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
@@ -4097,12 +4396,8 @@ export default function LivePage() {
         <>
           <RightPanel
             activePanel={activePanel}
-            anchorEl={
-              activePanel && activePanel !== "lounge"
-                ? (railButtonRefs.current[activePanel as LiveRailButtonId] ?? null)
-                : null
-            }
-            setActivePanel={setActivePanel}
+            anchorEl={activePanel ? panelAnchorEl : null}
+            onClosePanel={closeActivePanel}
             weatherDetail={weatherDetail}
             weatherLoading={weatherDetailLoading}
             onRefreshWeather={() => {
@@ -4121,12 +4416,7 @@ export default function LivePage() {
             onNavigateToPin={handleNavigateToPin}
             onSaveCurrentLocation={() => void handleSaveCurrentLocation()}
           />
-          <LoungePanel
-            isOpen={activePanel === "lounge"}
-            onClose={() => setActivePanel(null)}
-            anchorEl={railButtonRefs.current.lounge ?? null}
-          />
-          <div className="pointer-events-auto absolute inset-0">
+          <div className="pointer-events-none absolute inset-0">
             <LiveControlRail
               activePanel={activePanel}
               weatherTemp={weather?.temperature_2m ?? null}
@@ -4235,12 +4525,7 @@ export default function LivePage() {
         />
       ) : null}
 
-      {showDestinationSheet ? (
-        <DestinationSheet
-          onClose={() => setShowDestinationSheet(false)}
-          onSelect={handleDestinationSelect}
-        />
-      ) : null}
+
 
       {route && destination && !driverMode ? (
         <NavigationSheet
