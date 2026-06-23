@@ -80,6 +80,9 @@ import {
   Volume2,
   VolumeX,
   X,
+  MessageSquare,
+  Phone,
+  PhoneOff,
 } from "lucide-react";
 import maplibregl, { type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -1596,6 +1599,17 @@ export default function LivePage() {
         if (!entry) {
           const { element, setBearing, setOpacity, setLowBattery, setLabel, setTransport } =
             createMemberMarker(color, memberLabel);
+          
+          element.style.cursor = "pointer";
+          element.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const latestLive = memberLiveRef.current[member.user_id] || live;
+            setSelectedMemberCard({
+              member,
+              liveData: latestLive,
+            });
+          });
+
           const marker = new maplibregl.Marker({ element, anchor: "center" })
             .setLngLat([live.lng, live.lat])
             .addTo(map);
@@ -4160,6 +4174,53 @@ export default function LivePage() {
   const groupEndRef = useRef<HTMLDivElement>(null);
   const [chatActiveTab, setChatActiveTab] = useState<"group" | "route">("group");
 
+  const [selectedMemberCard, setSelectedMemberCard] = useState<{
+    member: TripMember;
+    liveData: MemberLiveData;
+  } | null>(null);
+  const [memberCardAddress, setMemberCardAddress] = useState<string>("");
+  const [activeVoiceCallMember, setActiveVoiceCallMember] = useState<TripMember | null>(null);
+
+  useEffect(() => {
+    if (!selectedMemberCard) {
+      setMemberCardAddress("");
+      return;
+    }
+    setMemberCardAddress("Loading address...");
+    const lat = selectedMemberCard.liveData.lat;
+    const lng = selectedMemberCard.liveData.lng;
+    if (lat == null || lng == null) {
+      setMemberCardAddress("Unknown coordinates");
+      return;
+    }
+
+    let aborted = false;
+    const fetchAddr = async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+          {
+            headers: {
+              "User-Agent": "RovvyTravelApp/1.0",
+            },
+          }
+        );
+        if (!res.ok) throw new Error("reverse geocode failed");
+        const data = await res.json();
+        if (aborted) return;
+        setMemberCardAddress(data.display_name || "Unknown address");
+      } catch (e) {
+        if (aborted) return;
+        setMemberCardAddress(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+      }
+    };
+
+    void fetchAddr();
+    return () => {
+      aborted = true;
+    };
+  }, [selectedMemberCard]);
+
   useEffect(() => {
     if (!firebaseDb || !validTripId || !showGroupChat) return;
     const chatRef = ref(firebaseDb, `trips/${validTripId}/chat`);
@@ -5445,6 +5506,146 @@ export default function LivePage() {
           onConfirm={(radiusM, label) => void handleConfirmGeofence(radiusM, label)}
         />
       ) : null}
+
+      {/* Snapchat-style Member Location Card */}
+      {selectedMemberCard ? (() => {
+        const liveData = memberLive[selectedMemberCard.member.user_id] || selectedMemberCard.liveData;
+        const offline = liveData.last_seen != null &&
+          Date.now() - new Date(liveData.last_seen).getTime() > 5 * 60 * 1000;
+        
+        const parts = selectedMemberCard.member.display_name.trim().split(/\s+/);
+        const initials = parts.length === 1
+          ? parts[0].slice(0, 2).toUpperCase()
+          : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+
+        const speed = liveData.speed_mph != null ? Math.round(liveData.speed_mph) : 0;
+        const battery = liveData.battery_level != null ? Math.round(liveData.battery_level) : null;
+        
+        return (
+          <div className="fixed bottom-20 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:max-w-sm z-[140] bg-white rounded-2xl shadow-2xl border border-stone-205 p-4 transition-all duration-300 animate-slide-in pointer-events-auto">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#0F766E] to-[#2DD4BF] text-white font-bold text-base flex items-center justify-center shadow-inner shrink-0">
+                  {initials}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-stone-900 text-sm truncate">
+                    {selectedMemberCard.member.display_name}
+                  </h3>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className={`w-2.5 h-2.5 rounded-full ${offline ? "bg-stone-400" : "bg-green-500 animate-pulse"}`} />
+                    <span className="text-[11px] text-stone-500 font-medium">
+                      {offline ? (
+                        liveData.last_seen ? `Last seen ${new Date(liveData.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : "Offline"
+                      ) : (
+                        "Active Now"
+                      )}
+                    </span>
+                    {battery != null && (
+                      <span className="text-[11px] text-stone-400">· 🔋 {battery}%</span>
+                    )}
+                    {!offline && speed > 0 && (
+                      <span className="text-[11px] text-stone-400">· 🚗 {speed} mph</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedMemberCard(null)}
+                className="text-stone-400 hover:text-stone-600 rounded-full p-1 hover:bg-stone-100 transition shrink-0"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Address */}
+            <div className="mt-3 bg-stone-50 rounded-xl p-2.5 border border-stone-100">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
+                {offline ? "Last Location Address" : "Current Location Address"}
+              </p>
+              <p className="text-xs text-stone-600 font-medium mt-0.5 line-clamp-2 leading-relaxed">
+                {memberCardAddress || "Resolving location..."}
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedMemberCard(null);
+                  setShowGroupChat(true);
+                  setChatActiveTab("group");
+                  setGroupInput(`@${selectedMemberCard.member.display_name} `);
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-[#0F766E] hover:bg-[#0D625B] text-white rounded-xl py-2 text-xs font-bold transition shadow-sm animate-pulse-subtle"
+              >
+                <MessageSquare size={14} />
+                Message
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedMemberCard(null);
+                  setActiveVoiceCallMember(selectedMemberCard.member);
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2 text-xs font-bold transition shadow-sm"
+              >
+                <Phone size={14} />
+                Call
+              </button>
+            </div>
+          </div>
+        );
+      })() : null}
+
+      {/* Simulated Premium Voice Call Screen Overlay */}
+      {activeVoiceCallMember ? (() => {
+        const parts = activeVoiceCallMember.display_name.trim().split(/\s+/);
+        const initials = parts.length === 1
+          ? parts[0].slice(0, 2).toUpperCase()
+          : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+
+        return (
+          <div className="fixed inset-0 z-[200] bg-stone-900/98 flex flex-col justify-between items-center py-16 px-6 text-white animate-fade-in backdrop-blur-md">
+            {/* Top Info */}
+            <div className="text-center mt-8">
+              <p className="text-xs font-bold uppercase tracking-widest text-teal-400">Rovvy Voice Call</p>
+              <p className="text-xs text-stone-400 mt-1">End-to-End Encrypted</p>
+            </div>
+
+            {/* Avatar & Rings */}
+            <div className="relative flex items-center justify-center my-12">
+              <div className="absolute w-44 h-44 rounded-full bg-teal-500/10 animate-ping" />
+              <div className="absolute w-36 h-36 rounded-full bg-teal-500/20 animate-pulse" />
+              <div className="relative w-28 h-28 rounded-full bg-gradient-to-tr from-[#0f766e] to-[#2dd4bf] text-white font-extrabold text-3xl flex items-center justify-center shadow-2xl border-4 border-white/20">
+                {initials}
+              </div>
+            </div>
+
+            {/* Middle text */}
+            <div className="text-center mb-16">
+              <h2 className="text-2xl font-bold tracking-wide">{activeVoiceCallMember.display_name}</h2>
+              <p className="text-sm text-stone-400 mt-2 animate-pulse">Connecting securely...</p>
+            </div>
+
+            {/* Call Control (Hang Up Button) */}
+            <div className="mb-8">
+              <button
+                type="button"
+                onClick={() => setActiveVoiceCallMember(null)}
+                className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center text-white shadow-lg transition-transform transform active:scale-95 duration-200"
+                aria-label="Hang up call"
+              >
+                <PhoneOff size={28} />
+              </button>
+              <p className="text-[11px] text-center text-stone-500 mt-2 font-bold uppercase tracking-wider">Hang Up</p>
+            </div>
+          </div>
+        );
+      })() : null}
     </div>
   );
 }
