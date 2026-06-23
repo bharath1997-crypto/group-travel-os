@@ -16,10 +16,10 @@ from app.utils.database import SessionLocal
 logger = logging.getLogger(__name__)
 
 OVERPASS_SERVERS = [
-    "https://overpass-api.de/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
     "https://overpass.openstreetmap.ru/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass-api.de/api/interpreter",
 ]
 OVERPASS_HEADERS = {
     "User-Agent": "RovvyApp/1.0 (contact@rovvy.app)",

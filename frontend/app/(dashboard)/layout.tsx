@@ -2,14 +2,20 @@
 
 import { AIAssistantSidecar } from "@/components/ai/AIAssistantSidecar";
 import { LoungeDock } from "@/components/LoungeDock";
+import { emitOpenLounge } from "@/lib/open-lounge";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  MoreVertical,
   Calendar,
   Users as LucideUsers,
+  Bot,
+  MessageSquare,
   DollarSign,
   Compass,
   Map,
+  Bell,
+  User,
   Activity,
   CloudSun,
   Plane,
@@ -17,13 +23,14 @@ import {
   Route,
   Bus,
   Heart,
-  Radio,
+  LayoutDashboard,
+  ShoppingCart,
   type LucideIcon,
 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
-import { IconCheck } from "@/components/icons";
+import { IconBell, IconCheck, IconLogout } from "@/components/icons";
 
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
@@ -31,7 +38,6 @@ import { VerificationBanner } from "@/components/VerificationBanner";
 import { RovvyLogo } from "@/components/RovvyLogo";
 import BrandedLoading from "@/components/BrandedLoading";
 import ConnectionStatusBanner from "@/components/ConnectionStatusBanner";
-import { HeaderProfileMenu } from "@/components/HeaderProfileMenu";
 import { HeaderSearchBar } from "@/components/HeaderSearchBar";
 import {
   DashboardUserProvider,
@@ -49,7 +55,7 @@ const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
 type SubNavItem = { href: string; label: string; Icon?: LucideIcon };
 
 type NavSectionDef = {
-  id: "explore" | "trips" | "split-activities" | "live";
+  id: "explore" | "trips" | "split-activities" | "profile";
   href: string;
   label: string;
   Icon: LucideIcon | null;
@@ -94,10 +100,10 @@ const NAV_SECTIONS: NavSectionDef[] = [
     subs: [],
   },
   {
-    id: "live",
-    href: "/live",
-    label: "LIVE",
-    Icon: Radio,
+    id: "profile",
+    href: "/profile",
+    label: "Profile",
+    Icon: User,
     subs: [],
   },
 ];
@@ -205,8 +211,13 @@ function sectionActive(pathname: string, section: NavSectionDef): boolean {
   if (section.id === "split-activities") {
     return pathname.startsWith("/split-activities");
   }
-  if (section.id === "live") {
-    return pathname.startsWith("/live");
+  if (section.id === "profile") {
+    return (
+      pathname === "/profile" ||
+      pathname.startsWith("/profile/") ||
+      pathname.startsWith("/settings") ||
+      pathname.startsWith("/stats")
+    );
   }
   return false;
 }
@@ -360,9 +371,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading } = useDashboardUser();
-  const isLivePage = pathname === "/live";
-  const hideAssistantSidecar =
-    pathname.startsWith("/travel-hub") || isLivePage;
+  const hideAssistantSidecar = pathname.startsWith("/travel-hub");
   const hideBottomNav = false;
 
   const isMapPage = pathname === "/map" || pathname === "/explore/map";
@@ -382,15 +391,11 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     isTripSpacePage;
 
   const [isMdUp, setIsMdUp] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [sidebarMe, setSidebarMe] = useState<SidebarAuthMe | null>(null);
   const [sidebarProfileLoading, setSidebarProfileLoading] = useState(true);
   const [notifCount, setNotifCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (loading || !user) return;
@@ -484,7 +489,6 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
   const needsZeroOuterPadding =
     isMapPage ||
-    isLivePage ||
     isExplorerEventsShell ||
     isExploreShortsShell ||
     pathname.startsWith("/profile");
@@ -531,16 +535,6 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   }, []);
 
   if (loading) {
-    if (!mounted) {
-      return (
-        <div
-          className="fixed inset-0 z-50 bg-[#F8FAFC]"
-          aria-busy="true"
-          aria-label="Loading Rovvy"
-          suppressHydrationWarning
-        />
-      );
-    }
     return <BrandedLoading fullScreen={true} />;
   }
 
@@ -556,7 +550,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const activeSubs = activeSection?.subs ?? [];
   const hasSubNav = activeSubs.length > 0;
 
-  // Header height: 64px primary row + 44px sub-nav row when present
+  // Header height: 56px primary row + 44px sub-nav row when present
   const headerPx = hasSubNav ? 108 : 64;
 
   return (
@@ -566,54 +560,42 @@ function DashboardChrome({ children }: { children: ReactNode }) {
       {/* ═══════════════════════════════════════════════════
           FIXED TOP HEADER — never hides on scroll
       ═══════════════════════════════════════════════════ */}
-      <header
-        className="dashboard-header fixed top-0 left-0 right-0 z-40 overflow-visible border-b border-stone-200 bg-white shadow-sm select-none"
-      >
-        <div className="flex h-16 items-center gap-3 overflow-visible px-3 md:gap-4 md:px-6">
-          {/* Logo — image taller than the bar for a zoomed-in wordmark */}
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-stone-200 shadow-sm select-none">
+        <div className="flex h-16 items-center gap-2 px-3 md:gap-3 md:px-6">
+          {/* Logo */}
           <Link
             href="/explore"
-            className="flex shrink-0 items-center overflow-visible focus-visible:outline-none"
+            className="flex shrink-0 items-center focus-visible:outline-none"
           >
-            <RovvyLogo variant="primary" height={76} className="md:hidden" />
-            <RovvyLogo variant="primary" height={96} className="hidden md:block" />
+            <RovvyLogo variant="primary" size="sm" />
           </Link>
 
-          {/* Search — centered in remaining space on desktop */}
+          {/* Search — Google-style pill, centered in header */}
           <div className="hidden min-w-0 flex-1 items-center justify-center px-3 md:flex lg:px-6">
             <HeaderSearchBar />
           </div>
 
-          {/* Nav tabs + profile menu — right aligned */}
-          <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-3">
+          {/* Navigation + Notifications + Overflow Menu */}
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 md:ml-0 md:gap-3">
+            {/* Primary nav tabs — desktop only */}
             <nav className="hidden md:flex items-center gap-0.5 xl:gap-1" aria-label="Primary">
               {NAV_SECTIONS.map((section) => {
                 const active = sectionActive(pathname, section);
-                const isLiveSection = section.id === "live";
                 return (
                   <Link
                     key={section.id}
                     href={section.href}
                     className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-all ${
-                      isLiveSection
-                        ? active
-                          ? "bg-[#0F766E] text-white shadow-sm ring-1 ring-[#0F766E]/20"
-                          : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-                        : active
-                          ? "text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
-                          : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
+                      active
+                        ? "text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
+                        : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
                     }`}
                     title={section.label}
                   >
-                    {isLiveSection ? (
-                      <span className="relative flex h-2 w-2 shrink-0 items-center justify-center mr-0.5">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                      </span>
-                    ) : section.Icon ? (
+                    {section.Icon ? (
                       <section.Icon size={15} strokeWidth={2} aria-hidden />
                     ) : null}
-                    <span className={isLiveSection ? "" : "hidden xl:inline"}>{section.label}</span>
+                    <span className="hidden xl:inline">{section.label}</span>
                   </Link>
                 );
               })}
@@ -621,14 +603,117 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
             <div className="hidden md:block h-6 w-px bg-stone-200" />
 
-            <HeaderProfileMenu
-              displayName={sidebarDisplayName}
-              avatarUrl={sidebarPicUrl}
-              cartCount={cartCount}
-              notifCount={notifCount}
-              onLogout={handleLogout}
-              showOverflowItems
-            />
+            {/* Travel Cart */}
+            <Link
+              href="/cart"
+              className="relative p-2 text-stone-500 hover:text-stone-800 rounded-lg hover:bg-stone-100 transition-colors"
+              aria-label="Travel Cart"
+            >
+              <ShoppingCart size={20} />
+              {cartCount > 0 ? (
+                <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-teal-600 px-1 text-[8px] font-bold text-white ring-2 ring-white">
+                  {cartCount > 99 ? "99" : cartCount}
+                </span>
+              ) : null}
+            </Link>
+
+            {/* Notifications */}
+            <Link
+              href="/notifications"
+              className="relative p-2 text-stone-500 hover:text-stone-800 rounded-lg hover:bg-stone-100 transition-colors"
+              aria-label="Notifications"
+            >
+              <IconBell size={20} />
+              {notifCount > 0 ? (
+                <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold text-white ring-2 ring-white">
+                  {notifCount > 99 ? "99" : notifCount}
+                </span>
+              ) : null}
+            </Link>
+
+            {/* Overflow menu */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="p-2 text-stone-500 hover:text-stone-800 rounded-lg hover:bg-stone-100 transition-colors"
+                aria-label="More options"
+              >
+                <MoreVertical size={20} />
+              </button>
+
+              {menuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40 bg-transparent"
+                    onClick={() => setMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 mt-1.5 w-48 rounded-xl bg-white border border-stone-200 shadow-xl py-1.5 z-50 text-[12px] font-medium text-stone-700">
+                    <button
+                      type="button"
+                      onClick={() => { router.push("/trips/plan"); setMenuOpen(false); }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                    >
+                      <Calendar size={14} className="text-[#0F766E]" />
+                      <span>Plan a Trip</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        emitOpenLounge();
+                        setMenuOpen(false);
+                      }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                    >
+                      <MessageSquare size={14} className="text-[#0F766E]" />
+                      <span>Rovvy Lounge</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { router.push("/dashboard"); setMenuOpen(false); }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                    >
+                      <LayoutDashboard size={14} className="text-[#0F766E]" />
+                      <span>Dashboard</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { router.push("/stats"); setMenuOpen(false); }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                    >
+                      <MoreVertical size={14} className="text-stone-500" />
+                      <span>My Stats</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { router.push("/settings"); setMenuOpen(false); }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                    >
+                      <MoreVertical size={14} className="text-stone-500" />
+                      <span>Settings</span>
+                    </button>
+                    <div className="mx-3 my-1 border-t border-stone-100" />
+                    <button
+                      type="button"
+                      onClick={() => { const e = new CustomEvent("open-ai-sidecar"); window.dispatchEvent(e); setMenuOpen(false); }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-stone-50 flex items-center gap-2"
+                    >
+                      <Bot size={14} className="text-teal-600" />
+                      <span>Ask AI Assistant</span>
+                    </button>
+                    <div className="mx-3 my-1 border-t border-stone-100" />
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="w-full text-left px-3.5 py-2 hover:bg-red-50 flex items-center gap-2 text-red-500"
+                    >
+                      <MoreVertical size={14} />
+                      <span>Sign out</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -660,9 +745,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           MAIN CONTENT — padded to clear the fixed header
       ═══════════════════════════════════════════════════ */}
       <div
-        className={`dashboard-content-shell main-content flex h-screen h-[100dvh] w-full max-w-[100vw] flex-col overflow-y-auto md:pb-0 ${
-          isLivePage ? "ml-0 pl-0 overflow-hidden" : ""
-        } ${
+        className={`flex h-screen h-[100dvh] w-full flex-col overflow-y-auto md:pb-0 ${
           hideBottomNav ? "pb-0" : "pb-[calc(56px+env(safe-area-inset-bottom,0px))]"
         }`}
         style={{ paddingTop: `${headerPx}px` }}
@@ -670,18 +753,18 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         <main
           className={
             needsZeroOuterPadding
-              ? `flex min-h-0 flex-1 flex-col overflow-hidden p-0${isLivePage ? " dashboard-main-live" : ""}`
+              ? "flex min-h-0 flex-1 flex-col overflow-hidden p-0"
               : "min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-4 xl:p-5"
           }
         >
-          {isMapPage || isLivePage ? (
+          {isMapPage ? (
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
               <div className="sr-only" aria-hidden>
                 <PresenceHeartbeat />
               </div>
               <PostOAuthWelcomeModal />
               <VerificationBanner />
-              <div className="live-page-shell relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+              <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
                 {children}
               </div>
             </div>
@@ -705,7 +788,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             MOBILE BOTTOM NAV — fixed, dark bar
         ═══════════════════════════════════════════════════ */}
         <nav
-          className={`bottom-tab-bar fixed bottom-0 left-0 right-0 z-30 flex items-end border-t border-[#1E293B] bg-[#0F172A] pb-[env(safe-area-inset-bottom,0px)] md:hidden ${
+          className={`fixed bottom-0 left-0 right-0 z-30 flex items-end border-t border-[#1E293B] bg-[#0F172A] pb-[env(safe-area-inset-bottom,0px)] md:hidden ${
             hideBottomNav ? "hidden" : ""
           }`}
           aria-label="Primary"
@@ -765,7 +848,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           className="!z-[40] max-md:!bottom-[72px] max-md:!left-0 max-md:!p-0 [&>div]:max-md:!pb-0 [&>div]:max-md:!pl-4"
         />
       ) : null}
-      {user ? <LoungeDock /> : null}
+      {user && !hideBottomNav && <LoungeDock />}
     </div>
   );
 }

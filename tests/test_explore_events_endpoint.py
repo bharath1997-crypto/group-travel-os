@@ -143,7 +143,7 @@ def test_get_explore_event_detail_ticketmaster_row():
 
 def test_get_similar_explore_events():
     """Similar events match category and city, exclude anchor, sort by rating."""
-    from datetime import date, datetime, timedelta, timezone
+    from datetime import date, datetime, timezone
     from sqlalchemy import delete
 
     from app.models.explore_content import ExploreContent
@@ -161,7 +161,6 @@ def test_get_similar_explore_events():
         db.execute(delete(ExploreContent).where(ExploreContent.event_id.in_(ids)))
         db.commit()
 
-        future_date = (datetime.now(timezone.utc) + timedelta(days=1)).date()
         base = dict(
             content_type="ticketmaster_event",
             data=[],
@@ -170,7 +169,7 @@ def test_get_similar_explore_events():
             venue_lat=30.2672,
             venue_lon=-97.7431,
             state="Texas",
-            start_date=future_date,
+            start_date=date(2026, 6, 20),
             start_time="20:00",
             source="ticketmaster",
         )

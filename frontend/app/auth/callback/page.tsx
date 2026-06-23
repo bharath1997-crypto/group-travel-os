@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { apiFetchWithStatus } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import { clearToken, saveToken } from "@/lib/auth";
 import { syncLocalProfileCache } from "@/lib/profileCache";
 
@@ -11,14 +11,17 @@ const WELCOME_KEY = "gt_oauth_welcome";
 
 type Me = { full_name: string; email: string; avatar_url?: string | null };
 
-async function fetchMeWithRetry(): Promise<Me | null> {
+async function fetchMeWithRetry(): Promise<Me> {
+  let lastErr: Error | null = null;
   for (let attempt = 0; attempt < 4; attempt++) {
-    const { data, status } = await apiFetchWithStatus<Me>("/auth/me", {}, 25000);
-    if (status === 200 && data) return data;
-    if (status === 401 || status === 403) return null;
-    await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
+    try {
+      return await apiFetch<Me>("/auth/me");
+    } catch (e) {
+      lastErr = e instanceof Error ? e : new Error("profile fetch failed");
+      await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
+    }
   }
-  return null;
+  throw lastErr ?? new Error("profile fetch failed");
 }
 
 function oauthErrorPath(err: string, intent: string | null): string {
@@ -57,9 +60,6 @@ export default function OAuthCallbackPage() {
     (async () => {
       try {
         const me = await fetchMeWithRetry();
-        if (!me) {
-          throw new Error("profile unavailable");
-        }
         localStorage.setItem(
           "gt_user_name",
           me.full_name?.trim() || "Traveler",

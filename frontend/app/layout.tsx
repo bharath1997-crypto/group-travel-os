@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Inter, Outfit } from "next/font/google";
-import { ClientProviders } from "./client-providers";
 import "./globals.css";
 
 const inter = Inter({
@@ -51,10 +50,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
-        <Script id="rovvy-api-rejection-guard" strategy="beforeInteractive">
-          {`(function(){if(typeof window==="undefined")return;var k="__rovvyApiRejectionGuardInline";if(window[k])return;window[k]=true;window.addEventListener("unhandledrejection",function(e){var r=e.reason;var m=r&&r.message?r.message:String(r||"");if(/timed out|database might be waking|Failed to fetch|Network error|Could not reach|rovvyApiUnavailable/i.test(m)||(r&&r.rovvyApiUnavailable)){e.preventDefault();console.warn("[Rovvy] API unavailable:",m);}},true);})();`}
-        </Script>
-        <ClientProviders>{children}</ClientProviders>
+        {children}
         <Script id="gt-register-sw" strategy="afterInteractive">
           {`
             if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {

@@ -34,8 +34,6 @@ import {
 } from "lucide-react";
 
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
-
-const DASHBOARD_FETCH_TIMEOUT_MS = 45000;
 import { clearToken } from "@/lib/auth";
 import { emitOpenWayra } from "@/lib/open-wayra";
 import WayraIcon from "@/components/ui/WayraIcon";
@@ -737,7 +735,7 @@ async function apiFetchWithDeadline<T>(
   pageSignal: AbortSignal,
 ): Promise<T> {
   const t = new AbortController();
-  const timer = setTimeout(() => t.abort(), DASHBOARD_FETCH_TIMEOUT_MS);
+  const timer = setTimeout(() => t.abort(), 8000);
   const onPageAbort = () => t.abort();
   pageSignal.addEventListener("abort", onPageAbort);
   try {
@@ -754,7 +752,7 @@ async function apiFetchWithStatusDeadline<T>(
   pageSignal: AbortSignal,
 ): Promise<{ data: T | null; status: number }> {
   const t = new AbortController();
-  const timer = setTimeout(() => t.abort(), DASHBOARD_FETCH_TIMEOUT_MS);
+  const timer = setTimeout(() => t.abort(), 8000);
   const onPageAbort = () => t.abort();
   pageSignal.addEventListener("abort", onPageAbort);
   try {
@@ -1505,10 +1503,7 @@ export default function DashboardPage() {
       })();
     }
 
-    void run().catch((err) => {
-      if ((err as Error)?.name === "AbortError") return;
-      console.warn("[Rovvy] Dashboard load partial failure:", err);
-    });
+    void run();
     return () => {
       cancelled = true;
       ac.abort();

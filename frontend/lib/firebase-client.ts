@@ -1,6 +1,5 @@
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import { getDatabase, type Database } from "firebase/database";
-import { getAuth, signInWithCustomToken } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -31,19 +30,3 @@ export function initFirebase(): FirebaseReady {
     return { ok: false, app: null, db: null };
   }
 }
-
-export async function authenticateFirebase(token: string): Promise<boolean> {
-  if (typeof window === "undefined") return false;
-  try {
-    const apps = getApps();
-    if (apps.length === 0) return false;
-    const app = apps[0]!;
-    const auth = getAuth(app);
-    await signInWithCustomToken(auth, token);
-    return true;
-  } catch (error) {
-    console.error("Firebase custom token authentication failed:", error);
-    return false;
-  }
-}
-

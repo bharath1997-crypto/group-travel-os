@@ -20,11 +20,10 @@ import {
   authLinkClass,
 } from "@/components/auth/AuthExploreLayout";
 import { AuthSocialButtons, authToggleBtnClass } from "@/components/auth/AuthSocialButtons";
-import { apiFetchWithStatus } from "@/lib/api";
-import { clearToken, isLoggedIn, saveToken } from "@/lib/auth";
+import { apiFetch } from "@/lib/api";
+import { saveToken } from "@/lib/auth";
 import { startFacebookOAuth, startGoogleOAuth } from "@/lib/oauth";
 import { syncLocalProfileCache } from "@/lib/profileCache";
-import { checkSession } from "@/lib/sessionValidation";
 import { oauthErrorToAlert, type OauthLoginAlert } from "@/lib/oauthLoginErrors";
 import BrandedLoading from "@/components/BrandedLoading";
 
@@ -125,50 +124,8 @@ function LoginPageInner() {
   const [verifiedNotice, setVerifiedNotice] = useState(false);
   const [unverifiedBanner, setUnverifiedBanner] = useState(false);
   const [pendingNext, setPendingNext] = useState<string | null>(null);
-  const [checkingSession, setCheckingSession] = useState(true);
 
   const isBusy = submitting || oauthBusy;
-
-  useEffect(() => {
-    if (!isLoggedIn()) {
-      setCheckingSession(false);
-      return;
-    }
-
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const result = await checkSession();
-        if (cancelled) return;
-
-        const next = safeNextPath(searchParams.get("next"));
-
-        if (result.status === "valid") {
-          syncLocalProfileCache(result.user);
-          router.replace(next);
-          return;
-        }
-
-        if (result.status === "invalid") {
-          clearToken();
-          return;
-        }
-
-        router.replace(next);
-      } catch {
-        if (!cancelled) {
-          router.replace(safeNextPath(searchParams.get("next")));
-        }
-      } finally {
-        if (!cancelled) setCheckingSession(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [router, searchParams]);
 
   useEffect(() => {
     const oauthErr = searchParams.get("oauth_error");
@@ -214,30 +171,13 @@ function LoginPageInner() {
     setError(null);
     setSubmitting(true);
     try {
-      const { data, status } = await apiFetchWithStatus<LoginResponse>(
-        "/auth/login",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            email: emailOrUser.trim(),
-            password,
-          }),
-        },
-        45000,
-      );
-
-      if (status === 408 || status === 0) {
-        setError(
-          "The server is slow or offline. Start the backend (port 8000) and try again.",
-        );
-        return;
-      }
-
-      if (status !== 200 || !data) {
-        setError("Invalid email or password");
-        return;
-      }
-
+      const data = await apiFetch<LoginResponse>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({
+          email: emailOrUser.trim(),
+          password,
+        }),
+      }, 30000);
       saveToken(data.token.access_token);
       if (typeof window !== "undefined") {
         localStorage.setItem("gt_user_name", data.user.full_name.trim() || "Traveler");
@@ -254,7 +194,7 @@ function LoginPageInner() {
       }
       router.replace(next);
     } catch {
-      setError("Could not sign in. Check that the backend is running and try again.");
+      setError("Invalid email or password");
     } finally {
       setSubmitting(false);
     }
@@ -290,10 +230,6 @@ function LoginPageInner() {
         body: err instanceof Error ? err.message : String(err),
       });
     }
-  }
-
-  if (checkingSession && isLoggedIn()) {
-    return <BrandedLoading fullScreen={true} />;
   }
 
   return (

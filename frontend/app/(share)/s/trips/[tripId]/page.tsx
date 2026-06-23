@@ -133,13 +133,11 @@ export default function TripPublicPage() {
   useEffect(() => {
     if (!data?.viewer_is_member || !isLoggedIn()) return;
     let cancelled = false;
-    void apiFetch<{ id: string }>("/auth/me")
-      .then((me) => {
-        if (cancelled) return;
-        const self = data.public_participants.find((p) => p.user_id === me.id);
-        if (self?.trip_note) setRosterNote(self.trip_note);
-      })
-      .catch(() => {});
+    void apiFetch<{ id: string }>("/auth/me").then((me) => {
+      if (cancelled) return;
+      const self = data.public_participants.find((p) => p.user_id === me.id);
+      if (self?.trip_note) setRosterNote(self.trip_note);
+    });
     return () => {
       cancelled = true;
     };

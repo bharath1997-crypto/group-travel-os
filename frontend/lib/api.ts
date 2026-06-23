@@ -3,61 +3,6 @@ import { getToken } from "@/lib/auth";
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
-const DEFAULT_TIMEOUT_MS =
-  typeof process !== "undefined" && process.env.NODE_ENV === "development"
-    ? 45000
-    : 8000;
-
-const API_UNAVAILABLE_PATTERN =
-  /timed out|database might be waking|Failed to fetch|Network error|Could not reach|network request failed|load failed/i;
-
-/** Thrown by apiFetch on timeout/network failure — dev overlay suppresses these. */
-export class ApiFetchError extends Error {
-  readonly rovvyApiUnavailable = true;
-
-  constructor(message: string) {
-    super(message);
-    this.name = "ApiFetchError";
-  }
-}
-
-function isApiUnavailableError(reason: unknown): boolean {
-  if (
-    reason instanceof ApiFetchError ||
-    (typeof reason === "object" &&
-      reason !== null &&
-      "rovvyApiUnavailable" in reason &&
-      (reason as { rovvyApiUnavailable?: boolean }).rovvyApiUnavailable)
-  ) {
-    return true;
-  }
-  const message =
-    reason instanceof Error ? reason.message : reason != null ? String(reason) : "";
-  return API_UNAVAILABLE_PATTERN.test(message);
-}
-
-function installApiRejectionGuard() {
-  if (typeof window === "undefined") return;
-  const w = window as Window & { __rovvyApiRejectionGuard?: boolean };
-  if (w.__rovvyApiRejectionGuard) return;
-  w.__rovvyApiRejectionGuard = true;
-
-  window.addEventListener(
-    "unhandledrejection",
-    (event: PromiseRejectionEvent) => {
-      if (!isApiUnavailableError(event.reason)) return;
-      event.preventDefault();
-      event.stopImmediatePropagation?.();
-      const message =
-        event.reason instanceof Error ? event.reason.message : String(event.reason ?? "");
-      console.warn("[Rovvy] API unavailable (backend slow or offline):", message);
-    },
-    true,
-  );
-}
-
-installApiRejectionGuard();
-
 function networkErrorMessage(url: string, cause: unknown): string {
   let origin = API_BASE;
   try {
@@ -111,7 +56,7 @@ async function errorMessageFromResponse(res: Response): Promise<string> {
 export async function apiFetch<T = unknown>(
   path: string,
   options: RequestInit = {},
-  timeoutMs = DEFAULT_TIMEOUT_MS,
+  timeoutMs = 8000,
 ): Promise<T> {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const url = `${API_BASE}${normalized}`;
@@ -145,16 +90,14 @@ export async function apiFetch<T = unknown>(
   } catch (e) {
     clearTimeout(timeoutId);
     if (e instanceof Error && e.name === "AbortError") {
-      throw new ApiFetchError(
-        "The request timed out. The database might be waking up or experiencing high latency.",
-      );
+      throw new Error("The request timed out. The database might be waking up or experiencing high latency.");
     }
-    throw new ApiFetchError(networkErrorMessage(url, e));
+    throw new Error(networkErrorMessage(url, e));
   }
 
   if (!res.ok) {
     const message = await errorMessageFromResponse(res);
-    throw new ApiFetchError(message);
+    throw new Error(message);
   }
 
   if (res.status === 204) return undefined as T;
@@ -165,7 +108,7 @@ export async function apiFetch<T = unknown>(
 export async function apiFetchWithStatus<T>(
   path: string,
   options?: RequestInit,
-  timeoutMs = DEFAULT_TIMEOUT_MS,
+  timeoutMs = 8000,
 ): Promise<{ data: T | null; status: number }> {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const url = `${API_BASE}${normalized}`;
@@ -231,7 +174,7 @@ export async function apiFetchPublic<T = unknown>(
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seconds timeout
 
   let res: Response;
   try {
@@ -240,16 +183,14 @@ export async function apiFetchPublic<T = unknown>(
   } catch (e) {
     clearTimeout(timeoutId);
     if (e instanceof Error && e.name === "AbortError") {
-      throw new ApiFetchError(
-        "The request timed out. The database might be waking up or experiencing high latency.",
-      );
+      throw new Error("The request timed out. The database might be waking up or experiencing high latency.");
     }
-    throw new ApiFetchError(networkErrorMessage(url, e));
+    throw new Error(networkErrorMessage(url, e));
   }
 
   if (!res.ok) {
     const message = await errorMessageFromResponse(res);
-    throw new ApiFetchError(message);
+    throw new Error(message);
   }
 
   if (res.status === 204) return undefined as T;

@@ -1,250 +1,11 @@
 # Rovvy — Cursor AI Rules
 # Read this before every task.
 
----
-
-# ROVVY PROJECT RULES (Cost-Control + Productivity)
-
-## Primary Role
-
-You are the Engineering Team for Rovvy.
-
-Your responsibility is:
-
-* Build features
-* Modify code
-* Fix bugs
-* Refactor safely
-* Connect APIs
-* Create components
-* Create pages
-* Write tests
-* Improve performance
-
-Your primary goal is shipping production-ready code.
-
----
-
-## Do Not Become the Research Team
-
-Before starting a task, classify it.
-
-### IMPLEMENTATION TASKS (Proceed)
-
-Examples:
-
-* Build page
-* Create component
-* Connect API
-* Add route
-* Fix bug
-* Refactor module
-* Add database migration
-* Improve UI
-* Create modal
-* Add authentication
-* Add Firebase integration
-* Add MapLibre functionality
-
-Proceed normally.
-
----
-
-### RESEARCH TASKS (Stop)
-
-Examples:
-
-* Product strategy
-* Competitor analysis
-* Klook comparison
-* Airbnb comparison
-* Waze comparison
-* Market analysis
-* Feature prioritization
-* Future roadmap
-* Technology evaluation
-* Architecture comparison
-* Subscription analysis
-* Cost analysis
-* UX research
-* UI inspiration research
-
-Do NOT perform extensive research.
-
-Respond:
-
-"This task is better suited for ChatGPT, Claude, Gemini, or Perplexity. Please return with a final decision and I will implement it."
-
----
-
-## Screenshot Review Rule
-
-If the user uploads screenshots and asks:
-
-* What do you think?
-* Compare these designs
-* Review this UI
-* Analyze this screen
-* Suggest product direction
-
-DO NOT spend large amounts of tokens reviewing screenshots.
-
-Respond:
-
-"This is a design-review task. Please review it with ChatGPT, Claude, Gemini, or Perplexity and return with a final decision. I will implement the chosen direction."
-
-Exception:
-
-If the user explicitly asks for code changes to match a screenshot, proceed.
-
----
-
-## Architecture Lock
-
-Assume Rovvy architecture is approved.
-
-Frontend:
-
-* Next.js
-* TypeScript
-* Tailwind CSS
-
-Backend:
-
-* FastAPI
-* Python
-
-Database:
-
-* PostgreSQL
-
-Maps:
-
-* MapLibre
-* OpenStreetMap
-
-Realtime:
-
-* Firebase RTDB
-
-Auth:
-
-* JWT
-
-Do NOT redesign architecture unless explicitly requested.
-
-Do NOT generate large architecture reports.
-
-Focus on implementation.
-
----
-
-## Live Mode Rules
-
-Live Mode is a Waze-style navigation product.
-
-Do not convert Live Mode into:
-
-* Dashboard
-* Admin panel
-* Analytics page
-* Settings page
-
-Map is the primary product.
-
-Current approved roadmap:
-
-L1:
-
-* Fullscreen map
-* GPS dot
-* Day/night mode
-
-L2:
-
-* Reports
-* Hazards
-* Voting
-
-L3:
-
-* Traffic
-* Weather
-* POI search
-
-L4:
-
-* Routing
-* Navigation
-
-L5:
-
-* Route chat
-
-L6:
-
-* Group travel
-
-L7:
-
-* Convoy mode
-
-L8:
-
-* Wayra AI
-
-Implement only the requested phase.
-
-Do not build future phases unless asked.
-
----
-
-## Cost Control Rule
-
-Always prefer:
-
-* Small focused changes
-* Minimal file modifications
-* Incremental implementation
-
-Avoid:
-
-* Massive rewrites
-* Unrequested refactors
-* Multi-option research reports
-* Long speculative analysis
-
-Default behavior:
-
-Think enough to implement correctly.
-Do not spend tokens exploring alternatives unless explicitly requested.
-
----
-
-## Decision Workflow
-
-For Rovvy:
-
-ChatGPT / Claude / Gemini / Perplexity
-→ Research
-→ Product decisions
-→ UX review
-→ Architecture discussion
-
-Cursor
-→ Build final decision
-→ Ship production code
-
-Cursor is the Engineering Team, not the Research Team.
-
----
-
 ## Project
 Name: Rovvy (formerly Group Travel OS)
 Type: Group travel coordination platform
 Tagline: Roam together
-Branch: Production-main (always push here, NEVER to main)
-Project root: D:\group travel os
+Branch: Production-main (always push here)
 
 ## Stack
 Backend: FastAPI (Python 3.13)
@@ -256,8 +17,6 @@ Deployment: Cloud Run (backend) + Vercel (frontend)
 Real-time: Firebase RTDB
 Email: Brevo SMTP via fastapi-mail
 Auth: JWT stored as 'gt_token' in localStorage
-Background jobs: APScheduler
-Maps: MapLibre GL JS + OpenStreetMap tiles (NOT Google Maps)
 
 ## CRITICAL — NEVER DO THESE
 - NEVER modify frontend/lib/api.ts
@@ -270,10 +29,6 @@ Maps: MapLibre GL JS + OpenStreetMap tiles (NOT Google Maps)
 - NEVER push to main (only Production-main)
 - NEVER store vote counts as columns
 - NEVER write to Firebase for permanent data
-- NEVER invent routes, services, or models — check existing list first
-- NEVER run Alembic autogenerate without reviewing for destructive DROP operations
-- NEVER store Google Maps or external geocoding coordinates in DB
-- NEVER generate, AI-create, or invent logos/icons
 
 ## Architecture Rules
 Routes → Services → Models (strict layering)
@@ -308,18 +63,17 @@ raise AppException.unauthorized("message")
 - RovvyLogo from @/components/RovvyLogo
 - BRAND from @/lib/brand for colors/names
 - Tailwind CSS only — no inline styles
-- Content pages: bg-white or bg-[#F8FAFC] — WHITE/LIGHT ONLY
-- Dark navy bg-[#0F172A]: SIDEBAR ONLY — never on content pages
+- Dark navy theme: bg-[#0F172A]
 - Teal accent: text-[#0F766E] bg-[#0F766E]
 
 ## Testing Rules
 - Mock ALL external APIs in tests
 - Never make real HTTP calls in tests
-- Every new endpoint needs minimum:
+- Every new endpoint needs at minimum:
   * 200 success test
   * 401 unauthorized test
   * 422 validation error test
-- Run: .venv\Scripts\python -m pytest -q
+- Run: pytest -q (expect 154+ passing)
 
 ## Git Rules
 - Always: git push origin Production-main
@@ -330,14 +84,15 @@ raise AppException.unauthorized("message")
 ## Environment Configuration Rule
 NEVER modify, check, or suggest changes to:
 - frontend/.env.local
-- frontend/.env.production
+- frontend/.env.production  
 - .env (root)
 - Any environment variable files
 
-For ALL environment configuration issues:
+For ALL environment configuration issues (CORS, OAuth, API URLs, secrets):
 - Backend env vars → Claude decides → gcloud CLI commands only
 - Frontend env vars → Claude decides → Vercel dashboard only
-Do NOT touch any config without explicit Claude approval.
+
+Do NOT touch production or local frontend/backend configs without explicit Claude approval.
 
 ## Existing Services (DO NOT recreate)
 app/services/flight_service.py
@@ -354,18 +109,17 @@ app/services/notification_service.py
 /api/v1/users/* — user management
 /api/v1/groups/* — groups
 /api/v1/trips/* — trips
-/api/v1/flights/search — Travelpayouts widget
+/api/v1/flights/search — Kiwi.com
 /api/v1/routes/search — Google Routes
 /api/v1/activities/search — GetYourGuide
 /api/v1/hotels/search — Agoda
 /api/v1/buddy/* — Buddy Trips
 /api/v1/weather/* — weather
-/api/v1/explore/* — events + destinations
+/api/v1/explore/* — events
 
 ## Brand
 Primary color: #0F766E (teal)
-Background (sidebar only): #0F172A (navy)
-Content pages: #FFFFFF or #F8FAFC (WHITE/LIGHT ONLY)
+Background: #0F172A (navy)
 Surface: #1E293B
 Font: Inter + Outfit (Google Fonts)
 Logo component: @/components/RovvyLogo
@@ -374,48 +128,9 @@ NEVER hardcode "Travello" — always "Rovvy"
 ## Logo & Brand Assets (CRITICAL)
 - NEVER generate, AI-create, draw, or invent logos/icons
 - NEVER use inline SVG logos or code-rendered logos
-- ONLY use official PNG assets from repo root brand/ folder
-- Frontend served copies: frontend/public/brand/
-- ALWAYS use RovvyLogo or RovvyIcon from @/components/RovvyLogo
+- ONLY use official PNG assets from repo root `brand/` folder
+- Frontend served copies: `frontend/public/brand/` (sync from `brand/` when updating)
+- ALWAYS use `RovvyLogo` or `RovvyIcon` from `@/components/RovvyLogo`
+- Do NOT add, replace, or create logo files without explicit user confirmation
+- Do NOT reintroduce `frontend/public/rovvy-logo.png` or any non-brand logo assets
 - variant="primary" → light backgrounds; variant="dark" or "white" → dark backgrounds
-
----
-
-## Feature Registry (Auto-Updated by Cursor)
-After every feature change, update this section in .cursorrules:
-- If feature already listed → modify existing entry, update status + date. NO duplicate.
-- If new feature → append to list.
-- Never delete entries — change status to "Modified" or "Deprecated" instead.
-
-| Page / Feature | Status | Last Updated |
-|---|---|---|
-| Auth (JWT + OTP + Google OAuth) | Complete | 2025-06 |
-| Flights page (Travelpayouts widget) | Complete | 2025-06 |
-| Hotels page (Agoda) | Complete | 2025-06 |
-| Routes search | Complete | 2025-06 |
-| Activities (GetYourGuide) | Complete | 2025-06 |
-| Deal Scanner | Complete | 2025-06 |
-| Buddy Trips | Complete | 2025-06 |
-| Email Verification | Complete | 2025-06 |
-| Welcome Email | Complete | 2025-06 |
-| Explore page (destinations + events) | Complete | 2025-06 |
-| Live Trip Mode (MapLibre) | Modified | 2026-06 |
-| Buses page | Pending | — |
-
----
-
-## Test Registry (Auto-Updated by Cursor)
-After every pytest run, update this section in .cursorrules:
-- If module already listed → update timestamp + count only. NO duplicate.
-- If new module → append to list.
-- Never delete entries.
-
-| Test Module | Test Count | Last Run |
-|---|---|---|
-| tests/test_auth.py | — | — |
-| tests/test_flights.py | — | — |
-| tests/test_hotels.py | — | — |
-| tests/test_routes.py | — | — |
-| tests/test_activities.py | — | — |
-| tests/test_buddy.py | — | — |
-| tests/test_explore.py | — | — |

@@ -20,7 +20,6 @@ from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.utils.auth import create_access_token, hash_password
-from app.utils.db_diagnostics import apply_interactive_db_timeouts
 from app.utils.exceptions import AppException
 from config import settings
 
@@ -183,7 +182,6 @@ def _find_or_create_from_oauth(
     allow_create: bool = True,
 ) -> tuple[User, bool]:
     email_l = email.lower().strip()
-    apply_interactive_db_timeouts(db)
 
     if google_sub:
         u = db.execute(
