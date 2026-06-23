@@ -257,7 +257,7 @@ After every feature change, update this section in GEMINI.md:
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2025-06 |
-| Live Trip Mode (MapLibre) | Complete | 2026-06 |
+| Live Trip Mode (MapLibre) | Complete | 2026-06 (Updated) |
 | Buses page | Pending | — |
 
 ---
