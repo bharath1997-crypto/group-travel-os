@@ -2,7 +2,10 @@
 
 import { ChevronLeft, Search, Send, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { ANCHORED_PANEL_MAX_HEIGHT, useAnchoredPosition } from "@/components/live/AnchoredLivePopover";
+import {
+  ANCHORED_PANEL_MAX_HEIGHT,
+  AnchoredLivePopover,
+} from "@/components/live/AnchoredLivePopover";
 
 type LoungeMessage = {
   text: string;
@@ -52,7 +55,6 @@ export function LoungePanel({ isOpen, onClose, anchorEl }: LoungePanelProps) {
   const [view, setView] = useState<"list" | "chat">("list");
   const [activeChat, setActiveChat] = useState<LoungeChat | null>(null);
   const [search, setSearch] = useState("");
-  const top = useAnchoredPosition(isOpen, anchorEl);
 
   useEffect(() => {
     if (!isOpen) {
@@ -70,22 +72,11 @@ export function LoungePanel({ isOpen, onClose, anchorEl }: LoungePanelProps) {
     [search],
   );
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      className={[
-        "fixed z-[30] flex flex-col overflow-hidden rounded-2xl border border-white/10",
-        "bg-slate-950/92 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl",
-        "transition-all duration-200",
-        isOpen ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0",
-      ].join(" ")}
-      style={{
-        right: 72,
-        width: 300,
-        height: ANCHORED_PANEL_MAX_HEIGHT,
-        top,
-      }}
+    <AnchoredLivePopover
+      isOpen={isOpen}
+      anchorEl={isOpen ? anchorEl : null}
+      fixedHeight={ANCHORED_PANEL_MAX_HEIGHT}
     >
       {view === "list" ? (
         <>
@@ -139,17 +130,21 @@ export function LoungePanel({ isOpen, onClose, anchorEl }: LoungePanelProps) {
                 }}
                 className="flex w-full items-center gap-3 border-b border-white/4 px-4 py-3 transition-colors hover:bg-white/5"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-600/30 text-[13px] font-medium text-emerald-300">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#0F766E]/30 bg-[#0F766E]/25 text-[13px] font-medium text-teal-200">
                   {chat.name[0]?.toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1 text-left">
-                  <div className="truncate text-[12px] font-medium text-white/90">{chat.name}</div>
-                  <div className="mt-0.5 truncate text-[10px] text-white/35">{chat.lastMessage}</div>
+                  <div className="truncate text-[12px] font-medium text-white/90">
+                    {chat.name}
+                  </div>
+                  <div className="mt-0.5 truncate text-[10px] text-white/35">
+                    {chat.lastMessage}
+                  </div>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <span className="text-[9px] text-white/25">{chat.time}</span>
                   {chat.unread > 0 ? (
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-medium text-white">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0F766E] text-[9px] font-medium text-white">
                       {chat.unread}
                     </span>
                   ) : null}
@@ -169,10 +164,12 @@ export function LoungePanel({ isOpen, onClose, anchorEl }: LoungePanelProps) {
             >
               <ChevronLeft size={16} />
             </button>
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600/30 text-[11px] font-medium text-emerald-300">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0F766E]/30 text-[11px] font-medium text-teal-200">
               {activeChat?.name[0]?.toUpperCase()}
             </div>
-            <span className="flex-1 text-[12px] font-medium text-white/90">{activeChat?.name}</span>
+            <span className="flex-1 text-[12px] font-medium text-white/90">
+              {activeChat?.name}
+            </span>
             <button
               type="button"
               onClick={onClose}
@@ -190,7 +187,7 @@ export function LoungePanel({ isOpen, onClose, anchorEl }: LoungePanelProps) {
                 className={[
                   "max-w-[80%] rounded-2xl px-3 py-2 text-[12px] leading-relaxed",
                   msg.mine
-                    ? "self-end rounded-br-sm bg-emerald-600/70 text-white"
+                    ? "self-end rounded-br-sm bg-[#0F766E]/80 text-white"
                     : "self-start rounded-bl-sm bg-white/10 text-white/85",
                 ].join(" ")}
               >
@@ -207,7 +204,9 @@ export function LoungePanel({ isOpen, onClose, anchorEl }: LoungePanelProps) {
             ))}
             {!activeChat?.messages?.length ? (
               <div className="flex flex-1 items-center justify-center">
-                <span className="text-[11px] text-white/25">No messages yet · say hello!</span>
+                <span className="text-[11px] text-white/25">
+                  No messages yet · say hello!
+                </span>
               </div>
             ) : null}
           </div>
@@ -220,7 +219,7 @@ export function LoungePanel({ isOpen, onClose, anchorEl }: LoungePanelProps) {
             />
             <button
               type="button"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600 transition-colors hover:bg-emerald-500"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#0F766E] transition-colors hover:bg-[#0d655c]"
               aria-label="Send message"
             >
               <Send size={13} className="text-white" />
@@ -228,6 +227,6 @@ export function LoungePanel({ isOpen, onClose, anchorEl }: LoungePanelProps) {
           </div>
         </>
       )}
-    </div>
+    </AnchoredLivePopover>
   );
 }

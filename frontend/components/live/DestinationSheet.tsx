@@ -26,6 +26,19 @@ export async function searchPlaces(query: string): Promise<NominatimPlace[]> {
   return (await res.json()) as NominatimPlace[];
 }
 
+export function getPlaceName(displayName: string): string {
+  if (!displayName) return "";
+  const parts = displayName.split(",").map((p) => p.trim());
+  if (parts.length > 1) {
+    const firstPart = parts[0];
+    const isNumber = /^\d+[-/a-zA-Z0-9]*$/.test(firstPart) && /[0-9]/.test(firstPart);
+    if (isNumber && parts[1]) {
+      return `${firstPart} ${parts[1]}`;
+    }
+  }
+  return parts[0] || displayName;
+}
+
 export function DestinationSheet({ onClose, onSelect }: DestinationSheetProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<NominatimPlace[]>([]);
@@ -81,7 +94,9 @@ export function DestinationSheet({ onClose, onSelect }: DestinationSheetProps) {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search destination..."
-            className="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-[#0F766E]"
+            autoComplete="off"
+            spellCheck={false}
+            className="live-destination-search-input w-full rounded-xl border border-stone-200 px-3 py-2.5 focus:border-[#0F766E]"
           />
         </div>
 
@@ -107,7 +122,7 @@ export function DestinationSheet({ onClose, onSelect }: DestinationSheetProps) {
                 onSelect({
                   lat: Number.parseFloat(place.lat),
                   lng: Number.parseFloat(place.lon),
-                  name: place.display_name.split(",")[0] || place.display_name,
+                  name: getPlaceName(place.display_name),
                 })
               }
               className="flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-stone-50"
@@ -115,7 +130,7 @@ export function DestinationSheet({ onClose, onSelect }: DestinationSheetProps) {
               <MapPin size={16} className="mt-0.5 shrink-0 text-[#0F766E]" />
               <span>
                 <span className="block text-sm font-medium text-stone-900">
-                  {place.display_name.split(",")[0]}
+                  {getPlaceName(place.display_name)}
                 </span>
                 <span className="mt-0.5 block text-xs text-stone-500">
                   {place.display_name}

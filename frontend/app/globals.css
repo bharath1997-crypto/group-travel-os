@@ -314,6 +314,45 @@ body.live-mode .dashboard-main-live {
   overflow: hidden !important;
 }
 
+body.live-mode .live-page-shell > * {
+  max-width: 100% !important;
+}
+
+/* Live destination search — force readable text on white pill over dark map */
+.live-destination-search-shell {
+  color-scheme: light;
+  background-color: #ffffff;
+}
+
+.live-destination-search-input {
+  flex: 1 1 0%;
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  background-color: #ffffff;
+  color: #1c1917 !important;
+  -webkit-text-fill-color: #1c1917 !important;
+  caret-color: #1c1917;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.25rem;
+  outline: none;
+}
+
+.live-destination-search-input::placeholder {
+  color: #a8a29e !important;
+  -webkit-text-fill-color: #a8a29e !important;
+  opacity: 1;
+}
+
+.live-destination-search-input:-webkit-autofill,
+.live-destination-search-input:-webkit-autofill:hover,
+.live-destination-search-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #1c1917 !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  transition: background-color 9999s ease-out 0s;
+}
+
 @keyframes live-gps-pulse {
   0% {
     transform: scale(1);
@@ -333,6 +372,7 @@ body.live-mode .dashboard-main-live {
   position: relative;
   width: 24px;
   height: 24px;
+  cursor: pointer;
 }
 
 .live-user-pulse {
@@ -375,14 +415,43 @@ body.live-mode .dashboard-main-live {
   display: none;
 }
 
+.live-user-label {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  z-index: 20;
+  border-radius: 9999px;
+  background: rgba(15, 118, 110, 0.96);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.live-user-marker:hover .live-user-label,
+.live-user-marker:focus-visible .live-user-label {
+  opacity: 1;
+  visibility: visible;
+}
+
 .live-member-marker {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
+  cursor: pointer;
 }
 
 .live-member-dot {
+  position: relative;
+  z-index: 1;
   height: 16px;
   width: 16px;
   border-radius: 9999px;
@@ -409,15 +478,32 @@ body.live-mode .dashboard-main-live {
 }
 
 .live-member-label {
-  margin-top: 2px;
-  max-width: 64px;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  z-index: 20;
+  max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 10px;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.94);
+  padding: 4px 10px;
+  font-size: 11px;
   font-weight: 600;
-  color: #1c1917;
-  text-shadow: 0 0 2px #ffffff, 0 0 4px #ffffff;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.live-member-marker:hover .live-member-label,
+.live-member-marker:focus-visible .live-member-label {
+  opacity: 1;
+  visibility: visible;
 }
 
 .live-meeting-point-marker {
@@ -620,12 +706,43 @@ body.live-mode .dashboard-main-live {
 }
 
 .live-traveler-dot {
+  position: relative;
+  z-index: 1;
   height: 12px;
   width: 12px;
   border-radius: 9999px;
   border: 2px solid #ffffff;
   background: #6b7280;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.live-traveler-label {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  z-index: 20;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.94);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.live-traveler-marker:hover .live-traveler-label,
+.live-traveler-marker:focus-visible .live-traveler-label {
+  opacity: 1;
+  visibility: visible;
 }
 
 .live-traveler-cone {

@@ -6,10 +6,13 @@ export const ANCHORED_PANEL_WIDTH = 300;
 export const ANCHORED_PANEL_MAX_HEIGHT = 420;
 
 export function useAnchoredPosition(isOpen: boolean, anchorEl: HTMLElement | null) {
-  const [top, setTop] = useState(0);
+  const [top, setTop] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!isOpen || !anchorEl) return;
+    if (!isOpen || !anchorEl) {
+      setTop(null);
+      return;
+    }
 
     const update = () => {
       const rect = anchorEl.getBoundingClientRect();
@@ -51,7 +54,7 @@ export function AnchoredLivePopover({
 }: AnchoredLivePopoverProps) {
   const top = useAnchoredPosition(isOpen, anchorEl);
 
-  if (!isOpen) return null;
+  if (!isOpen || top === null) return null;
 
   return (
     <div

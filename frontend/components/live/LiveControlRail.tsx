@@ -73,7 +73,7 @@ const LiveControlButton = ({
       className={[
         "relative flex h-11 w-11 items-center justify-center rounded-full border border-white/10 backdrop-blur-xl transition-all duration-150 ease-out",
         active
-          ? "border-emerald-400/40 bg-emerald-500/25 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+          ? "border-[#0F766E]/50 bg-[#0F766E]/25 shadow-[0_0_12px_rgba(15,118,110,0.35)]"
           : "bg-white/8 hover:bg-white/14 active:bg-white/20",
         disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer",
       ].join(" ")}
@@ -159,7 +159,7 @@ export function LiveControlRail({
     },
     {
       id: "wayra",
-      icon: <Mic size={17} className={isListening ? "text-emerald-400" : "text-white/80"} />,
+      icon: <Mic size={17} className={isListening ? "text-teal-300" : "text-white/80"} />,
       label: "Wayra",
       onClick: () => onToolbarTap("wayra"),
       active: activePanel === "wayra" || isListening,
@@ -216,11 +216,12 @@ export function LiveControlRail({
   ];
 
   return (
-    <div className="absolute right-3 top-1/2 z-[22] flex -translate-y-1/2 flex-col items-center gap-2">
+    <div className="pointer-events-auto absolute right-3 top-1/2 z-[22] flex max-h-[min(92dvh,720px)] -translate-y-1/2 flex-col items-center gap-2">
       <div
         className="
-          flex flex-col items-center gap-2 rounded-2xl border border-white/10
-          bg-slate-950/45 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl
+          flex max-h-full flex-col items-center gap-2 overflow-y-auto rounded-2xl border border-white/10
+          bg-[#0F172A]/55 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-xl
+          [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden
         "
       >
         {mainButtons.map((btn) => (

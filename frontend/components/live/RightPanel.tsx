@@ -68,7 +68,7 @@ function getWeatherConfig(code: number) {
 interface RightPanelProps {
   activePanel: string | null;
   anchorEl: HTMLElement | null;
-  setActivePanel: (id: string | null) => void;
+  onClosePanel: () => void;
   weatherDetail: WeatherDetail | null;
   weatherLoading: boolean;
   onRefreshWeather: () => void;
@@ -90,7 +90,7 @@ const PANEL_IDS = new Set(["weather", "notifications", "wayra", "connectivity", 
 export function RightPanel({
   activePanel,
   anchorEl,
-  setActivePanel,
+  onClosePanel,
   weatherDetail,
   weatherLoading,
   onRefreshWeather,
@@ -131,7 +131,7 @@ export function RightPanel({
         <span className="text-[13px] font-medium text-white">{panelTitle}</span>
         <button
           type="button"
-          onClick={() => setActivePanel(null)}
+          onClick={onClosePanel}
           className="text-white/40 transition-colors hover:text-white/70"
           aria-label="Close panel"
         >
@@ -239,7 +239,7 @@ export function RightPanel({
               className={[
                 "flex h-[72px] w-[72px] items-center justify-center rounded-full transition-all",
                 isListening
-                  ? "border-[3px] border-emerald-400/60 bg-[#0F766E]"
+                  ? "border-[3px] border-[#0F766E]/60 bg-[#0F766E]"
                   : "border-2 border-white/10 bg-white/8",
               ].join(" ")}
             >

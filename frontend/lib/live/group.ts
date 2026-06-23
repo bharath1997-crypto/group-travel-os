@@ -44,6 +44,7 @@ export type MemberLiveData = {
   last_seen?: string;
   battery_level?: number;
   status?: QuickStatus | { status?: QuickStatus; updated_at?: string };
+  transport?: "driving" | "bike" | "foot";
 };
 
 export type GeofenceData = {

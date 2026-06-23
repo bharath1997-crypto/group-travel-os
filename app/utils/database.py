@@ -19,8 +19,24 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 
+def _normalize_database_url(url: str) -> str:
+    """
+    Supabase transaction pooler (6543) is incompatible with SQLAlchemy + psycopg2
+    (prepared statements / SSL drops). Session pooler on 5432 works reliably.
+    """
+    parsed = make_url(url)
+    host = parsed.host or ""
+    if parsed.port == 6543 and "pooler.supabase.com" in host:
+        parsed = parsed.set(port=5432)
+        logger.info(
+            "DATABASE_URL uses Supabase transaction pooler (6543); "
+            "switching to session pooler (5432) for SQLAlchemy"
+        )
+    return parsed.render_as_string(hide_password=False)
+
+
 # ── Engine ────────────────────────────────────────────────────────────────────
-_url = make_url(settings.DATABASE_URL)
+_url = make_url(_normalize_database_url(settings.DATABASE_URL))
 _driver = _url.drivername
 _engine_kw: dict = {
     # Log every SQL statement when DEBUG=True. Never enable in production.
@@ -42,16 +58,17 @@ if not _driver.startswith("sqlite"):
             # Max seconds to wait for a free pooled connection.
             "pool_timeout": 30,
             # Timeout for connecting to the database (in seconds).
-            # Allows Supabase wake-from-pause without hanging forever.
             "connect_args": {"connect_timeout": 15},
         },
     )
+    if "supabase.com" in (_url.host or ""):
+        _engine_kw["connect_args"]["sslmode"] = "require"
 # SQLite + Starlette TestClient: requests run in a thread pool on Linux; without this,
 # sqlite3 raises "SQLite objects created in a thread can only be used in that same thread".
 if _driver.startswith("sqlite"):
     _engine_kw["connect_args"] = {"check_same_thread": False}
 
-engine = create_engine(settings.DATABASE_URL, **_engine_kw)
+engine = create_engine(_url, **_engine_kw)
 
 
 # ── Session factory ───────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 "use client";
 
 import { ConvoySheet } from "@/components/live/ConvoySheet";
-import { DestinationSheet, searchPlaces, type NominatimPlace } from "@/components/live/DestinationSheet";
+import { DestinationSheet, searchPlaces, getPlaceName, type NominatimPlace } from "@/components/live/DestinationSheet";
 import { EmergencyContactsSheet } from "@/components/live/EmergencyContactsSheet";
 import { GeofenceSetupSheet } from "@/components/live/GeofenceSetupSheet";
 import { GroupLiveChatButton, GroupLiveChatSheet } from "@/components/live/GroupLiveChatSheet";
@@ -63,6 +63,7 @@ import {
   distanceToRouteLine,
   formatETA,
   routeBounds,
+  formatInstruction,
   type Destination,
   type RouteData,
   type RouteStep,
@@ -90,6 +91,17 @@ import { off, onValue, ref, remove, set, type Database } from "firebase/database
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+// Rovvy Live layout component imports
+import { LiveSidebar } from "@/components/live/LiveSidebar";
+import { LiveTopBar } from "@/components/live/LiveTopBar";
+import { LiveRightPanel } from "@/components/live/LiveRightPanel";
+import { LiveBottomStrip } from "@/components/live/LiveBottomStrip";
+import { TransportModeModal } from "@/components/live/TransportModeModal";
+import { GroupPulse } from "@/components/live/GroupPulse";
+import { ActiveNavBanner } from "@/components/live/ActiveNavBanner";
+import { SpeedDisplay } from "@/components/live/SpeedDisplay";
+import { MapFilterPills } from "@/components/live/MapFilterPills";
 
 const OSM_MAX_ZOOM = 19;
 
@@ -903,7 +915,22 @@ export default function LivePage() {
   const [sheetHeight, setSheetHeight] = useState<SheetHeight>("peek");
   const [sheetTab, setSheetTab] = useState<SheetTab>("reports");
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [mapStyleMode, setMapStyleMode] = useState<MapStyleMode>("auto");
+  const [mapStyleMode, setMapStyleMode] = useState<MapStyleMode>("light");
+  
+  // New layout states for Live Trip v2
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeSidebarTab, setActiveSidebarTab] = useState("live");
+  const [activeModeSelector, setActiveModeSelector] = useState<"driving" | "bike" | "trek" | "walk">("driving");
+  const [activeMapFilters, setActiveMapFilters] = useState<Set<"traffic" | "alerts" | "cameras" | "hazards" | "weather" | "more">>(
+    new Set(["traffic", "alerts", "cameras"])
+  );
+
+  useEffect(() => {
+    // Show transport mode modal on first load if not selected
+    if (!transportModeSelected) {
+      setShowTransportModal(true);
+    }
+  }, [transportModeSelected]);
   const [activePanel, setActivePanel] = useState<LiveRailButtonId | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatTarget, setChatTarget] = useState<{
@@ -3684,10 +3711,10 @@ export default function LivePage() {
     const container = mapContainerRef.current;
     if (!container) return;
 
-    const initialDark = isNightMode(
+    const initialDark = mapStyleMode === "dark" || (mapStyleMode === "auto" && isNightMode(
       sunCoordsRef.current.lat,
       sunCoordsRef.current.lng,
-    );
+    ));
     isDarkRef.current = initialDark;
 
     const map = new maplibregl.Map({
@@ -4336,764 +4363,567 @@ export default function LivePage() {
     ? REPORT_CONFIG[routeHazardBanner.report.report_type]
     : null;
 
-  return (
+    return (
     <div
-      className="fixed inset-0 z-[100] h-[100dvh] w-full overflow-hidden bg-stone-900"
+      className="fixed inset-0 z-[100] h-[100dvh] w-full overflow-hidden bg-slate-100 flex text-stone-800"
       style={{ margin: 0, padding: 0 }}
     >
-      <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" />
+      {/* 1. Sidebar */}
+      {!driverMode && (
+        <LiveSidebar
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+          tripName={tripName}
+          tripMembers={tripMembers}
+          memberLive={memberLive}
+          memberStatuses={memberStatuses}
+          convoy={convoy}
+          nextMeetup={meetingPoint}
+          onNavigateMeetup={() => {
+            if (meetingPoint) {
+              const place = {
+                name: meetingPoint.label,
+                lat: meetingPoint.lat,
+                lng: meetingPoint.lng,
+              };
+              setDestination(place);
+              destinationRef.current = place;
+              if (currentLatRef.current != null && currentLngRef.current != null) {
+                void fetchRoute(currentLatRef.current, currentLngRef.current, place);
+              }
+            }
+          }}
+          onInviteMembers={() => {
+            if (validTripId) {
+              const inviteLink = `${window.location.origin}/trips/${validTripId}`;
+              void navigator.clipboard.writeText(inviteLink).then(() => {
+                showToastMessage("Trip invite link copied!");
+              });
+            } else {
+              showToastMessage("Invite is only available in Group Trip mode");
+            }
+          }}
+          isDarkMode={mapStyleMode === "dark"}
+          onToggleDarkMode={cycleMapStyle}
+          activeTab={activeSidebarTab}
+          onTabChange={(tab) => {
+            setActiveSidebarTab(tab);
+            if (tab === "chat") {
+              setShowGroupChat(true);
+            }
+          }}
+          onOpenWayra={() => setShowWayra(true)}
+        />
+      )}
 
-      {driverMode ? (
-        <DriverModeOverlay
-          currentStep={route?.steps[activeStepIndex] ?? null}
-          nextStep={route?.steps[activeStepIndex + 1] ?? null}
-          distanceToNextTurn={distanceToNextTurn}
-          currentSpeed={speedMph}
-          speedLimit={speedLimitMph}
-          roadName={roadName}
-          activeAlert={routeAlert}
-          cameraAlert={cameraAlert}
-          destination={destination}
-          navigationActive={navigationActive}
-          eta={route ? formatETA(route.total_duration_s) : null}
-          arrived={arrivalBanner}
-          voiceMuted={voiceMuted}
-          onToggleMute={toggleVoiceMute}
-          wayraListening={driverWayraListening}
-          onExitDriverMode={() => setDriverMode(false)}
-          onWayraTap={handleDriverModeWayra}
-          onSOSPressStart={handleSOSPressStart}
-          onSOSPressEnd={handleSOSPressEnd}
-          sosHoldProgress={sosHoldProgress}
-          highwayExit={highwayExit}
-          upcomingAlert={upcomingAlert?.message ?? null}
-          transportMode={transportMode}
-          onTransportModeChange={(mode) => {
-            setTransportMode(mode);
-            transportModeRef.current = mode;
-            writeUserLocation(
-              currentLatRef.current ?? 0,
-              currentLngRef.current ?? 0,
-              currentBearingRef.current,
-              currentSpeedRef.current
-            );
+      {/* 2. Main content area */}
+      <div className="flex flex-1 flex-col overflow-hidden relative">
+        {!driverMode && (
+          <LiveTopBar
+            tripName={tripName}
+            totalMembers={tripMembers.length}
+            totalVehicles={3}
+            onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+            activeMode={activeModeSelector}
+            onModeChange={(mode) => {
+              setActiveModeSelector(mode);
+              const osrmMode = mode === "walk" || mode === "trek" ? "foot" : mode === "bike" ? "bike" : "driving";
+              setTransportMode(osrmMode);
+              transportModeRef.current = osrmMode;
+              writeUserLocation(
+                currentLatRef.current ?? 0,
+                currentLngRef.current ?? 0,
+                currentBearingRef.current,
+                currentSpeedRef.current
+              );
+              if (destination) {
+                void fetchRoute(
+                  currentLatRef.current ?? 0,
+                  currentLngRef.current ?? 0,
+                  destination,
+                  { fitBounds: false }
+                );
+              }
+            }}
+            weather={weather}
+            userAvatarUrl={dashboardUser?.avatar_url}
+            userName={currentUserName}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            searchResults={searchResults}
+            searchLoading={searchLoading}
+            showSearchDropdown={showSearchDropdown}
+            setShowSearchDropdown={setShowSearchDropdown}
+            onSelectPlace={(place) => {
+              const lat = parseFloat(place.lat);
+              const lng = parseFloat(place.lon);
+              const name = getPlaceName(place.display_name);
+              const destObj = { lat, lng, name };
+              setDestination(destObj);
+              destinationRef.current = destObj;
+              if (currentLatRef.current != null && currentLngRef.current != null) {
+                void fetchRoute(currentLatRef.current, currentLngRef.current, destObj);
+              }
+            }}
+            searchInputRef={searchInputRef}
+            routeLoading={routeLoading}
+            destination={destination}
+            clearNavigation={clearNavigation}
+            getPlaceName={getPlaceName}
+          />
+        )}
+
+        {/* Inner Map/Dashboard section */}
+        <div className="flex flex-1 overflow-hidden relative">
+          {/* Map view wrapper */}
+          <div className="flex flex-1 flex-col overflow-hidden relative">
+            <div className="flex-1 relative min-h-0">
+              {/* Map container */}
+              <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" />
+              
+              {/* Overlays on map */}
+              {driverMode ? (
+                <DriverModeOverlay
+                  currentStep={route?.steps[activeStepIndex] ?? null}
+                  nextStep={route?.steps[activeStepIndex + 1] ?? null}
+                  distanceToNextTurn={distanceToNextTurn}
+                  currentSpeed={speedMph}
+                  speedLimit={speedLimitMph}
+                  roadName={roadName}
+                  activeAlert={routeAlert}
+                  cameraAlert={cameraAlert}
+                  destination={destination}
+                  onExitDriverMode={() => setDriverMode(false)}
+                  onWayraTap={toggleVoiceListening}
+                  onSOSPressStart={handleSOSPressStart}
+                  onSOSPressEnd={handleSOSPressEnd}
+                  sosHoldProgress={sosHoldProgress}
+                  navigationActive={!!route}
+                  eta={route ? formatETA(route.total_duration_s) : null}
+                  voiceMuted={voiceMuted}
+                  onToggleMute={toggleVoiceMute}
+                  wayraListening={driverWayraListening}
+                  arrived={arrivalBanner}
+                />
+              ) : null}
+
+              {driverModeBanner ? (
+                <div className="pointer-events-none absolute inset-x-0 top-[max(1rem,env(safe-area-inset-top))] z-[200] flex justify-center">
+                  <div className="rounded-xl bg-teal-800 px-4 py-3 text-center text-sm font-semibold text-white shadow-xl">
+                    Driver Mode Active
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Map filters pill */}
+              {!driverMode && (
+                <MapFilterPills
+                  activeFilters={activeMapFilters}
+                  onToggleFilter={(filterId) => {
+                    setActiveMapFilters((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(filterId)) {
+                        next.delete(filterId);
+                      } else {
+                        next.add(filterId);
+                      }
+                      return next;
+                    });
+                  }}
+                />
+              )}
+
+              {/* Group Pulse indicator */}
+              {!driverMode && !sidebarOpen && (
+                <div className="absolute left-3 top-16 z-[110]">
+                  <GroupPulse
+                    totalMembers={tripMembers.length}
+                    totalVehicles={3}
+                    movingCount={6}
+                    stoppedCount={1}
+                    offlineCount={1}
+                  />
+                </div>
+              )}
+
+              {/* Navigation Instruction Bar */}
+              {!driverMode && route && destination && (
+                <ActiveNavBanner
+                  distanceText={distanceToNextTurn > 0 ? `${(distanceToNextTurn * 0.000621371).toFixed(1)} mi` : "0.8 mi"}
+                  maneuverType={route.steps[activeStepIndex] ? formatInstruction(route.steps[activeStepIndex]) : "Continue to destination"}
+                  roadName={roadName || "US-24 W"}
+                />
+              )}
+
+              {/* Speed limit display bubble */}
+              {!driverMode && destination && (
+                <SpeedDisplay
+                  currentSpeedMph={speedMph}
+                  speedLimitMph={speedLimitMph}
+                  etaTimeText={route ? formatETA(route.total_duration_s) : "2:15 PM"}
+                  durationText={route ? `${Math.round(route.total_duration_s / 60)} min` : "2h 15m"}
+                  distanceText={route ? `${(route.total_distance_m * 0.000621371).toFixed(1)} mi` : "118 mi"}
+                />
+              )}
+
+              {/* Safety alerts banner */}
+              {sosBanner ? (
+                <div className="pointer-events-none absolute left-3 right-3 top-16 z-[130]">
+                  <div className="rounded-xl bg-red-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+                    SOS activated — alerting your group
+                  </div>
+                </div>
+              ) : null}
+
+              {settingMeetingPoint ? (
+                <div className="pointer-events-none absolute left-3 right-3 top-16 z-[130]">
+                  <div className="rounded-xl bg-teal-700 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+                    Tap anywhere on the map to set meeting point
+                  </div>
+                </div>
+              ) : null}
+
+              {settingGeofence ? (
+                <div className="pointer-events-none absolute left-3 right-3 top-16 z-[130]">
+                  <div className="rounded-xl bg-teal-700 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+                    Tap anywhere on the map to set safe zone center
+                  </div>
+                </div>
+              ) : null}
+
+              {safetyBanner ? (
+                <div className="pointer-events-none absolute left-3 right-3 top-16 z-[130]">
+                  <div
+                    className={`rounded-xl px-4 py-3 text-center text-sm font-semibold text-white shadow-lg ${
+                      safetyBanner.tone === "red" ? "bg-red-600" : "bg-amber-500"
+                    }`}
+                  >
+                    {safetyBanner.message}
+                  </div>
+                </div>
+              ) : null}
+
+              {wayraAlert ? (
+                <div className="pointer-events-auto absolute left-3 right-3 top-28 z-[130]">
+                  <div
+                    className={`flex items-start gap-3 rounded-xl px-4 py-3 text-white shadow-lg ${
+                      wayraAlert.severity === "danger"
+                        ? "bg-red-600"
+                        : wayraAlert.severity === "warning"
+                          ? "bg-amber-500"
+                          : "bg-[#0F766E]"
+                    }`}
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm font-bold">
+                      W
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold">{wayraAlert.message}</p>
+                      {wayraAlert.action ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (wayraAlert.action === "open_navigation") {
+                              focusSearchInput();
+                            } else if (wayraAlert.action === "open_poi_search") {
+                              setShowPoiSearch(true);
+                            }
+                            setWayraAlert(null);
+                          }}
+                          className="mt-2 rounded-lg bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30"
+                        >
+                          {wayraAlert.action === "open_navigation"
+                            ? "Open navigation"
+                            : "Search nearby"}
+                        </button>
+                      ) : null}
+                    </div>
+                    {wayraAlert.severity === "danger" ? (
+                      <button
+                        type="button"
+                        aria-label="Dismiss alert"
+                        onClick={() => setWayraAlert(null)}
+                        className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold hover:bg-white/20"
+                      >
+                        Dismiss
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
+              {convoyBanner ? (
+                <div className="pointer-events-none absolute left-3 right-3 top-16 z-[130]">
+                  <div className="rounded-xl bg-[#0F766E] px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+                    {convoyBanner}
+                  </div>
+                </div>
+              ) : null}
+
+              {meetingArrivalBanner ? (
+                <div className="pointer-events-none absolute left-3 right-3 top-16 z-[130]">
+                  <div className="rounded-xl bg-green-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+                    {meetingArrivalBanner}
+                  </div>
+                </div>
+              ) : null}
+
+              {everyoneArrivedBanner ? (
+                <div className="pointer-events-none absolute left-3 right-3 top-24 z-[130]">
+                  <div className="rounded-xl bg-green-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+                    Everyone has arrived! 🎉
+                  </div>
+                </div>
+              ) : null}
+
+              {arrivalBanner ? (
+                <div className="pointer-events-none absolute left-3 right-3 top-16 z-[130]">
+                  <div className="rounded-xl bg-green-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+                    You have arrived!
+                  </div>
+                </div>
+              ) : null}
+
+              {recalculatingBanner ? (
+                <div className="pointer-events-none absolute left-3 right-3 top-16 z-[130]">
+                  <div className="rounded-xl bg-amber-500 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
+                    Recalculating…
+                  </div>
+                </div>
+              ) : null}
+
+              {hazardBanner && hazardConfig ? (
+                <div className="pointer-events-none absolute left-3 right-3 top-24">
+                  <div className="rounded-xl bg-gradient-to-r from-orange-600 to-red-600 px-4 py-3 text-white shadow-lg">
+                    <p className="text-sm font-semibold">
+                      {hazardConfig.emoji} {hazardConfig.label} ·{" "}
+                      {formatDistance(hazardBanner.distanceM)} ·{" "}
+                      {minutesAgo(hazardBanner.report.created_at) === 0
+                        ? "just now"
+                        : `${minutesAgo(hazardBanner.report.created_at)} min ago`}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
+              {cameraAlert ? (
+                <div
+                  className={`pointer-events-none absolute left-3 right-3 z-[125] ${
+                    hazardBanner ? "top-32" : "top-24"
+                  }`}
+                >
+                  <div
+                    className={`rounded-xl px-4 py-3 text-white shadow-lg ${
+                      cameraAlert.tier === "immediate"
+                        ? "bg-red-600"
+                        : cameraAlert.tier === "warning"
+                          ? "bg-amber-500"
+                          : "bg-stone-600"
+                    } ${cameraAlert.over_limit ? "live-camera-banner-flash" : ""}`}
+                  >
+                    <p className="text-sm font-semibold">📷 {cameraAlert.message}</p>
+                  </div>
+                </div>
+              ) : null}
+
+              {routeAlert ? (
+                <div
+                  className={`pointer-events-none absolute left-3 right-3 z-[125] ${
+                    hazardBanner ? "top-32" : "top-24"
+                  }`}
+                >
+                  <div
+                    className={`rounded-xl px-4 py-3 text-white shadow-lg ${
+                      routeAlert.tier === "immediate"
+                        ? "bg-red-600"
+                        : "bg-amber-500"
+                    }`}
+                  >
+                    <p className="text-sm font-semibold">{routeAlert.message}</p>
+                  </div>
+                </div>
+              ) : null}
+
+              {routeHazardBanner && routeHazardConfig ? (
+                <div className="pointer-events-none absolute left-3 right-3 top-24">
+                  <div className="rounded-xl bg-amber-500 px-4 py-3 text-white shadow-lg">
+                    <p className="text-sm font-semibold">
+                      {routeHazardConfig.emoji} {routeHazardConfig.label} ahead on your route —{" "}
+                      {formatDistance(routeHazardBanner.distanceM)} away
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
+              {selectedCamera ? (
+                <div className="pointer-events-auto absolute bottom-40 left-1/2 z-30 w-[min(90%,20rem)] -translate-x-1/2 rounded-xl bg-[rgba(15,23,42,0.92)] px-4 py-3 text-white shadow-lg">
+                  <p className="text-sm font-semibold">📷 Speed camera</p>
+                  <p className="mt-1 text-xs text-white/80">
+                    {selectedCamera.max_speed_mph != null
+                      ? `Limit ${selectedCamera.max_speed_mph} mph`
+                      : "Fixed speed enforcement"}
+                    {selectedCamera.direction ? ` · ${selectedCamera.direction}` : ""}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCamera(null)}
+                    className="mt-2 text-xs font-semibold text-[#5EEAD4]"
+                  >
+                    Close
+                  </button>
+                </div>
+              ) : null}
+
+              {/* Quick Report Button */}
+              {!driverMode && (
+                <button
+                  type="button"
+                  onClick={handleReportButton}
+                  className="pointer-events-auto absolute bottom-24 left-4 z-20 flex items-center gap-2 rounded-full bg-[#0F766E] px-4 py-2.5 shadow-lg transition hover:bg-[#0d655c]"
+                >
+                  <AlertCircle className="h-4 w-4 text-white" aria-hidden />
+                  <span className="text-sm font-medium text-white">Report</span>
+                </button>
+              )}
+
+              {/* SOS Silent Trigger Button */}
+              {!isGuest && !driverMode ? (
+                <button
+                  type="button"
+                  onClick={() => void triggerSOS()}
+                  style={{
+                    position: "absolute",
+                    left: 16,
+                    bottom: 84,
+                    zIndex: 18,
+                    background: "none",
+                    border: "none",
+                    color: "rgba(0,0,0,0.4)",
+                    fontSize: 10,
+                    cursor: "pointer",
+                    padding: 4,
+                  }}
+                >
+                  SOS
+                </button>
+              ) : null}
+
+              {/* Real-time Address Popup for Selected Member */}
+              {selectedMemberCard && (
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl p-6 z-[250] max-w-sm w-full border border-stone-100 flex flex-col items-center">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMemberCard(null)}
+                    className="absolute top-3 right-3 text-stone-400 hover:text-stone-600 rounded-full hover:bg-stone-50 p-1"
+                  >
+                    <X size={16} />
+                  </button>
+                  <div className="relative">
+                    {(selectedMemberCard.member as any).avatar_url ? (
+                      <img
+                        src={(selectedMemberCard.member as any).avatar_url}
+                        alt={selectedMemberCard.member.display_name}
+                        className="w-16 h-16 rounded-full object-cover border-2 border-teal-500 shadow-md"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center border-2 border-teal-500 shadow-md">
+                        <span className="text-xl font-bold text-teal-700">
+                          {selectedMemberCard.member.display_name.slice(0, 2).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <span className="absolute bottom-0 right-0 w-4 h-4 bg-teal-500 border-2 border-white rounded-full" />
+                  </div>
+                  <h3 className="text-lg font-bold text-stone-900 mt-3">
+                    {selectedMemberCard.member.display_name}
+                  </h3>
+                  <div className="bg-stone-50 rounded-xl px-4 py-2 mt-2 w-full text-center">
+                    <p className="text-xs text-stone-500">Real-time Location</p>
+                    <p className="text-sm font-semibold text-stone-800 mt-1 whitespace-pre-wrap select-all">
+                      {memberCardAddress || "No address found"}
+                    </p>
+                  </div>
+                  <div className="flex gap-4 mt-4 w-full">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedMemberCard(null);
+                        setActiveVoiceCallMember(selectedMemberCard.member);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 bg-[#0F766E] text-white py-2 rounded-xl text-sm font-semibold hover:bg-[#0d655c] transition"
+                    >
+                      <Phone size={14} /> Call
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedMemberCard(null);
+                        setShowGroupChat(true);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 bg-stone-100 text-stone-700 py-2 rounded-xl text-sm font-semibold hover:bg-stone-200 transition"
+                    >
+                      <MessageSquare size={14} /> Message
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Controls / Strip */}
+            {!driverMode && (
+              <LiveBottomStrip
+                alerts={routeAlert ? [routeAlert] : []}
+                cameras={cameraAlert ? [cameraAlert] : []}
+              />
+            )}
+          </div>
+
+          {!driverMode && (
+            <LiveRightPanel
+              onQuickAction={(actionId) => {
+                if (actionId === "group_call") {
+                  toggleLounge();
+                } else if (actionId === "send_alert") {
+                  setShowReportTypes(true);
+                } else if (actionId === "weather") {
+                  setActivePanel("weather");
+                }
+              }}
+              onOpenSOS={() => {
+                void triggerSOS();
+              }}
+              onOpenMeetupSetup={() => {
+                setShowGeofenceSetup(true);
+              }}
+              onOpenLocationShare={() => {
+                void shareSpectator();
+              }}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Global Modals / Dialogs / Overlay sheets */}
+      {showTransportModal && (
+        <TransportModeModal
+          isOpen={showTransportModal}
+          onSelect={(mode) => {
+            const osrmMode = mode;
+            setTransportMode(osrmMode);
+            transportModeRef.current = osrmMode;
+            setTransportModeSelected(true);
+            setShowTransportModal(false);
             if (destination) {
               void fetchRoute(
                 currentLatRef.current ?? 0,
                 currentLngRef.current ?? 0,
                 destination,
-                { fitBounds: false }
+                { fitBounds: true }
               );
             }
           }}
-          availableRoutes={availableRoutes}
-          selectedRouteIndex={selectedRouteIndex}
-          onSelectRouteIndex={(index) => {
-            setSelectedRouteIndex(index);
-            setRoute(availableRoutes[index]);
-            routeRef.current = availableRoutes[index];
-            const map = mapRef.current;
-            if (map) {
-              ensureMultipleRoutesLayer(map, availableRoutes, index);
-            }
-          }}
-          routeTolls={routeTolls}
         />
-      ) : null}
-
-      {driverModeBanner ? (
-        <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.25rem)] z-[150]">
-          <div className="rounded-xl bg-green-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
-            Driver mode — hands-free active
-          </div>
-        </div>
-      ) : null}
-
-      <div className="pointer-events-none absolute inset-0 z-10">
-        {!driverMode ? (
-          <>
-        <div className="pointer-events-none absolute left-3 right-3 top-[max(0.75rem,env(safe-area-inset-top))] flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => void handleLeaveLive()}
-            className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-[rgba(15,23,42,0.82)] px-3 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition hover:bg-[rgba(15,23,42,0.92)]"
-            aria-label="Go back"
-          >
-            <ChevronLeft size={18} strokeWidth={2.5} className="text-white" />
-            <span className="text-[#5EEAD4]">LIVE</span>
-          </button>
-
-          <div className="pointer-events-auto flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setDriverMode(true)}
-              className="rounded-full bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition hover:bg-[#0d655c]"
-            >
-              Drive
-            </button>
-            <Link
-              href="/live/history"
-              className="rounded-full bg-[rgba(15,23,42,0.82)] px-3 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition hover:bg-[rgba(15,23,42,0.92)]"
-            >
-              History
-            </Link>
-            {!isGuest && sessionId && activeSpectatorCount > 0 ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(15,23,42,0.82)] px-3 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur-sm">
-                <Eye size={14} />
-                {activeSpectatorCount} watching
-              </span>
-            ) : null}
-            <span
-              className={`h-2.5 w-2.5 rounded-full ${
-                continuousVoiceActive ? "bg-green-500" : "bg-stone-500"
-              }`}
-              aria-hidden
-            />
-            <button
-              type="button"
-              onClick={toggleVoiceMute}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(15,23,42,0.82)] text-white shadow-lg backdrop-blur-sm transition hover:bg-[rgba(15,23,42,0.92)]"
-              aria-label={voiceMuted ? "Unmute Wayra voice" : "Mute Wayra voice"}
-            >
-              {voiceMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-            </button>
-            {!isGuest && sessionId ? (
-              <button
-                type="button"
-                onClick={() => void shareSpectator()}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(15,23,42,0.82)] text-white shadow-lg backdrop-blur-sm transition hover:bg-[rgba(15,23,42,0.92)]"
-                aria-label="Share live trip"
-              >
-                <Share2 size={18} />
-              </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => setShowPoiSearch(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(15,23,42,0.82)] text-white shadow-lg backdrop-blur-sm transition hover:bg-[rgba(15,23,42,0.92)]"
-              aria-label="Search nearby places"
-            >
-              <Search size={18} />
-            </button>
-          </div>
-        </div>
-
-        {sosBanner ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.25rem)] z-[130]">
-            <div className="rounded-xl bg-red-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
-              SOS activated — alerting your group
-            </div>
-          </div>
-        ) : null}
-
-        {groupMode && !driverMode ? (
-          <button
-            type="button"
-            onClick={() => setGroupPanelOpen((open) => !open)}
-            className="pointer-events-auto absolute left-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.5rem)] z-[18] rounded-full bg-[rgba(15,23,42,0.82)] px-3 py-2 text-xs font-semibold text-white shadow-lg"
-          >
-            Group ({tripMembers.length})
-          </button>
-        ) : null}
-
-        {settingMeetingPoint ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
-            <div className="rounded-xl bg-teal-700 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
-              Tap anywhere on the map to set meeting point
-            </div>
-          </div>
-        ) : null}
-
-        {settingGeofence ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
-            <div className="rounded-xl bg-teal-700 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
-              Tap anywhere on the map to set safe zone center
-            </div>
-          </div>
-        ) : null}
-
-        {safetyBanner ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
-            <div
-              className={`rounded-xl px-4 py-3 text-center text-sm font-semibold text-white shadow-lg ${
-                safetyBanner.tone === "red" ? "bg-red-600" : "bg-amber-500"
-              }`}
-            >
-              {safetyBanner.message}
-            </div>
-          </div>
-        ) : null}
-
-        {wayraAlert ? (
-          <div className="pointer-events-auto absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+9.5rem)] z-[130]">
-            <div
-              className={`flex items-start gap-3 rounded-xl px-4 py-3 text-white shadow-lg ${
-                wayraAlert.severity === "danger"
-                  ? "bg-red-600"
-                  : wayraAlert.severity === "warning"
-                    ? "bg-amber-500"
-                    : "bg-[#0F766E]"
-              }`}
-            >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm font-bold">
-                W
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">{wayraAlert.message}</p>
-                {wayraAlert.action ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (wayraAlert.action === "open_navigation") {
-                        focusSearchInput();
-                      } else if (wayraAlert.action === "open_poi_search") {
-                        setShowPoiSearch(true);
-                      }
-                      setWayraAlert(null);
-                    }}
-                    className="mt-2 rounded-lg bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30"
-                  >
-                    {wayraAlert.action === "open_navigation"
-                      ? "Open navigation"
-                      : "Search nearby"}
-                  </button>
-                ) : null}
-              </div>
-              {wayraAlert.severity === "danger" ? (
-                <button
-                  type="button"
-                  aria-label="Dismiss alert"
-                  onClick={() => setWayraAlert(null)}
-                  className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold hover:bg-white/20"
-                >
-                  Dismiss
-                </button>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-
-        {convoyBanner ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
-            <div className="rounded-xl bg-[#0F766E] px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
-              {convoyBanner}
-            </div>
-          </div>
-        ) : null}
-
-        {meetingArrivalBanner ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
-            <div className="rounded-xl bg-green-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
-              {meetingArrivalBanner}
-            </div>
-          </div>
-        ) : null}
-
-        {everyoneArrivedBanner ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+9rem)] z-[130]">
-            <div className="rounded-xl bg-green-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
-              Everyone has arrived! 🎉
-            </div>
-          </div>
-        ) : null}
-
-        {!driverMode ? (
-          <div
-            className="pointer-events-none absolute left-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.25rem)] z-[125] flex flex-col w-[min(380px,calc(100%-1.5rem))]"
-          >
-            {showSearchDropdown ? (
-              <div
-                className="fixed inset-0 z-0 pointer-events-auto cursor-default"
-                onClick={() => setShowSearchDropdown(false)}
-              />
-            ) : null}
-            <div className="relative z-10 pointer-events-auto flex items-center gap-2 rounded-full bg-white border border-stone-200 px-4 py-2.5 text-left text-sm text-stone-800 shadow-md transition focus-within:ring-2 focus-within:ring-[#0F766E]/20">
-              <MapPin size={16} className="shrink-0 text-[#0F766E]" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setShowSearchDropdown(true);
-                }}
-                onFocus={(e) => {
-                  if (groupMode && convoy?.active && !isGroupAdmin) {
-                    showToastMessage("Convoy is active — follow the group route");
-                    e.target.blur();
-                    return;
-                  }
-                  setShowSearchDropdown(true);
-                }}
-                placeholder="Search destination..."
-                className="w-full bg-transparent text-sm text-stone-900 placeholder-stone-400 outline-none"
-              />
-              {routeLoading || searchLoading ? (
-                <Loader2 size={14} className="ml-auto animate-spin text-[#0F766E] shrink-0" />
-              ) : null}
-              {searchQuery ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery("");
-                    setSearchResults([]);
-                    setShowSearchDropdown(false);
-                    if (destination) {
-                      clearNavigation();
-                    }
-                  }}
-                  className="ml-1 rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700 shrink-0 transition"
-                  aria-label="Clear search"
-                >
-                  <X size={14} />
-                </button>
-              ) : null}
-            </div>
-
-            {showSearchDropdown && (searchQuery.trim().length >= 2 || searchResults.length > 0) ? (
-              <div className="relative z-10 mt-2 max-h-60 w-full overflow-y-auto rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-black/5 pointer-events-auto">
-                {searchLoading && searchResults.length === 0 ? (
-                  <div className="flex items-center justify-center gap-2 py-4 text-xs text-stone-500">
-                    <Loader2 size={12} className="animate-spin text-[#0F766E]" />
-                    Searching…
-                  </div>
-                ) : null}
-                {!searchLoading && searchQuery.trim().length >= 2 && searchResults.length === 0 ? (
-                  <div className="px-3 py-4 text-center text-xs text-stone-500">
-                    No places found.
-                  </div>
-                ) : null}
-                {searchResults.map((place) => (
-                  <button
-                    key={`${place.lat}-${place.lon}-${place.display_name}`}
-                    type="button"
-                    onClick={() => {
-                      handleDestinationSelect({
-                        lat: Number.parseFloat(place.lat),
-                        lng: Number.parseFloat(place.lon),
-                        name: place.display_name.split(",")[0] || place.display_name,
-                      });
-                      setSearchQuery(place.display_name.split(",")[0] || place.display_name);
-                      setShowSearchDropdown(false);
-                    }}
-                    className="flex w-full items-start gap-2.5 rounded-xl px-3 py-2.5 text-left transition hover:bg-stone-50"
-                  >
-                    <MapPin size={14} className="mt-0.5 shrink-0 text-[#0F766E]" />
-                    <div className="min-w-0 flex-1">
-                      <span className="block truncate text-xs font-semibold text-stone-900">
-                        {place.display_name.split(",")[0]}
-                      </span>
-                      <span className="block truncate text-[10px] text-stone-500">
-                        {place.display_name}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-
-        {arrivalBanner ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
-            <div className="rounded-xl bg-green-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
-              You have arrived!
-            </div>
-          </div>
-        ) : null}
-
-        {recalculatingBanner ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)] z-[130]">
-            <div className="rounded-xl bg-amber-500 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg">
-              Recalculating…
-            </div>
-          </div>
-        ) : null}
-
-        {hazardBanner && hazardConfig ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+9rem)]">
-            <div className="rounded-xl bg-gradient-to-r from-orange-600 to-red-600 px-4 py-3 text-white shadow-lg">
-              <p className="text-sm font-semibold">
-                {hazardConfig.emoji} {hazardConfig.label} ·{" "}
-                {formatDistance(hazardBanner.distanceM)} ·{" "}
-                {minutesAgo(hazardBanner.report.created_at) === 0
-                  ? "just now"
-                  : `${minutesAgo(hazardBanner.report.created_at)} min ago`}
-              </p>
-            </div>
-          </div>
-        ) : null}
-
-        {cameraAlert ? (
-          <div
-            className={`pointer-events-none absolute left-3 right-3 z-[125] ${
-              hazardBanner ? "top-[calc(max(0.75rem,env(safe-area-inset-top))+12rem)]" : "top-[calc(max(0.75rem,env(safe-area-inset-top))+9rem)]"
-            }`}
-          >
-            <div
-              className={`rounded-xl px-4 py-3 text-white shadow-lg ${
-                cameraAlert.tier === "immediate"
-                  ? "bg-red-600"
-                  : cameraAlert.tier === "warning"
-                    ? "bg-amber-500"
-                    : "bg-stone-600"
-              } ${cameraAlert.over_limit ? "live-camera-banner-flash" : ""}`}
-            >
-              <p className="text-sm font-semibold">📷 {cameraAlert.message}</p>
-            </div>
-          </div>
-        ) : null}
-
-        {routeAlert ? (
-          <div
-            className={`pointer-events-none absolute left-3 right-3 z-[125] ${
-              hazardBanner ? "top-[calc(max(0.75rem,env(safe-area-inset-top))+12rem)]" : "top-[calc(max(0.75rem,env(safe-area-inset-top))+9rem)]"
-            }`}
-          >
-            <div
-              className={`rounded-xl px-4 py-3 text-white shadow-lg ${
-                routeAlert.tier === "immediate"
-                  ? "bg-red-600"
-                  : "bg-amber-500"
-              }`}
-            >
-              <p className="text-sm font-semibold">{routeAlert.message}</p>
-            </div>
-          </div>
-        ) : null}
-
-        {routeHazardBanner && routeHazardConfig ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+9rem)]">
-            <div className="rounded-xl bg-amber-500 px-4 py-3 text-white shadow-lg">
-              <p className="text-sm font-semibold">
-                {routeHazardConfig.emoji} {routeHazardConfig.label} ahead on your route —{" "}
-                {formatDistance(routeHazardBanner.distanceM)} away
-              </p>
-            </div>
-          </div>
-        ) : null}
-
-        <button
-          type="button"
-          onClick={handleReportButton}
-          className="pointer-events-auto absolute bottom-36 left-4 z-20 flex items-center gap-2 rounded-full bg-[#0F766E] px-4 py-2 shadow-lg transition hover:bg-[#0d655c]"
-        >
-          <AlertCircle className="h-4 w-4 text-white" aria-hidden />
-          <span className="text-sm font-medium text-white">Report</span>
-        </button>
-
-        {!isGuest ? (
-          <button
-            type="button"
-            onClick={() => void triggerSOS()}
-            style={{
-              position: "absolute",
-              left: 12,
-              bottom: 140,
-              zIndex: 18,
-              background: "none",
-              border: "none",
-              color: "rgba(255,255,255,0.5)",
-              fontSize: 10,
-              cursor: "pointer",
-              padding: 4,
-            }}
-          >
-            SOS
-          </button>
-        ) : null}
-
-        {groupMode && firebaseDb && validTripId && currentUserId ? (
-          <GroupLiveChatButton onClick={() => setShowGroupChat(true)} />
-        ) : null}
-
-        {selectedCamera ? (
-          <div className="pointer-events-auto absolute bottom-40 left-1/2 z-30 w-[min(90%,20rem)] -translate-x-1/2 rounded-xl bg-[rgba(15,23,42,0.92)] px-4 py-3 text-white shadow-lg">
-            <p className="text-sm font-semibold">📷 Speed camera</p>
-            <p className="mt-1 text-xs text-white/80">
-              {selectedCamera.max_speed_mph != null
-                ? `Limit ${selectedCamera.max_speed_mph} mph`
-                : "Fixed speed enforcement"}
-              {selectedCamera.direction ? ` · ${selectedCamera.direction}` : ""}
-            </p>
-            <button
-              type="button"
-              onClick={() => setSelectedCamera(null)}
-              className="mt-2 text-xs font-semibold text-[#5EEAD4]"
-            >
-              Close
-            </button>
-          </div>
-        ) : null}
-
-        {gpsState === "granted" ? (
-          <div className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-3">
-            {roadName ? (
-              <p className="mb-1 max-w-[140px] truncate text-xs font-semibold text-white drop-shadow">
-                {roadName}
-              </p>
-            ) : null}
-            <div className="rounded-2xl bg-white px-4 py-3 shadow-lg ring-1 ring-stone-200/80">
-              <p
-                className={`text-3xl font-bold leading-none tabular-nums ${
-                  speedLimitMph != null && speedMph > speedLimitMph
-                    ? "text-red-600"
-                    : speedLimitMph != null && speedMph >= speedLimitMph - 5
-                      ? "text-amber-600"
-                      : "text-stone-900"
-                }`}
-              >
-                {speedMph}
-              </p>
-              <p className="mt-1 text-xs font-medium uppercase tracking-wide text-stone-500">
-                mph{speedLimitMph != null ? ` · limit ${speedLimitMph}` : ""}
-              </p>
-            </div>
-          </div>
-        ) : null}
-
-        {gpsState === "denied" ? (
-          <div className="pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-3 right-3 flex justify-center">
-            <div className="rounded-xl bg-white/95 px-4 py-3 text-center text-sm font-medium text-stone-700 shadow-lg ring-1 ring-stone-200">
-              Enable location to see your position
-            </div>
-          </div>
-        ) : null}
-          </>
-        ) : null}
-      </div>
-
-      {toast ? (
-        <div className="pointer-events-none absolute left-1/2 top-[max(5rem,env(safe-area-inset-top))] z-[140] -translate-x-1/2 rounded-full bg-stone-900/90 px-4 py-2 text-sm font-medium text-white shadow-lg">
-          {toast}
-        </div>
-      ) : null}
-
-      {!driverMode && !(route && destination) ? (
-        <div
-          className="pointer-events-auto absolute bottom-0 left-0 right-0 z-20 flex flex-col overflow-hidden"
-          style={{
-            height: "85vh",
-            transform: SHEET_TRANSLATE[sheetHeight],
-            transition: "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
-            background: "white",
-            borderRadius: "16px 16px 0 0",
-            borderTop: "0.5px solid #e2e8f0",
-          }}
-          onTouchStart={(event) => {
-            sheetTouchStartYRef.current = event.touches[0]?.clientY ?? null;
-          }}
-          onTouchEnd={(event) => {
-            const startY = sheetTouchStartYRef.current;
-            const endY = event.changedTouches[0]?.clientY;
-            sheetTouchStartYRef.current = null;
-            if (startY == null || endY == null) return;
-            const delta = startY - endY;
-            if (delta > 40) setSheetHeight("half");
-            else if (delta < -40) setSheetHeight("peek");
-          }}
-        >
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={cycleSheetHeight}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") cycleSheetHeight();
-            }}
-            style={{ padding: "10px 0 6px", cursor: "pointer", textAlign: "center" }}
-            aria-label="Adjust bottom sheet"
-          >
-            <div
-              style={{
-                width: 32,
-                height: 3,
-                background: "#cbd5e1",
-                borderRadius: 2,
-                margin: "0 auto",
-              }}
-            />
-          </div>
-
-          <div className="flex gap-1 border-b border-stone-200 px-3 pb-2">
-            {(
-              [
-                ["reports", "Nearby reports"],
-                ["route_chat", "Route chat"],
-                ["group", "Group"],
-                ["travelers", "Travelers"],
-              ] as const
-            ).map(([tab, label]) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => {
-                  setSheetTab(tab);
-                  if (tab === "group" && groupMode) setGroupPanelOpen(true);
-                }}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-                  sheetTab === tab
-                    ? "bg-[#0F766E] text-white"
-                    : "bg-stone-100 text-stone-600"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div
-            className={`flex-1 overflow-y-auto px-4 py-3 ${sheetHeight === "full" ? "" : "overflow-hidden"}`}
-          >
-            {sheetTab === "reports" ? (
-              reports.length === 0 ? (
-                <p className="text-sm text-stone-500">No nearby reports yet.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {visibleReports.map((report) => {
-                    const config = REPORT_CONFIG[report.report_type];
-                    return (
-                      <li key={report.id}>
-                        <button
-                          type="button"
-                          onClick={() => openReportRef.current(report)}
-                          className="flex w-full items-center justify-between rounded-xl bg-stone-50 px-3 py-2 text-left"
-                        >
-                          <span className="text-sm font-medium text-stone-900">
-                            {config.label}
-                          </span>
-                          <span className="text-xs text-stone-500">
-                            {formatDistance(
-                              haversineMeters(
-                                userPositionRef.current?.lat ?? report.lat,
-                                userPositionRef.current?.lng ?? report.lng,
-                                report.lat,
-                                report.lng,
-                              ),
-                            )}
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )
-            ) : null}
-
-            {sheetTab === "route_chat" ? (
-              selectedReport ? (
-                <button
-                  type="button"
-                  onClick={() => openReportChat(selectedReport)}
-                  className="w-full rounded-xl bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800"
-                >
-                  Open chat for {REPORT_CONFIG[selectedReport.report_type].label}
-                </button>
-              ) : (
-                <p className="text-sm text-stone-500">
-                  Select a report on the map to open route chat.
-                </p>
-              )
-            ) : null}
-
-            {sheetTab === "group" ? (
-              groupMode ? (
-                <button
-                  type="button"
-                  onClick={() => setGroupPanelOpen(true)}
-                  className="w-full rounded-xl bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800"
-                >
-                  Open group panel ({tripMembers.length} members)
-                </button>
-              ) : (
-                <p className="text-sm text-stone-500">Group mode is not active.</p>
-              )
-            ) : null}
-
-            {sheetTab === "travelers" ? (
-              nearbyTravelers.length === 0 ? (
-                <p className="text-sm text-stone-500">No nearby travelers.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {(sheetHeight === "peek"
-                    ? nearbyTravelers.slice(0, 1)
-                    : sheetHeight === "half"
-                      ? nearbyTravelers.slice(0, 3)
-                      : nearbyTravelers
-                  ).map((traveler) => (
-                    <li key={traveler.traveler_id}>
-                      <button
-                        type="button"
-                        onClick={() => openTravelerChat(traveler)}
-                        className="flex w-full items-center justify-between rounded-xl bg-stone-50 px-3 py-2 text-left"
-                      >
-                        <span className="text-sm font-medium text-stone-900">
-                          {traveler.label}
-                        </span>
-                        <span className="text-xs text-stone-500">
-                          {traveler.distance_miles.toFixed(1)} mi
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
-      {!driverMode ? (
-        <>
-          <RightPanel
-            activePanel={activePanel}
-            anchorEl={activePanel ? panelAnchorEl : null}
-            onClosePanel={closeActivePanel}
-            weatherDetail={weatherDetail}
-            weatherLoading={weatherDetailLoading}
-            onRefreshWeather={() => {
-              const pos = userPositionRef.current;
-              if (pos) void fetchWeatherDetail(pos.lat, pos.lng);
-            }}
-            alerts={alertItems}
-            onClearAlerts={handleClearAlerts}
-            isListening={wayraListening}
-            toggleVoiceListening={toggleVoiceListening}
-            connectivityCount={nearbyTravelers.length}
-            nearbyTravelers={nearbyTravelers}
-            onTravelerTap={openTravelerChat}
-            savedPins={savedPins}
-            pinsLoading={pinsLoading}
-            onNavigateToPin={handleNavigateToPin}
-            onSaveCurrentLocation={() => void handleSaveCurrentLocation()}
-          />
-          <div className="pointer-events-none absolute inset-0">
-            <LiveControlRail
-              activePanel={activePanel}
-              weatherTemp={weather?.temperature_2m ?? null}
-              batteryLevel={deviceBatteryLevel}
-              connectivityCount={nearbyTravelers.length}
-              unreadAlerts={unreadAlerts}
-              unreadLounge={unreadLounge}
-              isListening={wayraListening}
-              onToolbarTap={handleToolbarTap}
-              onZoomIn={() => mapRef.current?.zoomIn()}
-              onZoomOut={() => mapRef.current?.zoomOut()}
-              onStyleTap={cycleMapStyle}
-              buttonRefs={railButtonRefs}
-            />
-          </div>
-          <ChatSlidePanel
-            chatOpen={chatOpen}
-            chatTarget={chatTarget}
-            anchorEl={railButtonRefs.current.connectivity ?? null}
-            onBack={() => {
-              setChatOpen(false);
-              setChatTarget(null);
-            }}
-            onToast={showToastMessage}
-          />
-        </>
-      ) : null}
+      )}
 
       {gpsState === "pending" ? (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-stone-900/25">
@@ -5175,8 +5005,6 @@ export default function LivePage() {
         />
       ) : null}
 
-
-
       {route && destination && !driverMode ? (
         <NavigationSheet
           destinationName={destination.name}
@@ -5205,295 +5033,34 @@ export default function LivePage() {
               );
             }
           }}
-          availableRoutes={availableRoutes}
-          selectedRouteIndex={selectedRouteIndex}
-          onSelectRouteIndex={(index) => {
-            setSelectedRouteIndex(index);
-            setRoute(availableRoutes[index]);
-            routeRef.current = availableRoutes[index];
-            const map = mapRef.current;
-            if (map) {
-              ensureMultipleRoutesLayer(map, availableRoutes, index);
-            }
-          }}
-          routeTolls={routeTolls}
         />
       ) : null}
 
-      {guestPrompt ? (
-        <GuestPrompt
-          message={guestPrompt}
-          onDismiss={() => setGuestPrompt(null)}
-        />
-      ) : null}
-
-      {groupMode && !driverMode ? (
-        <FamilyPanel
-          open={groupPanelOpen}
-          tripMembers={tripMembers}
-          memberStatuses={memberStatuses}
-          memberLive={memberLive}
-          meetingPoint={meetingPoint}
-          isGroupAdmin={isGroupAdmin}
-          currentUserId={currentUserId}
-          currentUserSpeedMph={speedMph}
-          onClose={() => setGroupPanelOpen(false)}
-          onSetMeetingPoint={handleSetMeetingPointMode}
-          onStartConvoy={() => setShowConvoySheet(true)}
-          onQuickStatus={(status) => void postQuickStatus(status)}
-        />
-      ) : null}
-
-      {showConvoySheet ? (
+      {showConvoySheet && (
         <ConvoySheet
           busy={convoyBusy}
           onClose={() => setShowConvoySheet(false)}
-          onStart={(place) => void handleStartConvoy(place)}
+          onStart={handleStartConvoy}
         />
-      ) : null}
+      )}
 
-      {showGroupChat && firebaseDb && validTripId && currentUserId ? (
-        <div className="fixed inset-y-0 right-0 z-[150] w-[380px] bg-white/95 backdrop-blur-md shadow-2xl border-l border-stone-200 flex flex-col transition-all duration-300 animate-slide-in">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3 bg-stone-50">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setChatActiveTab("group")}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition ${
-                  chatActiveTab === "group"
-                    ? "bg-[#0F766E] text-white"
-                    : "text-stone-600 hover:bg-stone-200"
-                }`}
-              >
-                Group Chat
-              </button>
-              <button
-                type="button"
-                onClick={() => setChatActiveTab("route")}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition flex items-center gap-1 ${
-                  chatActiveTab === "route"
-                    ? "bg-[#0F766E] text-white"
-                    : "text-stone-600 hover:bg-stone-200"
-                }`}
-              >
-                Route Chat
-                {roadName && (
-                  <span className="max-w-[70px] truncate opacity-70">({roadName})</span>
-                )}
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowGroupChat(false)}
-              className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
-            >
-              <X size={16} />
-            </button>
-          </div>
+      {showGroupChat && firebaseDb && validTripId && currentUserId && (
+        <GroupLiveChatSheet
+          tripId={validTripId}
+          db={firebaseDb}
+          currentUserId={currentUserId}
+          currentUserName={currentUserName}
+          onClose={() => setShowGroupChat(false)}
+        />
+      )}
 
-          {/* Messages list */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {chatActiveTab === "group" ? (
-              groupMessages.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center text-stone-400 text-xs gap-1">
-                  <span>No messages in group chat.</span>
-                  <span>Start the conversation!</span>
-                </div>
-              ) : (
-                groupMessages.map((msg) => {
-                  const isMe = msg.sender_id === currentUserId;
-                  const parts = msg.sender_name.trim().split(/\s+/);
-                  const initials = parts.length === 1
-                    ? parts[0].slice(0, 2).toUpperCase()
-                    : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-                  return (
-                    <div
-                      key={msg.id}
-                      className={`flex gap-2 items-end ${isMe ? "flex-row-reverse" : "flex-row"}`}
-                    >
-                      {!isMe && (
-                        <div className="w-7 h-7 rounded-full bg-stone-300 text-stone-700 font-bold text-[10px] flex items-center justify-center shrink-0">
-                          {initials}
-                        </div>
-                      )}
-                      <div
-                        className={`max-w-[75%] rounded-2xl px-3 py-2 text-xs shadow-sm ${
-                          isMe
-                            ? "bg-[#0F766E] text-white rounded-br-none"
-                            : "bg-stone-100 text-stone-800 rounded-bl-none"
-                        }`}
-                      >
-                        {!isMe && (
-                          <div className="font-bold text-[10px] text-stone-500 mb-0.5">
-                            {msg.sender_name}
-                          </div>
-                        )}
-                        <p className="break-words whitespace-pre-wrap">{msg.text}</p>
-                        <div
-                          className={`text-[9px] text-right mt-1 opacity-70 ${
-                            isMe ? "text-stone-200" : "text-stone-500"
-                          }`}
-                        >
-                          {new Date(msg.timestamp).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )
-            ) : !roadName ? (
-              <div className="flex h-full items-center justify-center text-stone-400 text-xs text-center px-4">
-                No route active. Route chat is available when driving or walking on a named road.
-              </div>
-            ) : routeChatMessages.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center text-stone-400 text-xs gap-1">
-                <span>No messages on {roadName}.</span>
-                <span>Send a local traffic or speed warning!</span>
-              </div>
-            ) : (
-              routeChatMessages.map((msg) => {
-                const isMe = msg.sender === currentUserName;
-                const parts = msg.sender.trim().split(/\s+/);
-                const initials = parts.length === 1
-                  ? parts[0].slice(0, 2).toUpperCase()
-                  : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-                return (
-                  <div
-                    key={msg.id}
-                    className={`flex gap-2 items-end ${isMe ? "flex-row-reverse" : "flex-row"}`}
-                  >
-                    {!isMe && (
-                      <div className="w-7 h-7 rounded-full bg-stone-300 text-stone-700 font-bold text-[10px] flex items-center justify-center shrink-0">
-                        {initials}
-                      </div>
-                    )}
-                    <div
-                      className={`max-w-[75%] rounded-2xl px-3 py-2 text-xs shadow-sm ${
-                        isMe
-                          ? "bg-[#0F766E] text-white rounded-br-none"
-                          : "bg-stone-100 text-stone-800 rounded-bl-none"
-                      }`}
-                    >
-                      {!isMe && (
-                        <div className="font-bold text-[10px] text-stone-500 mb-0.5">
-                          {msg.sender}
-                        </div>
-                      )}
-                      <p className="break-words whitespace-pre-wrap">{msg.text}</p>
-                      <div
-                        className={`text-[9px] text-right mt-1 opacity-70 ${
-                          isMe ? "text-stone-200" : "text-stone-500"
-                        }`}
-                      >
-                        {new Date(msg.ts).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-            <div ref={groupEndRef} />
-          </div>
-
-          {/* Chat Input */}
-          {chatActiveTab === "group" || roadName ? (
-            <div className="p-3 border-t border-stone-200 bg-stone-50 flex gap-2 items-center">
-              <input
-                type="text"
-                value={chatActiveTab === "group" ? groupInput : routeChatMessageText}
-                onChange={(e) =>
-                  chatActiveTab === "group"
-                    ? setGroupInput(e.target.value)
-                    : setRouteChatMessageText(e.target.value)
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    if (chatActiveTab === "group") {
-                      void handleSendGroupMessage();
-                    } else {
-                      void sendRouteChatMessage();
-                    }
-                  }
-                }}
-                placeholder={
-                  chatActiveTab === "group"
-                    ? "Type message to group..."
-                    : `Post update to ${roadName}...`
-                }
-                className="flex-1 bg-white border border-stone-200 rounded-full px-4 py-2 text-xs text-stone-800 outline-none focus:ring-2 focus:ring-[#0F766E]/20"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (chatActiveTab === "group") {
-                    void handleSendGroupMessage();
-                  } else {
-                    void sendRouteChatMessage();
-                  }
-                }}
-                disabled={
-                  chatActiveTab === "group"
-                    ? !groupInput.trim() || groupSending
-                    : !routeChatMessageText.trim()
-                }
-                className="bg-[#0F766E] text-white p-2 rounded-full hover:bg-[#0D625B] disabled:opacity-50 transition shrink-0"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="w-4 h-4"
-                >
-                  <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-                </svg>
-              </button>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      {showEmergencyContacts && !isGuest ? (
+      {showEmergencyContacts && (
         <EmergencyContactsSheet
           onClose={() => setShowEmergencyContacts(false)}
-          onSkip={() => setShowEmergencyContacts(false)}
         />
-      ) : null}
+      )}
 
-      {showSosConfirm && sosResponse ? (
-        <SOSConfirmSheet
-          fcmSentTo={sosResponse.fcm_sent_to}
-          groupMode={groupMode}
-          emergencyContacts={sosResponse.emergency_contacts}
-          smsTemplate={sosResponse.sms_template}
-          googleMapsUrl={sosResponse.google_maps_url}
-          onCancelSos={() => void handleCancelSos()}
-          onAddContacts={() => setShowEmergencyContacts(true)}
-        />
-      ) : null}
-
-      {showTripSummary && summaryTrack ? (
-        <TripSummarySheet
-          track={summaryTrack}
-          onToast={showToastMessage}
-          onClose={() => {
-            setShowTripSummary(false);
-            setSummaryTrack(null);
-            if (pendingNavigateAway) {
-              setPendingNavigateAway(false);
-              router.back();
-            }
-          }}
-        />
-      ) : null}
-
-      {showGeofenceSetup && geofenceSetupCenter ? (
+      {showGeofenceSetup && geofenceSetupCenter && (
         <GeofenceSetupSheet
           label="Safe Zone"
           centerLat={geofenceSetupCenter.lat}
@@ -5503,149 +5070,107 @@ export default function LivePage() {
             setShowGeofenceSetup(false);
             setGeofenceSetupCenter(null);
           }}
-          onConfirm={(radiusM, label) => void handleConfirmGeofence(radiusM, label)}
+          onConfirm={handleConfirmGeofence}
         />
-      ) : null}
+      )}
 
-      {/* Snapchat-style Member Location Card */}
-      {selectedMemberCard ? (() => {
-        const liveData = memberLive[selectedMemberCard.member.user_id] || selectedMemberCard.liveData;
-        const offline = liveData.last_seen != null &&
-          Date.now() - new Date(liveData.last_seen).getTime() > 5 * 60 * 1000;
-        
-        const parts = selectedMemberCard.member.display_name.trim().split(/\s+/);
-        const initials = parts.length === 1
-          ? parts[0].slice(0, 2).toUpperCase()
-          : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      {guestPrompt && (
+        <GuestPrompt
+          message={guestPrompt}
+          onDismiss={() => setGuestPrompt(null)}
+        />
+      )}
 
-        const speed = liveData.speed_mph != null ? Math.round(liveData.speed_mph) : 0;
-        const battery = liveData.battery_level != null ? Math.round(liveData.battery_level) : null;
-        
-        return (
-          <div className="fixed bottom-20 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:max-w-sm z-[140] bg-white rounded-2xl shadow-2xl border border-stone-205 p-4 transition-all duration-300 animate-slide-in pointer-events-auto">
-            {/* Header */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#0F766E] to-[#2DD4BF] text-white font-bold text-base flex items-center justify-center shadow-inner shrink-0">
-                  {initials}
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-bold text-stone-900 text-sm truncate">
-                    {selectedMemberCard.member.display_name}
-                  </h3>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className={`w-2.5 h-2.5 rounded-full ${offline ? "bg-stone-400" : "bg-green-500 animate-pulse"}`} />
-                    <span className="text-[11px] text-stone-500 font-medium">
-                      {offline ? (
-                        liveData.last_seen ? `Last seen ${new Date(liveData.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : "Offline"
-                      ) : (
-                        "Active Now"
-                      )}
-                    </span>
-                    {battery != null && (
-                      <span className="text-[11px] text-stone-400">· 🔋 {battery}%</span>
-                    )}
-                    {!offline && speed > 0 && (
-                      <span className="text-[11px] text-stone-400">· 🚗 {speed} mph</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedMemberCard(null)}
-                className="text-stone-400 hover:text-stone-600 rounded-full p-1 hover:bg-stone-100 transition shrink-0"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Address */}
-            <div className="mt-3 bg-stone-50 rounded-xl p-2.5 border border-stone-100">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
-                {offline ? "Last Location Address" : "Current Location Address"}
-              </p>
-              <p className="text-xs text-stone-600 font-medium mt-0.5 line-clamp-2 leading-relaxed">
-                {memberCardAddress || "Resolving location..."}
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedMemberCard(null);
-                  setShowGroupChat(true);
-                  setChatActiveTab("group");
-                  setGroupInput(`@${selectedMemberCard.member.display_name} `);
-                }}
-                className="flex-1 flex items-center justify-center gap-1.5 bg-[#0F766E] hover:bg-[#0D625B] text-white rounded-xl py-2 text-xs font-bold transition shadow-sm animate-pulse-subtle"
-              >
-                <MessageSquare size={14} />
-                Message
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedMemberCard(null);
-                  setActiveVoiceCallMember(selectedMemberCard.member);
-                }}
-                className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2 text-xs font-bold transition shadow-sm"
-              >
-                <Phone size={14} />
-                Call
-              </button>
-            </div>
+      {showSosConfirm && (
+        <div className="fixed inset-0 z-[350] flex flex-col items-center justify-center bg-black/80 text-white backdrop-blur-md">
+          <div className="w-24 h-24 rounded-full bg-red-600/20 border-4 border-red-500 flex items-center justify-center text-3xl font-extrabold animate-pulse">
+            {Math.max(1, Math.ceil((100 - sosHoldProgress) / 33))}s
           </div>
-        );
-      })() : null}
+          <h2 className="text-2xl font-bold mt-6 text-red-500">Activating SOS...</h2>
+          <p className="text-sm text-stone-400 mt-2 px-6 text-center">Hold for 3 seconds to alert emergency services and group members.</p>
+          <div className="w-64 h-2 bg-stone-850 rounded-full overflow-hidden mt-6">
+            <div className="h-full bg-red-600 transition-all duration-100" style={{ width: `${sosHoldProgress}%` }} />
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowSosConfirm(false)}
+            className="mt-8 px-6 py-3 bg-stone-800 hover:bg-stone-700 text-white rounded-xl text-sm font-semibold transition"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
-      {/* Simulated Premium Voice Call Screen Overlay */}
+      {sosResponse && (
+        <SOSConfirmSheet
+          fcmSentTo={sosResponse.fcm_sent_to ?? 0}
+          groupMode={!!validTripId}
+          emergencyContacts={sosResponse.emergency_contacts ?? []}
+          smsTemplate={sosResponse.sms_template || ""}
+          googleMapsUrl={sosResponse.google_maps_url || ""}
+          onCancelSos={handleCancelSos}
+          onAddContacts={() => {
+            setShowEmergencyContacts(true);
+            setSosResponse(null);
+          }}
+        />
+      )}
+
+      {showTripSummary && summaryTrack && (
+        <TripSummarySheet
+          track={summaryTrack}
+          onClose={() => {
+            setShowTripSummary(false);
+            setSummaryTrack(null);
+            if (pendingNavigateAway) {
+              router.back();
+            }
+          }}
+        />
+      )}
+
       {activeVoiceCallMember ? (() => {
-        const parts = activeVoiceCallMember.display_name.trim().split(/\s+/);
-        const initials = parts.length === 1
-          ? parts[0].slice(0, 2).toUpperCase()
-          : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-
+        const callerName = activeVoiceCallMember.display_name;
         return (
-          <div className="fixed inset-0 z-[200] bg-stone-900/98 flex flex-col justify-between items-center py-16 px-6 text-white animate-fade-in backdrop-blur-md">
-            {/* Top Info */}
-            <div className="text-center mt-8">
-              <p className="text-xs font-bold uppercase tracking-widest text-teal-400">Rovvy Voice Call</p>
-              <p className="text-xs text-stone-400 mt-1">End-to-End Encrypted</p>
+          <div className="fixed inset-0 z-[300] bg-stone-900/90 flex flex-col items-center justify-center text-white">
+            <div className="w-24 h-24 rounded-full bg-teal-600/30 animate-ping absolute" />
+            <div className="relative">
+              {(activeVoiceCallMember as any).avatar_url ? (
+                <img
+                  src={(activeVoiceCallMember as any).avatar_url}
+                  alt={callerName}
+                  className="w-24 h-24 rounded-full object-cover border-4 border-teal-500 shadow-2xl relative z-10"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-teal-700 flex items-center justify-center border-4 border-teal-500 shadow-2xl relative z-10">
+                  <span className="text-3xl font-bold text-white">
+                    {callerName.slice(0, 2).toUpperCase()}
+                  </span>
+                </div>
+              )}
             </div>
-
-            {/* Avatar & Rings */}
-            <div className="relative flex items-center justify-center my-12">
-              <div className="absolute w-44 h-44 rounded-full bg-teal-500/10 animate-ping" />
-              <div className="absolute w-36 h-36 rounded-full bg-teal-500/20 animate-pulse" />
-              <div className="relative w-28 h-28 rounded-full bg-gradient-to-tr from-[#0f766e] to-[#2dd4bf] text-white font-extrabold text-3xl flex items-center justify-center shadow-2xl border-4 border-white/20">
-                {initials}
-              </div>
-            </div>
-
-            {/* Middle text */}
-            <div className="text-center mb-16">
-              <h2 className="text-2xl font-bold tracking-wide">{activeVoiceCallMember.display_name}</h2>
-              <p className="text-sm text-stone-400 mt-2 animate-pulse">Connecting securely...</p>
-            </div>
-
-            {/* Call Control (Hang Up Button) */}
-            <div className="mb-8">
+            <h2 className="text-2xl font-bold mt-6">{callerName}</h2>
+            <p className="text-teal-400 mt-2 font-medium animate-pulse">Voice Calling...</p>
+            <div className="mt-12 flex flex-col items-center">
               <button
                 type="button"
                 onClick={() => setActiveVoiceCallMember(null)}
-                className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center text-white shadow-lg transition-transform transform active:scale-95 duration-200"
+                className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center text-white shadow-2xl transition hover:scale-105 active:scale-95"
                 aria-label="Hang up call"
               >
                 <PhoneOff size={28} />
               </button>
-              <p className="text-[11px] text-center text-stone-500 mt-2 font-bold uppercase tracking-wider">Hang Up</p>
+              <p className="text-[11px] text-center text-stone-400 mt-2 font-bold uppercase tracking-wider">Hang Up</p>
             </div>
           </div>
         );
       })() : null}
+
+      {toast ? (
+        <div className="pointer-events-none absolute left-1/2 top-4 z-[300] -translate-x-1/2 rounded-full bg-stone-900/90 px-4 py-2 text-sm font-medium text-white shadow-lg">
+          {toast}
+        </div>
+      ) : null}
     </div>
   );
 }

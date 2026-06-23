@@ -4,6 +4,7 @@ import { Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   searchPlaces,
+  getPlaceName,
   type NominatimPlace,
 } from "@/components/live/DestinationSheet";
 
@@ -94,13 +95,13 @@ export function ConvoySheet({ onClose, onStart, busy = false }: ConvoySheetProps
                     onStart({
                       lat: Number.parseFloat(place.lat),
                       lng: Number.parseFloat(place.lon),
-                      name: place.display_name.split(",")[0]?.trim() || place.display_name,
+                      name: getPlaceName(place.display_name),
                     })
                   }
                   className="w-full rounded-xl px-3 py-3 text-left text-sm hover:bg-stone-50 disabled:opacity-60"
                 >
                   <span className="font-medium text-stone-900">
-                    {place.display_name.split(",")[0]}
+                    {getPlaceName(place.display_name)}
                   </span>
                   <span className="mt-0.5 block truncate text-xs text-stone-500">
                     {place.display_name}

@@ -255,6 +255,53 @@ def _parse_maxspeed_mph(raw: str) -> int | None:
         return None
 
 
+OVERPASS_SERVERS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+    "https://overpass.openstreetmap.ru/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+]
+OVERPASS_TIMEOUT_SECONDS = 8
+OVERPASS_BACKOFF_FAILURES = 3
+OVERPASS_BACKOFF_SECONDS = 10 * 60
+
+_overpass_fail_streak = 0
+_overpass_backoff_until: float | None = None
+
+
+def _overpass_query(query: str) -> dict | None:
+    """Try each Overpass mirror in order until one returns HTTP 200 JSON."""
+    global _overpass_fail_streak, _overpass_backoff_until
+
+    now = time.monotonic()
+    if _overpass_backoff_until is not None and now < _overpass_backoff_until:
+        return None
+
+    with httpx.Client(timeout=OVERPASS_TIMEOUT_SECONDS) as client:
+        for url in OVERPASS_SERVERS:
+            try:
+                response = client.get(url, params={"data": query})
+                if response.status_code == 200:
+                    data = response.json()
+                    if isinstance(data, dict):
+                        _overpass_fail_streak = 0
+                        _overpass_backoff_until = None
+                        return data
+            except Exception as exc:
+                logger.debug("Overpass %s failed: %s", url, exc)
+
+    _overpass_fail_streak += 1
+    if _overpass_fail_streak >= OVERPASS_BACKOFF_FAILURES:
+        _overpass_backoff_until = now + OVERPASS_BACKOFF_SECONDS
+        _overpass_fail_streak = 0
+        logger.warning(
+            "Overpass unavailable after %d consecutive failures — backing off for %d minutes",
+            OVERPASS_BACKOFF_FAILURES,
+            OVERPASS_BACKOFF_SECONDS // 60,
+        )
+    return None
+
+
 def _fetch_speed_limit_from_overpass(lat: float, lng: float) -> dict[str, int | str | None]:
     query = (
         f'[out:json][timeout:10];'
@@ -262,15 +309,10 @@ def _fetch_speed_limit_from_overpass(lat: float, lng: float) -> dict[str, int | 
         f'out tags;'
     )
     try:
-        with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
-            response = client.get(
-                "https://overpass-api.de/api/interpreter",
-                params={"data": query},
-            )
-        if response.status_code != 200:
+        data = _overpass_query(query)
+        if data is None:
             return {"speed_limit_mph": None, "road_name": None}
 
-        data = response.json()
         elements = data.get("elements")
         if not isinstance(elements, list):
             return {"speed_limit_mph": None, "road_name": None}
@@ -354,15 +396,10 @@ def _fetch_speed_cameras_from_overpass(
     cameras: list[dict] = []
     seen_ids: set[str] = set()
     try:
-        with httpx.Client(timeout=API_TIMEOUT_SECONDS) as client:
-            response = client.get(
-                "https://overpass-api.de/api/interpreter",
-                params={"data": query},
-            )
-        if response.status_code != 200:
+        data = _overpass_query(query)
+        if data is None:
             return cameras
 
-        data = response.json()
         elements = data.get("elements")
         if not isinstance(elements, list):
             return cameras

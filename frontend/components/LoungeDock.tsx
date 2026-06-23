@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import {
   X,
   ChevronUp,
@@ -155,6 +156,8 @@ type Message = {
 };
 
 export function LoungeDock() {
+  const pathname = usePathname();
+  const isLiveMapPage = pathname === "/live";
   const [isOpen, setIsOpen] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -1296,11 +1299,17 @@ export function LoungeDock() {
 
   const dockSettingsOpen =
     showSettingsOverlay && settingsScreen === "settings";
+  const showDockWidget = isOpen || !isLiveMapPage;
 
   return (
-    <div className="fixed bottom-0 right-2 sm:right-[40px] z-[80] pointer-events-none select-none max-md:inset-x-0 max-md:top-0 max-md:bottom-auto max-md:right-0 max-md:left-0">
+    <div
+      className={`fixed bottom-0 right-2 sm:right-[40px] pointer-events-none select-none max-md:inset-x-0 max-md:top-0 max-md:bottom-auto max-md:right-0 max-md:left-0 ${
+        isLiveMapPage ? "z-[160]" : "z-[80]"
+      }`}
+    >
       <div className="flex flex-row-reverse items-end gap-3 max-md:flex-col max-md:items-stretch">
-      {/* MAIN DOCK WIDGET — always shows chat list when open */}
+      {/* MAIN DOCK WIDGET — hidden on Live map until opened from the rail */}
+      {showDockWidget ? (
       <div
         className={`bg-slate-900 text-white shadow-2xl rounded-t-xl flex flex-col border border-slate-700/50 pointer-events-auto select-text overflow-hidden transition-all duration-300 ease-in-out max-md:fixed max-md:top-0 max-md:left-0 max-md:right-0 max-md:w-full max-md:rounded-none max-md:rounded-b-2xl max-md:border-x-0 max-md:border-t-0 max-md:transition-transform max-md:duration-300 max-md:ease-out ${
           isOpen
@@ -1835,6 +1844,7 @@ export function LoungeDock() {
               </>
         )}
       </div>
+      ) : null}
 
       {openChatIds.map((chatId) => {
         const chatInfo = resolveHubChatInfo(chatId);
