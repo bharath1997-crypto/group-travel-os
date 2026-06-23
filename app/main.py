@@ -9,10 +9,13 @@ Import the app instance via: from app.main import app
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 
-from app.utils.database import check_db_connection
+from app.utils.database import check_db_connection, get_db
+from app.utils.db_diagnostics import collect_db_diagnostics, dev_diagnostics_enabled
+from app.utils.exceptions import AppException
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -105,6 +108,24 @@ async def lifespan(app: FastAPI):
         hour=3,
         minute=0,
         id="viator_sync",
+        replace_existing=True,
+    )
+    from app.jobs.live_chat_cleanup import cleanup_expired_report_chats
+
+    scheduler.add_job(
+        cleanup_expired_report_chats,
+        trigger="interval",
+        minutes=5,
+        id="live_chat_cleanup",
+        replace_existing=True,
+    )
+    from app.jobs.dead_zone_detection import detect_dead_zones
+
+    scheduler.add_job(
+        detect_dead_zones,
+        trigger="interval",
+        minutes=5,
+        id="detect_dead_zones",
         replace_existing=True,
     )
 
@@ -200,6 +221,17 @@ def _register_routes(app: FastAPI) -> None:
             "environment": settings.ENVIRONMENT,
             "database": "connected" if db_ok else "unreachable",
         }
+
+    @app.get("/health/db", tags=["Health"])
+    def health_db_diagnostics(db: Session = Depends(get_db)):
+        """
+        Development-only: pool stats, Postgres blockers, timeout settings.
+        Use when login/OAuth hangs or fails after idle periods.
+        """
+        if not dev_diagnostics_enabled():
+            AppException.not_found("Not found")
+
+        return collect_db_diagnostics(db)
 
     # ── Feature routers ───────────────────────────────────────────────────────
     # Uncomment each block as you complete the corresponding build step.
@@ -385,6 +417,10 @@ def _register_routes(app: FastAPI) -> None:
     from app.routes.integrations import router as integrations_router
 
     app.include_router(integrations_router, prefix="/api/v1")
+
+    from app.routes.live import router as live_router
+
+    app.include_router(live_router, prefix="/api/v1")
 
 
 

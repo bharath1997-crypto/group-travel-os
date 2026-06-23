@@ -21,10 +21,11 @@ import {
   authLinkClass,
 } from "@/components/auth/AuthExploreLayout";
 import { AuthSocialButtons, authToggleBtnClass } from "@/components/auth/AuthSocialButtons";
-import { apiFetch } from "@/lib/api";
-import { saveToken } from "@/lib/auth";
+import { apiFetchWithStatus } from "@/lib/api";
+import { clearToken, isLoggedIn, saveToken } from "@/lib/auth";
 import { startFacebookOAuth, startGoogleOAuth } from "@/lib/oauth";
 import { syncLocalProfileCache } from "@/lib/profileCache";
+import { checkSession } from "@/lib/sessionValidation";
 import {
   oauthErrorToRegisterAlert,
   type OauthLoginAlert,
@@ -171,8 +172,42 @@ function RegisterPageInner() {
   const [oauthBusy, setOauthBusy] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [agreeError, setAgreeError] = useState<string | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   const isBusy = submitting || oauthBusy;
+
+  useEffect(() => {
+    if (!isLoggedIn()) {
+      setCheckingSession(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const result = await checkSession();
+        if (cancelled) return;
+        if (result.status === "valid") {
+          router.replace("/explore");
+          return;
+        }
+        if (result.status === "invalid") {
+          clearToken();
+        } else {
+          router.replace("/explore");
+        }
+      } catch {
+        if (!cancelled) router.replace("/explore");
+      } finally {
+        if (!cancelled) setCheckingSession(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   useEffect(() => {
     const oauthErr = searchParams.get("oauth_error");
@@ -228,16 +263,33 @@ function RegisterPageInner() {
 
     setSubmitting(true);
     try {
-      const data = await apiFetch<RegisterResponse>("/auth/register", {
-        method: "POST",
-        body: JSON.stringify({
-          full_name: trimmedUsername,
-          username: trimmedUsername,
-          email: email.trim(),
-          password,
-          date_of_birth: dob,
-        }),
-      }, 30000);
+      const { data, status } = await apiFetchWithStatus<RegisterResponse>(
+        "/auth/register",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            full_name: trimmedUsername,
+            username: trimmedUsername,
+            email: email.trim(),
+            password,
+            date_of_birth: dob,
+          }),
+        },
+        45000,
+      );
+
+      if (status === 408 || status === 0) {
+        setError(
+          "The server is slow or offline. Start the backend (port 8000) and try again.",
+        );
+        return;
+      }
+
+      if (status !== 200 || !data) {
+        setError("Registration failed. Check your details and try again.");
+        return;
+      }
+
       saveToken(data.token.access_token);
       if (typeof window !== "undefined") {
         const em = data.user.email.trim();
@@ -284,6 +336,10 @@ function RegisterPageInner() {
         body: err instanceof Error ? err.message : String(err),
       });
     }
+  }
+
+  if (checkingSession && isLoggedIn()) {
+    return <BrandedLoading fullScreen={true} />;
   }
 
   return (

@@ -66,3 +66,12 @@ def get_rtdb(path: str) -> dict | None:
     if isinstance(value, dict):
         return value
     return None
+
+
+def create_custom_token(uid: str) -> str:
+    """Generate a custom Firebase token for a given user UID."""
+    get_firebase_app()
+    from firebase_admin import auth
+    token_bytes = auth.create_custom_token(uid)
+    return token_bytes.decode("utf-8") if isinstance(token_bytes, bytes) else token_bytes
+

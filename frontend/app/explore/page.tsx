@@ -7,14 +7,10 @@ import {
   Compass,
   Map,
   DollarSign,
-  Bell,
-  ChevronDown,
-  LogOut,
-  ShoppingCart,
-  User,
 } from "lucide-react";
 
 import { RovvyLogo } from "@/components/RovvyLogo";
+import { HeaderProfileMenu } from "@/components/HeaderProfileMenu";
 import { apiFetch } from "@/lib/api";
 import {
   formatDateTime,
@@ -252,129 +248,83 @@ export default function ExplorePage() {
   return (
     <div className="min-h-screen bg-white text-slate-800 font-sans pb-16">
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-stone-200 shadow-sm select-none">
-        <div className="flex h-16 items-center gap-2 px-3 md:gap-3 md:px-6">
+      <header className="fixed top-0 left-0 right-0 z-40 overflow-visible bg-white border-b border-stone-200 shadow-sm select-none">
+        <div className="flex h-16 items-center gap-3 overflow-visible px-3 md:gap-4 md:px-6">
           <Link
             href="/explore"
-            className="flex shrink-0 items-center focus-visible:outline-none"
+            className="flex shrink-0 items-center overflow-visible focus-visible:outline-none"
           >
-            <RovvyLogo variant="primary" size="md" />
+            <RovvyLogo variant="primary" height={76} className="md:hidden" />
+            <RovvyLogo variant="primary" height={96} className="hidden md:block" />
           </Link>
 
-          <nav className="hidden md:flex flex-1 items-center justify-center gap-0.5 lg:gap-1" aria-label="Primary">
-            <Link
-              href="/explore"
-              className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 lg:px-3 text-xs lg:text-[13px] font-semibold whitespace-nowrap text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
-            >
-              <Compass size={15} strokeWidth={2} />
-              <span>Explore</span>
-            </Link>
-            <Link
-              href="/trips"
-              className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 lg:px-3 text-xs lg:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
-            >
-              <Map size={15} strokeWidth={2} />
-              <span>Trips</span>
-            </Link>
-            <Link
-              href="/trip-live"
-              className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 lg:px-3 text-xs lg:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
-            >
-              <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-              </span>
-              <span>LIVE</span>
-            </Link>
-            <Link
-              href="/split-activities"
-              className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 lg:px-3 text-xs lg:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
-            >
-              <DollarSign size={15} strokeWidth={2} />
-              <span>Split Activities</span>
-            </Link>
-            <Link
-              href="/profile"
-              className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 lg:px-3 text-xs lg:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
-            >
-              <User size={15} strokeWidth={2} />
-              <span>Profile</span>
-            </Link>
-          </nav>
+          <div className="min-w-0 flex-1" />
 
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 md:gap-3">
-          {isLoggedIn ? (
-            <>
+          <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-3">
+            <nav
+              className="hidden md:flex items-center gap-0.5 lg:gap-1"
+              aria-label="Primary"
+            >
               <Link
-                href="/cart"
-                className="relative p-2 text-slate-500 hover:text-[#0F766E] rounded-lg transition-colors"
-                aria-label="Travel Cart"
+                href="/explore"
+                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 lg:px-3 text-xs lg:text-[13px] font-semibold whitespace-nowrap text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
               >
-                <ShoppingCart size={20} />
-                {cartCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-teal-600 px-1 text-[8px] font-bold text-white ring-2 ring-white">
-                    {cartCount > 99 ? "99" : cartCount}
-                  </span>
-                )}
+                <Compass size={15} strokeWidth={2} />
+                <span>Explore</span>
               </Link>
               <Link
-                href="/notifications"
-                className="relative p-2 text-slate-500 hover:text-[#0F766E] rounded-lg transition-colors"
-                aria-label="Notifications"
+                href="/trips"
+                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 lg:px-3 text-xs lg:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
               >
-                <Bell size={20} />
-                {unreadNotifCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold text-white ring-2 ring-white">
-                    {unreadNotifCount}
-                  </span>
-                )}
+                <Map size={15} strokeWidth={2} />
+                <span>Trips</span>
               </Link>
-              <div className="relative group">
-                <button className="flex items-center gap-1 focus:outline-none" aria-label="Profile Menu">
-                  {userProfile?.avatar_url || userProfile?.google_picture ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={userProfile.avatar_url || userProfile.google_picture!}
-                      alt="Profile"
-                      className="h-8 w-8 rounded-full object-cover ring-2 ring-teal-500/20"
-                    />
-                  ) : (
-                    <div className="h-8 w-8 rounded-full bg-[#0F766E] text-white flex items-center justify-center text-sm font-bold">
-                      {userProfile?.full_name ? userProfile.full_name[0] : "U"}
-                    </div>
-                  )}
-                  <ChevronDown size={14} className="text-slate-400" />
-                </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-lg py-2 hidden group-hover:block hover:block z-50">
-                  <Link href="/dashboard" className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-[#0F766E] font-medium">
-                    Dashboard
-                  </Link>
-                  <Link href="/profile" className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-[#0F766E] font-medium">
-                    My Profile
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-slate-50 font-medium flex items-center gap-2"
-                  >
-                    <LogOut size={14} />
-                    Sign out
-                  </button>
-                </div>
+              <Link
+                href="/live"
+                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 lg:px-3 text-xs lg:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
+              >
+                <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                </span>
+                <span>LIVE</span>
+              </Link>
+              <Link
+                href="/split-activities"
+                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 lg:px-3 text-xs lg:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
+              >
+                <DollarSign size={15} strokeWidth={2} />
+                <span>Split Activities</span>
+              </Link>
+            </nav>
+
+            {isLoggedIn ? (
+              <>
+                <div className="hidden md:block h-6 w-px bg-stone-200" />
+                <HeaderProfileMenu
+                  displayName={userProfile?.full_name}
+                  avatarUrl={userProfile?.avatar_url || userProfile?.google_picture}
+                  cartCount={cartCount}
+                  notifCount={unreadNotifCount}
+                  onLogout={handleLogout}
+                />
+              </>
+            ) : (
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Link
+                  href="/login"
+                  className="text-stone-600 hover:text-[#0F766E] text-sm font-semibold px-2 sm:px-3 py-2"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/register"
+                  className="bg-[#0F766E] hover:bg-[#0D635C] text-white text-sm font-semibold px-3 sm:px-4 py-2 rounded-xl transition-colors"
+                >
+                  Sign up
+                </Link>
               </div>
-            </>
-          ) : (
-            <div className="flex items-center gap-3">
-              <Link href="/login" className="text-slate-600 hover:text-[#0F766E] text-sm font-semibold px-3 py-2">
-                Log in
-              </Link>
-              <Link
-                href="/register"
-                className="bg-[#0F766E] hover:bg-[#0D635C] text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
-              >
-                Sign up
-              </Link>
-            </div>
-          )}
+            )}
           </div>
         </div>
       </header>

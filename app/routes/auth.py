@@ -15,6 +15,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from fastapi.responses import RedirectResponse
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from twilio.rest import Client
 
@@ -155,6 +156,11 @@ def oauth_google_callback(
             f"{fe}/auth/callback?oauth_error={quote(_oauth_detail_str(e))}"
             f"&oauth_intent={quote(oauth_intent)}"
         )
+    except OperationalError:
+        logger.exception("Google OAuth database error (lock/timeout)")
+        return RedirectResponse(
+            f"{fe}/auth/callback?oauth_error=db_busy&oauth_intent={quote(oauth_intent)}"
+        )
     except Exception:
         logger.exception("Google OAuth callback failed")
         return RedirectResponse(
@@ -213,6 +219,11 @@ def oauth_facebook_callback(
         return RedirectResponse(
             f"{fe}/auth/callback?oauth_error={quote(_oauth_detail_str(e))}"
             f"&oauth_intent={quote(oauth_intent)}"
+        )
+    except OperationalError:
+        logger.exception("Facebook OAuth database error (lock/timeout)")
+        return RedirectResponse(
+            f"{fe}/auth/callback?oauth_error=db_busy&oauth_intent={quote(oauth_intent)}"
         )
     except Exception:
         logger.exception("Facebook OAuth callback failed")

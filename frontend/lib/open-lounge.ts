@@ -22,3 +22,8 @@ export function emitOpenLounge(detail?: OpenLoungeDetail): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(OPEN_LOUNGE_EVENT, { detail }));
 }
+
+export function toggleLounge(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("toggle-rovvy-lounge"));
+}

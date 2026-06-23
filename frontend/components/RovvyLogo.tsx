@@ -10,7 +10,7 @@ const BRAND_ASSETS = {
 interface RovvyLogoProps {
   variant?: 'primary' | 'dark' | 'white'
   showTagline?: boolean
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
   className?: string
   width?: number
   height?: number
@@ -21,6 +21,7 @@ const SIZE_HEIGHT: Record<NonNullable<RovvyLogoProps['size']>, number> = {
   md: 34,
   lg: 46,
   xl: 62,
+  '2xl': 78,
 }
 
 /**

@@ -32,6 +32,11 @@ from app.models.wayra import WayraPersonalMemory, WayraGroupSettings, WayraGroup
 from app.models.data_export import DataExportRequest
 from app.models.data_import import DataImportRequest
 from app.models.user_integration import UserIntegration
+from app.models.live_session import LiveSession, LiveMode
+from app.models.road_report import RoadReport, ReportConfirmation, ReportType
+from app.models.emergency_contact import EmergencyContact
+from app.models.trip_track import TripTrack
+from app.models.spectator_invite import SpectatorInvite
 
 __all__: list[str] = [
     "User",
@@ -83,5 +88,13 @@ __all__: list[str] = [
     "DataExportRequest",
     "DataImportRequest",
     "UserIntegration",
+    "LiveSession",
+    "LiveMode",
+    "RoadReport",
+    "ReportConfirmation",
+    "ReportType",
+    "EmergencyContact",
+    "TripTrack",
+    "SpectatorInvite",
 ]
 
