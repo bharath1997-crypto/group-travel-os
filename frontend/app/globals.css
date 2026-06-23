@@ -271,16 +271,13 @@ input[type="date"]::-webkit-outer-spin-button {
   display: none;
 }
 
-/* Live tab — fullscreen map hides dashboard chrome */
+/* Live tab — map fills dashboard content below global header */
 body.live-mode {
   overflow: hidden;
   width: 100vw;
 }
 
-body.live-mode .dashboard-sidebar,
-body.live-mode .bottom-tab-bar,
-body.live-mode .dashboard-header,
-body.live-mode nav {
+body.live-mode .dashboard-sidebar {
   display: none !important;
 }
 
@@ -305,10 +302,6 @@ body.live-mode .live-page-shell {
   max-width: 100vw !important;
 }
 
-body.live-mode .dashboard-content-shell {
-  padding-top: 0 !important;
-}
-
 body.live-mode .dashboard-main-live {
   padding: 0 !important;
   overflow: hidden !important;
@@ -316,6 +309,19 @@ body.live-mode .dashboard-main-live {
 
 body.live-mode .live-page-shell > * {
   max-width: 100% !important;
+}
+
+/* Waze-style Driver/Navigation Mode overrides — hides global layout shells completely */
+body.driver-mode .dashboard-header,
+body.driver-mode .bottom-tab-bar {
+  display: none !important;
+}
+
+body.driver-mode .dashboard-content-shell {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  height: 100vh !important;
+  height: 100dvh !important;
 }
 
 /* Live destination search — force readable text on white pill over dark map */

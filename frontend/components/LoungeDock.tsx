@@ -1299,7 +1299,7 @@ export function LoungeDock() {
 
   const dockSettingsOpen =
     showSettingsOverlay && settingsScreen === "settings";
-  const showDockWidget = isOpen || !isLiveMapPage;
+  const showDockWidget = true;
 
   return (
     <div

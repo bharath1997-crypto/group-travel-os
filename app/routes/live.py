@@ -72,6 +72,7 @@ from app.schemas.live import (
     TravelerChatSendOut,
     TravelerChatItemOut,
     TravelerChatFlagOut,
+    FirebaseTokenOut,
 )
 from app.services.live_service import LiveService
 from app.utils.auth import get_current_user, get_current_user_optional
@@ -817,3 +818,18 @@ def update_group_battery(
         trip_id,
         body.level,
     )
+
+
+@router.get(
+    "/firebase-token",
+    response_model=FirebaseTokenOut,
+    status_code=status.HTTP_200_OK,
+    summary="Get custom Firebase Auth token for Realtime Database authentication",
+)
+def get_firebase_token(
+    current_user: User = Depends(get_current_user),
+):
+    from app.utils.firebase import create_custom_token
+    token = create_custom_token(str(current_user.id))
+    return {"token": token}
+

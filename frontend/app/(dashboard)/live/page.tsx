@@ -22,7 +22,7 @@ import { WayraChatSheet } from "@/components/live/WayraChatSheet";
 import { apiFetch, apiFetchPublic } from "@/lib/api";
 import { toggleLounge } from "@/lib/open-lounge";
 import { useDashboardUser } from "@/contexts/dashboard-user-context";
-import { initFirebase } from "@/lib/firebase-client";
+import { initFirebase, authenticateFirebase } from "@/lib/firebase-client";
 import {
   firstName,
   geofenceCircleGeoJson,
@@ -84,20 +84,24 @@ import {
   MessageSquare,
   Phone,
   PhoneOff,
+  Menu,
+  Car,
+  Bike,
+  Mountain,
+  Footprints,
+  ChevronDown,
 } from "lucide-react";
 import maplibregl, { type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { off, onValue, ref, remove, set, type Database } from "firebase/database";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // Rovvy Live layout component imports
+import { LiveSubBar } from "@/components/live/LiveSubBar";
 import { LiveSidebar } from "@/components/live/LiveSidebar";
-import { LiveTopBar } from "@/components/live/LiveTopBar";
 import { LiveRightPanel } from "@/components/live/LiveRightPanel";
 import { LiveBottomStrip } from "@/components/live/LiveBottomStrip";
-import { TransportModeModal } from "@/components/live/TransportModeModal";
 import { GroupPulse } from "@/components/live/GroupPulse";
 import { ActiveNavBanner } from "@/components/live/ActiveNavBanner";
 import { SpeedDisplay } from "@/components/live/SpeedDisplay";
@@ -359,6 +363,18 @@ type PinOut = {
   name: string;
   note: string | null;
 };
+
+function getWeatherCondition(code: number | null): { text: string; icon: string } {
+  if (code === null) return { text: "Sunny", icon: "☀️" };
+  if (code === 0) return { text: "Clear", icon: "☀️" };
+  if (code >= 1 && code <= 3) return { text: "Partly Cloudy", icon: "⛅" };
+  if (code >= 45 && code <= 48) return { text: "Foggy", icon: "🌫️" };
+  if (code >= 51 && code <= 67) return { text: "Raining", icon: "🌧️" };
+  if (code >= 71 && code <= 77) return { text: "Snowing", icon: "❄️" };
+  if (code >= 80 && code <= 82) return { text: "Showers", icon: "🌧️" };
+  if (code >= 95 && code <= 99) return { text: "Stormy", icon: "⛈️" };
+  return { text: "Clear", icon: "☀️" };
+}
 
 function createMemberMarker(color: string, label: string): {
   element: HTMLDivElement;
@@ -874,8 +890,7 @@ export default function LivePage() {
   const [navigationActive, setNavigationActive] = useState(false);
   const [showDestinationSheet, setShowDestinationSheet] = useState(false);
   const [transportMode, setTransportMode] = useState<"driving" | "bike" | "foot">("driving");
-  const [showTransportModal, setShowTransportModal] = useState(false);
-  const [transportModeSelected, setTransportModeSelected] = useState(false);
+  const [headerWeatherF, setHeaderWeatherF] = useState<number | null>(null);
   const [availableRoutes, setAvailableRoutes] = useState<RouteData[]>([]);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState<number>(0);
   const [routeTolls, setRouteTolls] = useState<number[]>([]);
@@ -968,19 +983,13 @@ export default function LivePage() {
   const [mapStyleMode, setMapStyleMode] = useState<MapStyleMode>("light");
   
   // New layout states for Live Trip v2
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeSidebarTab, setActiveSidebarTab] = useState("live");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeSidebarTab, setActiveSidebarTab] = useState("overview");
   const [activeModeSelector, setActiveModeSelector] = useState<"driving" | "bike" | "trek" | "walk">("driving");
   const [activeMapFilters, setActiveMapFilters] = useState<Set<"traffic" | "alerts" | "cameras" | "hazards" | "weather" | "more">>(
     new Set(["traffic", "alerts", "cameras"])
   );
 
-  useEffect(() => {
-    // Show transport mode modal on first load if not selected
-    if (!transportModeSelected) {
-      setShowTransportModal(true);
-    }
-  }, [transportModeSelected]);
   const [activePanel, setActivePanel] = useState<LiveRailButtonId | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatTarget, setChatTarget] = useState<{
@@ -1059,6 +1068,33 @@ export default function LivePage() {
     const token =
       typeof window !== "undefined" ? localStorage.getItem("gt_token") : null;
     setIsGuest(!token);
+  }, []);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude: lat, longitude: lng } = position.coords;
+        void (async () => {
+          try {
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&temperature_unit=fahrenheit`;
+            const res = await fetch(url);
+            if (!res.ok) return;
+            const data = (await res.json()) as {
+              current_weather?: { temperature?: number };
+            };
+            const temp = data.current_weather?.temperature;
+            if (typeof temp === "number") {
+              setHeaderWeatherF(Math.round(temp));
+            }
+          } catch {
+            // Hide weather on fetch failure
+          }
+        })();
+      },
+      () => {},
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
   }, []);
 
   useEffect(() => {
@@ -1198,11 +1234,24 @@ export default function LivePage() {
   }, [geofence]);
 
   useEffect(() => {
-    const fb = initFirebase();
-    if (fb.ok && fb.db) {
-      firebaseDbRef.current = fb.db;
-      setFirebaseDb(fb.db);
+    async function setupFirebase() {
+      try {
+        const tokenData = await apiFetch<{ token: string }>("/live/firebase-token");
+        const fb = initFirebase();
+        if (fb.ok && fb.db) {
+          const authenticated = await authenticateFirebase(tokenData.token);
+          if (authenticated) {
+            firebaseDbRef.current = fb.db;
+            setFirebaseDb(fb.db);
+          } else {
+            console.error("Failed to authenticate with Firebase custom token");
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch Firebase custom token", err);
+      }
     }
+    void setupFirebase();
   }, []);
 
   const showToastMessage = useCallback((message: string) => {
@@ -2858,6 +2907,7 @@ export default function LivePage() {
     }
 
     const sessionMembersRef = ref(db, `live/${sessionId}/members`);
+    console.log("[Live] Firebase onValue listener session_id:", sessionId);
     const unsubscribe = onValue(sessionMembersRef, (snapshot) => {
       const data = (snapshot.val() ?? {}) as Record<string, any>;
       setSessionMembers(data);
@@ -3488,6 +3538,7 @@ export default function LivePage() {
       });
       setSessionId(session.id);
       sessionIdRef.current = session.id;
+      console.log("[Live] Active session_id:", session.id);
       startTrackRecording(session.id);
     } catch {
       sessionStartedRef.current = false;
@@ -3707,6 +3758,17 @@ export default function LivePage() {
     },
     [],
   );
+
+  useEffect(() => {
+    if (driverMode) {
+      document.body.classList.add("driver-mode");
+    } else {
+      document.body.classList.remove("driver-mode");
+    }
+    return () => {
+      document.body.classList.remove("driver-mode");
+    };
+  }, [driverMode]);
 
   useEffect(() => {
     document.body.classList.add("live-mode");
@@ -4429,126 +4491,246 @@ export default function LivePage() {
     : null;
 
     return (
-    <div
-      className="fixed inset-0 z-[100] h-[100dvh] w-full overflow-hidden bg-slate-100 flex text-stone-800"
-      style={{ margin: 0, padding: 0 }}
-    >
-      {/* 1. Sidebar */}
-      {!driverMode && (
-        <LiveSidebar
-          isOpen={sidebarOpen}
-          onToggle={() => setSidebarOpen(!sidebarOpen)}
-          tripName={tripName}
-          tripMembers={tripMembers}
-          memberLive={memberLive}
-          memberStatuses={memberStatuses}
-          convoy={convoy}
-          nextMeetup={meetingPoint}
-          onNavigateMeetup={() => {
-            if (meetingPoint) {
-              const place = {
-                name: meetingPoint.label,
-                lat: meetingPoint.lat,
-                lng: meetingPoint.lng,
-              };
-              setDestination(place);
-              destinationRef.current = place;
-              if (currentLatRef.current != null && currentLngRef.current != null) {
-                void fetchRoute(currentLatRef.current, currentLngRef.current, place);
-              }
-            }
-          }}
-          onInviteMembers={() => {
-            if (validTripId) {
-              const inviteLink = `${window.location.origin}/trips/${validTripId}`;
-              void navigator.clipboard.writeText(inviteLink).then(() => {
-                showToastMessage("Trip invite link copied!");
-              });
-            } else {
-              showToastMessage("Invite is only available in Group Trip mode");
-            }
-          }}
-          isDarkMode={mapStyleMode === "dark"}
-          onToggleDarkMode={cycleMapStyle}
-          activeTab={activeSidebarTab}
-          onTabChange={(tab) => {
-            setActiveSidebarTab(tab);
-            if (tab === "chat") {
-              setShowGroupChat(true);
-            }
-          }}
-          onOpenWayra={() => setShowWayra(true)}
-          sessionMembers={sessionMembers}
-          destination={destination}
-        />
-      )}
+    <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden bg-slate-100 text-stone-800">
+      {!driverMode ? (
+        <div className="w-full flex flex-col md:flex-row gap-2 items-center justify-between border-b border-stone-200 bg-white px-4 py-2.5 shrink-0 shadow-sm select-none">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+              title="Toggle sidebar"
+            >
+              <Menu size={18} />
+            </button>
+            <div className="flex items-center gap-1.5 bg-red-650 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full select-none">
+              <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+              <span>LIVE</span>
+            </div>
+            <div className="flex items-center gap-1 border border-stone-205 bg-white rounded-lg px-2.5 py-1 text-xs font-bold text-stone-800 shadow-sm">
+              <span>{tripName || "Colorado Trip"}</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+              <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+              <span>Session Active</span>
+            </div>
+          </div>
 
-      {/* 2. Main content area */}
-      <div className="flex flex-1 flex-col overflow-hidden relative">
-        {!driverMode && (
-          <LiveTopBar
-            tripName={tripName}
-            totalMembers={groupPulseData.totalMembers}
-            totalVehicles={groupPulseData.totalVehicles}
-            onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-            sessionId={sessionId}
-            hasOnlineMember={groupPulseData.hasOnlineMember}
-            activeMode={activeModeSelector}
-            onModeChange={(mode) => {
-              setActiveModeSelector(mode);
-              const osrmMode = mode === "walk" || mode === "trek" ? "foot" : mode === "bike" ? "bike" : "driving";
-              setTransportMode(osrmMode);
-              transportModeRef.current = osrmMode;
-              writeUserLocation(
-                currentLatRef.current ?? 0,
-                currentLngRef.current ?? 0,
-                currentBearingRef.current,
-                currentSpeedRef.current
-              );
-              if (destination) {
-                void fetchRoute(
-                  currentLatRef.current ?? 0,
-                  currentLngRef.current ?? 0,
-                  destination,
-                  { fitBounds: false }
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Destination selector or search */}
+            {destination ? (
+              <div className="flex items-center gap-1.5 bg-[#0F766E]/10 border border-[#0F766E]/20 text-[#0F766E] text-xs font-bold px-3 py-1 rounded-full">
+                <MapPin size={12} />
+                <span className="max-w-[120px] truncate">{destination.name}</span>
+                <button
+                  type="button"
+                  onClick={clearNavigation}
+                  className="text-[#0F766E] hover:text-teal-800 rounded-full p-0.5 transition-colors"
+                  title="Clear destination"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ) : (
+              <div className="relative w-48 md:w-60">
+                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                  <Search size={13} className="text-stone-400" />
+                </div>
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search destination..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSearchDropdown(true);
+                  }}
+                  onFocus={() => setShowSearchDropdown(true)}
+                  className="w-full pl-7 pr-7 py-1 bg-stone-50 border border-stone-200 text-xs rounded-full focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:bg-white text-stone-900 transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setShowSearchDropdown(false);
+                    }}
+                    className="absolute inset-y-0 right-0 pr-2 flex items-center text-stone-400 hover:text-stone-600"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+                {showSearchDropdown && searchResults.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-stone-200 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto custom-scrollbar p-1">
+                    {searchResults.map((place: NominatimPlace, index: number) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => {
+                          const lat = parseFloat(place.lat);
+                          const lng = parseFloat(place.lon);
+                          const name = getPlaceName(place.display_name);
+                          const destObj = { lat, lng, name };
+                          setDestination(destObj);
+                          destinationRef.current = destObj;
+                          setShowSearchDropdown(false);
+                          if (currentLatRef.current != null && currentLngRef.current != null) {
+                            void fetchRoute(currentLatRef.current, currentLngRef.current, destObj);
+                          }
+                        }}
+                        className="w-full text-left px-3 py-1.5 text-xs font-semibold text-stone-750 hover:bg-stone-50 rounded-lg flex items-start gap-2 transition-colors"
+                      >
+                        <MapPin size={13} className="text-stone-400 mt-0.5 shrink-0" />
+                        <span>{place.display_name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mode Selectors */}
+            <div className="flex items-center bg-stone-100 rounded-full p-0.5 border border-stone-200 select-none">
+              {[
+                { id: "driving", label: "Drive", icon: Car },
+                { id: "bike", label: "Bike", icon: Bike },
+                { id: "trek", label: "Trek", icon: Mountain },
+                { id: "walk", label: "Walk", icon: Footprints },
+              ].map((modeItem) => {
+                const isSelected = activeModeSelector === modeItem.id;
+                const IconComponent = modeItem.icon;
+                return (
+                  <button
+                    key={modeItem.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveModeSelector(modeItem.id as any);
+                      const osrmMode =
+                        modeItem.id === "walk" || modeItem.id === "trek"
+                          ? "foot"
+                          : modeItem.id === "bike"
+                            ? "bike"
+                            : "driving";
+                      setTransportMode(osrmMode);
+                      transportModeRef.current = osrmMode;
+                      writeUserLocation(
+                        currentLatRef.current ?? 0,
+                        currentLngRef.current ?? 0,
+                        currentBearingRef.current,
+                        currentSpeedRef.current
+                      );
+                      if (destination) {
+                        void fetchRoute(
+                          currentLatRef.current ?? 0,
+                          currentLngRef.current ?? 0,
+                          destination,
+                          { fitBounds: false }
+                        );
+                      }
+                    }}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
+                      isSelected
+                        ? "bg-[#0F766E] text-white shadow-sm"
+                        : "text-stone-600 hover:text-stone-900 hover:bg-stone-50"
+                    }`}
+                  >
+                    <IconComponent size={13} />
+                    <span>{modeItem.label}</span>
+                  </button>
                 );
-              }
-            }}
-            weather={weather}
-            userAvatarUrl={dashboardUser?.avatar_url}
-            userName={currentUserName}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            searchResults={searchResults}
-            searchLoading={searchLoading}
-            showSearchDropdown={showSearchDropdown}
-            setShowSearchDropdown={setShowSearchDropdown}
-            onSelectPlace={(place) => {
-              const lat = parseFloat(place.lat);
-              const lng = parseFloat(place.lon);
-              const name = getPlaceName(place.display_name);
-              const destObj = { lat, lng, name };
-              setDestination(destObj);
-              destinationRef.current = destObj;
-              if (currentLatRef.current != null && currentLngRef.current != null) {
-                void fetchRoute(currentLatRef.current, currentLngRef.current, destObj);
-              }
-            }}
-            searchInputRef={searchInputRef}
-            routeLoading={routeLoading}
-            destination={destination}
-            clearNavigation={clearNavigation}
-            getPlaceName={getPlaceName}
-          />
-        )}
+              })}
+            </div>
 
+            {/* Weather widget */}
+            {headerWeatherF !== null && (
+              <div className="flex items-center gap-1 bg-stone-50 border border-stone-200 px-2.5 py-1 rounded-full text-xs font-extrabold text-slate-700 shadow-sm">
+                <span>{getWeatherCondition(weather?.weathercode ?? null).icon}</span>
+                <span>{headerWeatherF}°F</span>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+      {/* Main content area — map fills full width; sidebar overlays when open */}
+      <div className="relative flex flex-1 flex-col overflow-hidden">
         {/* Inner Map/Dashboard section */}
         <div className="flex flex-1 overflow-hidden relative">
           {/* Map view wrapper */}
           <div className="flex flex-1 flex-col overflow-hidden relative">
-            <div className="flex-1 relative min-h-0">
-              {/* Map container */}
-              <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" />
+            <div className="relative min-h-0 flex-1 flex">
+              {/* Spacer on Desktop for Left Command Panel */}
+              {!driverMode && (
+                <div
+                  className={`transition-all duration-300 ease-in-out shrink-0 ${
+                    sidebarOpen ? "w-[360px]" : "w-0"
+                  } hidden md:block`}
+                />
+              )}
+
+              <div className="relative flex-1 h-full min-w-0">
+                {/* Map container */}
+                <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" />
+              </div>
+
+              {!driverMode && sidebarOpen ? (
+                <button
+                  type="button"
+                  className="absolute inset-0 z-10 bg-black/20"
+                  onClick={() => setSidebarOpen(false)}
+                  aria-label="Close sidebar"
+                />
+              ) : null}
+
+              {!driverMode ? (
+                <LiveSidebar
+                  sidebarOpen={sidebarOpen}
+                  setSidebarOpen={setSidebarOpen}
+                  tripName={tripName}
+                  tripMembers={tripMembers}
+                  memberLive={memberLive}
+                  memberStatuses={memberStatuses}
+                  convoy={convoy}
+                  nextMeetup={meetingPoint}
+                  onNavigateMeetup={() => {
+                    if (meetingPoint) {
+                      const place = {
+                        name: meetingPoint.label,
+                        lat: meetingPoint.lat,
+                        lng: meetingPoint.lng,
+                      };
+                      setDestination(place);
+                      destinationRef.current = place;
+                      if (currentLatRef.current != null && currentLngRef.current != null) {
+                        void fetchRoute(currentLatRef.current, currentLngRef.current, place);
+                      }
+                    }
+                  }}
+                  onInviteMembers={() => {
+                    if (validTripId) {
+                      const inviteLink = `${window.location.origin}/trips/${validTripId}`;
+                      void navigator.clipboard.writeText(inviteLink).then(() => {
+                        showToastMessage("Trip invite link copied!");
+                      });
+                    } else {
+                      showToastMessage("Invite is only available in Group Trip mode");
+                    }
+                  }}
+                  isDarkMode={mapStyleMode === "dark"}
+                  onToggleDarkMode={cycleMapStyle}
+                  activeTab={activeSidebarTab}
+                  onTabChange={(tab) => {
+                    setActiveSidebarTab(tab);
+                    if (tab === "chat") {
+                      setShowGroupChat(true);
+                    }
+                  }}
+                  onOpenWayra={() => setShowWayra(true)}
+                  sessionMembers={sessionMembers}
+                  destination={destination}
+                />
+              ) : null}
               
               {/* Overlays on map */}
               {driverMode ? (
@@ -4973,28 +5155,9 @@ export default function LivePage() {
           )}
         </div>
       </div>
+      </div>
 
-      {/* Global Modals / Dialogs / Overlay sheets */}
-      {showTransportModal && (
-        <TransportModeModal
-          isOpen={showTransportModal}
-          onSelect={(mode) => {
-            const osrmMode = mode;
-            setTransportMode(osrmMode);
-            transportModeRef.current = osrmMode;
-            setTransportModeSelected(true);
-            setShowTransportModal(false);
-            if (destination) {
-              void fetchRoute(
-                currentLatRef.current ?? 0,
-                currentLngRef.current ?? 0,
-                destination,
-                { fitBounds: true }
-              );
-            }
-          }}
-        />
-      )}
+
 
       {gpsState === "pending" ? (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-stone-900/25">

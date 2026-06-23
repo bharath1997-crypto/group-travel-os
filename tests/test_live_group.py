@@ -273,3 +273,19 @@ class TestConvoy:
         LiveService.end_convoy(db, mock_user.id, _TRIP_ID)
         mock_delete.assert_called_once_with(f"trips/{_TRIP_ID}/live/convoy")
         mock_fcm.assert_called_once()
+
+
+class TestFirebaseToken:
+    @patch("app.utils.firebase.create_custom_token")
+    def test_get_firebase_token_success(self, mock_create_token, auth_client):
+        mock_create_token.return_value = "mocked-firebase-token"
+        resp = auth_client.get("/api/v1/live/firebase-token")
+        assert resp.status_code == 200
+        assert resp.json() == {"token": "mocked-firebase-token"}
+        mock_create_token.assert_called_once_with(str(_USER_ID))
+
+    def test_get_firebase_token_unauthorized(self):
+        client = TestClient(app)
+        resp = client.get("/api/v1/live/firebase-token")
+        assert resp.status_code == 401
+

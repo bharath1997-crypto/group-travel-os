@@ -17,6 +17,7 @@ import {
   Route,
   Bus,
   Heart,
+  Radio,
   type LucideIcon,
 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
@@ -48,7 +49,7 @@ const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
 type SubNavItem = { href: string; label: string; Icon?: LucideIcon };
 
 type NavSectionDef = {
-  id: "explore" | "trips" | "split-activities";
+  id: "explore" | "trips" | "split-activities" | "live";
   href: string;
   label: string;
   Icon: LucideIcon | null;
@@ -90,6 +91,13 @@ const NAV_SECTIONS: NavSectionDef[] = [
     label: "Split Activities",
     mobileLabel: "Split",
     Icon: DollarSign,
+    subs: [],
+  },
+  {
+    id: "live",
+    href: "/live",
+    label: "LIVE",
+    Icon: Radio,
     subs: [],
   },
 ];
@@ -196,6 +204,9 @@ function sectionActive(pathname: string, section: NavSectionDef): boolean {
   }
   if (section.id === "split-activities") {
     return pathname.startsWith("/split-activities");
+  }
+  if (section.id === "live") {
+    return pathname.startsWith("/live");
   }
   return false;
 }
@@ -352,7 +363,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const isLivePage = pathname === "/live";
   const hideAssistantSidecar =
     pathname.startsWith("/travel-hub") || isLivePage;
-  const hideBottomNav = isLivePage;
+  const hideBottomNav = false;
 
   const isMapPage = pathname === "/map" || pathname === "/explore/map";
   const isExplorerEventsShell = pathname.startsWith("/explore/events");
@@ -556,9 +567,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           FIXED TOP HEADER — never hides on scroll
       ═══════════════════════════════════════════════════ */}
       <header
-        className={`dashboard-header fixed top-0 left-0 right-0 z-40 overflow-visible bg-white border-b border-stone-200 shadow-sm select-none${
-          isLivePage ? " hidden" : ""
-        }`}
+        className="dashboard-header fixed top-0 left-0 right-0 z-40 overflow-visible border-b border-stone-200 bg-white shadow-sm select-none"
       >
         <div className="flex h-16 items-center gap-3 overflow-visible px-3 md:gap-4 md:px-6">
           {/* Logo — image taller than the bar for a zoomed-in wordmark */}
@@ -580,39 +589,34 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             <nav className="hidden md:flex items-center gap-0.5 xl:gap-1" aria-label="Primary">
               {NAV_SECTIONS.map((section) => {
                 const active = sectionActive(pathname, section);
+                const isLiveSection = section.id === "live";
                 return (
                   <Link
                     key={section.id}
                     href={section.href}
                     className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-all ${
-                      active
-                        ? "text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
-                        : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
+                      isLiveSection
+                        ? active
+                          ? "bg-[#0F766E] text-white shadow-sm ring-1 ring-[#0F766E]/20"
+                          : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                        : active
+                          ? "text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
+                          : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
                     }`}
                     title={section.label}
                   >
-                    {section.Icon ? (
+                    {isLiveSection ? (
+                      <span className="relative flex h-2 w-2 shrink-0 items-center justify-center mr-0.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                      </span>
+                    ) : section.Icon ? (
                       <section.Icon size={15} strokeWidth={2} aria-hidden />
                     ) : null}
-                    <span className="hidden xl:inline">{section.label}</span>
+                    <span className={isLiveSection ? "" : "hidden xl:inline"}>{section.label}</span>
                   </Link>
                 );
               })}
-              <Link
-                href="/live"
-                className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-all ${
-                  isLivePage
-                    ? "text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
-                    : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
-                }`}
-                title="Live"
-              >
-                <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                </span>
-                <span className="hidden xl:inline">LIVE</span>
-              </Link>
             </nav>
 
             <div className="hidden md:block h-6 w-px bg-stone-200" />
@@ -661,7 +665,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         } ${
           hideBottomNav ? "pb-0" : "pb-[calc(56px+env(safe-area-inset-bottom,0px))]"
         }`}
-        style={{ paddingTop: isLivePage ? 0 : `${headerPx}px` }}
+        style={{ paddingTop: `${headerPx}px` }}
       >
         <main
           className={

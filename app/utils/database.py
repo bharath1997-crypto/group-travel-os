@@ -44,6 +44,7 @@ _engine_kw: dict = {
 }
 # PostgreSQL (and other server DBs): pooling + stale connection checks.
 if not _driver.startswith("sqlite"):
+    is_dev = settings.ENVIRONMENT == "development" or settings.DEBUG
     _engine_kw.update(
         {
             # Drop and re-test stale connections before handing to a request.
@@ -52,9 +53,9 @@ if not _driver.startswith("sqlite"):
             # Recycle connections before Supabase/pooler closes idle sockets (~30–60 min).
             "pool_recycle": 1800,
             # Connections kept open in the pool at all times.
-            "pool_size": 10,
+            "pool_size": 3 if is_dev else 10,
             # Extra connections allowed above pool_size under load, then discarded.
-            "max_overflow": 20,
+            "max_overflow": 2 if is_dev else 20,
             # Max seconds to wait for a free pooled connection.
             "pool_timeout": 30,
             # Timeout for connecting to the database (in seconds).

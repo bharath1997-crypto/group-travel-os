@@ -447,3 +447,8 @@ class SpectatorHostLocationOut(BaseModel):
 
 class SpectatorActiveCountOut(BaseModel):
     count: int
+
+
+class FirebaseTokenOut(BaseModel):
+    token: str
+
