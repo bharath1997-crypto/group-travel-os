@@ -44,6 +44,8 @@ type LiveTopBarProps = {
   destination: any;
   clearNavigation: () => void;
   getPlaceName: (displayName: string) => string;
+  sessionId?: string | null;
+  hasOnlineMember?: boolean;
 };
 
 export function LiveTopBar({
@@ -68,6 +70,8 @@ export function LiveTopBar({
   destination,
   clearNavigation,
   getPlaceName,
+  sessionId = null,
+  hasOnlineMember = false,
 }: LiveTopBarProps) {
   // Format weather temperature
   const tempF = weather?.current?.temp_f ?? 72;
@@ -101,10 +105,21 @@ export function LiveTopBar({
           </span>
           <ChevronDown size={14} className="text-stone-500" />
         </div>
-        <div className="flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-semibold text-green-700 border border-green-200">
-          <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-          {totalMembers || 8} Members • {totalVehicles || 3} Vehicles
-        </div>
+        {sessionId ? (
+          <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold border ${
+            hasOnlineMember 
+              ? "bg-green-50 text-green-700 border-green-200" 
+              : "bg-stone-50 text-stone-600 border-stone-200"
+          }`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${hasOnlineMember ? "bg-green-500 animate-pulse" : "bg-stone-400"}`} />
+            {totalMembers} Member{totalMembers !== 1 ? "s" : ""} • {totalVehicles} Car{totalVehicles !== 1 ? "s" : ""} • Session: {sessionId}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 rounded-full bg-stone-50 px-2.5 py-1 text-[10px] font-semibold text-stone-650 border border-stone-200">
+            <span className="h-1.5 w-1.5 rounded-full bg-stone-400" />
+            No live session
+          </div>
+        )}
       </div>
 
       {/* Center: Search input */}

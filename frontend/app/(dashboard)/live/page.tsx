@@ -911,6 +911,56 @@ export default function LivePage() {
   const [convoy, setConvoy] = useState<ConvoyData | null>(null);
   const [memberStatuses, setMemberStatuses] = useState<Record<string, QuickStatus>>({});
   const [memberLive, setMemberLive] = useState<Record<string, MemberLiveData>>({});
+  const [sessionMembers, setSessionMembers] = useState<Record<string, any>>({});
+
+  const groupPulseData = useMemo(() => {
+    const now = Math.floor(Date.now() / 1000);
+    let moving = 0;
+    let stopped = 0;
+    let stale = 0;
+    let offline = 0;
+    const vehiclesSet = new Set<string>();
+
+    const membersList = Object.values(sessionMembers || {});
+
+    for (const m of membersList) {
+      const tsVal = m.ts ?? m.timestamp;
+      const tsSec = tsVal ? (tsVal > 20000000000 ? Math.floor(tsVal / 1000) : tsVal) : now;
+      const ageSec = now - tsSec;
+      const speed = m.speed ?? 0;
+      const isOnline = m.online !== false && m.is_active !== false;
+
+      const vehicleId = m.vehicle_id || null;
+      if (vehicleId) {
+        vehiclesSet.add(vehicleId);
+      }
+
+      if (!isOnline || ageSec > 300) {
+        offline++;
+      } else if (ageSec > 120) {
+        stale++;
+      } else if (speed > 2) {
+        moving++;
+      } else {
+        stopped++;
+      }
+    }
+
+    const hasNullVehicle = membersList.some((m) => !m.vehicle_id);
+    const totalVehicles = vehiclesSet.size + (hasNullVehicle && membersList.length > 0 ? 1 : 0);
+
+    const hasOnlineMember = membersList.some((m) => m.online !== false && m.is_active !== false && (now - (m.ts ?? m.timestamp ?? 0) <= 300));
+
+    return {
+      totalMembers: membersList.length,
+      totalVehicles,
+      movingCount: moving,
+      stoppedCount: stopped,
+      staleCount: stale,
+      offlineCount: offline,
+      hasOnlineMember,
+    };
+  }, [sessionMembers]);
   const [groupPanelOpen, setGroupPanelOpen] = useState(false);
   const [sheetHeight, setSheetHeight] = useState<SheetHeight>("peek");
   const [sheetTab, setSheetTab] = useState<SheetTab>("reports");
@@ -2801,6 +2851,21 @@ export default function LivePage() {
   }, [firebaseDb, groupMode, syncGeofenceOnMap, validTripId]);
 
   useEffect(() => {
+    const db = firebaseDb;
+    if (!sessionId || !db) {
+      setSessionMembers({});
+      return;
+    }
+
+    const sessionMembersRef = ref(db, `live/${sessionId}/members`);
+    const unsubscribe = onValue(sessionMembersRef, (snapshot) => {
+      const data = (snapshot.val() ?? {}) as Record<string, any>;
+      setSessionMembers(data);
+    });
+    return () => off(sessionMembersRef, "value", unsubscribe);
+  }, [firebaseDb, sessionId]);
+
+  useEffect(() => {
     if (!groupMode || !validTripId || !firebaseDb) return;
 
     const membersRef = ref(firebaseDb, `trips/${validTripId}/live/members`);
@@ -4413,6 +4478,8 @@ export default function LivePage() {
             }
           }}
           onOpenWayra={() => setShowWayra(true)}
+          sessionMembers={sessionMembers}
+          destination={destination}
         />
       )}
 
@@ -4421,9 +4488,11 @@ export default function LivePage() {
         {!driverMode && (
           <LiveTopBar
             tripName={tripName}
-            totalMembers={tripMembers.length}
-            totalVehicles={3}
+            totalMembers={groupPulseData.totalMembers}
+            totalVehicles={groupPulseData.totalVehicles}
             onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+            sessionId={sessionId}
+            hasOnlineMember={groupPulseData.hasOnlineMember}
             activeMode={activeModeSelector}
             onModeChange={(mode) => {
               setActiveModeSelector(mode);
@@ -4537,11 +4606,13 @@ export default function LivePage() {
               {!driverMode && !sidebarOpen && (
                 <div className="absolute left-3 top-16 z-[110]">
                   <GroupPulse
-                    totalMembers={tripMembers.length}
-                    totalVehicles={3}
-                    movingCount={6}
-                    stoppedCount={1}
-                    offlineCount={1}
+                    totalMembers={groupPulseData.totalMembers}
+                    totalVehicles={groupPulseData.totalVehicles}
+                    movingCount={groupPulseData.movingCount}
+                    stoppedCount={groupPulseData.stoppedCount}
+                    staleCount={groupPulseData.staleCount}
+                    offlineCount={groupPulseData.offlineCount}
+                    hasOnlineMember={groupPulseData.hasOnlineMember}
                   />
                 </div>
               )}
