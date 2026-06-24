@@ -277,5 +277,5 @@ After every pytest run, update this section in GEMINI.md:
 | tests/test_activities.py | — | — |
 | tests/test_buddy.py | — | — |
 | tests/test_explore.py | — | — |
-| tests/test_live_group.py | 12 | 2026-06-23 |
+| tests/test_live_group.py | 12 | 2026-06-24 |
 
