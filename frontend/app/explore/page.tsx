@@ -279,16 +279,7 @@ export default function ExplorePage() {
                 <Map size={15} strokeWidth={2} />
                 <span>Trips</span>
               </Link>
-              <Link
-                href="/live"
-                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 lg:px-3 text-xs lg:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
-              >
-                <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                </span>
-                <span>LIVE</span>
-              </Link>
+
               <Link
                 href="/split-activities"
                 className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 lg:px-3 text-xs lg:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"

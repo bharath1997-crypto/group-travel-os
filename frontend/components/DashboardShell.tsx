@@ -56,7 +56,7 @@ const TRIPS_SUBNAV = [
 ];
 
 /* ─── Primary tabs ───────────────────────────────────────────────────────── */
-type PrimaryTab = "explore" | "trips" | "live" | "notifications" | "profile";
+type PrimaryTab = "explore" | "trips" | "notifications" | "profile";
 
 function getPrimaryTab(pathname: string): PrimaryTab {
   if (pathname.startsWith("/explore") || pathname.startsWith("/weather") || pathname.startsWith("/map"))
@@ -69,22 +69,10 @@ function getPrimaryTab(pathname: string): PrimaryTab {
     false
   )
     return "trips";
-  if (pathname.startsWith("/trip-live") || pathname.startsWith("/live"))
-    return "live";
   if (pathname.startsWith("/notifications")) return "notifications";
   if (pathname.startsWith("/profile") || pathname.startsWith("/settings") || pathname.startsWith("/stats"))
     return "profile";
   return "explore";
-}
-
-/* ─── Pulsing LIVE dot icon ──────────────────────────────────────────────── */
-function LiveDot() {
-  return (
-    <span className="relative flex h-5 w-5 items-center justify-center">
-      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-      <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-400" />
-    </span>
-  );
 }
 
 /* ─── Overflow menu (mobile top-bar) ─────────────────────────────────────── */
@@ -239,12 +227,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       Icon: Map,
     },
     {
-      id: "live" as PrimaryTab,
-      href: "/live",
-      label: "LIVE",
-      Icon: null, // replaced with LiveDot
-    },
-    {
       id: "notifications" as PrimaryTab,
       href: "/notifications",
       label: "Notifications",
@@ -308,32 +290,18 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <nav className="flex flex-1 flex-col gap-0.5 px-3 py-3 overflow-y-auto">
           {sidebarPrimary.map(({ id, href, label, Icon }) => {
             const active = activeTab === id;
-            const isLive = id === "live";
             return (
               <div key={id}>
                 <Link
                   href={href}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all ${
-                    active && !isLive
+                    active
                       ? "bg-[#0F766E]/20 text-[#CCFBF1]"
-                      : isLive
-                      ? active
-                        ? "bg-emerald-500/20 text-emerald-300"
-                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
                       : "text-slate-400 hover:bg-slate-800 hover:text-white"
                   }`}
                 >
-                  {isLive ? (
-                    <LiveDot />
-                  ) : Icon ? (
-                    <Icon className="h-4 w-4 shrink-0" />
-                  ) : null}
+                  {Icon && <Icon className="h-4 w-4 shrink-0" />}
                   {label}
-                  {isLive && (
-                    <span className="ml-auto rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-emerald-400">
-                      Live
-                    </span>
-                  )}
                 </Link>
 
                 {/* Sub-navs */}
@@ -495,37 +463,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
         {/* ─────────────────────── MOBILE BOTTOM NAV ──────────────────────── */}
         <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-end bg-[#0F172A] border-t border-slate-800 md:hidden">
-          {sidebarPrimary.map(({ id, href, label, Icon }, idx) => {
+          {sidebarPrimary.map(({ id, href, label, Icon }) => {
             const active = activeTab === id;
-            const isLive = id === "live";
-            const isCenter = idx === 2; // LIVE is index 2
-
-            if (isCenter) {
-              return (
-                <Link
-                  key={id}
-                  href={href}
-                  className="flex flex-1 flex-col items-center justify-start -mt-5"
-                >
-                  <span
-                    className={`flex h-14 w-14 items-center justify-center rounded-full border-4 shadow-xl transition-all ${
-                      active
-                        ? "border-slate-900 bg-emerald-500 shadow-emerald-500/40"
-                        : "border-slate-900 bg-[#0F766E] shadow-[#0F766E]/30 hover:bg-emerald-500"
-                    }`}
-                  >
-                    <LiveDot />
-                  </span>
-                  <span
-                    className={`mt-1 text-[9px] font-black uppercase tracking-widest pb-2 ${
-                      active ? "text-emerald-400" : "text-slate-500"
-                    }`}
-                  >
-                    Live
-                  </span>
-                </Link>
-              );
-            }
 
             return (
               <Link

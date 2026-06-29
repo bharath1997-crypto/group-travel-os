@@ -157,7 +157,7 @@ type Message = {
 
 export function LoungeDock() {
   const pathname = usePathname();
-  const isLiveMapPage = pathname === "/live";
+  const isLiveMapPage = false;
   const [isOpen, setIsOpen] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);

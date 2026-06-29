@@ -17,7 +17,7 @@ export default function NotFound() {
   }, []);
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#0F172A] px-6 py-12 text-[#F8FAFC] overflow-hidden">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#0F172A] px-6 py-12 text-[#F8FAFC] overflow-hidden" suppressHydrationWarning>
       {/* Background Radial Glow */}
       <div 
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full opacity-20 pointer-events-none blur-[100px]"

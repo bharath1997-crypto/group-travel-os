@@ -49,7 +49,7 @@ const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
 type SubNavItem = { href: string; label: string; Icon?: LucideIcon };
 
 type NavSectionDef = {
-  id: "explore" | "trips" | "split-activities" | "live";
+  id: "explore" | "live" | "trips" | "split-activities";
   href: string;
   label: string;
   Icon: LucideIcon | null;
@@ -69,6 +69,13 @@ const NAV_SECTIONS: NavSectionDef[] = [
       { href: "/weather",            label: "Weather",    Icon: CloudSun },
       { href: "/explore/map",        label: "Map View",   Icon: Map },
     ],
+  },
+  {
+    id: "live",
+    href: "/live",
+    label: "Live",
+    Icon: Radio,
+    subs: [],
   },
   {
     id: "trips",
@@ -91,13 +98,6 @@ const NAV_SECTIONS: NavSectionDef[] = [
     label: "Split Activities",
     mobileLabel: "Split",
     Icon: DollarSign,
-    subs: [],
-  },
-  {
-    id: "live",
-    href: "/live",
-    label: "LIVE",
-    Icon: Radio,
     subs: [],
   },
 ];
@@ -189,6 +189,9 @@ function sectionActive(pathname: string, section: NavSectionDef): boolean {
       pathname === "/map"
     );
   }
+  if (section.id === "live") {
+    return pathname === "/live" || pathname.startsWith("/live/");
+  }
   if (section.id === "trips") {
     return (
       pathname === "/trips" ||
@@ -204,9 +207,6 @@ function sectionActive(pathname: string, section: NavSectionDef): boolean {
   }
   if (section.id === "split-activities") {
     return pathname.startsWith("/split-activities");
-  }
-  if (section.id === "live") {
-    return pathname.startsWith("/live");
   }
   return false;
 }
@@ -360,12 +360,11 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading } = useDashboardUser();
-  const isLivePage = pathname === "/live";
   const hideAssistantSidecar =
-    pathname.startsWith("/travel-hub") || isLivePage;
+    pathname.startsWith("/travel-hub");
   const hideBottomNav = false;
 
-  const isMapPage = pathname === "/map" || pathname === "/explore/map";
+  const isMapPage = pathname === "/map" || pathname === "/explore/map" || pathname === "/live" || pathname.startsWith("/live");
   const isExplorerEventsShell = pathname.startsWith("/explore/events");
   const isExploreShortsShell = pathname.startsWith("/explore/shorts");
   const isFlightsPage = pathname.startsWith("/flights");
@@ -379,6 +378,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     pathname === "/group" ||
     pathname === "/explore" ||
     pathname === "/buses" ||
+    pathname === "/live" ||
     isTripSpacePage;
 
   const [isMdUp, setIsMdUp] = useState(false);
@@ -484,7 +484,6 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
   const needsZeroOuterPadding =
     isMapPage ||
-    isLivePage ||
     isExplorerEventsShell ||
     isExploreShortsShell ||
     pathname.startsWith("/profile");
@@ -589,31 +588,21 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             <nav className="hidden md:flex items-center gap-0.5 xl:gap-1" aria-label="Primary">
               {NAV_SECTIONS.map((section) => {
                 const active = sectionActive(pathname, section);
-                const isLiveSection = section.id === "live";
                 return (
                   <Link
                     key={section.id}
                     href={section.href}
                     className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-all ${
-                      isLiveSection
-                        ? active
-                          ? "bg-[#0F766E] text-white shadow-sm ring-1 ring-[#0F766E]/20"
-                          : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-                        : active
-                          ? "text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
-                          : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
+                      active
+                        ? "text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
+                        : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
                     }`}
                     title={section.label}
                   >
-                    {isLiveSection ? (
-                      <span className="relative flex h-2 w-2 shrink-0 items-center justify-center mr-0.5">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                      </span>
-                    ) : section.Icon ? (
+                    {section.Icon ? (
                       <section.Icon size={15} strokeWidth={2} aria-hidden />
                     ) : null}
-                    <span className={isLiveSection ? "" : "hidden xl:inline"}>{section.label}</span>
+                    <span className="hidden xl:inline">{section.label}</span>
                   </Link>
                 );
               })}
@@ -660,28 +649,24 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           MAIN CONTENT — padded to clear the fixed header
       ═══════════════════════════════════════════════════ */}
       <div
-        className={`dashboard-content-shell main-content flex h-screen h-[100dvh] w-full max-w-[100vw] flex-col overflow-y-auto md:pb-0 ${
-          isLivePage ? "ml-0 pl-0 overflow-hidden" : ""
-        } ${
-          hideBottomNav ? "pb-0" : "pb-[calc(56px+env(safe-area-inset-bottom,0px))]"
-        }`}
+        className="dashboard-content-shell main-content flex h-screen h-[100dvh] w-full max-w-[100vw] flex-col overflow-y-auto md:pb-0 pb-[calc(56px+env(safe-area-inset-bottom,0px))]"
         style={{ paddingTop: `${headerPx}px` }}
       >
         <main
           className={
             needsZeroOuterPadding
-              ? `flex min-h-0 flex-1 flex-col overflow-hidden p-0${isLivePage ? " dashboard-main-live" : ""}`
+              ? "flex min-h-0 flex-1 flex-col overflow-hidden p-0"
               : "min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-4 xl:p-5"
           }
         >
-          {isMapPage || isLivePage ? (
+          {isMapPage ? (
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
               <div className="sr-only" aria-hidden>
                 <PresenceHeartbeat />
               </div>
               <PostOAuthWelcomeModal />
               <VerificationBanner />
-              <div className="live-page-shell relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+              <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
                 {children}
               </div>
             </div>

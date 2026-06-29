@@ -257,7 +257,7 @@ After every feature change, update this section in GEMINI.md:
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2025-06 |
-| Live Trip Mode (MapLibre) | Complete | 2026-06 (Unified Dashboard Shell & Panels) |
+| Live Trip Mode (MapLibre) | Deprecated | 2026-06-29 (Purged frontend implementation and links) |
 | Buses page | Pending | — |
 
 ---
@@ -277,5 +277,5 @@ After every pytest run, update this section in GEMINI.md:
 | tests/test_activities.py | — | — |
 | tests/test_buddy.py | — | — |
 | tests/test_explore.py | — | — |
-| tests/test_live_group.py | 12 | 2026-06-24 |
+| tests/test_live_group.py | Deprecated | 2026-06-25 |
 

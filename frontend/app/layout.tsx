@@ -51,19 +51,27 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
-        <Script id="rovvy-api-rejection-guard" strategy="beforeInteractive">
-          {`(function(){if(typeof window==="undefined")return;var k="__rovvyApiRejectionGuardInline";if(window[k])return;window[k]=true;window.addEventListener("unhandledrejection",function(e){var r=e.reason;var m=r&&r.message?r.message:String(r||"");if(/timed out|database might be waking|Failed to fetch|Network error|Could not reach|rovvyApiUnavailable/i.test(m)||(r&&r.rovvyApiUnavailable)){e.preventDefault();console.warn("[Rovvy] API unavailable:",m);}},true);})();`}
-        </Script>
+        <Script
+          id="rovvy-api-rejection-guard"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){if(typeof window==="undefined")return;var k="__rovvyApiRejectionGuardInline";if(window[k])return;window[k]=true;window.addEventListener("unhandledrejection",function(e){var r=e.reason;var m=r&&r.message?r.message:String(r||"");if(/timed out|database might be waking|Failed to fetch|Network error|Could not reach|rovvyApiUnavailable/i.test(m)||(r&&r.rovvyApiUnavailable)){e.preventDefault();console.warn("[Rovvy] API unavailable:",m);}},true);})();`
+          }}
+        />
         <ClientProviders>{children}</ClientProviders>
-        <Script id="gt-register-sw" strategy="afterInteractive">
-          {`
-            if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
-              navigator.serviceWorker.register("/sw.js")
-                .then(function (reg) { console.log("SW registered:", reg.scope); })
-                .catch(function (err) { console.log("SW error:", err); });
-            }
-          `}
-        </Script>
+        <Script
+          id="gt-register-sw"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+                navigator.serviceWorker.register("/sw.js")
+                  .then(function (reg) { console.log("SW registered:", reg.scope); })
+                  .catch(function (err) { console.log("SW error:", err); });
+              }
+            `
+          }}
+        />
         {process.env.NODE_ENV === "production" && (
           <Script
             id="travelpayouts-drive"

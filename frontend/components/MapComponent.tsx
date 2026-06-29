@@ -547,19 +547,7 @@ export default function MapComponent({
             </button>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={() =>
-            showToast("Live location sharing coming in the next update!")
-          }
-          className="flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow-lg ring-2 ring-red-400/50"
-        >
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-200 opacity-80" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
-          </span>
-          Live
-        </button>
+
       </div>
 
       {loadError ? (

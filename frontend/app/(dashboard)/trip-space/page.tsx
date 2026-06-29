@@ -1075,7 +1075,7 @@ export default function TripSpacePage() {
                 Group Coordination Panel
               </h3>
               
-              <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+              <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
                 {/* Polls */}
                 <Link
                   href="/trips/new?tab=polls"
@@ -1109,16 +1109,6 @@ export default function TripSpacePage() {
                   <span className="text-xs font-bold text-slate-800">Invite Friends</span>
                   <span className="text-[9px] text-slate-500 mt-1">Copy invite link</span>
                 </button>
-
-                {/* LIVE Mode */}
-                <Link
-                  href="/live"
-                  className="flex flex-col items-center justify-center text-center rounded-xl border border-slate-200 bg-white hover:border-[#0F766E] hover:bg-slate-50 p-5 group transition shadow-sm"
-                >
-                  <MapPin className="h-6 w-6 text-pink-500 group-hover:scale-110 transition-transform mb-3" />
-                  <span className="text-xs font-bold text-slate-800">LIVE Mode</span>
-                  <span className="text-[9px] text-slate-500 mt-1">Live trip tracking</span>
-                </Link>
               </div>
             </div>
           </div>

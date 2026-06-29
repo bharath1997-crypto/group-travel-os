@@ -53,9 +53,9 @@ if not _driver.startswith("sqlite"):
             # Recycle connections before Supabase/pooler closes idle sockets (~30–60 min).
             "pool_recycle": 1800,
             # Connections kept open in the pool at all times.
-            "pool_size": 3 if is_dev else 10,
+            "pool_size": 6 if is_dev else 10,
             # Extra connections allowed above pool_size under load, then discarded.
-            "max_overflow": 2 if is_dev else 20,
+            "max_overflow": 4 if is_dev else 20,
             # Max seconds to wait for a free pooled connection.
             "pool_timeout": 30,
             # Timeout for connecting to the database (in seconds).

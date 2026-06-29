@@ -110,24 +110,7 @@ async def lifespan(app: FastAPI):
         id="viator_sync",
         replace_existing=True,
     )
-    from app.jobs.live_chat_cleanup import cleanup_expired_report_chats
 
-    scheduler.add_job(
-        cleanup_expired_report_chats,
-        trigger="interval",
-        minutes=5,
-        id="live_chat_cleanup",
-        replace_existing=True,
-    )
-    from app.jobs.dead_zone_detection import detect_dead_zones
-
-    scheduler.add_job(
-        detect_dead_zones,
-        trigger="interval",
-        minutes=5,
-        id="detect_dead_zones",
-        replace_existing=True,
-    )
 
     yield
 
@@ -418,9 +401,6 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(integrations_router, prefix="/api/v1")
 
-    from app.routes.live import router as live_router
-
-    app.include_router(live_router, prefix="/api/v1")
 
 
 

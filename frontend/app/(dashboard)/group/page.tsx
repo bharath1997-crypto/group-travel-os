@@ -17,22 +17,14 @@ export default function GroupHubPage() {
       title: "Rovvy Lounge",
       desc: "Messages, calls & updates",
     },
-    {
-      href: "/live",
-      emoji: "📍",
-      title: "Live Coordination",
-      desc: "Real-time session",
-    },
   ];
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] px-4 py-8 text-slate-800 md:px-8">
-      <div className="mx-auto max-w-4xl">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
-          Your Group
-        </h1>
+    <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="flex flex-col">
+        <h1 className="text-2xl font-bold text-slate-900">Group Travel OS</h1>
         <p className="mt-2 max-w-xl text-sm text-slate-500">
-          Buddy trips, group hub, and live coordination.
+          Buddy trips and group hub.
         </p>
 
         <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
