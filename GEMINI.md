@@ -257,7 +257,7 @@ After every feature change, update this section in GEMINI.md:
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2025-06 |
-| Live Trip Mode (MapLibre) | Deprecated | 2026-06-29 (Purged frontend implementation and links) |
+| Live Trip Mode (MapLibre Static Landing) | Complete | 2026-06-29 (Built Static Landing state on branch stitch-static-only) |
 | Buses page | Pending | — |
 
 ---
