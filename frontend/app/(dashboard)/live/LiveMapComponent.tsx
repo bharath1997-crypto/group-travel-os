@@ -41,6 +41,8 @@ type Props = {
   onUserLocationChange?: (update: UserLocationUpdate) => void;
   onLiveGpsChange?: (active: boolean) => void;
   onGpsError?: (message: string) => void;
+  nearbyResults?: any[] | null;
+  onNearbyMarkerClick?: (place: any) => void;
 };
 
 const GPS_OPTIONS: PositionOptions = {
@@ -151,6 +153,8 @@ export default function LiveMapComponent({
   onUserLocationChange,
   onLiveGpsChange,
   onGpsError,
+  nearbyResults,
+  onNearbyMarkerClick,
 }: Props) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<maplibregl.Map | null>(null);
@@ -396,6 +400,61 @@ export default function LiveMapComponent({
       .setLngLat([mapPin.lng, mapPin.lat])
       .addTo(map);
   }, [mapPin, navigationMode]);
+
+  const nearbyMarkersRef = useRef<maplibregl.Marker[]>([]);
+
+  useEffect(() => {
+    const map = instanceRef.current;
+    if (!map) return;
+
+    nearbyMarkersRef.current.forEach((m) => m.remove());
+    nearbyMarkersRef.current = [];
+
+    if (!nearbyResults || nearbyResults.length === 0) return;
+
+    nearbyResults.forEach((res, index) => {
+      const el = document.createElement("div");
+      el.className = "nearby-result-marker";
+      el.innerHTML = `
+        <div style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: #0F766E;
+          color: white;
+          font-size: 11px;
+          font-weight: 700;
+          border: 2px solid white;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          cursor: pointer;
+        ">
+          \${index + 1}
+        </div>
+      `;
+
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        onNearbyMarkerClick?.(res);
+      });
+
+      const marker = new maplibregl.Marker({
+        element: el,
+        anchor: "center",
+      })
+        .setLngLat([res.lng, res.lat])
+        .addTo(map);
+
+      nearbyMarkersRef.current.push(marker);
+    });
+
+    return () => {
+      nearbyMarkersRef.current.forEach((m) => m.remove());
+      nearbyMarkersRef.current = [];
+    };
+  }, [nearbyResults, onNearbyMarkerClick]);
 
   const routeFitKeyRef = useRef("");
 

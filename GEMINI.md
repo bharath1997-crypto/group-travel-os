@@ -257,7 +257,7 @@ After every feature change, update this section in GEMINI.md:
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2026-06-30 (Aligned nav bar to match Dashboard Layout header) |
-| Live Trip Mode (MapLibre Static Landing) | Complete | 2026-06-30 (Refined with map-first in-map search and frosted glass suggestions trigger) |
+| Live Trip Mode (MapLibre Static Landing) | Complete | 2026-06-30 (Implemented interactive glassmorphism Nearby Suggestions results panel and map markers) |
 | Buses page | Pending | — |
 
 ---
@@ -278,4 +278,5 @@ After every pytest run, update this section in GEMINI.md:
 | tests/test_buddy.py | — | — |
 | tests/test_explore.py | — | — |
 | tests/test_live_group.py | Deprecated | 2026-06-25 |
+| tests/test_place_media.py | 8 | 2026-06-30 |
 

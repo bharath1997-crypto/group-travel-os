@@ -44,6 +44,12 @@ import {
   fetchRoviPlaceExplanation,
   type RoviPlaceExplanation,
 } from "./live-rovi";
+import { buildPlaceKey, extractCityCountry } from "./live-place-key";
+import {
+  resolvePlaceMedia,
+  type PlaceMediaItem,
+  type PlaceMediaResolution,
+} from "./live-place-media";
 import type { LiveMapRef, MapFollowMode } from "./LiveMapComponent";
 
 const LiveMapComponent = dynamic(() => import("./LiveMapComponent"), {
@@ -93,6 +99,148 @@ function formatStreetAddress(
     .join(", ");
   const formatted = [line1, line2].filter(Boolean).join(", ");
   return formatted || fallback || "";
+}
+
+// TODO for backend: GET /api/v1/places/nearby?category=&lat=&lng=&limit=15
+async function searchNearbyPlaces(
+  category: string,
+  center: { lat: number; lng: number },
+): Promise<PlacePreviewData[]> {
+  await new Promise((resolve) => setTimeout(resolve, 800));
+
+  const mockTemplates: Record<string, { name: string; addr: string; cat: string; hours?: string }[]> = {
+    "Gas Station": [
+      { name: "Shell", addr: "Western Ave", cat: "Gas station", hours: "Open 24/7" },
+      { name: "BP", addr: "Damen Ave", cat: "Gas station", hours: "Open 24/7" },
+      { name: "Mobil", addr: "Fullerton Ave", cat: "Gas station", hours: "Open 24/7" },
+      { name: "Speedway", addr: "Elston Ave", cat: "Gas station", hours: "Open 24/7" },
+      { name: "7-Eleven Gas", addr: "Belmont Ave", cat: "Gas station", hours: "Open 24/7" },
+      { name: "Chevron", addr: "Kedzie Ave", cat: "Gas station", hours: "Open now" },
+      { name: "Costco Gasoline", addr: "Clybourn Ave", cat: "Gas station", hours: "Open now" },
+      { name: "Amoco", addr: "Milwaukee Ave", cat: "Gas station", hours: "Open 24/7" },
+      { name: "Citgo", addr: "Pulaski Rd", cat: "Gas station", hours: "Open now" },
+      { name: "Marathon", addr: "North Ave", cat: "Gas station", hours: "Open 24/7" },
+      { name: "Phillips 66", addr: "Grand Ave", cat: "Gas station", hours: "Open now" },
+      { name: "Valero", addr: "Division St", cat: "Gas station", hours: "Open now" },
+    ],
+    "Coffee Shop": [
+      { name: "Starbucks", addr: "Logan Blvd", cat: "Cafe", hours: "Open now" },
+      { name: "Colectivo Coffee", addr: "Milwaukee Ave", cat: "Cafe", hours: "Open now" },
+      { name: "Ipsento Coffee", addr: "Western Ave", cat: "Cafe", hours: "Open now" },
+      { name: "Intelligentsia Coffee", addr: "Broadway St", cat: "Cafe", hours: "Open now" },
+      { name: "Dark Matter Coffee", addr: "Chicago Ave", cat: "Cafe", hours: "Open now" },
+      { name: "La Colombe Torrefaction", addr: "Randolph St", cat: "Cafe", hours: "Open now" },
+      { name: "Peet's Coffee", addr: "Michigan Ave", cat: "Cafe", hours: "Open now" },
+      { name: "Philz Coffee", addr: "Wicker Park", cat: "Cafe", hours: "Open now" },
+      { name: "Dunkin'", addr: "Kedzie Ave", cat: "Cafe", hours: "Open 24/7" },
+      { name: "Metric Coffee", addr: "Fulton St", cat: "Cafe", hours: "Open now" },
+      { name: "Sip of Hope", addr: "Fullerton Ave", cat: "Cafe", hours: "Open now" },
+      { name: "Gaslight Coffee Roasters", addr: "Fullerton Ave", cat: "Cafe", hours: "Open now" },
+    ],
+    "Restaurant": [
+      { name: "Lula Cafe", addr: "Kedzie Blvd", cat: "Restaurant", hours: "Open now" },
+      { name: "Giant", addr: "Armitage Ave", cat: "Restaurant", hours: "Open now" },
+      { name: "Mi Tocaya Antojería", addr: "Logan Blvd", cat: "Restaurant", hours: "Open now" },
+      { name: "Ramen Wasabi", addr: "Milwaukee Ave", cat: "Restaurant", hours: "Open now" },
+      { name: "The Whistler", addr: "Kedzie Ave", cat: "Restaurant", hours: "Open now" },
+      { name: "Longman & Eagle", addr: "Schubert Ave", cat: "Restaurant", hours: "Open now" },
+      { name: "Billy Sunday", addr: "Kedzie Ave", cat: "Restaurant", hours: "Open now" },
+      { name: "Dunlays on the Square", addr: "Logan Sq", cat: "Restaurant", hours: "Open now" },
+      { name: "Daisies", addr: "Milwaukee Ave", cat: "Restaurant", hours: "Open now" },
+      { name: "Taqueria Moran", addr: "California Ave", cat: "Restaurant", hours: "Open now" },
+      { name: "Chipotle Mexican Grill", addr: "Milwaukee Ave", cat: "Restaurant", hours: "Open now" },
+      { name: "McDonald's", addr: "Fullerton Ave", cat: "Restaurant", hours: "Open 24/7" },
+    ],
+    "Restroom": [
+      { name: "Public Restroom - Logan Square Park", addr: "Kedzie Blvd", cat: "Restroom", hours: "Open now" },
+      { name: "Library Restrooms", addr: "Altgeld St", cat: "Restroom", hours: "Open now" },
+      { name: "Community Center Restroom", addr: "Fullerton Ave", cat: "Restroom", hours: "Open now" },
+      { name: "Target Customer Restroom", addr: "Elston Ave", cat: "Restroom", hours: "Open now" },
+      { name: "Rest Area Restrooms", addr: "Kennedy Expy", cat: "Restroom", hours: "Open 24/7" },
+      { name: "Public Restroom - Haas Park", addr: "Washtenaw Ave", cat: "Restroom", hours: "Open now" },
+      { name: "Transit Station Restroom", addr: "Kedzie Ave", cat: "Restroom", hours: "Open now" },
+      { name: "Police Station Lobby Restroom", addr: "California Ave", cat: "Restroom", hours: "Open 24/7" },
+      { name: "City Hall Restrooms", addr: "LaSalle St", cat: "Restroom", hours: "Open now" },
+      { name: "Park District Restrooms", addr: "Palmer St", cat: "Restroom", hours: "Open now" },
+    ],
+    "Hospital": [
+      { name: "Ascension Saint Elizabeth Hospital", addr: "Western Ave", cat: "Hospital", hours: "Open 24/7" },
+      { name: "St. Mary of Nazareth Hospital", addr: "Division St", cat: "Hospital", hours: "Open 24/7" },
+      { name: "Advocate Illinois Masonic Medical Center", addr: "Wellington Ave", cat: "Hospital", hours: "Open 24/7" },
+      { name: "Northwestern Memorial Hospital", addr: "Erie St", cat: "Hospital", hours: "Open 24/7" },
+      { name: "Rush University Medical Center", addr: "Harrison St", cat: "Hospital", hours: "Open 24/7" },
+      { name: "Cook County Hospital", addr: "Harrison St", cat: "Hospital", hours: "Open 24/7" },
+      { name: "UI Health Hospital", addr: "Taylor St", cat: "Hospital", hours: "Open 24/7" },
+      { name: "Swedish Hospital", addr: "Foster Ave", cat: "Hospital", hours: "Open 24/7" },
+      { name: "Mercy Hospital", addr: "26th St", cat: "Hospital", hours: "Open 24/7" },
+      { name: "Lurie Children's Hospital", addr: "Chicago Ave", cat: "Hospital", hours: "Open 24/7" },
+    ],
+    "Park": [
+      { name: "Logan Square Park", addr: "Logan Blvd", cat: "Park", hours: "Open now" },
+      { name: "Palmer Square Park", addr: "Palmer St", cat: "Park", hours: "Open now" },
+      { name: "Haas Park", addr: "Washtenaw Ave", cat: "Park", hours: "Open now" },
+      { name: "Kosciuszko Park", addr: "Avers Ave", cat: "Park", hours: "Open now" },
+      { name: "Humboldt Park", addr: "Division St", cat: "Park", hours: "Open now" },
+      { name: "Wicker Park", addr: "Damen Ave", cat: "Park", hours: "Open now" },
+      { name: "Mozart Park", addr: "Armitage Ave", cat: "Park", hours: "Open now" },
+      { name: "Holstein Park", addr: "Oakley Ave", cat: "Park", hours: "Open now" },
+      { name: "Avondale Park", addr: "Henderson St", cat: "Park", hours: "Open now" },
+      { name: "Gill Park", addr: "Sheridan Rd", cat: "Park", hours: "Open now" },
+    ],
+    "ATM": [
+      { name: "Chase Bank ATM", addr: "Milwaukee Ave", cat: "ATM", hours: "Open 24/7" },
+      { name: "PNC Bank ATM", addr: "Western Ave", cat: "ATM", hours: "Open 24/7" },
+      { name: "Bank of America ATM", addr: "Fullerton Ave", cat: "ATM", hours: "Open 24/7" },
+      { name: "Citibank ATM", addr: "Kedzie Ave", cat: "ATM", hours: "Open 24/7" },
+      { name: "ATM (Allpoint)", addr: "Belmont Ave", cat: "ATM", hours: "Open 24/7" },
+      { name: "Fifth Third Bank ATM", addr: "Armitage Ave", cat: "ATM", hours: "Open 24/7" },
+      { name: "Wintrust Bank ATM", addr: "North Ave", cat: "ATM", hours: "Open 24/7" },
+      { name: "ATM (Cardtronics)", addr: "California Ave", cat: "ATM", hours: "Open 24/7" },
+      { name: "First Eagle Bank ATM", addr: "Halsted St", cat: "ATM", hours: "Open 24/7" },
+      { name: "BMO Harris ATM", addr: "Diversey Pkwy", cat: "ATM", hours: "Open 24/7" },
+    ],
+  };
+
+  const templates = mockTemplates[category] || mockTemplates["Coffee Shop"];
+
+  return templates.map((temp, index) => {
+    const angle = (index * 0.5) * Math.PI;
+    const distanceDegree = 0.002 + index * 0.0018;
+    const lat = center.lat + Math.sin(angle) * distanceDegree;
+    const lng = center.lng + Math.cos(angle) * distanceDegree;
+    const distanceM = haversineM(center.lat, center.lng, lat, lng);
+    const placeKey = `nearby-${category}-${index}-${lat.toFixed(4)}-${lng.toFixed(4)}`;
+
+    return {
+      name: temp.name,
+      categoryLabel: temp.cat,
+      address: `${100 + index * 12} ${temp.addr}, Chicago, IL`,
+      phone: null,
+      lat,
+      lng,
+      distanceM,
+      openingHours: temp.hours || null,
+      openStatus: temp.hours ? "Open Now" : null,
+      placeKey,
+      osmType: null,
+      osmId: null,
+      city: "Chicago",
+      country: "United States",
+    };
+  });
+}
+
+function getNearbyCategoryTitle(query: string): string {
+  switch (query) {
+    case "Gas Station": return "Gas near you";
+    case "Coffee Shop": return "Coffee nearby";
+    case "Restaurant": return "Restaurants near you";
+    case "Restroom": return "Restrooms nearby";
+    case "Hospital": return "Hospitals nearby";
+    case "Park": return "Parks nearby";
+    case "ATM": return "ATMs nearby";
+    default: return `${query} nearby`;
+  }
 }
 
 export default function LivePage() {
@@ -145,6 +293,16 @@ export default function LivePage() {
   const [roviExplanationError, setRoviExplanationError] = useState<string | null>(null);
   const roviExplanationCacheRef = useRef<Map<string, RoviPlaceExplanation>>(new Map());
   const userRegionLoadedRef = useRef(false);
+  const [placeMedia, setPlaceMedia] = useState<PlaceMediaItem[]>([]);
+  const [placeTags, setPlaceTags] = useState<string[]>([]);
+  const [placeMediaLoading, setPlaceMediaLoading] = useState(false);
+
+  const [nearbyResults, setNearbyResults] = useState<PlacePreviewData[] | null>(null);
+  const [nearbyCategory, setNearbyCategory] = useState<string | null>(null);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
+  const [nearbyError, setNearbyError] = useState<string | null>(null);
+  const [expandedResultIndex, setExpandedResultIndex] = useState<number | null>(null);
+  const [viewingDetailsFromNearby, setViewingDetailsFromNearby] = useState(false);
 
   const recentSearches = [
     "Starbucks Reserve Chicago",
@@ -165,12 +323,104 @@ export default function LivePage() {
     return searchBias;
   }, [userLocation, searchBias]);
 
+  const resolveAnchorCoordinate = useCallback((): { lat: number; lng: number } => {
+    if (userLocation) return userLocation;
+    const mapCenter = mapRef.current?.getMapCenter();
+    if (mapCenter) return mapCenter;
+    if (destination) return { lat: destination.lat, lng: destination.lng };
+    return { lat: 41.8781, lng: -87.6298 };
+  }, [userLocation, destination]);
+
+  const handleNearbySearch = useCallback(async (query: string) => {
+    setSelectedPlace(null);
+    setToast(null);
+    setGpsError(null);
+    setViewingDetailsFromNearby(false);
+
+    setShowSearchPopup(false);
+    setShowSuggestionsCard(false);
+
+    setNearbyCategory(query);
+    setNearbyLoading(true);
+    setNearbyError(null);
+    setNearbyResults([]);
+    setExpandedResultIndex(null);
+
+    try {
+      const center = resolveAnchorCoordinate();
+      const results = await searchNearbyPlaces(query, center);
+      setNearbyResults(results);
+    } catch (err) {
+      setNearbyError("Nearby search is unavailable right now.");
+    } finally {
+      setNearbyLoading(false);
+    }
+  }, [resolveAnchorCoordinate]);
+
+  const handleCloseNearbyResults = useCallback(() => {
+    setNearbyResults(null);
+    setNearbyCategory(null);
+    setNearbyError(null);
+    setExpandedResultIndex(null);
+    setViewingDetailsFromNearby(false);
+  }, []);
+
+  const handleResultClick = useCallback((result: PlacePreviewData, idx: number) => {
+    if (isLiveActive) {
+      setExpandedResultIndex((prev) => (prev === idx ? null : idx));
+    } else {
+      setSelectedPlace(result);
+      setDestination(null);
+      setLiveStage("place_preview");
+    }
+  }, [isLiveActive]);
+
+  const handleAddStopFromNearby = useCallback((result: PlacePreviewData) => {
+    if (!destination) {
+      showToast("Make this a destination first, then add stops.");
+      return;
+    }
+    setPlannedStops((prev) => [...prev, result]);
+    showToast(`${result.name} added as a stop.`);
+    setExpandedResultIndex(null);
+  }, [destination]);
+
+  const handleViewDetailsFromNearby = useCallback((result: PlacePreviewData) => {
+    setSelectedPlace(result);
+    setViewingDetailsFromNearby(true);
+  }, []);
+
+  const handleMakeDestinationFromNearby = useCallback((result: PlacePreviewData) => {
+    setDestination(result);
+    setLiveStage("destination_set");
+    setIsLiveActive(false);
+    setExpandedResultIndex(null);
+    setNearbyResults(null);
+    setNearbyCategory(null);
+    showToast(`Destination changed to ${result.name}.`);
+  }, []);
+
+  const handleSavePlaceFromNearby = useCallback(() => {
+    showToast("Place saved.");
+    setExpandedResultIndex(null);
+  }, []);
+
   const selectPlace = useCallback(async (result: LiveGeocodingSearchResult) => {
     const lat = parseFloat(result.lat);
     const lng = parseFloat(result.lon);
     const bias = resolveSearchBias();
     const userLoc = userLocation ?? mapRef.current?.getUserLocation() ?? bias;
     const distanceM = userLoc ? haversineM(userLoc.lat, userLoc.lng, lat, lng) : null;
+    const { city, country } = extractCityCountry(result.address);
+    const placeKey = buildPlaceKey({
+      name: result.name || result.display_name.split(",")[0],
+      lat,
+      lng,
+      city,
+      country,
+      osmType: result.osm_type,
+      osmId: result.osm_id,
+    });
 
     const initial: PlacePreviewData = {
       name: result.name || result.display_name.split(",")[0],
@@ -182,6 +432,11 @@ export default function LivePage() {
       distanceM,
       openingHours: null,
       openStatus: null,
+      placeKey,
+      osmType: result.osm_type ?? null,
+      osmId: result.osm_id ?? null,
+      city: city ?? null,
+      country: country ?? null,
     };
 
     setSelectedPlace(initial);
@@ -191,19 +446,46 @@ export default function LivePage() {
     setRoviExplanation(null);
     setRoviExplanationError(null);
     setRoviExplanationLoading(false);
+    setPlaceMedia([]);
+    setPlaceTags([]);
+    setPlaceMediaLoading(true);
     setSearchQuery(result.name || result.display_name.split(",")[0]);
     setSearchResults([]);
     setShowSearchPopup(false);
     setShowSuggestionsCard(false);
     setLoadingPlaceDetails(true);
 
+    void resolvePlaceMedia(initial).then((resolution: PlaceMediaResolution) => {
+      setSelectedPlace((prev) => {
+        if (!prev || prev.lat !== lat || prev.lng !== lng) return prev;
+        return { ...prev, placeKey: resolution.placeKey };
+      });
+      setPlaceMedia(resolution.media);
+      setPlaceTags(resolution.tags);
+      setPlaceMediaLoading(false);
+    });
+
     try {
       const details = await liveGeocodingReverse(lat, lng);
       if (!details) return;
 
       const hours = details.extratags?.opening_hours;
+      const reverseGeo = extractCityCountry(details.address);
       setSelectedPlace((prev) => {
         if (!prev || prev.lat !== lat || prev.lng !== lng) return prev;
+        const nextOsmType = details.osm_type ?? prev.osmType;
+        const nextOsmId = details.osm_id ?? prev.osmId;
+        const nextCity = reverseGeo.city ?? prev.city;
+        const nextCountry = reverseGeo.country ?? prev.country;
+        const nextKey = buildPlaceKey({
+          name: details.name || prev.name,
+          lat,
+          lng,
+          city: nextCity,
+          country: nextCountry,
+          osmType: nextOsmType,
+          osmId: nextOsmId,
+        });
         return {
           ...prev,
           name: details.name || prev.name,
@@ -213,6 +495,11 @@ export default function LivePage() {
           phone: extractPhone(details.extratags),
           openingHours: hours ?? null,
           openStatus: parseOpenStatus(hours),
+          osmType: nextOsmType,
+          osmId: nextOsmId,
+          city: nextCity,
+          country: nextCountry,
+          placeKey: nextKey,
         };
       });
     } finally {
@@ -364,12 +651,17 @@ export default function LivePage() {
   }
 
   function clearSelectedPlace() {
-    if (isLiveActive) return;
     setSelectedPlace(null);
+    setPlaceMedia([]);
+    setPlaceTags([]);
+    setPlaceMediaLoading(false);
+    resetRoviExplanation();
+    setViewingDetailsFromNearby(false);
+
+    if (isLiveActive) return;
     setDestination(null);
     setLiveStage("static_landing");
     setSearchQuery("");
-    resetRoviExplanation();
   }
 
   function requireSolo(): boolean {
@@ -526,16 +818,14 @@ export default function LivePage() {
   }
 
   const showFarAwayPanel =
-    liveStage === "place_preview" &&
-    selectedPlace &&
-    !isLiveActive &&
+    ((liveStage === "place_preview" && selectedPlace && !isLiveActive) ||
+      (selectedPlace && viewingDetailsFromNearby)) &&
     locationContext != null &&
     (locationContext.classification === "very_far_destination" ||
       locationContext.classification === "country_mismatch");
   const showPlacePreview =
-    liveStage === "place_preview" &&
-    selectedPlace &&
-    !isLiveActive &&
+    ((liveStage === "place_preview" && selectedPlace && !isLiveActive) ||
+      (selectedPlace && viewingDetailsFromNearby)) &&
     !showFarAwayPanel;
   const showRoutePreview =
     (liveStage === "destination_set" || isLongDistancePreview) &&
@@ -614,6 +904,8 @@ export default function LivePage() {
         onUserLocationChange={handleUserLocationChange}
         onLiveGpsChange={setLiveGpsActive}
         onGpsError={setGpsError}
+        nearbyResults={nearbyResults}
+        onNearbyMarkerClick={(res) => handleResultClick(res, nearbyResults ? nearbyResults.findIndex(r => r.name === res.name) : -1)}
       />
 
       {toast ? (
@@ -787,6 +1079,7 @@ export default function LivePage() {
                         { label: "⛽ Gas", query: "Gas Station" },
                         { label: "☕ Coffee", query: "Coffee Shop" },
                         { label: "🍴 Food", query: "Restaurant" },
+                        { label: "🚻 Restrooms", query: "Restroom" },
                         { label: "🌲 Parks", query: "Park" },
                         { label: "🏧 ATM", query: "ATM" },
                         { label: "🏥 Hospital", query: "Hospital" },
@@ -796,7 +1089,7 @@ export default function LivePage() {
                           type="button"
                           className="px-2.5 py-1 rounded-full text-xs font-medium text-stone-700 bg-white/40 hover:bg-white/60 border border-white/20 transition-all cursor-pointer"
                           onClick={() => {
-                            void searchPlaceByName(item.query);
+                            void handleNearbySearch(item.query);
                           }}
                         >
                           {item.label}
@@ -856,6 +1149,139 @@ export default function LivePage() {
               </div>
             </div>
           </div>
+
+          {/* Nearby Suggestions Results Panel */}
+          {nearbyCategory && (
+            <div className="w-80 sm:w-96 rounded-2xl bg-white/75 backdrop-blur-xl border border-white/30 p-4 shadow-xl text-stone-800 flex flex-col max-h-[calc(100vh-140px)] animate-in fade-in slide-in-from-top-2 duration-200">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-3 shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📍</span>
+                  <h3 className="font-bold text-stone-800 text-sm">
+                    {getNearbyCategoryTitle(nearbyCategory)}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCloseNearbyResults}
+                  className="p-1 rounded-full hover:bg-stone-200/50 text-stone-500 hover:text-stone-700 transition-colors cursor-pointer"
+                  title="Close Results"
+                >
+                  <span className="text-xs font-bold px-1.5 py-0.5">✕</span>
+                </button>
+              </div>
+
+              {/* Error State */}
+              {nearbyError && (
+                <div className="py-6 text-center text-xs text-red-600 font-medium shrink-0">
+                  {nearbyError}
+                </div>
+              )}
+
+              {/* Loading State */}
+              {nearbyLoading && (
+                <div className="py-12 flex flex-col items-center justify-center gap-2 shrink-0">
+                  <div className="w-6 h-6 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs text-stone-500 font-medium animate-pulse">Searching nearby...</span>
+                </div>
+              )}
+
+              {/* Empty/Not Found State */}
+              {!nearbyLoading && !nearbyError && nearbyResults && nearbyResults.length === 0 && (
+                <div className="py-8 text-center text-xs text-stone-500 shrink-0">
+                  No places found for "{nearbyCategory}" in this area.
+                </div>
+              )}
+
+              {/* List View */}
+              {!nearbyLoading && !nearbyError && nearbyResults && nearbyResults.length > 0 && (
+                <div className="overflow-y-auto pr-1 flex-1 space-y-2 max-h-[380px]">
+                  {nearbyResults.map((res, index) => {
+                    const isExpanded = expandedResultIndex === index;
+                    const distanceKm = res.distanceM ? (res.distanceM / 1000).toFixed(1) : null;
+                    return (
+                      <div
+                        key={res.placeKey}
+                        className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                          isExpanded 
+                            ? "bg-white/95 border-teal-500 shadow-md" 
+                            : "bg-white/40 border-stone-200/40 hover:bg-white/60 hover:border-stone-300/60"
+                        }`}
+                        onClick={() => handleResultClick(res, index)}
+                      >
+                        <div className="flex items-start gap-2.5">
+                          {/* Number Badge */}
+                          <div className="w-5 h-5 rounded-full bg-[#0F766E] text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                            {index + 1}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-stone-800 text-xs truncate">
+                              {res.name}
+                            </h4>
+                            <p className="text-[11px] text-stone-500 truncate mt-0.5">
+                              {res.categoryLabel}
+                            </p>
+                            <p className="text-[11px] text-stone-400 truncate mt-0.5">
+                              {res.address}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1.5 text-[10px] font-medium text-stone-500">
+                              {distanceKm && (
+                                <span className="bg-stone-200/50 px-1.5 py-0.5 rounded">
+                                  {distanceKm} km
+                                </span>
+                              )}
+                              {res.openingHours && (
+                                <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">
+                                  {res.openingHours}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Expanded Actions Panel for Solo/Group Active Live Trip mode */}
+                        {isExpanded && (
+                          <div 
+                            className="mt-3 pt-3 border-t border-stone-200/60 flex flex-wrap gap-1.5 justify-end"
+                            onClick={(e) => e.stopPropagation()} // Prevent collapse on action clicks
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleAddStopFromNearby(res)}
+                              className="px-2 py-1 rounded bg-[#0F766E] text-white text-[10px] font-bold hover:bg-[#0D635C] transition-colors cursor-pointer"
+                            >
+                              Add Stop
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleViewDetailsFromNearby(res)}
+                              className="px-2 py-1 rounded bg-stone-100 text-stone-700 text-[10px] font-semibold hover:bg-stone-200 transition-colors border border-stone-200 cursor-pointer"
+                            >
+                              View Details
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMakeDestinationFromNearby(res)}
+                              className="px-2 py-1 rounded bg-stone-800 text-white text-[10px] font-semibold hover:bg-stone-900 transition-colors cursor-pointer"
+                            >
+                              Make Destination
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleSavePlaceFromNearby}
+                              className="px-2 py-1 rounded bg-stone-100 text-stone-700 text-[10px] font-semibold hover:bg-stone-200 transition-colors border border-stone-200 cursor-pointer"
+                            >
+                              Save Place
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ) : null}
 
@@ -881,6 +1307,9 @@ export default function LivePage() {
         <PlacePreviewCard
           place={selectedPlace}
           loadingDetails={loadingPlaceDetails}
+          placeMedia={placeMedia}
+          placeMediaLoading={placeMediaLoading}
+          placeTags={placeTags}
           hasUserLocation={Boolean(userLocation)}
           locationContext={locationContext}
           showAskRovi={showAskRoviAi}
@@ -893,7 +1322,10 @@ export default function LivePage() {
           onPlanTrip={handlePlanTrip}
           onContinueAnyway={handleContinueFromPreview}
           onClose={clearSelectedPlace}
-          onSavePlace={() => showToast("Place saved.")}
+          onSavePlace={() => {
+            // TODO: ensure_place_registry_on_action + upload photo flow
+            showToast("Place saved.");
+          }}
           onAddStop={handleAddStopFromPreview}
           onAddToTrip={() => showToast("Choose trip — coming soon.")}
           onCreateMeetPoint={() => showToast("Meet point created.")}
