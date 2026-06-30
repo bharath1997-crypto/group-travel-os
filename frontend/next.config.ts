@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 import path from "path";
+import { logMapProviderBuildWarnings } from "./lib/map-providers";
+
+logMapProviderBuildWarnings();
 
 /** Ensure apiFetch paths resolve under /api/v1 (fixes duplicate .env.local entries). */
 function normalizePublicApiUrl(raw: string | undefined): string {

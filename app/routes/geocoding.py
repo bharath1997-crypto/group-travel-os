@@ -1,33 +1,22 @@
 """
 app/routes/geocoding.py — Nominatim geocoding proxy (no auth)
 """
-import httpx
 from fastapi import APIRouter, Query
 
-router = APIRouter(tags=["Geocoding"])
+from app.services.geocoding_service import GeocodingService
 
-NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
-NOMINATIM_HEADERS = {
-    "User-Agent": "Rovvy/1.0 contact@rovvy.app",
-    "Accept-Language": "en",
-}
+router = APIRouter(tags=["Geocoding"])
 
 
 @router.get("/geocoding/search")
 async def search_address(q: str = Query(..., min_length=1)):
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            NOMINATIM_URL,
-            params={
-                "q": q,
-                "format": "json",
-                "limit": 5,
-                "addressdetails": 1,
-            },
-            headers=NOMINATIM_HEADERS,
-            timeout=10.0,
-        )
-        if response.status_code != 200:
-            return []
-        data = response.json()
-        return data if isinstance(data, list) else []
+    return await GeocodingService.search_address(q)
+
+
+@router.get("/geocoding/reverse")
+async def reverse_geocode(
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+):
+    result = await GeocodingService.reverse_geocode(lat, lng)
+    return result if result else {}

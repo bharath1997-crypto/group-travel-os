@@ -257,7 +257,7 @@ After every feature change, update this section in GEMINI.md:
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2026-06-30 (Aligned nav bar to match Dashboard Layout header) |
-| Live Trip Mode (MapLibre Static Landing) | Complete | 2026-06-29 (Built Static Landing state on branch stitch-static-only) |
+| Live Trip Mode (MapLibre Static Landing) | Complete | 2026-06-30 (Completed premium Search Popup, place preview bottom sheet, and coordination flows) |
 | Buses page | Pending | — |
 
 ---

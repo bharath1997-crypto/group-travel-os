@@ -419,3 +419,4 @@ After every pytest run, update this section in .cursorrules:
 | tests/test_activities.py | — | — |
 | tests/test_buddy.py | — | — |
 | tests/test_explore.py | — | — |
+| tests/test_geocoding.py | 7 | 2026-06 |
