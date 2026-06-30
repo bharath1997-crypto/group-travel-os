@@ -7,10 +7,12 @@ import {
   Compass,
   Map,
   DollarSign,
+  Radio,
 } from "lucide-react";
 
 import { RovvyLogo } from "@/components/RovvyLogo";
 import { HeaderProfileMenu } from "@/components/HeaderProfileMenu";
+import { HeaderSearchBar } from "@/components/HeaderSearchBar";
 import { apiFetch } from "@/lib/api";
 import {
   formatDateTime,
@@ -248,7 +250,7 @@ export default function ExplorePage() {
   return (
     <div className="min-h-screen bg-white text-slate-800 font-sans pb-16">
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
-      <header className="fixed top-0 left-0 right-0 z-40 overflow-visible bg-white border-b border-stone-200 shadow-sm select-none">
+      <header className="dashboard-header fixed top-0 left-0 right-0 z-40 overflow-visible bg-white border-b border-stone-200 shadow-sm select-none">
         <div className="flex h-16 items-center gap-3 overflow-visible px-3 md:gap-4 md:px-6">
           <Link
             href="/explore"
@@ -258,34 +260,48 @@ export default function ExplorePage() {
             <RovvyLogo variant="primary" height={96} className="hidden md:block" />
           </Link>
 
-          <div className="min-w-0 flex-1" />
+          {/* Search — centered in remaining space on desktop */}
+          <div className="hidden min-w-0 flex-1 items-center justify-center px-3 md:flex lg:px-6">
+            <HeaderSearchBar />
+          </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-3">
             <nav
-              className="hidden md:flex items-center gap-0.5 lg:gap-1"
+              className="hidden md:flex items-center gap-0.5 xl:gap-1"
               aria-label="Primary"
             >
               <Link
                 href="/explore"
-                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 lg:px-3 text-xs lg:text-[13px] font-semibold whitespace-nowrap text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
+                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
+                title="Explore"
               >
                 <Compass size={15} strokeWidth={2} />
-                <span>Explore</span>
+                <span className="hidden xl:inline">Explore</span>
+              </Link>
+              <Link
+                href="/live"
+                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
+                title="Live"
+              >
+                <Radio size={15} strokeWidth={2} />
+                <span className="hidden xl:inline">Live</span>
               </Link>
               <Link
                 href="/trips"
-                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 lg:px-3 text-xs lg:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
+                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
+                title="Trips"
               >
                 <Map size={15} strokeWidth={2} />
-                <span>Trips</span>
+                <span className="hidden xl:inline">Trips</span>
               </Link>
 
               <Link
                 href="/split-activities"
-                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 lg:px-3 text-xs lg:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
+                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
+                title="Split Activities"
               >
                 <DollarSign size={15} strokeWidth={2} />
-                <span>Split Activities</span>
+                <span className="hidden xl:inline">Split Activities</span>
               </Link>
             </nav>
 
@@ -298,6 +314,7 @@ export default function ExplorePage() {
                   cartCount={cartCount}
                   notifCount={unreadNotifCount}
                   onLogout={handleLogout}
+                  showOverflowItems
                 />
               </>
             ) : (
