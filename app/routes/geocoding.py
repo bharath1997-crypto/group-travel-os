@@ -9,8 +9,12 @@ router = APIRouter(tags=["Geocoding"])
 
 
 @router.get("/geocoding/search")
-async def search_address(q: str = Query(..., min_length=1)):
-    return await GeocodingService.search_address(q)
+async def search_address(
+    q: str = Query(..., min_length=1),
+    lat: float | None = Query(None, ge=-90, le=90),
+    lng: float | None = Query(None, ge=-180, le=180),
+):
+    return await GeocodingService.search_address(q, lat=lat, lng=lng)
 
 
 @router.get("/geocoding/reverse")

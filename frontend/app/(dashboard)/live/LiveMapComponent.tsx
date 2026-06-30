@@ -6,12 +6,16 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import {
   geolocationErrorMessage,
   geolocationUnavailableMessage,
+  haversineM,
 } from "@/lib/geo";
 import {
   getLiveMapLibreLayerStyles,
+  LIVE_MAP_MAX_ZOOM,
+  LIVE_MAP_MIN_ZOOM,
   warnIfUnsafeProductionTiles,
 } from "@/lib/map-providers";
 import type { RouteLine, UserLocationUpdate } from "./live-types";
+import { LOCAL_LIVE_MAX_M } from "./live-types";
 
 export type UserLocation = { lat: number; lng: number };
 
@@ -20,8 +24,11 @@ export type LiveMapRef = {
   zoomOut: () => void;
   locateUser: () => void;
   getUserLocation: () => UserLocation | null;
+  getMapCenter: () => UserLocation | null;
   isLiveGpsActive: () => boolean;
 };
+
+export type MapFollowMode = "default" | "local-only" | "off";
 
 type Props = {
   activeLayer: "street" | "satellite" | "dark";
@@ -30,6 +37,7 @@ type Props = {
   routeLine?: RouteLine | null;
   isLiveActive?: boolean;
   navigationMode?: boolean;
+  mapFollowMode?: MapFollowMode;
   onUserLocationChange?: (update: UserLocationUpdate) => void;
   onLiveGpsChange?: (active: boolean) => void;
   onGpsError?: (message: string) => void;
@@ -139,6 +147,7 @@ export default function LiveMapComponent({
   routeLine,
   isLiveActive = false,
   navigationMode = false,
+  mapFollowMode = "default",
   onUserLocationChange,
   onLiveGpsChange,
   onGpsError,
@@ -158,6 +167,8 @@ export default function LiveMapComponent({
   isLiveActiveRef.current = isLiveActive;
   const navigationModeRef = useRef(navigationMode);
   navigationModeRef.current = navigationMode;
+  const mapFollowModeRef = useRef(mapFollowMode);
+  mapFollowModeRef.current = mapFollowMode;
 
   useEffect(() => {
     warnIfUnsafeProductionTiles("live");
@@ -172,10 +183,18 @@ export default function LiveMapComponent({
       style: layerStyles[activeLayer] || layerStyles.street,
       center: [-73.9855, 40.7484],
       zoom: 13,
+      minZoom: LIVE_MAP_MIN_ZOOM,
+      maxZoom: LIVE_MAP_MAX_ZOOM,
       attributionControl: false,
     });
 
     instanceRef.current = map;
+
+    map.on("load", () => {
+      if (map.getZoom() > LIVE_MAP_MAX_ZOOM) {
+        map.setZoom(LIVE_MAP_MAX_ZOOM);
+      }
+    });
 
     function ensureUserMarker(lat: number, lng: number) {
       if (userMarkerRef.current) {
@@ -282,9 +301,15 @@ export default function LiveMapComponent({
     }
 
     mapRef.current = {
-      zoomIn: () => map.zoomIn(),
+      zoomIn: () => {
+        if (map.getZoom() < LIVE_MAP_MAX_ZOOM) map.zoomIn();
+      },
       zoomOut: () => map.zoomOut(),
       getUserLocation: () => userLocationRef.current,
+      getMapCenter: () => {
+        const center = map.getCenter();
+        return { lat: center.lat, lng: center.lng };
+      },
       isLiveGpsActive: () => liveGpsActiveRef.current,
       locateUser: () => {
         if (liveGpsActiveRef.current) {
@@ -312,7 +337,12 @@ export default function LiveMapComponent({
   useEffect(() => {
     if (!instanceRef.current) return;
     const layerStyles = getLayerStyles();
-    instanceRef.current.setStyle(layerStyles[activeLayer] || layerStyles.street);
+    const map = instanceRef.current;
+    map.setStyle(layerStyles[activeLayer] || layerStyles.street);
+    map.once("style.load", () => {
+      map.setMaxZoom(LIVE_MAP_MAX_ZOOM);
+      map.setMinZoom(LIVE_MAP_MIN_ZOOM);
+    });
   }, [activeLayer]);
 
   useEffect(() => {
@@ -374,6 +404,9 @@ export default function LiveMapComponent({
     const map = instanceRef.current;
     if (!map || !mapPin) return;
 
+    const followMode = mapFollowModeRef.current;
+    if (followMode === "off") return;
+
     const fitKey = routeLine
       ? `route:${mapPin.lat.toFixed(4)},${mapPin.lng.toFixed(4)}`
       : `pin:${mapPin.lat.toFixed(4)},${mapPin.lng.toFixed(4)}`;
@@ -381,6 +414,14 @@ export default function LiveMapComponent({
     routeFitKeyRef.current = fitKey;
 
     if (routeLine) {
+      const routeDistanceM = haversineM(
+        routeLine.from.lat,
+        routeLine.from.lng,
+        routeLine.to.lat,
+        routeLine.to.lng,
+      );
+      if (routeDistanceM > LOCAL_LIVE_MAX_M) return;
+
       const bounds = new maplibregl.LngLatBounds();
       bounds.extend([routeLine.from.lng, routeLine.from.lat]);
       bounds.extend([routeLine.to.lng, routeLine.to.lat]);
@@ -388,8 +429,21 @@ export default function LiveMapComponent({
       return;
     }
 
+    if (followMode === "local-only") {
+      const userLoc = userLocationRef.current;
+      if (userLoc) {
+        const pinDistanceM = haversineM(
+          userLoc.lat,
+          userLoc.lng,
+          mapPin.lat,
+          mapPin.lng,
+        );
+        if (pinDistanceM > LOCAL_LIVE_MAX_M) return;
+      }
+    }
+
     map.flyTo({ center: [mapPin.lng, mapPin.lat], zoom: 15, essential: true });
-  }, [mapPin, routeLine]);
+  }, [mapPin, routeLine, mapFollowMode, navigationMode]);
 
   return <div ref={mapContainer} className="w-full h-full" />;
 }

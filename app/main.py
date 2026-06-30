@@ -290,6 +290,10 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(geocoding_router, prefix="/api/v1")
 
+    from app.routes.live_ai import router as live_ai_router
+
+    app.include_router(live_ai_router, prefix="/api/v1")
+
     from app.routes.travel_intel import router as travel_intel_router
 
     app.include_router(travel_intel_router, prefix="/api/v1")
