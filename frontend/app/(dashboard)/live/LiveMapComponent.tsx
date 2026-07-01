@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
@@ -43,6 +43,7 @@ type Props = {
   onGpsError?: (message: string) => void;
   nearbyResults?: any[] | null;
   onNearbyMarkerClick?: (place: any) => void;
+  onMapClick?: (lat: number, lng: number, features: any[]) => void;
 };
 
 const GPS_OPTIONS: PositionOptions = {
@@ -155,9 +156,18 @@ export default function LiveMapComponent({
   onGpsError,
   nearbyResults,
   onNearbyMarkerClick,
+  onMapClick,
 }: Props) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<maplibregl.Map | null>(null);
+  const [debugInfo, setDebugInfo] = useState<{
+    lat: number;
+    lng: number;
+    count: number;
+    layers: string[];
+    topName?: string;
+    topCategory?: string;
+  } | null>(null);
   const userMarkerRef = useRef<maplibregl.Marker | null>(null);
   const placeMarkerRef = useRef<maplibregl.Marker | null>(null);
   const userLocationRef = useRef<UserLocation | null>(null);
@@ -165,8 +175,8 @@ export default function LiveMapComponent({
   const liveGpsActiveRef = useRef(false);
   const hasCenteredOnUserRef = useRef(false);
 
-  const callbacksRef = useRef({ onUserLocationChange, onLiveGpsChange, onGpsError });
-  callbacksRef.current = { onUserLocationChange, onLiveGpsChange, onGpsError };
+  const callbacksRef = useRef({ onUserLocationChange, onLiveGpsChange, onGpsError, onMapClick });
+  callbacksRef.current = { onUserLocationChange, onLiveGpsChange, onGpsError, onMapClick };
   const isLiveActiveRef = useRef(isLiveActive);
   isLiveActiveRef.current = isLiveActive;
   const navigationModeRef = useRef(navigationMode);
@@ -198,6 +208,64 @@ export default function LiveMapComponent({
       if (map.getZoom() > LIVE_MAP_MAX_ZOOM) {
         map.setZoom(LIVE_MAP_MAX_ZOOM);
       }
+    });
+
+    map.on("click", (e) => {
+      const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
+        [e.point.x - 10, e.point.y - 10],
+        [e.point.x + 10, e.point.y + 10]
+      ];
+      const features = map.queryRenderedFeatures(bbox);
+
+      // Score features to find the top one
+      const scoredFeatures = features
+        .map((f: any) => ({ feature: f, score: scoreFeature(f) }))
+        .sort((a, b) => b.score - a.score);
+
+      const topFeatureObj = scoredFeatures[0]?.feature;
+      const topName = topFeatureObj ? (topFeatureObj.properties?.name || topFeatureObj.properties?.display_name || topFeatureObj.properties?.title) : undefined;
+      let topCategory = "";
+      if (topFeatureObj) {
+        const p = topFeatureObj.properties || {};
+        topCategory = formatCategoryLabel(p.type || p.class || p.amenity, p.class);
+      }
+
+      console.log(`[Rovvy Map Feature Inspector] Clicked Lat/Lng: ${e.lngLat.lat}, ${e.lngLat.lng}`);
+      if (features.length === 0) {
+        console.log("[Rovvy Map Feature Inspector] Zero queryable POI/features found around this click.");
+      } else {
+        const tableData = features.map((f: any) => {
+          const p = f.properties || {};
+          return {
+            "layer.id": f.layer?.id || "",
+            "source": f.layer?.source || "",
+            "sourceLayer": f.layer?.["source-layer"] || "",
+            "geometry.type": f.geometry?.type || "",
+            "name": p.name || p.display_name || p.title || "",
+            "class": p.class || "",
+            "type": p.type || "",
+            "amenity": p.amenity || "",
+            "shop": p.shop || "",
+            "tourism": p.tourism || "",
+            "leisure": p.leisure || "",
+            "highway": p.highway || "",
+            "osm_id": p.osm_id || "",
+            "id": p.id || ""
+          };
+        });
+        console.table(tableData);
+      }
+
+      setDebugInfo({
+        lat: e.lngLat.lat,
+        lng: e.lngLat.lng,
+        count: features.length,
+        layers: features.map((f: any) => f.layer?.id || "unknown"),
+        topName,
+        topCategory,
+      });
+
+      callbacksRef.current.onMapClick?.(e.lngLat.lat, e.lngLat.lng, features);
     });
 
     function ensureUserMarker(lat: number, lng: number) {
@@ -504,5 +572,80 @@ export default function LiveMapComponent({
     map.flyTo({ center: [mapPin.lng, mapPin.lat], zoom: 15, essential: true });
   }, [mapPin, routeLine, mapFollowMode, navigationMode]);
 
-  return <div ref={mapContainer} className="w-full h-full" />;
+  return (
+    <div className="relative w-full h-full">
+      <div ref={mapContainer} className="w-full h-full" />
+      {process.env.NEXT_PUBLIC_ROVVY_MAP_DEBUG === "true" && debugInfo && (
+        <div className="absolute bottom-4 left-4 z-[100] bg-stone-900/90 text-stone-100 backdrop-blur-md border border-stone-800 p-4 rounded-xl shadow-lg max-w-xs text-xs font-mono flex flex-col gap-2 pointer-events-auto">
+          <div className="font-bold text-stone-200 border-b border-stone-800 pb-1 flex justify-between items-center">
+            <span>[Rovvy Map Debug]</span>
+            <button onClick={() => setDebugInfo(null)} className="text-stone-400 hover:text-stone-100 font-bold px-1.5 py-0.5">×</button>
+          </div>
+          <div>Lat: {debugInfo.lat.toFixed(6)}</div>
+          <div>Lng: {debugInfo.lng.toFixed(6)}</div>
+          <div>Features Found: {debugInfo.count}</div>
+          {debugInfo.topName && (
+            <div>
+              <span className="font-semibold text-teal-400">Top Feature:</span> {debugInfo.topName} ({debugInfo.topCategory || "unknown"})
+            </div>
+          )}
+          <div>
+            <span className="font-semibold text-teal-400">Top Layers:</span>
+            <ul className="list-disc pl-4 mt-1 flex flex-col gap-0.5 max-h-[80px] overflow-y-auto">
+              {debugInfo.layers.slice(0, 5).map((l, idx) => (
+                <li key={idx} className="truncate max-w-[200px]">{l}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function scoreFeature(f: any): number {
+  const p = f.properties || {};
+  const hasName = !!(p.name || p.display_name || p.title);
+  
+  const isPoi = !!(
+    p.amenity ||
+    p.shop ||
+    p.tourism ||
+    p.leisure ||
+    p.healthcare ||
+    p.public_transport ||
+    p.highway === "bus_stop" ||
+    p.highway === "bus_station" ||
+    (p.class && !["building", "road", "highway", "water", "landuse", "boundary", "transit", "administrative"].includes(p.class)) ||
+    (p.type && !["building", "road", "highway", "water", "landuse", "boundary", "transit", "administrative"].includes(p.type))
+  );
+
+  const isBuilding = !!(
+    p.building ||
+    p.class === "building" ||
+    p.type === "building" ||
+    f.layer?.id?.includes("building") ||
+    f.layer?.["source-layer"]?.includes("building")
+  );
+
+  const isSymbol = f.layer?.type === "symbol";
+
+  if (hasName && isPoi && isSymbol) return 100;
+  if (hasName && isPoi) return 90;
+  if (hasName && isBuilding) return 80;
+  if (isPoi) return 70;
+  if (isBuilding && (p["addr:housenumber"] || p.house_number || p.street || p["addr:street"])) return 60;
+  if (isBuilding) return 50;
+  if (hasName) return 40;
+  if (Object.keys(p).length > 0) return 10;
+  return 0;
+}
+
+function formatCategoryLabel(type?: string, cls?: string): string {
+  const parts = [type, cls]
+    .filter(Boolean)
+    .map((part) => part!.replace(/_/g, " "))
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1));
+  const unique = [...new Set(parts)];
+  return unique.length ? unique.join(" · ") : "Place";
 }
