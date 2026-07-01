@@ -95,3 +95,129 @@ def test_api_places_nearby_endpoint():
         assert len(body["results"]) == 1
         assert body["results"][0]["name"] == "Shell Gas"
         assert body["results"][0]["distanceMiles"] == 0.4
+
+
+def test_resolve_click_with_useful_properties():
+    res = client.post(
+        "/api/v1/places/resolve-click",
+        json={
+            "lat": 41.91,
+            "lng": -87.68,
+            "clickedName": "Shell Gas",
+            "featureProperties": {
+                "name": "Shell Gas",
+                "amenity": "fuel",
+                "osm_id": "11111",
+                "osm_type": "node",
+            },
+        },
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["place"]["name"] == "Shell Gas"
+    assert body["place"]["category"] == "Gas station"
+    assert body["place"]["source"] == "map_feature"
+    assert body["place"]["placeKey"] == "osm:node:11111"
+
+
+def test_resolve_click_with_nearby_search_enrichment():
+    mock_nearby = [
+        {
+            "id": "osm:node:11111",
+            "placeKey": "osm:node:11111",
+            "name": "Shell Gas Station",
+            "category": "Gas station",
+            "address": "1234 N Western Ave, Chicago, IL",
+            "lat": 41.9101,
+            "lng": -87.6801,
+            "distanceMiles": 0.01,
+            "source": "osm",
+            "osmType": "node",
+            "osmId": "11111",
+            "tags": {"amenity": "fuel"},
+        }
+    ]
+
+    with patch(
+        "app.services.places_nearby_service.PlacesNearbyService.search_nearby_places",
+        new_callable=AsyncMock,
+    ) as mock_search:
+        mock_search.return_value = mock_nearby
+
+        res = client.post(
+            "/api/v1/places/resolve-click",
+            json={
+                "lat": 41.91,
+                "lng": -87.68,
+                "clickedName": "Shell",
+                "featureProperties": {},
+            },
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert body["place"]["name"] == "Shell Gas Station"
+        assert body["place"]["category"] == "Gas station"
+        assert body["place"]["source"] == "osm_enriched"
+        assert len(body["candidates"]) > 0
+
+
+def test_resolve_click_fallback_reverse_geocode():
+    mock_geo = {
+        "name": "Western Ave & Division St",
+        "address": {"road": "Western Ave", "city": "Chicago", "country": "US"},
+        "display_name": "Western Ave & Division St, Chicago, US",
+        "osm_type": "way",
+        "osm_id": 22222,
+    }
+
+    with patch(
+        "app.services.places_nearby_service.PlacesNearbyService.search_nearby_places",
+        new_callable=AsyncMock,
+    ) as mock_search, patch(
+        "app.services.geocoding_service.GeocodingService.reverse_geocode",
+        new_callable=AsyncMock,
+    ) as mock_reverse:
+        mock_search.return_value = []
+        mock_reverse.return_value = mock_geo
+
+        res = client.post(
+            "/api/v1/places/resolve-click",
+            json={
+                "lat": 41.91,
+                "lng": -87.68,
+                "clickedName": None,
+                "featureProperties": {},
+            },
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert body["place"]["category"] == "Address"
+        assert body["place"]["source"] == "reverse_geocode"
+        assert body["place"]["placeKey"] == "osm:way:22222"
+
+
+def test_resolve_click_fallback_dropped_pin():
+    with patch(
+        "app.services.places_nearby_service.PlacesNearbyService.search_nearby_places",
+        new_callable=AsyncMock,
+    ) as mock_search, patch(
+        "app.services.geocoding_service.GeocodingService.reverse_geocode",
+        new_callable=AsyncMock,
+    ) as mock_reverse:
+        mock_search.return_value = []
+        mock_reverse.return_value = None
+
+        res = client.post(
+            "/api/v1/places/resolve-click",
+            json={
+                "lat": 41.91,
+                "lng": -87.68,
+                "clickedName": None,
+                "featureProperties": {},
+            },
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert body["place"]["category"] == "Dropped pin"
+        assert body["place"]["source"] == "dropped_pin"
+

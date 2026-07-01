@@ -230,6 +230,21 @@ export default function LiveMapComponent({
         topCategory = formatCategoryLabel(p.type || p.class || p.amenity, p.class);
       }
 
+      console.log("[Rovvy Map Click Feature]", {
+        clicked: { lat: e.lngLat.lat, lng: e.lngLat.lng },
+        featuresCount: features.length,
+        candidate: topFeatureObj ? {
+          layerId: topFeatureObj.layer?.id,
+          sourceLayer: topFeatureObj.layer?.["source-layer"],
+          properties: topFeatureObj.properties
+        } : null,
+        allFeatures: features.map((f: any) => ({
+          layerId: f.layer?.id,
+          sourceLayer: f.layer?.["source-layer"],
+          properties: f.properties
+        }))
+      });
+
       console.log(`[Rovvy Map Feature Inspector] Clicked Lat/Lng: ${e.lngLat.lat}, ${e.lngLat.lng}`);
       if (features.length === 0) {
         console.log("[Rovvy Map Feature Inspector] Zero queryable POI/features found around this click.");

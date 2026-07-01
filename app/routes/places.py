@@ -3,6 +3,7 @@ app/routes/places.py — Endpoint for searching nearby points of interest.
 """
 from fastapi import APIRouter, Query
 
+from app.schemas.places import PlaceResolveRequest, PlaceResolveResponse
 from app.services.places_nearby_service import PlacesNearbyService
 from app.utils.exceptions import AppException
 
@@ -28,3 +29,19 @@ async def search_nearby_places(
         return {"results": results}
     except Exception as exc:
         raise AppException.bad_request(f"Nearby search failed: {str(exc)}")
+
+
+@router.post("/places/resolve-click", response_model=PlaceResolveResponse)
+async def resolve_click(request: PlaceResolveRequest):
+    try:
+        res = await PlacesNearbyService.resolve_click(
+            lat=request.lat,
+            lng=request.lng,
+            clicked_name=request.clickedName,
+            feature_properties=request.featureProperties,
+            radius_meters=request.radiusMeters,
+        )
+        return res
+    except Exception as exc:
+        raise AppException.bad_request(f"Click resolution failed: {str(exc)}")
+

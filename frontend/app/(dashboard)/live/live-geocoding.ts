@@ -208,7 +208,14 @@ export function normalizePlaceCategory(item: any): string | null {
     if (val === "parking") return "Parking";
     if (val === "bank") return "Bank";
     if (val === "atm") return "ATM";
-    if (val === "place_of_worship") return "Place of worship";
+    if (val === "place_of_worship") {
+      const religion = String(p.religion || "").toLowerCase();
+      if (religion === "christian") return "Church";
+      if (religion === "muslim") return "Mosque";
+      if (religion === "jewish") return "Synagogue";
+      if (religion === "hindu") return "Temple";
+      return "Place of worship";
+    }
     if (val === "school") return "School";
     if (val === "college") return "College";
     if (val === "university") return "University";
@@ -281,7 +288,14 @@ export function normalizePlaceCategory(item: any): string | null {
     if (val === "parking") return "Parking";
     if (val === "bank") return "Bank";
     if (val === "atm") return "ATM";
-    if (val === "place of worship") return "Place of worship";
+    if (val === "place of worship") {
+      const religion = String(p.religion || "").toLowerCase();
+      if (religion === "christian") return "Church";
+      if (religion === "muslim") return "Mosque";
+      if (religion === "jewish") return "Synagogue";
+      if (religion === "hindu") return "Temple";
+      return "Place of worship";
+    }
     if (val === "school") return "School";
     if (val === "college") return "College";
     if (val === "university") return "University";

@@ -109,12 +109,12 @@ function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-function TinyPhotoPlaceholder({ categoryLabel }: { categoryLabel: string }) {
+function TinyPhotoPlaceholder() {
   return (
     <div className="flex items-center gap-2 rounded-xl bg-stone-50 border border-stone-200 px-3 py-2 text-stone-500">
       <Camera className="h-4 w-4 text-[#0F766E]" aria-hidden />
       <span className="text-xs font-semibold text-stone-600">
-        No Rovvy photos yet for {categoryLabel || "this place"}
+        No Rovvy photos yet
       </span>
     </div>
   );
@@ -355,7 +355,7 @@ export default function PlacePreviewCard({
         {showMedia && (
           <div className="mt-4">
             {isDroppedPinOrAddress || hasNoPhotos ? (
-              <TinyPhotoPlaceholder categoryLabel={place.categoryLabel} />
+              <TinyPhotoPlaceholder />
             ) : (
               <div className={`overflow-hidden rounded-xl ${mediaMaxHeightClass}`}>
                 <PlacePreviewMedia

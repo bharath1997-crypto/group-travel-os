@@ -388,8 +388,7 @@ export default function LivePage() {
     setSelectedPlace(poi);
     setNearbyPlacesAtClick(null);
   }, []);
-
-  const handleMapClick = useCallback(async (lat: number, lng: number, features: any[]) => {
+  const handleMapClick = useCallback(async (lat: number, lng: number, features: any[]) => {
     setSelectedPlace(null);
     setDestination(null);
     setLiveStage("static_landing");
@@ -407,195 +406,104 @@ export default function LivePage() {
     setMapClickError(null);
     setNearbyPlacesAtClick(null);
 
-    // 1. Score features and find the best one
-    const scored = features
-      .map((f) => ({ feature: f, score: scoreFeature(f) }))
-      .sort((a, b) => b.score - a.score);
-
-    const bestFeatureObj = scored[0];
-    
-    if (bestFeatureObj && bestFeatureObj.score >= 90) {
-      // Step 3: POI found directly from vector tiles
-      const f = bestFeatureObj.feature;
-      const p = f.properties || {};
-      const fLat = f.geometry && f.geometry.type === "Point" ? f.geometry.coordinates[1] : lat;
-      const fLng = f.geometry && f.geometry.type === "Point" ? f.geometry.coordinates[0] : lng;
-      const dist = userLocation ? haversineM(userLocation.lat, userLocation.lng, fLat, fLng) : null;
-
-      const addrDict = {
-        house_number: p["addr:housenumber"] || p.house_number || "",
-        road: p["addr:street"] || p.street || p.road || "",
-        city: p["addr:city"] || p.city || p.town || p.village || "",
-        state: p["addr:state"] || p.state || "",
-        postcode: p["addr:postcode"] || p.postcode || "",
-      };
-      const formattedAddr = formatStreetAddress(addrDict) || p.address || p["addr:full"] || `Coordinates: ${fLat.toFixed(4)}, ${fLng.toFixed(4)}`;
-
-      const newPlace: PlacePreviewData = {
-        name: p.name || p.display_name || p.title || "Selected Location",
-        categoryLabel: normalizePlaceCategory(p) || (p.name || p.display_name || p.title ? "Place" : "Address"),
-        address: formattedAddr,
-        phone: p.phone || p["contact:phone"] || null,
-        lat: fLat,
-        lng: fLng,
-        distanceM: dist,
-        openingHours: p.opening_hours || null,
-        openStatus: p.opening_hours ? parseOpenStatus(p.opening_hours) : null,
-        placeKey: p.placeKey || `map-feature:${p.osm_id || p.id || `${fLat.toFixed(5)},${fLng.toFixed(5)}`}`,
-        osmType: p.osm_type || null,
-        osmId: p.osm_id ? parseInt(p.osm_id, 10) : null,
-        source: "map_feature",
-        tags: p
-      };
-
-      setSelectedPlace(newPlace);
-      setLiveStage("place_preview");
-      setMapClickResolving(false);
-      return;
-    }
-
-    // Step 5: Fallback to API queries (reverse lookup and nearby POIs)
     try {
-      const [reverseResult, nearbyPois] = await Promise.all([
-        liveGeocodingReverse(lat, lng).catch((err) => {
-          console.error("Reverse geocoding lookup failed", err);
-          return null;
-        }),
-        apiFetch<{ results: BackendNearbyPlace[] }>(
-          `/places/nearby?category=all&lat=${lat}&lng=${lng}&radius_meters=75&limit=5`
-        ).then(res => {
-          if (!res || !res.results) return [];
-          return res.results.map((item) => ({
-            name: item.name,
-            categoryLabel: item.category || normalizePlaceCategory((item as any).tags) || "Place",
-            address: item.address,
-            phone: null,
-            lat: item.lat,
-            lng: item.lng,
-            distanceM: userLocation ? haversineM(userLocation.lat, userLocation.lng, item.lat, item.lng) : item.distanceMiles * 1609.34,
-            openingHours: null,
-            openStatus: null,
-            placeKey: item.placeKey || item.id,
-            osmType: item.osmType || null,
-            osmId: item.osmId ? parseInt(item.osmId, 10) : null,
-            source: "osm" as const,
-            tags: (item as any).tags
-          }));
-        }).catch((err) => {
-          console.error("Nearby search failed at click point", err);
-          return [];
-        })
-      ]);
+      // 1. Score features and find the best one
+      const scored = features
+        .map((f) => ({ feature: f, score: scoreFeature(f) }))
+        .sort((a, b) => b.score - a.score);
 
-      const dist = userLocation ? haversineM(userLocation.lat, userLocation.lng, lat, lng) : null;
+      const bestFeatureObj = scored[0];
+      const bestFeature = bestFeatureObj?.feature;
+      const clickedName = bestFeature
+        ? (bestFeature.properties?.name ||
+           bestFeature.properties?.display_name ||
+           bestFeature.properties?.title ||
+           null)
+        : null;
 
-      const poisWithClickDistance = nearbyPois.map((poi) => {
-        const clickDist = haversineM(lat, lng, poi.lat, poi.lng);
-        return { ...poi, clickDistanceM: clickDist };
-      });
-      poisWithClickDistance.sort((a, b) => a.clickDistanceM - b.clickDistanceM);
-
-      // Rule: 0–25 meters: can auto-select clearly named POI
-      const veryClosePoi = poisWithClickDistance.find(
-        (poi) => poi.clickDistanceM <= 25 && poi.name && poi.name !== "Unnamed Place"
-      );
-
-      if (veryClosePoi) {
-        const { clickDistanceM, ...poiClean } = veryClosePoi;
-        setSelectedPlace(poiClean);
-        setLiveStage("place_preview");
-        setMapClickResolving(false);
-        return;
+      let featureProperties: any = null;
+      if (bestFeature) {
+        const p = bestFeature.properties || {};
+        featureProperties = {};
+        const keysToPreserve = [
+          "name", "amenity", "shop", "tourism", "leisure", "healthcare",
+          "public_transport", "highway", "brand", "operator", "class",
+          "type", "category", "maki", "icon", "osm_id", "osm_type"
+        ];
+        keysToPreserve.forEach((key) => {
+          if (p[key] !== undefined) {
+            featureProperties[key] = p[key];
+          }
+        });
+        if (bestFeature.layer?.id) {
+          featureProperties["layer.id"] = bestFeature.layer.id;
+        }
+        if (bestFeature.layer?.["source-layer"]) {
+          featureProperties["sourceLayer"] = bestFeature.layer["source-layer"];
+        }
+        if (bestFeature.id) {
+          featureProperties["id"] = bestFeature.id;
+        }
       }
 
-      // Rule: 25–75 meters: show “Nearby places here” list
-      const nearbyIn75m = poisWithClickDistance
-        .filter((poi) => poi.clickDistanceM > 25 && poi.clickDistanceM <= 75)
-        .map(({ clickDistanceM, ...poiClean }) => poiClean);
-
-      if (nearbyIn75m.length > 0) {
-        setNearbyPlacesAtClick(nearbyIn75m);
-      }
-
-      // If no POI was auto-selected (within 25m):
-      if (bestFeatureObj && bestFeatureObj.score >= 50) {
-        // Step 4: Use building/address feature found in queryRenderedFeatures
-        const f = bestFeatureObj.feature;
-        const p = f.properties || {};
-        const fLat = f.geometry && f.geometry.type === "Point" ? f.geometry.coordinates[1] : lat;
-        const fLng = f.geometry && f.geometry.type === "Point" ? f.geometry.coordinates[0] : lng;
-        const fDist = userLocation ? haversineM(userLocation.lat, userLocation.lng, fLat, fLng) : null;
-
-        const addrDict = {
-          house_number: p["addr:housenumber"] || p.house_number || "",
-          road: p["addr:street"] || p.street || p.road || "",
-          city: p["addr:city"] || p.city || p.town || p.village || "",
-          state: p["addr:state"] || p.state || "",
-          postcode: p["addr:postcode"] || p.postcode || "",
-        };
-        const formattedAddr = formatStreetAddress(addrDict) || p.address || p["addr:full"] || `Coordinates: ${fLat.toFixed(4)}, ${fLng.toFixed(4)}`;
-
-        const buildingPlace: PlacePreviewData = {
-          name: p.name || p.display_name || p.title || "Address/Building",
-          categoryLabel: normalizePlaceCategory(p) || "Address",
-          address: formattedAddr,
-          phone: p.phone || p["contact:phone"] || null,
-          lat: fLat,
-          lng: fLng,
-          distanceM: fDist,
-          openingHours: p.opening_hours || null,
-          openStatus: p.opening_hours ? parseOpenStatus(p.opening_hours) : null,
-          placeKey: p.placeKey || `map-feature:${p.osm_id || p.id || `${fLat.toFixed(5)},${fLng.toFixed(5)}`}`,
-          osmType: p.osm_type || null,
-          osmId: p.osm_id ? parseInt(p.osm_id, 10) : null,
-          source: "map_feature",
-          tags: p
-        };
-        setSelectedPlace(buildingPlace);
-        setLiveStage("place_preview");
-      } else if (reverseResult && (reverseResult.name || reverseResult.address)) {
-        // Step 5: Fall back to reverse geocode
-        const addressPlace: PlacePreviewData = {
-          name: reverseResult.name || "Location Address",
-          categoryLabel:
-            normalizePlaceCategory(reverseResult) ||
-            (reverseResult.extratags ? normalizePlaceCategory(reverseResult.extratags) : null) ||
-            (reverseResult.name ? "Place" : "Address"),
-          address: typeof reverseResult.address === "string" ? reverseResult.address : (reverseResult.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`),
-          phone: null,
-          lat: lat,
-          lng: lng,
-          distanceM: dist,
-          openingHours: null,
-          openStatus: null,
-          placeKey: reverseResult.placeKey || `address:${lat.toFixed(5)},${lng.toFixed(5)}`,
-          source: "nominatim",
-          city: reverseResult.city || null,
-          country: reverseResult.country || null,
-          tags: reverseResult.extratags
-        };
-        setSelectedPlace(addressPlace);
-        setLiveStage("place_preview");
-      } else {
-        // Step 6: Fall back to Dropped Pin
-        const roundedLat = lat.toFixed(4);
-        const roundedLng = lng.toFixed(4);
-        const droppedPinPlace: PlacePreviewData = {
-          name: "Dropped pin",
-          categoryLabel: "Selected location",
-          address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
-          phone: null,
+      // 2. Call backend resolve-click endpoint
+      const response = await apiFetch<{ place: any; candidates: any[] }>("/places/resolve-click", {
+        method: "POST",
+        body: JSON.stringify({
           lat,
           lng,
-          distanceM: dist,
-          openingHours: null,
-          openStatus: null,
-          placeKey: `dropped-pin:${roundedLat}:${roundedLng}`,
-          source: "dropped_pin"
-        };
-        setSelectedPlace(droppedPinPlace);
-        setLiveStage("place_preview");
+          clickedName,
+          featureProperties,
+          radiusMeters: 75
+        })
+      });
+
+      if (!response || !response.place) {
+        throw new Error("Invalid response from click resolver");
       }
+
+      const p = response.place;
+      const primaryPlace: PlacePreviewData = {
+        name: p.name,
+        categoryLabel: p.category, // Backend returned normalized category label
+        address: p.address || "",
+        phone: p.tags?.phone || p.tags?.["contact:phone"] || null,
+        lat: p.lat,
+        lng: p.lng,
+        distanceM: userLocation ? haversineM(userLocation.lat, userLocation.lng, p.lat, p.lng) : p.distanceMeters,
+        openingHours: p.tags?.opening_hours || null,
+        openStatus: p.tags?.opening_hours ? parseOpenStatus(p.tags.opening_hours) : null,
+        placeKey: p.placeKey,
+        osmType: p.tags?.osm_type || null,
+        osmId: p.tags?.osm_id ? parseInt(p.tags.osm_id, 10) : null,
+        source: p.source,
+        tags: p.tags || {}
+      };
+
+      const otherCandidates = (response.candidates || [])
+        .filter((c: any) => c.placeKey !== p.placeKey)
+        .map((c: any) => ({
+          name: c.name,
+          categoryLabel: c.category,
+          address: c.address || "",
+          phone: c.tags?.phone || c.tags?.["contact:phone"] || null,
+          lat: c.lat,
+          lng: c.lng,
+          distanceM: userLocation ? haversineM(userLocation.lat, userLocation.lng, c.lat, c.lng) : c.distanceMeters,
+          openingHours: c.tags?.opening_hours || null,
+          openStatus: c.tags?.opening_hours ? parseOpenStatus(c.tags.opening_hours) : null,
+          placeKey: c.placeKey,
+          osmType: c.tags?.osm_type || null,
+          osmId: c.tags?.osm_id ? parseInt(c.tags.osm_id, 10) : null,
+          source: c.source,
+          tags: c.tags || {}
+        }));
+
+      setSelectedPlace(primaryPlace);
+      if (otherCandidates.length > 0) {
+        setNearbyPlacesAtClick(otherCandidates);
+      }
+      setLiveStage("place_preview");
     } catch (err) {
       console.error("Map click resolution error", err);
       setMapClickError("Could not resolve location info.");
