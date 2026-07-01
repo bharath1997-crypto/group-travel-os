@@ -257,7 +257,7 @@ After every feature change, update this section in GEMINI.md:
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2026-06-30 (Aligned nav bar to match Dashboard Layout header) |
-| Live Trip Mode (MapLibre Static Landing) | Complete | 2026-07-01 (Implemented interactive Map Feature Inspector, visual debug panel, symbol POI prioritization, reverse geocode/nearby fallbacks, responsive driving-safe layouts, LoungeDock auto-collapse, frontend & backend category normalization, and trust-badge formatting) |
+| Live Trip Mode (MapLibre Static Landing) | Complete | 2026-07-01 (Integrated /places/resolve-click backend endpoint into handleMapClick; frontend now delegates all map-click resolution to API — map_feature / osm_enriched / reverse_geocode / dropped_pin source chain. Added religion-aware place_of_worship category normalization (Church / Mosque / Synagogue / Temple). Removed technical "Place data from OSM" UI copy. Enriched [Rovvy Map Click Feature] console debug log.) |
 | Buses page | Pending | — |
 
 ---
@@ -279,5 +279,5 @@ After every pytest run, update this section in GEMINI.md:
 | tests/test_explore.py | — | — |
 | tests/test_live_group.py | Deprecated | 2026-06-25 |
 | tests/test_place_media.py | 8 | 2026-07-01 |
-| tests/test_places_nearby.py | 2 | 2026-07-01 |
+| tests/test_places_nearby.py | 6 | 2026-07-01 |
 
