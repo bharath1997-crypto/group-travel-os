@@ -325,12 +325,20 @@ export function LoungeDock() {
       });
     }
 
+    const handleMinimizeLounge = () => {
+      if (window.innerWidth < 768) {
+        setIsOpen(false);
+      }
+    };
+
     window.addEventListener("toggle-rovvy-lounge", handleToggle);
     window.addEventListener(OPEN_LOUNGE_EVENT, handleOpenLounge);
+    window.addEventListener("minimize-rovvy-lounge", handleMinimizeLounge);
 
     return () => {
       window.removeEventListener("toggle-rovvy-lounge", handleToggle);
       window.removeEventListener(OPEN_LOUNGE_EVENT, handleOpenLounge);
+      window.removeEventListener("minimize-rovvy-lounge", handleMinimizeLounge);
 
       // Clean up firebase subscriptions
       Object.values(firebaseListeners.current).forEach((unsubscribe) => unsubscribe());

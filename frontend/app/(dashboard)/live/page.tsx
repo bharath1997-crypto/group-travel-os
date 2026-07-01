@@ -746,6 +746,12 @@ export default function LivePage() {
   }, [showSearchPopup, showSuggestionsCard]);
 
   useEffect(() => {
+    if (selectedPlace) {
+      window.dispatchEvent(new CustomEvent("minimize-rovvy-lounge"));
+    }
+  }, [selectedPlace]);
+
+  useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
       return;
@@ -1513,6 +1519,7 @@ export default function LivePage() {
           onStartLive={handleStartFromPlacePreview}
           nearbyPlacesAtClick={nearbyPlacesAtClick}
           onSelectNearbyPlaceAtClick={handleSelectNearbyPlaceAtClick}
+          liveStage={liveStage}
         />
       ) : null}
 
@@ -1568,7 +1575,9 @@ export default function LivePage() {
       {/* Right Map Controls */}
       <div
         className={`absolute top-1/2 -translate-y-1/2 flex flex-col gap-2 z-10 transition-all ${
-          rightPanelOpen ? "right-[448px] max-lg:right-4" : "right-4"
+          rightPanelOpen
+            ? "xl:right-[434px] lg:right-[404px] md:landscape:right-[364px] right-4"
+            : "right-4"
         }`}
       >
         <button
