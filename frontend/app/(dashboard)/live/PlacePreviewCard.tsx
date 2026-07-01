@@ -36,6 +36,7 @@ export type PlacePreviewData = {
   city?: string | null;
   country?: string | null;
   source?: string;
+  tags?: any;
 };
 
 type Props = {
@@ -179,8 +180,23 @@ export default function PlacePreviewCard({
       ? "Place data from OpenStreetMap / Rovvy Places"
       : "Place data source limited";
 
+  const displayCategory = place.name === "Dropped pin"
+    ? "Selected location"
+    : (place.categoryLabel || "Place");
+
+  const subheaderParts = [displayCategory];
+  if (place.distanceM != null && place.name !== "Dropped pin") {
+    const miles = place.distanceM / 1609.34;
+    const formattedDistance = miles < 0.1
+      ? `${Math.round(place.distanceM)} m away`
+      : `${miles.toFixed(1)} mi away`;
+    subheaderParts.push(formattedDistance);
+  }
+  const subheaderText = subheaderParts.join(" · ");
+
   const isDroppedPinOrAddress =
-    place.source === "dropped_pin" || place.source === "nominatim";
+    place.source === "dropped_pin" ||
+    (place.source === "nominatim" && place.categoryLabel === "Address");
 
   const secondaryActions = isDroppedPinOrAddress
     ? [
@@ -239,8 +255,8 @@ export default function PlacePreviewCard({
               <h3 className="text-lg font-bold text-stone-900 truncate">
                 {place.name}
               </h3>
-              <p className="text-xs text-stone-500 font-medium">
-                {place.categoryLabel || "Selected location"} • {distanceLabel}
+              <p className="text-xs text-stone-500 font-medium truncate">
+                {subheaderText}
               </p>
             </div>
             <button
@@ -322,7 +338,7 @@ export default function PlacePreviewCard({
               {place.name}
             </h3>
             <p className="mt-0.5 text-xs font-medium text-stone-500">
-              {place.categoryLabel || "Place"}
+              {subheaderText}
             </p>
           </div>
           <button
@@ -374,7 +390,6 @@ export default function PlacePreviewCard({
               <CheckCircle2 className="h-3 w-3" />
               Best match
             </span>
-            <span className="text-[10px] leading-snug text-stone-500">{sourceLabel}</span>
           </div>
         )}
 

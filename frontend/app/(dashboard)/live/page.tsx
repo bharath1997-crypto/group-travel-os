@@ -31,6 +31,7 @@ import {
   liveGeocodingReverse,
   liveGeocodingSearch,
   pickNearestSearchResult,
+  normalizePlaceCategory,
   type LiveGeocodingSearchResult,
   type SearchBias,
 } from "./live-geocoding";
@@ -170,7 +171,7 @@ async function searchNearbyPlaces(
     if (!data || !data.results) return [];
     return data.results.map((item) => ({
       name: item.name,
-      categoryLabel: item.category,
+      categoryLabel: item.category || normalizePlaceCategory((item as any).tags) || "Place",
       address: item.address,
       phone: null,
       lat: item.lat,
@@ -182,7 +183,8 @@ async function searchNearbyPlaces(
       osmType: item.osmType || null,
       osmId: item.osmId ? parseInt(item.osmId, 10) : null,
       city: null,
-      country: null
+      country: null,
+      tags: (item as any).tags
     }));
   } catch (err) {
     console.error("Failed to search nearby places", err);
@@ -431,7 +433,7 @@ export default function LivePage() {
 
       const newPlace: PlacePreviewData = {
         name: p.name || p.display_name || p.title || "Selected Location",
-        categoryLabel: formatCategoryLabel(p.type || p.class || p.amenity, p.class),
+        categoryLabel: normalizePlaceCategory(p) || (p.name || p.display_name || p.title ? "Place" : "Address"),
         address: formattedAddr,
         phone: p.phone || p["contact:phone"] || null,
         lat: fLat,
@@ -442,7 +444,8 @@ export default function LivePage() {
         placeKey: p.placeKey || `map-feature:${p.osm_id || p.id || `${fLat.toFixed(5)},${fLng.toFixed(5)}`}`,
         osmType: p.osm_type || null,
         osmId: p.osm_id ? parseInt(p.osm_id, 10) : null,
-        source: "map_feature"
+        source: "map_feature",
+        tags: p
       };
 
       setSelectedPlace(newPlace);
@@ -464,7 +467,7 @@ export default function LivePage() {
           if (!res || !res.results) return [];
           return res.results.map((item) => ({
             name: item.name,
-            categoryLabel: item.category,
+            categoryLabel: item.category || normalizePlaceCategory((item as any).tags) || "Place",
             address: item.address,
             phone: null,
             lat: item.lat,
@@ -475,7 +478,8 @@ export default function LivePage() {
             placeKey: item.placeKey || item.id,
             osmType: item.osmType || null,
             osmId: item.osmId ? parseInt(item.osmId, 10) : null,
-            source: "osm" as const
+            source: "osm" as const,
+            tags: (item as any).tags
           }));
         }).catch((err) => {
           console.error("Nearby search failed at click point", err);
@@ -533,7 +537,7 @@ export default function LivePage() {
 
         const buildingPlace: PlacePreviewData = {
           name: p.name || p.display_name || p.title || "Address/Building",
-          categoryLabel: "Address",
+          categoryLabel: normalizePlaceCategory(p) || "Address",
           address: formattedAddr,
           phone: p.phone || p["contact:phone"] || null,
           lat: fLat,
@@ -544,7 +548,8 @@ export default function LivePage() {
           placeKey: p.placeKey || `map-feature:${p.osm_id || p.id || `${fLat.toFixed(5)},${fLng.toFixed(5)}`}`,
           osmType: p.osm_type || null,
           osmId: p.osm_id ? parseInt(p.osm_id, 10) : null,
-          source: "map_feature"
+          source: "map_feature",
+          tags: p
         };
         setSelectedPlace(buildingPlace);
         setLiveStage("place_preview");
@@ -552,7 +557,10 @@ export default function LivePage() {
         // Step 5: Fall back to reverse geocode
         const addressPlace: PlacePreviewData = {
           name: reverseResult.name || "Location Address",
-          categoryLabel: "Address",
+          categoryLabel:
+            normalizePlaceCategory(reverseResult) ||
+            (reverseResult.extratags ? normalizePlaceCategory(reverseResult.extratags) : null) ||
+            (reverseResult.name ? "Place" : "Address"),
           address: typeof reverseResult.address === "string" ? reverseResult.address : (reverseResult.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`),
           phone: null,
           lat: lat,
@@ -563,7 +571,8 @@ export default function LivePage() {
           placeKey: reverseResult.placeKey || `address:${lat.toFixed(5)},${lng.toFixed(5)}`,
           source: "nominatim",
           city: reverseResult.city || null,
-          country: reverseResult.country || null
+          country: reverseResult.country || null,
+          tags: reverseResult.extratags
         };
         setSelectedPlace(addressPlace);
         setLiveStage("place_preview");
@@ -614,7 +623,7 @@ export default function LivePage() {
 
     const initial: PlacePreviewData = {
       name: result.name || result.display_name.split(",")[0],
-      categoryLabel: formatCategoryLabel(result.type, result.class),
+      categoryLabel: normalizePlaceCategory(result) || (result.name ? "Place" : "Address"),
       address: result.display_name,
       phone: null,
       lat,
@@ -680,7 +689,10 @@ export default function LivePage() {
           ...prev,
           name: details.name || prev.name,
           categoryLabel:
-            formatCategoryLabel(details.type, details.class) || prev.categoryLabel,
+            normalizePlaceCategory(details) ||
+            (details.extratags ? normalizePlaceCategory(details.extratags) : null) ||
+            (details.name || prev.name ? "Place" : "Address") ||
+            prev.categoryLabel,
           address: formatStreetAddress(details.address, details.display_name || prev.address),
           phone: extractPhone(details.extratags),
           openingHours: hours ?? null,

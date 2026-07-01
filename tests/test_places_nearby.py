@@ -1,0 +1,97 @@
+from __future__ import annotations
+
+import pytest
+from fastapi.testclient import TestClient
+from unittest.mock import AsyncMock, patch
+
+from app.main import app
+from app.services.places_nearby_service import PlacesNearbyService
+
+client = TestClient(app)
+
+
+@pytest.mark.anyio
+async def test_search_nearby_places_success():
+    # Mock httpx response from Overpass API
+    mock_overpass_response = {
+        "elements": [
+            {
+                "type": "node",
+                "id": 11111,
+                "lat": 41.91,
+                "lon": -87.68,
+                "tags": {
+                    "name": "Shell Gas",
+                    "amenity": "fuel",
+                    "addr:street": "N Western Ave",
+                    "addr:housenumber": "1234",
+                    "addr:city": "Chicago",
+                    "addr:state": "IL",
+                },
+            }
+        ]
+    }
+
+    class MockResponse:
+        def __init__(self, json_data, status_code):
+            self._json_data = json_data
+            self.status_code = status_code
+
+        def json(self):
+            return self._json_data
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = MockResponse(mock_overpass_response, 200)
+
+        results = await PlacesNearbyService.search_nearby_places(
+            category="gas",
+            lat=41.91,
+            lng=-87.68,
+            radius_meters=5000,
+            limit=15,
+        )
+
+        assert len(results) == 1
+        assert results[0]["name"] == "Shell Gas"
+        assert results[0]["category"] == "Gas station"
+        assert results[0]["lat"] == 41.91
+        assert results[0]["lng"] == -87.68
+        assert results[0]["placeKey"] == "osm:node:11111"
+        assert results[0]["distanceMiles"] == 0.0
+
+
+def test_api_places_nearby_endpoint():
+    # Test end-to-end endpoint with mocked service layer
+    mock_results = [
+        {
+            "id": "osm:node:11111",
+            "placeKey": "osm:node:11111",
+            "name": "Shell Gas",
+            "category": "Gas station",
+            "address": "1234 N Western Ave, Chicago, IL",
+            "lat": 41.91,
+            "lng": -87.68,
+            "distanceMiles": 0.4,
+            "source": "osm",
+            "osmType": "node",
+            "osmId": "11111",
+            "tags": {"amenity": "fuel"},
+        }
+    ]
+
+    with patch(
+        "app.services.places_nearby_service.PlacesNearbyService.search_nearby_places",
+        new_callable=AsyncMock,
+    ) as mock_search:
+        mock_search.return_value = mock_results
+
+        res = client.get(
+            "/api/v1/places/nearby",
+            params={"category": "gas", "lat": 41.91, "lng": -87.68},
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert "results" in body
+        assert len(body["results"]) == 1
+        assert body["results"][0]["name"] == "Shell Gas"
+        assert body["results"][0]["distanceMiles"] == 0.4

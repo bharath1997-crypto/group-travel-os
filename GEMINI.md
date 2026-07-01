@@ -257,7 +257,7 @@ After every feature change, update this section in GEMINI.md:
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2026-06-30 (Aligned nav bar to match Dashboard Layout header) |
-| Live Trip Mode (MapLibre Static Landing) | Complete | 2026-07-01 (Implemented interactive Map Feature Inspector, visual debug panel, symbol POI prioritization, reverse geocode/nearby fallbacks, responsive driving-safe layouts, and LoungeDock auto-collapse) |
+| Live Trip Mode (MapLibre Static Landing) | Complete | 2026-07-01 (Implemented interactive Map Feature Inspector, visual debug panel, symbol POI prioritization, reverse geocode/nearby fallbacks, responsive driving-safe layouts, LoungeDock auto-collapse, frontend & backend category normalization, and trust-badge formatting) |
 | Buses page | Pending | — |
 
 ---

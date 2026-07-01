@@ -34,6 +34,8 @@ export type LiveGeocodingSearchResult = {
   type?: string;
   class?: string;
   name?: string;
+  osm_type?: string;
+  osm_id?: number;
   address?: Record<string, string>;
 };
 
@@ -42,8 +44,17 @@ export type LiveGeocodingReverseResult = {
   name?: string;
   type?: string;
   class?: string;
+  osm_type?: string;
+  osm_id?: number;
   address?: Record<string, string>;
   extratags?: Record<string, string>;
+  lat?: number;
+  lng?: number;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  placeKey?: string | null;
+  source?: string;
 };
 
 export type SearchBias = {
@@ -175,4 +186,128 @@ export function formatSearchResultSubtitle(
     else parts.push(`${miles.toFixed(1)} mi away`);
   }
   return parts.join(" · ");
+}
+
+export function normalizePlaceCategory(item: any): string | null {
+  if (!item) return null;
+  const p = item.properties || item.tags || item;
+
+  // 1. amenity
+  if (p.amenity) {
+    const val = p.amenity;
+    if (val === "fuel") return "Gas station";
+    if (val === "restaurant") return "Restaurant";
+    if (val === "fast_food") return "Fast food";
+    if (val === "cafe") return "Cafe";
+    if (val === "bar") return "Bar";
+    if (val === "pub") return "Pub";
+    if (val === "cinema") return "Cinema";
+    if (val === "hospital") return "Hospital";
+    if (val === "clinic") return "Clinic";
+    if (val === "pharmacy") return "Pharmacy";
+    if (val === "parking") return "Parking";
+    if (val === "bank") return "Bank";
+    if (val === "atm") return "ATM";
+    if (val === "place_of_worship") return "Place of worship";
+    if (val === "school") return "School";
+    if (val === "college") return "College";
+    if (val === "university") return "University";
+    if (val === "library") return "Library";
+    if (val === "toilets") return "Restroom";
+    return val.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+  }
+
+  // 2. shop
+  if (p.shop) {
+    const val = p.shop;
+    if (val === "alcohol") return "Liquor store";
+    if (val === "beverages") return "Beverage store";
+    if (val === "convenience") return "Convenience store";
+    if (val === "supermarket") return "Supermarket";
+    if (val === "mobile_phone") return "Mobile phone store";
+    if (val === "clothes") return "Clothing store";
+    if (val === "bakery") return "Bakery";
+    if (val === "coffee") return "Coffee shop";
+    return val.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+  }
+
+  // 3. tourism
+  if (p.tourism) {
+    const val = p.tourism;
+    if (val === "hotel") return "Hotel";
+    if (val === "motel") return "Motel";
+    if (val === "attraction") return "Attraction";
+    if (val === "museum") return "Museum";
+    if (val === "gallery") return "Gallery";
+    return val.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+  }
+
+  // 4. leisure
+  if (p.leisure) {
+    const val = p.leisure;
+    if (val === "park") return "Park";
+    if (val === "fitness_centre" || val === "fitness_center") return "Fitness center";
+    if (val === "sports_centre" || val === "sports_center") return "Sports center";
+    return val.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+  }
+
+  // 5. healthcare
+  if (p.healthcare) {
+    const val = p.healthcare;
+    if (val === "hospital") return "Hospital";
+    if (val === "clinic") return "Clinic";
+    if (val === "pharmacy") return "Pharmacy";
+    return val.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+  }
+
+  // 6. public_transport / highway
+  if (p.highway === "bus_stop") return "Bus stop";
+  if (p.public_transport === "platform") return "Transit stop";
+
+  // 7. class/type/category
+  const c = p.class || p.type || p.category;
+  if (c) {
+    const val = String(c).toLowerCase().replace(/_/g, " ");
+    if (val === "fuel" || val === "gas station") return "Gas station";
+    if (val === "restaurant") return "Restaurant";
+    if (val === "fast food") return "Fast food";
+    if (val === "cafe" || val === "coffee") return "Cafe";
+    if (val === "bar") return "Bar";
+    if (val === "pub") return "Pub";
+    if (val === "cinema") return "Cinema";
+    if (val === "hospital") return "Hospital";
+    if (val === "clinic") return "Clinic";
+    if (val === "pharmacy") return "Pharmacy";
+    if (val === "parking") return "Parking";
+    if (val === "bank") return "Bank";
+    if (val === "atm") return "ATM";
+    if (val === "place of worship") return "Place of worship";
+    if (val === "school") return "School";
+    if (val === "college") return "College";
+    if (val === "university") return "University";
+    if (val === "library") return "Library";
+    if (val === "toilets" || val === "restroom") return "Restroom";
+    if (val === "hotel") return "Hotel";
+    if (val === "motel") return "Motel";
+    if (val === "attraction") return "Attraction";
+    if (val === "museum") return "Museum";
+    if (val === "gallery") return "Gallery";
+    if (val === "park") return "Park";
+    if (val === "fitness centre" || val === "fitness center") return "Fitness center";
+    if (val === "sports centre" || val === "sports center") return "Sports center";
+    if (val === "bus stop") return "Bus stop";
+    if (val === "platform" || val === "transit stop") return "Transit stop";
+    if (val === "alcohol" || val === "liquor store") return "Liquor store";
+    if (val === "beverages" || val === "beverage store") return "Beverage store";
+    if (val === "convenience" || val === "convenience store") return "Convenience store";
+    if (val === "supermarket") return "Supermarket";
+    if (val === "mobile phone" || val === "mobile phone store") return "Mobile phone store";
+    if (val === "clothes" || val === "clothing store") return "Clothing store";
+    if (val === "bakery") return "Bakery";
+    if (val === "coffee shop") return "Coffee shop";
+
+    return val.replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  return null;
 }
