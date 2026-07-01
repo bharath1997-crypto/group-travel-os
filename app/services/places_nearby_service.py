@@ -299,26 +299,181 @@ CATEGORY_TAG_QUERIES: dict[str, list[str]] = {
         'way["amenity"="parking"](around:{radius},{lat},{lng});',
     ],
     "all": [
-        'node["amenity"~"fuel|cafe|restaurant|fast_food|toilets|hospital|clinic|atm|bank|parking|pub|bar|theme_park"](around:{radius},{lat},{lng});',
-        'way["amenity"~"fuel|cafe|restaurant|fast_food|toilets|hospital|clinic|atm|bank|parking|pub|bar|theme_park"](around:{radius},{lat},{lng});',
-        'node["shop"~"convenience|supermarket|bakery|mall|department_store"](around:{radius},{lat},{lng});',
-        'way["shop"~"convenience|supermarket|bakery|mall|department_store"](around:{radius},{lat},{lng});',
-        'node["leisure"~"park|playground|garden|sports_centre"](around:{radius},{lat},{lng});',
-        'way["leisure"~"park|playground|garden|sports_centre"](around:{radius},{lat},{lng});',
-        'node["tourism"~"attraction|museum|hotel|viewpoint|artwork"](around:{radius},{lat},{lng});',
-        'way["tourism"~"attraction|museum|hotel|viewpoint|artwork"](around:{radius},{lat},{lng});',
+        'node["amenity"~"fuel|cafe|restaurant|fast_food|toilets|hospital|clinic|pharmacy|atm|bank|parking|pub|bar|cinema|theatre|library|school|college|university|place_of_worship"](around:{radius},{lat},{lng});',
+        'way["amenity"~"fuel|cafe|restaurant|fast_food|toilets|hospital|clinic|pharmacy|atm|bank|parking|pub|bar|cinema|theatre|library|school|college|university|place_of_worship"](around:{radius},{lat},{lng});',
+        'node["shop"~"convenience|supermarket|bakery|mall|department_store|alcohol|beverages|clothes|mobile_phone|coffee|hardware|electronics|florist|gift|jewelry|books"](around:{radius},{lat},{lng});',
+        'way["shop"~"convenience|supermarket|bakery|mall|department_store|alcohol|beverages|clothes|mobile_phone|coffee|hardware|electronics|florist|gift|jewelry|books"](around:{radius},{lat},{lng});',
+        'node["leisure"~"park|playground|garden|sports_centre|fitness_centre|stadium"](around:{radius},{lat},{lng});',
+        'way["leisure"~"park|playground|garden|sports_centre|fitness_centre|stadium"](around:{radius},{lat},{lng});',
+        'node["tourism"~"attraction|museum|hotel|motel|viewpoint|artwork|gallery"](around:{radius},{lat},{lng});',
+        'way["tourism"~"attraction|museum|hotel|motel|viewpoint|artwork|gallery"](around:{radius},{lat},{lng});',
     ],
     "click": [
-        'node["amenity"~"fuel|cafe|restaurant|fast_food|toilets|hospital|clinic|atm|bank|parking|pub|bar|theme_park"](around:{radius},{lat},{lng});',
-        'way["amenity"~"fuel|cafe|restaurant|fast_food|toilets|hospital|clinic|atm|bank|parking|pub|bar|theme_park"](around:{radius},{lat},{lng});',
-        'node["shop"~"convenience|supermarket|bakery|mall|department_store"](around:{radius},{lat},{lng});',
-        'way["shop"~"convenience|supermarket|bakery|mall|department_store"](around:{radius},{lat},{lng});',
-        'node["leisure"~"park|playground|garden|sports_centre"](around:{radius},{lat},{lng});',
-        'way["leisure"~"park|playground|garden|sports_centre"](around:{radius},{lat},{lng});',
-        'node["tourism"~"attraction|museum|hotel|viewpoint|artwork"](around:{radius},{lat},{lng});',
-        'way["tourism"~"attraction|museum|hotel|viewpoint|artwork"](around:{radius},{lat},{lng});',
+        'node["amenity"~"fuel|cafe|restaurant|fast_food|toilets|hospital|clinic|pharmacy|atm|bank|parking|pub|bar|cinema|theatre|library|school|college|university|place_of_worship"](around:{radius},{lat},{lng});',
+        'way["amenity"~"fuel|cafe|restaurant|fast_food|toilets|hospital|clinic|pharmacy|atm|bank|parking|pub|bar|cinema|theatre|library|school|college|university|place_of_worship"](around:{radius},{lat},{lng});',
+        'node["shop"~"convenience|supermarket|bakery|mall|department_store|alcohol|beverages|clothes|mobile_phone|coffee|hardware|electronics|florist|gift|jewelry|books"](around:{radius},{lat},{lng});',
+        'way["shop"~"convenience|supermarket|bakery|mall|department_store|alcohol|beverages|clothes|mobile_phone|coffee|hardware|electronics|florist|gift|jewelry|books"](around:{radius},{lat},{lng});',
+        'node["leisure"~"park|playground|garden|sports_centre|fitness_centre|stadium"](around:{radius},{lat},{lng});',
+        'way["leisure"~"park|playground|garden|sports_centre|fitness_centre|stadium"](around:{radius},{lat},{lng});',
+        'node["tourism"~"attraction|museum|hotel|motel|viewpoint|artwork|gallery"](around:{radius},{lat},{lng});',
+        'way["tourism"~"attraction|museum|hotel|motel|viewpoint|artwork|gallery"](around:{radius},{lat},{lng});',
     ],
 }
+
+
+# ---------------------------------------------------------------------------
+# Tile feature property → category inference
+# ---------------------------------------------------------------------------
+# MapLibre vector tiles encode POI type in several ways depending on the tile
+# provider and layer.  When a click arrives WITHOUT explicit amenity=/shop=
+# properties (e.g. the tile uses class="shop" + type="alcohol"), we do a
+# best-effort inference so we can show something meaningful instead of "Address".
+
+_CLASS_TYPE_TO_CATEGORY: dict[str, str] = {
+    "fuel": "Gas station",
+    "gas_station": "Gas station",
+    "restaurant": "Restaurant",
+    "fast_food": "Fast food",
+    "cafe": "Cafe",
+    "coffee": "Cafe",
+    "bar": "Bar",
+    "pub": "Pub",
+    "cinema": "Cinema",
+    "theatre": "Theatre",
+    "hospital": "Hospital",
+    "clinic": "Clinic",
+    "pharmacy": "Pharmacy",
+    "parking": "Parking",
+    "bank": "Bank",
+    "atm": "ATM",
+    "place_of_worship": "Place of worship",
+    "church": "Church",
+    "mosque": "Mosque",
+    "synagogue": "Synagogue",
+    "temple": "Temple",
+    "school": "School",
+    "college": "College",
+    "university": "University",
+    "library": "Library",
+    "toilets": "Restroom",
+    "restroom": "Restroom",
+    "hotel": "Hotel",
+    "motel": "Motel",
+    "attraction": "Attraction",
+    "museum": "Museum",
+    "gallery": "Gallery",
+    "park": "Park",
+    "stadium": "Stadium",
+    "fitness_centre": "Fitness center",
+    "fitness_center": "Fitness center",
+    "sports_centre": "Sports center",
+    "sports_center": "Sports center",
+    "bus_stop": "Bus stop",
+    "platform": "Transit stop",
+    "alcohol": "Liquor store",
+    "liquor": "Liquor store",
+    "liquor_store": "Liquor store",
+    "beverages": "Beverage store",
+    "convenience": "Convenience store",
+    "supermarket": "Supermarket",
+    "grocery": "Supermarket",
+    "mobile_phone": "Mobile phone store",
+    "clothes": "Clothing store",
+    "clothing": "Clothing store",
+    "bakery": "Bakery",
+    "coffee_shop": "Coffee shop",
+    "shop": "Shop",
+}
+
+_MAKI_TO_CATEGORY: dict[str, str] = {
+    "alcohol-shop": "Liquor store",
+    "liquor-store": "Liquor store",
+    "bar": "Bar",
+    "beer": "Bar",
+    "restaurant": "Restaurant",
+    "fast-food": "Fast food",
+    "cafe": "Cafe",
+    "coffee": "Cafe",
+    "fuel": "Gas station",
+    "gas-station": "Gas station",
+    "pharmacy": "Pharmacy",
+    "hospital": "Hospital",
+    "cinema": "Cinema",
+    "theatre": "Theatre",
+    "museum": "Museum",
+    "park": "Park",
+    "parking": "Parking",
+    "bank": "Bank",
+    "atm": "ATM",
+    "bus": "Bus stop",
+    "rail": "Train station",
+    "airport": "Airport",
+    "hotel": "Hotel",
+    "lodging": "Hotel",
+    "grocery": "Supermarket",
+    "convenience": "Convenience store",
+    "clothing-store": "Clothing store",
+    "library": "Library",
+    "school": "School",
+    "college": "College",
+    "religious-christian": "Church",
+    "religious-jewish": "Synagogue",
+    "religious-muslim": "Mosque",
+    "place-of-worship": "Place of worship",
+    "fitness-centre": "Fitness center",
+    "sports-centre": "Sports center",
+}
+
+
+def _infer_category_from_props(props: dict[str, Any]) -> str | None:
+    """
+    Infer a human-readable category from MapLibre tile feature properties
+    when explicit OSM amenity=/shop= keys are absent.
+    Returns None if no inference can be made (caller should default to 'Address').
+    """
+    if not props:
+        return None
+
+    # 1. maki / icon — set by the tile renderer for the displayed symbol
+    for icon_key in ("maki", "icon", "symbol", "marker-symbol"):
+        icon_val = str(props.get(icon_key) or "").lower().strip()
+        if icon_val and icon_val in _MAKI_TO_CATEGORY:
+            return _MAKI_TO_CATEGORY[icon_val]
+
+    # 2. class / type / category — common in OpenMapTiles and similar schemas
+    for key in ("class", "type", "category", "subclass", "kind"):
+        val = str(props.get(key) or "").lower().strip().replace("-", "_").replace(" ", "_")
+        if val and val in _CLASS_TYPE_TO_CATEGORY:
+            return _CLASS_TYPE_TO_CATEGORY[val]
+
+    # 3. layer.id / sourceLayer — last resort, pull the dominant noun
+    layer_id = str(props.get("layer.id") or props.get("sourceLayer") or "").lower()
+    if "alcohol" in layer_id or "liquor" in layer_id:
+        return "Liquor store"
+    if "fuel" in layer_id or "gas" in layer_id:
+        return "Gas station"
+    if "restaurant" in layer_id or "food" in layer_id:
+        return "Restaurant"
+    if "cafe" in layer_id or "coffee" in layer_id:
+        return "Cafe"
+    if "bar" in layer_id or "pub" in layer_id:
+        return "Bar"
+    if "cinema" in layer_id or "theatre" in layer_id or "theater" in layer_id:
+        return "Cinema"
+    if "hospital" in layer_id or "clinic" in layer_id:
+        return "Hospital"
+    if "pharmacy" in layer_id:
+        return "Pharmacy"
+    if "worship" in layer_id or "church" in layer_id:
+        return "Place of worship"
+    if "park" in layer_id:
+        return "Park"
+    if "hotel" in layer_id or "lodging" in layer_id:
+        return "Hotel"
+    if "shop" in layer_id:
+        return "Shop"
+
+    return None
 
 
 class PlacesNearbyService:
@@ -449,16 +604,24 @@ out center;"""
         radius_meters = max(10, min(150, radius_meters))
 
         props = feature_properties or {}
-        has_useful_props = any(
+        # "Useful" means: either the classic OSM tags are present, OR the tile
+        # includes class/type/maki which we can infer a category from.
+        has_explicit_tags = any(
             k in props
             for k in ["amenity", "shop", "tourism", "leisure", "healthcare", "highway", "public_transport"]
         )
+        inferred_category_from_props = _infer_category_from_props(props)
+        has_useful_props = has_explicit_tags or (inferred_category_from_props is not None)
 
         name = props.get("name") or props.get("display_name") or props.get("title") or clicked_name
 
         # Step 1: If feature properties already contain a useful category
         if has_useful_props and name:
-            category = normalize_tags(props)
+            if has_explicit_tags:
+                category = normalize_tags(props)
+            else:
+                # class/type/maki based inference — no explicit OSM tag
+                category = inferred_category_from_props  # type: ignore[assignment]
             address = (
                 props.get("address")
                 or props.get("addr:full")
@@ -541,13 +704,21 @@ out center;"""
                 or addr.get("suburb")
             )
             country = addr.get("country")
+
+            # Prefer clicked_name (from vector tile) over the geocoded road name.
+            # clicked_name is the name the user saw on the map — trust it.
             geo_name = (
-                geo_result.get("name")
+                clicked_name
+                or geo_result.get("name")
                 or addr.get("road")
                 or geo_result.get("display_name", "").split(",")[0]
-                or name
                 or "Location Address"
             )
+
+            # Try to infer category from the feature properties (class/type/maki/icon).
+            # This handles tile features that encode POI type via class= or type= rather
+            # than explicit amenity=/shop= tags that are filtered by Overpass.
+            geo_category = _infer_category_from_props(props) or "Address"
 
             address_str = geo_result.get("display_name")
             place_key = build_place_key(
@@ -564,7 +735,7 @@ out center;"""
                 "id": place_key,
                 "placeKey": place_key,
                 "name": geo_name,
-                "category": "Address",
+                "category": geo_category,
                 "address": address_str,
                 "lat": lat,
                 "lng": lng,

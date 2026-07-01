@@ -427,8 +427,11 @@ export default function LivePage() {
         featureProperties = {};
         const keysToPreserve = [
           "name", "amenity", "shop", "tourism", "leisure", "healthcare",
-          "public_transport", "highway", "brand", "operator", "class",
-          "type", "category", "maki", "icon", "osm_id", "osm_type"
+          "public_transport", "highway", "brand", "operator",
+          "class", "type", "category", "subclass", "kind",
+          "maki", "icon", "symbol", "marker-symbol",
+          "religion",    // needed for place_of_worship → Church/Mosque etc.
+          "osm_id", "osm_type"
         ];
         keysToPreserve.forEach((key) => {
           if (p[key] !== undefined) {
