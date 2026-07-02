@@ -199,7 +199,7 @@ export function buildLocationContext(input: LocationContextInput): LiveLocationC
     distanceMiles = Math.round(haversineMiles(user.lat, user.lng, place.lat, place.lng) * 10) / 10;
   }
 
-  const sameCountry = regionsMatch(user?.country, place.country);
+  const sameCountry = (user?.country && place.country) ? regionsMatch(user.country, place.country) : null;
   const sameState =
     user?.state && place.state
       ? normalizeToken(user.state) === normalizeToken(place.state)
@@ -209,7 +209,25 @@ export function buildLocationContext(input: LocationContextInput): LiveLocationC
       ? normalizeToken(user.city) === normalizeToken(place.city)
       : null;
 
-  const countryMismatch = sameCountry === false;
+  let countryMismatch = sameCountry === false;
+  if (distanceMiles !== null && distanceMiles < 100) {
+    // Do not claim a country mismatch for local places:
+    // 1. If either country field is missing.
+    // 2. If either country value looks like a coordinate, a POI category,
+    //    or any other non-country string (< 4 chars or contains digits).
+    const userCountryClean = (user?.country || "").trim();
+    const placeCountryClean = (place.country || "").trim();
+    const looksLikeRealCountry = (s: string) =>
+      s.length >= 4 && !/\d/.test(s) && !s.includes(":") && !s.includes(",");
+    if (
+      !userCountryClean ||
+      !placeCountryClean ||
+      !looksLikeRealCountry(userCountryClean) ||
+      !looksLikeRealCountry(placeCountryClean)
+    ) {
+      countryMismatch = false;
+    }
+  }
   const stateMismatch = sameState === false;
   const missingAddress = isIncompletePlace(place);
   const missingHours = place.hasOpeningHours === false;
@@ -287,7 +305,17 @@ type BuiltSlice = {
 };
 
 export function classifyLocationContext(built: BuiltSlice): LocationClassification {
-  if (built.countryMismatch) return "country_mismatch";
+  if (built.countryMismatch) {
+    // Extra safety: only escalate to country_mismatch when the distance is
+    // known AND is large enough to plausibly cross a border (>= 50 miles).
+    // This prevents stale/wrong geocode data from triggering the warning on
+    // a parking lot 4 miles away.
+    if (built.distanceMiles !== null && built.distanceMiles < 50) {
+      // Treat as local even if country flag is set
+    } else {
+      return "country_mismatch";
+    }
+  }
   if (built.missingAddress && (built.missingDistance || built.dataQualityScore < 0.6)) {
     return "incomplete_place_data";
   }

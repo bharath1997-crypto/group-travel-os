@@ -342,6 +342,9 @@ export default function LivePage() {
     setRoviExplanationError(null);
     setRoviExplanationLoading(false);
 
+    // Clear teal clicked-pin when starting a fresh nearby search
+    mapRef.current?.clearClickedPin();
+
     // Record category search in recent searches
     recordRecentSearch(buildCategoryRecentSearch(query), currentUserId);
     refreshRecentSearches();
@@ -361,7 +364,8 @@ export default function LivePage() {
     } finally {
       setNearbyLoading(false);
     }
-  }, [resolveAnchorCoordinate, currentUserId, refreshRecentSearches]);
+  }, [resolveAnchorCoordinate, currentUserId, refreshRecentSearches, mapRef]);
+
 
   const handleCloseNearbyResults = useCallback(() => {
     setNearbyResults(null);
@@ -853,6 +857,7 @@ export default function LivePage() {
     setPlaceMediaLoading(false);
     resetRoviExplanation();
     setViewingDetailsFromNearby(false);
+    mapRef.current?.clearClickedPin();
 
     if (isLiveActive) return;
     setDestination(null);
@@ -872,6 +877,8 @@ export default function LivePage() {
     setDestination(selectedPlace);
     setIsLiveActive(false);
     setLiveStage("destination_set");
+    // Teal clicked-pin replaced by the destination 📍 marker
+    mapRef.current?.clearClickedPin();
     // Record as destination type in recent searches
     recordRecentSearch(
       { ...buildPlaceRecentSearch(selectedPlace), type: "destination" },

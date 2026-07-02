@@ -17,6 +17,30 @@ import {
 import type { RouteLine, UserLocationUpdate } from "./live-types";
 import { LOCAL_LIVE_MAX_M } from "./live-types";
 
+/** Arrow-cursor style injected once for the Live map container */
+const LIVE_MAP_CURSOR_CSS = `
+.rovvy-live-map-container .maplibregl-canvas-container,
+.rovvy-live-map-container .maplibregl-canvas {
+  cursor: default !important;
+}
+.rovvy-live-map-container .maplibregl-canvas:active {
+  cursor: default !important;
+}
+.rovvy-live-map-container .maplibregl-canvas-container:active {
+  cursor: default !important;
+}
+`;
+
+let liveCursorStyleInjected = false;
+function injectLiveMapCursorStyle() {
+  if (typeof document === "undefined" || liveCursorStyleInjected) return;
+  const style = document.createElement("style");
+  style.id = "rovvy-live-map-cursor";
+  style.textContent = LIVE_MAP_CURSOR_CSS;
+  document.head.appendChild(style);
+  liveCursorStyleInjected = true;
+}
+
 export type UserLocation = { lat: number; lng: number };
 
 export type LiveMapRef = {
@@ -26,6 +50,7 @@ export type LiveMapRef = {
   getUserLocation: () => UserLocation | null;
   getMapCenter: () => UserLocation | null;
   isLiveGpsActive: () => boolean;
+  clearClickedPin: () => void;
 };
 
 export type MapFollowMode = "default" | "local-only" | "off";
@@ -84,6 +109,70 @@ function createDestinationMarkerElement(navigating: boolean): HTMLDivElement {
   }
   el.innerHTML = `<div style="font-size:28px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">📍</div>`;
   return el;
+}
+
+/** Teal map-click pin — distinct from the destination 📍 and from the blue user dot */
+function createClickedPinMarkerElement(): HTMLDivElement {
+  const el = document.createElement("div");
+  el.style.cssText = "pointer-events:none;";
+  el.innerHTML = `
+    <div style="
+      position: relative;
+      width: 28px;
+      height: 36px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    ">
+      <!-- pin body -->
+      <div style="
+        width: 24px;
+        height: 24px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        background: #0F766E;
+        border: 3px solid #ffffff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+      "></div>
+    </div>
+  `;
+  return el;
+}
+
+/** Show a brief ripple at the screen pixel position then remove it. */
+function showClickRipple(container: HTMLElement, x: number, y: number): void {
+  const ripple = document.createElement("div");
+  ripple.style.cssText = `
+    position: absolute;
+    left: ${x}px;
+    top: ${y}px;
+    width: 40px;
+    height: 40px;
+    transform: translate(-50%, -50%) scale(0);
+    border-radius: 50%;
+    border: 2px solid #0F766E;
+    background: rgba(15,118,110,0.12);
+    pointer-events: none;
+    z-index: 9999;
+    animation: rovvy-ripple 0.75s ease-out forwards;
+  `;
+
+  // Inject animation keyframes once
+  if (!document.getElementById("rovvy-ripple-keyframes")) {
+    const style = document.createElement("style");
+    style.id = "rovvy-ripple-keyframes";
+    style.textContent = `
+      @keyframes rovvy-ripple {
+        0%   { transform: translate(-50%,-50%) scale(0); opacity: 1; }
+        70%  { transform: translate(-50%,-50%) scale(1.8); opacity: 0.5; }
+        100% { transform: translate(-50%,-50%) scale(2.4); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  container.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 800);
 }
 
 function syncRouteLayer(map: maplibregl.Map, routeLine: RouteLine | null | undefined) {
@@ -183,6 +272,11 @@ export default function LiveMapComponent({
   navigationModeRef.current = navigationMode;
   const mapFollowModeRef = useRef(mapFollowMode);
   mapFollowModeRef.current = mapFollowMode;
+  const clickedPinMarkerRef = useRef<maplibregl.Marker | null>(null);
+
+  useEffect(() => {
+    injectLiveMapCursorStyle();
+  }, []);
 
   useEffect(() => {
     warnIfUnsafeProductionTiles("live");
@@ -211,11 +305,29 @@ export default function LiveMapComponent({
     });
 
     map.on("click", (e) => {
+      const { x, y } = e.point;
       const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
-        [e.point.x - 10, e.point.y - 10],
-        [e.point.x + 10, e.point.y + 10]
+        [x - 10, y - 10],
+        [x + 10, y + 10]
       ];
       const features = map.queryRenderedFeatures(bbox);
+
+      // ── Place teal dropped-pin marker immediately at clicked coordinate ──
+      if (clickedPinMarkerRef.current) {
+        clickedPinMarkerRef.current.remove();
+        clickedPinMarkerRef.current = null;
+      }
+      clickedPinMarkerRef.current = new maplibregl.Marker({
+        element: createClickedPinMarkerElement(),
+        anchor: "bottom",
+      })
+        .setLngLat([e.lngLat.lng, e.lngLat.lat])
+        .addTo(map);
+
+      // ── Show ripple at click pixel position ──
+      if (mapContainer.current) {
+        showClickRipple(mapContainer.current, x, y);
+      }
 
       // Score features to find the top one
       const scoredFeatures = features
@@ -398,6 +510,10 @@ export default function LiveMapComponent({
         return { lat: center.lat, lng: center.lng };
       },
       isLiveGpsActive: () => liveGpsActiveRef.current,
+      clearClickedPin: () => {
+        clickedPinMarkerRef.current?.remove();
+        clickedPinMarkerRef.current = null;
+      },
       locateUser: () => {
         if (liveGpsActiveRef.current) {
           const loc = userLocationRef.current;
@@ -416,6 +532,8 @@ export default function LiveMapComponent({
       stopLiveGps();
       userMarkerRef.current?.remove();
       userMarkerRef.current = null;
+      clickedPinMarkerRef.current?.remove();
+      clickedPinMarkerRef.current = null;
       map.remove();
       mapRef.current = null;
     };
@@ -483,6 +601,15 @@ export default function LiveMapComponent({
       .setLngLat([mapPin.lng, mapPin.lat])
       .addTo(map);
   }, [mapPin, navigationMode]);
+
+  // Remove the teal clicked-pin when a proper mapPin (destination/selected place) is provided,
+  // so we don't show two pins at once after the user makes a destination.
+  useEffect(() => {
+    if (mapPin && clickedPinMarkerRef.current) {
+      clickedPinMarkerRef.current.remove();
+      clickedPinMarkerRef.current = null;
+    }
+  }, [mapPin]);
 
   const nearbyMarkersRef = useRef<maplibregl.Marker[]>([]);
 
@@ -588,7 +715,7 @@ export default function LiveMapComponent({
   }, [mapPin, routeLine, mapFollowMode, navigationMode]);
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full rovvy-live-map-container">
       <div ref={mapContainer} className="w-full h-full" />
       {process.env.NEXT_PUBLIC_ROVVY_MAP_DEBUG === "true" && debugInfo && (
         <div className="absolute bottom-4 left-4 z-[100] bg-stone-900/90 text-stone-100 backdrop-blur-md border border-stone-800 p-4 rounded-xl shadow-lg max-w-xs text-xs font-mono flex flex-col gap-2 pointer-events-auto">
