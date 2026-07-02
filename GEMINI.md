@@ -257,7 +257,7 @@ After every feature change, update this section in GEMINI.md:
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2026-06-30 (Aligned nav bar to match Dashboard Layout header) |
-| Live Trip Mode (MapLibre Static Landing) | Complete | 2026-07-02 (Dynamic Recent Searches: replaced hardcoded static places with localStorage-backed per-user cache. New module live-recent-searches.ts — recordRecentSearch, getRecentSearches, clearRecentSearches, DEFAULT_RECENT_SUGGESTIONS. Captures: search queries, nearby result clicks, map clicks, Make Destination, dropped pins, quick category searches. Dedup by placeKey > lat/lng+label > query. Display: latest 5, falls back to Coffee/Gas/Food/Restrooms/Parking defaults when empty. Clear button in header. Type-aware row icons (🔍 category, 📍 place, 🏁 destination). SSR-safe typeof window checks throughout.) |
+| Live Trip Mode (MapLibre Static Landing) | Complete | 2026-07-02 (Map click UX: replaced hand/grab cursor with arrow cursor (CSS scoped to .rovvy-live-map-container); added teal rotated-square dropped-pin marker at every click coordinate; 750ms ripple pulse at click pixel; exposed clearClickedPin() on LiveMapRef; pin auto-clears on Make Destination / nearby search / preview close. Country mismatch fix: suppressed false "another country" warning when distance < 100 mi and country strings are missing/garbage or when distanceMiles < 50 mi regardless.) |
 | Buses page | Pending | — |
 
 ---
