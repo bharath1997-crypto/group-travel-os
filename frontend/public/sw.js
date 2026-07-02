@@ -12,7 +12,7 @@ self.addEventListener('push', function (event) {
 
   const options = {
     body: body,
-    icon: '/icon-192x192.png',
+    icon: '/brand/rovvy_icon.png',
     badge: '/badge-72x72.png',
     data: dataFields,
     actions: raw.actions || [],

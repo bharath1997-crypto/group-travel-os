@@ -20,10 +20,10 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_API_URL: publicApiUrl,
   },
   transpilePackages: ["maplibre-gl"],
-  outputFileTracingRoot: path.resolve(__dirname, ".."),
-  /** Pin Turbopack to this app when multiple lockfiles exist above this folder. */
+  outputFileTracingRoot: path.resolve(__dirname),
+  /** Scope Turbopack to the frontend app (avoids stale HMR from repo-wide scans). */
   turbopack: {
-    root: path.resolve(__dirname, ".."),
+    root: path.resolve(__dirname),
   },
   async redirects() {
     return [

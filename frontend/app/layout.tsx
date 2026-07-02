@@ -59,19 +59,21 @@ export default function RootLayout({
           }}
         />
         <ClientProviders>{children}</ClientProviders>
-        <Script
-          id="gt-register-sw"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
-                navigator.serviceWorker.register("/sw.js")
-                  .then(function (reg) { console.log("SW registered:", reg.scope); })
-                  .catch(function (err) { console.log("SW error:", err); });
-              }
-            `
-          }}
-        />
+        {process.env.NODE_ENV === "production" && (
+          <Script
+            id="gt-register-sw"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+                  navigator.serviceWorker.register("/sw.js")
+                    .then(function (reg) { console.log("SW registered:", reg.scope); })
+                    .catch(function (err) { console.log("SW error:", err); });
+                }
+              `,
+            }}
+          />
+        )}
         {process.env.NODE_ENV === "production" && (
           <Script
             id="travelpayouts-drive"

@@ -15,6 +15,8 @@ export type UserLocationUpdate = {
   lng: number;
   speedMps: number | null;
   heading: number | null;
+  accuracyMeters: number | null;
+  timestamp: number | null;
 };
 
 export type RouteLine = {

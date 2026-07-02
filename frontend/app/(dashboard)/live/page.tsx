@@ -304,22 +304,24 @@ export default function LivePage() {
 
   const resolveSearchBias = useCallback((): SearchBias | null => {
     if (clickedLocation) return clickedLocation;
-    if (userLocation) return userLocation;
+    if (userLocation && (gpsStatus === "active" || gpsStatus === "low_accuracy")) return userLocation;
     const mapCenter = mapRef.current?.getMapCenter();
     if (mapCenter) return mapCenter;
+    if (userLocation) return userLocation; // fallback for stale
     return searchBias;
-  }, [clickedLocation, userLocation, searchBias]);
+  }, [clickedLocation, userLocation, searchBias, gpsStatus]);
 
-  const resolveAnchorCoordinate = useCallback((): { lat: number; lng: number } | null => {
-    if (clickedLocation) return clickedLocation;
-    if (userLocation) return userLocation;
+  const resolveAnchorCoordinate = useCallback((): { lat: number; lng: number; source: "click" | "gps" | "map" | "gps_stale" } | null => {
+    if (clickedLocation) return { ...clickedLocation, source: "click" };
+    if (userLocation && (gpsStatus === "active" || gpsStatus === "low_accuracy")) return { ...userLocation, source: "gps" };
     const mapCenter = mapRef.current?.getMapCenter();
-    if (mapCenter) return mapCenter;
+    if (mapCenter) return { ...mapCenter, source: "map" };
+    if (userLocation) return { ...userLocation, source: "gps_stale" };
     if (destination && isLiveActive && liveStage === "solo_drive_navigation") {
-      return { lat: destination.lat, lng: destination.lng };
+      return { lat: destination.lat, lng: destination.lng, source: "map" };
     }
     return null;
-  }, [clickedLocation, userLocation, destination, isLiveActive, liveStage]);
+  }, [clickedLocation, userLocation, destination, isLiveActive, liveStage, gpsStatus]);
 
   const handleNearbySearch = useCallback(async (query: string) => {
     setSelectedPlace(null);
@@ -350,22 +352,28 @@ export default function LivePage() {
     recordRecentSearch(buildCategoryRecentSearch(query), currentUserId);
     refreshRecentSearches();
 
-    const center = resolveAnchorCoordinate();
-    if (!center) {
+    const anchor = resolveAnchorCoordinate();
+    if (!anchor) {
       setNearbyError("Location unavailable. Turn on GPS or move the map first.");
       setNearbyLoading(false);
       return;
     }
 
+    if (anchor.source === "gps" && gpsStatus === "low_accuracy") {
+      showToast("Using approximate location");
+    } else if (anchor.source === "gps_stale") {
+      showToast("Using last known location");
+    }
+
     try {
-      const results = await searchNearbyPlaces(query, center);
+      const results = await searchNearbyPlaces(query, anchor);
       setNearbyResults(results);
     } catch (err) {
       setNearbyError("Nearby search is unavailable right now.");
     } finally {
       setNearbyLoading(false);
     }
-  }, [resolveAnchorCoordinate, currentUserId, refreshRecentSearches, mapRef]);
+  }, [resolveAnchorCoordinate, currentUserId, refreshRecentSearches, gpsStatus]);
 
 
   const handleCloseNearbyResults = useCallback(() => {
@@ -867,11 +875,18 @@ export default function LivePage() {
   }
 
   function handleUserLocationChange(update: UserLocationUpdate) {
-    const loc = { lat: update.lat, lng: update.lng };
+    const loc = { lat: update.lat, lng: update.lng, accuracy: update.accuracyMeters || undefined, timestamp: update.timestamp || undefined };
     setUserLocation(loc);
     setSpeedMps(update.speedMps);
     setSelectedPlace((prev) => (prev ? updatePlaceDistance(prev, loc) : prev));
     setDestination((prev) => (prev ? updatePlaceDistance(prev, loc) : prev));
+    
+    if (update.accuracyMeters && update.accuracyMeters > 300) {
+      const isMobile = typeof navigator !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
+      if (!isMobile) {
+        showToast("Desktop location can be approximate. For precise GPS, use Rovvy on mobile or enable precise location.");
+      }
+    }
   }
 
   function clearSelectedPlace() {
@@ -1682,7 +1697,7 @@ export default function LivePage() {
               ? "bg-blue-100 hover:bg-blue-200"
               : "bg-white hover:bg-stone-100"
           }`}
-          onClick={locateUser}
+          onClick={() => mapRef.current?.locateUser(true)}
           title={gpsStatus === "denied" ? "Location denied — click to retry" : gpsStatus === "requesting" ? "Finding location…" : "Locate me"}
           aria-pressed={liveGpsActive}
         >
@@ -1705,6 +1720,10 @@ export default function LivePage() {
               ? "bg-blue-600 text-white"
               : gpsStatus === "requesting"
               ? "bg-blue-100 text-blue-700"
+              : gpsStatus === "low_accuracy"
+              ? "bg-amber-100 text-amber-700"
+              : gpsStatus === "stale"
+              ? "bg-stone-200 text-stone-600"
               : gpsStatus === "denied"
               ? "bg-red-100 text-red-600"
               : gpsStatus === "error"
@@ -1715,6 +1734,10 @@ export default function LivePage() {
         >
           {gpsStatus === "active"
             ? "GPS active"
+            : gpsStatus === "low_accuracy"
+            ? "Approx location"
+            : gpsStatus === "stale"
+            ? "Updating…"
             : gpsStatus === "requesting"
             ? "Finding…"
             : gpsStatus === "denied"

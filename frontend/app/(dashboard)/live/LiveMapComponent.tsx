@@ -46,14 +46,14 @@ function injectLiveMapCursorStyle() {
   liveCssInjected = true;
 }
 
-export type UserLocation = { lat: number; lng: number };
+export type UserLocation = { lat: number; lng: number; accuracy?: number; timestamp?: number };
 
-export type GpsStatus = "idle" | "requesting" | "active" | "denied" | "error";
+export type GpsStatus = "idle" | "requesting" | "active" | "denied" | "error" | "stale" | "low_accuracy";
 
 export type LiveMapRef = {
   zoomIn: () => void;
   zoomOut: () => void;
-  locateUser: () => void;
+  locateUser: (forceFresh?: boolean) => void;
   getUserLocation: () => UserLocation | null;
   getMapCenter: () => UserLocation | null;
   isLiveGpsActive: () => boolean;
@@ -274,6 +274,68 @@ function syncRouteLayer(map: maplibregl.Map, routeLine: RouteLine | null | undef
   });
 }
 
+function syncAccuracyLayer(map: maplibregl.Map, lat: number, lng: number, accuracyMeters: number | null) {
+  const sourceId = "user-accuracy";
+  const layerId = "user-accuracy-fill";
+  const layerOutlineId = "user-accuracy-outline";
+
+  if (!accuracyMeters || accuracyMeters <= 20) {
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
+    if (map.getLayer(layerOutlineId)) map.removeLayer(layerOutlineId);
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
+    return;
+  }
+
+  // Create circle polygon
+  const points = 64;
+  const coords = [];
+  const R = 6378137;
+  for (let i = 0; i < points; i++) {
+    const theta = (i / points) * (2 * Math.PI);
+    const dx = accuracyMeters * Math.cos(theta);
+    const dy = accuracyMeters * Math.sin(theta);
+    const latOffset = (dy / R) * (180 / Math.PI);
+    const lngOffset = (dx / (R * Math.cos((lat * Math.PI) / 180))) * (180 / Math.PI);
+    coords.push([lng + lngOffset, lat + latOffset]);
+  }
+  coords.push(coords[0]);
+
+  const data: GeoJSON.Feature<GeoJSON.Polygon> = {
+    type: "Feature",
+    properties: {},
+    geometry: { type: "Polygon", coordinates: [coords] },
+  };
+
+  const existing = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;
+  if (existing) {
+    existing.setData(data);
+    return;
+  }
+
+  map.addSource(sourceId, { type: "geojson", data });
+  
+  // Try to insert below labels and symbols if possible, otherwise just add
+  let beforeId: string | undefined = undefined;
+  const layers = map.getStyle().layers;
+  if (layers) {
+    const firstSymbolId = layers.find(l => l.type === 'symbol')?.id;
+    if (firstSymbolId) beforeId = firstSymbolId;
+  }
+
+  map.addLayer({
+    id: layerId,
+    type: "fill",
+    source: sourceId,
+    paint: { "fill-color": "#2563EB", "fill-opacity": 0.15 },
+  }, beforeId);
+  map.addLayer({
+    id: layerOutlineId,
+    type: "line",
+    source: sourceId,
+    paint: { "line-color": "#2563EB", "line-width": 1, "line-opacity": 0.35 },
+  }, beforeId);
+}
+
 export default function LiveMapComponent({
   activeLayer,
   mapRef,
@@ -438,17 +500,33 @@ export default function LiveMapComponent({
       callbacksRef.current.onMapClick?.(e.lngLat.lat, e.lngLat.lng, features);
     });
 
-    function ensureUserMarker(lat: number, lng: number) {
+    function ensureUserMarker(lat: number, lng: number, accuracy: number | null, timestamp: number | null) {
       if (userMarkerRef.current) {
         userMarkerRef.current.setLngLat([lng, lat]);
-        return;
+      } else {
+        userMarkerRef.current = new maplibregl.Marker({
+          element: createUserMarkerElement(isLiveActiveRef.current, navigationModeRef.current),
+          anchor: "center",
+        })
+          .setLngLat([lng, lat])
+          .addTo(map);
+        
+        const popup = new maplibregl.Popup({ closeButton: false, offset: 15, className: "user-location-popup" });
+        userMarkerRef.current.setPopup(popup);
       }
-      userMarkerRef.current = new maplibregl.Marker({
-        element: createUserMarkerElement(isLiveActiveRef.current, navigationModeRef.current),
-        anchor: "center",
-      })
-        .setLngLat([lng, lat])
-        .addTo(map);
+      
+      const popup = userMarkerRef.current.getPopup();
+      if (popup) {
+        const ageSec = timestamp ? Math.round((Date.now() - timestamp) / 1000) : 0;
+        const content = `
+          <div style="padding: 4px 8px; font-family: sans-serif; min-width: 140px;">
+            <div style="font-weight: bold; font-size: 13px; margin-bottom: 4px; color: #1c1917;">You are here</div>
+            <div style="font-size: 11px; color: #57534e;">Accuracy: ± ${accuracy ? Math.round(accuracy) : '?'} m</div>
+            <div style="font-size: 11px; color: #78716c; margin-top: 2px;">Updated ${ageSec} sec ago</div>
+          </div>
+        `;
+        popup.setHTML(content);
+      }
     }
 
     function applyUserLocation(
@@ -457,14 +535,29 @@ export default function LiveMapComponent({
       centerMap: boolean,
       speedMps: number | null,
       heading: number | null,
+      accuracyMeters: number | null,
+      timestamp: number | null,
     ) {
-      userLocationRef.current = { lat, lng };
-      ensureUserMarker(lat, lng);
+      userLocationRef.current = { lat, lng, accuracy: accuracyMeters || undefined, timestamp: timestamp || undefined };
+      ensureUserMarker(lat, lng, accuracyMeters, timestamp);
+      syncAccuracyLayer(map, lat, lng, accuracyMeters);
+      
+      // Update GpsStatus based on accuracy/freshness
+      let newStatus: GpsStatus = "active";
+      if (timestamp && Date.now() - timestamp > 30000) {
+        newStatus = "stale";
+      } else if (accuracyMeters && accuracyMeters > 150) {
+        newStatus = "low_accuracy";
+      }
+      callbacksRef.current.onGpsStatusChange?.(newStatus);
+      
       callbacksRef.current.onUserLocationChange?.({
         lat,
         lng,
         speedMps,
         heading,
+        accuracyMeters,
+        timestamp,
       });
 
       if (navigationModeRef.current) {
@@ -522,8 +615,7 @@ export default function LiveMapComponent({
               lat: latitude, lng: longitude, accuracy, speed, heading,
             });
           }
-          callbacksRef.current.onGpsStatusChange?.("active");
-          applyUserLocation(latitude, longitude, true, speed, heading);
+          applyUserLocation(latitude, longitude, true, speed, heading, accuracy, pos.timestamp);
         },
         (err) => {
           const msg = geolocationErrorMessage(err);
@@ -534,7 +626,7 @@ export default function LiveMapComponent({
           callbacksRef.current.onGpsError?.(msg);
           callbacksRef.current.onGpsStatusChange?.(err.code === 1 ? "denied" : "error");
         },
-        GPS_OPTIONS,
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
 
       watchIdRef.current = navigator.geolocation.watchPosition(
@@ -549,8 +641,7 @@ export default function LiveMapComponent({
               });
             }
           }
-          callbacksRef.current.onGpsStatusChange?.("active");
-          applyUserLocation(latitude, longitude, false, speed, heading);
+          applyUserLocation(latitude, longitude, false, speed, heading, accuracy, pos.timestamp);
         },
         (err) => {
           const msg = geolocationErrorMessage(err);
@@ -561,7 +652,7 @@ export default function LiveMapComponent({
           callbacksRef.current.onGpsError?.(msg);
           callbacksRef.current.onGpsStatusChange?.(err.code === 1 ? "denied" : "error");
         },
-        GPS_OPTIONS,
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
       );
     }
 
@@ -580,11 +671,38 @@ export default function LiveMapComponent({
         clickedPinMarkerRef.current?.remove();
         clickedPinMarkerRef.current = null;
       },
-      locateUser: () => {
+      locateUser: (forceFresh?: boolean) => {
+        if (forceFresh) {
+          if (process.env.NODE_ENV === "development") {
+            console.log("[Rovvy GPS] Forcing fresh location request...");
+          }
+          callbacksRef.current.onGpsStatusChange?.("requesting");
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const { latitude, longitude, accuracy, speed, heading } = pos.coords;
+              applyUserLocation(latitude, longitude, true, speed, heading, accuracy, pos.timestamp);
+              // Open popup to say "You are here"
+              userMarkerRef.current?.togglePopup();
+              // Make sure to re-establish the watch if not already active
+              if (!liveGpsActiveRef.current) {
+                startLiveGps();
+              }
+            },
+            (err) => {
+              const msg = geolocationErrorMessage(err);
+              callbacksRef.current.onGpsError?.(msg);
+              callbacksRef.current.onGpsStatusChange?.(err.code === 1 ? "denied" : "error");
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+          );
+          return;
+        }
+        
         if (liveGpsActiveRef.current) {
           const loc = userLocationRef.current;
           if (loc) {
-            map.flyTo({ center: [loc.lng, loc.lat], zoom: 16, essential: true });
+            map.flyTo({ center: [loc.lng, loc.lat], zoom: loc.accuracy && loc.accuracy > 150 ? 14 : 16, essential: true });
+            userMarkerRef.current?.togglePopup();
           } else {
             startLiveGps();
           }
