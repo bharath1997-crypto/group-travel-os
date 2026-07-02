@@ -51,6 +51,16 @@ import {
   type PlaceMediaItem,
   type PlaceMediaResolution,
 } from "./live-place-media";
+import {
+  recordRecentSearch,
+  getRecentSearches,
+  clearRecentSearches,
+  buildPlaceRecentSearch,
+  buildCategoryRecentSearch,
+  buildDroppedPinRecentSearch,
+  DEFAULT_RECENT_SUGGESTIONS,
+  type RecentSearchItem,
+} from "./live-recent-searches";
 import type { LiveMapRef, MapFollowMode } from "./LiveMapComponent";
 
 const LiveMapComponent = dynamic(() => import("./LiveMapComponent"), {
@@ -270,11 +280,20 @@ export default function LivePage() {
   const [mapClickError, setMapClickError] = useState<string | null>(null);
   const [nearbyPlacesAtClick, setNearbyPlacesAtClick] = useState<PlacePreviewData[] | null>(null);
 
-  const recentSearches = [
-    "Starbucks Reserve Chicago",
-    "Shedd Aquarium",
-    "Navy Pier",
-  ];
+  // ─── Recent searches (dynamic, localStorage-backed) ────────────────────────
+  const [recentSearches, setRecentSearches] = useState<RecentSearchItem[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  /** Refresh the displayed recent searches from localStorage (stable callback) */
+  const refreshRecentSearches = useCallback(() => {
+    if (typeof window === "undefined") return;
+    // Read currentUserId from localStorage directly to avoid stale closure
+    const uid = typeof window !== "undefined"
+      ? (localStorage.getItem("gt_avatar_user_id") ?? null)
+      : null;
+    const saved = getRecentSearches(5, uid);
+    setRecentSearches(saved);
+  }, []);
 
   const savedPlaces = [
     { name: "Home", address: "123 Main St" },
@@ -323,6 +342,10 @@ export default function LivePage() {
     setRoviExplanationError(null);
     setRoviExplanationLoading(false);
 
+    // Record category search in recent searches
+    recordRecentSearch(buildCategoryRecentSearch(query), currentUserId);
+    refreshRecentSearches();
+
     const center = resolveAnchorCoordinate();
     if (!center) {
       setNearbyError("Location unavailable. Turn on GPS or move the map first.");
@@ -338,7 +361,7 @@ export default function LivePage() {
     } finally {
       setNearbyLoading(false);
     }
-  }, [resolveAnchorCoordinate]);
+  }, [resolveAnchorCoordinate, currentUserId, refreshRecentSearches]);
 
   const handleCloseNearbyResults = useCallback(() => {
     setNearbyResults(null);
@@ -352,7 +375,10 @@ export default function LivePage() {
     setSelectedPlace(result);
     setViewingDetailsFromNearby(true);
     setLiveStage("place_preview");
-  }, []);
+    // Record as recent search when user clicks a nearby result
+    recordRecentSearch(buildPlaceRecentSearch(result), currentUserId);
+    refreshRecentSearches();
+  }, [currentUserId, refreshRecentSearches]);
 
   const handleAddStopFromNearby = useCallback((result: PlacePreviewData) => {
     if (!destination) {
@@ -507,13 +533,24 @@ export default function LivePage() {
         setNearbyPlacesAtClick(otherCandidates);
       }
       setLiveStage("place_preview");
+
+      // Record the resolved map-click place as a recent search
+      if (primaryPlace.source === "dropped_pin") {
+        recordRecentSearch(
+          buildDroppedPinRecentSearch(primaryPlace.lat, primaryPlace.lng, primaryPlace.address),
+          currentUserId,
+        );
+      } else {
+        recordRecentSearch(buildPlaceRecentSearch(primaryPlace), currentUserId);
+      }
+      refreshRecentSearches();
     } catch (err) {
       console.error("Map click resolution error", err);
       setMapClickError("Could not resolve location info.");
     } finally {
       setMapClickResolving(false);
     }
-  }, [userLocation]);
+  }, [userLocation, currentUserId, refreshRecentSearches]);
 
   const selectPlace = useCallback(async (result: LiveGeocodingSearchResult) => {
     const lat = parseFloat(result.lat);
@@ -564,6 +601,10 @@ export default function LivePage() {
     setShowSearchPopup(false);
     setShowSuggestionsCard(false);
     setLoadingPlaceDetails(true);
+
+    // Record place in recent searches immediately (will be enriched later but this captures the intent)
+    recordRecentSearch(buildPlaceRecentSearch(initial), currentUserId);
+    refreshRecentSearches();
 
     void resolvePlaceMedia(initial).then((resolution: PlaceMediaResolution) => {
       setSelectedPlace((prev) => {
@@ -618,7 +659,7 @@ export default function LivePage() {
     } finally {
       setLoadingPlaceDetails(false);
     }
-  }, [resolveSearchBias, userLocation]);
+  }, [resolveSearchBias, userLocation, currentUserId, refreshRecentSearches]);
 
   const searchPlaceByName = useCallback(
     async (name: string) => {
@@ -667,6 +708,15 @@ export default function LivePage() {
       document.removeEventListener("click", handleDocumentClick);
     };
   }, [showSearchPopup, showSuggestionsCard]);
+
+  // ─── Load user ID + hydrate recent searches from localStorage ──────────────
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedUserId = localStorage.getItem("gt_avatar_user_id") ?? null;
+    setCurrentUserId(storedUserId);
+    const saved = getRecentSearches(5, storedUserId);
+    setRecentSearches(saved);
+  }, []);
 
   useEffect(() => {
     if (selectedPlace) {
@@ -822,6 +872,12 @@ export default function LivePage() {
     setDestination(selectedPlace);
     setIsLiveActive(false);
     setLiveStage("destination_set");
+    // Record as destination type in recent searches
+    recordRecentSearch(
+      { ...buildPlaceRecentSearch(selectedPlace), type: "destination" },
+      currentUserId,
+    );
+    refreshRecentSearches();
   }
 
   function handleStartFromPlacePreview() {
@@ -1170,23 +1226,87 @@ export default function LivePage() {
               {/* Suggestions / Quick Picks Glassmorphism Card */}
               {showSuggestionsCard && (
                 <div className="absolute left-0 top-full z-30 mt-2 w-80 sm:w-96 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/30 p-4 shadow-xl text-stone-800 animate-in fade-in slide-in-from-top-2 duration-200">
-                  {/* Recent Searches */}
+                  {/* Recent Searches — dynamic, localStorage-backed */}
                   <div>
-                    <h4 className="mb-2 text-[11px] font-bold text-stone-500 uppercase tracking-wider">
-                      Recent Searches
-                    </h4>
-                    <ul className="flex flex-col gap-1 text-sm">
-                      {recentSearches.map((search) => (
-                        <li key={search}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">
+                        {recentSearches.length > 0 ? "Recent Searches" : "Suggestions"}
+                      </h4>
+                      {recentSearches.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            clearRecentSearches(currentUserId);
+                            setRecentSearches([]);
+                          }}
+                          className="text-[10px] font-semibold text-stone-400 hover:text-red-500 transition-colors cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <ul className="flex flex-col gap-0.5">
+                      {(recentSearches.length > 0 ? recentSearches : DEFAULT_RECENT_SUGGESTIONS).map((item) => (
+                        <li key={item.id}>
                           <button
                             type="button"
-                            className="flex justify-between items-center w-full px-2 py-1.5 hover:bg-white/40 rounded-lg text-left transition-colors cursor-pointer"
+                            className="flex items-center gap-2.5 w-full px-2 py-1.5 hover:bg-white/40 rounded-lg text-left transition-colors cursor-pointer group"
                             onClick={() => {
-                              void searchPlaceByName(search);
+                              if (item.type === "category_search" && item.query) {
+                                void handleNearbySearch(item.query);
+                              } else if (
+                                (item.type === "place" ||
+                                  item.type === "destination" ||
+                                  item.type === "dropped_pin") &&
+                                item.lat != null &&
+                                item.lng != null
+                              ) {
+                                // Open place preview for known-coord items
+                                const pseudo: PlacePreviewData = {
+                                  name: item.label,
+                                  categoryLabel: item.category ?? item.subtitle ?? "Place",
+                                  address: item.address ?? "",
+                                  phone: null,
+                                  lat: item.lat,
+                                  lng: item.lng,
+                                  distanceM: null,
+                                  openingHours: null,
+                                  openStatus: null,
+                                  placeKey: item.placeKey,
+                                  source: item.source,
+                                };
+                                setSelectedPlace(pseudo);
+                                setLiveStage("place_preview");
+                                setShowSuggestionsCard(false);
+                              } else if (item.query) {
+                                void searchPlaceByName(item.query);
+                              } else {
+                                void searchPlaceByName(item.label);
+                              }
                             }}
                           >
-                            <span className="truncate text-stone-700 font-medium">{search}</span>
-                            <ChevronRight className="w-4 h-4 text-stone-400 shrink-0" />
+                            {/* Type icon */}
+                            <span className="text-[13px] shrink-0 w-4 text-center">
+                              {item.type === "category_search"
+                                ? "🔍"
+                                : item.type === "dropped_pin"
+                                ? "📍"
+                                : item.type === "destination"
+                                ? "🏁"
+                                : "📍"}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-medium text-stone-700 truncate">
+                                {item.label}
+                              </span>
+                              {item.subtitle && (
+                                <span className="block text-[10px] text-stone-400 truncate">
+                                  {item.subtitle}
+                                </span>
+                              )}
+                            </span>
+                            <ChevronRight className="w-3.5 h-3.5 text-stone-300 group-hover:text-stone-500 shrink-0 transition-colors" />
                           </button>
                         </li>
                       ))}

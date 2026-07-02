@@ -257,7 +257,7 @@ After every feature change, update this section in GEMINI.md:
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2026-06-30 (Aligned nav bar to match Dashboard Layout header) |
-| Live Trip Mode (MapLibre Static Landing) | Complete | 2026-07-01 (Integrated /places/resolve-click backend endpoint into handleMapClick; frontend now delegates all map-click resolution to API — map_feature / osm_enriched / reverse_geocode / dropped_pin source chain. Added religion-aware place_of_worship category normalization (Church / Mosque / Synagogue / Temple). Removed technical "Place data from OSM" UI copy. Enriched [Rovvy Map Click Feature] console debug log.) |
+| Live Trip Mode (MapLibre Static Landing) | Complete | 2026-07-02 (Dynamic Recent Searches: replaced hardcoded static places with localStorage-backed per-user cache. New module live-recent-searches.ts — recordRecentSearch, getRecentSearches, clearRecentSearches, DEFAULT_RECENT_SUGGESTIONS. Captures: search queries, nearby result clicks, map clicks, Make Destination, dropped pins, quick category searches. Dedup by placeKey > lat/lng+label > query. Display: latest 5, falls back to Coffee/Gas/Food/Restrooms/Parking defaults when empty. Clear button in header. Type-aware row icons (🔍 category, 📍 place, 🏁 destination). SSR-safe typeof window checks throughout.) |
 | Buses page | Pending | — |
 
 ---
