@@ -17,8 +17,8 @@ import {
 import type { RouteLine, UserLocationUpdate } from "./live-types";
 import { LOCAL_LIVE_MAX_M } from "./live-types";
 
-/** Arrow-cursor style injected once for the Live map container */
-const LIVE_MAP_CURSOR_CSS = `
+/** Arrow-cursor + GPS pulse animation styles injected once for the Live map */
+const LIVE_MAP_CSS = `
 .rovvy-live-map-container .maplibregl-canvas-container,
 .rovvy-live-map-container .maplibregl-canvas {
   cursor: default !important;
@@ -29,19 +29,26 @@ const LIVE_MAP_CURSOR_CSS = `
 .rovvy-live-map-container .maplibregl-canvas-container:active {
   cursor: default !important;
 }
+@keyframes rovvy-gps-pulse {
+  0%   { transform: scale(0.85); opacity: 0.9; }
+  50%  { transform: scale(1.35); opacity: 0.35; }
+  100% { transform: scale(0.85); opacity: 0.9; }
+}
 `;
 
-let liveCursorStyleInjected = false;
+let liveCssInjected = false;
 function injectLiveMapCursorStyle() {
-  if (typeof document === "undefined" || liveCursorStyleInjected) return;
+  if (typeof document === "undefined" || liveCssInjected) return;
   const style = document.createElement("style");
-  style.id = "rovvy-live-map-cursor";
-  style.textContent = LIVE_MAP_CURSOR_CSS;
+  style.id = "rovvy-live-map-css";
+  style.textContent = LIVE_MAP_CSS;
   document.head.appendChild(style);
-  liveCursorStyleInjected = true;
+  liveCssInjected = true;
 }
 
 export type UserLocation = { lat: number; lng: number };
+
+export type GpsStatus = "idle" | "requesting" | "active" | "denied" | "error";
 
 export type LiveMapRef = {
   zoomIn: () => void;
@@ -66,6 +73,7 @@ type Props = {
   onUserLocationChange?: (update: UserLocationUpdate) => void;
   onLiveGpsChange?: (active: boolean) => void;
   onGpsError?: (message: string) => void;
+  onGpsStatusChange?: (status: GpsStatus) => void;
   nearbyResults?: any[] | null;
   onNearbyMarkerClick?: (place: any) => void;
   onMapClick?: (lat: number, lng: number, features: any[]) => void;
@@ -84,18 +92,52 @@ function getLayerStyles() {
 function createUserMarkerElement(liveActive: boolean, navigating: boolean): HTMLDivElement {
   const el = document.createElement("div");
   el.className = "gt-user-location-marker";
+  el.style.cssText = "pointer-events:none;position:relative;";
+
   if (navigating) {
-    el.innerHTML = `<div style="width:20px;height:20px;border-radius:50%;background:${liveActive ? "#0F766E" : "#2563EB"};border:3px solid #FFFFFF;box-shadow:0 0 14px rgba(15,118,110,0.55);"></div>`;
+    // Navigation mode: teal/blue solid dot
+    el.innerHTML = `<div style="width:20px;height:20px;border-radius:50%;background:${liveActive ? "#0F766E" : "#2563EB"};border:3px solid #FFFFFF;box-shadow:0 0 14px rgba(37,99,235,0.55);"></div>`;
     return el;
   }
+
   if (liveActive) {
+    // Live mode: car emoji
     el.innerHTML = `<div style="font-size:22px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35));">🚗</div>`;
     return el;
   }
+
+  // Default: Google Maps-style blue dot with animated outer ring
+  // Uses rovvy-gps-pulse keyframes injected by injectLiveMapCursorStyle()
   el.innerHTML = `
-    <div style="position: relative; width: 24px; height: 24px; pointer-events: none;">
-      <div style="position: absolute; inset: -4px; border-radius: 50%; background: rgba(59, 130, 246, 0.4); animation: pulse 2s infinite;"></div>
-      <div style="position: absolute; inset: 3px; border-radius: 50%; background: #2563EB; border: 2px solid #FFFFFF; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"></div>
+    <div style="
+      position: relative;
+      width: 22px;
+      height: 22px;
+      pointer-events: none;
+    ">
+      <!-- Pulsing outer ring -->
+      <div style="
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+        background: rgba(37, 99, 235, 0.25);
+        animation: rovvy-gps-pulse 2s ease-in-out infinite;
+      "></div>
+      <!-- White border ring -->
+      <div style="
+        position: absolute;
+        inset: -2px;
+        border-radius: 50%;
+        background: #ffffff;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      "></div>
+      <!-- Blue inner dot -->
+      <div style="
+        position: absolute;
+        inset: 3px;
+        border-radius: 50%;
+        background: #2563EB;
+      "></div>
     </div>
   `;
   return el;
@@ -243,6 +285,7 @@ export default function LiveMapComponent({
   onUserLocationChange,
   onLiveGpsChange,
   onGpsError,
+  onGpsStatusChange,
   nearbyResults,
   onNearbyMarkerClick,
   onMapClick,
@@ -264,8 +307,8 @@ export default function LiveMapComponent({
   const liveGpsActiveRef = useRef(false);
   const hasCenteredOnUserRef = useRef(false);
 
-  const callbacksRef = useRef({ onUserLocationChange, onLiveGpsChange, onGpsError, onMapClick });
-  callbacksRef.current = { onUserLocationChange, onLiveGpsChange, onGpsError, onMapClick };
+  const callbacksRef = useRef({ onUserLocationChange, onLiveGpsChange, onGpsError, onGpsStatusChange, onMapClick });
+  callbacksRef.current = { onUserLocationChange, onLiveGpsChange, onGpsError, onGpsStatusChange, onMapClick };
   const isLiveActiveRef = useRef(isLiveActive);
   isLiveActiveRef.current = isLiveActive;
   const navigationModeRef = useRef(navigationMode);
@@ -450,50 +493,73 @@ export default function LiveMapComponent({
       }
       liveGpsActiveRef.current = false;
       callbacksRef.current.onLiveGpsChange?.(false);
+      callbacksRef.current.onGpsStatusChange?.("idle");
     }
 
     function startLiveGps() {
       const blocked = geolocationUnavailableMessage();
       if (blocked) {
         callbacksRef.current.onGpsError?.(blocked);
+        callbacksRef.current.onGpsStatusChange?.("error");
         return;
       }
 
       stopLiveGps();
       liveGpsActiveRef.current = true;
       callbacksRef.current.onLiveGpsChange?.(true);
+      callbacksRef.current.onGpsStatusChange?.("requesting");
       hasCenteredOnUserRef.current = false;
+
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Rovvy GPS] Requesting location...");
+      }
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          applyUserLocation(
-            pos.coords.latitude,
-            pos.coords.longitude,
-            true,
-            pos.coords.speed,
-            pos.coords.heading,
-          );
+          const { latitude, longitude, accuracy, speed, heading } = pos.coords;
+          if (process.env.NODE_ENV === "development") {
+            console.log("[Rovvy GPS] First fix", {
+              lat: latitude, lng: longitude, accuracy, speed, heading,
+            });
+          }
+          callbacksRef.current.onGpsStatusChange?.("active");
+          applyUserLocation(latitude, longitude, true, speed, heading);
         },
         (err) => {
+          const msg = geolocationErrorMessage(err);
+          if (process.env.NODE_ENV === "development") {
+            console.warn("[Rovvy GPS] getCurrentPosition error", err.code, msg);
+          }
           stopLiveGps();
-          callbacksRef.current.onGpsError?.(geolocationErrorMessage(err));
+          callbacksRef.current.onGpsError?.(msg);
+          callbacksRef.current.onGpsStatusChange?.(err.code === 1 ? "denied" : "error");
         },
         GPS_OPTIONS,
       );
 
       watchIdRef.current = navigator.geolocation.watchPosition(
         (pos) => {
-          applyUserLocation(
-            pos.coords.latitude,
-            pos.coords.longitude,
-            false,
-            pos.coords.speed,
-            pos.coords.heading,
-          );
+          const { latitude, longitude, accuracy, speed, heading } = pos.coords;
+          if (process.env.NODE_ENV === "development") {
+            // Only log when position meaningfully changes (> 1 meter)
+            const prev = userLocationRef.current;
+            if (!prev || Math.abs(prev.lat - latitude) > 0.00001 || Math.abs(prev.lng - longitude) > 0.00001) {
+              console.log("[Rovvy GPS] watchPosition update", {
+                lat: latitude, lng: longitude, accuracy, speed, heading,
+              });
+            }
+          }
+          callbacksRef.current.onGpsStatusChange?.("active");
+          applyUserLocation(latitude, longitude, false, speed, heading);
         },
         (err) => {
+          const msg = geolocationErrorMessage(err);
+          if (process.env.NODE_ENV === "development") {
+            console.warn("[Rovvy GPS] watchPosition error", err.code, msg);
+          }
           stopLiveGps();
-          callbacksRef.current.onGpsError?.(geolocationErrorMessage(err));
+          callbacksRef.current.onGpsError?.(msg);
+          callbacksRef.current.onGpsStatusChange?.(err.code === 1 ? "denied" : "error");
         },
         GPS_OPTIONS,
       );

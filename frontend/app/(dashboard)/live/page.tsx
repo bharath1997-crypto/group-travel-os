@@ -61,7 +61,7 @@ import {
   DEFAULT_RECENT_SUGGESTIONS,
   type RecentSearchItem,
 } from "./live-recent-searches";
-import type { LiveMapRef, MapFollowMode } from "./LiveMapComponent";
+import type { LiveMapRef, MapFollowMode, GpsStatus } from "./LiveMapComponent";
 
 const LiveMapComponent = dynamic(() => import("./LiveMapComponent"), {
   ssr: false,
@@ -252,6 +252,7 @@ export default function LivePage() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [alertsEnabled, setAlertsEnabled] = useState(true);
   const [liveGpsActive, setLiveGpsActive] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState<GpsStatus>("idle");
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [userRegion, setUserRegion] = useState<{
     lat?: number;
@@ -772,6 +773,31 @@ export default function LivePage() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  // Check geolocation permission state on mount and reflect it in gpsStatus immediately
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.permissions) return;
+    navigator.permissions.query({ name: "geolocation" as PermissionName }).then((result) => {
+      if (result.state === "denied") {
+        setGpsStatus("denied");
+        setGpsError("Enable location permission in browser settings");
+      } else if (result.state === "granted") {
+        setGpsStatus("requesting"); // will become 'active' once first fix arrives
+      }
+      // Watch for live permission changes (e.g. user toggles in settings)
+      result.onchange = () => {
+        if (result.state === "denied") {
+          setGpsStatus("denied");
+          setGpsError("Enable location permission in browser settings");
+        } else if (result.state === "granted" && gpsStatus !== "active") {
+          mapRef.current?.locateUser();
+        }
+      };
+    }).catch(() => {
+      // permissions API not available — silent fallback
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (userLocation) {
       setSearchBias(userLocation);
@@ -1116,6 +1142,7 @@ export default function LivePage() {
         onUserLocationChange={handleUserLocationChange}
         onLiveGpsChange={setLiveGpsActive}
         onGpsError={setGpsError}
+        onGpsStatusChange={setGpsStatus}
         nearbyResults={nearbyResults}
         onNearbyMarkerClick={handleResultClick}
         onMapClick={handleMapClick}
@@ -1646,19 +1673,56 @@ export default function LivePage() {
         </button>
         <button
           type="button"
-          className={`w-10 h-10 flex items-center justify-center rounded-full shadow-lg ${
+          className={`w-10 h-10 flex items-center justify-center rounded-full shadow-lg relative ${
             liveGpsActive
               ? "bg-blue-600 hover:bg-blue-700"
+              : gpsStatus === "denied" || gpsStatus === "error"
+              ? "bg-red-100 hover:bg-red-200"
+              : gpsStatus === "requesting"
+              ? "bg-blue-100 hover:bg-blue-200"
               : "bg-white hover:bg-stone-100"
           }`}
           onClick={locateUser}
-          title="Live GPS"
+          title={gpsStatus === "denied" ? "Location denied — click to retry" : gpsStatus === "requesting" ? "Finding location…" : "Locate me"}
           aria-pressed={liveGpsActive}
         >
-          <MapPin
-            className={`w-5 h-5 ${liveGpsActive ? "text-white" : "text-stone-500"}`}
-          />
+          {gpsStatus === "requesting" ? (
+            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <MapPin
+              className={`w-5 h-5 ${
+                liveGpsActive ? "text-white" :
+                gpsStatus === "denied" || gpsStatus === "error" ? "text-red-500" :
+                "text-stone-500"
+              }`}
+            />
+          )}
         </button>
+        {/* GPS status micro-pill — shows below the locate button */}
+        <div
+          className={`px-2 py-0.5 rounded-full text-[9px] font-semibold text-center shadow-sm whitespace-nowrap ${
+            gpsStatus === "active"
+              ? "bg-blue-600 text-white"
+              : gpsStatus === "requesting"
+              ? "bg-blue-100 text-blue-700"
+              : gpsStatus === "denied"
+              ? "bg-red-100 text-red-600"
+              : gpsStatus === "error"
+              ? "bg-amber-100 text-amber-700"
+              : "bg-stone-100 text-stone-500"
+          }`}
+          title="GPS status"
+        >
+          {gpsStatus === "active"
+            ? "GPS active"
+            : gpsStatus === "requesting"
+            ? "Finding…"
+            : gpsStatus === "denied"
+            ? "Location off"
+            : gpsStatus === "error"
+            ? "GPS error"
+            : "GPS off"}
+        </div>
         <button
           type="button"
           className="w-10 h-10 flex items-center justify-center bg-white hover:bg-stone-100 rounded-full shadow-lg"
