@@ -1,5 +1,14 @@
 import type { PlacePreviewData } from "./PlacePreviewCard";
 
+export function toSafeErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object" && "type" in error) {
+    return `Browser event error: ${(error as Event).type}`;
+  }
+  return "Unknown error";
+}
+
 export type LiveStage =
   | "static_landing"
   | "place_preview"
@@ -19,9 +28,18 @@ export type UserLocationUpdate = {
   timestamp: number | null;
 };
 
+export type RouteManeuver = {
+  instruction: string;
+  location: [number, number]; // [lng, lat]
+};
+
 export type RouteLine = {
   from: { lat: number; lng: number };
   to: { lat: number; lng: number };
+  geometry: [number, number][];
+  distanceMeters: number;
+  durationSeconds: number;
+  maneuvers?: RouteManeuver[];
   active: boolean;
 };
 

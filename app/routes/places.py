@@ -5,9 +5,37 @@ from fastapi import APIRouter, Query
 
 from app.schemas.places import PlaceResolveRequest, PlaceResolveResponse
 from app.services.places_nearby_service import PlacesNearbyService
+from app.services.place_wikipedia_service import PlaceWikipediaService
+from app.services.place_autocomplete_service import PlaceAutocompleteService
+from app.utils.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends
 from app.utils.exceptions import AppException
 
 router = APIRouter(tags=["Places"])
+
+@router.get("/places/autocomplete")
+async def get_places_autocomplete(
+    q: str = Query(..., min_length=2),
+    lat: float | None = Query(None, ge=-90, le=90),
+    lng: float | None = Query(None, ge=-180, le=180),
+    limit: int = Query(10, ge=1, le=20),
+    radius_meters: int = Query(25000, ge=10),
+    mode: str | None = Query(None),
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        results = await PlaceAutocompleteService.autocomplete(
+            db=db,
+            q=q,
+            lat=lat,
+            lng=lng,
+            limit=limit,
+            radius_meters=radius_meters
+        )
+        return {"results": results}
+    except Exception as exc:
+        raise AppException.bad_request(f"Autocomplete failed: {str(exc)}")
 
 
 @router.get("/places/nearby")
@@ -44,4 +72,26 @@ async def resolve_click(request: PlaceResolveRequest):
         return res
     except Exception as exc:
         raise AppException.bad_request(f"Click resolution failed: {str(exc)}")
+
+
+@router.get("/places/wiki-summary")
+async def get_wiki_summary(
+    name: str = Query(..., min_length=1),
+    category: str = Query(..., min_length=1),
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+    wikidata_id: str | None = None,
+    wikipedia_title: str | None = None,
+):
+    try:
+        return await PlaceWikipediaService.get_wiki_summary(
+            name=name,
+            category=category,
+            lat=lat,
+            lng=lng,
+            wikidata_id=wikidata_id,
+            wikipedia_title=wikipedia_title,
+        )
+    except Exception as exc:
+        raise AppException.bad_request(f"Wikipedia lookup failed: {str(exc)}")
 

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { EXTERNAL_MAP_HANDOFF } from "@/lib/map-providers";
 import type { PlacePreviewData } from "./PlacePreviewCard";
-import type { TripStatus } from "./live-types";
+import type { TripStatus, RouteLine } from "./live-types";
 import {
   estimateDriveEta,
   etaMinutesFromDistance,
@@ -41,6 +41,8 @@ type Props = {
   onSaveParking: () => void;
   onShareTrip: () => void;
   onAddStop: () => void;
+  routeLine: RouteLine | null;
+  onOverviewClick: () => void;
 };
 
 export default function SoloLiveNavigationOverlay({
@@ -53,12 +55,17 @@ export default function SoloLiveNavigationOverlay({
   onSaveParking,
   onShareTrip,
   onAddStop,
+  routeLine,
+  onOverviewClick,
 }: Props) {
   const [statusOpen, setStatusOpen] = useState(false);
   const speedMph = speedMpsToMph(speedMps);
   const etaMin = etaMinutesFromDistance(destination.distanceM);
   const etaLabel = estimateDriveEta(destination.distanceM);
   const arrival = formatArrivalTime(etaMin);
+  const nextManeuver = (routeLine?.maneuvers && routeLine.maneuvers.length > 0)
+    ? routeLine.maneuvers[0].instruction
+    : (routeLine ? "Follow highlighted route" : `Continue toward ${destination.name}`);
   const maneuverMi = destination.distanceM
     ? Math.max(0.1, (destination.distanceM / 1609.34) * 0.35).toFixed(1)
     : "0.8";
@@ -93,7 +100,7 @@ export default function SoloLiveNavigationOverlay({
           </div>
           <div className="min-w-0">
             <p className="text-lg font-bold leading-snug text-stone-900">
-              Keep right toward {destination.name}
+              {nextManeuver}
             </p>
             <p className="mt-0.5 text-sm font-semibold text-stone-500">{maneuverMi} MI</p>
           </div>
@@ -133,6 +140,11 @@ export default function SoloLiveNavigationOverlay({
             { label: "Save Parking", icon: ParkingCircle, onClick: onSaveParking },
             { label: "Share Trip", icon: Share2, onClick: onShareTrip },
             { label: "Add Stop", icon: Plus, onClick: onAddStop },
+            {
+              label: "Overview",
+              icon: Map,
+              onClick: onOverviewClick,
+            },
             {
               label: "Waze",
               icon: Navigation,

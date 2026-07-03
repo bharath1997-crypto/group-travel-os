@@ -1,28 +1,35 @@
+import asyncio
 import httpx
 
-def test_overpass():
-    lat, lon = 25.7617, -80.1918  # Miami Center
-    overpass_query = f"""
-    [out:json][timeout:25];
-    (
-      node["tourism"~"museum|tourist_attraction|viewpoint|gallery|theme_park|zoo"](around:15000,{lat},{lon});
-      way["tourism"~"museum|tourist_attraction|viewpoint|gallery|theme_park|zoo"](around:15000,{lat},{lon});
-      node["leisure"="park"](around:15000,{lat},{lon});
-      node["historic"](around:15000,{lat},{lon});
-    );
-    out body qt 12;
-    """
-    url = "https://overpass-api.de/api/interpreter"
-    try:
-        r = httpx.post(url, data={"data": overpass_query}, timeout=30)
-        print(f"Status: {r.status_code}")
-        data = r.json()
-        elements = data.get("elements", [])
-        print(f"Found {len(elements)} elements.")
-        for el in elements[:5]:
-            print(f"- {el.get('tags', {}).get('name')}")
-    except Exception as e:
-        print(f"Error: {e}")
+ENDPOINTS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+]
 
-if __name__ == "__main__":
-    test_overpass()
+async def test():
+    query = '[out:json][timeout:10];\n(\nnode["amenity"="fuel"](around:500,41.8781,-87.6298);\n);\nout center;'
+    
+    for url in ENDPOINTS:
+        print(f"\nTesting: {url}")
+        try:
+            async with httpx.AsyncClient() as c:
+                r = await c.post(
+                    url,
+                    data={"data": query},
+                    timeout=15.0,
+                    headers={"User-Agent": "Rovvy/1.0 (group-travel-os)"}
+                )
+                print(f"  Status: {r.status_code}")
+                if r.status_code == 200:
+                    data = r.json()
+                    elements = data.get("elements", [])
+                    print(f"  Elements: {len(elements)}")
+                    for el in elements[:2]:
+                        print(f"   - {el.get('tags', {}).get('name', 'no-name')} {el.get('lat')},{el.get('lon')}")
+                else:
+                    print(f"  Response: {r.text[:100]}")
+        except Exception as e:
+            print(f"  Error: {e}")
+
+asyncio.run(test())

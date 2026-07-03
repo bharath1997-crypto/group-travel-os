@@ -1,6 +1,7 @@
 "use client";
 
 import type { PlacePreviewData } from "./PlacePreviewCard";
+import type { RouteLine } from "./live-types";
 import {
   canStartSoloLive,
   estimateDriveEta,
@@ -8,6 +9,7 @@ import {
   isFarFromUser,
   isLongDistanceFromUser,
 } from "./live-types";
+import { LIVE_PANEL_MAX_WIDTH, LIVE_PANEL_RIGHT_INSET } from "./live-layout";
 
 const TEAL = "#0F766E";
 
@@ -20,6 +22,8 @@ type Props = {
   onChangeDestination: () => void;
   onClose: () => void;
   onPlanTrip?: () => void;
+  routeLine: RouteLine | null;
+  routeLoading: boolean;
 };
 
 export default function SoloRoutePreviewPanel({
@@ -31,6 +35,8 @@ export default function SoloRoutePreviewPanel({
   onChangeDestination,
   onClose,
   onPlanTrip,
+  routeLine,
+  routeLoading,
 }: Props) {
   const farWarning = isFarFromUser(destination.distanceM);
   const longDistance = isLongDistanceFromUser(destination.distanceM) || planningMode;
@@ -38,7 +44,7 @@ export default function SoloRoutePreviewPanel({
 
   return (
     <div
-      className="absolute right-4 top-[72px] z-30 flex w-[336px] max-w-[calc(100%-2rem)] max-h-[calc(100%-6.5rem)] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
+      className={`absolute ${LIVE_PANEL_RIGHT_INSET} top-[72px] z-30 flex w-[336px] ${LIVE_PANEL_MAX_WIDTH} max-h-[calc(100%-6.5rem)] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)]`}
       role="dialog"
       aria-label={planningMode ? "Long-distance route preview" : "Solo route preview"}
     >
@@ -80,7 +86,7 @@ export default function SoloRoutePreviewPanel({
           </p>
           <p>
             <span className="font-medium text-stone-500">Distance:</span>{" "}
-            {formatDistanceMiles(destination.distanceM)}
+            {routeLine ? formatDistanceMiles(routeLine.distanceMeters) : formatDistanceMiles(destination.distanceM)}
           </p>
           <p className="leading-snug">
             <span className="font-medium text-stone-500">Address:</span>
@@ -112,10 +118,11 @@ export default function SoloRoutePreviewPanel({
           <button
             type="button"
             onClick={onStartSoloLive}
-            className="w-full rounded-full py-3 text-sm font-semibold text-white hover:opacity-90"
-            style={{ backgroundColor: TEAL }}
+            disabled={!routeLine || routeLoading}
+            className="w-full rounded-full py-3 text-sm font-semibold text-white hover:opacity-90 disabled:bg-stone-300 disabled:opacity-50"
+            style={{ backgroundColor: routeLine && !routeLoading ? TEAL : undefined }}
           >
-            Start Solo Live
+            {routeLoading ? "Loading route..." : "Start Solo Live"}
           </button>
         ) : (
           <button

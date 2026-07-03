@@ -400,6 +400,7 @@ After every feature change, update this section in .cursorrules:
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2025-06 |
 | Live Trip Mode (MapLibre) | Modified | 2026-06 |
+| Live Place Media Resolver (lazy placeKey lookup) | Complete | 2026-06 |
 | Buses page | Pending | — |
 
 ---
@@ -419,4 +420,5 @@ After every pytest run, update this section in .cursorrules:
 | tests/test_activities.py | — | — |
 | tests/test_buddy.py | — | — |
 | tests/test_explore.py | — | — |
+| tests/test_place_media.py | 8 | 2026-06 |
 | tests/test_geocoding.py | 7 | 2026-06 |

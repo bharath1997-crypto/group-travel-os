@@ -62,6 +62,49 @@ export type SearchBias = {
   lng: number;
 };
 
+export type AutocompleteResult = {
+  id: string;
+  placeKey: string;
+  name: string;
+  category: string;
+  address: string;
+  lat: number;
+  lng: number;
+  distanceMeters: number | null;
+  distanceLabel: string | null;
+  source: string;
+  matchType: string;
+  score: number;
+  tags: Record<string, string>;
+};
+
+export async function liveAutocompleteSearch(
+  query: string,
+  bias?: SearchBias | null,
+  abortSignal?: AbortSignal,
+): Promise<AutocompleteResult[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+
+  const params = new URLSearchParams({ q });
+  if (bias) {
+    params.set("lat", String(bias.lat));
+    params.set("lng", String(bias.lng));
+  }
+
+  try {
+    // Note: If apiFetch supports abort signals, pass it; otherwise omit it
+    const data = await apiFetch<{ results: AutocompleteResult[] }>(
+      `/places/autocomplete?${params.toString()}`,
+      abortSignal ? { signal: abortSignal } : undefined
+    );
+    return data?.results || [];
+  } catch (err: any) {
+    if (err.name === 'AbortError') throw err;
+    return [];
+  }
+}
+
 function searchCacheKey(query: string, bias?: SearchBias | null): string {
   const q = query.trim().toLowerCase();
   if (!bias) return q;

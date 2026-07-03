@@ -37,6 +37,7 @@ from app.models.road_report import RoadReport, ReportConfirmation, ReportType
 from app.models.emergency_contact import EmergencyContact
 from app.models.trip_track import TripTrack
 from app.models.spectator_invite import SpectatorInvite
+from app.models.place_registry import PlaceMedia, PlaceRegistry
 
 __all__: list[str] = [
     "User",
@@ -96,5 +97,7 @@ __all__: list[str] = [
     "EmergencyContact",
     "TripTrack",
     "SpectatorInvite",
+    "PlaceRegistry",
+    "PlaceMedia",
 ]
 

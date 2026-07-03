@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
+  Compass,
   ChevronRight,
   MapPin,
   Search,
@@ -21,6 +22,7 @@ import SoloRoutePreviewPanel from "./SoloRoutePreviewPanel";
 import SoloLiveActivePanel from "./SoloLiveActivePanel";
 import SoloLiveNavigationOverlay from "./SoloLiveNavigationOverlay";
 import type { LiveStage, RouteLine, TripStatus, UserLocationUpdate } from "./live-types";
+import { fetchLiveRoute } from "./live-routing";
 import {
   canDrawLocalRoute,
   canStartSoloLive,
@@ -30,9 +32,11 @@ import {
   formatSearchResultSubtitle,
   liveGeocodingReverse,
   liveGeocodingSearch,
+  liveAutocompleteSearch,
   pickNearestSearchResult,
   normalizePlaceCategory,
   type LiveGeocodingSearchResult,
+  type AutocompleteResult,
   type SearchBias,
 } from "./live-geocoding";
 import {
@@ -61,7 +65,17 @@ import {
   DEFAULT_RECENT_SUGGESTIONS,
   type RecentSearchItem,
 } from "./live-recent-searches";
-import type { LiveMapRef, MapFollowMode, GpsStatus } from "./LiveMapComponent";
+import type { LiveMapRef, MapFollowMode } from "./LiveMapComponent";
+import {
+  gpsStatusLabel,
+  gpsStatusNeedsHelper,
+  isFreshGpsStatus,
+  logRovvyGps,
+  logRovvyMapClickResolver,
+  type GpsStatus,
+  type GpsState,
+} from "./live-gps";
+import { LIVE_MAP_CONTROLS_POSITION } from "./live-layout";
 
 const LiveMapComponent = dynamic(() => import("./LiveMapComponent"), {
   ssr: false,
@@ -126,6 +140,57 @@ function parseOpenStatus(openingHours: string | undefined): string | null {
   if (!openingHours) return null;
   if (openingHours.includes("24/7")) return "Open Now";
   return "Open Now";
+}
+
+function roundCoord(value: number): number {
+  return Math.round(value * 100000) / 100000;
+}
+
+function buildDroppedPinPlace(
+  lat: number,
+  lng: number,
+  userLoc: { lat: number; lng: number } | null,
+): PlacePreviewData {
+  const roundedLat = roundCoord(lat);
+  const roundedLng = roundCoord(lng);
+  return {
+    name: "Dropped pin",
+    categoryLabel: "Dropped pin",
+    address: `Coordinates: ${roundedLat}, ${roundedLng}`,
+    phone: null,
+    lat,
+    lng,
+    distanceM: userLoc ? haversineM(userLoc.lat, userLoc.lng, lat, lng) : null,
+    openingHours: null,
+    openStatus: null,
+    placeKey: `dropped-pin:${roundedLat},${roundedLng}`,
+    osmType: null,
+    osmId: null,
+    source: "dropped_pin",
+    tags: {},
+  };
+}
+
+function mapResolveClickPlace(
+  p: any,
+  userLoc: { lat: number; lng: number } | null,
+): PlacePreviewData {
+  return {
+    name: p.name,
+    categoryLabel: p.category,
+    address: p.address || "",
+    phone: p.tags?.phone || p.tags?.["contact:phone"] || null,
+    lat: p.lat,
+    lng: p.lng,
+    distanceM: userLoc ? haversineM(userLoc.lat, userLoc.lng, p.lat, p.lng) : p.distanceMeters,
+    openingHours: p.tags?.opening_hours || null,
+    openStatus: p.tags?.opening_hours ? parseOpenStatus(p.tags.opening_hours) : null,
+    placeKey: p.placeKey,
+    osmType: p.tags?.osm_type || null,
+    osmId: p.tags?.osm_id ? parseInt(p.tags.osm_id, 10) : null,
+    source: p.source,
+    tags: p.tags || {},
+  };
 }
 
 function extractPhone(extratags?: Record<string, string>): string | null {
@@ -232,28 +297,49 @@ export default function LivePage() {
 
   const [selectedPlace, setSelectedPlace] = useState<PlacePreviewData | null>(null);
   const [destination, setDestination] = useState<PlacePreviewData | null>(null);
+  const [activeRoute, setActiveRoute] = useState<RouteLine | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
   const [isLiveActive, setIsLiveActive] = useState(false);
   const [tripStatus, setTripStatus] = useState<TripStatus>("on_the_way");
   const [plannedStops, setPlannedStops] = useState<PlacePreviewData[]>([]);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(
-    null,
+  const [gpsState, setGpsState] = useState<GpsState>({
+    status: "idle",
+    lat: null,
+    lng: null,
+    accuracyMeters: null,
+    heading: null,
+    speed: null,
+    timestamp: null,
+    source: null,
+  });
+
+  const userLocation = useMemo(() => 
+    gpsState.lat !== null && gpsState.lng !== null
+      ? { lat: gpsState.lat, lng: gpsState.lng }
+      : null,
+    [gpsState.lat, gpsState.lng]
   );
-  const [speedMps, setSpeedMps] = useState<number | null>(null);
+  const speedMps = gpsState.speed;
+  const gpsStatus = gpsState.status;
+  const liveGpsActive = gpsStatus === "active" || gpsStatus === "approximate" || gpsStatus === "requesting" || gpsStatus === "stale";
+
   const [toast, setToast] = useState<string | null>(null);
   const [loadingPlaceDetails, setLoadingPlaceDetails] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchPopup, setShowSearchPopup] = useState(false);
   const [showSuggestionsCard, setShowSuggestionsCard] = useState(false);
-  const [searchResults, setSearchResults] = useState<LiveGeocodingSearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<AutocompleteResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchBias, setSearchBias] = useState<SearchBias | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [alertsEnabled, setAlertsEnabled] = useState(true);
-  const [liveGpsActive, setLiveGpsActive] = useState(false);
-  const [gpsStatus, setGpsStatus] = useState<GpsStatus>("idle");
-  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [showGpsHelper, setShowGpsHelper] = useState(false);
+  const [searchAnchorHint, setSearchAnchorHint] = useState<string | null>(null);
+  const [mapBearing, setMapBearing] = useState(0);
+  const lowAccuracyToastShownRef = useRef(false);
   const [userRegion, setUserRegion] = useState<{
     lat?: number;
     lng?: number;
@@ -278,7 +364,6 @@ export default function LivePage() {
   const [viewingDetailsFromNearby, setViewingDetailsFromNearby] = useState(false);
   const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [mapClickResolving, setMapClickResolving] = useState(false);
-  const [mapClickError, setMapClickError] = useState<string | null>(null);
   const [nearbyPlacesAtClick, setNearbyPlacesAtClick] = useState<PlacePreviewData[] | null>(null);
 
   // ─── Recent searches (dynamic, localStorage-backed) ────────────────────────
@@ -304,21 +389,26 @@ export default function LivePage() {
 
   const resolveSearchBias = useCallback((): SearchBias | null => {
     if (clickedLocation) return clickedLocation;
-    if (userLocation && (gpsStatus === "active" || gpsStatus === "low_accuracy")) return userLocation;
+    if (userLocation && isFreshGpsStatus(gpsStatus)) return userLocation;
     const mapCenter = mapRef.current?.getMapCenter();
     if (mapCenter) return mapCenter;
-    if (userLocation) return userLocation; // fallback for stale
+    if (destination && isLiveActive && liveStage === "solo_drive_navigation") {
+      return { lat: destination.lat, lng: destination.lng };
+    }
     return searchBias;
-  }, [clickedLocation, userLocation, searchBias, gpsStatus]);
+  }, [clickedLocation, userLocation, searchBias, gpsStatus, destination, isLiveActive, liveStage]);
 
-  const resolveAnchorCoordinate = useCallback((): { lat: number; lng: number; source: "click" | "gps" | "map" | "gps_stale" } | null => {
+  const resolveAnchorCoordinate = useCallback((): {
+    lat: number;
+    lng: number;
+    source: "click" | "gps" | "map" | "destination";
+  } | null => {
     if (clickedLocation) return { ...clickedLocation, source: "click" };
-    if (userLocation && (gpsStatus === "active" || gpsStatus === "low_accuracy")) return { ...userLocation, source: "gps" };
+    if (userLocation && isFreshGpsStatus(gpsStatus)) return { ...userLocation, source: "gps" };
     const mapCenter = mapRef.current?.getMapCenter();
     if (mapCenter) return { ...mapCenter, source: "map" };
-    if (userLocation) return { ...userLocation, source: "gps_stale" };
     if (destination && isLiveActive && liveStage === "solo_drive_navigation") {
-      return { lat: destination.lat, lng: destination.lng, source: "map" };
+      return { lat: destination.lat, lng: destination.lng, source: "destination" };
     }
     return null;
   }, [clickedLocation, userLocation, destination, isLiveActive, liveStage, gpsStatus]);
@@ -328,7 +418,6 @@ export default function LivePage() {
     setDestination(null);
     setLiveStage("static_landing");
     setToast(null);
-    setGpsError(null);
     setViewingDetailsFromNearby(false);
 
     setShowSearchPopup(false);
@@ -354,15 +443,18 @@ export default function LivePage() {
 
     const anchor = resolveAnchorCoordinate();
     if (!anchor) {
-      setNearbyError("Location unavailable. Turn on GPS or move the map first.");
+      setNearbyError("Move the map to choose an area first.");
       setNearbyLoading(false);
       return;
     }
 
-    if (anchor.source === "gps" && gpsStatus === "low_accuracy") {
-      showToast("Using approximate location");
-    } else if (anchor.source === "gps_stale") {
-      showToast("Using last known location");
+    if (anchor.source === "map" || anchor.source === "destination") {
+      setSearchAnchorHint("Searching this map area");
+      logRovvyGps("fallback used", { source: anchor.source });
+    } else if (anchor.source === "gps" && gpsStatus === "approximate") {
+      setSearchAnchorHint("Using approximate location");
+    } else {
+      setSearchAnchorHint(null);
     }
 
     try {
@@ -380,6 +472,7 @@ export default function LivePage() {
     setNearbyResults(null);
     setNearbyCategory(null);
     setNearbyError(null);
+    setSearchAnchorHint(null);
     setExpandedResultIndex(null);
     setViewingDetailsFromNearby(false);
   }, []);
@@ -427,10 +520,9 @@ export default function LivePage() {
     setSelectedPlace(poi);
     setNearbyPlacesAtClick(null);
   }, []);
-  const handleMapClick = useCallback(async (lat: number, lng: number, features: any[]) => {
-    setSelectedPlace(null);
+
+  const handleMapClick = useCallback(async (lat: number, lng: number, features: any[]) => {
     setDestination(null);
-    setLiveStage("static_landing");
     setViewingDetailsFromNearby(false);
     setShowSearchPopup(false);
     setShowSuggestionsCard(false);
@@ -442,8 +534,11 @@ export default function LivePage() {
 
     setClickedLocation({ lat, lng });
     setMapClickResolving(true);
-    setMapClickError(null);
     setNearbyPlacesAtClick(null);
+
+    const fallbackPlace = buildDroppedPinPlace(lat, lng, userLocation);
+    setSelectedPlace(fallbackPlace);
+    setLiveStage("place_preview");
 
     try {
       // 1. Score features and find the best one
@@ -505,49 +600,17 @@ export default function LivePage() {
       }
 
       const p = response.place;
-      const primaryPlace: PlacePreviewData = {
-        name: p.name,
-        categoryLabel: p.category, // Backend returned normalized category label
-        address: p.address || "",
-        phone: p.tags?.phone || p.tags?.["contact:phone"] || null,
-        lat: p.lat,
-        lng: p.lng,
-        distanceM: userLocation ? haversineM(userLocation.lat, userLocation.lng, p.lat, p.lng) : p.distanceMeters,
-        openingHours: p.tags?.opening_hours || null,
-        openStatus: p.tags?.opening_hours ? parseOpenStatus(p.tags.opening_hours) : null,
-        placeKey: p.placeKey,
-        osmType: p.tags?.osm_type || null,
-        osmId: p.tags?.osm_id ? parseInt(p.tags.osm_id, 10) : null,
-        source: p.source,
-        tags: p.tags || {}
-      };
+      const primaryPlace = mapResolveClickPlace(p, userLocation);
 
       const otherCandidates = (response.candidates || [])
         .filter((c: any) => c.placeKey !== p.placeKey)
-        .map((c: any) => ({
-          name: c.name,
-          categoryLabel: c.category,
-          address: c.address || "",
-          phone: c.tags?.phone || c.tags?.["contact:phone"] || null,
-          lat: c.lat,
-          lng: c.lng,
-          distanceM: userLocation ? haversineM(userLocation.lat, userLocation.lng, c.lat, c.lng) : c.distanceMeters,
-          openingHours: c.tags?.opening_hours || null,
-          openStatus: c.tags?.opening_hours ? parseOpenStatus(c.tags.opening_hours) : null,
-          placeKey: c.placeKey,
-          osmType: c.tags?.osm_type || null,
-          osmId: c.tags?.osm_id ? parseInt(c.tags.osm_id, 10) : null,
-          source: c.source,
-          tags: c.tags || {}
-        }));
+        .map((c: any) => mapResolveClickPlace(c, userLocation));
 
       setSelectedPlace(primaryPlace);
       if (otherCandidates.length > 0) {
         setNearbyPlacesAtClick(otherCandidates);
       }
-      setLiveStage("place_preview");
 
-      // Record the resolved map-click place as a recent search
       if (primaryPlace.source === "dropped_pin") {
         recordRecentSearch(
           buildDroppedPinRecentSearch(primaryPlace.lat, primaryPlace.lng, primaryPlace.address),
@@ -557,47 +620,79 @@ export default function LivePage() {
         recordRecentSearch(buildPlaceRecentSearch(primaryPlace), currentUserId);
       }
       refreshRecentSearches();
-    } catch (err) {
-      console.error("Map click resolution error", err);
-      setMapClickError("Could not resolve location info.");
+    } catch {
+      logRovvyMapClickResolver("backend unavailable, using dropped pin fallback.");
+      recordRecentSearch(
+        buildDroppedPinRecentSearch(lat, lng, fallbackPlace.address),
+        currentUserId,
+      );
+      refreshRecentSearches();
     } finally {
       setMapClickResolving(false);
     }
   }, [userLocation, currentUserId, refreshRecentSearches]);
 
-  const selectPlace = useCallback(async (result: LiveGeocodingSearchResult) => {
-    const lat = parseFloat(result.lat);
-    const lng = parseFloat(result.lon);
-    const bias = resolveSearchBias();
-    const userLoc = userLocation ?? mapRef.current?.getUserLocation() ?? bias;
-    const distanceM = userLoc ? haversineM(userLoc.lat, userLoc.lng, lat, lng) : null;
-    const { city, country } = extractCityCountry(result.address);
-    const placeKey = buildPlaceKey({
-      name: result.name || result.display_name.split(",")[0],
-      lat,
-      lng,
-      city,
-      country,
-      osmType: result.osm_type,
-      osmId: result.osm_id,
-    });
+  const selectPlace = useCallback(async (result: LiveGeocodingSearchResult | AutocompleteResult) => {
+    let lat: number, lng: number, placeKey: string, initial: PlacePreviewData;
 
-    const initial: PlacePreviewData = {
-      name: result.name || result.display_name.split(",")[0],
-      categoryLabel: normalizePlaceCategory(result) || (result.name ? "Place" : "Address"),
-      address: result.display_name,
-      phone: null,
-      lat,
-      lng,
-      distanceM,
-      openingHours: null,
-      openStatus: null,
-      placeKey,
-      osmType: result.osm_type ?? null,
-      osmId: result.osm_id ?? null,
-      city: city ?? null,
-      country: country ?? null,
-    };
+    if ("distanceLabel" in result) {
+      // It's an AutocompleteResult
+      lat = result.lat;
+      lng = result.lng;
+      placeKey = result.placeKey;
+      initial = {
+        name: result.name,
+        categoryLabel: result.category,
+        address: result.address,
+        phone: null,
+        lat,
+        lng,
+        distanceM: result.distanceMeters,
+        openingHours: null,
+        openStatus: null,
+        placeKey,
+        osmType: null,
+        osmId: null,
+        city: null,
+        country: null,
+        source: result.source,
+        tags: result.tags,
+      };
+    } else {
+      // It's a LiveGeocodingSearchResult
+      lat = parseFloat(result.lat);
+      lng = parseFloat(result.lon);
+      const bias = resolveSearchBias();
+      const userLoc = userLocation ?? mapRef.current?.getUserLocation() ?? bias;
+      const distanceM = userLoc ? haversineM(userLoc.lat, userLoc.lng, lat, lng) : null;
+      const { city, country } = extractCityCountry(result.address);
+      placeKey = buildPlaceKey({
+        name: result.name || result.display_name.split(",")[0],
+        lat,
+        lng,
+        city,
+        country,
+        osmType: result.osm_type,
+        osmId: result.osm_id,
+      });
+
+      initial = {
+        name: result.name || result.display_name.split(",")[0],
+        categoryLabel: normalizePlaceCategory(result) || (result.name ? "Place" : "Address"),
+        address: result.display_name,
+        phone: null,
+        lat,
+        lng,
+        distanceM,
+        openingHours: null,
+        openStatus: null,
+        placeKey,
+        osmType: result.osm_type ?? null,
+        osmId: result.osm_id ?? null,
+        city: city ?? null,
+        country: country ?? null,
+      };
+    }
 
     setSelectedPlace(initial);
     setDestination(null);
@@ -609,7 +704,7 @@ export default function LivePage() {
     setPlaceMedia([]);
     setPlaceTags([]);
     setPlaceMediaLoading(true);
-    setSearchQuery(result.name || result.display_name.split(",")[0]);
+    setSearchQuery(result.name || ("display_name" in result ? result.display_name.split(",")[0] : "Unknown"));
     setSearchResults([]);
     setShowSearchPopup(false);
     setShowSuggestionsCard(false);
@@ -692,8 +787,8 @@ export default function LivePage() {
       setSearchLoading(true);
       try {
         const bias = resolveSearchBias();
-        const results = await liveGeocodingSearch(name, bias);
-        const best = pickNearestSearchResult(results, bias);
+        const results = await liveAutocompleteSearch(name, bias);
+        const best = results[0];
         if (best) {
           await selectPlace(best);
         } else {
@@ -739,7 +834,7 @@ export default function LivePage() {
 
   useEffect(() => {
     if (!searchQuery.trim()) {
-      setSearchResults([]);
+      setSearchResults(prev => prev.length ? [] : prev);
       return;
     }
 
@@ -749,7 +844,7 @@ export default function LivePage() {
       "food", "restroom", "toilet", "hospital", "atm", "parking", "park"
     ];
     if (keywords.includes(q)) {
-      setSearchResults([]);
+      setSearchResults(prev => prev.length ? [] : prev);
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
       searchDebounceRef.current = setTimeout(() => {
         void handleNearbySearch(searchQuery);
@@ -758,18 +853,26 @@ export default function LivePage() {
     }
 
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    
     searchDebounceRef.current = setTimeout(async () => {
       setSearchLoading(true);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+      
       try {
         const bias = resolveSearchBias();
-        const results = await liveGeocodingSearch(searchQuery, bias);
+        const results = await liveAutocompleteSearch(searchQuery, bias, abortControllerRef.current.signal);
         setSearchResults(results);
-      } catch {
-        setSearchResults([]);
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          setSearchResults(prev => prev.length ? [] : prev);
+        }
       } finally {
         setSearchLoading(false);
       }
-    }, 400);
+    }, 250); // Reduced debounce for autocomplete
 
     return () => {
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
@@ -781,23 +884,36 @@ export default function LivePage() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const bearing = mapRef.current?.getBearing();
+      if (bearing != null) setMapBearing(Math.round(bearing));
+    }, 500);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (isFreshGpsStatus(gpsStatus)) {
+      setShowGpsHelper(false);
+    }
+  }, [gpsStatus]);
+
   // Check geolocation permission state on mount and reflect it in gpsStatus immediately
   useEffect(() => {
     if (typeof navigator === "undefined" || !navigator.permissions) return;
     navigator.permissions.query({ name: "geolocation" as PermissionName }).then((result) => {
+      logRovvyGps("permission state", { state: result.state });
       if (result.state === "denied") {
-        setGpsStatus("denied");
-        setGpsError("Enable location permission in browser settings");
+        setGpsState((prev) => ({ ...prev, status: "denied" }));
       } else if (result.state === "granted") {
-        setGpsStatus("requesting"); // will become 'active' once first fix arrives
+        setGpsState((prev) => ({ ...prev, status: "requesting" }));
       }
-      // Watch for live permission changes (e.g. user toggles in settings)
       result.onchange = () => {
+        logRovvyGps("permission state changed", { state: result.state });
         if (result.state === "denied") {
-          setGpsStatus("denied");
-          setGpsError("Enable location permission in browser settings");
+          setGpsState((prev) => ({ ...prev, status: "denied" }));
         } else if (result.state === "granted" && gpsStatus !== "active") {
-          mapRef.current?.locateUser();
+          mapRef.current?.locateUser(true);
         }
       };
     }).catch(() => {
@@ -874,18 +990,18 @@ export default function LivePage() {
     };
   }
 
-  function handleUserLocationChange(update: UserLocationUpdate) {
-    const loc = { lat: update.lat, lng: update.lng, accuracy: update.accuracyMeters || undefined, timestamp: update.timestamp || undefined };
-    setUserLocation(loc);
-    setSpeedMps(update.speedMps);
-    setSelectedPlace((prev) => (prev ? updatePlaceDistance(prev, loc) : prev));
-    setDestination((prev) => (prev ? updatePlaceDistance(prev, loc) : prev));
-    
-    if (update.accuracyMeters && update.accuracyMeters > 300) {
-      const isMobile = typeof navigator !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
-      if (!isMobile) {
-        showToast("Desktop location can be approximate. For precise GPS, use Rovvy on mobile or enable precise location.");
-      }
+  function handleGpsStateChange(newState: GpsState) {
+    setGpsState(newState);
+
+    if (newState.lat !== null && newState.lng !== null) {
+      const loc = { lat: newState.lat, lng: newState.lng };
+      setSelectedPlace((prev) => (prev ? updatePlaceDistance(prev, loc) : prev));
+      setDestination((prev) => (prev ? updatePlaceDistance(prev, loc) : prev));
+    }
+
+    if (newState.accuracyMeters && newState.accuracyMeters > 500 && !lowAccuracyToastShownRef.current) {
+      lowAccuracyToastShownRef.current = true;
+      showToast("Your location may be approximate.");
     }
   }
 
@@ -926,10 +1042,54 @@ export default function LivePage() {
       currentUserId,
     );
     refreshRecentSearches();
+
+    if (userLocation) {
+      setRouteLoading(true);
+      fetchLiveRoute(userLocation, { lat: selectedPlace.lat, lng: selectedPlace.lng })
+        .then((r) => {
+          if (r) {
+            r.active = false;
+            setActiveRoute(r);
+            mapRef.current?.fitBounds([
+              [r.from.lng, r.from.lat],
+              [r.to.lng, r.to.lat]
+            ]); // We will implement fitRoute in mapRef instead of fitBounds
+          }
+          setRouteLoading(false);
+        });
+    }
   }
 
   function handleStartFromPlacePreview() {
     handleMakeDestination();
+  }
+
+  function handleGetDirections() {
+    if (!requireSolo() || !selectedPlace) return;
+    if (locationContext && !locationContext.liveSafe) return;
+    if (!canStartSoloLive(selectedPlace.distanceM)) {
+      showToast("This destination is too far for Solo Live. Plan a trip first.");
+      return;
+    }
+    setDestination(selectedPlace);
+    setIsLiveActive(true);
+    setLiveStage("solo_drive_command");
+    mapRef.current?.clearClickedPin();
+    recordRecentSearch(
+      { ...buildPlaceRecentSearch(selectedPlace), type: "destination" },
+      currentUserId,
+    );
+    refreshRecentSearches();
+
+    if (userLocation) {
+      setRouteLoading(true);
+      fetchLiveRoute(userLocation, { lat: selectedPlace.lat, lng: selectedPlace.lng }, true)
+        .then((r) => {
+          if (r) setActiveRoute(r);
+          setRouteLoading(false);
+        });
+    }
+    if (!liveGpsActive) mapRef.current?.locateUser();
   }
 
   function handleContinueFromPreview() {
@@ -971,35 +1131,54 @@ export default function LivePage() {
 
   function handleStartSoloLive() {
     if (!requireSolo() || !destination) return;
+    if (!activeRoute) {
+      showToast("Route unavailable right now.");
+      return;
+    }
     if (!canStartSoloLive(destination.distanceM)) {
       showToast("This destination is too far for Solo Live. Plan a trip first.");
       return;
     }
     setIsLiveActive(true);
     setLiveStage("solo_drive_command");
-    if (!liveGpsActive) mapRef.current?.locateUser();
+    mapRef.current?.locateUser(true);
   }
 
   function handleChangeDestination() {
     setDestination(null);
+    setActiveRoute(null);
     setIsLiveActive(false);
     setLiveStage(selectedPlace ? "place_preview" : "static_landing");
   }
 
   function handleBeginNavigation() {
     if (!requireSolo() || !destination) return;
+    if (!activeRoute) {
+      showToast("Route unavailable right now.");
+      return;
+    }
     if (!canStartSoloLive(destination.distanceM)) {
       showToast("This destination is too far for Solo Live navigation.");
       return;
     }
     setLiveStage("solo_drive_navigation");
-    if (!liveGpsActive) mapRef.current?.locateUser();
+    setIsLiveActive(true);
+    mapRef.current?.locateUser(true);
+  }
+
+  function handleRouteOverview() {
+    if (activeRoute) {
+      mapRef.current?.fitBounds([
+        [activeRoute.from.lng, activeRoute.from.lat],
+        [activeRoute.to.lng, activeRoute.to.lat]
+      ]);
+    }
   }
 
   function handleEndSoloLive() {
     setIsLiveActive(false);
     setTripStatus("on_the_way");
-    setSpeedMps(null);
+
     setLiveStage("destination_set");
     showToast("Solo Live ended.");
   }
@@ -1021,9 +1200,22 @@ export default function LivePage() {
     showToast("Add Stop — coming soon.");
   }
 
-  function locateUser() {
-    setGpsError(null);
-    mapRef.current?.locateUser();
+  function handleLocateClick() {
+    if (gpsStatusNeedsHelper(gpsStatus)) {
+      setShowGpsHelper(true);
+    }
+    mapRef.current?.locateUser(true);
+  }
+
+  function handleUseMapArea() {
+    setShowGpsHelper(false);
+    logRovvyGps("fallback used", { source: "map", manual: true });
+  }
+
+  function handleGpsStatusBadgeClick() {
+    if (gpsStatusNeedsHelper(gpsStatus)) {
+      setShowGpsHelper((prev) => !prev);
+    }
   }
 
   const isNavigating = liveStage === "solo_drive_navigation";
@@ -1105,7 +1297,7 @@ export default function LivePage() {
   }, [showFarAwayPanel, isLongDistancePreview, liveStage]);
 
   const routeLine: RouteLine | null = useMemo(() => {
-    if (!destination || !userLocation) return null;
+    if (!activeRoute) return null;
     if (
       liveStage !== "destination_set" &&
       liveStage !== "long_distance_preview" &&
@@ -1113,17 +1305,12 @@ export default function LivePage() {
     ) {
       return null;
     }
-    if (!canDrawLocalRoute(destination.distanceM)) return null;
     return {
-      from: userLocation,
-      to: { lat: destination.lat, lng: destination.lng },
+      ...activeRoute,
       active: isLiveActive,
     };
-  }, [destination, userLocation, liveStage, isLiveActive]);
+  }, [activeRoute, liveStage, isLiveActive]);
 
-  const rightPanelOpen = Boolean(
-    showPlacePreview || showFarAwayPanel || showRoutePreview || showSoloLivePanel,
-  );
   const searchDropdownBias = resolveSearchBias();
   const showAskRoviAi = shouldShowAskRoviAi(locationContext);
 
@@ -1154,10 +1341,7 @@ export default function LivePage() {
         isLiveActive={isLiveActive}
         navigationMode={isNavigating}
         mapFollowMode={mapFollowMode}
-        onUserLocationChange={handleUserLocationChange}
-        onLiveGpsChange={setLiveGpsActive}
-        onGpsError={setGpsError}
-        onGpsStatusChange={setGpsStatus}
+        onGpsStateChange={handleGpsStateChange}
         nearbyResults={nearbyResults}
         onNearbyMarkerClick={handleResultClick}
         onMapClick={handleMapClick}
@@ -1166,12 +1350,6 @@ export default function LivePage() {
       {toast ? (
         <div className="absolute left-1/2 top-20 z-40 max-w-sm -translate-x-1/2 rounded-xl bg-stone-900 px-4 py-2 text-center text-sm text-white shadow-lg">
           {toast}
-        </div>
-      ) : null}
-
-      {gpsError ? (
-        <div className="absolute left-1/2 top-32 z-40 max-w-sm -translate-x-1/2 rounded-xl bg-red-900 px-4 py-2 text-center text-sm text-white shadow-lg">
-          {gpsError}
         </div>
       ) : null}
 
@@ -1244,9 +1422,15 @@ export default function LivePage() {
               {searchQuery.trim().length >= 2 && searchResults.length > 0 && showSearchPopup && (
                 <ul className="absolute left-0 right-0 top-full z-30 mt-1 max-h-52 overflow-auto rounded-2xl border border-stone-200/60 bg-white/95 backdrop-blur-md shadow-xl">
                   {searchResults.map((result) => {
-                    const subtitle = formatSearchResultSubtitle(result, searchDropdownBias);
+                    const subtitleParts = [];
+                    if (result.category && result.category !== "Place") subtitleParts.push(result.category);
+                    if (result.distanceLabel) subtitleParts.push(result.distanceLabel);
+                    
+                    const subtitle = subtitleParts.join(" · ");
+                    const addressLine = result.address !== result.name ? result.address : null;
+
                     return (
-                      <li key={result.place_id}>
+                      <li key={result.id}>
                         <button
                           type="button"
                           className="flex w-full gap-2 px-3 py-2.5 text-left hover:bg-stone-50/80 transition-colors"
@@ -1254,16 +1438,23 @@ export default function LivePage() {
                             void selectPlace(result);
                           }}
                         >
-                          <span className="shrink-0 pt-0.5">📍</span>
+                          <span className="shrink-0 pt-0.5">
+                            {result.category === "Address" || result.category === "Building" ? "📌" : "📍"}
+                          </span>
                           <span className="min-w-0">
                             <span className="block text-sm font-medium text-stone-800 line-clamp-1">
-                              {result.name || result.display_name.split(",")[0]}
+                              {result.name}
                             </span>
-                            {subtitle ? (
-                              <span className="block text-xs text-stone-500 line-clamp-1">
+                            {subtitle && (
+                              <span className="block text-xs font-medium text-teal-700 line-clamp-1 mt-0.5">
                                 {subtitle}
                               </span>
-                            ) : null}
+                            )}
+                            {addressLine && (
+                              <span className="block text-[10px] text-stone-500 line-clamp-1 mt-0.5">
+                                {addressLine}
+                              </span>
+                            )}
                           </span>
                         </button>
                       </li>
@@ -1488,6 +1679,9 @@ export default function LivePage() {
                       {getNearbyCategoryTitle(nearbyCategory)}
                     </h3>
                     <p className="text-[10px] text-stone-500 font-medium">Sorted by distance</p>
+                    {searchAnchorHint ? (
+                      <p className="text-[10px] text-amber-700 font-medium">{searchAnchorHint}</p>
+                    ) : null}
                   </div>
                 </div>
                 <button
@@ -1584,7 +1778,7 @@ export default function LivePage() {
       {showPlacePreview && selectedPlace && locationContext ? (
         <PlacePreviewCard
           place={selectedPlace}
-          loadingDetails={loadingPlaceDetails}
+          loadingDetails={mapClickResolving || loadingPlaceDetails}
           placeMedia={placeMedia}
           placeMediaLoading={placeMediaLoading}
           placeTags={placeTags}
@@ -1608,6 +1802,7 @@ export default function LivePage() {
           onAddToTrip={() => showToast("Choose trip — coming soon.")}
           onCreateMeetPoint={() => showToast("Meet point created.")}
           onMakeDestination={handleMakeDestination}
+          onGetDirections={handleGetDirections}
           onStartLive={handleStartFromPlacePreview}
           nearbyPlacesAtClick={nearbyPlacesAtClick}
           onSelectNearbyPlaceAtClick={handleSelectNearbyPlaceAtClick}
@@ -1632,6 +1827,8 @@ export default function LivePage() {
           onChangeDestination={handleChangeDestination}
           onClose={handleChangeDestination}
           onPlanTrip={handlePlanTrip}
+          routeLine={activeRoute}
+          routeLoading={routeLoading}
         />
       ) : null}
 
@@ -1647,6 +1844,7 @@ export default function LivePage() {
           onSaveParking={() => showToast("Parking saved.")}
           onShareTrip={() => showToast("Share trip — coming soon.")}
           onAddStop={handleAddStopFromLive}
+          routeLine={activeRoute}
         />
       ) : null}
 
@@ -1661,116 +1859,179 @@ export default function LivePage() {
           onSaveParking={() => showToast("Parking saved.")}
           onShareTrip={() => showToast("Share trip — coming soon.")}
           onAddStop={handleAddStopFromLive}
+          routeLine={routeLine}
+          onOverviewClick={handleRouteOverview}
         />
       ) : null}
 
-      {/* Right Map Controls */}
+      {/* Right Map Controls — fixed on map workspace, always visible */}
       <div
-        className={`absolute top-1/2 -translate-y-1/2 flex flex-col gap-2 z-10 transition-all ${
-          rightPanelOpen
-            ? "xl:right-[434px] lg:right-[404px] md:landscape:right-[364px] right-4"
-            : "right-4"
-        }`}
+        className={`pointer-events-auto absolute z-40 flex flex-col items-center gap-1.5 transition-all duration-200 max-md:gap-1 md:gap-2 ${LIVE_MAP_CONTROLS_POSITION}`}
       >
         <button
           type="button"
-          className="w-10 h-10 flex items-center justify-center bg-white hover:bg-stone-100 rounded-full shadow-lg"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 md:h-10 md:w-10"
           onClick={() => mapRef.current?.zoomIn()}
+          title="Zoom in"
+          aria-label="Zoom in"
         >
-          <span className="text-2xl font-light text-stone-600">+</span>
+          <span className="text-xl font-light text-stone-600 md:text-2xl">+</span>
         </button>
         <button
           type="button"
-          className="w-10 h-10 flex items-center justify-center bg-white hover:bg-stone-100 rounded-full shadow-lg"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 md:h-10 md:w-10"
           onClick={() => mapRef.current?.zoomOut()}
+          title="Zoom out"
+          aria-label="Zoom out"
         >
-          <span className="text-2xl font-light text-stone-600">-</span>
+          <span className="text-xl font-light text-stone-600 md:text-2xl">−</span>
         </button>
-        <button
-          type="button"
-          className={`w-10 h-10 flex items-center justify-center rounded-full shadow-lg relative ${
-            liveGpsActive
-              ? "bg-blue-600 hover:bg-blue-700"
-              : gpsStatus === "denied" || gpsStatus === "error"
-              ? "bg-red-100 hover:bg-red-200"
-              : gpsStatus === "requesting"
-              ? "bg-blue-100 hover:bg-blue-200"
-              : "bg-white hover:bg-stone-100"
-          }`}
-          onClick={() => mapRef.current?.locateUser(true)}
-          title={gpsStatus === "denied" ? "Location denied — click to retry" : gpsStatus === "requesting" ? "Finding location…" : "Locate me"}
-          aria-pressed={liveGpsActive}
-        >
-          {gpsStatus === "requesting" ? (
-            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <MapPin
-              className={`w-5 h-5 ${
-                liveGpsActive ? "text-white" :
-                gpsStatus === "denied" || gpsStatus === "error" ? "text-red-500" :
-                "text-stone-500"
+
+        <div className="relative flex flex-col items-center gap-1">
+          <button
+            type="button"
+            className={`flex h-9 w-9 items-center justify-center rounded-full shadow-lg md:h-10 md:w-10 ${
+              gpsStatus === "active"
+                ? "bg-blue-600 hover:bg-blue-700"
+                : gpsStatus === "approximate"
+                ? "bg-blue-500 hover:bg-blue-600"
+                : gpsStatus === "denied"
+                ? "bg-stone-100 hover:bg-stone-200"
+                : gpsStatus === "timeout" || gpsStatus === "error" || gpsStatus === "outdated"
+                ? "bg-amber-50 hover:bg-amber-100"
+                : gpsStatus === "requesting"
+                ? "bg-blue-100 hover:bg-blue-200"
+                : "bg-white hover:bg-stone-100"
+            }`}
+            onClick={handleLocateClick}
+            title={
+              gpsStatus === "denied"
+                ? "Location off — click to retry"
+                : gpsStatus === "timeout" || gpsStatus === "error"
+                ? "Location unavailable — click for options"
+                : gpsStatus === "requesting"
+                ? "Finding location…"
+                : "Locate me"
+            }
+            aria-pressed={liveGpsActive}
+            aria-label="Locate me"
+          >
+            {gpsStatus === "requesting" ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+            ) : (
+              <MapPin
+                className={`h-5 w-5 ${
+                  gpsStatus === "active" || gpsStatus === "approximate"
+                    ? "text-white"
+                    : gpsStatus === "denied"
+                    ? "text-stone-500"
+                    : gpsStatus === "timeout" || gpsStatus === "error" || gpsStatus === "outdated"
+                    ? "text-amber-600"
+                    : "text-stone-500"
+                }`}
+              />
+            )}
+          </button>
+          {gpsStatusLabel(gpsStatus) &&
+          gpsStatus !== "active" &&
+          gpsStatus !== "approximate" ? (
+            <button
+              type="button"
+              onClick={handleGpsStatusBadgeClick}
+              className={`cursor-pointer whitespace-nowrap rounded-full px-2 py-0.5 text-center text-[9px] font-semibold shadow-sm ${
+                gpsStatus === "requesting"
+                  ? "bg-blue-100 text-blue-700"
+                  : gpsStatus === "stale"
+                  ? "bg-stone-200 text-stone-600"
+                  : gpsStatus === "outdated"
+                  ? "bg-amber-100 text-amber-800"
+                  : gpsStatus === "denied"
+                  ? "bg-stone-200 text-stone-600"
+                  : gpsStatus === "timeout" || gpsStatus === "error"
+                  ? "bg-amber-100 text-amber-800"
+                  : "bg-stone-100 text-stone-500"
               }`}
-            />
-          )}
-        </button>
-        {/* GPS status micro-pill — shows below the locate button */}
-        <div
-          className={`px-2 py-0.5 rounded-full text-[9px] font-semibold text-center shadow-sm whitespace-nowrap ${
-            gpsStatus === "active"
-              ? "bg-blue-600 text-white"
-              : gpsStatus === "requesting"
-              ? "bg-blue-100 text-blue-700"
-              : gpsStatus === "low_accuracy"
-              ? "bg-amber-100 text-amber-700"
-              : gpsStatus === "stale"
-              ? "bg-stone-200 text-stone-600"
-              : gpsStatus === "denied"
-              ? "bg-red-100 text-red-600"
-              : gpsStatus === "error"
-              ? "bg-amber-100 text-amber-700"
-              : "bg-stone-100 text-stone-500"
-          }`}
-          title="GPS status"
-        >
-          {gpsStatus === "active"
-            ? "GPS active"
-            : gpsStatus === "low_accuracy"
-            ? "Approx location"
-            : gpsStatus === "stale"
-            ? "Updating…"
-            : gpsStatus === "requesting"
-            ? "Finding…"
-            : gpsStatus === "denied"
-            ? "Location off"
-            : gpsStatus === "error"
-            ? "GPS error"
-            : "GPS off"}
+              title="GPS status"
+            >
+              {gpsStatusLabel(gpsStatus)}
+            </button>
+          ) : null}
+          {!isFreshGpsStatus(gpsStatus) &&
+          gpsStatus !== "requesting" &&
+          (gpsStatus === "timeout" ||
+            gpsStatus === "denied" ||
+            gpsStatus === "error" ||
+            gpsStatus === "idle" ||
+            gpsStatus === "outdated" ||
+            gpsStatus === "stale") ? (
+            <div className="whitespace-nowrap rounded-full bg-stone-100 px-2 py-0.5 text-center text-[9px] font-medium text-stone-500 shadow-sm">
+              Using this map area
+            </div>
+          ) : null}
+          {showGpsHelper ? (
+            <div className="absolute right-full top-1/2 z-50 mr-3 w-56 -translate-y-1/2 rounded-xl border border-stone-200 bg-white/95 p-3 text-left shadow-xl backdrop-blur-md">
+              <p className="text-xs font-semibold text-stone-800">
+                {gpsStatus === "denied" ? "Location off" : "Location unavailable"}
+              </p>
+              <p className="mt-1 text-[11px] leading-snug text-stone-600">
+                {gpsStatus === "denied"
+                  ? "Enable location permission in your browser to show your position."
+                  : "Rovvy couldn't get your exact location from this browser. You can try again or use the current map area."}
+              </p>
+              <div className="mt-3 flex flex-col gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleLocateClick}
+                  className="rounded-lg bg-[#0F766E] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-teal-800"
+                >
+                  Try again
+                </button>
+                {gpsStatus === "denied" ? (
+                  <a
+                    href="https://support.google.com/chrome/answer/142064?hl=en"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg border border-stone-200 px-3 py-1.5 text-center text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
+                  >
+                    Browser location help
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleUseMapArea}
+                    className="rounded-lg border border-stone-200 px-3 py-1.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
+                  >
+                    Use map area
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGpsHelper(false)}
+                className="absolute right-1.5 top-1.5 px-1 text-xs text-stone-400 hover:text-stone-600"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+          ) : null}
         </div>
+
         <button
           type="button"
-          className="w-10 h-10 flex items-center justify-center bg-white hover:bg-stone-100 rounded-full shadow-lg"
-          onClick={() => setSoundEnabled((prev) => !prev)}
-          title="Sound"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 md:h-10 md:w-10"
+          onClick={() => mapRef.current?.resetNorth()}
+          title="Reset map orientation"
+          aria-label="Reset map orientation"
         >
-          {soundEnabled ? (
-            <Volume2 className="w-5 h-5 text-stone-500" />
-          ) : (
-            <VolumeX className="w-5 h-5 text-stone-300" />
-          )}
-        </button>
-        <button
-          type="button"
-          className="w-10 h-10 flex items-center justify-center bg-white hover:bg-stone-100 rounded-full shadow-lg"
-          onClick={() => setAlertsEnabled((prev) => !prev)}
-          title="Alerts"
-        >
-          <Bell
-            className={`w-5 h-5 ${alertsEnabled ? "text-amber-500" : "text-stone-300"}`}
+          <Compass
+            className={`h-5 w-5 text-stone-500 transition-transform duration-300 ${mapBearing !== 0 ? "text-teal-700" : ""}`}
+            style={{ transform: `rotate(${-mapBearing}deg)` }}
           />
         </button>
         <button
           type="button"
-          className="w-10 h-10 flex items-center justify-center bg-white hover:bg-stone-100 rounded-full shadow-lg"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 md:h-10 md:w-10"
           onClick={() => {
             const layers = ["street", "satellite", "dark"] as const;
             setActiveLayer((current) => {
@@ -1779,22 +2040,48 @@ export default function LivePage() {
             });
           }}
           title={`Layer: ${activeLayer}`}
+          aria-label="Change map layer"
         >
-          <Layers className="w-5 h-5 text-stone-500" />
+          <Layers className="h-5 w-5 text-stone-500" />
         </button>
         <button
           type="button"
-          className="w-10 h-10 flex items-center justify-center bg-white hover:bg-stone-100 rounded-full shadow-lg"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 md:h-10 md:w-10"
           onClick={() => {
             if (!document.fullscreenElement) {
-              document.documentElement.requestFullscreen();
+              void document.documentElement.requestFullscreen();
             } else {
-              document.exitFullscreen();
+              void document.exitFullscreen();
             }
           }}
-          title="Toggle Fullscreen"
+          title="Toggle fullscreen"
+          aria-label="Toggle fullscreen"
         >
-          <Maximize2 className="w-5 h-5 text-stone-500" />
+          <Maximize2 className="h-5 w-5 text-stone-500" />
+        </button>
+        <button
+          type="button"
+          className="hidden h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 sm:flex md:h-10 md:w-10"
+          onClick={() => setSoundEnabled((prev) => !prev)}
+          title="Sound"
+          aria-label="Toggle sound"
+        >
+          {soundEnabled ? (
+            <Volume2 className="h-5 w-5 text-stone-500" />
+          ) : (
+            <VolumeX className="h-5 w-5 text-stone-300" />
+          )}
+        </button>
+        <button
+          type="button"
+          className="hidden h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 sm:flex md:h-10 md:w-10"
+          onClick={() => setAlertsEnabled((prev) => !prev)}
+          title="Alerts"
+          aria-label="Toggle alerts"
+        >
+          <Bell
+            className={`h-5 w-5 ${alertsEnabled ? "text-amber-500" : "text-stone-300"}`}
+          />
         </button>
       </div>
     </div>

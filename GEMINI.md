@@ -257,7 +257,9 @@ After every feature change, update this section in GEMINI.md:
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2026-06-30 (Aligned nav bar to match Dashboard Layout header) |
-| Live Trip Mode (MapLibre Static Landing) | Complete | 2026-07-02 (Map click UX: replaced hand/grab cursor with arrow cursor (CSS scoped to .rovvy-live-map-container); added teal rotated-square dropped-pin marker at every click coordinate; 750ms ripple pulse at click pixel; exposed clearClickedPin() on LiveMapRef; pin auto-clears on Make Destination / nearby search / preview close. Country mismatch fix: suppressed false "another country" warning when distance < 100 mi and country strings are missing/garbage or when distanceMiles < 50 mi regardless. GPS tracking: implemented high-accuracy watchPosition/getCurrentPosition with accuracy circles, stale/low_accuracy states, MapLibre 'You are here' popups, and desktop warning toasts. Nearby search anchors now prioritize fresh GPS locations. Locate button forces fresh request with maxAge=0.) |
+| Live Trip Mode (MapLibre Navigation) | Complete | 2026-07-03 (Implemented active OSRM-based route navigation geometry, dynamic Follow mode camera with user interaction pause via `dragstart`, and interactive "Route Overview" map bounds fitting. UI panels now use real ETA/distance from active route.) |
+| Place Preview Wikipedia Enrichment | Complete | 2026-07-02 (Added backend integration via /api/v1/places/wiki-summary and frontend UI for eligible place types) |
+| Live Search Autocomplete | Complete | 2026-07-02 (Implemented robust Google Maps-style autocomplete with local place registry and OSM Nominatim fallback, optimized distance ranking, category keyword detection, and debounced AbortController-managed fetching.) |
 | Buses page | Pending | — |
 
 ---

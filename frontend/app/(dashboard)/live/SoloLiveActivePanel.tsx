@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { EXTERNAL_MAP_HANDOFF } from "@/lib/map-providers";
 import type { PlacePreviewData } from "./PlacePreviewCard";
-import type { LiveStage, TripStatus } from "./live-types";
+import type { LiveStage, TripStatus, RouteLine } from "./live-types";
 import { estimateDriveEta, formatDistanceMiles } from "./live-types";
+import { LIVE_PANEL_MAX_WIDTH, LIVE_PANEL_RIGHT_INSET } from "./live-layout";
 
 const TEAL = "#0F766E";
 
@@ -26,6 +27,7 @@ type Props = {
   onSaveParking: () => void;
   onShareTrip: () => void;
   onAddStop: () => void;
+  routeLine: RouteLine | null;
 };
 
 export default function SoloLiveActivePanel({
@@ -39,6 +41,7 @@ export default function SoloLiveActivePanel({
   onSaveParking,
   onShareTrip,
   onAddStop,
+  routeLine,
 }: Props) {
   const [moreOpen, setMoreOpen] = useState(false);
   const navigating = liveStage === "solo_drive_navigation";
@@ -46,7 +49,7 @@ export default function SoloLiveActivePanel({
 
   return (
     <div
-      className="absolute right-4 top-[72px] z-30 flex w-[336px] max-w-[calc(100%-2rem)] max-h-[calc(100%-6.5rem)] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
+      className={`absolute ${LIVE_PANEL_RIGHT_INSET} top-[72px] z-30 flex w-[336px] ${LIVE_PANEL_MAX_WIDTH} max-h-[calc(100%-6.5rem)] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)]`}
       role="dialog"
       aria-label="Solo live active"
     >
@@ -62,11 +65,11 @@ export default function SoloLiveActivePanel({
         <div className="mt-4 space-y-1 border-t border-stone-100 pt-4 text-sm text-stone-700">
           <p>
             <span className="font-medium text-stone-500">ETA:</span>{" "}
-            {estimateDriveEta(destination.distanceM)}
+            {routeLine ? estimateDriveEta(routeLine.distanceMeters) : estimateDriveEta(destination.distanceM)}
           </p>
           <p>
             <span className="font-medium text-stone-500">Distance:</span>{" "}
-            {formatDistanceMiles(destination.distanceM)}
+            {routeLine ? formatDistanceMiles(routeLine.distanceMeters) : formatDistanceMiles(destination.distanceM)}
           </p>
           <p>
             <span className="font-medium text-stone-500">Status:</span>{" "}

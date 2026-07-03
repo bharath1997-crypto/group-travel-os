@@ -13,12 +13,13 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { EXTERNAL_MAP_HANDOFF } from "@/lib/map-providers";
+import { apiFetch } from "@/lib/api";
 import type { LiveLocationContext } from "./live-location-context";
 import type { PlaceMediaItem } from "./live-place-media";
 import PlacePreviewMedia from "./PlacePreviewMedia";
 import RoviPlaceExplanationBlock from "./RoviPlaceExplanationBlock";
 import type { RoviPlaceExplanation } from "./live-rovi";
+import { LIVE_PANEL_MAX_WIDTH, LIVE_PANEL_RIGHT_INSET } from "./live-layout";
 
 export type PlacePreviewData = {
   name: string;
@@ -63,6 +64,7 @@ type Props = {
   onAddToTrip: () => void;
   onCreateMeetPoint: () => void;
   onMakeDestination: () => void;
+  onGetDirections: () => void;
   onStartLive: () => void;
   nearbyPlacesAtClick?: PlacePreviewData[] | null;
   onSelectNearbyPlaceAtClick?: (place: PlacePreviewData) => void;
@@ -141,6 +143,7 @@ export default function PlacePreviewCard({
   onAddToTrip,
   onCreateMeetPoint,
   onMakeDestination,
+  onGetDirections,
   onStartLive,
   nearbyPlacesAtClick = null,
   onSelectNearbyPlaceAtClick,
@@ -150,10 +153,57 @@ export default function PlacePreviewCard({
   liveStage = "static_landing",
 }: Props) {
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
+  const [wikiSummary, setWikiSummary] = useState<{ available: boolean; summary?: string; url?: string; title?: string; attribution?: string } | null>(null);
+  const [wikiLoading, setWikiLoading] = useState(false);
 
   useEffect(() => {
     setIsSheetExpanded(false);
   }, [place.placeKey, place.lat, place.lng]);
+
+  useEffect(() => {
+    // Reset wiki summary when place changes
+    setWikiSummary(null);
+
+    const isEligibleCategory = [
+      "Landmark", "Attraction", "Museum", "Park", "Historic site",
+      "Airport", "University", "Church / Place of worship", "Stadium", "Monument"
+    ].includes(place.categoryLabel);
+
+    const wikidataId = place.tags?.wikidata;
+    const wikipediaTitle = place.tags?.wikipedia;
+
+    if (!isEligibleCategory && !wikidataId && !wikipediaTitle) {
+      return;
+    }
+    
+    if (place.name === "Dropped pin" || place.categoryLabel === "Address" || !place.name) {
+      return;
+    }
+
+    const fetchWiki = async () => {
+      setWikiLoading(true);
+      try {
+        const query = new URLSearchParams({
+          name: place.name,
+          category: place.categoryLabel,
+          lat: place.lat.toString(),
+          lng: place.lng.toString(),
+        });
+        if (wikidataId) query.append("wikidata_id", wikidataId);
+        if (wikipediaTitle) query.append("wikipedia_title", wikipediaTitle);
+
+        const res = await apiFetch<any>(`/api/v1/places/wiki-summary?${query.toString()}`);
+        setWikiSummary(res);
+      } catch (err) {
+        console.warn("Wiki fetch failed", err);
+        setWikiSummary({ available: false });
+      } finally {
+        setWikiLoading(false);
+      }
+    };
+
+    fetchWiki();
+  }, [place.name, place.categoryLabel, place.lat, place.lng, place.tags]);
 
   const isDesktop = useMediaQuery("(min-width: 1280px)");
   const isLaptop = useMediaQuery("(min-width: 1024px) and (max-width: 1279px)");
@@ -168,7 +218,6 @@ export default function PlacePreviewCard({
   const isDrivingMode =
     liveStage === "solo_drive_navigation" || liveStage === "solo_drive_command";
 
-  const directionsUrl = EXTERNAL_MAP_HANDOFF.googleDirections(place.lat, place.lng);
   const distanceLabel = formatDistanceLabel(
     place.distanceM,
     hasUserLocation,
@@ -221,17 +270,17 @@ export default function PlacePreviewCard({
         "fixed inset-x-0 bottom-0 z-30 h-[160px] rounded-t-[24px] border border-stone-200 bg-white shadow-2xl flex flex-col justify-between p-4";
     } else {
       layoutClass =
-        "absolute bottom-4 right-4 z-30 w-[360px] h-[230px] rounded-2xl border border-stone-200 bg-white shadow-2xl flex flex-col justify-between p-4";
+        `absolute bottom-4 ${LIVE_PANEL_RIGHT_INSET} z-30 w-[360px] ${LIVE_PANEL_MAX_WIDTH} h-[230px] rounded-2xl border border-stone-200 bg-white shadow-2xl flex flex-col justify-between p-4`;
     }
   } else if (isDesktop) {
     layoutClass =
-      "absolute right-6 top-[88px] z-30 w-[410px] max-h-[75vh] rounded-[24px] border border-stone-200/80 bg-white shadow-2xl flex flex-col overflow-hidden";
+      `absolute ${LIVE_PANEL_RIGHT_INSET} top-[88px] z-30 w-[410px] ${LIVE_PANEL_MAX_WIDTH} max-h-[75vh] rounded-[24px] border border-stone-200/80 bg-white shadow-2xl flex flex-col overflow-hidden`;
   } else if (isLaptop) {
     layoutClass =
-      "absolute right-4 top-[76px] z-30 w-[385px] max-h-[70vh] rounded-2xl border border-stone-200/80 bg-white shadow-xl flex flex-col overflow-hidden";
+      `absolute ${LIVE_PANEL_RIGHT_INSET} top-[76px] z-30 w-[385px] ${LIVE_PANEL_MAX_WIDTH} max-h-[70vh] rounded-2xl border border-stone-200/80 bg-white shadow-xl flex flex-col overflow-hidden`;
   } else if (isTabletLandscape) {
     layoutClass =
-      "absolute right-4 top-[72px] z-30 w-[340px] max-h-[68vh] rounded-2xl border border-stone-200/80 bg-white shadow-lg flex flex-col overflow-hidden";
+      `absolute ${LIVE_PANEL_RIGHT_INSET} top-[72px] z-30 w-[340px] ${LIVE_PANEL_MAX_WIDTH} max-h-[68vh] rounded-2xl border border-stone-200/80 bg-white shadow-lg flex flex-col overflow-hidden`;
   } else if (isTabletPortrait) {
     const sheetHeight = isSheetExpanded ? "h-[75vh]" : "h-[40vh]";
     layoutClass = `fixed inset-x-0 bottom-0 z-30 w-full ${sheetHeight} rounded-t-[24px] border-t border-stone-200 bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.08)] flex flex-col overflow-hidden transition-all duration-300 ease-out`;
@@ -381,7 +430,7 @@ export default function PlacePreviewCard({
         )}
 
         {/* Trust row */}
-        {showDetails && (
+        {showDetails && !isDroppedPinOrAddress && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span
               className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
@@ -395,20 +444,51 @@ export default function PlacePreviewCard({
 
         {/* Distance & hours */}
         <div className="mt-3 space-y-0.5 border-t border-stone-100 pt-3">
-          <p className="text-xs font-semibold text-stone-700">{distanceLabel}</p>
-          {showDetails && hoursLabel && (
+          {isDroppedPinOrAddress ? (
+            <p className="text-xs font-semibold text-stone-700">{place.address}</p>
+          ) : (
+            <p className="text-xs font-semibold text-stone-700">{distanceLabel}</p>
+          )}
+          {showDetails && !isDroppedPinOrAddress && hoursLabel && (
             <p className="text-[11px] text-stone-500">{hoursLabel}</p>
           )}
         </div>
 
         {/* Address */}
-        {place.address && (
+        {place.address && !isDroppedPinOrAddress && (
           <div className="mt-2.5">
             <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400">
               Address
             </p>
             <p className="mt-0.5 text-xs leading-snug text-stone-700 line-clamp-2">
               {place.address}
+            </p>
+          </div>
+        )}
+
+        {/* About / Wiki Summary */}
+        {showDetails && wikiSummary?.available && wikiSummary.summary && (
+          <div className="mt-4 border-t border-stone-100 pt-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400">
+                About
+              </p>
+              {wikiSummary.url && (
+                <a 
+                  href={wikiSummary.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[9px] text-[#0F766E] hover:underline flex items-center gap-0.5"
+                >
+                  Read more
+                </a>
+              )}
+            </div>
+            <p className="mt-1.5 text-xs leading-relaxed text-stone-600 line-clamp-3">
+              {wikiSummary.summary}
+            </p>
+            <p className="mt-1 text-[9px] text-stone-400">
+              Source: {wikiSummary.attribution}
             </p>
           </div>
         )}
@@ -477,17 +557,16 @@ export default function PlacePreviewCard({
           </div>
         )}
 
-        {/* Get Directions Link */}
+        {/* Get Directions — starts Solo Live in-app */}
         {showDetails && (
           <div className="mt-3">
-            <a
-              href={directionsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={onGetDirections}
               className="text-xs font-semibold text-stone-500 hover:text-[#0F766E] hover:underline"
             >
               Get Directions →
-            </a>
+            </button>
           </div>
         )}
       </div>
@@ -502,7 +581,7 @@ export default function PlacePreviewCard({
         >
           {isDroppedPinOrAddress ? "Use this location" : "Make Destination"}
         </button>
-        {!isDrivingMode && (
+        {!isDrivingMode && !isDroppedPinOrAddress && (
           <button
             type="button"
             onClick={onStartLive}

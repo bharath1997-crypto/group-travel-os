@@ -3,6 +3,7 @@
 import { AlertTriangle, X } from "lucide-react";
 import type { PlacePreviewData } from "./PlacePreviewCard";
 import RoviPlaceExplanationBlock from "./RoviPlaceExplanationBlock";
+import { LIVE_PANEL_RIGHT_INSET } from "./live-layout";
 import type { LiveLocationContext } from "./live-location-context";
 import type { RoviPlaceExplanation } from "./live-rovi";
 import { formatDistanceMiles } from "./live-types";
@@ -38,7 +39,7 @@ export default function FarAwayPlacePanel({
 }: Props) {
   return (
     <div
-      className="absolute inset-x-0 bottom-0 z-30 flex max-h-[72vh] flex-col overflow-hidden rounded-t-2xl border border-amber-200/80 bg-white/95 shadow-[0_-8px_40px_rgba(0,0,0,0.12)] backdrop-blur-md max-lg:fixed lg:inset-x-auto lg:bottom-auto lg:right-4 lg:top-[72px] lg:w-[min(420px,calc(100%-5.5rem))] lg:max-h-[calc(100%-6.5rem)] lg:rounded-2xl lg:shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
+      className={`absolute inset-x-0 bottom-0 z-30 flex max-h-[72vh] flex-col overflow-hidden rounded-t-2xl border border-amber-200/80 bg-white/95 shadow-[0_-8px_40px_rgba(0,0,0,0.12)] backdrop-blur-md max-lg:fixed lg:inset-x-auto lg:bottom-auto ${LIVE_PANEL_RIGHT_INSET} lg:top-[72px] lg:w-[min(420px,calc(100%-6.5rem))] lg:max-h-[calc(100%-6.5rem)] lg:rounded-2xl lg:shadow-[0_8px_30px_rgba(0,0,0,0.12)]`}
       role="dialog"
       aria-label="Far-away place warning"
     >

@@ -12,8 +12,13 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
-HTTP_TIMEOUT_SECONDS = 15.0
+OVERPASS_MIRRORS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+]
+HTTP_TIMEOUT_SECONDS = 12.0
+OVERPASS_USER_AGENT = "Rovvy/1.0 (group-travel-os; contact@rovvy.app)"
 CACHE_TTL_SECONDS = 600  # 10 minutes
 MAX_CACHE_ENTRIES = 500
 
@@ -522,27 +527,40 @@ class PlacesNearbyService:
 );
 out center;"""
 
+        response = None
+        last_exc: Exception | None = None
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    OVERPASS_URL,
-                    content=overpass_query,
-                    timeout=HTTP_TIMEOUT_SECONDS,
-                )
-            if response.status_code != 200:
-                logger.warning(
-                    "Overpass API returned status code %s for category=%s lat=%s lng=%s",
-                    response.status_code,
-                    matched_key,
-                    lat,
-                    lng,
-                )
-                return []
+                for mirror_url in OVERPASS_MIRRORS:
+                    try:
+                        r = await client.post(
+                            mirror_url,
+                            data={"data": overpass_query},
+                            timeout=HTTP_TIMEOUT_SECONDS,
+                            headers={"User-Agent": OVERPASS_USER_AGENT},
+                        )
+                        if r.status_code == 200:
+                            response = r
+                            break
+                        logger.warning(
+                            "Overpass mirror %s returned %s for category=%s",
+                            mirror_url, r.status_code, matched_key,
+                        )
+                    except Exception as mirror_exc:
+                        logger.warning("Overpass mirror %s failed: %s", mirror_url, mirror_exc)
+                        last_exc = mirror_exc
+        except Exception as exc:
+            last_exc = exc
 
+        if response is None:
+            logger.error("All Overpass mirrors failed. Last error: %s", last_exc)
+            return []
+
+        try:
             data = response.json()
             elements = data.get("elements", [])
         except Exception as exc:
-            logger.error("Overpass API request failed: %s", exc)
+            logger.error("Overpass API JSON parse failed: %s", exc)
             return []
 
         # Normalize and sort results
