@@ -1,17 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import {
   Car,
   Coffee,
-  Map,
-  Navigation,
   ParkingCircle,
   Plus,
   Share2,
-  Info,
 } from "lucide-react";
-import { EXTERNAL_MAP_HANDOFF } from "@/lib/map-providers";
 import type { PlacePreviewData } from "./PlacePreviewCard";
 import type { TripStatus, RouteLine } from "./live-types";
 import {
@@ -24,13 +19,6 @@ import {
 
 const TEAL = "#0F766E";
 
-const TRIP_STATUSES: { key: TripStatus; label: string }[] = [
-  { key: "on_the_way", label: "On the way" },
-  { key: "stopping", label: "Stopping" },
-  { key: "reached", label: "Reached" },
-  { key: "running_late", label: "Running late" },
-];
-
 type Props = {
   destination: PlacePreviewData;
   travelMode: string;
@@ -42,7 +30,6 @@ type Props = {
   onShareTrip: () => void;
   onAddStop: () => void;
   routeLine: RouteLine | null;
-  onOverviewClick: () => void;
 };
 
 export default function SoloLiveNavigationOverlay({
@@ -56,9 +43,7 @@ export default function SoloLiveNavigationOverlay({
   onShareTrip,
   onAddStop,
   routeLine,
-  onOverviewClick,
 }: Props) {
-  const [statusOpen, setStatusOpen] = useState(false);
   const speedMph = speedMpsToMph(speedMps);
   const etaMin = etaMinutesFromDistance(destination.distanceM);
   const etaLabel = estimateDriveEta(destination.distanceM);
@@ -69,9 +54,6 @@ export default function SoloLiveNavigationOverlay({
   const maneuverMi = destination.distanceM
     ? Math.max(0.1, (destination.distanceM / 1609.34) * 0.35).toFixed(1)
     : "0.8";
-
-  const mapsUrl = EXTERNAL_MAP_HANDOFF.googleDirections(destination.lat, destination.lng);
-  const wazeUrl = EXTERNAL_MAP_HANDOFF.wazeNavigate(destination.lat, destination.lng);
 
   return (
     <>
@@ -140,76 +122,18 @@ export default function SoloLiveNavigationOverlay({
             { label: "Save Parking", icon: ParkingCircle, onClick: onSaveParking },
             { label: "Share Trip", icon: Share2, onClick: onShareTrip },
             { label: "Add Stop", icon: Plus, onClick: onAddStop },
-            {
-              label: "Overview",
-              icon: Map,
-              onClick: onOverviewClick,
-            },
-            {
-              label: "Waze",
-              icon: Navigation,
-              href: wazeUrl,
-            },
-            {
-              label: "Maps",
-              icon: Map,
-              href: mapsUrl,
-            },
-            {
-              label: "Status",
-              icon: Info,
-              onClick: () => setStatusOpen((v) => !v),
-            },
-          ].map(({ label, icon: Icon, onClick, href }) =>
-            href ? (
-              <a
-                key={label}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-stone-700 shadow-sm hover:bg-stone-50"
-              >
-                <Icon className="h-3.5 w-3.5" style={{ color: TEAL }} />
-                {label}
-              </a>
-            ) : (
-              <button
-                key={label}
-                type="button"
-                onClick={onClick}
-                className="flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-stone-700 shadow-sm hover:bg-stone-50"
-              >
-                <Icon className="h-3.5 w-3.5" style={{ color: TEAL }} />
-                {label}
-              </button>
-            ),
-          )}
+          ].map(({ label, icon: Icon, onClick }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={onClick}
+              className="flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-stone-700 shadow-sm hover:bg-stone-50"
+            >
+              <Icon className="h-3.5 w-3.5" style={{ color: TEAL }} />
+              {label}
+            </button>
+          ))}
         </div>
-
-        {statusOpen ? (
-          <div className="mx-auto mb-2 max-w-md rounded-xl border border-stone-200 bg-white p-3 shadow-lg">
-            <p className="mb-2 text-xs font-semibold uppercase text-stone-500">Trip status</p>
-            <div className="grid grid-cols-2 gap-2">
-              {TRIP_STATUSES.map(({ key, label }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => {
-                    onTripStatusChange(key);
-                    setStatusOpen(false);
-                  }}
-                  className={`rounded-lg border px-2 py-2 text-xs font-semibold ${
-                    tripStatus === key
-                      ? "border-[#0F766E] bg-teal-50 text-[#0F766E]"
-                      : "border-stone-200 text-stone-700"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
 
         <div className="mx-auto flex max-w-4xl items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
           <div className="grid shrink-0 grid-cols-3 gap-4 text-center">

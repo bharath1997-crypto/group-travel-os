@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { EXTERNAL_MAP_HANDOFF } from "@/lib/map-providers";
 import type { PlacePreviewData } from "./PlacePreviewCard";
 import type { LiveStage, TripStatus, RouteLine } from "./live-types";
 import { estimateDriveEta, formatDistanceMiles } from "./live-types";
@@ -43,9 +41,7 @@ export default function SoloLiveActivePanel({
   onAddStop,
   routeLine,
 }: Props) {
-  const [moreOpen, setMoreOpen] = useState(false);
   const navigating = liveStage === "solo_drive_navigation";
-  const mapsUrl = EXTERNAL_MAP_HANDOFF.googleDirections(destination.lat, destination.lng);
 
   return (
     <div
@@ -109,7 +105,7 @@ export default function SoloLiveActivePanel({
           </button>
         ) : null}
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-4 grid grid-cols-3 gap-2">
           <button
             type="button"
             onClick={onSaveParking}
@@ -131,28 +127,6 @@ export default function SoloLiveActivePanel({
           >
             Add Stop
           </button>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setMoreOpen((v) => !v)}
-              className="w-full rounded-xl border border-stone-200 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
-            >
-              More
-            </button>
-            {moreOpen ? (
-              <div className="absolute right-0 top-full z-10 mt-1 w-44 rounded-xl border border-stone-200 bg-white py-1 shadow-lg">
-                <a
-                  href={mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50"
-                  onClick={() => setMoreOpen(false)}
-                >
-                  Open in Maps →
-                </a>
-              </div>
-            ) : null}
-          </div>
         </div>
       </div>
 

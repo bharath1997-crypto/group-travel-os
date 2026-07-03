@@ -1860,7 +1860,6 @@ export default function LivePage() {
           onShareTrip={() => showToast("Share trip — coming soon.")}
           onAddStop={handleAddStopFromLive}
           routeLine={routeLine}
-          onOverviewClick={handleRouteOverview}
         />
       ) : null}
 
