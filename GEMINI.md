@@ -261,6 +261,7 @@ After every feature change, update this section in GEMINI.md:
 | Place Preview Wikipedia Enrichment | Complete | 2026-07-02 (Added backend integration via /api/v1/places/wiki-summary and frontend UI for eligible place types) |
 | Live Search Autocomplete | Complete | 2026-07-02 (Implemented robust Google Maps-style autocomplete with local place registry and OSM Nominatim fallback, optimized distance ranking, category keyword detection, and debounced AbortController-managed fetching.) |
 | Buses page | Pending | — |
+| Rovi Travel Route Intelligence | Complete | 2026-07-04 (Backend deterministic resolver + Rovi AI explanation endpoint. Frontend RoviRouteIntelligencePanel with route option cards + segment breakdown. Wired into long_distance_preview stage in Live page.) |
 
 ---
 
@@ -282,4 +283,5 @@ After every pytest run, update this section in GEMINI.md:
 | tests/test_live_group.py | Deprecated | 2026-06-25 |
 | tests/test_place_media.py | 8 | 2026-07-01 |
 | tests/test_places_nearby.py | 6 | 2026-07-01 |
+| tests/test_route_intelligence.py | 12 | 2026-07-04 |
 

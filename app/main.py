@@ -312,6 +312,10 @@ def _register_routes(app: FastAPI) -> None:
 
     app.include_router(route_discovery_router, prefix="/api/v1")
 
+    from app.routes.route_intelligence import router as route_intelligence_router
+
+    app.include_router(route_intelligence_router, prefix="/api/v1")
+
     from app.routes.activities import router as activities_router
 
     app.include_router(activities_router, prefix="/api/v1")

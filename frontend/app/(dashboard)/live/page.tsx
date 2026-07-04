@@ -76,6 +76,13 @@ import {
   type GpsState,
 } from "./live-gps";
 import { LIVE_MAP_CONTROLS_POSITION } from "./live-layout";
+import RoviRouteIntelligencePanel from "./RoviRouteIntelligencePanel";
+import {
+  fetchRouteIntelligence,
+  placeToLocationSummary,
+  userRegionToLocationSummary,
+} from "./route-intelligence";
+import type { RouteIntelligenceResponse, RouteOption } from "./route-intelligence-types";
 
 const LiveMapComponent = dynamic(() => import("./LiveMapComponent"), {
   ssr: false,
@@ -352,6 +359,12 @@ export default function LivePage() {
   const [roviExplanationError, setRoviExplanationError] = useState<string | null>(null);
   const roviExplanationCacheRef = useRef<Map<string, RoviPlaceExplanation>>(new Map());
   const userRegionLoadedRef = useRef(false);
+
+  // ─── Route Intelligence (long-distance / global destinations) ─────────────
+  const [routeIntelligenceLoading, setRouteIntelligenceLoading] = useState(false);
+  const [routeIntelligenceResponse, setRouteIntelligenceResponse] =
+    useState<RouteIntelligenceResponse | null>(null);
+  const [routeIntelligenceError, setRouteIntelligenceError] = useState<string | null>(null);
   const [placeMedia, setPlaceMedia] = useState<PlaceMediaItem[]>([]);
   const [placeTags, setPlaceTags] = useState<string[]>([]);
   const [placeMediaLoading, setPlaceMediaLoading] = useState(false);
@@ -1103,10 +1116,37 @@ export default function LivePage() {
 
   function handleContinueAnyway() {
     if (!requireSolo() || !selectedPlace) return;
-    setDestination(selectedPlace);
+    const place = selectedPlace;
+    setDestination(place);
     setIsLiveActive(false);
     setLiveStage("long_distance_preview");
     resetRoviExplanation();
+
+    // ── Trigger Route Intelligence fetch ─────────────────────────────────────
+    const destSummary = placeToLocationSummary(place);
+    const originSummary = userRegionToLocationSummary(userRegion, userLocation);
+    if (originSummary) {
+      setRouteIntelligenceLoading(true);
+      setRouteIntelligenceResponse(null);
+      setRouteIntelligenceError(null);
+      fetchRouteIntelligence(originSummary, destSummary)
+        .then((resp) => {
+          setRouteIntelligenceResponse(resp);
+        })
+        .catch((err) => {
+          setRouteIntelligenceError(
+            "Route intelligence unavailable. Check connection and try again."
+          );
+        })
+        .finally(() => {
+          setRouteIntelligenceLoading(false);
+        });
+    } else {
+      // No origin resolved — skip intelligence, just show map
+      setRouteIntelligenceError(
+        "Your location is needed to resolve route options. Enable GPS or move the map."
+      );
+    }
   }
 
   function handleSearchNearMe() {
@@ -1817,18 +1857,39 @@ export default function LivePage() {
         </div>
       )}
 
-      {showRoutePreview && destination ? (
+      {/* Route Preview — local/regional destination */}
+      {showRoutePreview && destination && !isLongDistancePreview ? (
         <SoloRoutePreviewPanel
           destination={destination}
           travelMode={travelMode}
           plannedStops={plannedStops}
-          planningMode={isLongDistancePreview}
+          planningMode={false}
           onStartSoloLive={handleStartSoloLive}
           onChangeDestination={handleChangeDestination}
           onClose={handleChangeDestination}
           onPlanTrip={handlePlanTrip}
           routeLine={activeRoute}
           routeLoading={routeLoading}
+        />
+      ) : null}
+
+      {/* Rovi Route Intelligence — long-distance / global destination */}
+      {isLongDistancePreview && destination ? (
+        <RoviRouteIntelligencePanel
+          originName={
+            userRegion?.city ??
+            userRegion?.state ??
+            userLocation ? `${userLocation.lat.toFixed(2)}, ${userLocation.lng.toFixed(2)}` : "Your location"
+          }
+          destinationName={destination.name}
+          loading={routeIntelligenceLoading}
+          error={routeIntelligenceError}
+          response={routeIntelligenceResponse}
+          onSelectOption={(option: RouteOption) => {
+            showToast(`Route selected: ${option.title}`);
+          }}
+          onClose={handleChangeDestination}
+          onPlanTrip={handlePlanTrip}
         />
       ) : null}
 
