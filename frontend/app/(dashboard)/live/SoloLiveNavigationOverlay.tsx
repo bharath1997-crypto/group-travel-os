@@ -72,27 +72,27 @@ export default function SoloLiveNavigationOverlay({
       </div>
 
       {/* Turn-by-turn card */}
-      <div className="absolute left-1/2 top-4 z-20 w-[min(440px,calc(100%-2rem))] -translate-x-1/2 rounded-2xl bg-white p-4 shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
-        <div className="flex items-start gap-3">
+      <div className="absolute left-1/2 top-4 z-20 w-[min(440px,calc(100%-2rem))] -translate-x-1/2 rounded-2xl bg-white/95 backdrop-blur-md py-5 px-5 shadow-[0_12px_38px_rgba(0,0,0,0.1)] border border-stone-100/80">
+        <div className="flex items-start gap-3.5">
           <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl font-bold text-white"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl font-bold text-white shadow-sm"
             style={{ backgroundColor: TEAL }}
           >
             ↱
           </div>
-          <div className="min-w-0">
-            <p className="text-lg font-bold leading-snug text-stone-900">
+          <div className="min-w-0 flex-1 pt-0.5">
+            <p className="text-[19px] font-extrabold leading-snug tracking-tight text-stone-900">
               {nextManeuver}
             </p>
-            <p className="mt-0.5 text-sm font-semibold text-stone-500">{maneuverMi} MI</p>
+            <p className="mt-1 text-xs font-bold text-stone-400 uppercase tracking-wider">{maneuverMi} MI</p>
           </div>
         </div>
-        <div className="mt-3 flex gap-1">
+        <div className="mt-4 flex gap-1.5">
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className={`flex h-8 flex-1 items-center justify-center rounded-md text-sm ${
-                i >= 2 ? "bg-teal-50 font-bold text-[#0F766E]" : "bg-stone-100 text-stone-400"
+              className={`flex h-9 flex-1 items-center justify-center rounded-xl text-sm transition-colors ${
+                i >= 2 ? "bg-teal-50 font-bold text-[#0F766E] border border-teal-600/10" : "bg-stone-50 text-stone-450 border border-stone-200/40"
               }`}
             >
               {i >= 2 ? "↱" : "↑"}
@@ -102,9 +102,9 @@ export default function SoloLiveNavigationOverlay({
       </div>
 
       {/* Speed */}
-      <div className="absolute bottom-[148px] left-4 z-20 rounded-2xl bg-white px-4 py-3 shadow-lg">
-        <p className="text-3xl font-bold leading-none text-stone-900">{speedMph || "—"}</p>
-        <p className="mt-1 text-[10px] font-bold tracking-wide text-stone-500">MPH</p>
+      <div className="absolute bottom-[calc(200px+env(safe-area-inset-bottom,0px))] md:bottom-[154px] left-4 z-20 rounded-2xl bg-white px-4 py-3 shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-stone-100/60">
+        <p className="text-3xl font-extrabold leading-none text-stone-900">{speedMph || "—"}</p>
+        <p className="mt-1 text-[10px] font-bold tracking-wide text-stone-400 uppercase">MPH</p>
         <div className="mt-2 flex gap-0.5">
           {[0, 1, 2, 3].map((i) => (
             <span
@@ -116,8 +116,8 @@ export default function SoloLiveNavigationOverlay({
       </div>
 
       {/* Bottom controls */}
-      <div className="absolute inset-x-0 bottom-0 z-20 px-3 pb-3">
-        <div className="mx-auto mb-2 flex max-w-4xl flex-wrap justify-center gap-2">
+      <div className="absolute left-1/2 bottom-[calc(76px+env(safe-area-inset-bottom,0px))] md:bottom-6 z-20 w-[min(440px,calc(100%-2rem))] -translate-x-1/2 flex flex-col gap-2.5">
+        <div className="flex justify-center gap-2">
           {[
             { label: "Save Parking", icon: ParkingCircle, onClick: onSaveParking },
             { label: "Share Trip", icon: Share2, onClick: onShareTrip },
@@ -127,7 +127,7 @@ export default function SoloLiveNavigationOverlay({
               key={label}
               type="button"
               onClick={onClick}
-              className="flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-stone-700 shadow-sm hover:bg-stone-50"
+              className="flex items-center gap-1.5 rounded-full border border-stone-200 bg-white/95 backdrop-blur-md px-3.5 py-2 text-[10px] font-bold uppercase tracking-wide text-stone-700 shadow-md hover:bg-stone-50 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <Icon className="h-3.5 w-3.5" style={{ color: TEAL }} />
               {label}
@@ -135,31 +135,27 @@ export default function SoloLiveNavigationOverlay({
           ))}
         </div>
 
-        <div className="mx-auto flex max-w-4xl items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
-          <div className="grid shrink-0 grid-cols-3 gap-4 text-center">
+        <div className="flex w-full items-center gap-3 rounded-2xl bg-white/95 backdrop-blur-md px-4 py-4 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-stone-100/80">
+          <div className="grid flex-1 grid-cols-3 gap-2 text-center pr-2 border-r border-stone-100">
             <div>
-              <p className="text-lg font-bold text-stone-900">{etaLabel}</p>
-              <p className="text-[10px] font-semibold uppercase text-stone-500">ETA</p>
+              <p className="text-[17px] font-black text-stone-900 leading-tight">{etaLabel}</p>
+              <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400 mt-0.5">ETA</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-stone-900">
+              <p className="text-[17px] font-black text-stone-900 leading-tight">
                 {formatDistanceMiles(destination.distanceM)}
               </p>
-              <p className="text-[10px] font-semibold uppercase text-stone-500">Distance</p>
+              <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400 mt-0.5">Distance</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-stone-900">{arrival}</p>
-              <p className="text-[10px] font-semibold uppercase text-stone-500">Arrival</p>
+              <p className="text-[17px] font-black text-stone-900 leading-tight">{arrival}</p>
+              <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400 mt-0.5">Arrival</p>
             </div>
-          </div>
-          <div className="hidden min-w-0 flex-1 items-center gap-2 sm:flex">
-            <Coffee className="h-5 w-5 shrink-0" style={{ color: TEAL }} />
-            <p className="truncate text-sm font-semibold text-stone-800">{destination.name}</p>
           </div>
           <button
             type="button"
             onClick={onEndSoloLive}
-            className="shrink-0 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold uppercase tracking-wide text-white hover:bg-red-700"
+            className="shrink-0 rounded-xl bg-red-600 px-6 py-3.5 text-xs font-black uppercase tracking-wider text-white shadow-sm hover:bg-red-700 transition-colors active:scale-[0.97]"
           >
             End
           </button>

@@ -1959,7 +1959,7 @@ export default function LivePage() {
           onSaveParking={() => showToast("Parking saved.")}
           onShareTrip={() => showToast("Share trip — coming soon.")}
           onAddStop={handleAddStopFromLive}
-          routeLine={routeLine}
+          routeLine={activeRoute}
         />
       ) : null}
 

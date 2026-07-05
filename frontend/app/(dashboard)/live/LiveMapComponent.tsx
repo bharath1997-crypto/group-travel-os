@@ -652,6 +652,15 @@ export default function LiveMapComponent({
         return;
       }
 
+      // If we have a fresh coordinate (e.g. from watchPosition), ignore temporary timeouts/errors
+      if (userLocationRef.current && userLocationRef.current.timestamp) {
+        const ageMs = Date.now() - userLocationRef.current.timestamp;
+        if (ageMs < 45000) {
+          logRovvyGps(`ignoring geolocation error/timeout in ${source} because we have a fresh coordinate (${Math.round(ageMs / 1000)}s old)`);
+          return;
+        }
+      }
+
       if (err.code === 3) {
         if (userLocationRef.current) {
           callbacksRef.current.onGpsStateChange?.({
@@ -759,16 +768,20 @@ export default function LiveMapComponent({
 
         if (forceFresh) {
           logRovvyGps("forcing fresh location request");
-          callbacksRef.current.onGpsStateChange?.({
-            status: "requesting",
-            lat: userLocationRef.current?.lat || null,
-            lng: userLocationRef.current?.lng || null,
-            accuracyMeters: userLocationRef.current?.accuracy || null,
-            heading: null,
-            speed: null,
-            timestamp: userLocationRef.current?.timestamp || null,
-            source: null,
-          });
+          const ageMs = userLocationRef.current?.timestamp ? Date.now() - userLocationRef.current.timestamp : Infinity;
+          const isFresh = userLocationRef.current && ageMs < 15000;
+          if (!isFresh) {
+            callbacksRef.current.onGpsStateChange?.({
+              status: "requesting",
+              lat: userLocationRef.current?.lat || null,
+              lng: userLocationRef.current?.lng || null,
+              accuracyMeters: userLocationRef.current?.accuracy || null,
+              heading: null,
+              speed: null,
+              timestamp: userLocationRef.current?.timestamp || null,
+              source: null,
+            });
+          }
           navigationFollowUserRef.current = true;
           navigator.geolocation.getCurrentPosition(
             (pos) => {
