@@ -35,9 +35,9 @@ const LIVE_MAP_CSS = `
   cursor: default !important;
 }
 @keyframes rovvy-gps-pulse {
-  0%   { transform: scale(0.85); opacity: 0.9; }
-  50%  { transform: scale(1.35); opacity: 0.35; }
-  100% { transform: scale(0.85); opacity: 0.9; }
+  0%   { transform: scale(1); opacity: 0.6; }
+  50%  { transform: scale(1.5); opacity: 0.15; }
+  100% { transform: scale(1); opacity: 0.6; }
 }
 `;
 
@@ -112,37 +112,28 @@ function createUserMarkerElement(liveActive: boolean, navigating: boolean): HTML
     return el;
   }
 
-  // Default: Google Maps-style blue dot with animated outer ring
-  // Uses rovvy-gps-pulse keyframes injected by injectLiveMapCursorStyle()
+  // Default: Google Maps-style blue dot — solid circle, white border, no outer ring
   el.innerHTML = `
     <div style="
       position: relative;
-      width: 22px;
-      height: 22px;
+      width: 18px;
+      height: 18px;
       pointer-events: none;
     ">
-      <!-- Pulsing outer ring -->
+      <!-- White shadow ring (border) -->
       <div style="
         position: absolute;
-        inset: -6px;
-        border-radius: 50%;
-        background: rgba(37, 99, 235, 0.25);
-        animation: rovvy-gps-pulse 2s ease-in-out infinite;
-      "></div>
-      <!-- White border ring -->
-      <div style="
-        position: absolute;
-        inset: -2px;
+        inset: 0;
         border-radius: 50%;
         background: #ffffff;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        box-shadow: 0 1px 6px rgba(0,0,0,0.28);
       "></div>
       <!-- Blue inner dot -->
       <div style="
         position: absolute;
         inset: 3px;
         border-radius: 50%;
-        background: #2563EB;
+        background: #1A73E8;
       "></div>
     </div>
   `;
@@ -409,13 +400,13 @@ function syncAccuracyLayerNow(
     id: layerId,
     type: "fill",
     source: sourceId,
-    paint: { "fill-color": "#2563EB", "fill-opacity": 0.15 },
+    paint: { "fill-color": "#1A73E8", "fill-opacity": 0.10 },
   }, beforeId);
   map.addLayer({
     id: layerOutlineId,
     type: "line",
     source: sourceId,
-    paint: { "line-color": "#2563EB", "line-width": 1, "line-opacity": 0.35 },
+    paint: { "line-color": "#1A73E8", "line-width": 1, "line-opacity": 0.25 },
   }, beforeId);
 }
 
@@ -648,15 +639,10 @@ export default function LiveMapComponent({
       accuracyMeters: number | null,
       timestamp: number | null,
     ) {
+      // Always render the accuracy halo first (behind the dot), then the dot on top
+      // This matches Google Maps behaviour: the dot is ALWAYS visible, accuracy ring is beneath it
       const displayRadius = displayAccuracyRadiusMeters(accuracyMeters);
-      if (displayRadius) {
-        userMarkerRef.current?.remove();
-        userMarkerRef.current = null;
-        syncAccuracyLayer(map, lat, lng, displayRadius);
-        return;
-      }
-
-      syncAccuracyLayer(map, lat, lng, null);
+      syncAccuracyLayer(map, lat, lng, displayRadius);
       ensureUserMarker(lat, lng, accuracyMeters, timestamp);
     }
     syncUserLocationVisualsRef.current = syncUserLocationVisuals;
