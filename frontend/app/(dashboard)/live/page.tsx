@@ -1950,18 +1950,18 @@ export default function LivePage() {
         <div className="relative flex flex-col items-center gap-1">
           <button
             type="button"
-            className={`flex h-9 w-9 items-center justify-center rounded-full shadow-lg md:h-10 md:w-10 ${
+            className={`relative flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-all duration-200 md:h-11 md:w-11 ${
               gpsStatus === "active"
-                ? "bg-blue-600 hover:bg-blue-700"
+                ? "bg-[#0D5C52] hover:bg-[#0a4a42] ring-2 ring-[#0F766E]/40"
                 : gpsStatus === "approximate"
-                ? "bg-blue-500 hover:bg-blue-600"
+                ? "bg-[#0F766E] hover:bg-[#0D5C52] ring-2 ring-[#0F766E]/30"
                 : gpsStatus === "denied"
-                ? "bg-stone-100 hover:bg-stone-200"
+                ? "bg-stone-700 hover:bg-stone-800"
                 : gpsStatus === "timeout" || gpsStatus === "error" || gpsStatus === "outdated"
-                ? "bg-amber-50 hover:bg-amber-100"
+                ? "bg-amber-700 hover:bg-amber-800"
                 : gpsStatus === "requesting"
-                ? "bg-blue-100 hover:bg-blue-200"
-                : "bg-white hover:bg-stone-100"
+                ? "bg-[#0F766E] hover:bg-[#0D5C52] animate-pulse"
+                : "bg-[#134E48] hover:bg-[#0D5C52]"
             }`}
             onClick={handleLocateClick}
             title={
@@ -1977,19 +1977,25 @@ export default function LivePage() {
             aria-label="Locate me"
           >
             {gpsStatus === "requesting" ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
             ) : (
-              <MapPin
-                className={`h-5 w-5 ${
-                  gpsStatus === "active" || gpsStatus === "approximate"
-                    ? "text-white"
-                    : gpsStatus === "denied"
-                    ? "text-stone-500"
-                    : gpsStatus === "timeout" || gpsStatus === "error" || gpsStatus === "outdated"
-                    ? "text-amber-600"
-                    : "text-stone-500"
-                }`}
-              />
+              /* Google Maps-style GPS crosshair target icon */
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                className="h-5 w-5 md:h-6 md:w-6"
+                aria-hidden="true"
+              >
+                {/* Outer ring */}
+                <circle cx="12" cy="12" r="7" stroke="white" strokeWidth="1.8" fill="none" />
+                {/* Inner filled dot */}
+                <circle cx="12" cy="12" r="2.5" fill="white" />
+                {/* Crosshair lines */}
+                <line x1="12" y1="2" x2="12" y2="5.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+                <line x1="12" y1="18.5" x2="12" y2="22" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+                <line x1="2" y1="12" x2="5.5" y2="12" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+                <line x1="18.5" y1="12" x2="22" y2="12" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
             )}
           </button>
           {gpsStatusLabel(gpsStatus) &&
