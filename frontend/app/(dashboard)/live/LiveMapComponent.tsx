@@ -503,9 +503,11 @@ export default function LiveMapComponent({
 
     map.on("click", (e) => {
       const { x, y } = e.point;
+
+      // 1. Widen the query bounding box to 32px to capture symbol hitboxes gracefully
       const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
-        [x - 10, y - 10],
-        [x + 10, y + 10]
+        [x - 16, y - 16],
+        [x + 16, y + 16]
       ];
       const features = map.queryRenderedFeatures(bbox);
 
@@ -526,8 +528,18 @@ export default function LiveMapComponent({
         showClickRipple(mapContainer.current, x, y);
       }
 
+      // 2. Fallback: if 32px box returned nothing, widen to 48px targeting symbols specifically
+      let targetedFeatures = features;
+      if (features.length === 0) {
+        const fallbackBbox: [maplibregl.PointLike, maplibregl.PointLike] = [
+          [x - 24, y - 24],
+          [x + 24, y + 24]
+        ];
+        targetedFeatures = map.queryRenderedFeatures(fallbackBbox);
+      }
+
       // Score features to find the top one
-      const scoredFeatures = features
+      const scoredFeatures = targetedFeatures
         .map((f: any) => ({ feature: f, score: scoreFeature(f) }))
         .sort((a, b) => b.score - a.score);
 
@@ -541,13 +553,13 @@ export default function LiveMapComponent({
 
       console.log("[Rovvy Map Click Feature]", {
         clicked: { lat: e.lngLat.lat, lng: e.lngLat.lng },
-        featuresCount: features.length,
+        featuresCount: targetedFeatures.length,
         candidate: topFeatureObj ? {
           layerId: topFeatureObj.layer?.id,
           sourceLayer: topFeatureObj.layer?.["source-layer"],
           properties: topFeatureObj.properties
         } : null,
-        allFeatures: features.map((f: any) => ({
+        allFeatures: targetedFeatures.map((f: any) => ({
           layerId: f.layer?.id,
           sourceLayer: f.layer?.["source-layer"],
           properties: f.properties
@@ -555,10 +567,10 @@ export default function LiveMapComponent({
       });
 
       console.log(`[Rovvy Map Feature Inspector] Clicked Lat/Lng: ${e.lngLat.lat}, ${e.lngLat.lng}`);
-      if (features.length === 0) {
+      if (targetedFeatures.length === 0) {
         console.log("[Rovvy Map Feature Inspector] Zero queryable POI/features found around this click.");
       } else {
-        const tableData = features.map((f: any) => {
+        const tableData = targetedFeatures.map((f: any) => {
           const p = f.properties || {};
           return {
             "layer.id": f.layer?.id || "",
@@ -583,14 +595,15 @@ export default function LiveMapComponent({
       setDebugInfo({
         lat: e.lngLat.lat,
         lng: e.lngLat.lng,
-        count: features.length,
-        layers: features.map((f: any) => f.layer?.id || "unknown"),
+        count: targetedFeatures.length,
+        layers: targetedFeatures.map((f: any) => f.layer?.id || "unknown"),
         topName,
         topCategory,
       });
 
-      callbacksRef.current.onMapClick?.(e.lngLat.lat, e.lngLat.lng, features);
+      callbacksRef.current.onMapClick?.(e.lngLat.lat, e.lngLat.lng, targetedFeatures);
     });
+
 
     map.on("dragstart", () => {
       if (navigationModeRef.current) {
