@@ -580,7 +580,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
           {/* Search — centered in remaining space on desktop */}
           <div className="hidden min-w-0 flex-1 items-center justify-center px-3 md:flex lg:px-6">
-            <HeaderSearchBar />
+            {pathname !== "/live" && !pathname.startsWith("/live/") && <HeaderSearchBar />}
           </div>
 
           {/* Nav tabs + profile menu — right aligned */}

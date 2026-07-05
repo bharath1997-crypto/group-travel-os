@@ -88,6 +88,7 @@ type Props = {
   onNearbyMarkerClick?: (place: any) => void;
   onMapClick?: (lat: number, lng: number, features: any[]) => void;
   onLiveGpsChange?: (active: boolean) => void;
+  onMapInteraction?: (interacting: boolean) => void;
 };
 
 function createUserMarkerElement(liveActive: boolean, navigating: boolean): HTMLDivElement {
@@ -348,6 +349,7 @@ export default function LiveMapComponent({
   onNearbyMarkerClick,
   onMapClick,
   onLiveGpsChange,
+  onMapInteraction,
 }: Props) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<maplibregl.Map | null>(null);
@@ -374,8 +376,8 @@ export default function LiveMapComponent({
   const liveGpsActiveRef = useRef(false);
   const hasCenteredOnUserRef = useRef(false);
 
-  const callbacksRef = useRef({ onGpsStateChange, onMapClick, onLiveGpsChange });
-  callbacksRef.current = { onGpsStateChange, onMapClick, onLiveGpsChange };
+  const callbacksRef = useRef({ onGpsStateChange, onMapClick, onLiveGpsChange, onMapInteraction });
+  callbacksRef.current = { onGpsStateChange, onMapClick, onLiveGpsChange, onMapInteraction };
   const isLiveActiveRef = useRef(isLiveActive);
   isLiveActiveRef.current = isLiveActive;
   const navigationModeRef = useRef(navigationMode);
@@ -491,6 +493,14 @@ export default function LiveMapComponent({
       if (navigationModeRef.current) {
         navigationFollowUserRef.current = false;
       }
+    });
+
+    map.on("movestart", () => {
+      callbacksRef.current.onMapInteraction?.(true);
+    });
+
+    map.on("moveend", () => {
+      callbacksRef.current.onMapInteraction?.(false);
     });
 
     function ensureUserMarker(lat: number, lng: number, accuracy: number | null, timestamp: number | null) {

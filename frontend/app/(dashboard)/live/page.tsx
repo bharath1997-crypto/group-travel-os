@@ -301,6 +301,7 @@ export default function LivePage() {
     useState<(typeof WORKFLOW_TYPES)[number]>("Solo");
   const [travelMode, setTravelMode] =
     useState<(typeof TRAVEL_MODES)[number]>("Drive");
+  const [isMapInteracting, setIsMapInteracting] = useState(false);
 
   const [selectedPlace, setSelectedPlace] = useState<PlacePreviewData | null>(null);
   const [destination, setDestination] = useState<PlacePreviewData | null>(null);
@@ -1385,6 +1386,7 @@ export default function LivePage() {
         nearbyResults={nearbyResults}
         onNearbyMarkerClick={handleResultClick}
         onMapClick={handleMapClick}
+        onMapInteraction={setIsMapInteracting}
       />
 
       {toast ? (
@@ -1403,14 +1405,20 @@ export default function LivePage() {
 
       {/* Floating in-map search bar & selectors */}
       {!isNavigating ? (
-        <div className="absolute top-4 left-4 z-30 flex flex-col gap-2 max-w-[calc(100%-2rem)]">
+        <div
+          className={`absolute top-4 left-4 z-30 flex flex-col gap-2 max-w-[calc(100%-2rem)] transition-all duration-300 ${
+            isMapInteracting
+              ? "opacity-0 pointer-events-none translate-y-[-10px]"
+              : "opacity-100 pointer-events-auto translate-y-0"
+          }`}
+        >
           {/* Top Row: Search Bar & Selectors */}
           <div className="flex flex-wrap items-center gap-3">
             {/* Search Bar Container */}
             <div className="relative" id="search-container">
               {/* Floating Search Bar */}
               <div
-                className="flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full bg-white/95 backdrop-blur-md shadow-lg border border-stone-200/50 w-72 sm:w-96"
+                className="flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full bg-white/95 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.08)] w-72 sm:w-96"
               >
                 <Search className="w-4 h-4 shrink-0 text-stone-400" />
                  <input
@@ -1460,7 +1468,7 @@ export default function LivePage() {
 
               {/* Autocomplete Dropdown Search Results */}
               {searchQuery.trim().length >= 2 && searchResults.length > 0 && showSearchPopup && (
-                <ul className="absolute left-0 right-0 top-full z-30 mt-1 max-h-52 overflow-auto rounded-2xl border border-stone-200/60 bg-white/95 backdrop-blur-md shadow-xl">
+                <ul className="absolute left-0 right-0 top-full z-30 mt-1 max-h-52 overflow-auto rounded-2xl bg-white/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
                   {searchResults.map((result) => {
                     const subtitleParts = [];
                     if (result.category && result.category !== "Place") subtitleParts.push(result.category);
@@ -1505,7 +1513,7 @@ export default function LivePage() {
 
               {/* Suggestions / Quick Picks Glassmorphism Card */}
               {showSuggestionsCard && (
-                <div className="absolute left-0 top-full z-30 mt-2 w-80 sm:w-96 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/30 p-4 shadow-xl text-stone-800 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute left-0 top-full z-30 mt-2 w-80 sm:w-96 rounded-2xl bg-white/95 backdrop-blur-xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)] text-stone-800 animate-in fade-in slide-in-from-top-2 duration-200">
                   {/* Recent Searches — dynamic, localStorage-backed */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -1673,33 +1681,64 @@ export default function LivePage() {
             </div>
 
             {/* Travel Mode + Workflow Selectors (Floating Pills) */}
-            <div className="flex gap-2 shrink-0">
-              <select
-                value={travelMode}
-                onChange={(e) => setTravelMode(e.target.value as (typeof TRAVEL_MODES)[number])}
-                className="rounded-full border border-stone-200/60 bg-white/90 backdrop-blur-sm px-3 py-1.5 text-xs font-semibold text-stone-700 outline-none shadow-md hover:bg-stone-50 cursor-pointer transition-colors"
-              >
-                {TRAVEL_MODES.map((mode) => (
-                  <option key={mode} value={mode}>
-                    {mode}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={workflowType}
-                onChange={(e) =>
-                  setWorkflowType(e.target.value as (typeof WORKFLOW_TYPES)[number])
-                }
-                className="rounded-full border border-stone-200/60 bg-white/90 backdrop-blur-sm px-3 py-1.5 text-xs font-semibold text-stone-700 outline-none shadow-md hover:bg-stone-50 cursor-pointer transition-colors"
-              >
-                {WORKFLOW_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              {/* Travel Mode Selector */}
+              <div className="flex gap-0.5 p-0.5 bg-white/95 backdrop-blur-md rounded-full shadow-[0_4px_18px_rgba(0,0,0,0.08)]">
+                {TRAVEL_MODES.map((mode) => {
+                  const isActive = travelMode === mode;
+                  const icons: Record<string, string> = {
+                    Drive: "🚗",
+                    Bike: "🚲",
+                    Trek: "🥾",
+                    Walk: "🚶",
+                  };
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setTravelMode(mode)}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                        isActive
+                          ? "bg-[#0F766E] text-white shadow-sm"
+                          : "text-stone-500 hover:text-stone-800 hover:bg-stone-100/50"
+                      }`}
+                    >
+                      <span className="mr-1">{icons[mode] || ""}</span>
+                      {mode}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Workflow Selector */}
+              <div className="flex gap-0.5 p-0.5 bg-white/95 backdrop-blur-md rounded-full shadow-[0_4px_18px_rgba(0,0,0,0.08)]">
+                {WORKFLOW_TYPES.map((type) => {
+                  const isActive = workflowType === type;
+                  const icons: Record<string, string> = {
+                    Solo: "👤",
+                    "Group Travel": "👥",
+                    "Seat Share": "💺",
+                  };
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setWorkflowType(type)}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                        isActive
+                          ? "bg-[#0F766E] text-white shadow-sm"
+                          : "text-stone-500 hover:text-stone-800 hover:bg-stone-100/50"
+                      }`}
+                    >
+                      <span className="mr-1">{icons[type] || ""}</span>
+                      {type}
+                    </button>
+                  );
+                })}
+              </div>
+
               <div
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shadow-md ${statusPillClass()}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shadow-[0_4px_18px_rgba(0,0,0,0.08)] ${statusPillClass()}`}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
                 {statusPillLabel()}
@@ -1709,7 +1748,7 @@ export default function LivePage() {
 
           {/* Nearby Suggestions Results Panel */}
           {nearbyCategory && !selectedPlace && (
-            <div className="w-80 sm:w-96 rounded-2xl bg-white/75 backdrop-blur-xl border border-white/30 p-4 shadow-xl text-stone-800 flex flex-col max-h-[calc(100vh-140px)] animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="w-80 sm:w-96 rounded-2xl bg-white/95 backdrop-blur-xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)] text-stone-800 flex flex-col max-h-[calc(100vh-140px)] animate-in fade-in slide-in-from-top-2 duration-200">
               {/* Header */}
               <div className="flex items-center justify-between mb-3 shrink-0">
                 <div className="flex items-center gap-2">
@@ -1879,7 +1918,7 @@ export default function LivePage() {
           originName={
             userRegion?.city ??
             userRegion?.state ??
-            userLocation ? `${userLocation.lat.toFixed(2)}, ${userLocation.lng.toFixed(2)}` : "Your location"
+            (userLocation ? `${userLocation.lat.toFixed(2)}, ${userLocation.lng.toFixed(2)}` : "Your location")
           }
           destinationName={destination.name}
           loading={routeIntelligenceLoading}
