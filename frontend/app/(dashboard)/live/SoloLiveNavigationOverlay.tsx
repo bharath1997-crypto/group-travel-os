@@ -32,6 +32,13 @@ type Props = {
   routeLine: RouteLine | null;
 };
 
+function getManeuverType(instruction: string): "left" | "right" | "straight" {
+  const instrLower = instruction.toLowerCase();
+  if (instrLower.includes("left")) return "left";
+  if (instrLower.includes("right")) return "right";
+  return "straight";
+}
+
 export default function SoloLiveNavigationOverlay({
   destination,
   travelMode,
@@ -54,6 +61,36 @@ export default function SoloLiveNavigationOverlay({
   const maneuverMi = destination.distanceM
     ? Math.max(0.1, (destination.distanceM / 1609.34) * 0.35).toFixed(1)
     : "0.8";
+
+  const mType = getManeuverType(nextManeuver);
+  let maneuverIcon = "↑";
+  let laneConfig: { arrow: string; active: boolean }[] = [];
+
+  if (mType === "left") {
+    maneuverIcon = "↰";
+    laneConfig = [
+      { arrow: "↰", active: true },
+      { arrow: "↑", active: false },
+      { arrow: "↑", active: false },
+      { arrow: "↱", active: false },
+    ];
+  } else if (mType === "right") {
+    maneuverIcon = "↱";
+    laneConfig = [
+      { arrow: "↰", active: false },
+      { arrow: "↑", active: false },
+      { arrow: "↑", active: false },
+      { arrow: "↱", active: true },
+    ];
+  } else {
+    maneuverIcon = "↑";
+    laneConfig = [
+      { arrow: "↰", active: false },
+      { arrow: "↑", active: true },
+      { arrow: "↑", active: true },
+      { arrow: "↱", active: false },
+    ];
+  }
 
   return (
     <>
@@ -78,7 +115,7 @@ export default function SoloLiveNavigationOverlay({
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl font-bold text-white shadow-sm"
             style={{ backgroundColor: TEAL }}
           >
-            ↱
+            {maneuverIcon}
           </div>
           <div className="min-w-0 flex-1 pt-0.5">
             <p className="text-[19px] font-extrabold leading-snug tracking-tight text-stone-900">
@@ -88,14 +125,14 @@ export default function SoloLiveNavigationOverlay({
           </div>
         </div>
         <div className="mt-4 flex gap-1.5">
-          {[0, 1, 2, 3].map((i) => (
+          {laneConfig.map((lane, i) => (
             <div
               key={i}
               className={`flex h-9 flex-1 items-center justify-center rounded-xl text-sm transition-colors ${
-                i >= 2 ? "bg-teal-50 font-bold text-[#0F766E] border border-teal-600/10" : "bg-stone-50 text-stone-450 border border-stone-200/40"
+                lane.active ? "bg-teal-50 font-bold text-[#0F766E] border border-teal-600/10" : "bg-stone-50 text-stone-450 border border-stone-200/40"
               }`}
             >
-              {i >= 2 ? "↱" : "↑"}
+              {lane.arrow}
             </div>
           ))}
         </div>

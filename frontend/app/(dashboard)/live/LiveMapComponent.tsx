@@ -151,6 +151,45 @@ function createUserMarkerElement(liveActive: boolean, navigating: boolean): HTML
   return el;
 }
 
+function createStartMarkerElement(): HTMLDivElement {
+  const el = document.createElement("div");
+  el.className = "rovvy-start-marker";
+  el.style.cssText = "display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; user-select: none;";
+  
+  el.innerHTML = `
+    <div style="
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      border: 2.5px solid #64748B;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="width: 4px; height: 4px; border-radius: 50%; background: #0F766E;"></div>
+    </div>
+    <div style="
+      margin-top: 4px;
+      background: #0F172A;
+      color: #FFFFFF;
+      font-family: sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 2.5px 6.5px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      white-space: nowrap;
+    ">
+      Start
+    </div>
+  `;
+  return el;
+}
+
 function createDestinationMarkerElement(navigating: boolean): HTMLDivElement {
   const el = document.createElement("div");
   if (navigating) {
@@ -273,10 +312,12 @@ function syncRouteLayer(map: maplibregl.Map, routeLine: RouteLine | null | undef
 function syncRouteLayerNow(map: maplibregl.Map, routeLine: RouteLine | null | undefined) {
   const sourceId = "live-route";
   const layerId = "live-route-line";
+  const arrowsLayerId = "live-route-arrows";
 
   if (!routeLine) {
     if (map.getLayer(layerId)) map.removeLayer(layerId);
-    if (map.getSource(sourceId)) map.removeSource(sourceId);
+    if (map.getLayer(arrowsLayerId)) map.removeLayer(arrowsLayerId);
+    if (map.getSource(sourceId)) map.getSource(sourceId);
     return;
   }
 
@@ -303,6 +344,42 @@ function syncRouteLayerNow(map: maplibregl.Map, routeLine: RouteLine | null | un
         18, routeLine.active ? 12 : 8
       ]);
       map.setPaintProperty(layerId, "line-opacity", routeLine.active ? 0.95 : 0.55);
+    }
+    if (map.getLayer(arrowsLayerId)) {
+      map.setPaintProperty(arrowsLayerId, "text-opacity", routeLine.active ? 0.85 : 0);
+    } else {
+      let beforeId: string | undefined = undefined;
+      const layers = map.getStyle().layers;
+      if (layers) {
+        const firstSymbolId = layers.find(l => l.type === 'symbol')?.id;
+        if (firstSymbolId) beforeId = firstSymbolId;
+      }
+      map.addLayer({
+        id: arrowsLayerId,
+        type: "symbol",
+        source: sourceId,
+        layout: {
+          "symbol-placement": "line",
+          "symbol-spacing": 60,
+          "text-field": "▶",
+          "text-size": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            5, 8,
+            14, 11,
+            18, 14
+          ],
+          "text-keep-upright": false,
+          "text-rotation-alignment": "map",
+          "text-pitch-alignment": "map",
+          "text-offset": [0, 0],
+        },
+        paint: {
+          "text-color": "#FFFFFF",
+          "text-opacity": routeLine.active ? 0.85 : 0,
+        },
+      }, beforeId);
     }
     return;
   }
@@ -332,6 +409,33 @@ function syncRouteLayerNow(map: maplibregl.Map, routeLine: RouteLine | null | un
         18, routeLine.active ? 12 : 8
       ],
       "line-opacity": routeLine.active ? 0.95 : 0.55,
+    },
+  }, beforeId);
+
+  map.addLayer({
+    id: arrowsLayerId,
+    type: "symbol",
+    source: sourceId,
+    layout: {
+      "symbol-placement": "line",
+      "symbol-spacing": 60,
+      "text-field": "▶",
+      "text-size": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        5, 8,
+        14, 11,
+        18, 14
+      ],
+      "text-keep-upright": false,
+      "text-rotation-alignment": "map",
+      "text-pitch-alignment": "map",
+      "text-offset": [0, 0],
+    },
+    paint: {
+      "text-color": "#FFFFFF",
+      "text-opacity": routeLine.active ? 0.85 : 0,
     },
   }, beforeId);
 }
@@ -371,6 +475,7 @@ export default function LiveMapComponent({
   } | null>(null);
   const userMarkerRef = useRef<maplibregl.Marker | null>(null);
   const placeMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const startMarkerRef = useRef<maplibregl.Marker | null>(null);
   const userLocationRef = useRef<UserLocation | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const liveGpsActiveRef = useRef(false);
@@ -822,6 +927,8 @@ export default function LiveMapComponent({
       stopLiveGps();
       userMarkerRef.current?.remove();
       userMarkerRef.current = null;
+      startMarkerRef.current?.remove();
+      startMarkerRef.current = null;
       clickedPinMarkerRef.current?.remove();
       clickedPinMarkerRef.current = null;
       map.remove();
@@ -859,6 +966,29 @@ export default function LiveMapComponent({
       map.off("styledata", applyRoute);
     };
   }, [routeLine, activeLayer]);
+
+  useEffect(() => {
+    const map = instanceRef.current;
+    if (!map) return;
+
+    if (!routeLine || !routeLine.geometry || routeLine.geometry.length === 0) {
+      startMarkerRef.current?.remove();
+      startMarkerRef.current = null;
+      return;
+    }
+
+    const startCoord = routeLine.geometry[0]; // [lng, lat]
+    if (startMarkerRef.current) {
+      startMarkerRef.current.setLngLat([startCoord[0], startCoord[1]]);
+    } else {
+      startMarkerRef.current = new maplibregl.Marker({
+        element: createStartMarkerElement(),
+        anchor: "center",
+      })
+        .setLngLat([startCoord[0], startCoord[1]])
+        .addTo(map);
+    }
+  }, [routeLine]);
 
   useEffect(() => {
     const marker = userMarkerRef.current;
