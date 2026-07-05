@@ -983,24 +983,20 @@ export default function LiveMapComponent({
     };
   }, [routeLine, activeLayer]);
 
+  // When live/navigation mode changes, swap the marker icon in-place — never create a second marker.
+  // Destroying + re-creating the marker is what caused the duplicate dot bug.
   useEffect(() => {
-    const map = instanceRef.current;
-    if (!map) return;
-    const loc = userLocationRef.current;
-    if (!loc || !shouldShowGpsDot(loc.accuracy)) {
-      userMarkerRef.current?.remove();
-      userMarkerRef.current = null;
-      return;
-    }
-
-    userMarkerRef.current?.remove();
-    userMarkerRef.current = new maplibregl.Marker({
-      element: createUserMarkerElement(isLiveActive, navigationMode),
-      anchor: "center",
-    })
-      .setLngLat([loc.lng, loc.lat])
-      .addTo(map);
+    const marker = userMarkerRef.current;
+    if (!marker) return;
+    const newEl = createUserMarkerElement(isLiveActive, navigationMode);
+    const existing = marker.getElement();
+    // Replace children: clear existing, append new inner HTML node
+    while (existing.firstChild) existing.removeChild(existing.firstChild);
+    const tmp = document.createElement("div");
+    tmp.innerHTML = newEl.innerHTML;
+    while (tmp.firstChild) existing.appendChild(tmp.firstChild);
   }, [isLiveActive, navigationMode]);
+
 
   useEffect(() => {
     const map = instanceRef.current;
