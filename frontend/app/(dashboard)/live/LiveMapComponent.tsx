@@ -256,8 +256,8 @@ function isRoutineTileFetchError(error: unknown): boolean {
     error instanceof Error
       ? error.message
       : typeof error === "string"
-      ? error
-      : "";
+        ? error
+        : "";
   return (
     message.includes("AJAXError") ||
     message.includes("Failed to fetch") ||
@@ -384,6 +384,8 @@ export default function LiveMapComponent({
   const mapFollowModeRef = useRef(mapFollowMode);
   mapFollowModeRef.current = mapFollowMode;
   const clickedPinMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const ensureUserMarkerRef = useRef<((lat: number, lng: number, accuracy: number | null, timestamp: number | null) => void) | null>(null);
+
 
   useEffect(() => {
     injectLiveMapCursorStyle();
@@ -501,11 +503,11 @@ export default function LiveMapComponent({
         })
           .setLngLat([lng, lat])
           .addTo(map);
-        
+
         const popup = new maplibregl.Popup({ closeButton: false, offset: 15, className: "user-location-popup" });
         userMarkerRef.current.setPopup(popup);
       }
-      
+
       const popup = userMarkerRef.current.getPopup();
       if (popup) {
         const ageSec = timestamp ? Math.round((Date.now() - timestamp) / 1000) : 0;
@@ -519,6 +521,8 @@ export default function LiveMapComponent({
         popup.setHTML(content);
       }
     }
+    ensureUserMarkerRef.current = ensureUserMarker;
+
 
     function applyUserLocation(
       lat: number,
@@ -534,9 +538,9 @@ export default function LiveMapComponent({
         callbacksRef.current.onLiveGpsChange?.(true);
       }
       userLocationRef.current = { lat, lng, accuracy: accuracyMeters || undefined, timestamp: timestamp || undefined };
-      
+
       ensureUserMarker(lat, lng, accuracyMeters, timestamp);
-      
+
       const ageMs = timestamp ? Date.now() - timestamp : 0;
       let newStatus: GpsStatus = "active";
       if (timestamp && ageMs > 120000) {
@@ -557,7 +561,7 @@ export default function LiveMapComponent({
         timestamp,
         source: "browser_geolocation",
       };
-      
+
       callbacksRef.current.onGpsStateChange?.(newState);
 
       if (process.env.NEXT_PUBLIC_ROVVY_MAP_DEBUG === "true") {
@@ -769,7 +773,7 @@ export default function LiveMapComponent({
           );
           return;
         }
-        
+
         if (liveGpsActiveRef.current) {
           navigationFollowUserRef.current = true;
           const loc = userLocationRef.current;
@@ -786,6 +790,7 @@ export default function LiveMapComponent({
     };
 
     return () => {
+      ensureUserMarkerRef.current = null;
       stopLiveGps();
       userMarkerRef.current?.remove();
       userMarkerRef.current = null;
@@ -794,6 +799,7 @@ export default function LiveMapComponent({
       map.remove();
       mapRef.current = null;
     };
+
   }, [mapRef]);
 
   useEffect(() => {
@@ -806,8 +812,9 @@ export default function LiveMapComponent({
       map.setMinZoom(LIVE_MAP_MIN_ZOOM);
       const loc = userLocationRef.current;
       if (loc) {
-        ensureUserMarker(loc.lat, loc.lng, loc.accuracy ?? null, loc.timestamp ?? null);
+        ensureUserMarkerRef.current?.(loc.lat, loc.lng, loc.accuracy ?? null, loc.timestamp ?? null);
       }
+
       syncRouteLayer(map, routeLine);
     });
   }, [activeLayer, routeLine]);
@@ -998,7 +1005,7 @@ export default function LiveMapComponent({
           </div>
         </div>
       )}
-      
+
       {process.env.NEXT_PUBLIC_ROVVY_MAP_DEBUG === "true" && gpsDebug && (
         <div className="absolute top-24 left-4 z-[100] bg-stone-900/90 text-stone-100 backdrop-blur-md border border-stone-800 p-3 rounded-xl shadow-lg max-w-xs text-[10px] font-mono flex flex-col gap-1 pointer-events-auto">
           <div className="font-bold text-stone-200 border-b border-stone-800 pb-1 mb-1 flex justify-between items-center">
@@ -1019,7 +1026,7 @@ export default function LiveMapComponent({
 function scoreFeature(f: any): number {
   const p = f.properties || {};
   const hasName = !!(p.name || p.display_name || p.title);
-  
+
   const isPoi = !!(
     p.amenity ||
     p.shop ||
