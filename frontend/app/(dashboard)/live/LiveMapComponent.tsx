@@ -748,6 +748,7 @@ export default function LiveMapComponent({
         }
 
         if (forceFresh) {
+          logRovvyGps("forcing fresh location request");
           callbacksRef.current.onGpsStateChange?.({
             status: "requesting",
             lat: userLocationRef.current?.lat || null,
@@ -769,7 +770,11 @@ export default function LiveMapComponent({
               }
             },
             (err) => handleGeolocationError(err, "locateUser"),
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+            {
+              enableHighAccuracy: true,
+              timeout: 30000,     // Widen timeout to 30 seconds to allow slow hardware links to hook
+              maximumAge: 10000,  // Allow a 10-second cache threshold so taps feel instant if a watch step just completed
+            },
           );
           return;
         }
