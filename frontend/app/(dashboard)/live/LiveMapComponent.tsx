@@ -22,7 +22,7 @@ import {
 import type { RouteLine, UserLocationUpdate } from "./live-types";
 import { LOCAL_LIVE_MAX_M } from "./live-types";
 
-/** Arrow-cursor + GPS pulse animation styles injected once for the Live map */
+/** Extended arrow-cursor + custom Google Maps style pulse animations */
 const LIVE_MAP_CSS = `
 .rovvy-live-map-container .maplibregl-canvas-container,
 .rovvy-live-map-container .maplibregl-canvas {
@@ -35,9 +35,14 @@ const LIVE_MAP_CSS = `
   cursor: default !important;
 }
 @keyframes rovvy-gps-pulse {
-  0%   { transform: scale(1); opacity: 0.6; }
-  50%  { transform: scale(1.5); opacity: 0.15; }
-  100% { transform: scale(1); opacity: 0.6; }
+  0% {
+    transform: scale(0.95);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
 }
 `;
 
@@ -85,55 +90,60 @@ type Props = {
   onLiveGpsChange?: (active: boolean) => void;
 };
 
-const GPS_OPTIONS: PositionOptions = {
-  enableHighAccuracy: true,
-  timeout: 15000,
-  maximumAge: 0,
-};
-
-function getLayerStyles() {
-  return getLiveMapLibreLayerStyles();
-}
-
 function createUserMarkerElement(liveActive: boolean, navigating: boolean): HTMLDivElement {
   const el = document.createElement("div");
   el.className = "gt-user-location-marker";
   el.style.cssText = "pointer-events:none;position:relative;";
 
   if (navigating) {
-    // Navigation mode: teal/blue solid dot
     el.innerHTML = `<div style="width:20px;height:20px;border-radius:50%;background:${liveActive ? "#0F766E" : "#2563EB"};border:3px solid #FFFFFF;box-shadow:0 0 14px rgba(37,99,235,0.55);"></div>`;
     return el;
   }
 
   if (liveActive) {
-    // Live mode: car emoji
     el.innerHTML = `<div style="font-size:22px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35));">🚗</div>`;
     return el;
   }
 
-  // Default: Google Maps-style blue dot — solid circle, white border, no outer ring
+  // Pure Google Maps style HTML layer marker setup
   el.innerHTML = `
     <div style="
       position: relative;
-      width: 18px;
-      height: 18px;
-      pointer-events: none;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     ">
-      <!-- White shadow ring (border) -->
       <div style="
         position: absolute;
-        inset: 0;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(26, 115, 232, 0.2);
+        border: 1px solid rgba(26, 115, 232, 0.35);
+        animation: rovvy-gps-pulse 2.2s infinite cubic-bezier(0.25, 0, 0, 1);
+        pointer-events: none;
+        z-index: 1;
+      "></div>
+
+      <div style="
+        position: absolute;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
         background: #ffffff;
-        box-shadow: 0 1px 6px rgba(0,0,0,0.28);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+        z-index: 2;
       "></div>
-      <!-- Blue inner dot -->
+
       <div style="
         position: absolute;
-        inset: 3px;
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
         background: #1A73E8;
+        z-index: 3;
       "></div>
     </div>
   `;
@@ -150,7 +160,6 @@ function createDestinationMarkerElement(navigating: boolean): HTMLDivElement {
   return el;
 }
 
-/** Teal map-click pin — distinct from the destination 📍 and from the blue user dot */
 function createClickedPinMarkerElement(): HTMLDivElement {
   const el = document.createElement("div");
   el.style.cssText = "pointer-events:none;";
@@ -163,7 +172,6 @@ function createClickedPinMarkerElement(): HTMLDivElement {
       align-items: flex-start;
       justify-content: center;
     ">
-      <!-- pin body -->
       <div style="
         width: 24px;
         height: 24px;
@@ -178,7 +186,6 @@ function createClickedPinMarkerElement(): HTMLDivElement {
   return el;
 }
 
-/** Show a brief ripple at the screen pixel position then remove it. */
 function showClickRipple(container: HTMLElement, x: number, y: number): void {
   const ripple = document.createElement("div");
   ripple.style.cssText = `
@@ -196,7 +203,6 @@ function showClickRipple(container: HTMLElement, x: number, y: number): void {
     animation: rovvy-ripple 0.75s ease-out forwards;
   `;
 
-  // Inject animation keyframes once
   if (!document.getElementById("rovvy-ripple-keyframes")) {
     const style = document.createElement("style");
     style.id = "rovvy-ripple-keyframes";
@@ -240,7 +246,6 @@ function whenMapStyleReady(map: maplibregl.Map, fn: () => void): void {
     try {
       fn();
     } catch {
-      // Style can still be mid-swap; next GPS tick or styledata will retry.
     }
   };
   map.on("styledata", run);
@@ -287,11 +292,7 @@ function syncRouteLayerNow(map: maplibregl.Map, routeLine: RouteLine | null | un
   if (existing) {
     existing.setData(data);
     if (map.getLayer(layerId)) {
-      map.setPaintProperty(
-        layerId,
-        "line-color",
-        routeLine.active ? "#0F766E" : "#64748b",
-      );
+      map.setPaintProperty(layerId, "line-color", routeLine.active ? "#0F766E" : "#64748b");
       map.setPaintProperty(layerId, "line-width", [
         "interpolate",
         ["linear"],
@@ -331,82 +332,6 @@ function syncRouteLayerNow(map: maplibregl.Map, routeLine: RouteLine | null | un
       ],
       "line-opacity": routeLine.active ? 0.95 : 0.55,
     },
-  }, beforeId);
-}
-
-function syncAccuracyLayer(
-  map: maplibregl.Map,
-  lat: number,
-  lng: number,
-  accuracyMeters: number | null,
-) {
-  whenMapStyleReady(map, () => syncAccuracyLayerNow(map, lat, lng, accuracyMeters));
-}
-
-function syncAccuracyLayerNow(
-  map: maplibregl.Map,
-  lat: number,
-  lng: number,
-  accuracyMeters: number | null,
-) {
-  const sourceId = "user-accuracy";
-  const layerId = "user-accuracy-fill";
-  const layerOutlineId = "user-accuracy-outline";
-
-  if (!accuracyMeters || accuracyMeters <= 20) {
-    if (map.getLayer(layerId)) map.removeLayer(layerId);
-    if (map.getLayer(layerOutlineId)) map.removeLayer(layerOutlineId);
-    if (map.getSource(sourceId)) map.removeSource(sourceId);
-    return;
-  }
-
-  // Create circle polygon
-  const points = 64;
-  const coords = [];
-  const R = 6378137;
-  for (let i = 0; i < points; i++) {
-    const theta = (i / points) * (2 * Math.PI);
-    const dx = accuracyMeters * Math.cos(theta);
-    const dy = accuracyMeters * Math.sin(theta);
-    const latOffset = (dy / R) * (180 / Math.PI);
-    const lngOffset = (dx / (R * Math.cos((lat * Math.PI) / 180))) * (180 / Math.PI);
-    coords.push([lng + lngOffset, lat + latOffset]);
-  }
-  coords.push(coords[0]);
-
-  const data: GeoJSON.Feature<GeoJSON.Polygon> = {
-    type: "Feature",
-    properties: {},
-    geometry: { type: "Polygon", coordinates: [coords] },
-  };
-
-  const existing = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;
-  if (existing) {
-    existing.setData(data);
-    return;
-  }
-
-  map.addSource(sourceId, { type: "geojson", data });
-  
-  // Try to insert below labels and symbols if possible, otherwise just add
-  let beforeId: string | undefined = undefined;
-  const layers = map.getStyle().layers;
-  if (layers) {
-    const firstSymbolId = layers.find(l => l.type === 'symbol')?.id;
-    if (firstSymbolId) beforeId = firstSymbolId;
-  }
-
-  map.addLayer({
-    id: layerId,
-    type: "fill",
-    source: sourceId,
-    paint: { "fill-color": "#1A73E8", "fill-opacity": 0.10 },
-  }, beforeId);
-  map.addLayer({
-    id: layerOutlineId,
-    type: "line",
-    source: sourceId,
-    paint: { "line-color": "#1A73E8", "line-width": 1, "line-opacity": 0.25 },
   }, beforeId);
 }
 
@@ -459,9 +384,6 @@ export default function LiveMapComponent({
   const mapFollowModeRef = useRef(mapFollowMode);
   mapFollowModeRef.current = mapFollowMode;
   const clickedPinMarkerRef = useRef<maplibregl.Marker | null>(null);
-  const syncUserLocationVisualsRef = useRef<
-    ((lat: number, lng: number, accuracyMeters: number | null, timestamp: number | null) => void) | null
-  >(null);
 
   useEffect(() => {
     injectLiveMapCursorStyle();
@@ -474,12 +396,12 @@ export default function LiveMapComponent({
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    const layerStyles = getLayerStyles();
+    const layerStyles = getLiveMapLibreLayerStyles();
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: layerStyles[activeLayer] || layerStyles.street,
-      center: [-73.9855, 40.7484],
-      zoom: 13,
+      center: [-87.726, 41.922], // Pulaski Road, Chicago baseline coordinates
+      zoom: 14,
       minZoom: LIVE_MAP_MIN_ZOOM,
       maxZoom: LIVE_MAP_MAX_ZOOM,
       attributionControl: false,
@@ -503,15 +425,12 @@ export default function LiveMapComponent({
 
     map.on("click", (e) => {
       const { x, y } = e.point;
-
-      // 1. Widen the query bounding box to 32px to capture symbol hitboxes gracefully
       const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
         [x - 16, y - 16],
         [x + 16, y + 16]
       ];
       const features = map.queryRenderedFeatures(bbox);
 
-      // ── Place teal dropped-pin marker immediately at clicked coordinate ──
       if (clickedPinMarkerRef.current) {
         clickedPinMarkerRef.current.remove();
         clickedPinMarkerRef.current = null;
@@ -523,12 +442,10 @@ export default function LiveMapComponent({
         .setLngLat([e.lngLat.lng, e.lngLat.lat])
         .addTo(map);
 
-      // ── Show ripple at click pixel position ──
       if (mapContainer.current) {
         showClickRipple(mapContainer.current, x, y);
       }
 
-      // 2. Fallback: if 32px box returned nothing, widen to 48px targeting symbols specifically
       let targetedFeatures = features;
       if (features.length === 0) {
         const fallbackBbox: [maplibregl.PointLike, maplibregl.PointLike] = [
@@ -538,7 +455,6 @@ export default function LiveMapComponent({
         targetedFeatures = map.queryRenderedFeatures(fallbackBbox);
       }
 
-      // Score features to find the top one
       const scoredFeatures = targetedFeatures
         .map((f: any) => ({ feature: f, score: scoreFeature(f) }))
         .sort((a, b) => b.score - a.score);
@@ -549,47 +465,6 @@ export default function LiveMapComponent({
       if (topFeatureObj) {
         const p = topFeatureObj.properties || {};
         topCategory = formatCategoryLabel(p.type || p.class || p.amenity, p.class);
-      }
-
-      console.log("[Rovvy Map Click Feature]", {
-        clicked: { lat: e.lngLat.lat, lng: e.lngLat.lng },
-        featuresCount: targetedFeatures.length,
-        candidate: topFeatureObj ? {
-          layerId: topFeatureObj.layer?.id,
-          sourceLayer: topFeatureObj.layer?.["source-layer"],
-          properties: topFeatureObj.properties
-        } : null,
-        allFeatures: targetedFeatures.map((f: any) => ({
-          layerId: f.layer?.id,
-          sourceLayer: f.layer?.["source-layer"],
-          properties: f.properties
-        }))
-      });
-
-      console.log(`[Rovvy Map Feature Inspector] Clicked Lat/Lng: ${e.lngLat.lat}, ${e.lngLat.lng}`);
-      if (targetedFeatures.length === 0) {
-        console.log("[Rovvy Map Feature Inspector] Zero queryable POI/features found around this click.");
-      } else {
-        const tableData = targetedFeatures.map((f: any) => {
-          const p = f.properties || {};
-          return {
-            "layer.id": f.layer?.id || "",
-            "source": f.layer?.source || "",
-            "sourceLayer": f.layer?.["source-layer"] || "",
-            "geometry.type": f.geometry?.type || "",
-            "name": p.name || p.display_name || p.title || "",
-            "class": p.class || "",
-            "type": p.type || "",
-            "amenity": p.amenity || "",
-            "shop": p.shop || "",
-            "tourism": p.tourism || "",
-            "leisure": p.leisure || "",
-            "highway": p.highway || "",
-            "osm_id": p.osm_id || "",
-            "id": p.id || ""
-          };
-        });
-        console.table(tableData);
       }
 
       setDebugInfo({
@@ -603,7 +478,6 @@ export default function LiveMapComponent({
 
       callbacksRef.current.onMapClick?.(e.lngLat.lat, e.lngLat.lng, targetedFeatures);
     });
-
 
     map.on("dragstart", () => {
       if (navigationModeRef.current) {
@@ -646,20 +520,6 @@ export default function LiveMapComponent({
       }
     }
 
-    function syncUserLocationVisuals(
-      lat: number,
-      lng: number,
-      accuracyMeters: number | null,
-      timestamp: number | null,
-    ) {
-      // Always render the accuracy halo first (behind the dot), then the dot on top
-      // This matches Google Maps behaviour: the dot is ALWAYS visible, accuracy ring is beneath it
-      const displayRadius = displayAccuracyRadiusMeters(accuracyMeters);
-      syncAccuracyLayer(map, lat, lng, displayRadius);
-      ensureUserMarker(lat, lng, accuracyMeters, timestamp);
-    }
-    syncUserLocationVisualsRef.current = syncUserLocationVisuals;
-
     function applyUserLocation(
       lat: number,
       lng: number,
@@ -674,22 +534,9 @@ export default function LiveMapComponent({
         callbacksRef.current.onLiveGpsChange?.(true);
       }
       userLocationRef.current = { lat, lng, accuracy: accuracyMeters || undefined, timestamp: timestamp || undefined };
-      syncUserLocationVisuals(lat, lng, accuracyMeters, timestamp);
-
-      if (process.env.NODE_ENV === "development" && shouldShowGpsDot(accuracyMeters)) {
-        const markerCenter = userMarkerRef.current?.getLngLat();
-        const circleCenter = { lng, lat };
-        if (markerCenter && (Math.abs(markerCenter.lng - circleCenter.lng) > 0.00001 || Math.abs(markerCenter.lat - circleCenter.lat) > 0.00001)) {
-          console.warn("[Rovvy GPS] Marker/circle center mismatch", {
-            markerCenter,
-            circleCenter,
-            lat,
-            lng
-          });
-        }
-      }
       
-      // Update GpsStatus based on accuracy/freshness
+      ensureUserMarker(lat, lng, accuracyMeters, timestamp);
+      
       const ageMs = timestamp ? Date.now() - timestamp : 0;
       let newStatus: GpsStatus = "active";
       if (timestamp && ageMs > 120000) {
@@ -847,12 +694,6 @@ export default function LiveMapComponent({
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude, accuracy, speed, heading } = pos.coords;
-          logRovvyGps("first fix", {
-            lat: latitude,
-            lng: longitude,
-            accuracy,
-            timeout: false,
-          });
           applyUserLocation(latitude, longitude, true, speed, heading, accuracy, pos.timestamp);
         },
         (err) => handleGeolocationError(err, "getCurrentPosition"),
@@ -862,11 +703,6 @@ export default function LiveMapComponent({
       watchIdRef.current = navigator.geolocation.watchPosition(
         (pos) => {
           const { latitude, longitude, accuracy, speed, heading } = pos.coords;
-          logRovvyGps("watchPosition update", {
-            lat: latitude,
-            lng: longitude,
-            accuracy,
-          });
           applyUserLocation(latitude, longitude, false, speed, heading, accuracy, pos.timestamp);
         },
         (err) => handleGeolocationError(err, "watchPosition"),
@@ -908,7 +744,6 @@ export default function LiveMapComponent({
         }
 
         if (forceFresh) {
-          logRovvyGps("forcing fresh location request");
           callbacksRef.current.onGpsStateChange?.({
             status: "requesting",
             lat: userLocationRef.current?.lat || null,
@@ -951,7 +786,6 @@ export default function LiveMapComponent({
     };
 
     return () => {
-      syncUserLocationVisualsRef.current = null;
       stopLiveGps();
       userMarkerRef.current?.remove();
       userMarkerRef.current = null;
@@ -964,7 +798,7 @@ export default function LiveMapComponent({
 
   useEffect(() => {
     if (!instanceRef.current) return;
-    const layerStyles = getLayerStyles();
+    const layerStyles = getLiveMapLibreLayerStyles();
     const map = instanceRef.current;
     map.setStyle(layerStyles[activeLayer] || layerStyles.street);
     map.once("style.load", () => {
@@ -972,12 +806,7 @@ export default function LiveMapComponent({
       map.setMinZoom(LIVE_MAP_MIN_ZOOM);
       const loc = userLocationRef.current;
       if (loc) {
-        syncUserLocationVisualsRef.current?.(
-          loc.lat,
-          loc.lng,
-          loc.accuracy ?? null,
-          loc.timestamp ?? null,
-        );
+        ensureUserMarker(loc.lat, loc.lng, loc.accuracy ?? null, loc.timestamp ?? null);
       }
       syncRouteLayer(map, routeLine);
     });
@@ -996,20 +825,16 @@ export default function LiveMapComponent({
     };
   }, [routeLine, activeLayer]);
 
-  // When live/navigation mode changes, swap the marker icon in-place — never create a second marker.
-  // Destroying + re-creating the marker is what caused the duplicate dot bug.
   useEffect(() => {
     const marker = userMarkerRef.current;
     if (!marker) return;
     const newEl = createUserMarkerElement(isLiveActive, navigationMode);
     const existing = marker.getElement();
-    // Replace children: clear existing, append new inner HTML node
     while (existing.firstChild) existing.removeChild(existing.firstChild);
     const tmp = document.createElement("div");
     tmp.innerHTML = newEl.innerHTML;
     while (tmp.firstChild) existing.appendChild(tmp.firstChild);
   }, [isLiveActive, navigationMode]);
-
 
   useEffect(() => {
     const map = instanceRef.current;
@@ -1036,8 +861,6 @@ export default function LiveMapComponent({
       .addTo(map);
   }, [mapPin, navigationMode]);
 
-  // Remove the teal clicked-pin when a proper mapPin (destination/selected place) is provided,
-  // so we don't show two pins at once after the user makes a destination.
   useEffect(() => {
     if (mapPin && clickedPinMarkerRef.current) {
       clickedPinMarkerRef.current.remove();
