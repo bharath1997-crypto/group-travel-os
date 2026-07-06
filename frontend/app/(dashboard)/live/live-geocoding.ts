@@ -62,6 +62,19 @@ export type SearchBias = {
   lng: number;
 };
 
+export type SearchPlaceSource = "osm_local" | "osm_provider" | "fallback";
+
+export type SearchPlace = {
+  id: string;
+  name: string;
+  address?: string;
+  latitude: number;
+  longitude: number;
+  category?: string;
+  distanceMeters?: number;
+  source: SearchPlaceSource;
+};
+
 export type AutocompleteResult = {
   id: string;
   placeKey: string;
@@ -78,6 +91,41 @@ export type AutocompleteResult = {
   tags: Record<string, string>;
 };
 
+const SEARCH_RADIUS_KM = 10;
+const SEARCH_LIMIT = 8;
+const SEARCH_DEBOUNCE_MS = 300;
+
+function formatDistanceLabel(distanceMeters: number | null | undefined): string | null {
+  if (distanceMeters == null) return null;
+  const miles = distanceMeters / 1609.34;
+  if (miles > 0.1) return `${miles.toFixed(1)} mi`;
+  return `${Math.round(distanceMeters)} m`;
+}
+
+function mapSearchPlaceToAutocomplete(result: SearchPlace): AutocompleteResult {
+  const distM = result.distanceMeters ?? null;
+  return {
+    id: result.id,
+    placeKey: result.id,
+    name: result.name,
+    category: result.category || "Place",
+    address: result.address || "",
+    lat: result.latitude,
+    lng: result.longitude,
+    distanceMeters: distM,
+    distanceLabel: formatDistanceLabel(distM),
+    source: result.source,
+    matchType: "text",
+    score: 0,
+    tags: {},
+  };
+}
+
+function logLiveSearchDebug(event: string, payload: Record<string, unknown>) {
+  if (process.env.NEXT_PUBLIC_ROVVY_MAP_DEBUG !== "true") return;
+  console.info(`[Rovvy Live Search] ${event}`, payload);
+}
+
 export async function liveAutocompleteSearch(
   query: string,
   bias?: SearchBias | null,
@@ -86,24 +134,38 @@ export async function liveAutocompleteSearch(
   const q = query.trim();
   if (q.length < 2) return [];
 
-  const params = new URLSearchParams({ q });
+  const params = new URLSearchParams({
+    q,
+    radius_km: String(SEARCH_RADIUS_KM),
+    limit: String(SEARCH_LIMIT),
+  });
   if (bias) {
     params.set("lat", String(bias.lat));
     params.set("lng", String(bias.lng));
   }
 
+  logLiveSearchDebug("request", {
+    query: q,
+    bias,
+    url: `/search/places?${params.toString()}`,
+  });
+
   try {
-    // Note: If apiFetch supports abort signals, pass it; otherwise omit it
-    const data = await apiFetch<{ results: AutocompleteResult[] }>(
-      `/places/autocomplete?${params.toString()}`,
-      abortSignal ? { signal: abortSignal } : undefined
+    const data = await apiFetch<{ results: SearchPlace[] }>(
+      `/search/places?${params.toString()}`,
+      abortSignal ? { signal: abortSignal } : undefined,
     );
-    return data?.results || [];
+    const results = (data?.results || []).map(mapSearchPlaceToAutocomplete);
+    logLiveSearchDebug("response", { query: q, count: results.length });
+    return results;
   } catch (err: any) {
-    if (err.name === 'AbortError') throw err;
+    if (err.name === "AbortError") throw err;
+    logLiveSearchDebug("error", { query: q, message: err?.message || "unknown" });
     return [];
   }
 }
+
+export { SEARCH_DEBOUNCE_MS };
 
 function searchCacheKey(query: string, bias?: SearchBias | null): string {
   const q = query.trim().toLowerCase();

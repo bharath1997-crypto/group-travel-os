@@ -23,6 +23,11 @@ CATEGORY_KEYWORD_MAP = {
     "hospital": "hospital",
     "parking": "parking",
     "atm": "atm",
+    "park": "parks",
+    "parks": "parks",
+    "hotel": "hotel",
+    "hotels": "hotel",
+    "motel": "hotel",
 }
 
 def _normalize_string(s: str) -> str:
@@ -88,6 +93,37 @@ def _calculate_score(name: str, query: str, distance_meters: float | None) -> fl
     return (text_score * 1000) - distance_penalty
 
 
+def _map_source_label(raw_source: str) -> str:
+    if raw_source in {"osm", "rovvy_category"}:
+        return "osm_local"
+    if raw_source == "nominatim":
+        return "osm_provider"
+    return "fallback"
+
+
+def _format_distance_label(distance_meters: float | None) -> str | None:
+    if distance_meters is None:
+        return None
+    miles = distance_meters / 1609.34
+    if miles > 0.1:
+        return f"{round(miles, 1)} mi"
+    return f"{round(distance_meters)} m"
+
+
+def _autocomplete_item_to_search_place(item: dict[str, Any]) -> dict[str, Any]:
+    dist_m = item.get("distanceMeters")
+    return {
+        "id": item["id"],
+        "name": item["name"],
+        "address": item.get("address"),
+        "latitude": item["lat"],
+        "longitude": item["lng"],
+        "category": item.get("category"),
+        "distanceMeters": round(dist_m) if dist_m is not None else None,
+        "source": _map_source_label(item.get("source", "fallback")),
+    }
+
+
 class PlaceAutocompleteService:
     @staticmethod
     async def autocomplete(
@@ -134,9 +170,43 @@ class PlaceAutocompleteService:
                 })
             return out
 
-        results_map = {}
+        results_map: dict[str, dict[str, Any]] = {}
 
-        # 2. Search local PlaceRegistry
+        # 2. Nearby OSM text search when coordinates are available
+        if lat is not None and lng is not None:
+            osm_text_results = await PlacesNearbyService.search_places_by_text(
+                query=q,
+                lat=lat,
+                lng=lng,
+                radius_meters=min(radius_meters, 15000),
+                limit=max(limit, 12),
+            )
+            for item in osm_text_results:
+                dist_m = item.get("distanceMiles", 0.0) * 1609.34
+                score = _calculate_score(item["name"], q, dist_m)
+                tags = item.get("tags") or {}
+                category = item.get("category") or "Place"
+                if score <= 0 and n_query not in category.lower():
+                    continue
+                if score <= 0:
+                    score = 40.0
+                results_map[item["placeKey"]] = {
+                    "id": item["id"],
+                    "placeKey": item["placeKey"],
+                    "name": item["name"],
+                    "category": category,
+                    "address": item["address"],
+                    "lat": item["lat"],
+                    "lng": item["lng"],
+                    "distanceMeters": dist_m,
+                    "distanceLabel": _format_distance_label(dist_m),
+                    "source": "osm",
+                    "matchType": "text" if score >= 50 else "category",
+                    "score": score,
+                    "tags": tags,
+                }
+
+        # 3. Search local PlaceRegistry
         stmt = select(PlaceRegistry).where(PlaceRegistry.name.ilike(f"%{q}%")).limit(20)
         local_places = (await db.execute(stmt)).scalars().all()
         for place in local_places:
@@ -168,7 +238,7 @@ class PlaceAutocompleteService:
                     "tags": {}
                 }
 
-        # 3. Fallback to Nominatim if we need more results
+        # 4. Fallback to Nominatim if we need more results
         if len(results_map) < limit:
             nominatim_results = await GeocodingService.search_address(q, lat, lng)
             for nom in nominatim_results:
@@ -225,3 +295,23 @@ class PlaceAutocompleteService:
         final_results.sort(key=lambda x: x["score"], reverse=True)
         
         return final_results[:limit]
+
+    @staticmethod
+    async def search_places(
+        db: AsyncSession,
+        q: str,
+        lat: float | None = None,
+        lng: float | None = None,
+        radius_km: float = 10.0,
+        limit: int = 8,
+    ) -> list[dict[str, Any]]:
+        radius_meters = max(500, min(int(radius_km * 1000), 50000))
+        raw_results = await PlaceAutocompleteService.autocomplete(
+            db=db,
+            q=q,
+            lat=lat,
+            lng=lng,
+            limit=limit,
+            radius_meters=radius_meters,
+        )
+        return [_autocomplete_item_to_search_place(item) for item in raw_results]

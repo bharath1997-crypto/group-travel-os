@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 import time
 from typing import Any
 
@@ -303,6 +304,12 @@ CATEGORY_TAG_QUERIES: dict[str, list[str]] = {
         'node["amenity"="parking"](around:{radius},{lat},{lng});',
         'way["amenity"="parking"](around:{radius},{lat},{lng});',
     ],
+    "hotel": [
+        'node["tourism"="hotel"](around:{radius},{lat},{lng});',
+        'way["tourism"="hotel"](around:{radius},{lat},{lng});',
+        'node["tourism"="motel"](around:{radius},{lat},{lng});',
+        'way["tourism"="motel"](around:{radius},{lat},{lng});',
+    ],
     "all": [
         'node["amenity"~"fuel|cafe|restaurant|fast_food|toilets|hospital|clinic|pharmacy|atm|bank|parking|pub|bar|cinema|theatre|library|school|college|university|place_of_worship"](around:{radius},{lat},{lng});',
         'way["amenity"~"fuel|cafe|restaurant|fast_food|toilets|hospital|clinic|pharmacy|atm|bank|parking|pub|bar|cinema|theatre|library|school|college|university|place_of_worship"](around:{radius},{lat},{lng});',
@@ -577,6 +584,93 @@ out center;"""
         _nearby_cache[cache_key] = (now + CACHE_TTL_SECONDS, normalized_results[:50])
         _prune_cache()
 
+        return normalized_results[:limit]
+
+    @staticmethod
+    def _escape_overpass_regex(value: str) -> str:
+        return re.sub(r'([.*+?^${}()|[\]\\])', r"\\\1", value.strip())
+
+    @staticmethod
+    async def search_places_by_text(
+        query: str,
+        lat: float,
+        lng: float,
+        radius_meters: int = 10000,
+        limit: int = 8,
+    ) -> list[dict[str, Any]]:
+        """Search nearby named OSM POIs by name, brand, or operator within a radius."""
+        clean_q = query.strip()
+        if len(clean_q) < 2:
+            return []
+
+        pattern = PlacesNearbyService._escape_overpass_regex(clean_q)
+        rounded_lat = round(lat, 3)
+        rounded_lng = round(lng, 3)
+        cache_key = ("text", pattern.lower(), rounded_lat, rounded_lng, radius_meters)
+
+        now = time.time()
+        cached = _nearby_cache.get(cache_key)
+        if cached and cached[0] > now:
+            return cached[1][:limit]
+
+        overpass_query = f"""[out:json][timeout:15];
+(
+  node["name"~"{pattern}",i](around:{radius_meters},{lat},{lng});
+  way["name"~"{pattern}",i](around:{radius_meters},{lat},{lng});
+  node["brand"~"{pattern}",i](around:{radius_meters},{lat},{lng});
+  way["brand"~"{pattern}",i](around:{radius_meters},{lat},{lng});
+  node["operator"~"{pattern}",i](around:{radius_meters},{lat},{lng});
+  way["operator"~"{pattern}",i](around:{radius_meters},{lat},{lng});
+);
+out center;"""
+
+        response = None
+        last_exc: Exception | None = None
+        try:
+            async with httpx.AsyncClient() as client:
+                for mirror_url in OVERPASS_MIRRORS:
+                    try:
+                        r = await client.post(
+                            mirror_url,
+                            data={"data": overpass_query},
+                            timeout=HTTP_TIMEOUT_SECONDS,
+                            headers={"User-Agent": OVERPASS_USER_AGENT},
+                        )
+                        if r.status_code == 200:
+                            response = r
+                            break
+                        logger.warning(
+                            "Overpass mirror %s returned %s for text query=%s",
+                            mirror_url,
+                            r.status_code,
+                            clean_q,
+                        )
+                    except Exception as mirror_exc:
+                        logger.warning("Overpass mirror %s failed: %s", mirror_url, mirror_exc)
+                        last_exc = mirror_exc
+        except Exception as exc:
+            last_exc = exc
+
+        if response is None:
+            logger.error("All Overpass mirrors failed for text search. Last error: %s", last_exc)
+            return []
+
+        try:
+            data = response.json()
+            elements = data.get("elements", [])
+        except Exception as exc:
+            logger.error("Overpass text search JSON parse failed: %s", exc)
+            return []
+
+        normalized_results: list[dict[str, Any]] = []
+        for elem in elements:
+            norm = normalize_poi_result(elem, lat, lng)
+            if norm:
+                normalized_results.append(norm)
+
+        normalized_results.sort(key=lambda x: x["distanceMiles"])
+        _nearby_cache[cache_key] = (now + CACHE_TTL_SECONDS, normalized_results[:50])
+        _prune_cache()
         return normalized_results[:limit]
 
     @staticmethod

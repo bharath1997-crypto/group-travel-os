@@ -221,3 +221,35 @@ def test_resolve_click_fallback_dropped_pin():
         assert body["place"]["category"] == "Dropped pin"
         assert body["place"]["source"] == "dropped_pin"
 
+
+def test_search_places_endpoint():
+    mock_results = [
+        {
+            "id": "osm:node:22222",
+            "name": "Starbucks",
+            "address": "123 Main St, Chicago, IL",
+            "latitude": 41.8781,
+            "longitude": -87.6298,
+            "category": "Cafe",
+            "distanceMeters": 620,
+            "source": "osm_local",
+        }
+    ]
+
+    with patch(
+        "app.services.place_autocomplete_service.PlaceAutocompleteService.search_places",
+        new_callable=AsyncMock,
+    ) as mock_search:
+        mock_search.return_value = mock_results
+
+        res = client.get(
+            "/api/v1/search/places",
+            params={"q": "coffee", "lat": 41.8781, "lng": -87.6298, "radius_km": 10, "limit": 8},
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert len(body["results"]) == 1
+        assert body["results"][0]["name"] == "Starbucks"
+        assert body["results"][0]["latitude"] == 41.8781
+        assert body["results"][0]["source"] == "osm_local"
+

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { geolocationUnavailableMessage, haversineM } from "@/lib/geo";
@@ -18,7 +18,13 @@ import {
   LIVE_MAP_MAX_ZOOM,
   LIVE_MAP_MIN_ZOOM,
   warnIfUnsafeProductionTiles,
+  type LiveMapLayer,
 } from "@/lib/map-providers";
+import {
+  mapSupportsLabelSearch,
+  searchVisibleMapLabels,
+} from "./live-map-labels";
+import type { AutocompleteResult } from "./live-geocoding";
 import type { RouteLine, UserLocationUpdate } from "./live-types";
 import { LOCAL_LIVE_MAX_M } from "./live-types";
 
@@ -68,6 +74,13 @@ export type LiveMapRef = {
   getMapCenter: () => UserLocation | null;
   isLiveGpsActive: () => boolean;
   clearClickedPin: () => void;
+  flyToPlace: (lat: number, lng: number, zoom?: number) => void;
+  searchMapLabels: (
+    query: string,
+    anchor: { lat: number; lng: number } | null,
+    limit?: number,
+  ) => AutocompleteResult[];
+  supportsLabelSearch: () => boolean;
   resetNorth: () => void;
   getBearing: () => number;
   fitBounds: (bounds: [[number, number], [number, number]]) => void;
@@ -76,7 +89,7 @@ export type LiveMapRef = {
 export type MapFollowMode = "default" | "local-only" | "off";
 
 type Props = {
-  activeLayer: "street" | "satellite" | "dark";
+  activeLayer: LiveMapLayer;
   mapRef: React.MutableRefObject<LiveMapRef | null>;
   mapPin?: { lat: number; lng: number } | null;
   routeLine?: RouteLine | null;
@@ -305,6 +318,59 @@ function isRoutineTileFetchError(error: unknown): boolean {
   );
 }
 
+function reattachHtmlMarker(marker: maplibregl.Marker, map: maplibregl.Map): void {
+  const lngLat = marker.getLngLat();
+  marker.remove();
+  marker.setLngLat(lngLat).addTo(map);
+}
+
+function syncNearbyMarkersNow(
+  map: maplibregl.Map,
+  nearbyResults: any[] | null | undefined,
+  onNearbyMarkerClick: ((place: any) => void) | undefined,
+  markersOut: maplibregl.Marker[],
+): maplibregl.Marker[] {
+  markersOut.forEach((m) => m.remove());
+  if (!nearbyResults || nearbyResults.length === 0) return [];
+
+  const next: maplibregl.Marker[] = [];
+  nearbyResults.forEach((res, index) => {
+    const el = document.createElement("div");
+    el.className = "nearby-result-marker";
+    el.innerHTML = `
+      <div style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #0F766E;
+        color: white;
+        font-size: 11px;
+        font-weight: 700;
+        border: 2px solid white;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        cursor: pointer;
+      ">
+        ${index + 1}
+      </div>
+    `;
+
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      onNearbyMarkerClick?.(res);
+    });
+
+    next.push(
+      new maplibregl.Marker({ element: el, anchor: "center" })
+        .setLngLat([res.lng, res.lat])
+        .addTo(map),
+    );
+  });
+  return next;
+}
+
 function syncRouteLayer(map: maplibregl.Map, routeLine: RouteLine | null | undefined) {
   whenMapStyleReady(map, () => syncRouteLayerNow(map, routeLine));
 }
@@ -315,9 +381,9 @@ function syncRouteLayerNow(map: maplibregl.Map, routeLine: RouteLine | null | un
   const arrowsLayerId = "live-route-arrows";
 
   if (!routeLine) {
-    if (map.getLayer(layerId)) map.removeLayer(layerId);
     if (map.getLayer(arrowsLayerId)) map.removeLayer(arrowsLayerId);
-    if (map.getSource(sourceId)) map.getSource(sourceId);
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
     return;
   }
 
@@ -493,6 +559,75 @@ export default function LiveMapComponent({
   mapFollowModeRef.current = mapFollowMode;
   const clickedPinMarkerRef = useRef<maplibregl.Marker | null>(null);
   const ensureUserMarkerRef = useRef<((lat: number, lng: number, accuracy: number | null, timestamp: number | null) => void) | null>(null);
+  const nearbyMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const skipInitialStyleSwitchRef = useRef(true);
+  const mapPinRef = useRef(mapPin);
+  mapPinRef.current = mapPin;
+  const routeLineRef = useRef(routeLine);
+  routeLineRef.current = routeLine;
+  const nearbyResultsRef = useRef(nearbyResults);
+  nearbyResultsRef.current = nearbyResults;
+  const onNearbyMarkerClickRef = useRef(onNearbyMarkerClick);
+  onNearbyMarkerClickRef.current = onNearbyMarkerClick;
+
+  const restoreOverlaysAfterStyleChange = useCallback((map: maplibregl.Map) => {
+    syncRouteLayer(map, routeLineRef.current);
+
+    const loc = userLocationRef.current;
+    if (loc) {
+      ensureUserMarkerRef.current?.(
+        loc.lat,
+        loc.lng,
+        loc.accuracy ?? null,
+        loc.timestamp ?? null,
+      );
+      syncAccuracyLayer(map, loc.lat, loc.lng, loc.accuracy ?? null);
+    } else if (userMarkerRef.current) {
+      reattachHtmlMarker(userMarkerRef.current, map);
+    }
+
+    const pin = mapPinRef.current;
+    if (pin) {
+      if (placeMarkerRef.current) {
+        placeMarkerRef.current.setLngLat([pin.lng, pin.lat]);
+        reattachHtmlMarker(placeMarkerRef.current, map);
+      } else {
+        placeMarkerRef.current = new maplibregl.Marker({
+          element: createDestinationMarkerElement(navigationModeRef.current),
+          anchor: navigationModeRef.current ? "center" : "bottom",
+        })
+          .setLngLat([pin.lng, pin.lat])
+          .addTo(map);
+      }
+    }
+
+    const route = routeLineRef.current;
+    if (route?.geometry?.length) {
+      const startCoord = route.geometry[0];
+      if (startMarkerRef.current) {
+        startMarkerRef.current.setLngLat([startCoord[0], startCoord[1]]);
+        reattachHtmlMarker(startMarkerRef.current, map);
+      } else {
+        startMarkerRef.current = new maplibregl.Marker({
+          element: createStartMarkerElement(),
+          anchor: "center",
+        })
+          .setLngLat([startCoord[0], startCoord[1]])
+          .addTo(map);
+      }
+    }
+
+    if (clickedPinMarkerRef.current) {
+      reattachHtmlMarker(clickedPinMarkerRef.current, map);
+    }
+
+    nearbyMarkersRef.current = syncNearbyMarkersNow(
+      map,
+      nearbyResultsRef.current,
+      onNearbyMarkerClickRef.current,
+      nearbyMarkersRef.current,
+    );
+  }, []);
 
 
   useEffect(() => {
@@ -610,6 +745,8 @@ export default function LiveMapComponent({
     });
 
     function ensureUserMarker(lat: number, lng: number, accuracy: number | null, timestamp: number | null) {
+      const showDot = shouldShowGpsDot(accuracy);
+
       if (userMarkerRef.current) {
         userMarkerRef.current.setLngLat([lng, lat]);
       } else {
@@ -622,6 +759,11 @@ export default function LiveMapComponent({
 
         const popup = new maplibregl.Popup({ closeButton: false, offset: 15, className: "user-location-popup" });
         userMarkerRef.current.setPopup(popup);
+      }
+
+      const markerEl = userMarkerRef.current.getElement();
+      if (markerEl) {
+        markerEl.style.display = showDot ? "" : "none";
       }
 
       const popup = userMarkerRef.current.getPopup();
@@ -656,6 +798,8 @@ export default function LiveMapComponent({
       userLocationRef.current = { lat, lng, accuracy: accuracyMeters || undefined, timestamp: timestamp || undefined };
 
       ensureUserMarker(lat, lng, accuracyMeters, timestamp);
+
+      syncAccuracyLayer(map, lat, lng, accuracyMeters);
 
       const ageMs = timestamp ? Date.now() - timestamp : 0;
       let newStatus: GpsStatus = "active";
@@ -742,6 +886,7 @@ export default function LiveMapComponent({
         timestamp: userLocationRef.current?.timestamp || null,
         source: null,
       });
+      syncAccuracyLayer(map, null, null, null);
     }
 
     function handleGeolocationError(err: GeolocationPositionError, source: string) {
@@ -758,6 +903,7 @@ export default function LiveMapComponent({
         userMarkerRef.current?.remove();
         userMarkerRef.current = null;
         userLocationRef.current = null;
+        syncAccuracyLayer(map, null, null, null);
         callbacksRef.current.onGpsStateChange?.({
           status: "denied", lat: null, lng: null, accuracyMeters: null, heading: null, speed: null, timestamp: null, source: null
         });
@@ -861,6 +1007,13 @@ export default function LiveMapComponent({
         clickedPinMarkerRef.current?.remove();
         clickedPinMarkerRef.current = null;
       },
+      flyToPlace: (lat: number, lng: number, zoom = 15) => {
+        routeFitKeyRef.current = "";
+        map.flyTo({ center: [lng, lat], zoom, essential: true });
+      },
+      searchMapLabels: (query, anchor, limit = 8) =>
+        searchVisibleMapLabels(map, query, anchor, limit),
+      supportsLabelSearch: () => mapSupportsLabelSearch(map),
       resetNorth: () => {
         map.easeTo({ bearing: 0, pitch: 0, duration: 500, essential: true });
       },
@@ -947,20 +1100,22 @@ export default function LiveMapComponent({
 
   useEffect(() => {
     if (!instanceRef.current) return;
-    const layerStyles = getLiveMapLibreLayerStyles();
     const map = instanceRef.current;
+
+    if (skipInitialStyleSwitchRef.current) {
+      skipInitialStyleSwitchRef.current = false;
+      syncRouteLayer(map, routeLineRef.current);
+      return;
+    }
+
+    const layerStyles = getLiveMapLibreLayerStyles();
     map.setStyle(layerStyles[activeLayer] || layerStyles.street);
     map.once("style.load", () => {
       map.setMaxZoom(LIVE_MAP_MAX_ZOOM);
       map.setMinZoom(LIVE_MAP_MIN_ZOOM);
-      const loc = userLocationRef.current;
-      if (loc) {
-        ensureUserMarkerRef.current?.(loc.lat, loc.lng, loc.accuracy ?? null, loc.timestamp ?? null);
-      }
-
-      syncRouteLayer(map, routeLine);
+      restoreOverlaysAfterStyleChange(map);
     });
-  }, [activeLayer, routeLine]);
+  }, [activeLayer, restoreOverlaysAfterStyleChange]);
 
   useEffect(() => {
     const map = instanceRef.current;
@@ -1041,54 +1196,16 @@ export default function LiveMapComponent({
     }
   }, [mapPin]);
 
-  const nearbyMarkersRef = useRef<maplibregl.Marker[]>([]);
-
   useEffect(() => {
     const map = instanceRef.current;
     if (!map) return;
 
-    nearbyMarkersRef.current.forEach((m) => m.remove());
-    nearbyMarkersRef.current = [];
-
-    if (!nearbyResults || nearbyResults.length === 0) return;
-
-    nearbyResults.forEach((res, index) => {
-      const el = document.createElement("div");
-      el.className = "nearby-result-marker";
-      el.innerHTML = `
-        <div style="
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background: #0F766E;
-          color: white;
-          font-size: 11px;
-          font-weight: 700;
-          border: 2px solid white;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-          cursor: pointer;
-        ">
-          \${index + 1}
-        </div>
-      `;
-
-      el.addEventListener("click", (e) => {
-        e.stopPropagation();
-        onNearbyMarkerClick?.(res);
-      });
-
-      const marker = new maplibregl.Marker({
-        element: el,
-        anchor: "center",
-      })
-        .setLngLat([res.lng, res.lat])
-        .addTo(map);
-
-      nearbyMarkersRef.current.push(marker);
-    });
+    nearbyMarkersRef.current = syncNearbyMarkersNow(
+      map,
+      nearbyResults,
+      onNearbyMarkerClick,
+      nearbyMarkersRef.current,
+    );
 
     return () => {
       nearbyMarkersRef.current.forEach((m) => m.remove());
@@ -1234,4 +1351,117 @@ function formatCategoryLabel(type?: string, cls?: string): string {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1));
   const unique = [...new Set(parts)];
   return unique.length ? unique.join(" · ") : "Place";
+}
+
+function createGeoJsonCircle(
+  center: [number, number],
+  radiusInKm: number,
+  points: number = 64
+): GeoJSON.Feature<GeoJSON.Polygon> {
+  const coords = {
+    latitude: center[1],
+    longitude: center[0],
+  };
+
+  const km = radiusInKm;
+
+  const ret = [];
+  const distanceX = km / (111.32 * Math.cos((coords.latitude * Math.PI) / 180));
+  const distanceY = km / 110.574;
+
+  let theta, x, y;
+  for (let i = 0; i < points; i++) {
+    theta = (i / points) * (2 * Math.PI);
+    x = distanceX * Math.cos(theta);
+    y = distanceY * Math.sin(theta);
+
+    ret.push([coords.longitude + x, coords.latitude + y]);
+  }
+  ret.push(ret[0]); // close the loop
+
+  return {
+    type: "Feature",
+    properties: {},
+    geometry: {
+      type: "Polygon",
+      coordinates: [ret],
+    },
+  };
+}
+
+function syncAccuracyLayer(
+  map: maplibregl.Map,
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+  accuracyMeters: number | null | undefined
+) {
+  const sourceId = "user-gps-accuracy";
+  const fillLayerId = "user-gps-accuracy-fill";
+  const strokeLayerId = "user-gps-accuracy-stroke";
+
+  const radius = displayAccuracyRadiusMeters(accuracyMeters);
+
+  if (lat == null || lng == null || radius == null) {
+    if (map.getLayer(fillLayerId)) map.removeLayer(fillLayerId);
+    if (map.getLayer(strokeLayerId)) map.removeLayer(strokeLayerId);
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
+    return;
+  }
+
+  const circleFeature = createGeoJsonCircle([lng, lat], radius / 1000);
+
+  const existing = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;
+  if (existing) {
+    existing.setData(circleFeature);
+    if (!map.getLayer(fillLayerId)) {
+      addAccuracyLayers(map, sourceId, fillLayerId, strokeLayerId);
+    }
+  } else {
+    map.addSource(sourceId, {
+      type: "geojson",
+      data: circleFeature,
+    });
+    addAccuracyLayers(map, sourceId, fillLayerId, strokeLayerId);
+  }
+}
+
+function addAccuracyLayers(
+  map: maplibregl.Map,
+  sourceId: string,
+  fillLayerId: string,
+  strokeLayerId: string
+) {
+  let beforeId: string | undefined = undefined;
+  const layers = map.getStyle().layers;
+  if (layers) {
+    const firstSymbolId = layers.find((l) => l.type === "symbol")?.id;
+    if (firstSymbolId) beforeId = firstSymbolId;
+  }
+
+  map.addLayer(
+    {
+      id: fillLayerId,
+      type: "fill",
+      source: sourceId,
+      paint: {
+        "fill-color": "#1A73E8",
+        "fill-opacity": 0.15,
+      },
+    },
+    beforeId
+  );
+
+  map.addLayer(
+    {
+      id: strokeLayerId,
+      type: "line",
+      source: sourceId,
+      paint: {
+        "line-color": "#1A73E8",
+        "line-width": 1,
+        "line-opacity": 0.4,
+      },
+    },
+    beforeId
+  );
 }

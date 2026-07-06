@@ -24,6 +24,7 @@ import type { StyleSpecification } from "maplibre-gl";
 
 export type MapLayerKind =
   | "street"
+  | "clean"
   | "satellite"
   | "dark"
   | "terrain"
@@ -132,6 +133,24 @@ export const TILE_PROVIDER_REGISTRY: TileProviderEntry[] = [
     usedIn: ["map/page.tsx", "MapComponent.tsx", "weather/page.tsx"],
   },
   {
+    provider: "Esri",
+    layer: "hybrid",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
+    attribution: "© Esri",
+    productionRisk: "medium",
+    reason: "Esri reference overlay — road labels for hybrid satellite mode",
+    usedIn: ["live/LiveMapComponent.tsx (hybrid label overlay)"],
+  },
+  {
+    provider: "Esri",
+    layer: "hybrid",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+    attribution: "© Esri",
+    productionRisk: "medium",
+    reason: "Esri reference overlay — place/boundary labels for hybrid satellite mode",
+    usedIn: ["live/LiveMapComponent.tsx (hybrid label overlay)"],
+  },
+  {
     provider: "Stamen (Fastly CDN)",
     layer: "hybrid",
     url: "https://stamen-tiles.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}.png",
@@ -139,6 +158,15 @@ export const TILE_PROVIDER_REGISTRY: TileProviderEntry[] = [
     productionRisk: "high",
     reason: "Legacy Stamen endpoints; deprecated/unreliable for production",
     usedIn: ["MapComponent.tsx (hybrid label overlay)"],
+  },
+  {
+    provider: "OpenFreeMap",
+    layer: "clean",
+    url: "https://tiles.openfreemap.org/styles/liberty",
+    attribution: "© OpenFreeMap © OpenStreetMap",
+    productionRisk: "medium",
+    reason: "Vector liberty style — simplified Live map option (Clean Map)",
+    usedIn: ["live/LiveMapLayerControl.tsx (clean layer)"],
   },
   {
     provider: "MapLibre demo",
@@ -164,6 +192,14 @@ export const DEV_TILE_DEFAULTS = {
   dark: {
     url: "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
     attribution: "© CARTO",
+  },
+  /** Hybrid label overlays — stacked above satellite imagery (Esri Reference). */
+  hybridLabels: {
+    transport:
+      "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
+    places:
+      "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+    attribution: "© Esri",
   },
 } as const;
 
@@ -200,34 +236,120 @@ export function tileUrlNeedsCommercialReview(url: string): boolean {
   return COMMERCIAL_REVIEW_TILE_PATTERNS.some((pattern) => url.includes(pattern));
 }
 
+/** Simplified vector OSM style — optional Clean Map layer (queryable labels/POIs). */
+export const OPENFREEMAP_STREET_STYLE_URL =
+  "https://tiles.openfreemap.org/styles/liberty";
+
 /** Live Tab zoom limits — public OSM raster tiles are available through z19 only. */
 export const LIVE_MAP_MAX_ZOOM = 19;
 export const LIVE_MAP_MIN_ZOOM = 2;
 
-/** MapLibre raster styles for Live Tab (street respects env override). */
-export function getLiveMapLibreLayerStyles(): Record<
-  "street" | "satellite" | "dark",
-  StyleSpecification
-> {
+export type LiveMapLayer = "street" | "clean" | "satellite" | "hybrid" | "dark";
+
+export type LiveMapStyle = StyleSpecification | string;
+
+function resolveHybridLabelTileUrl(): string | null {
+  const override = process.env.NEXT_PUBLIC_MAP_HYBRID_LABEL_URL?.trim();
+  if (override === "none") return null;
+  return override || DEV_TILE_DEFAULTS.hybridLabels.transport;
+}
+
+function buildHybridStyle(streetFallback: LiveMapStyle): LiveMapStyle {
+  const labelUrl = resolveHybridLabelTileUrl();
+  if (!labelUrl) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        "[Rovvy Map/live] Hybrid label overlay URL missing — falling back to street style.",
+      );
+    }
+    return streetFallback;
+  }
+
+  const useSingleOverlay = !!process.env.NEXT_PUBLIC_MAP_HYBRID_LABEL_URL?.trim();
+  const placesUrl = useSingleOverlay
+    ? labelUrl
+    : DEV_TILE_DEFAULTS.hybridLabels.places;
+
+  const sources: StyleSpecification["sources"] = {
+    esri: {
+      type: "raster",
+      tiles: [DEV_TILE_DEFAULTS.satellite.url],
+      tileSize: 256,
+      attribution: `${DEV_TILE_DEFAULTS.satellite.attribution} ${DEV_TILE_DEFAULTS.hybridLabels.attribution}`,
+      maxzoom: LIVE_MAP_MAX_ZOOM,
+    },
+    "esri-labels-transport": {
+      type: "raster",
+      tiles: [labelUrl],
+      tileSize: 256,
+      maxzoom: LIVE_MAP_MAX_ZOOM,
+    },
+  };
+
+  const layers: StyleSpecification["layers"] = [
+    {
+      id: "esri-imagery",
+      type: "raster",
+      source: "esri",
+      minzoom: 0,
+      maxzoom: LIVE_MAP_MAX_ZOOM,
+    },
+    {
+      id: "esri-labels-transport",
+      type: "raster",
+      source: "esri-labels-transport",
+      minzoom: 0,
+      maxzoom: LIVE_MAP_MAX_ZOOM,
+    },
+  ];
+
+  if (!useSingleOverlay) {
+    sources["esri-labels-places"] = {
+      type: "raster",
+      tiles: [placesUrl],
+      tileSize: 256,
+      maxzoom: LIVE_MAP_MAX_ZOOM,
+    };
+    layers.push({
+      id: "esri-labels-places",
+      type: "raster",
+      source: "esri-labels-places",
+      minzoom: 0,
+      maxzoom: LIVE_MAP_MAX_ZOOM,
+    });
+  }
+
+  return { version: 8, sources, layers };
+}
+
+/** Detailed OSM raster style — default Live map (labels, POIs, buildings). */
+function buildDetailedStreetStyle(): StyleSpecification {
   const streetUrl = resolveStreetTileUrl();
   const streetAttribution = resolveStreetTileAttribution();
+  return {
+    version: 8,
+    sources: {
+      osm: {
+        type: "raster",
+        tiles: [streetUrl],
+        tileSize: 256,
+        attribution: streetAttribution,
+        maxzoom: LIVE_MAP_MAX_ZOOM,
+      },
+    },
+    layers: [
+      { id: "osm-tiles", type: "raster", source: "osm", minzoom: 0, maxzoom: LIVE_MAP_MAX_ZOOM },
+    ],
+  };
+}
+
+/** MapLibre styles for Live Tab. Street = detailed OSM raster; clean = simplified vector style. */
+export function getLiveMapLibreLayerStyles(): Record<LiveMapLayer, LiveMapStyle> {
+  const detailedStreetStyle = buildDetailedStreetStyle();
 
   return {
-    street: {
-      version: 8,
-      sources: {
-        osm: {
-          type: "raster",
-          tiles: [streetUrl],
-          tileSize: 256,
-          attribution: streetAttribution,
-          maxzoom: LIVE_MAP_MAX_ZOOM,
-        },
-      },
-      layers: [
-        { id: "osm-tiles", type: "raster", source: "osm", minzoom: 0, maxzoom: LIVE_MAP_MAX_ZOOM },
-      ],
-    },
+    street: detailedStreetStyle,
+    clean: OPENFREEMAP_STREET_STYLE_URL,
     satellite: {
       version: 8,
       sources: {
@@ -258,6 +380,7 @@ export function getLiveMapLibreLayerStyles(): Record<
         { id: "carto-tiles", type: "raster", source: "carto", minzoom: 0, maxzoom: LIVE_MAP_MAX_ZOOM },
       ],
     },
+    hybrid: buildHybridStyle(detailedStreetStyle),
   };
 }
 

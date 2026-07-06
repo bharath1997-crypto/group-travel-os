@@ -12,7 +12,6 @@ import {
   Volume2,
   VolumeX,
   Bell,
-  Layers,
   Maximize2,
 } from "lucide-react";
 import { haversineM } from "@/lib/geo";
@@ -29,13 +28,10 @@ import {
   isLongDistanceFromUser,
 } from "./live-types";
 import {
-  formatSearchResultSubtitle,
   liveGeocodingReverse,
-  liveGeocodingSearch,
   liveAutocompleteSearch,
-  pickNearestSearchResult,
+  SEARCH_DEBOUNCE_MS,
   normalizePlaceCategory,
-  type LiveGeocodingSearchResult,
   type AutocompleteResult,
   type SearchBias,
 } from "./live-geocoding";
@@ -76,6 +72,9 @@ import {
   type GpsState,
 } from "./live-gps";
 import { LIVE_MAP_CONTROLS_POSITION } from "./live-layout";
+import LiveMapLayerControl from "./LiveMapLayerControl";
+import type { LiveMapLayer } from "@/lib/map-providers";
+import { mapLabelFeatureToPlacePreview } from "./live-map-labels";
 import RoviRouteIntelligencePanel from "./RoviRouteIntelligencePanel";
 import {
   fetchRouteIntelligence,
@@ -294,8 +293,7 @@ export default function LivePage() {
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchBlurRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [activeLayer, setActiveLayer] =
-    useState<"street" | "satellite" | "dark">("street");
+  const [activeLayer, setActiveLayer] = useState<LiveMapLayer>("street");
   const [liveStage, setLiveStage] = useState<LiveStage>("static_landing");
   const [workflowType, setWorkflowType] =
     useState<(typeof WORKFLOW_TYPES)[number]>("Solo");
@@ -346,6 +344,7 @@ export default function LivePage() {
   const [alertsEnabled, setAlertsEnabled] = useState(true);
   const [showGpsHelper, setShowGpsHelper] = useState(false);
   const [searchAnchorHint, setSearchAnchorHint] = useState<string | null>(null);
+  const [searchNeedsLocation, setSearchNeedsLocation] = useState(false);
   const [mapBearing, setMapBearing] = useState(0);
   const lowAccuracyToastShownRef = useRef(false);
   const [userRegion, setUserRegion] = useState<{
@@ -400,6 +399,13 @@ export default function LivePage() {
     { name: "Work", address: "456 Broadway" },
     { name: "Gym", address: "789 Fitness Ave" },
   ];
+
+  const resolveSearchAnchor = useCallback((): SearchBias | null => {
+    if (userLocation && isFreshGpsStatus(gpsStatus)) return userLocation;
+    const mapCenter = mapRef.current?.getMapCenter();
+    if (mapCenter) return mapCenter;
+    return null;
+  }, [userLocation, gpsStatus]);
 
   const resolveSearchBias = useCallback((): SearchBias | null => {
     if (clickedLocation) return clickedLocation;
@@ -535,200 +541,69 @@ export default function LivePage() {
     setNearbyPlacesAtClick(null);
   }, []);
 
-  const handleMapClick = useCallback(async (lat: number, lng: number, features: any[]) => {
+  const selectDestinationFromPlace = useCallback(async (
+    place: PlacePreviewData,
+    options?: { origin?: "search" | "map_click"; clickLat?: number; clickLng?: number },
+  ) => {
+    const lat = place.lat;
+    const lng = place.lng;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      showToast("Invalid place location.");
+      return;
+    }
+
+    if (process.env.NEXT_PUBLIC_ROVVY_MAP_DEBUG === "true") {
+      console.info("[Rovvy Live Search] selectDestination", {
+        place,
+        targetLocation: { lat, lng },
+        origin: options?.origin,
+      });
+    }
+
     setDestination(null);
+    setIsLiveActive(false);
     setViewingDetailsFromNearby(false);
-    setShowSearchPopup(false);
-    setShowSuggestionsCard(false);
     setNearbyResults(null);
     setNearbyCategory(null);
     setNearbyError(null);
     setExpandedResultIndex(null);
-    resetRoviExplanation();
-
-    setClickedLocation({ lat, lng });
-    setMapClickResolving(true);
-    setNearbyPlacesAtClick(null);
-
-    const fallbackPlace = buildDroppedPinPlace(lat, lng, userLocation);
-    setSelectedPlace(fallbackPlace);
-    setLiveStage("place_preview");
-
-    try {
-      // 1. Score features and find the best one
-      const scored = features
-        .map((f) => ({ feature: f, score: scoreFeature(f) }))
-        .sort((a, b) => b.score - a.score);
-
-      const bestFeatureObj = scored[0];
-      const bestFeature = bestFeatureObj?.feature;
-      const clickedName = bestFeature
-        ? (bestFeature.properties?.name ||
-           bestFeature.properties?.display_name ||
-           bestFeature.properties?.title ||
-           null)
-        : null;
-
-      let featureProperties: any = null;
-      if (bestFeature) {
-        const p = bestFeature.properties || {};
-        featureProperties = {};
-        const keysToPreserve = [
-          "name", "amenity", "shop", "tourism", "leisure", "healthcare",
-          "public_transport", "highway", "brand", "operator",
-          "class", "type", "category", "subclass", "kind",
-          "maki", "icon", "symbol", "marker-symbol",
-          "religion",    // needed for place_of_worship → Church/Mosque etc.
-          "osm_id", "osm_type"
-        ];
-        keysToPreserve.forEach((key) => {
-          if (p[key] !== undefined) {
-            featureProperties[key] = p[key];
-          }
-        });
-        if (bestFeature.layer?.id) {
-          featureProperties["layer.id"] = bestFeature.layer.id;
-        }
-        if (bestFeature.layer?.["source-layer"]) {
-          featureProperties["sourceLayer"] = bestFeature.layer["source-layer"];
-        }
-        if (bestFeature.id) {
-          featureProperties["id"] = bestFeature.id;
-        }
-      }
-
-      // 2. Call backend resolve-click endpoint
-      const response = await apiFetch<{ place: any; candidates: any[] }>("/places/resolve-click", {
-        method: "POST",
-        body: JSON.stringify({
-          lat,
-          lng,
-          clickedName,
-          featureProperties,
-          radiusMeters: 75
-        })
-      });
-
-      if (!response || !response.place) {
-        throw new Error("Invalid response from click resolver");
-      }
-
-      const p = response.place;
-      const primaryPlace = mapResolveClickPlace(p, userLocation);
-
-      const otherCandidates = (response.candidates || [])
-        .filter((c: any) => c.placeKey !== p.placeKey)
-        .map((c: any) => mapResolveClickPlace(c, userLocation));
-
-      setSelectedPlace(primaryPlace);
-      if (otherCandidates.length > 0) {
-        setNearbyPlacesAtClick(otherCandidates);
-      }
-
-      if (primaryPlace.source === "dropped_pin") {
-        recordRecentSearch(
-          buildDroppedPinRecentSearch(primaryPlace.lat, primaryPlace.lng, primaryPlace.address),
-          currentUserId,
-        );
-      } else {
-        recordRecentSearch(buildPlaceRecentSearch(primaryPlace), currentUserId);
-      }
-      refreshRecentSearches();
-    } catch {
-      logRovvyMapClickResolver("backend unavailable, using dropped pin fallback.");
-      recordRecentSearch(
-        buildDroppedPinRecentSearch(lat, lng, fallbackPlace.address),
-        currentUserId,
-      );
-      refreshRecentSearches();
-    } finally {
-      setMapClickResolving(false);
-    }
-  }, [userLocation, currentUserId, refreshRecentSearches]);
-
-  const selectPlace = useCallback(async (result: LiveGeocodingSearchResult | AutocompleteResult) => {
-    let lat: number, lng: number, placeKey: string, initial: PlacePreviewData;
-
-    if ("distanceLabel" in result) {
-      // It's an AutocompleteResult
-      lat = result.lat;
-      lng = result.lng;
-      placeKey = result.placeKey;
-      initial = {
-        name: result.name,
-        categoryLabel: result.category,
-        address: result.address,
-        phone: null,
-        lat,
-        lng,
-        distanceM: result.distanceMeters,
-        openingHours: null,
-        openStatus: null,
-        placeKey,
-        osmType: null,
-        osmId: null,
-        city: null,
-        country: null,
-        source: result.source,
-        tags: result.tags,
-      };
-    } else {
-      // It's a LiveGeocodingSearchResult
-      lat = parseFloat(result.lat);
-      lng = parseFloat(result.lon);
-      const bias = resolveSearchBias();
-      const userLoc = userLocation ?? mapRef.current?.getUserLocation() ?? bias;
-      const distanceM = userLoc ? haversineM(userLoc.lat, userLoc.lng, lat, lng) : null;
-      const { city, country } = extractCityCountry(result.address);
-      placeKey = buildPlaceKey({
-        name: result.name || result.display_name.split(",")[0],
-        lat,
-        lng,
-        city,
-        country,
-        osmType: result.osm_type,
-        osmId: result.osm_id,
-      });
-
-      initial = {
-        name: result.name || result.display_name.split(",")[0],
-        categoryLabel: normalizePlaceCategory(result) || (result.name ? "Place" : "Address"),
-        address: result.display_name,
-        phone: null,
-        lat,
-        lng,
-        distanceM,
-        openingHours: null,
-        openStatus: null,
-        placeKey,
-        osmType: result.osm_type ?? null,
-        osmId: result.osm_id ?? null,
-        city: city ?? null,
-        country: country ?? null,
-      };
-    }
-
-    setSelectedPlace(initial);
-    setDestination(null);
-    setIsLiveActive(false);
-    setLiveStage("place_preview");
+    setShowSearchPopup(false);
+    setShowSuggestionsCard(false);
+    setSearchResults([]);
+    setSearchNeedsLocation(false);
     setRoviExplanation(null);
     setRoviExplanationError(null);
     setRoviExplanationLoading(false);
     setPlaceMedia([]);
     setPlaceTags([]);
     setPlaceMediaLoading(true);
-    setSearchQuery(result.name || ("display_name" in result ? result.display_name.split(",")[0] : "Unknown"));
-    setSearchResults([]);
-    setShowSearchPopup(false);
-    setShowSuggestionsCard(false);
-    setLoadingPlaceDetails(true);
 
-    // Record place in recent searches immediately (will be enriched later but this captures the intent)
-    recordRecentSearch(buildPlaceRecentSearch(initial), currentUserId);
+    if (options?.origin === "search") {
+      setClickedLocation(null);
+      setNearbyPlacesAtClick(null);
+      mapRef.current?.clearClickedPin();
+    } else if (options?.origin === "map_click") {
+      setClickedLocation({
+        lat: options.clickLat ?? lat,
+        lng: options.clickLng ?? lng,
+      });
+    }
+
+    setSelectedPlace(place);
+    setLiveStage("place_preview");
+    setSearchQuery(place.name);
+    setLoadingPlaceDetails(true);
+    mapRef.current?.flyToPlace(lat, lng);
+
+    recordRecentSearch(
+      place.source === "dropped_pin"
+        ? buildDroppedPinRecentSearch(lat, lng, place.address)
+        : buildPlaceRecentSearch(place),
+      currentUserId,
+    );
     refreshRecentSearches();
 
-    void resolvePlaceMedia(initial).then((resolution: PlaceMediaResolution) => {
+    void resolvePlaceMedia(place).then((resolution: PlaceMediaResolution) => {
       setSelectedPlace((prev) => {
         if (!prev || prev.lat !== lat || prev.lng !== lng) return prev;
         return { ...prev, placeKey: resolution.placeKey };
@@ -781,39 +656,171 @@ export default function LivePage() {
     } finally {
       setLoadingPlaceDetails(false);
     }
-  }, [resolveSearchBias, userLocation, currentUserId, refreshRecentSearches]);
+  }, [currentUserId, refreshRecentSearches]);
 
-  const searchPlaceByName = useCallback(
-    async (name: string) => {
-      const q = name.trim().toLowerCase();
-      const keywords = [
-        "gas", "gas station", "coffee", "cafe", "restaurant",
-        "food", "restroom", "toilet", "hospital", "atm", "parking", "park"
-      ];
-      if (keywords.includes(q)) {
-        void handleNearbySearch(name);
+  const handleMapClick = useCallback(async (lat: number, lng: number, features: any[]) => {
+    if (isLiveActive) return;
+
+    setViewingDetailsFromNearby(false);
+    setShowSearchPopup(false);
+    setShowSuggestionsCard(false);
+    setNearbyResults(null);
+    setNearbyCategory(null);
+    setNearbyError(null);
+    setExpandedResultIndex(null);
+    resetRoviExplanation();
+
+    setMapClickResolving(true);
+    setNearbyPlacesAtClick(null);
+
+    const fallbackPlace = buildDroppedPinPlace(lat, lng, userLocation);
+
+    try {
+      const scored = features
+        .map((f) => ({ feature: f, score: scoreFeature(f) }))
+        .sort((a, b) => b.score - a.score);
+
+      const bestFeatureObj = scored[0];
+      const bestFeature = bestFeatureObj?.feature;
+      const clickedName = bestFeature
+        ? (bestFeature.properties?.name ||
+           bestFeature.properties?.name_en ||
+           bestFeature.properties?.display_name ||
+           bestFeature.properties?.title ||
+           null)
+        : null;
+
+      if (bestFeature && clickedName && bestFeatureObj.score >= 40) {
+        const labelPlace = mapLabelFeatureToPlacePreview(bestFeature, lat, lng, userLocation);
+        await selectDestinationFromPlace(labelPlace, {
+          origin: "map_click",
+          clickLat: lat,
+          clickLng: lng,
+        });
         return;
       }
 
+      let featureProperties: any = null;
+      if (bestFeature) {
+        const p = bestFeature.properties || {};
+        featureProperties = {};
+        const keysToPreserve = [
+          "name", "amenity", "shop", "tourism", "leisure", "healthcare",
+          "public_transport", "highway", "brand", "operator",
+          "class", "type", "category", "subclass", "kind",
+          "maki", "icon", "symbol", "marker-symbol",
+          "religion",
+          "osm_id", "osm_type"
+        ];
+        keysToPreserve.forEach((key) => {
+          if (p[key] !== undefined) {
+            featureProperties[key] = p[key];
+          }
+        });
+        if (bestFeature.layer?.id) {
+          featureProperties["layer.id"] = bestFeature.layer.id;
+        }
+        if (bestFeature.layer?.["source-layer"]) {
+          featureProperties["sourceLayer"] = bestFeature.layer["source-layer"];
+        }
+        if (bestFeature.id) {
+          featureProperties["id"] = bestFeature.id;
+        }
+      }
+
+      const response = await apiFetch<{ place: any; candidates: any[] }>("/places/resolve-click", {
+        method: "POST",
+        body: JSON.stringify({
+          lat,
+          lng,
+          clickedName,
+          featureProperties,
+          radiusMeters: 75
+        })
+      });
+
+      if (!response || !response.place) {
+        throw new Error("Invalid response from click resolver");
+      }
+
+      const p = response.place;
+      const primaryPlace = mapResolveClickPlace(p, userLocation);
+
+      const otherCandidates = (response.candidates || [])
+        .filter((c: any) => c.placeKey !== p.placeKey)
+        .map((c: any) => mapResolveClickPlace(c, userLocation));
+
+      await selectDestinationFromPlace(primaryPlace, {
+        origin: "map_click",
+        clickLat: lat,
+        clickLng: lng,
+      });
+      if (otherCandidates.length > 0) {
+        setNearbyPlacesAtClick(otherCandidates);
+      }
+    } catch {
+      logRovvyMapClickResolver("backend unavailable, using dropped pin fallback.");
+      await selectDestinationFromPlace(fallbackPlace, {
+        origin: "map_click",
+        clickLat: lat,
+        clickLng: lng,
+      });
+    } finally {
+      setMapClickResolving(false);
+    }
+  }, [isLiveActive, userLocation, selectDestinationFromPlace]);
+
+  const selectPlace = useCallback(async (result: AutocompleteResult) => {
+    const distM =
+      result.distanceMeters ??
+      (userLocation ? haversineM(userLocation.lat, userLocation.lng, result.lat, result.lng) : null);
+    const place: PlacePreviewData = {
+      name: result.name,
+      categoryLabel: result.category,
+      address: result.address,
+      phone: null,
+      lat: result.lat,
+      lng: result.lng,
+      distanceM: distM,
+      openingHours: null,
+      openStatus: null,
+      placeKey: result.placeKey,
+      osmType: null,
+      osmId: null,
+      city: null,
+      country: null,
+      source: result.source,
+      tags: result.tags,
+    };
+    await selectDestinationFromPlace(place, { origin: "search" });
+  }, [selectDestinationFromPlace, userLocation]);
+
+  const searchPlaceByName = useCallback(
+    async (name: string) => {
       setSearchQuery(name);
       setShowSearchPopup(false);
       setShowSuggestionsCard(false);
       setSearchLoading(true);
+      setSearchNeedsLocation(false);
       try {
-        const bias = resolveSearchBias();
-        const results = await liveAutocompleteSearch(name, bias);
+        const anchor = resolveSearchAnchor();
+        const results = await liveAutocompleteSearch(name, anchor);
         const best = results[0];
         if (best) {
           await selectPlace(best);
         } else {
-          setToast("No nearby matches found. Try a more specific search.");
+          setToast(
+            anchor
+              ? "No nearby OSM matches found. Try a more specific search."
+              : "No matches found. Turn on location for nearby results.",
+          );
           window.setTimeout(() => setToast(null), 3200);
         }
       } finally {
         setSearchLoading(false);
       }
     },
-    [resolveSearchBias, selectPlace, handleNearbySearch],
+    [resolveSearchAnchor, selectPlace],
   );
 
   useEffect(() => {
@@ -848,50 +855,48 @@ export default function LivePage() {
 
   useEffect(() => {
     if (!searchQuery.trim()) {
-      setSearchResults(prev => prev.length ? [] : prev);
+      setSearchResults((prev) => (prev.length ? [] : prev));
+      setSearchNeedsLocation(false);
       return;
     }
 
-    const q = searchQuery.trim().toLowerCase();
-    const keywords = [
-      "gas", "gas station", "coffee", "cafe", "restaurant",
-      "food", "restroom", "toilet", "hospital", "atm", "parking", "park"
-    ];
-    if (keywords.includes(q)) {
-      setSearchResults(prev => prev.length ? [] : prev);
-      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-      searchDebounceRef.current = setTimeout(() => {
-        void handleNearbySearch(searchQuery);
-      }, 500);
+    if (searchQuery.trim().length < 2) {
+      setSearchResults((prev) => (prev.length ? [] : prev));
+      setSearchNeedsLocation(false);
       return;
     }
 
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    
+
     searchDebounceRef.current = setTimeout(async () => {
+      const anchor = resolveSearchAnchor();
+      setSearchNeedsLocation(!anchor);
       setSearchLoading(true);
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
       abortControllerRef.current = new AbortController();
-      
+
       try {
-        const bias = resolveSearchBias();
-        const results = await liveAutocompleteSearch(searchQuery, bias, abortControllerRef.current.signal);
+        const results = await liveAutocompleteSearch(
+          searchQuery,
+          anchor,
+          abortControllerRef.current.signal,
+        );
         setSearchResults(results);
       } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          setSearchResults(prev => prev.length ? [] : prev);
+        if (err.name !== "AbortError") {
+          setSearchResults((prev) => (prev.length ? [] : prev));
         }
       } finally {
         setSearchLoading(false);
       }
-    }, 250); // Reduced debounce for autocomplete
+    }, SEARCH_DEBOUNCE_MS);
 
     return () => {
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
     };
-  }, [searchQuery, resolveSearchBias, handleNearbySearch, showSearchPopup, showSuggestionsCard]);
+  }, [searchQuery, resolveSearchAnchor, showSearchPopup, showSuggestionsCard]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => mapRef.current?.locateUser(), 600);
@@ -1352,7 +1357,6 @@ export default function LivePage() {
     };
   }, [activeRoute, liveStage, isLiveActive]);
 
-  const searchDropdownBias = resolveSearchBias();
   const showAskRoviAi = shouldShowAskRoviAi(locationContext);
 
   function statusPillLabel(): string {
@@ -1467,6 +1471,16 @@ export default function LivePage() {
               </div>
 
               {/* Autocomplete Dropdown Search Results */}
+              {searchQuery.trim().length >= 2 && showSearchPopup && searchNeedsLocation && searchResults.length === 0 && !searchLoading && (
+                <div className="absolute left-0 right-0 top-full z-30 mt-1 rounded-2xl bg-white/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.12)] px-3 py-2.5 text-xs text-stone-500">
+                  Turn on location or move the map for better nearby OSM results.
+                </div>
+              )}
+              {searchQuery.trim().length >= 2 && showSearchPopup && searchLoading && searchResults.length === 0 && (
+                <div className="absolute left-0 right-0 top-full z-30 mt-1 rounded-2xl bg-white/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.12)] px-3 py-2.5 text-xs text-stone-400">
+                  Searching OSM places…
+                </div>
+              )}
               {searchQuery.trim().length >= 2 && searchResults.length > 0 && showSearchPopup && (
                 <ul className="absolute left-0 right-0 top-full z-30 mt-1 max-h-52 overflow-auto rounded-2xl bg-white/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
                   {searchResults.map((result) => {
@@ -2134,21 +2148,7 @@ export default function LivePage() {
             style={{ transform: `rotate(${-mapBearing}deg)` }}
           />
         </button>
-        <button
-          type="button"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 md:h-10 md:w-10"
-          onClick={() => {
-            const layers = ["street", "satellite", "dark"] as const;
-            setActiveLayer((current) => {
-              const i = layers.indexOf(current);
-              return layers[(i + 1) % layers.length];
-            });
-          }}
-          title={`Layer: ${activeLayer}`}
-          aria-label="Change map layer"
-        >
-          <Layers className="h-5 w-5 text-stone-500" />
-        </button>
+        <LiveMapLayerControl activeLayer={activeLayer} onLayerChange={setActiveLayer} />
         <button
           type="button"
           className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 md:h-10 md:w-10"

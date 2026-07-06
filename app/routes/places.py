@@ -14,6 +14,29 @@ from app.utils.exceptions import AppException
 
 router = APIRouter(tags=["Places"])
 
+@router.get("/search/places")
+async def search_places(
+    q: str = Query(..., min_length=2),
+    lat: float | None = Query(None, ge=-90, le=90),
+    lng: float | None = Query(None, ge=-180, le=180),
+    radius_km: float = Query(10.0, ge=0.1, le=50),
+    limit: int = Query(8, ge=1, le=20),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        results = await PlaceAutocompleteService.search_places(
+            db=db,
+            q=q,
+            lat=lat,
+            lng=lng,
+            radius_km=radius_km,
+            limit=limit,
+        )
+        return {"results": results}
+    except Exception as exc:
+        raise AppException.bad_request(f"Place search failed: {str(exc)}")
+
+
 @router.get("/places/autocomplete")
 async def get_places_autocomplete(
     q: str = Query(..., min_length=2),
