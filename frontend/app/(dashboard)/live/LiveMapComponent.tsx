@@ -480,6 +480,7 @@ export default function LiveMapComponent({
   const watchIdRef = useRef<number | null>(null);
   const liveGpsActiveRef = useRef(false);
   const hasCenteredOnUserRef = useRef(false);
+  const bestAccuracyCenteredRef = useRef<number | null>(null);
 
   const callbacksRef = useRef({ onGpsStateChange, onMapClick, onLiveGpsChange, onMapInteraction });
   callbacksRef.current = { onGpsStateChange, onMapClick, onLiveGpsChange, onMapInteraction };
@@ -713,9 +714,15 @@ export default function LiveMapComponent({
         navigationFollowUserRef.current = true;
       }
 
-      if (centerMap || !hasCenteredOnUserRef.current) {
+      const isSignificantlyMoreAccurate =
+        accuracyMeters != null &&
+        (bestAccuracyCenteredRef.current == null || bestAccuracyCenteredRef.current > 100) &&
+        accuracyMeters <= 100;
+
+      if (centerMap || !hasCenteredOnUserRef.current || isSignificantlyMoreAccurate) {
         map.flyTo({ center: [lng, lat], zoom: 16, essential: true });
         hasCenteredOnUserRef.current = true;
+        bestAccuracyCenteredRef.current = accuracyMeters;
       }
     }
 
@@ -816,6 +823,7 @@ export default function LiveMapComponent({
         source: null,
       });
       hasCenteredOnUserRef.current = false;
+      bestAccuracyCenteredRef.current = null;
 
       logRovvyGps("requesting location");
 
