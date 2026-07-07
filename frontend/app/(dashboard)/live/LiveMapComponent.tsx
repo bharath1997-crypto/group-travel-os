@@ -92,6 +92,7 @@ type Props = {
   activeLayer: LiveMapLayer;
   mapRef: React.MutableRefObject<LiveMapRef | null>;
   mapPin?: { lat: number; lng: number } | null;
+  routeOriginPin?: { lat: number; lng: number } | null;
   routeLine?: RouteLine | null;
   isLiveActive?: boolean;
   navigationMode?: boolean;
@@ -510,6 +511,7 @@ export default function LiveMapComponent({
   activeLayer,
   mapRef,
   mapPin,
+  routeOriginPin,
   routeLine,
   isLiveActive = false,
   navigationMode = false,
@@ -541,6 +543,7 @@ export default function LiveMapComponent({
   } | null>(null);
   const userMarkerRef = useRef<maplibregl.Marker | null>(null);
   const placeMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const originMarkerRef = useRef<maplibregl.Marker | null>(null);
   const startMarkerRef = useRef<maplibregl.Marker | null>(null);
   const userLocationRef = useRef<UserLocation | null>(null);
   const watchIdRef = useRef<number | null>(null);
@@ -563,6 +566,8 @@ export default function LiveMapComponent({
   const skipInitialStyleSwitchRef = useRef(true);
   const mapPinRef = useRef(mapPin);
   mapPinRef.current = mapPin;
+  const routeOriginPinRef = useRef(routeOriginPin);
+  routeOriginPinRef.current = routeOriginPin;
   const routeLineRef = useRef(routeLine);
   routeLineRef.current = routeLine;
   const nearbyResultsRef = useRef(nearbyResults);
@@ -599,6 +604,24 @@ export default function LiveMapComponent({
           .setLngLat([pin.lng, pin.lat])
           .addTo(map);
       }
+    }
+
+    const originPin = routeOriginPinRef.current;
+    if (originPin) {
+      if (originMarkerRef.current) {
+        originMarkerRef.current.setLngLat([originPin.lng, originPin.lat]);
+        reattachHtmlMarker(originMarkerRef.current, map);
+      } else {
+        originMarkerRef.current = new maplibregl.Marker({
+          element: createStartMarkerElement(),
+          anchor: "center",
+        })
+          .setLngLat([originPin.lng, originPin.lat])
+          .addTo(map);
+      }
+    } else {
+      originMarkerRef.current?.remove();
+      originMarkerRef.current = null;
     }
 
     const route = routeLineRef.current;
@@ -1190,6 +1213,28 @@ export default function LiveMapComponent({
   }, [mapPin, navigationMode]);
 
   useEffect(() => {
+    const map = instanceRef.current;
+    if (!map) return;
+
+    if (!routeOriginPin) {
+      originMarkerRef.current?.remove();
+      originMarkerRef.current = null;
+      return;
+    }
+
+    if (originMarkerRef.current) {
+      originMarkerRef.current.setLngLat([routeOriginPin.lng, routeOriginPin.lat]);
+    } else {
+      originMarkerRef.current = new maplibregl.Marker({
+        element: createStartMarkerElement(),
+        anchor: "center",
+      })
+        .setLngLat([routeOriginPin.lng, routeOriginPin.lat])
+        .addTo(map);
+    }
+  }, [routeOriginPin]);
+
+  useEffect(() => {
     if (mapPin && clickedPinMarkerRef.current) {
       clickedPinMarkerRef.current.remove();
       clickedPinMarkerRef.current = null;
@@ -1395,6 +1440,15 @@ function syncAccuracyLayer(
   lng: number | null | undefined,
   accuracyMeters: number | null | undefined
 ) {
+  whenMapStyleReady(map, () => syncAccuracyLayerNow(map, lat, lng, accuracyMeters));
+}
+
+function syncAccuracyLayerNow(
+  map: maplibregl.Map,
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+  accuracyMeters: number | null | undefined
+) {
   const sourceId = "user-gps-accuracy";
   const fillLayerId = "user-gps-accuracy-fill";
   const strokeLayerId = "user-gps-accuracy-stroke";
@@ -1402,26 +1456,34 @@ function syncAccuracyLayer(
   const radius = displayAccuracyRadiusMeters(accuracyMeters);
 
   if (lat == null || lng == null || radius == null) {
-    if (map.getLayer(fillLayerId)) map.removeLayer(fillLayerId);
-    if (map.getLayer(strokeLayerId)) map.removeLayer(strokeLayerId);
-    if (map.getSource(sourceId)) map.removeSource(sourceId);
+    try {
+      if (map.getLayer(fillLayerId)) map.removeLayer(fillLayerId);
+      if (map.getLayer(strokeLayerId)) map.removeLayer(strokeLayerId);
+      if (map.getSource(sourceId)) map.removeSource(sourceId);
+    } catch (err) {
+      console.warn("[Rovvy Map] Error cleaning up accuracy layer", err);
+    }
     return;
   }
 
   const circleFeature = createGeoJsonCircle([lng, lat], radius / 1000);
 
-  const existing = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;
-  if (existing) {
-    existing.setData(circleFeature);
-    if (!map.getLayer(fillLayerId)) {
+  try {
+    const existing = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;
+    if (existing) {
+      existing.setData(circleFeature);
+      if (!map.getLayer(fillLayerId)) {
+        addAccuracyLayers(map, sourceId, fillLayerId, strokeLayerId);
+      }
+    } else {
+      map.addSource(sourceId, {
+        type: "geojson",
+        data: circleFeature,
+      });
       addAccuracyLayers(map, sourceId, fillLayerId, strokeLayerId);
     }
-  } else {
-    map.addSource(sourceId, {
-      type: "geojson",
-      data: circleFeature,
-    });
-    addAccuracyLayers(map, sourceId, fillLayerId, strokeLayerId);
+  } catch (err) {
+    console.warn("[Rovvy Map] Error syncing accuracy layer", err);
   }
 }
 
