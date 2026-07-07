@@ -282,7 +282,8 @@ After every pytest run, update this section in GEMINI.md:
 | tests/test_buddy.py | — | — |
 | tests/test_explore.py | — | — |
 | tests/test_live_group.py | Deprecated | 2026-06-25 |
-| tests/test_place_media.py | 11 | 2026-07-07 |
+| tests/test_place_media.py | 8 | 2026-07-07 |
 | tests/test_places_nearby.py | 7 | 2026-07-06 |
 | tests/test_route_intelligence.py | 12 | 2026-07-04 |
+| tests/test_live_routing.py | 3 | 2026-07-07 |
 
