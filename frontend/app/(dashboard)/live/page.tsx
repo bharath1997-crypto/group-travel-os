@@ -457,10 +457,6 @@ export default function LivePage() {
     if (userLocation) {
       return buildGpsRouteOrigin(userLocation.lat, userLocation.lng, gpsState.accuracyMeters);
     }
-    const mapCenter = mapRef.current?.getMapCenter();
-    if (mapCenter) {
-      return buildMapCenterRouteOrigin(mapCenter.lat, mapCenter.lng);
-    }
     return null;
   }, [userLocation, gpsState.accuracyMeters]);
 
@@ -483,10 +479,18 @@ export default function LivePage() {
         return;
       }
 
-      const origin = options?.origin ?? routeOrigin ?? resolveDefaultRouteOrigin();
-      if (!validateRouteOriginCoords(origin)) {
+      const origin = options?.origin !== undefined ? options.origin : (routeOrigin ?? resolveDefaultRouteOrigin());
+      if (!dest || !validateRouteOriginCoords(origin)) {
         setRoutePreviewStatus("failed");
-        setRoutePreviewError("Current location unavailable");
+        if (!origin) {
+          if (gpsState.status === "denied") {
+            setRoutePreviewError("GPS access denied. Enable location services or pick a starting point manually.");
+          } else {
+            setRoutePreviewError("GPS location unavailable. Try picking a starting point manually.");
+          }
+        } else {
+          setRoutePreviewError("Destination is required to preview the route.");
+        }
         setActiveRoute(null);
         setRouteLoading(false);
         return;
@@ -558,7 +562,7 @@ export default function LivePage() {
         setRouteLoading(false);
       }
     },
-    [routeOrigin, resolveDefaultRouteOrigin, travelMode],
+    [routeOrigin, resolveDefaultRouteOrigin, travelMode, gpsState],
   );
 
   const applyRouteOriginAndPreview = useCallback(
