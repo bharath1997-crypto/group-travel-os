@@ -3,7 +3,7 @@ import math
 from typing import Any
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.place_registry import PlaceRegistry
 from app.services.geocoding_service import GeocodingService
@@ -94,11 +94,11 @@ def _calculate_score(name: str, query: str, distance_meters: float | None) -> fl
 
 
 def _map_source_label(raw_source: str) -> str:
-    if raw_source in {"osm", "rovvy_category"}:
+    if raw_source in {"osm", "rovvy_category", "rovvy_db"}:
         return "osm_local"
     if raw_source == "nominatim":
-        return "osm_provider"
-    return "fallback"
+        return "provider"
+    return "osm_local"
 
 
 def _format_distance_label(distance_meters: float | None) -> str | None:
@@ -127,7 +127,7 @@ def _autocomplete_item_to_search_place(item: dict[str, Any]) -> dict[str, Any]:
 class PlaceAutocompleteService:
     @staticmethod
     async def autocomplete(
-        db: AsyncSession,
+        db: Session,
         q: str,
         lat: float | None = None,
         lng: float | None = None,
@@ -208,7 +208,7 @@ class PlaceAutocompleteService:
 
         # 3. Search local PlaceRegistry
         stmt = select(PlaceRegistry).where(PlaceRegistry.name.ilike(f"%{q}%")).limit(20)
-        local_places = (await db.execute(stmt)).scalars().all()
+        local_places = db.execute(stmt).scalars().all()
         for place in local_places:
             dist_m = None
             dist_label = None
@@ -290,15 +290,20 @@ class PlaceAutocompleteService:
                         "tags": {}
                     }
 
-        # Convert to list and sort by score descending
+        # Convert to list and sort by score descending; named POIs before unnamed ties
         final_results = list(results_map.values())
-        final_results.sort(key=lambda x: x["score"], reverse=True)
+        final_results.sort(
+            key=lambda x: (
+                -x["score"],
+                0 if x.get("name") and x["name"] != "Unnamed Place" else 1,
+            ),
+        )
         
         return final_results[:limit]
 
     @staticmethod
     async def search_places(
-        db: AsyncSession,
+        db: Session,
         q: str,
         lat: float | None = None,
         lng: float | None = None,

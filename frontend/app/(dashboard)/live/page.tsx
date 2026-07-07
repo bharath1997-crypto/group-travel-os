@@ -360,6 +360,13 @@ export default function LivePage() {
   const [searchBias, setSearchBias] = useState<SearchBias | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const routePreviewRequestRef = useRef(0);
+  const lastFetchedRouteRef = useRef<{
+    originLat: number;
+    originLng: number;
+    destLat: number;
+    destLng: number;
+    travelMode: string;
+  } | null>(null);
 
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [alertsEnabled, setAlertsEnabled] = useState(true);
@@ -496,6 +503,27 @@ export default function LivePage() {
         setRouteLoading(false);
         return;
       }
+
+      const currentArgs = {
+        originLat: origin.latitude,
+        originLng: origin.longitude,
+        destLat: dest.lat,
+        destLng: dest.lng,
+        travelMode,
+      };
+
+      const isDuplicate =
+        lastFetchedRouteRef.current &&
+        lastFetchedRouteRef.current.originLat === currentArgs.originLat &&
+        lastFetchedRouteRef.current.originLng === currentArgs.originLng &&
+        lastFetchedRouteRef.current.destLat === currentArgs.destLat &&
+        lastFetchedRouteRef.current.destLng === currentArgs.destLng &&
+        lastFetchedRouteRef.current.travelMode === currentArgs.travelMode;
+
+      if (isDuplicate && !options?.active) {
+        return;
+      }
+      lastFetchedRouteRef.current = currentArgs;
 
       const requestId = ++routePreviewRequestRef.current;
       setRouteOrigin(origin);
@@ -1200,7 +1228,7 @@ export default function LivePage() {
     if (destination) {
       void loadRoutePreview(destination);
     }
-  }, [travelMode, destination, loadRoutePreview]);
+  }, [travelMode, destination?.lat, destination?.lng, destination?.placeKey, loadRoutePreview]);
 
   function resetRoviExplanation() {
     setRoviExplanation(null);

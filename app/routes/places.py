@@ -8,7 +8,7 @@ from app.services.places_nearby_service import PlacesNearbyService
 from app.services.place_wikipedia_service import PlaceWikipediaService
 from app.services.place_autocomplete_service import PlaceAutocompleteService
 from app.utils.database import get_db
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from fastapi import Depends
 from app.utils.exceptions import AppException
 
@@ -24,7 +24,7 @@ async def search_places(
     lng: float | None = Query(None, ge=-180, le=180),
     radius_km: float = Query(10.0, ge=0.1, le=50),
     limit: int = Query(8, ge=1, le=20),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     logger.info(
         "[Rovvy Search Audit] Search endpoint hit. Query: %s, Latitude: %s, Longitude: %s, Radius: %s km, Limit: %s",
@@ -57,7 +57,7 @@ async def get_places_autocomplete(
     limit: int = Query(10, ge=1, le=20),
     radius_meters: int = Query(25000, ge=10),
     mode: str | None = Query(None),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     try:
         results = await PlaceAutocompleteService.autocomplete(

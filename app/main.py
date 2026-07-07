@@ -297,8 +297,10 @@ def _register_routes(app: FastAPI) -> None:
     app.include_router(live_ai_router, prefix="/api/v1")
 
     from app.routes.place_media import router as place_media_router
+    from app.routes.live_routing import router as live_routing_router
 
     app.include_router(place_media_router, prefix="/api/v1")
+    app.include_router(live_routing_router, prefix="/api/v1")
 
     from app.routes.travel_intel import router as travel_intel_router
 
