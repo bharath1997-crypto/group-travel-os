@@ -359,6 +359,7 @@ export default function LivePage() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchBias, setSearchBias] = useState<SearchBias | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const routePreviewRequestRef = useRef(0);
 
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [alertsEnabled, setAlertsEnabled] = useState(true);
@@ -496,6 +497,7 @@ export default function LivePage() {
         return;
       }
 
+      const requestId = ++routePreviewRequestRef.current;
       setRouteOrigin(origin);
       setRoutePreviewStatus("loading");
       setRoutePreviewError(null);
@@ -508,7 +510,10 @@ export default function LivePage() {
           { lat: dest.lat, lng: dest.lng },
           travelMode,
           options?.active ?? false,
+          origin.source,
         );
+
+        if (requestId !== routePreviewRequestRef.current) return;
 
         if (result.error) {
           setRoutePreviewStatus("failed");
@@ -554,12 +559,15 @@ export default function LivePage() {
           ]);
         }
       } catch (err) {
+        if (requestId !== routePreviewRequestRef.current) return;
         console.error("[Rovvy Route] loadRoutePreview catch error:", err);
         setRoutePreviewStatus("failed");
         setRoutePreviewError("Directions service unavailable.");
         setActiveRoute(null);
       } finally {
-        setRouteLoading(false);
+        if (requestId === routePreviewRequestRef.current) {
+          setRouteLoading(false);
+        }
       }
     },
     [routeOrigin, resolveDefaultRouteOrigin, travelMode, gpsState],
@@ -1401,7 +1409,10 @@ export default function LivePage() {
 
   function handleRetryRoutePreview() {
     if (!destination) return;
-    void loadRoutePreview(destination, { origin: routeOrigin ?? resolveDefaultRouteOrigin() });
+    const currentOrigin = (routeOrigin && routeOrigin.source !== "gps")
+      ? routeOrigin
+      : resolveDefaultRouteOrigin();
+    void loadRoutePreview(destination, { origin: currentOrigin });
   }
 
   function handleBeginNavigation() {

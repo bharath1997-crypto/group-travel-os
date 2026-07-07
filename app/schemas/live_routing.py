@@ -1,0 +1,54 @@
+from __future__ import annotations
+
+from typing import Literal
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class RouteCoordinateOrigin(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+    source: Literal["gps", "search", "map_pick", "map_center"]
+
+
+class RouteCoordinateDestination(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+    name: str | None = None
+
+
+class RoutePreviewRequest(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    origin: RouteCoordinateOrigin
+    destination: RouteCoordinateDestination
+    travelMode: Literal["Drive", "Bike", "Walk", "Trek"]
+
+
+class GeoJSONGeometry(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    type: Literal["LineString"]
+    coordinates: list[list[float]]  # List of [lng, lat] pairs
+
+
+class RouteManeuverOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    instruction: str
+    location: list[float]  # [lng, lat]
+
+
+class RoutePreviewResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    status: Literal["ready", "failed"]
+    distanceMeters: float | None = None
+    durationSeconds: float | None = None
+    geometry: GeoJSONGeometry | None = None
+    maneuvers: list[RouteManeuverOut] | None = None
+    provider: str = "osrm"
+    message: str | None = None

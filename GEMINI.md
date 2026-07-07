@@ -257,7 +257,7 @@ After every feature change, update this section in GEMINI.md:
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2026-06-30 (Aligned nav bar to match Dashboard Layout header) |
-| Live Trip Mode (MapLibre Navigation) | Complete | 2026-07-07 (Synchronized initial network geolocation, added dynamic accuracy uncertainty circle for GPS XR, and coupled blue dot visibility with GPS precision levels. Fixed route preview engine, implemented OSRM travel mode profiles, automatic nearest-road snapping, and distance-based walk route suggestions. Fixed map style-load race condition on accuracy uncertainty layer.) |
+| Live Trip Mode (MapLibre Navigation) | Complete | 2026-07-07 (Added dynamic accuracy uncertainty circle, OSRM backend proxy route-preview endpoint, and client migration.) |
 | Place Preview Wikipedia Enrichment | Complete | 2026-07-02 (Added backend integration via /api/v1/places/wiki-summary and frontend UI for eligible place types) |
 | Live Search Autocomplete | Complete | 2026-07-02 (Implemented robust Google Maps-style autocomplete with local place registry and OSM Nominatim fallback, optimized distance ranking, category keyword detection, and debounced AbortController-managed fetching.) |
 | Buses page | Pending | — |
@@ -282,7 +282,7 @@ After every pytest run, update this section in GEMINI.md:
 | tests/test_buddy.py | — | — |
 | tests/test_explore.py | — | — |
 | tests/test_live_group.py | Deprecated | 2026-06-25 |
-| tests/test_place_media.py | 8 | 2026-07-06 |
+| tests/test_place_media.py | 11 | 2026-07-07 |
 | tests/test_places_nearby.py | 7 | 2026-07-06 |
 | tests/test_route_intelligence.py | 12 | 2026-07-04 |
 

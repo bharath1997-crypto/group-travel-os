@@ -12,6 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
 from app.utils.exceptions import AppException
 
+import logging
+logger = logging.getLogger(__name__)
+
 router = APIRouter(tags=["Places"])
 
 @router.get("/search/places")
@@ -23,6 +26,10 @@ async def search_places(
     limit: int = Query(8, ge=1, le=20),
     db: AsyncSession = Depends(get_db),
 ):
+    logger.info(
+        "[Rovvy Search Audit] Search endpoint hit. Query: %s, Latitude: %s, Longitude: %s, Radius: %s km, Limit: %s",
+        q, lat, lng, radius_km, limit
+    )
     try:
         results = await PlaceAutocompleteService.search_places(
             db=db,
@@ -32,8 +39,13 @@ async def search_places(
             radius_km=radius_km,
             limit=limit,
         )
+        logger.info(
+            "[Rovvy Search Audit] Search endpoint success. Found %d results.",
+            len(results) if results else 0
+        )
         return {"results": results}
     except Exception as exc:
+        logger.error("[Rovvy Search Audit] Search endpoint failed: %s", exc)
         raise AppException.bad_request(f"Place search failed: {str(exc)}")
 
 
