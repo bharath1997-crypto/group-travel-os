@@ -18,18 +18,32 @@ import { haversineM } from "@/lib/geo";
 import PlacePreviewCard, { type PlacePreviewData } from "./PlacePreviewCard";
 import FarAwayPlacePanel from "./FarAwayPlacePanel";
 import SoloRoutePreviewPanel from "./SoloRoutePreviewPanel";
+import LiveRouteOriginSetup from "./LiveRouteOriginSetup";
 import SoloLiveActivePanel from "./SoloLiveActivePanel";
 import SoloLiveNavigationOverlay from "./SoloLiveNavigationOverlay";
-import type { LiveStage, RouteLine, TripStatus, UserLocationUpdate } from "./live-types";
+import type {
+  LiveStage,
+  RouteLine,
+  RouteOrigin,
+  RoutePreviewStatus,
+  TripStatus,
+  UserLocationUpdate,
+} from "./live-types";
 import { fetchLiveRoute } from "./live-routing";
 import {
-  canDrawLocalRoute,
+  buildGpsRouteOrigin,
+  buildMapCenterRouteOrigin,
+  buildMapPickRouteOrigin,
+  validateRouteOriginCoords,
+} from "./live-route-origin";
+import {
   canStartSoloLive,
   isLongDistanceFromUser,
 } from "./live-types";
 import {
   liveGeocodingReverse,
   liveAutocompleteSearch,
+  autocompleteResultToPlacePreview,
   SEARCH_DEBOUNCE_MS,
   normalizePlaceCategory,
   type AutocompleteResult,
@@ -305,6 +319,11 @@ export default function LivePage() {
   const [destination, setDestination] = useState<PlacePreviewData | null>(null);
   const [activeRoute, setActiveRoute] = useState<RouteLine | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
+  const [routePreviewStatus, setRoutePreviewStatus] = useState<RoutePreviewStatus>("idle");
+  const [routePreviewError, setRoutePreviewError] = useState<string | null>(null);
+  const [routeOrigin, setRouteOrigin] = useState<RouteOrigin | null>(null);
+  const [originPickMode, setOriginPickMode] = useState(false);
+  const [showOriginSetup, setShowOriginSetup] = useState(false);
   const [isLiveActive, setIsLiveActive] = useState(false);
   const [tripStatus, setTripStatus] = useState<TripStatus>("on_the_way");
   const [plannedStops, setPlannedStops] = useState<PlacePreviewData[]>([]);
@@ -337,6 +356,7 @@ export default function LivePage() {
   const [showSuggestionsCard, setShowSuggestionsCard] = useState(false);
   const [searchResults, setSearchResults] = useState<AutocompleteResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [searchBias, setSearchBias] = useState<SearchBias | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -432,6 +452,176 @@ export default function LivePage() {
     }
     return null;
   }, [clickedLocation, userLocation, destination, isLiveActive, liveStage, gpsStatus]);
+
+  const resolveDefaultRouteOrigin = useCallback((): RouteOrigin | null => {
+    if (userLocation) {
+      return buildGpsRouteOrigin(userLocation.lat, userLocation.lng, gpsState.accuracyMeters);
+    }
+    const mapCenter = mapRef.current?.getMapCenter();
+    if (mapCenter) {
+      return buildMapCenterRouteOrigin(mapCenter.lat, mapCenter.lng);
+    }
+    return null;
+  }, [userLocation, gpsState.accuracyMeters]);
+
+  const loadRoutePreview = useCallback(
+    async (
+      dest: PlacePreviewData,
+      options?: { active?: boolean; fitMap?: boolean; origin?: RouteOrigin | null },
+    ) => {
+      if (!Number.isFinite(dest.lat) || !Number.isFinite(dest.lng)) {
+        setRoutePreviewStatus("failed");
+        setRoutePreviewError("Invalid destination coordinates.");
+        setActiveRoute(null);
+        return;
+      }
+
+      if (isLongDistanceFromUser(dest.distanceM)) {
+        setRoutePreviewStatus("idle");
+        setRoutePreviewError(null);
+        setActiveRoute(null);
+        return;
+      }
+
+      const origin = options?.origin ?? routeOrigin ?? resolveDefaultRouteOrigin();
+      if (!validateRouteOriginCoords(origin)) {
+        setRoutePreviewStatus("failed");
+        setRoutePreviewError("Current location unavailable");
+        setActiveRoute(null);
+        setRouteLoading(false);
+        return;
+      }
+
+      setRouteOrigin(origin);
+      setRoutePreviewStatus("loading");
+      setRoutePreviewError(null);
+      setRouteLoading(true);
+      setActiveRoute(null);
+
+      try {
+        const result = await fetchLiveRoute(
+          { lat: origin.latitude, lng: origin.longitude },
+          { lat: dest.lat, lng: dest.lng },
+          travelMode,
+          options?.active ?? false,
+        );
+
+        if (result.error) {
+          setRoutePreviewStatus("failed");
+          setRoutePreviewError(result.error);
+          setActiveRoute(null);
+          return;
+        }
+
+        const route = result.route;
+        if (!route || route.geometry.length < 2) {
+          setRoutePreviewStatus("failed");
+          if (travelMode === "Drive") {
+            const distance = dest.distanceM || haversineM(origin.latitude, origin.longitude, dest.lat, dest.lng);
+            if (distance < 300) {
+              setRoutePreviewError("This is nearby. Walking route may work better.");
+            } else {
+              setRoutePreviewError("Drive route unavailable to this exact point. Try walking route or Pick nearby road as destination.");
+            }
+          } else {
+            setRoutePreviewError("No route found for selected travel mode.");
+          }
+          setActiveRoute(null);
+          return;
+        }
+
+        setActiveRoute(route);
+        setRoutePreviewStatus("ready");
+        setDestination((prev) =>
+          prev && prev.lat === dest.lat && prev.lng === dest.lng
+            ? { ...prev, distanceM: route.distanceMeters }
+            : prev,
+        );
+        setSelectedPlace((prev) =>
+          prev && prev.lat === dest.lat && prev.lng === dest.lng
+            ? { ...prev, distanceM: route.distanceMeters }
+            : prev,
+        );
+
+        if (options?.fitMap !== false) {
+          mapRef.current?.fitBounds([
+            [route.from.lng, route.from.lat],
+            [route.to.lng, route.to.lat],
+          ]);
+        }
+      } catch (err) {
+        console.error("[Rovvy Route] loadRoutePreview catch error:", err);
+        setRoutePreviewStatus("failed");
+        setRoutePreviewError("Directions service unavailable.");
+        setActiveRoute(null);
+      } finally {
+        setRouteLoading(false);
+      }
+    },
+    [routeOrigin, resolveDefaultRouteOrigin, travelMode],
+  );
+
+  const applyRouteOriginAndPreview = useCallback(
+    (origin: RouteOrigin) => {
+      setRouteOrigin(origin);
+      setShowOriginSetup(false);
+      setOriginPickMode(false);
+      if (destination) {
+        void loadRoutePreview(destination, { origin });
+      }
+    },
+    [destination, loadRoutePreview],
+  );
+
+  const handleUseCurrentLocationOrigin = useCallback(() => {
+    if (!userLocation) {
+      showToast("Location unavailable. Enable GPS or choose another start point.");
+      return;
+    }
+    applyRouteOriginAndPreview(
+      buildGpsRouteOrigin(userLocation.lat, userLocation.lng, gpsState.accuracyMeters),
+    );
+  }, [userLocation, gpsState.accuracyMeters, applyRouteOriginAndPreview]);
+
+  const handleUseMapCenterOrigin = useCallback(() => {
+    const center = mapRef.current?.getMapCenter();
+    if (!center) {
+      showToast("Move the map first.");
+      return;
+    }
+    applyRouteOriginAndPreview(buildMapCenterRouteOrigin(center.lat, center.lng));
+  }, [applyRouteOriginAndPreview]);
+
+  const handleSearchOriginSelect = useCallback(
+    (origin: RouteOrigin) => {
+      applyRouteOriginAndPreview(origin);
+    },
+    [applyRouteOriginAndPreview],
+  );
+
+  const handleStartOriginPick = useCallback(() => {
+    setShowOriginSetup(false);
+    setOriginPickMode(true);
+    showToast("Tap the map to set your starting point");
+  }, []);
+
+  const handleOriginMapPick = useCallback(
+    async (lat: number, lng: number) => {
+      let name = "Custom start point";
+      let address: string | undefined;
+      try {
+        const details = await liveGeocodingReverse(lat, lng);
+        if (details) {
+          name = details.name || details.display_name?.split(",")[0]?.trim() || name;
+          address = details.display_name;
+        }
+      } catch {
+        // Reverse geocode is optional for map pick.
+      }
+      applyRouteOriginAndPreview(buildMapPickRouteOrigin(lat, lng, name, address));
+    },
+    [applyRouteOriginAndPreview],
+  );
 
   const handleNearbySearch = useCallback(async (query: string) => {
     setSelectedPlace(null);
@@ -529,7 +719,8 @@ export default function LivePage() {
     setNearbyResults(null);
     setNearbyCategory(null);
     showToast(`Destination changed to ${result.name}.`);
-  }, []);
+    void loadRoutePreview(result);
+  }, [loadRoutePreview]);
 
   const handleSavePlaceFromNearby = useCallback(() => {
     showToast("Place saved.");
@@ -541,7 +732,7 @@ export default function LivePage() {
     setNearbyPlacesAtClick(null);
   }, []);
 
-  const selectDestinationFromPlace = useCallback(async (
+  const selectDestination = useCallback(async (
     place: PlacePreviewData,
     options?: { origin?: "search" | "map_click"; clickLat?: number; clickLng?: number },
   ) => {
@@ -562,6 +753,13 @@ export default function LivePage() {
 
     setDestination(null);
     setIsLiveActive(false);
+    setActiveRoute(null);
+    setRoutePreviewStatus("idle");
+    setRoutePreviewError(null);
+    setRouteLoading(false);
+    setRouteOrigin(null);
+    setOriginPickMode(false);
+    setShowOriginSetup(false);
     setViewingDetailsFromNearby(false);
     setNearbyResults(null);
     setNearbyCategory(null);
@@ -658,8 +856,15 @@ export default function LivePage() {
     }
   }, [currentUserId, refreshRecentSearches]);
 
+  const selectDestinationFromPlace = selectDestination;
+
   const handleMapClick = useCallback(async (lat: number, lng: number, features: any[]) => {
     if (isLiveActive) return;
+
+    if (originPickMode) {
+      void handleOriginMapPick(lat, lng);
+      return;
+    }
 
     setViewingDetailsFromNearby(false);
     setShowSearchPopup(false);
@@ -692,6 +897,7 @@ export default function LivePage() {
 
       if (bestFeature && clickedName && bestFeatureObj.score >= 40) {
         const labelPlace = mapLabelFeatureToPlacePreview(bestFeature, lat, lng, userLocation);
+        setMapClickResolving(false);
         await selectDestinationFromPlace(labelPlace, {
           origin: "map_click",
           clickLat: lat,
@@ -750,6 +956,7 @@ export default function LivePage() {
         .filter((c: any) => c.placeKey !== p.placeKey)
         .map((c: any) => mapResolveClickPlace(c, userLocation));
 
+      setMapClickResolving(false);
       await selectDestinationFromPlace(primaryPlace, {
         origin: "map_click",
         clickLat: lat,
@@ -760,62 +967,50 @@ export default function LivePage() {
       }
     } catch {
       logRovvyMapClickResolver("backend unavailable, using dropped pin fallback.");
+      setMapClickResolving(false);
       await selectDestinationFromPlace(fallbackPlace, {
         origin: "map_click",
         clickLat: lat,
         clickLng: lng,
       });
-    } finally {
-      setMapClickResolving(false);
     }
-  }, [isLiveActive, userLocation, selectDestinationFromPlace]);
+  }, [isLiveActive, userLocation, selectDestination, originPickMode, handleOriginMapPick]);
 
   const selectPlace = useCallback(async (result: AutocompleteResult) => {
-    const distM =
-      result.distanceMeters ??
-      (userLocation ? haversineM(userLocation.lat, userLocation.lng, result.lat, result.lng) : null);
-    const place: PlacePreviewData = {
-      name: result.name,
-      categoryLabel: result.category,
-      address: result.address,
-      phone: null,
-      lat: result.lat,
-      lng: result.lng,
-      distanceM: distM,
-      openingHours: null,
-      openStatus: null,
-      placeKey: result.placeKey,
-      osmType: null,
-      osmId: null,
-      city: null,
-      country: null,
-      source: result.source,
-      tags: result.tags,
-    };
-    await selectDestinationFromPlace(place, { origin: "search" });
-  }, [selectDestinationFromPlace, userLocation]);
+    const anchor = resolveSearchAnchor();
+    await selectDestination(
+      autocompleteResultToPlacePreview(result, anchor ?? userLocation),
+      { origin: "search" },
+    );
+  }, [selectDestination, resolveSearchAnchor, userLocation]);
 
   const searchPlaceByName = useCallback(
     async (name: string) => {
       setSearchQuery(name);
       setShowSearchPopup(false);
       setShowSuggestionsCard(false);
+      setSearchError(null);
       setSearchLoading(true);
       setSearchNeedsLocation(false);
       try {
         const anchor = resolveSearchAnchor();
+        if (!anchor) {
+          setSearchNeedsLocation(true);
+          setSearchResults([]);
+          return;
+        }
         const results = await liveAutocompleteSearch(name, anchor);
         const best = results[0];
         if (best) {
           await selectPlace(best);
         } else {
-          setToast(
-            anchor
-              ? "No nearby OSM matches found. Try a more specific search."
-              : "No matches found. Turn on location for nearby results.",
-          );
+          setSearchResults([]);
+          setToast("No nearby places found. Try a different search.");
           window.setTimeout(() => setToast(null), 3200);
         }
+      } catch {
+        setSearchError("Search is unavailable right now.");
+        setSearchResults([]);
       } finally {
         setSearchLoading(false);
       }
@@ -857,12 +1052,14 @@ export default function LivePage() {
     if (!searchQuery.trim()) {
       setSearchResults((prev) => (prev.length ? [] : prev));
       setSearchNeedsLocation(false);
+      setSearchError(null);
       return;
     }
 
     if (searchQuery.trim().length < 2) {
       setSearchResults((prev) => (prev.length ? [] : prev));
       setSearchNeedsLocation(false);
+      setSearchError(null);
       return;
     }
 
@@ -870,7 +1067,16 @@ export default function LivePage() {
 
     searchDebounceRef.current = setTimeout(async () => {
       const anchor = resolveSearchAnchor();
-      setSearchNeedsLocation(!anchor);
+      if (!anchor) {
+        setSearchNeedsLocation(true);
+        setSearchResults([]);
+        setSearchError(null);
+        setSearchLoading(false);
+        return;
+      }
+
+      setSearchNeedsLocation(false);
+      setSearchError(null);
       setSearchLoading(true);
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -886,7 +1092,8 @@ export default function LivePage() {
         setSearchResults(results);
       } catch (err: any) {
         if (err.name !== "AbortError") {
-          setSearchResults((prev) => (prev.length ? [] : prev));
+          setSearchResults([]);
+          setSearchError("Search is unavailable right now.");
         }
       } finally {
         setSearchLoading(false);
@@ -896,7 +1103,7 @@ export default function LivePage() {
     return () => {
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
     };
-  }, [searchQuery, resolveSearchAnchor, showSearchPopup, showSuggestionsCard]);
+  }, [searchQuery, resolveSearchAnchor]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => mapRef.current?.locateUser(), 600);
@@ -977,6 +1184,12 @@ export default function LivePage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (destination) {
+      void loadRoutePreview(destination);
+    }
+  }, [travelMode, destination, loadRoutePreview]);
+
   function resetRoviExplanation() {
     setRoviExplanation(null);
     setRoviExplanationError(null);
@@ -1053,30 +1266,15 @@ export default function LivePage() {
     setDestination(selectedPlace);
     setIsLiveActive(false);
     setLiveStage("destination_set");
-    // Teal clicked-pin replaced by the destination 📍 marker
     mapRef.current?.clearClickedPin();
-    // Record as destination type in recent searches
     recordRecentSearch(
       { ...buildPlaceRecentSearch(selectedPlace), type: "destination" },
       currentUserId,
     );
     refreshRecentSearches();
-
-    if (userLocation) {
-      setRouteLoading(true);
-      fetchLiveRoute(userLocation, { lat: selectedPlace.lat, lng: selectedPlace.lng })
-        .then((r) => {
-          if (r) {
-            r.active = false;
-            setActiveRoute(r);
-            mapRef.current?.fitBounds([
-              [r.from.lng, r.from.lat],
-              [r.to.lng, r.to.lat]
-            ]); // We will implement fitRoute in mapRef instead of fitBounds
-          }
-          setRouteLoading(false);
-        });
-    }
+    const defaultOrigin = resolveDefaultRouteOrigin();
+    if (defaultOrigin) setRouteOrigin(defaultOrigin);
+    void loadRoutePreview(selectedPlace, { origin: defaultOrigin });
   }
 
   function handleStartFromPlacePreview() {
@@ -1099,15 +1297,9 @@ export default function LivePage() {
       currentUserId,
     );
     refreshRecentSearches();
-
-    if (userLocation) {
-      setRouteLoading(true);
-      fetchLiveRoute(userLocation, { lat: selectedPlace.lat, lng: selectedPlace.lng }, true)
-        .then((r) => {
-          if (r) setActiveRoute(r);
-          setRouteLoading(false);
-        });
-    }
+    const defaultOrigin = resolveDefaultRouteOrigin();
+    if (defaultOrigin) setRouteOrigin(defaultOrigin);
+    void loadRoutePreview(selectedPlace, { active: true, fitMap: false, origin: defaultOrigin });
     if (!liveGpsActive) mapRef.current?.locateUser();
   }
 
@@ -1177,8 +1369,8 @@ export default function LivePage() {
 
   function handleStartSoloLive() {
     if (!requireSolo() || !destination) return;
-    if (!activeRoute) {
-      showToast("Route unavailable right now.");
+    if (routePreviewStatus !== "ready" || !activeRoute) {
+      showToast(routePreviewError || "Route unavailable right now.");
       return;
     }
     if (!canStartSoloLive(destination.distanceM)) {
@@ -1193,14 +1385,25 @@ export default function LivePage() {
   function handleChangeDestination() {
     setDestination(null);
     setActiveRoute(null);
+    setRoutePreviewStatus("idle");
+    setRoutePreviewError(null);
+    setRouteLoading(false);
+    setRouteOrigin(null);
+    setOriginPickMode(false);
+    setShowOriginSetup(false);
     setIsLiveActive(false);
     setLiveStage(selectedPlace ? "place_preview" : "static_landing");
   }
 
+  function handleRetryRoutePreview() {
+    if (!destination) return;
+    void loadRoutePreview(destination, { origin: routeOrigin ?? resolveDefaultRouteOrigin() });
+  }
+
   function handleBeginNavigation() {
     if (!requireSolo() || !destination) return;
-    if (!activeRoute) {
-      showToast("Route unavailable right now.");
+    if (routePreviewStatus !== "ready" || !activeRoute) {
+      showToast(routePreviewError || "Route unavailable right now.");
       return;
     }
     if (!canStartSoloLive(destination.distanceM)) {
@@ -1357,6 +1560,12 @@ export default function LivePage() {
     };
   }, [activeRoute, liveStage, isLiveActive]);
 
+  const routeOriginPin = useMemo(() => {
+    if (!routeOrigin || routeOrigin.source === "gps") return null;
+    if (routePreviewStatus === "ready" && activeRoute) return null;
+    return { lat: routeOrigin.latitude, lng: routeOrigin.longitude };
+  }, [routeOrigin, routePreviewStatus, activeRoute]);
+
   const showAskRoviAi = shouldShowAskRoviAi(locationContext);
 
   function statusPillLabel(): string {
@@ -1382,6 +1591,7 @@ export default function LivePage() {
         activeLayer={activeLayer}
         mapRef={mapRef}
         mapPin={mapPin ? { lat: mapPin.lat, lng: mapPin.lng } : null}
+        routeOriginPin={routeOriginPin}
         routeLine={routeLine}
         isLiveActive={isLiveActive}
         navigationMode={isNavigating}
@@ -1471,14 +1681,24 @@ export default function LivePage() {
               </div>
 
               {/* Autocomplete Dropdown Search Results */}
-              {searchQuery.trim().length >= 2 && showSearchPopup && searchNeedsLocation && searchResults.length === 0 && !searchLoading && (
+              {searchQuery.trim().length >= 2 && showSearchPopup && searchNeedsLocation && !searchLoading && (
                 <div className="absolute left-0 right-0 top-full z-30 mt-1 rounded-2xl bg-white/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.12)] px-3 py-2.5 text-xs text-stone-500">
-                  Turn on location or move the map for better nearby OSM results.
+                  Turn on location or move the map to search nearby.
                 </div>
               )}
-              {searchQuery.trim().length >= 2 && showSearchPopup && searchLoading && searchResults.length === 0 && (
+              {searchQuery.trim().length >= 2 && showSearchPopup && searchLoading && searchResults.length === 0 && !searchNeedsLocation && (
                 <div className="absolute left-0 right-0 top-full z-30 mt-1 rounded-2xl bg-white/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.12)] px-3 py-2.5 text-xs text-stone-400">
-                  Searching OSM places…
+                  Searching nearby places…
+                </div>
+              )}
+              {searchQuery.trim().length >= 2 && showSearchPopup && searchError && !searchLoading && (
+                <div className="absolute left-0 right-0 top-full z-30 mt-1 rounded-2xl bg-white/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.12)] px-3 py-2.5 text-xs text-amber-700">
+                  {searchError}
+                </div>
+              )}
+              {searchQuery.trim().length >= 2 && showSearchPopup && !searchLoading && !searchNeedsLocation && !searchError && searchResults.length === 0 && (
+                <div className="absolute left-0 right-0 top-full z-30 mt-1 rounded-2xl bg-white/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.12)] px-3 py-2.5 text-xs text-stone-500">
+                  No nearby places found. Try a different search.
                 </div>
               )}
               {searchQuery.trim().length >= 2 && searchResults.length > 0 && showSearchPopup && (
@@ -1911,6 +2131,12 @@ export default function LivePage() {
       )}
 
       {/* Route Preview — local/regional destination */}
+      {originPickMode ? (
+        <div className="pointer-events-none absolute left-1/2 top-24 z-35 max-w-sm -translate-x-1/2 rounded-xl bg-stone-900/90 px-4 py-2 text-center text-sm text-white shadow-lg">
+          Tap the map to set your starting point
+        </div>
+      ) : null}
+
       {showRoutePreview && destination && !isLongDistancePreview ? (
         <SoloRoutePreviewPanel
           destination={destination}
@@ -1921,8 +2147,28 @@ export default function LivePage() {
           onChangeDestination={handleChangeDestination}
           onClose={handleChangeDestination}
           onPlanTrip={handlePlanTrip}
+          onRetryRoute={handleRetryRoutePreview}
+          onEditOrigin={() => setShowOriginSetup(true)}
+          routeOrigin={routeOrigin}
           routeLine={activeRoute}
           routeLoading={routeLoading}
+          routePreviewStatus={routePreviewStatus}
+          routePreviewError={routePreviewError}
+        />
+      ) : null}
+
+      {showRoutePreview && destination && !isLongDistancePreview ? (
+        <LiveRouteOriginSetup
+          open={showOriginSetup}
+          onClose={() => setShowOriginSetup(false)}
+          onUseCurrentLocation={handleUseCurrentLocationOrigin}
+          onUseMapCenter={handleUseMapCenterOrigin}
+          onPickOnMap={handleStartOriginPick}
+          onSelectSearchOrigin={handleSearchOriginSelect}
+          gpsAvailable={Boolean(userLocation)}
+          gpsAccuracyMeters={gpsState.accuracyMeters}
+          mapCenterAvailable={true}
+          searchBias={resolveSearchAnchor()}
         />
       ) : null}
 
