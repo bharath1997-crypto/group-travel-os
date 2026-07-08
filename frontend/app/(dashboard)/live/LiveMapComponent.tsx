@@ -41,11 +41,11 @@ const LIVE_MAP_CSS = `
 }
 @keyframes rovvy-gps-pulse {
   0% {
-    transform: scale(0.95);
-    opacity: 1;
+    transform: scale(0.6);
+    opacity: 0.85;
   }
   100% {
-    transform: scale(2.8);
+    transform: scale(4.5);
     opacity: 0;
   }
 }
@@ -110,12 +110,111 @@ function createUserMarkerElement(liveActive: boolean, navigating: boolean): HTML
   el.style.cssText = "pointer-events:none;position:relative;";
 
   if (navigating) {
-    el.innerHTML = `<div style="width:20px;height:20px;border-radius:50%;background:${liveActive ? "#0F766E" : "#2563EB"};border:3px solid #FFFFFF;box-shadow:0 0 14px rgba(37,99,235,0.55);"></div>`;
+    el.innerHTML = `
+      <div style="
+        position: relative;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <!-- Pulse Wave 1 -->
+        <div style="
+          position: absolute;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: rgba(15, 118, 110, 0.15);
+          border: 1.5px solid rgba(15, 118, 110, 0.3);
+          animation: rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25, 0, 0, 1);
+          pointer-events: none;
+          z-index: 1;
+        "></div>
+        <!-- Pulse Wave 2 -->
+        <div style="
+          position: absolute;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: rgba(15, 118, 110, 0.1);
+          border: 1px solid rgba(15, 118, 110, 0.2);
+          animation: rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25, 0, 0, 1);
+          animation-delay: 1.2s;
+          pointer-events: none;
+          z-index: 1;
+        "></div>
+
+        <!-- Navigation Dot -->
+        <div style="
+          position: absolute;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: #ffffff;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">
+          <div style="
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: ${liveActive ? "#0F766E" : "#2563EB"};
+          "></div>
+        </div>
+      </div>
+    `;
     return el;
   }
 
   if (liveActive) {
-    el.innerHTML = `<div style="font-size:22px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35));">🚗</div>`;
+    el.innerHTML = `
+      <div style="
+        position: relative;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <!-- Pulse Wave 1 -->
+        <div style="
+          position: absolute;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: rgba(15, 118, 110, 0.15);
+          border: 1.5px solid rgba(15, 118, 110, 0.3);
+          animation: rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25, 0, 0, 1);
+          pointer-events: none;
+          z-index: 1;
+        "></div>
+        <!-- Pulse Wave 2 -->
+        <div style="
+          position: absolute;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: rgba(15, 118, 110, 0.1);
+          border: 1px solid rgba(15, 118, 110, 0.2);
+          animation: rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25, 0, 0, 1);
+          animation-delay: 1.2s;
+          pointer-events: none;
+          z-index: 1;
+        "></div>
+
+        <div style="
+          position: absolute;
+          font-size: 22px;
+          line-height: 1;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+          z-index: 2;
+        ">🚗</div>
+      </div>
+    `;
     return el;
   }
 
@@ -129,14 +228,28 @@ function createUserMarkerElement(liveActive: boolean, navigating: boolean): HTML
       align-items: center;
       justify-content: center;
     ">
+      <!-- Wave 1 -->
       <div style="
         position: absolute;
-        width: 32px;
-        height: 32px;
+        width: 24px;
+        height: 24px;
         border-radius: 50%;
-        background: rgba(26, 115, 232, 0.2);
-        border: 1px solid rgba(26, 115, 232, 0.35);
-        animation: rovvy-gps-pulse 2.2s infinite cubic-bezier(0.25, 0, 0, 1);
+        background: rgba(26, 115, 232, 0.18);
+        border: 1.5px solid rgba(26, 115, 232, 0.35);
+        animation: rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25, 0, 0, 1);
+        pointer-events: none;
+        z-index: 1;
+      "></div>
+      <!-- Wave 2 (delayed) -->
+      <div style="
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(26, 115, 232, 0.10);
+        border: 1px solid rgba(26, 115, 232, 0.20);
+        animation: rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25, 0, 0, 1);
+        animation-delay: 1.2s;
         pointer-events: none;
         z-index: 1;
       "></div>
@@ -547,6 +660,12 @@ export default function LiveMapComponent({
   const userLocationRef = useRef<UserLocation | null>(null);
   const watchIdsRef = useRef<number[]>([]);
   const isUnmountedRef = useRef(false);
+  const lastStateReportedRef = useRef<{
+    status: GpsStatus;
+    lat: number | null;
+    lng: number | null;
+    timestamp: number | null;
+  } | null>(null);
   const liveGpsActiveRef = useRef(false);
   const hasCenteredOnUserRef = useRef(false);
   const bestAccuracyCenteredRef = useRef<number | null>(null);
@@ -847,7 +966,33 @@ export default function LiveMapComponent({
         source: "browser_geolocation",
       };
 
-      callbacksRef.current.onGpsStateChange?.(newState);
+      // Throttling React state updates: report only if status changes, 
+      // or at least 3 seconds have passed, or user moved > 10 meters.
+      const now = Date.now();
+      const last = lastStateReportedRef.current;
+      let shouldReport = false;
+      if (!last) {
+        shouldReport = true;
+      } else if (last.status !== newStatus) {
+        shouldReport = true;
+      } else if (now - (last.timestamp || 0) > 3000) {
+        shouldReport = true;
+      } else if (last.lat !== null && last.lng !== null) {
+        const dist = haversineM(last.lat, last.lng, lat, lng);
+        if (dist > 10) {
+          shouldReport = true;
+        }
+      }
+
+      if (shouldReport) {
+        lastStateReportedRef.current = {
+          status: newStatus,
+          lat,
+          lng,
+          timestamp: now,
+        };
+        callbacksRef.current.onGpsStateChange?.(newState);
+      }
 
       if (process.env.NEXT_PUBLIC_ROVVY_MAP_DEBUG === "true") {
         setGpsDebug({
@@ -907,6 +1052,7 @@ export default function LiveMapComponent({
         watchIdsRef.current = [];
       }
       liveGpsActiveRef.current = false;
+      lastStateReportedRef.current = null;
       callbacksRef.current.onGpsStateChange?.({
         status: "idle",
         lat: userLocationRef.current?.lat || null,
