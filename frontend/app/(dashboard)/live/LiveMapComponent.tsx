@@ -695,6 +695,7 @@ export default function LiveMapComponent({
   onNearbyMarkerClickRef.current = onNearbyMarkerClick;
 
   const restoreOverlaysAfterStyleChange = useCallback((map: maplibregl.Map) => {
+    console.log("[Rovvy Debug] marker restore after style.load, userLocation:", userLocationRef.current);
     syncRouteLayer(map, routeLineRef.current);
 
     const loc = userLocationRef.current;
@@ -771,6 +772,9 @@ export default function LiveMapComponent({
     );
   }, []);
 
+  const restoreOverlaysRef = useRef(restoreOverlaysAfterStyleChange);
+  restoreOverlaysRef.current = restoreOverlaysAfterStyleChange;
+
 
   useEffect(() => {
     injectLiveMapCursorStyle();
@@ -782,6 +786,7 @@ export default function LiveMapComponent({
 
   useEffect(() => {
     if (!mapContainer.current) return;
+    isUnmountedRef.current = false;
 
     const layerStyles = getLiveMapLibreLayerStyles();
     const map = new maplibregl.Map({
@@ -800,6 +805,8 @@ export default function LiveMapComponent({
       if (map.getZoom() > LIVE_MAP_MAX_ZOOM) {
         map.setZoom(LIVE_MAP_MAX_ZOOM);
       }
+      console.log("[Rovvy Debug] Map loaded, restoring overlays");
+      restoreOverlaysRef.current(map);
     });
 
     map.on("error", (event) => {
@@ -891,8 +898,10 @@ export default function LiveMapComponent({
       const showDot = true;
 
       if (userMarkerRef.current) {
+        console.log("[Rovvy Debug] user marker updated at:", [lng, lat]);
         userMarkerRef.current.setLngLat([lng, lat]);
       } else {
+        console.log("[Rovvy Debug] user marker created at:", [lng, lat]);
         userMarkerRef.current = new maplibregl.Marker({
           element: createUserMarkerElement(isLiveActiveRef.current, navigationModeRef.current),
           anchor: "center",
@@ -935,12 +944,17 @@ export default function LiveMapComponent({
       timestamp: number | null,
       errorMsg?: string,
     ) {
-      if (isUnmountedRef.current) return;
+      console.log("[Rovvy Debug] applyUserLocation called", { lat, lng, centerMap, accuracyMeters, timestamp });
+      if (isUnmountedRef.current) {
+        console.log("[Rovvy Debug] applyUserLocation skipped because unmounted");
+        return;
+      }
       if (!liveGpsActiveRef.current && watchIdsRef.current.length > 0) {
         liveGpsActiveRef.current = true;
         callbacksRef.current.onLiveGpsChange?.(true);
       }
       userLocationRef.current = { lat, lng, accuracy: accuracyMeters || undefined, timestamp: timestamp || undefined };
+      console.log("[Rovvy Debug] LiveMapComponent set userLocationRef:", userLocationRef.current);
 
       ensureUserMarker(lat, lng, accuracyMeters, timestamp);
 
@@ -1069,9 +1083,10 @@ export default function LiveMapComponent({
     }
 
     function handleGeolocationError(err: GeolocationPositionError, source: string) {
+      const errMsg = geolocationErrorMessage(err);
+      console.log("[Rovvy Debug] geolocation failure", { code: err.code, message: errMsg, source });
       if (isUnmountedRef.current) return;
       const status = gpsStatusFromGeolocationError(err.code);
-      const errMsg = geolocationErrorMessage(err);
       logRovvyGps(`${source} error`, {
         code: err.code,
         status,
@@ -1186,6 +1201,7 @@ export default function LiveMapComponent({
       bestAccuracyCenteredRef.current = null;
 
       logRovvyGps("requesting location");
+      console.log("[Rovvy Debug] geolocation requested via startLiveGps");
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -1193,7 +1209,7 @@ export default function LiveMapComponent({
           applyUserLocation(latitude, longitude, true, speed, heading, accuracy, pos.timestamp);
         },
         (err) => handleGeolocationError(err, "getCurrentPosition"),
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+        { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 },
       );
 
       const wId = navigator.geolocation.watchPosition(
@@ -1202,7 +1218,7 @@ export default function LiveMapComponent({
           applyUserLocation(latitude, longitude, false, speed, heading, accuracy, pos.timestamp);
         },
         (err) => handleGeolocationError(err, "watchPosition"),
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 },
+        { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 },
       );
       watchIdsRef.current.push(wId);
     }
@@ -1238,6 +1254,7 @@ export default function LiveMapComponent({
         map.fitBounds(bounds, { padding: 80, duration: 800 });
       },
       locateUser: (forceFresh?: boolean) => {
+        console.log("[Rovvy Debug] locateUser called", { forceFresh });
         const blocked = geolocationUnavailableMessage();
         if (blocked) {
           logRovvyGps("unavailable", { reason: blocked });
@@ -1257,6 +1274,7 @@ export default function LiveMapComponent({
 
         if (forceFresh) {
           logRovvyGps("forcing fresh location request");
+          console.log("[Rovvy Debug] geolocation requested via locateUser (forceFresh)");
           const ageMs = userLocationRef.current?.timestamp ? Date.now() - userLocationRef.current.timestamp : Infinity;
           const isFresh = userLocationRef.current && ageMs < 15000;
           if (!isFresh) {
@@ -1695,6 +1713,7 @@ function syncAccuracyLayerNow(
   const radius = displayAccuracyRadiusMeters(accuracyMeters);
 
   if (lat == null || lng == null || radius == null) {
+    console.log("[Rovvy Debug] accuracy circle cleared/removed");
     try {
       if (map.getLayer(fillLayerId)) map.removeLayer(fillLayerId);
       if (map.getLayer(strokeLayerId)) map.removeLayer(strokeLayerId);
@@ -1706,6 +1725,7 @@ function syncAccuracyLayerNow(
   }
 
   const circleFeature = createGeoJsonCircle([lng, lat], radius / 1000);
+  console.log("[Rovvy Debug] accuracy circle created/updated at:", [lng, lat], "radius:", radius);
 
   try {
     const existing = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;

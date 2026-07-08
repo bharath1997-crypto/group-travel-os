@@ -399,7 +399,7 @@ After every feature change, update this section in .cursorrules:
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2025-06 |
-| Live Trip Mode (detailed OSM default + layer chooser) | Modified | 2026-07 |
+| Live Trip Mode (route origin setup + From/To on preview failure) | Modified | 2026-07 |
 | Live Place Media Resolver (lazy placeKey lookup) | Complete | 2026-06 |
 | Buses page | Pending | — |
 

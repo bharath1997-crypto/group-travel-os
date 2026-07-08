@@ -346,7 +346,13 @@ export default function LivePage() {
   );
   const speedMps = gpsState.speed;
   const gpsStatus = gpsState.status;
+  const gpsStatusRef = useRef(gpsStatus);
+  gpsStatusRef.current = gpsStatus;
   const liveGpsActive = gpsStatus === "active" || gpsStatus === "approximate" || gpsStatus === "requesting" || gpsStatus === "stale";
+
+  useEffect(() => {
+    console.log("[Rovvy Debug] userLocation computed value changed:", userLocation);
+  }, [userLocation]);
 
   const [toast, setToast] = useState<string | null>(null);
   const [loadingPlaceDetails, setLoadingPlaceDetails] = useState(false);
@@ -1178,7 +1184,7 @@ export default function LivePage() {
         logRovvyGps("permission state changed", { state: result.state });
         if (result.state === "denied") {
           setGpsState((prev) => ({ ...prev, status: "denied" }));
-        } else if (result.state === "granted" && gpsStatus !== "active") {
+        } else if (result.state === "granted" && gpsStatusRef.current !== "active") {
           mapRef.current?.locateUser(true);
         }
       };
@@ -1263,12 +1269,19 @@ export default function LivePage() {
   }
 
   function handleGpsStateChange(newState: GpsState) {
+    console.log("[Rovvy Debug] gpsState after update:", newState);
     setGpsState(newState);
 
     if (newState.lat !== null && newState.lng !== null) {
       const loc = { lat: newState.lat, lng: newState.lng };
       setSelectedPlace((prev) => (prev ? updatePlaceDistance(prev, loc) : prev));
       setDestination((prev) => (prev ? updatePlaceDistance(prev, loc) : prev));
+      setRouteOrigin((prev) => {
+        if (!prev || prev.source === "gps") {
+          return buildGpsRouteOrigin(newState.lat!, newState.lng!, newState.accuracyMeters);
+        }
+        return prev;
+      });
     }
 
     if (newState.accuracyMeters && newState.accuracyMeters > 500 && !lowAccuracyToastShownRef.current) {

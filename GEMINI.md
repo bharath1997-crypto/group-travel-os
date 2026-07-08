@@ -257,7 +257,7 @@ After every feature change, update this section in GEMINI.md:
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2026-06-30 (Aligned nav bar to match Dashboard Layout header) |
-| Live Trip Mode (MapLibre Navigation) | Complete | 2026-07-08 (Ensure blue location marker dot is always visible, resolve navigation leaks/regressions, and optimize rendering with dual-wave pulses + throttled React state updates.) |
+| Live Trip Mode (MapLibre Navigation) | Complete | 2026-07-08 (Ensure blue location marker dot is always visible by resolving component mount/remount lifecycle ref leak, recovering overlays on map load, and resolving stale event closures.) |
 | Place Preview Wikipedia Enrichment | Complete | 2026-07-02 (Added backend integration via /api/v1/places/wiki-summary and frontend UI for eligible place types) |
 | Live Search Autocomplete | Complete | 2026-07-02 (Implemented robust Google Maps-style autocomplete with local place registry and OSM Nominatim fallback, optimized distance ranking, category keyword detection, and debounced AbortController-managed fetching.) |
 | Buses page | Pending | — |
@@ -274,16 +274,17 @@ After every pytest run, update this section in GEMINI.md:
 | Test Module | Test Count | Last Run |
 |---|---|---|
 | tests/test_auth.py | — | — |
-| tests/test_auth_service.py | 17 | 2026-07-06 |
-| tests/test_flights.py | 3 | 2026-07-06 |
-| tests/test_hotels.py | 3 | 2026-07-06 |
+| tests/test_auth_service.py | 17 | 2026-07-08 |
+| tests/test_flights.py | 3 | 2026-07-08 |
+| tests/test_hotels.py | 3 | 2026-07-08 |
 | tests/test_routes.py | — | — |
 | tests/test_activities.py | — | — |
 | tests/test_buddy.py | — | — |
 | tests/test_explore.py | — | — |
 | tests/test_live_group.py | Deprecated | 2026-06-25 |
-| tests/test_place_media.py | 8 | 2026-07-07 |
-| tests/test_places_nearby.py | 7 | 2026-07-06 |
-| tests/test_route_intelligence.py | 12 | 2026-07-04 |
-| tests/test_live_routing.py | 3 | 2026-07-07 |
+| tests/test_place_media.py | 8 | 2026-07-08 |
+| tests/test_places_nearby.py | 7 | 2026-07-08 |
+| tests/test_route_intelligence.py | 12 | 2026-07-08 |
+| tests/test_live_routing.py | 3 | 2026-07-08 |
+
 
