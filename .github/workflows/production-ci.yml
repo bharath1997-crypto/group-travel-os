@@ -25,6 +25,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py313-
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libgdal-dev gdal-bin libgeos-dev libproj-dev
+
       - name: Install dependencies
         run: |
           pip install --upgrade pip setuptools wheel
