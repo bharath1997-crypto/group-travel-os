@@ -27,8 +27,7 @@ export const GPS_ACCURACY_CIRCLE_MIN_M = 20;
 export const GPS_ACCURACY_CIRCLE_MAX_DISPLAY_M = 120;
 
 export function shouldShowGpsDot(accuracyMeters: number | null | undefined): boolean {
-  if (accuracyMeters == null) return true;
-  return accuracyMeters <= GPS_ACCURACY_CIRCLE_MIN_M;
+  return true;
 }
 
 export function displayAccuracyRadiusMeters(

@@ -222,6 +222,11 @@ def test_resolve_click_fallback_dropped_pin():
         assert body["place"]["source"] == "dropped_pin"
 
 
+def test_search_places_validation_error():
+    res = client.get("/api/v1/search/places", params={"q": "a"})
+    assert res.status_code == 422
+
+
 def test_search_places_endpoint():
     mock_results = [
         {

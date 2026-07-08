@@ -28,6 +28,28 @@ export type UserLocationUpdate = {
   timestamp: number | null;
 };
 
+export type RoutePreviewStatus = "idle" | "loading" | "ready" | "failed";
+
+export type RouteOriginSource = "gps" | "search" | "map_pick" | "map_center";
+
+export type RouteOrigin = {
+  id: string;
+  name: string;
+  address?: string;
+  latitude: number;
+  longitude: number;
+  source: RouteOriginSource;
+  accuracyMeters?: number | null;
+};
+
+export function formatRouteOriginLabel(origin: RouteOrigin | null | undefined): string {
+  if (!origin) return "Not set";
+  if (origin.source === "gps") return "Current location";
+  if (origin.source === "map_center") return "Map center";
+  if (origin.source === "map_pick") return origin.name || "Custom start point";
+  return origin.name;
+}
+
 export type RouteManeuver = {
   instruction: string;
   location: [number, number]; // [lng, lat]
@@ -95,6 +117,15 @@ export function estimateDriveEta(distanceM: number | null): string {
   const miles = distanceM / 1609.34;
   const minutes = Math.max(1, Math.round((miles / 30) * 60));
   return `${minutes} min`;
+}
+
+export function formatRouteDuration(durationSeconds: number | null | undefined): string {
+  if (durationSeconds == null || !Number.isFinite(durationSeconds)) return "Calculating…";
+  const minutes = Math.max(1, Math.round(durationSeconds / 60));
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const rem = minutes % 60;
+  return rem > 0 ? `${hours} hr ${rem} min` : `${hours} hr`;
 }
 
 export function speedMpsToMph(speedMps: number | null): number {

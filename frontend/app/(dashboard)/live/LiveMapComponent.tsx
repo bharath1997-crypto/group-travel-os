@@ -9,7 +9,6 @@ import {
   displayAccuracyRadiusMeters,
   gpsStatusFromGeolocationError,
   logRovvyGps,
-  shouldShowGpsDot,
   type GpsStatus,
   type GpsState,
 } from "./live-gps";
@@ -546,7 +545,8 @@ export default function LiveMapComponent({
   const originMarkerRef = useRef<maplibregl.Marker | null>(null);
   const startMarkerRef = useRef<maplibregl.Marker | null>(null);
   const userLocationRef = useRef<UserLocation | null>(null);
-  const watchIdRef = useRef<number | null>(null);
+  const watchIdsRef = useRef<number[]>([]);
+  const isUnmountedRef = useRef(false);
   const liveGpsActiveRef = useRef(false);
   const hasCenteredOnUserRef = useRef(false);
   const bestAccuracyCenteredRef = useRef<number | null>(null);
@@ -768,7 +768,8 @@ export default function LiveMapComponent({
     });
 
     function ensureUserMarker(lat: number, lng: number, accuracy: number | null, timestamp: number | null) {
-      const showDot = shouldShowGpsDot(accuracy);
+      // Always show the blue location dot (user marker), even inside the accuracy uncertainty circle, matching Google Maps.
+      const showDot = true;
 
       if (userMarkerRef.current) {
         userMarkerRef.current.setLngLat([lng, lat]);
@@ -814,7 +815,8 @@ export default function LiveMapComponent({
       accuracyMeters: number | null,
       timestamp: number | null,
     ) {
-      if (!liveGpsActiveRef.current && watchIdRef.current != null) {
+      if (isUnmountedRef.current) return;
+      if (!liveGpsActiveRef.current && watchIdsRef.current.length > 0) {
         liveGpsActiveRef.current = true;
         callbacksRef.current.onLiveGpsChange?.(true);
       }
@@ -894,9 +896,15 @@ export default function LiveMapComponent({
     }
 
     function stopLiveGps() {
-      if (watchIdRef.current != null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
+      if (watchIdsRef.current.length > 0) {
+        watchIdsRef.current.forEach((id) => {
+          try {
+            navigator.geolocation.clearWatch(id);
+          } catch (e) {
+            console.warn("[Rovvy GPS] error clearing watch id", id, e);
+          }
+        });
+        watchIdsRef.current = [];
       }
       liveGpsActiveRef.current = false;
       callbacksRef.current.onGpsStateChange?.({
@@ -913,6 +921,7 @@ export default function LiveMapComponent({
     }
 
     function handleGeolocationError(err: GeolocationPositionError, source: string) {
+      if (isUnmountedRef.current) return;
       const status = gpsStatusFromGeolocationError(err.code);
       logRovvyGps(`${source} error`, {
         code: err.code,
@@ -1005,7 +1014,7 @@ export default function LiveMapComponent({
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
       );
 
-      watchIdRef.current = navigator.geolocation.watchPosition(
+      const wId = navigator.geolocation.watchPosition(
         (pos) => {
           const { latitude, longitude, accuracy, speed, heading } = pos.coords;
           applyUserLocation(latitude, longitude, false, speed, heading, accuracy, pos.timestamp);
@@ -1013,6 +1022,7 @@ export default function LiveMapComponent({
         (err) => handleGeolocationError(err, "watchPosition"),
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 },
       );
+      watchIdsRef.current.push(wId);
     }
 
     mapRef.current = {
@@ -1107,15 +1117,54 @@ export default function LiveMapComponent({
     };
 
     return () => {
+      isUnmountedRef.current = true;
       ensureUserMarkerRef.current = null;
-      stopLiveGps();
-      userMarkerRef.current?.remove();
+      try {
+        stopLiveGps();
+      } catch (err) {
+        console.warn("[Rovvy GPS] error in stopLiveGps unmount", err);
+      }
+      try {
+        userMarkerRef.current?.remove();
+      } catch (err) {
+        console.warn("[Rovvy GPS] error userMarkerRef remove", err);
+      }
       userMarkerRef.current = null;
-      startMarkerRef.current?.remove();
+      try {
+        placeMarkerRef.current?.remove();
+      } catch (err) {
+        console.warn("[Rovvy GPS] error placeMarkerRef remove", err);
+      }
+      placeMarkerRef.current = null;
+      try {
+        originMarkerRef.current?.remove();
+      } catch (err) {
+        console.warn("[Rovvy GPS] error originMarkerRef remove", err);
+      }
+      originMarkerRef.current = null;
+      try {
+        startMarkerRef.current?.remove();
+      } catch (err) {
+        console.warn("[Rovvy GPS] error startMarkerRef remove", err);
+      }
       startMarkerRef.current = null;
-      clickedPinMarkerRef.current?.remove();
+      try {
+        clickedPinMarkerRef.current?.remove();
+      } catch (err) {
+        console.warn("[Rovvy GPS] error clickedPinMarkerRef remove", err);
+      }
       clickedPinMarkerRef.current = null;
-      map.remove();
+      try {
+        nearbyMarkersRef.current.forEach((m) => m.remove());
+      } catch (err) {
+        console.warn("[Rovvy GPS] error nearbyMarkers remove", err);
+      }
+      nearbyMarkersRef.current = [];
+      try {
+        map.remove();
+      } catch (err) {
+        console.warn("[Rovvy GPS] error map remove", err);
+      }
       mapRef.current = null;
     };
 

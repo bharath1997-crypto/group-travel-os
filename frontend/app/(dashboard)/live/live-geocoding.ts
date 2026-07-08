@@ -62,7 +62,7 @@ export type SearchBias = {
   lng: number;
 };
 
-export type SearchPlaceSource = "osm_local" | "osm_provider" | "fallback";
+export type SearchPlaceSource = "saved" | "recent" | "osm_local" | "provider";
 
 export type SearchPlace = {
   id: string;
@@ -93,7 +93,15 @@ export type AutocompleteResult = {
 
 const SEARCH_RADIUS_KM = 10;
 const SEARCH_LIMIT = 8;
-const SEARCH_DEBOUNCE_MS = 300;
+export const SEARCH_DEBOUNCE_MS = 300;
+
+function normalizeSearchPlaceSource(raw: string | undefined): SearchPlaceSource {
+  if (raw === "saved" || raw === "recent" || raw === "osm_local" || raw === "provider") {
+    return raw;
+  }
+  if (raw === "nominatim" || raw === "osm_provider" || raw === "fallback") return "provider";
+  return "osm_local";
+}
 
 function formatDistanceLabel(distanceMeters: number | null | undefined): string | null {
   if (distanceMeters == null) return null;
@@ -114,7 +122,7 @@ function mapSearchPlaceToAutocomplete(result: SearchPlace): AutocompleteResult {
     lng: result.longitude,
     distanceMeters: distM,
     distanceLabel: formatDistanceLabel(distM),
-    source: result.source,
+    source: normalizeSearchPlaceSource(result.source),
     matchType: "text",
     score: 0,
     tags: {},
@@ -155,17 +163,64 @@ export async function liveAutocompleteSearch(
       `/search/places?${params.toString()}`,
       abortSignal ? { signal: abortSignal } : undefined,
     );
-    const results = (data?.results || []).map(mapSearchPlaceToAutocomplete);
+    const results = (data?.results || []).map((row) =>
+      mapSearchPlaceToAutocomplete({
+        ...row,
+        source: normalizeSearchPlaceSource(row.source),
+      }),
+    );
     logLiveSearchDebug("response", { query: q, count: results.length });
     return results;
   } catch (err: any) {
     if (err.name === "AbortError") throw err;
     logLiveSearchDebug("error", { query: q, message: err?.message || "unknown" });
-    return [];
+    throw err;
   }
 }
 
-export { SEARCH_DEBOUNCE_MS };
+export function autocompleteResultToPlacePreview(
+  result: AutocompleteResult,
+  bias?: SearchBias | null,
+): {
+  name: string;
+  categoryLabel: string;
+  address: string;
+  phone: null;
+  lat: number;
+  lng: number;
+  distanceM: number | null;
+  openingHours: null;
+  openStatus: null;
+  placeKey: string;
+  osmType: null;
+  osmId: null;
+  city: null;
+  country: null;
+  source: string;
+  tags: Record<string, string>;
+} {
+  const distM =
+    result.distanceMeters ??
+    (bias ? haversineM(bias.lat, bias.lng, result.lat, result.lng) : null);
+  return {
+    name: result.name,
+    categoryLabel: result.category,
+    address: result.address,
+    phone: null,
+    lat: result.lat,
+    lng: result.lng,
+    distanceM: distM,
+    openingHours: null,
+    openStatus: null,
+    placeKey: result.placeKey,
+    osmType: null,
+    osmId: null,
+    city: null,
+    country: null,
+    source: result.source,
+    tags: result.tags,
+  };
+}
 
 function searchCacheKey(query: string, bias?: SearchBias | null): string {
   const q = query.trim().toLowerCase();

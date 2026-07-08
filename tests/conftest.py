@@ -31,6 +31,7 @@ def sqlite_create_explorer_events_table() -> None:
     from app.utils.database import Base, engine
 
     # Import registers each model on ``Base.metadata``.
+    from app.models.user import User
     from app.models.explore_event import ExploreEvent
     from app.models.explore_content import ExploreContent
     from app.models.unified_experience import UnifiedExperience
@@ -57,6 +58,7 @@ def sqlite_create_explorer_events_table() -> None:
     # SQLite does not enforce FK constraints, but correct ordering avoids
     # potential issues with SQLAlchemy's dependency sorter.
     tables_to_create = [
+        User.__table__,
         ExploreEvent.__table__,
         ExploreContent.__table__,
         UnifiedExperience.__table__,
