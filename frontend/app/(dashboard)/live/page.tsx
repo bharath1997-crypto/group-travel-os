@@ -2382,7 +2382,9 @@ export default function LivePage() {
                 {gpsStatus === "denied" ? "Location off" : "Location unavailable"}
               </p>
               <p className="mt-1 text-[11px] leading-snug text-stone-600">
-                {gpsStatus === "denied"
+                {gpsState.errorMessage
+                  ? gpsState.errorMessage
+                  : gpsStatus === "denied"
                   ? "Enable location permission in your browser to show your position."
                   : "Rovvy couldn't get your exact location from this browser. You can try again or use the current map area."}
               </p>

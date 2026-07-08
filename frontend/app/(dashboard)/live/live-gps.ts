@@ -18,6 +18,7 @@ export type GpsState = {
   speed: number | null;
   timestamp: number | null;
   source: "browser_geolocation" | "manual" | "mock" | null;
+  errorMessage?: string;
 };
 
 export const GPS_ACCEPTABLE_ACCURACY_M = 150;

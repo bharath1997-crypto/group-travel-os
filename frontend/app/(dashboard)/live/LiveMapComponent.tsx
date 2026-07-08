@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { geolocationUnavailableMessage, haversineM } from "@/lib/geo";
+import { geolocationUnavailableMessage, geolocationErrorMessage, haversineM } from "@/lib/geo";
 import {
   GPS_ACCEPTABLE_ACCURACY_M,
   displayAccuracyRadiusMeters,
@@ -107,7 +107,7 @@ type Props = {
 function createUserMarkerElement(liveActive: boolean, navigating: boolean): HTMLDivElement {
   const el = document.createElement("div");
   el.className = "gt-user-location-marker";
-  el.style.cssText = "pointer-events:none;position:relative;";
+  el.style.cssText = "pointer-events:none;position:relative;width:24px;height:24px;";
 
   if (navigating) {
     el.innerHTML = `
@@ -933,6 +933,7 @@ export default function LiveMapComponent({
       heading: number | null,
       accuracyMeters: number | null,
       timestamp: number | null,
+      errorMsg?: string,
     ) {
       if (isUnmountedRef.current) return;
       if (!liveGpsActiveRef.current && watchIdsRef.current.length > 0) {
@@ -964,6 +965,7 @@ export default function LiveMapComponent({
         speed: speedMps,
         timestamp,
         source: "browser_geolocation",
+        errorMessage: errorMsg,
       };
 
       // Throttling React state updates: report only if status changes, 
@@ -1069,6 +1071,7 @@ export default function LiveMapComponent({
     function handleGeolocationError(err: GeolocationPositionError, source: string) {
       if (isUnmountedRef.current) return;
       const status = gpsStatusFromGeolocationError(err.code);
+      const errMsg = geolocationErrorMessage(err);
       logRovvyGps(`${source} error`, {
         code: err.code,
         status,
@@ -1083,7 +1086,15 @@ export default function LiveMapComponent({
         userLocationRef.current = null;
         syncAccuracyLayer(map, null, null, null);
         callbacksRef.current.onGpsStateChange?.({
-          status: "denied", lat: null, lng: null, accuracyMeters: null, heading: null, speed: null, timestamp: null, source: null
+          status: "denied",
+          lat: null,
+          lng: null,
+          accuracyMeters: null,
+          heading: null,
+          speed: null,
+          timestamp: null,
+          source: null,
+          errorMessage: errMsg,
         });
         return;
       }
@@ -1108,19 +1119,36 @@ export default function LiveMapComponent({
             speed: null,
             timestamp: userLocationRef.current.timestamp || null,
             source: "browser_geolocation",
+            errorMessage: errMsg,
           });
           return;
         }
         liveGpsActiveRef.current = false;
         callbacksRef.current.onGpsStateChange?.({
-          status: "timeout", lat: null, lng: null, accuracyMeters: null, heading: null, speed: null, timestamp: null, source: null
+          status: "timeout",
+          lat: null,
+          lng: null,
+          accuracyMeters: null,
+          heading: null,
+          speed: null,
+          timestamp: null,
+          source: null,
+          errorMessage: errMsg,
         });
         return;
       }
 
       stopLiveGps();
       callbacksRef.current.onGpsStateChange?.({
-        status: "error", lat: null, lng: null, accuracyMeters: null, heading: null, speed: null, timestamp: null, source: null
+        status: "error",
+        lat: null,
+        lng: null,
+        accuracyMeters: null,
+        heading: null,
+        speed: null,
+        timestamp: null,
+        source: null,
+        errorMessage: errMsg,
       });
     }
 
@@ -1129,7 +1157,15 @@ export default function LiveMapComponent({
       if (blocked) {
         logRovvyGps("unavailable", { reason: blocked });
         callbacksRef.current.onGpsStateChange?.({
-          status: "error", lat: null, lng: null, accuracyMeters: null, heading: null, speed: null, timestamp: null, source: null
+          status: "error",
+          lat: null,
+          lng: null,
+          accuracyMeters: null,
+          heading: null,
+          speed: null,
+          timestamp: null,
+          source: null,
+          errorMessage: blocked,
         });
         return;
       }
@@ -1206,7 +1242,15 @@ export default function LiveMapComponent({
         if (blocked) {
           logRovvyGps("unavailable", { reason: blocked });
           callbacksRef.current.onGpsStateChange?.({
-            status: "error", lat: null, lng: null, accuracyMeters: null, heading: null, speed: null, timestamp: null, source: null
+            status: "error",
+            lat: null,
+            lng: null,
+            accuracyMeters: null,
+            heading: null,
+            speed: null,
+            timestamp: null,
+            source: null,
+            errorMessage: blocked,
           });
           return;
         }
