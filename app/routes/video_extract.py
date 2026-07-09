@@ -7,13 +7,20 @@ import requests
 from fastapi import APIRouter, status
 from pydantic import BaseModel
 import yt_dlp
-import instaloader
 
 from app.schemas.cart import VideoExtractRequest, VideoExtractResponse
 from app.services.ai_assistant_service import generate_gemini_content
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/cart", tags=["video_extract"])
+
+
+def _get_instaloader():
+    try:
+        import instaloader
+        return instaloader
+    except ModuleNotFoundError as exc:
+        raise ImportError("instaloader is required for Instagram video extract") from exc
 
 def detect_platform(url: str) -> str:
     url_lower = url.lower()
@@ -139,6 +146,7 @@ async def extract_from_url(body: VideoExtractRequest) -> VideoExtractResponse:
     instagram_success = False
     if platform == "instagram":
         try:
+            instaloader = _get_instaloader()
             shortcode_match = re.search(r"/(?:p|reel|tv)/([A-Za-z0-9_-]+)", url)
             if shortcode_match:
                 shortcode = shortcode_match.group(1)
