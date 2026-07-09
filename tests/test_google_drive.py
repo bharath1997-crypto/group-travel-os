@@ -25,6 +25,16 @@ from sqlalchemy.orm import Session
 from tests.conftest import exec_result
 
 
+@pytest.fixture
+def google_drive_oauth_env(monkeypatch):
+    """CI has no GOOGLE_CLIENT_ID — callback tests need fake OAuth credentials."""
+    monkeypatch.setattr("config.settings.GOOGLE_CLIENT_ID", "test-google-drive-client-id")
+    monkeypatch.setattr(
+        "config.settings.GOOGLE_CLIENT_SECRET",
+        "test-google-drive-client-secret",
+    )
+
+
 # ── App client helpers ────────────────────────────────────────────────────────
 
 def _get_client(mock_user):
@@ -90,7 +100,7 @@ class TestGoogleDriveConnect:
 # ── callback stores encrypted tokens ──────────────────────────────────────────
 
 class TestGoogleDriveCallback:
-    def test_callback_stores_encrypted_tokens(self):
+    def test_callback_stores_encrypted_tokens(self, google_drive_oauth_env):
         """Callback exchanges code → stores encrypted access + refresh tokens."""
         user_id = uuid.UUID("00000000-0000-0000-0000-000000000099")
         mock_db = MagicMock(spec=Session)

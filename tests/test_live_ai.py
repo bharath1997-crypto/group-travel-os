@@ -199,12 +199,13 @@ def test_place_explanation_cache_hit(auth_user):
         '{"summary": "Cached summary.", "recommendation": "Cached recommendation.", '
         '"actions": ["Search near me"], "risk_level": "very_far"}'
     )
-    with patch(
-        "app.services.live_ai_service._call_gemini",
-        return_value=(gemini_json, {"prompt_tokens": 10, "output_tokens": 10}),
-    ) as mock_gemini:
-        first = client.post("/api/v1/live/ai/place-explanation", json=_compact_payload())
-        second = client.post("/api/v1/live/ai/place-explanation", json=_compact_payload())
+    with patch("app.services.live_ai_service._gemini_key", return_value="test-gemini-key"):
+        with patch(
+            "app.services.live_ai_service._call_gemini",
+            return_value=(gemini_json, {"prompt_tokens": 10, "output_tokens": 10}),
+        ) as mock_gemini:
+            first = client.post("/api/v1/live/ai/place-explanation", json=_compact_payload())
+            second = client.post("/api/v1/live/ai/place-explanation", json=_compact_payload())
 
     assert first.status_code == 200
     assert second.status_code == 200

@@ -24,6 +24,16 @@ from sqlalchemy.orm import Session
 from tests.conftest import exec_result
 
 
+@pytest.fixture
+def google_calendar_oauth_env(monkeypatch):
+    """CI has no GOOGLE_CLIENT_ID — callback tests need fake OAuth credentials."""
+    monkeypatch.setattr("config.settings.GOOGLE_CLIENT_ID", "test-google-calendar-client-id")
+    monkeypatch.setattr(
+        "config.settings.GOOGLE_CLIENT_SECRET",
+        "test-google-calendar-client-secret",
+    )
+
+
 # ── App client helpers ────────────────────────────────────────────────────────
 
 def _get_client(mock_user):
@@ -96,7 +106,7 @@ class TestGoogleCalendarCallback:
         app.dependency_overrides.pop(get_db, None)
         return resp
 
-    def test_callback_stores_encrypted_tokens(self):
+    def test_callback_stores_encrypted_tokens(self, google_calendar_oauth_env):
         """Callback: exchanges code for tokens, stores encrypted tokens in DB."""
         user_id = uuid.UUID("00000000-0000-0000-0000-000000000099")
         state = "test_state"
