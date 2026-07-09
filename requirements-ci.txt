@@ -109,3 +109,4 @@ aiosqlite==0.20.0
 duffel-api
 yt-dlp
 instaloader
+reverse_geocoder
