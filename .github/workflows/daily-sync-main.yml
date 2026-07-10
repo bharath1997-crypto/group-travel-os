@@ -13,11 +13,13 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_PAT }}
-      - name: Merge Production-main into main
+      - name: Sync main to Production-main
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin
-          git checkout main
-          git merge --ff-only origin/Production-main
-          git push origin main
+          # Force main to match Production-main exactly.
+          # Using --force-with-lease instead of --ff-only so PR merge commits
+          # that accumulate on main (and diverge from Production-main) don't
+          # block the sync.
+          git push --force-with-lease origin origin/Production-main:refs/heads/main
