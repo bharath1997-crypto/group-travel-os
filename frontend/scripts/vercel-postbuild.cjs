@@ -1,33 +1,42 @@
 /**
  * Vercel post-build workaround for Next.js 16 monorepo deployments.
  *
- * 1. Copy routes-manifest.json → routes-manifest-deterministic.json when missing.
- * 2. Mirror frontend/.next → repo-root/.next so Git Integration finalization finds
- *    artifacts at /vercel/path0/.next (Vercel bug when Root Directory = frontend).
+ * Git Integration finalization looks under /vercel/path0/ (repo root) for
+ * .next/ and node_modules/next/ even when Root Directory = frontend/.
+ * Symlink those paths from frontend/ so finalization succeeds.
  */
 const fs = require("fs");
 const path = require("path");
 
 const frontendDir = path.join(__dirname, "..");
+const repoRoot = path.join(frontendDir, "..");
 const nextDir = path.join(frontendDir, ".next");
-const repoRootNext = path.join(frontendDir, "..", ".next");
 const routesManifest = path.join(nextDir, "routes-manifest.json");
 const deterministic = path.join(nextDir, "routes-manifest-deterministic.json");
+const symlinkType = process.platform === "win32" ? "junction" : "dir";
 
-if (!fs.existsSync(routesManifest)) {
-  console.warn("[vercel-postbuild] routes-manifest.json not found — skipping");
-  process.exit(0);
+function symlinkDirToRepoRoot(name) {
+  const src = path.join(frontendDir, name);
+  const dest = path.join(repoRoot, name);
+
+  if (!fs.existsSync(src)) {
+    console.warn(`[vercel-postbuild] ${name} not found — skipping`);
+    return;
+  }
+
+  if (fs.existsSync(dest)) {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+
+  const rel = path.relative(repoRoot, src);
+  fs.symlinkSync(rel, dest, symlinkType);
+  console.log(`[vercel-postbuild] Linked ${name} → repo root (${rel})`);
 }
 
-if (!fs.existsSync(deterministic)) {
+if (fs.existsSync(routesManifest) && !fs.existsSync(deterministic)) {
   fs.copyFileSync(routesManifest, deterministic);
   console.log("[vercel-postbuild] Created routes-manifest-deterministic.json");
 }
 
-if (!fs.existsSync(nextDir)) {
-  console.warn("[vercel-postbuild] .next directory missing — skipping root mirror");
-  process.exit(0);
-}
-
-fs.cpSync(nextDir, repoRootNext, { recursive: true, force: true });
-console.log("[vercel-postbuild] Mirrored .next to repo root for Vercel finalization");
+symlinkDirToRepoRoot(".next");
+symlinkDirToRepoRoot("node_modules");
