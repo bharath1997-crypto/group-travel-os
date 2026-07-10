@@ -1,12 +1,16 @@
 /**
- * Vercel post-build: copy routes-manifest.json → routes-manifest-deterministic.json
- * when the deterministic variant is missing (Next.js 16 + Turbopack local builds
- * only emit routes-manifest.json; Vercel finalization may expect the deterministic name).
+ * Vercel post-build workaround for Next.js 16 monorepo deployments.
+ *
+ * 1. Copy routes-manifest.json → routes-manifest-deterministic.json when missing.
+ * 2. Mirror frontend/.next → repo-root/.next so Git Integration finalization finds
+ *    artifacts at /vercel/path0/.next (Vercel bug when Root Directory = frontend).
  */
 const fs = require("fs");
 const path = require("path");
 
-const nextDir = path.join(__dirname, "..", ".next");
+const frontendDir = path.join(__dirname, "..");
+const nextDir = path.join(frontendDir, ".next");
+const repoRootNext = path.join(frontendDir, "..", ".next");
 const routesManifest = path.join(nextDir, "routes-manifest.json");
 const deterministic = path.join(nextDir, "routes-manifest-deterministic.json");
 
@@ -19,3 +23,11 @@ if (!fs.existsSync(deterministic)) {
   fs.copyFileSync(routesManifest, deterministic);
   console.log("[vercel-postbuild] Created routes-manifest-deterministic.json");
 }
+
+if (!fs.existsSync(nextDir)) {
+  console.warn("[vercel-postbuild] .next directory missing — skipping root mirror");
+  process.exit(0);
+}
+
+fs.cpSync(nextDir, repoRootNext, { recursive: true, force: true });
+console.log("[vercel-postbuild] Mirrored .next to repo root for Vercel finalization");
