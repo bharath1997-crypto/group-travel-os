@@ -6,6 +6,7 @@
     "dev": "next dev --webpack",
     "dev:turbo": "next dev",
     "build": "next build",
+    "postbuild": "node scripts/vercel-postbuild.cjs",
     "start": "next start",
     "lint": "eslint"
   },
