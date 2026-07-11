@@ -180,6 +180,12 @@ export const TILE_PROVIDER_REGISTRY: TileProviderEntry[] = [
 ];
 
 /** Default dev/low-traffic tile URLs (Live Tab + reference for other pages). */
+/** Production fallback when NEXT_PUBLIC_MAP_TILE_URL is unset (CARTO — not public OSM). */
+export const PRODUCTION_STREET_TILE_DEFAULT = {
+  url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+  attribution: "© CARTO © OpenStreetMap contributors",
+} as const;
+
 export const DEV_TILE_DEFAULTS = {
   street: {
     url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -220,12 +226,20 @@ export const EXTERNAL_MAP_HANDOFF = {
 
 export function resolveStreetTileUrl(): string {
   const override = process.env.NEXT_PUBLIC_MAP_TILE_URL?.trim();
-  return override || DEV_TILE_DEFAULTS.street.url;
+  if (override) return override;
+  if (process.env.NODE_ENV === "production") {
+    return PRODUCTION_STREET_TILE_DEFAULT.url;
+  }
+  return DEV_TILE_DEFAULTS.street.url;
 }
 
 export function resolveStreetTileAttribution(): string {
   const override = process.env.NEXT_PUBLIC_MAP_TILE_ATTRIBUTION?.trim();
-  return override || DEV_TILE_DEFAULTS.street.attribution;
+  if (override) return override;
+  if (process.env.NODE_ENV === "production") {
+    return PRODUCTION_STREET_TILE_DEFAULT.attribution;
+  }
+  return DEV_TILE_DEFAULTS.street.attribution;
 }
 
 export function isProductionRiskyTileUrl(url: string): boolean {
@@ -405,8 +419,10 @@ export function warnIfUnsafeProductionTiles(context = "map"): void {
 }
 
 /** Called from next.config at build time. */
+let mapBuildWarningLogged = false;
+
 export function logMapProviderBuildWarnings(): void {
-  if (process.env.NODE_ENV !== "production") return;
+  if (mapBuildWarningLogged || process.env.NODE_ENV !== "production") return;
 
   const streetUrl = resolveStreetTileUrl();
   if (isProductionRiskyTileUrl(streetUrl)) {
@@ -415,6 +431,7 @@ export function logMapProviderBuildWarnings(): void {
         `  ${streetUrl}\n` +
         "  Configure a production tile provider before launch.\n",
     );
+    mapBuildWarningLogged = true;
   }
 }
 
