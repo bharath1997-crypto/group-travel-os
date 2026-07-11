@@ -14,6 +14,10 @@ import {
   Bell,
   Maximize2,
 } from "lucide-react";
+import { useDashboardUser } from "@/contexts/dashboard-user-context";
+import TravelModeChip from "./TravelModeChip";
+import LiveMiniHud from "./LiveMiniHud";
+import InlineSignInModal from "./InlineSignInModal";
 import { haversineM } from "@/lib/geo";
 import PlacePreviewCard, { type PlacePreviewData } from "./PlacePreviewCard";
 import FarAwayPlacePanel from "./FarAwayPlacePanel";
@@ -301,6 +305,10 @@ function getNearbyCategoryTitle(query: string): string {
 }
 
 export default function LivePage() {
+  const { user } = useDashboardUser();
+  const [showSetupPanel, setShowSetupPanel] = useState(false);
+  const [showSignInModal, setShowSignInModal] = useState(false);
+
   const mapRef = useRef<LiveMapRef | null>(null);
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -433,6 +441,18 @@ export default function LivePage() {
     { name: "Work", address: "456 Broadway" },
     { name: "Gym", address: "789 Fitness Ave" },
   ];
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowSetupPanel(false);
+        setShowSuggestionsCard(false);
+        setShowSearchPopup(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const resolveSearchAnchor = useCallback((): SearchBias | null => {
     if (userLocation && isFreshGpsStatus(gpsStatus)) return userLocation;
@@ -1665,11 +1685,14 @@ export default function LivePage() {
         </div>
       ) : null}
 
-      {/* Click-away backdrop overlay to reduce background interaction and close suggestions */}
-      {showSuggestionsCard && (
+      {/* Click-away backdrop overlay to reduce background interaction and close suggestions/setup panel */}
+      {(showSuggestionsCard || showSetupPanel) && (
         <div
           className="fixed inset-0 z-20 cursor-default bg-stone-900/[0.02] backdrop-blur-[0.5px]"
-          onClick={() => setShowSuggestionsCard(false)}
+          onClick={() => {
+            setShowSuggestionsCard(false);
+            setShowSetupPanel(false);
+          }}
         />
       )}
 
@@ -1688,9 +1711,25 @@ export default function LivePage() {
             <div className="relative" id="search-container">
               {/* Floating Search Bar */}
               <div
-                className="flex h-11 items-center gap-2 pl-4 pr-1.5 rounded-full bg-white/95 backdrop-blur-md border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] w-72 sm:w-96"
+                className="flex h-11 items-center gap-2 pl-2 pr-1.5 rounded-full bg-white/95 backdrop-blur-md border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] w-80 sm:w-[420px]"
               >
-                <Search className="w-4 h-4 shrink-0 text-stone-400" />
+                <TravelModeChip
+                  travelMode={travelMode}
+                  status={
+                    isLiveActive
+                      ? "live_active"
+                      : destination && routePreviewStatus === "ready"
+                        ? "route_ready"
+                        : "idle"
+                  }
+                  onClickEdit={(e) => {
+                    e.stopPropagation();
+                    setShowSetupPanel((prev) => !prev);
+                    setShowSuggestionsCard(false);
+                    setShowSearchPopup(false);
+                  }}
+                  isOpen={showSetupPanel}
+                />
                  <input
                   ref={searchInputRef}
                   type="text"
@@ -1955,87 +1994,152 @@ export default function LivePage() {
                       ))}
                     </div>
                   </div>
+                </div>
+              )}
 
-                  {/* Divider */}
-                  <div className="my-3 border-t border-white/20" />
+              {/* Setup Panel */}
+              {showSetupPanel && (
+                <div className="absolute left-0 top-full z-30 mt-2 w-80 sm:w-96 rounded-2xl bg-white/95 backdrop-blur-xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-stone-200/50 text-stone-800 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {/* Travel Mode Row */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Travel Mode</label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {TRAVEL_MODES.map((mode) => {
+                        const isActive = travelMode === mode;
+                        const icons: Record<string, string> = {
+                          Drive: "🚗",
+                          Bike: "🚲",
+                          Trek: "🥾",
+                          Walk: "🚶",
+                        };
+                        return (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => {
+                              setTravelMode(mode);
+                            }}
+                            className={`h-9 px-2 flex flex-col items-center justify-center rounded-xl text-[10px] font-bold transition-all border ${
+                              isActive
+                                ? "bg-[#E6F7F4] text-[#007F73] border-[#007F73] shadow-sm"
+                                : "bg-white border-stone-200 text-stone-600 hover:text-stone-800 hover:bg-stone-50"
+                            }`}
+                          >
+                            <span className="text-sm mb-0.5">{icons[mode]}</span>
+                            <span>{mode}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                  {/* Open Group Trip Button */}
-                  <div>
-                    <button
-                      type="button"
-                      className="w-full rounded-full bg-[#0F766E]/90 hover:bg-[#0D635C] py-2 text-center text-xs font-semibold text-white shadow-md transition-colors cursor-pointer"
-                      onClick={() => router.push("/trips")}
-                    >
-                      Open Group Trip
-                    </button>
+                  {/* Workflow Row */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Workflow</label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {WORKFLOW_TYPES.map((type) => {
+                        const isActive = workflowType === type;
+                        const icons: Record<string, string> = {
+                          Solo: "👤",
+                          "Group Travel": "👥",
+                          "Seat Share": "💺",
+                        };
+                        return (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => {
+                              setWorkflowType(type);
+                            }}
+                            className={`h-9 px-1.5 flex items-center justify-center gap-1.5 rounded-xl text-[10px] font-bold transition-all border ${
+                              isActive
+                                ? "bg-[#E6F7F4] text-[#007F73] border-[#007F73] shadow-sm"
+                                : "bg-white border-stone-200 text-stone-600 hover:text-stone-800 hover:bg-stone-50"
+                            }`}
+                          >
+                            <span className="text-xs">{icons[type]}</span>
+                            <span className="truncate">{type}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Destination / Search Row */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Destination</label>
+                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-stone-200 bg-stone-50/50">
+                      <div className="min-w-0 flex-1 pr-2">
+                        <p className="text-xs font-semibold text-stone-700 truncate">
+                          {destination ? destination.name : "No destination set"}
+                        </p>
+                        {destination && (
+                          <p className="text-[10px] text-stone-500 truncate mt-0.5">{destination.address}</p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowSetupPanel(false);
+                          searchInputRef.current?.focus();
+                          if (searchQuery.trim().length < 2) {
+                            setShowSuggestionsCard(true);
+                          } else {
+                            setShowSearchPopup(true);
+                          }
+                        }}
+                        className="shrink-0 text-xs font-bold text-[#007F73] hover:underline"
+                      >
+                        {destination ? "Change" : "Set"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Action Area */}
+                  <div className="border-t border-stone-100 pt-3">
+                    {!user ? (
+                      <div className="text-center py-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowSetupPanel(false);
+                            setShowSignInModal(true);
+                          }}
+                          className="text-xs font-bold text-[#007F73] hover:underline transition-all"
+                        >
+                          Sign in to start
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleStartSoloLive();
+                          setShowSetupPanel(false);
+                        }}
+                        disabled={routePreviewStatus !== "ready" || !activeRoute || routeLoading}
+                        className="w-full h-10 rounded-xl flex items-center justify-center text-xs font-bold text-white bg-[#007F73] hover:bg-[#00665C] disabled:bg-stone-200 disabled:text-stone-400 disabled:cursor-not-allowed transition-all"
+                      >
+                        {routeLoading || routePreviewStatus === "loading"
+                          ? "Loading route..."
+                          : workflowType === "Solo"
+                            ? "Start Solo Live"
+                            : workflowType === "Group Travel"
+                              ? "Start Group Live"
+                              : "Start Seat Share Live"}
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Travel Mode + Workflow Selectors (Floating Pills) */}
-            <div className="flex flex-wrap items-center gap-3 shrink-0">
-              {/* Travel Mode Selector */}
-              <div className="flex items-center gap-3">
-                {TRAVEL_MODES.map((mode) => {
-                  const isActive = travelMode === mode;
-                  const icons: Record<string, string> = {
-                    Drive: "🚗",
-                    Bike: "🚲",
-                    Trek: "🥾",
-                    Walk: "🚶",
-                  };
-                  return (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setTravelMode(mode)}
-                      className={`h-9 px-4 flex items-center justify-center rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                        isActive
-                          ? "bg-[#007F73] text-white shadow-[0_4px_12px_rgba(0,127,115,0.2)]"
-                          : "bg-white/90 backdrop-blur-md border border-[rgba(15,23,42,0.10)] text-stone-600 hover:text-stone-800 hover:bg-white"
-                      }`}
-                    >
-                      <span className="mr-1">{icons[mode] || ""}</span>
-                      {mode}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Workflow Selector */}
-              <div className="flex items-center gap-3">
-                {WORKFLOW_TYPES.map((type) => {
-                  const isActive = workflowType === type;
-                  const icons: Record<string, string> = {
-                    Solo: "👤",
-                    "Group Travel": "👥",
-                    "Seat Share": "💺",
-                  };
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setWorkflowType(type)}
-                      className={`h-9 px-4 flex items-center justify-center rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                        isActive
-                          ? "bg-[#007F73] text-white shadow-[0_4px_12px_rgba(0,127,115,0.2)]"
-                          : "bg-white/90 backdrop-blur-md border border-[rgba(15,23,42,0.10)] text-stone-600 hover:text-stone-800 hover:bg-white"
-                      }`}
-                    >
-                      <span className="mr-1.5">{icons[type] || ""}</span>
-                      {type}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div
-                className="flex items-center gap-1.5 h-9 px-3.5 rounded-full text-xs font-semibold bg-[#E6F7F4] text-[#007F73] border border-[#007F73]/10 shadow-[0_4px_18px_rgba(15,23,42,0.05)]"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#007F73] animate-pulse" />
-                {statusPillLabel()}
-              </div>
+            {/* Status Pill Chip */}
+            <div
+              className="flex items-center gap-1.5 h-9 px-3.5 rounded-full text-xs font-semibold bg-[#E6F7F4] text-[#007F73] border border-[#007F73]/10 shadow-[0_4px_18px_rgba(15,23,42,0.05)] select-none shrink-0"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#007F73] animate-pulse" />
+              {statusPillLabel()}
             </div>
           </div>
 
@@ -2514,6 +2618,25 @@ export default function LivePage() {
           </button>
         </div>
       </div>
+
+      {/* Live Mini HUD */}
+      {isLiveActive && (
+        <div className="absolute top-[72px] left-4 z-30">
+          <LiveMiniHud
+            travelMode={travelMode}
+            workflowType={workflowType}
+            speedMps={speedMps}
+            durationSeconds={activeRoute ? activeRoute.durationSeconds : null}
+            onEdit={() => setShowSetupPanel(true)}
+          />
+        </div>
+      )}
+
+      {/* Inline Sign-In Modal */}
+      <InlineSignInModal
+        isOpen={showSignInModal}
+        onClose={() => setShowSignInModal(false)}
+      />
     </div>
   );
 }

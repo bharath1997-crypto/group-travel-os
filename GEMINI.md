@@ -257,7 +257,7 @@ After every feature change, update this section in GEMINI.md:
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2026-06-30 (Aligned nav bar to match Dashboard Layout header) |
-| Live Trip Mode (MapLibre Navigation) | Complete | 2026-07-11 (Polished layout header, search container, Suggestions button, selector pills, status chips, right control clusters, and layer list panels. Silenced browser console style diffing errors and missing sprite images.) |
+| Live Trip Mode (MapLibre Navigation) | Complete | 2026-07-11 (Simplified controls with TravelModeChip capsule button, inline Setup Panel for travel mode/workflow selector, inline authentication-gated sign-in modal, and active Live Mini HUD showing real-time GPS stats.) |
 | Place Preview Wikipedia Enrichment | Complete | 2026-07-02 (Added backend integration via /api/v1/places/wiki-summary and frontend UI for eligible place types) |
 | Live Search Autocomplete | Complete | 2026-07-02 (Implemented robust Google Maps-style autocomplete with local place registry and OSM Nominatim fallback, optimized distance ranking, category keyword detection, and debounced AbortController-managed fetching.) |
 | Buses page | Pending | — |
