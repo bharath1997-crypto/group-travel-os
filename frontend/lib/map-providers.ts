@@ -182,7 +182,8 @@ export const TILE_PROVIDER_REGISTRY: TileProviderEntry[] = [
 /** Default dev/low-traffic tile URLs (Live Tab + reference for other pages). */
 /** Production fallback when NEXT_PUBLIC_MAP_TILE_URL is unset (CARTO — not public OSM). */
 export const PRODUCTION_STREET_TILE_DEFAULT = {
-  url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+  /** MapLibre-safe — no Leaflet {s}/{r} placeholders. */
+  url: "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
   attribution: "© CARTO © OpenStreetMap contributors",
 } as const;
 
@@ -224,13 +225,73 @@ export const EXTERNAL_MAP_HANDOFF = {
     `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`,
 } as const;
 
+export function isProductionRiskyTileUrl(url: string): boolean {
+  return PRODUCTION_RISKY_TILE_PATTERNS.some((pattern) => url.includes(pattern));
+}
+
+/** MapLibre raster templates must include z/x/y and a valid http(s) scheme. */
+export function isValidRasterTileTemplate(url: string): boolean {
+  const u = url.trim();
+  if (!u.startsWith("http://") && !u.startsWith("https://")) return false;
+  return u.includes("{z}") && u.includes("{x}") && u.includes("{y}");
+}
+
+/**
+ * Expand Leaflet-style templates ({s}, {r}) into MapLibre raster tile URL list.
+ * MapLibre does not resolve {s} subdomains or {r} retina suffixes on its own.
+ */
+export function expandRasterTileUrls(template: string): string[] {
+  const trimmed = template.trim();
+  if (!isValidRasterTileTemplate(trimmed)) return [];
+
+  const withoutRetina = trimmed.replace(/\{r\}/g, "");
+  if (withoutRetina.includes("{s}")) {
+    return ["a", "b", "c", "d"].map((sub) =>
+      withoutRetina.replace(/\{s\}/g, sub),
+    );
+  }
+  return [withoutRetina];
+}
+
+let detailedMapFallbackWarningLogged = false;
+
+function logDetailedMapFallbackWarning(reason: string): void {
+  if (process.env.NODE_ENV !== "development" || detailedMapFallbackWarningLogged) {
+    return;
+  }
+  console.warn(
+    `[Rovvy Map/live] Detailed map unavailable; falling back to Clean Map. (${reason})`,
+  );
+  detailedMapFallbackWarningLogged = true;
+}
+
 export function resolveStreetTileUrl(): string {
   const override = process.env.NEXT_PUBLIC_MAP_TILE_URL?.trim();
-  if (override) return override;
+  if (override) {
+    if (isValidRasterTileTemplate(override)) return override;
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        "[Rovvy Map] NEXT_PUBLIC_MAP_TILE_URL is missing {z}/{x}/{y} or uses an invalid scheme — using built-in street tiles.",
+      );
+    }
+  }
   if (process.env.NODE_ENV === "production") {
     return PRODUCTION_STREET_TILE_DEFAULT.url;
   }
   return DEV_TILE_DEFAULTS.street.url;
+}
+
+/** Resolved raster tile URLs for MapLibre `sources.*.tiles` (never blank). */
+export function resolveStreetRasterTileUrls(): string[] {
+  const primary = expandRasterTileUrls(resolveStreetTileUrl());
+  if (primary.length > 0) return primary;
+
+  const productionFallback = expandRasterTileUrls(
+    PRODUCTION_STREET_TILE_DEFAULT.url,
+  );
+  if (productionFallback.length > 0) return productionFallback;
+
+  return expandRasterTileUrls(DEV_TILE_DEFAULTS.street.url);
 }
 
 export function resolveStreetTileAttribution(): string {
@@ -240,10 +301,6 @@ export function resolveStreetTileAttribution(): string {
     return PRODUCTION_STREET_TILE_DEFAULT.attribution;
   }
   return DEV_TILE_DEFAULTS.street.attribution;
-}
-
-export function isProductionRiskyTileUrl(url: string): boolean {
-  return PRODUCTION_RISKY_TILE_PATTERNS.some((pattern) => url.includes(pattern));
 }
 
 export function tileUrlNeedsCommercialReview(url: string): boolean {
@@ -337,15 +394,20 @@ function buildHybridStyle(streetFallback: LiveMapStyle): LiveMapStyle {
 }
 
 /** Detailed OSM raster style — default Live map (labels, POIs, buildings). */
-function buildDetailedStreetStyle(): StyleSpecification {
-  const streetUrl = resolveStreetTileUrl();
+function buildDetailedStreetStyle(): LiveMapStyle {
+  const tileUrls = resolveStreetRasterTileUrls();
+  if (tileUrls.length === 0) {
+    logDetailedMapFallbackWarning("no valid raster tile template");
+    return OPENFREEMAP_STREET_STYLE_URL;
+  }
+
   const streetAttribution = resolveStreetTileAttribution();
   return {
     version: 8,
     sources: {
       osm: {
         type: "raster",
-        tiles: [streetUrl],
+        tiles: tileUrls,
         tileSize: 256,
         attribution: streetAttribution,
         maxzoom: LIVE_MAP_MAX_ZOOM,
@@ -403,6 +465,14 @@ export function warnIfUnsafeProductionTiles(context = "map"): void {
   if (process.env.NODE_ENV !== "production") return;
 
   const streetUrl = resolveStreetTileUrl();
+  if (!isValidRasterTileTemplate(streetUrl)) {
+    console.warn(
+      `[Rovvy Map/${context}] Street tile URL is invalid: ${streetUrl || "(empty)"}. ` +
+        "Set NEXT_PUBLIC_MAP_TILE_URL to a raster template with {z}/{x}/{y}.",
+    );
+    return;
+  }
+
   if (isProductionRiskyTileUrl(streetUrl)) {
     console.warn(
       `[Rovvy Map/${context}] Production is using a dev/low-traffic street tile URL: ${streetUrl}. ` +
@@ -425,6 +495,16 @@ export function logMapProviderBuildWarnings(): void {
   if (mapBuildWarningLogged || process.env.NODE_ENV !== "production") return;
 
   const streetUrl = resolveStreetTileUrl();
+  if (!isValidRasterTileTemplate(streetUrl)) {
+    console.warn(
+      "\n[Rovvy Map BUILD WARNING] NEXT_PUBLIC_MAP_TILE_URL is invalid or empty:\n" +
+        `  ${streetUrl || "(empty)"}\n` +
+        "  Use a raster template with {z}/{x}/{y}, e.g. https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png\n",
+    );
+    mapBuildWarningLogged = true;
+    return;
+  }
+
   if (isProductionRiskyTileUrl(streetUrl)) {
     console.warn(
       "\n[Rovvy Map BUILD WARNING] NEXT_PUBLIC_MAP_TILE_URL is unset or points to a dev-only provider:\n" +
