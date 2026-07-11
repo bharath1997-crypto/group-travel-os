@@ -150,8 +150,8 @@ export default function LiveMapLayerControl({ activeLayer, onLayerChange }: Prop
     <div ref={rootRef} className="relative flex flex-col items-center">
       <button
         type="button"
-        className={`flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 md:h-10 md:w-10 ${
-          open ? "ring-2 ring-[#0F766E]/30" : ""
+        className={`flex h-11 w-11 items-center justify-center rounded-full bg-white border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] hover:bg-stone-50 transition-all ${
+          open ? "ring-2 ring-[#007F73]/30" : ""
         }`}
         onClick={() => setOpen((prev) => !prev)}
         title="Map layers"
@@ -160,7 +160,7 @@ export default function LiveMapLayerControl({ activeLayer, onLayerChange }: Prop
         aria-haspopup="dialog"
       >
         <Layers
-          className={`h-5 w-5 transition-colors ${open || activeLayer !== "street" ? "text-[#0F766E]" : "text-stone-500"}`}
+          className={`h-5 w-5 transition-colors ${open || activeLayer !== "street" ? "text-[#007F73]" : "text-stone-500"}`}
         />
       </button>
 
@@ -188,8 +188,8 @@ export default function LiveMapLayerControl({ activeLayer, onLayerChange }: Prop
                       onClick={() => selectLayer(option.id)}
                       className={`flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors ${
                         selected
-                          ? "bg-[#0F766E]/10 ring-1 ring-[#0F766E]/35"
-                          : "hover:bg-stone-50"
+                          ? "bg-[#E6F7F4] border border-[#007F73]"
+                          : "border border-transparent hover:bg-stone-50"
                       }`}
                       aria-pressed={selected}
                     >
@@ -197,7 +197,7 @@ export default function LiveMapLayerControl({ activeLayer, onLayerChange }: Prop
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <span
-                            className={`text-sm font-semibold ${selected ? "text-[#0F766E]" : "text-stone-800"}`}
+                            className={`text-sm font-semibold ${selected ? "text-[#007F73]" : "text-stone-800"}`}
                           >
                             {option.label}
                           </span>
@@ -208,7 +208,7 @@ export default function LiveMapLayerControl({ activeLayer, onLayerChange }: Prop
                         </p>
                       </div>
                       {selected ? (
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#0F766E] text-white">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#007F73] text-white">
                           <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
                         </span>
                       ) : (

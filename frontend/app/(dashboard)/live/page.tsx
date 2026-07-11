@@ -1676,19 +1676,19 @@ export default function LivePage() {
       {/* Floating in-map search bar & selectors */}
       {!isNavigating ? (
         <div
-          className={`absolute top-4 left-4 z-30 flex flex-col gap-2 max-w-[calc(100%-2rem)] transition-all duration-300 ${
+          className={`absolute top-4 left-4 z-30 flex flex-col gap-4 max-w-[calc(100%-2rem)] transition-all duration-300 ${
             isMapInteracting
               ? "opacity-0 pointer-events-none translate-y-[-10px]"
               : "opacity-100 pointer-events-auto translate-y-0"
           }`}
         >
           {/* Top Row: Search Bar & Selectors */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-4">
             {/* Search Bar Container */}
             <div className="relative" id="search-container">
               {/* Floating Search Bar */}
               <div
-                className="flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full bg-white/95 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.08)] w-72 sm:w-96"
+                className="flex h-11 items-center gap-2 pl-4 pr-1.5 rounded-full bg-white/95 backdrop-blur-md border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] w-72 sm:w-96"
               >
                 <Search className="w-4 h-4 shrink-0 text-stone-400" />
                  <input
@@ -1722,7 +1722,6 @@ export default function LivePage() {
                 {searchLoading ? (
                   <span className="text-[10px] text-stone-400 shrink-0 mr-1 animate-pulse">…</span>
                 ) : null}
-                <div className="h-4 w-px bg-stone-200 mx-1 shrink-0" />
                 <button
                   type="button"
                   onClick={(e) => {
@@ -1730,7 +1729,11 @@ export default function LivePage() {
                     setShowSuggestionsCard((prev) => !prev);
                     setShowSearchPopup(false);
                   }}
-                  className="px-3 py-1 rounded-full text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 transition-colors shrink-0 cursor-pointer"
+                  className={`h-8 px-4 rounded-full text-xs font-semibold transition-all shrink-0 cursor-pointer flex items-center justify-center ${
+                    showSuggestionsCard
+                      ? "bg-[#007F73] text-white shadow-sm"
+                      : "text-[#007F73] bg-[#E6F7F4] hover:bg-[#d5f2ed]"
+                  }`}
                 >
                   Suggestions
                 </button>
@@ -1971,9 +1974,9 @@ export default function LivePage() {
             </div>
 
             {/* Travel Mode + Workflow Selectors (Floating Pills) */}
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
               {/* Travel Mode Selector */}
-              <div className="flex gap-0.5 p-0.5 bg-white/95 backdrop-blur-md rounded-full shadow-[0_4px_18px_rgba(0,0,0,0.08)]">
+              <div className="flex items-center gap-3">
                 {TRAVEL_MODES.map((mode) => {
                   const isActive = travelMode === mode;
                   const icons: Record<string, string> = {
@@ -1987,10 +1990,10 @@ export default function LivePage() {
                       key={mode}
                       type="button"
                       onClick={() => setTravelMode(mode)}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      className={`h-9 px-4 flex items-center justify-center rounded-full text-xs font-semibold transition-all cursor-pointer ${
                         isActive
-                          ? "bg-[#0F766E] text-white shadow-sm"
-                          : "text-stone-500 hover:text-stone-800 hover:bg-stone-100/50"
+                          ? "bg-[#007F73] text-white shadow-[0_4px_12px_rgba(0,127,115,0.2)]"
+                          : "bg-white/90 backdrop-blur-md border border-[rgba(15,23,42,0.10)] text-stone-600 hover:text-stone-800 hover:bg-white"
                       }`}
                     >
                       <span className="mr-1">{icons[mode] || ""}</span>
@@ -2001,7 +2004,7 @@ export default function LivePage() {
               </div>
 
               {/* Workflow Selector */}
-              <div className="flex gap-0.5 p-0.5 bg-white/95 backdrop-blur-md rounded-full shadow-[0_4px_18px_rgba(0,0,0,0.08)]">
+              <div className="flex items-center gap-3">
                 {WORKFLOW_TYPES.map((type) => {
                   const isActive = workflowType === type;
                   const icons: Record<string, string> = {
@@ -2014,13 +2017,13 @@ export default function LivePage() {
                       key={type}
                       type="button"
                       onClick={() => setWorkflowType(type)}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      className={`h-9 px-4 flex items-center justify-center rounded-full text-xs font-semibold transition-all cursor-pointer ${
                         isActive
-                          ? "bg-[#0F766E] text-white shadow-sm"
-                          : "text-stone-500 hover:text-stone-800 hover:bg-stone-100/50"
+                          ? "bg-[#007F73] text-white shadow-[0_4px_12px_rgba(0,127,115,0.2)]"
+                          : "bg-white/90 backdrop-blur-md border border-[rgba(15,23,42,0.10)] text-stone-600 hover:text-stone-800 hover:bg-white"
                       }`}
                     >
-                      <span className="mr-1">{icons[type] || ""}</span>
+                      <span className="mr-1.5">{icons[type] || ""}</span>
                       {type}
                     </button>
                   );
@@ -2028,9 +2031,9 @@ export default function LivePage() {
               </div>
 
               <div
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shadow-[0_4px_18px_rgba(0,0,0,0.08)] ${statusPillClass()}`}
+                className="flex items-center gap-1.5 h-9 px-3.5 rounded-full text-xs font-semibold bg-[#E6F7F4] text-[#007F73] border border-[#007F73]/10 shadow-[0_4px_18px_rgba(15,23,42,0.05)]"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#007F73] animate-pulse" />
                 {statusPillLabel()}
               </div>
             </div>
@@ -2281,42 +2284,51 @@ export default function LivePage() {
 
       {/* Right Map Controls — fixed on map workspace, always visible */}
       <div
-        className={`pointer-events-auto absolute z-40 flex flex-col items-center gap-1.5 transition-all duration-200 max-md:gap-1 md:gap-2 ${LIVE_MAP_CONTROLS_POSITION}`}
+        className={`pointer-events-auto absolute z-40 flex flex-col items-center gap-4 transition-all duration-200 ${LIVE_MAP_CONTROLS_POSITION}`}
       >
-        <button
-          type="button"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 md:h-10 md:w-10"
-          onClick={() => mapRef.current?.zoomIn()}
-          title="Zoom in"
-          aria-label="Zoom in"
-        >
-          <span className="text-xl font-light text-stone-600 md:text-2xl">+</span>
-        </button>
-        <button
-          type="button"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 md:h-10 md:w-10"
-          onClick={() => mapRef.current?.zoomOut()}
-          title="Zoom out"
-          aria-label="Zoom out"
-        >
-          <span className="text-xl font-light text-stone-600 md:text-2xl">−</span>
-        </button>
-
-        <div className="relative flex flex-col items-center gap-1">
+        {/* Zoom Cluster */}
+        <div className="flex flex-col gap-1.5">
           <button
             type="button"
-            className={`relative flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-all duration-200 md:h-11 md:w-11 ${
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] hover:bg-stone-50 text-stone-600 hover:text-stone-800 transition-all"
+            onClick={() => mapRef.current?.zoomIn()}
+            title="Zoom in"
+            aria-label="Zoom in"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] hover:bg-stone-50 text-stone-600 hover:text-stone-800 transition-all"
+            onClick={() => mapRef.current?.zoomOut()}
+            title="Zoom out"
+            aria-label="Zoom out"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+
+        {/* Locate + Compass Cluster */}
+        <div className="relative flex flex-col items-center gap-1.5">
+          <button
+            type="button"
+            className={`relative flex h-11 w-11 items-center justify-center rounded-full shadow-[0_8px_24px_rgba(15,23,42,0.10)] transition-all duration-200 border border-[#007F73]/20 ${
               gpsStatus === "active"
-                ? "bg-[#0D5C52] hover:bg-[#0a4a42] ring-2 ring-[#0F766E]/40"
+                ? "bg-[#007F73] hover:bg-[#00665c] text-white"
                 : gpsStatus === "approximate"
-                ? "bg-[#0F766E] hover:bg-[#0D5C52] ring-2 ring-[#0F766E]/30"
+                ? "bg-[#007F73]/90 hover:bg-[#007F73] text-white"
                 : gpsStatus === "denied"
-                ? "bg-stone-700 hover:bg-stone-800"
+                ? "bg-stone-700 hover:bg-stone-800 text-white"
                 : gpsStatus === "timeout" || gpsStatus === "error" || gpsStatus === "outdated"
-                ? "bg-amber-700 hover:bg-amber-800"
+                ? "bg-amber-700 hover:bg-amber-800 text-white"
                 : gpsStatus === "requesting"
-                ? "bg-[#0F766E] hover:bg-[#0D5C52] animate-pulse"
-                : "bg-[#134E48] hover:bg-[#0D5C52]"
+                ? "bg-[#007F73] hover:bg-[#00665c] text-white animate-pulse"
+                : "bg-[#007F73] hover:bg-[#00665c] text-white"
             }`}
             onClick={handleLocateClick}
             title={
@@ -2338,7 +2350,7 @@ export default function LivePage() {
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
-                className="h-5 w-5 md:h-6 md:w-6"
+                className="h-5 w-5"
                 aria-hidden="true"
               >
                 {/* Outer ring */}
@@ -2353,6 +2365,20 @@ export default function LivePage() {
               </svg>
             )}
           </button>
+          
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] hover:bg-stone-50 text-stone-600 hover:text-stone-800 transition-all"
+            onClick={() => mapRef.current?.resetNorth()}
+            title="Reset map orientation"
+            aria-label="Reset map orientation"
+          >
+            <Compass
+              className={`h-5 w-5 transition-transform duration-300 ${mapBearing !== 0 ? "text-[#007F73]" : "text-stone-500"}`}
+              style={{ transform: `rotate(${-mapBearing}deg)` }}
+            />
+          </button>
+
           {gpsStatusLabel(gpsStatus) &&
           gpsStatus !== "active" &&
           gpsStatus !== "approximate" ? (
@@ -2405,7 +2431,7 @@ export default function LivePage() {
                 <button
                   type="button"
                   onClick={handleLocateClick}
-                  className="rounded-lg bg-[#0F766E] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-teal-800"
+                  className="rounded-lg bg-[#007F73] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#00665c]"
                 >
                   Try again
                 </button>
@@ -2440,58 +2466,53 @@ export default function LivePage() {
           ) : null}
         </div>
 
-        <button
-          type="button"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 md:h-10 md:w-10"
-          onClick={() => mapRef.current?.resetNorth()}
-          title="Reset map orientation"
-          aria-label="Reset map orientation"
-        >
-          <Compass
-            className={`h-5 w-5 text-stone-500 transition-transform duration-300 ${mapBearing !== 0 ? "text-teal-700" : ""}`}
-            style={{ transform: `rotate(${-mapBearing}deg)` }}
-          />
-        </button>
-        <LiveMapLayerControl activeLayer={activeLayer} onLayerChange={setActiveLayer} />
-        <button
-          type="button"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 md:h-10 md:w-10"
-          onClick={() => {
-            if (!document.fullscreenElement) {
-              void document.documentElement.requestFullscreen();
-            } else {
-              void document.exitFullscreen();
-            }
-          }}
-          title="Toggle fullscreen"
-          aria-label="Toggle fullscreen"
-        >
-          <Maximize2 className="h-5 w-5 text-stone-500" />
-        </button>
-        <button
-          type="button"
-          className="hidden h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 sm:flex md:h-10 md:w-10"
-          onClick={() => setSoundEnabled((prev) => !prev)}
-          title="Sound"
-          aria-label="Toggle sound"
-        >
-          {soundEnabled ? (
-            <Volume2 className="h-5 w-5 text-stone-500" />
-          ) : (
-            <VolumeX className="h-5 w-5 text-stone-300" />
-          )}
-        </button>
-        <button
-          type="button"
-          className="hidden h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg hover:bg-stone-100 sm:flex md:h-10 md:w-10"
-          onClick={() => setAlertsEnabled((prev) => !prev)}
-          title="Alerts"
-          aria-label="Toggle alerts"
-        >
-          <Bell
-            className={`h-5 w-5 ${alertsEnabled ? "text-amber-500" : "text-stone-300"}`}
-          />
-        </button>
+        {/* Layers + Fullscreen Cluster */}
+        <div className="flex flex-col gap-1.5">
+          <LiveMapLayerControl activeLayer={activeLayer} onLayerChange={setActiveLayer} />
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] hover:bg-stone-50 text-stone-600 hover:text-stone-800 transition-all"
+            onClick={() => {
+              if (!document.fullscreenElement) {
+                void document.documentElement.requestFullscreen();
+              } else {
+                void document.exitFullscreen();
+              }
+            }}
+            title="Toggle fullscreen"
+            aria-label="Toggle fullscreen"
+          >
+            <Maximize2 className="h-5 w-5 text-stone-500" />
+          </button>
+        </div>
+
+        {/* Sound + Notification Cluster */}
+        <div className="flex flex-col gap-1.5">
+          <button
+            type="button"
+            className="hidden h-11 w-11 items-center justify-center rounded-full bg-white border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] hover:bg-stone-50 text-stone-600 hover:text-stone-800 sm:flex transition-all"
+            onClick={() => setSoundEnabled((prev) => !prev)}
+            title="Sound"
+            aria-label="Toggle sound"
+          >
+            {soundEnabled ? (
+              <Volume2 className="h-5 w-5 text-stone-500" />
+            ) : (
+              <VolumeX className="h-5 w-5 text-stone-300" />
+            )}
+          </button>
+          <button
+            type="button"
+            className="hidden h-11 w-11 items-center justify-center rounded-full bg-white border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] hover:bg-stone-50 text-stone-600 hover:text-stone-800 sm:flex transition-all"
+            onClick={() => setAlertsEnabled((prev) => !prev)}
+            title="Alerts"
+            aria-label="Toggle alerts"
+          >
+            <Bell
+              className={`h-5 w-5 ${alertsEnabled ? "text-amber-500" : "text-stone-500"}`}
+            />
+          </button>
+        </div>
       </div>
     </div>
   );
