@@ -492,7 +492,6 @@ export default function PlanTripPage() {
     void (async () => {
       const { data, status } = await apiFetchWithStatus<GroupRow[]>("/groups");
       if (status === 401) {
-        router.push("/login");
         return;
       }
       const list = data ?? [];
@@ -693,7 +692,7 @@ export default function PlanTripPage() {
           },
         );
         if (status === 401) {
-          router.push("/login");
+          showToast("Sign in to create a trip");
           return;
         }
         if (!data?.id) {
@@ -719,7 +718,6 @@ export default function PlanTripPage() {
           }),
         });
         if (gSt === 401) {
-          router.push("/login");
           return;
         }
         if (!g?.id) {
@@ -736,7 +734,6 @@ export default function PlanTripPage() {
         },
       );
       if (status === 401) {
-        router.push("/login");
         return;
       }
       if (!data?.id) {

@@ -801,6 +801,16 @@ export default function LiveMapComponent({
 
     instanceRef.current = map;
 
+    map.on("styleimagemissing", (e) => {
+      const id = e.id;
+      const width = 1;
+      const height = 1;
+      const data = new Uint8Array(4); // transparent pixel [0,0,0,0]
+      if (!map.hasImage(id)) {
+        map.addImage(id, { width, height, data });
+      }
+    });
+
     map.on("load", () => {
       if (map.getZoom() > LIVE_MAP_MAX_ZOOM) {
         map.setZoom(LIVE_MAP_MAX_ZOOM);
@@ -1389,7 +1399,7 @@ export default function LiveMapComponent({
     }
 
     const layerStyles = getLiveMapLibreLayerStyles();
-    map.setStyle(layerStyles[activeLayer] || layerStyles.street);
+    map.setStyle(layerStyles[activeLayer] || layerStyles.street, { diff: false });
     map.once("style.load", () => {
       map.setMaxZoom(LIVE_MAP_MAX_ZOOM);
       map.setMinZoom(LIVE_MAP_MIN_ZOOM);

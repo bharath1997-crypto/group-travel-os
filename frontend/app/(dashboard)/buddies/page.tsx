@@ -129,8 +129,10 @@ export default function BuddiesPage() {
 
   const load = useCallback(async () => {
     if (!getToken()) {
-      clearToken();
-      router.replace("/login");
+      setLoading(false);
+      setConnections([]);
+      setReceived([]);
+      setSent([]);
       return;
     }
     setLoading(true);
@@ -147,7 +149,10 @@ export default function BuddiesPage() {
       ]);
       if (meRes.status === 401) {
         clearToken();
-        router.replace("/login");
+        setConnections([]);
+        setReceived([]);
+        setSent([]);
+        setLoading(false);
         return;
       }
       const u = meRes.data;

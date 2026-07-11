@@ -324,7 +324,14 @@ export function AIAssistantSidecar({
         );
 
         if (status === 401) {
-          router.push("/login");
+          setMessages((m) => [
+            ...m,
+            {
+              id: newId(),
+              role: "assistant",
+              text: "Sign in to chat with Wayra and get personalized travel help.",
+            },
+          ]);
           return;
         }
 

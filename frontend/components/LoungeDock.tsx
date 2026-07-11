@@ -512,7 +512,7 @@ export function LoungeDock() {
 
   const handleUnauthorized = useCallback(() => {
     localStorage.removeItem("gt_token");
-    window.location.href = "/login";
+    window.location.href = "/explore";
   }, []);
 
   const updateChatPref = useCallback((chatId: string, patch: Partial<ChatPrefs>) => {
@@ -1502,7 +1502,7 @@ export function LoungeDock() {
                       showToast={showToast}
                       onLogout={() => {
                         localStorage.removeItem("gt_token");
-                        window.location.href = "/login";
+                        window.location.href = "/explore";
                       }}
                       onShareInvite={async () => {
                         try {

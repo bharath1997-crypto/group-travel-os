@@ -383,8 +383,8 @@ export default function SplitActivitiesPage() {
 
   const handleUnauthorized = useCallback(() => {
     clearToken();
-    router.push("/login");
-  }, [router]);
+    showToast("Sign in to use split activities", "info");
+  }, [showToast]);
 
   const nameByUserId = useMemo(() => {
     const m = new Map<string, string>();

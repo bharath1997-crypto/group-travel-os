@@ -111,8 +111,7 @@ export default function SubscriptionPage() {
     let c = false;
     (async () => {
       if (typeof window !== "undefined" && !getToken()) {
-        clearToken();
-        router.replace("/login");
+        setLoading(false);
         return;
       }
       setLoading(true);
@@ -125,7 +124,7 @@ export default function SubscriptionPage() {
         if (c) return;
         if (meRes.status === 401) {
           clearToken();
-          router.replace("/login");
+          setMe(null);
           return;
         }
         if (meRes.data) setMe(meRes.data);

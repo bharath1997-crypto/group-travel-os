@@ -95,7 +95,6 @@ export default function ExploreV2Page() {
   const fetchV2 = async <T,>(path: string, params: Record<string, any>) => {
     const token = getToken();
     if (!token) {
-      window.location.href = "/login";
       throw new Error("Unauthorized");
     }
 
@@ -117,7 +116,6 @@ export default function ExploreV2Page() {
     });
 
     if (res.status === 401) {
-      window.location.href = "/login";
       throw new Error("Unauthorized");
     }
 
@@ -196,7 +194,7 @@ export default function ExploreV2Page() {
     // Check auth
     const token = getToken();
     if (!token) {
-      window.location.href = "/login";
+      setLoading(false);
       return;
     }
 

@@ -73,7 +73,7 @@ export default function CompleteProfilePage() {
         setRecoveryEmail(u.recovery_email ?? "");
         setAvatarUrl(u.avatar_url ?? "");
       } catch {
-        if (!c) router.replace("/login");
+        if (!c) router.replace("/explore");
       } finally {
         if (!c) setLoading(false);
       }

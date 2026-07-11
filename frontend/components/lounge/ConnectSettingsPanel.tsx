@@ -796,7 +796,7 @@ function ConnectMainScreen({
     localStorage.removeItem("gt_token");
     localStorage.removeItem("user");
     localStorage.removeItem("travello_user");
-    window.location.href = "/login";
+    window.location.href = "/explore";
   }, []);
 
   return (

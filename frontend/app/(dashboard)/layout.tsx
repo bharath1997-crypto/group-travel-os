@@ -482,10 +482,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const sidebarPrimaryLabel =
     uname && uname.length > 0 ? `@${uname}` : sidebarDisplayName;
 
+  const isExploreHub = pathname === "/explore";
   const needsZeroOuterPadding =
     isMapPage ||
     isExplorerEventsShell ||
     isExploreShortsShell ||
+    isExploreHub ||
     pathname.startsWith("/profile");
 
   const useFullWidthInner =
@@ -555,8 +557,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const activeSubs = activeSection?.subs ?? [];
   const hasSubNav = activeSubs.length > 0;
 
-  // Header height: 64px primary row + 44px sub-nav row when present
-  const headerPx = hasSubNav ? 108 : 64;
+  // Header height: 56px primary row + 44px sub-nav row when present
+  const headerPx = hasSubNav ? 100 : 56;
 
   return (
     <div className="min-h-screen min-h-[100dvh] bg-[#F8F9FA]">
@@ -566,16 +568,16 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           FIXED TOP HEADER — never hides on scroll
       ═══════════════════════════════════════════════════ */}
       <header
-        className="dashboard-header fixed top-0 left-0 right-0 z-40 overflow-visible border-b border-stone-200 bg-white shadow-sm select-none"
+        className="dashboard-header fixed top-0 left-0 right-0 z-40 overflow-visible border-b border-slate-100 bg-white shadow-[0_2px_8px_-1px_rgba(15,23,42,0.05)] select-none"
       >
-        <div className="flex h-16 items-center gap-3 overflow-visible px-3 md:gap-4 md:px-6">
+        <div className="flex h-14 items-center gap-3 overflow-visible px-3 md:gap-4 md:px-6">
           {/* Logo — image taller than the bar for a zoomed-in wordmark */}
           <Link
             href="/explore"
             className="flex shrink-0 items-center overflow-visible focus-visible:outline-none"
           >
-            <RovvyLogo variant="primary" height={76} className="md:hidden" />
-            <RovvyLogo variant="primary" height={96} className="hidden md:block" />
+            <RovvyLogo variant="primary" height={68} className="md:hidden" />
+            <RovvyLogo variant="primary" height={84} className="hidden md:block" />
           </Link>
 
           {/* Search — centered in remaining space on desktop */}
@@ -594,7 +596,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                     href={section.href}
                     className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-all ${
                       active
-                        ? "text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
+                        ? "text-[#007F73] bg-[#E6F7F4] ring-1 ring-[#007F73]/15"
                         : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
                     }`}
                     title={section.label}
@@ -608,16 +610,35 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               })}
             </nav>
 
-            <div className="hidden md:block h-6 w-px bg-stone-200" />
+            {user ? (
+              <>
+                <div className="hidden md:block h-6 w-px bg-stone-200" />
 
-            <HeaderProfileMenu
-              displayName={sidebarDisplayName}
-              avatarUrl={sidebarPicUrl}
-              cartCount={cartCount}
-              notifCount={notifCount}
-              onLogout={handleLogout}
-              showOverflowItems
-            />
+                <HeaderProfileMenu
+                  displayName={sidebarDisplayName}
+                  avatarUrl={sidebarPicUrl}
+                  cartCount={cartCount}
+                  notifCount={notifCount}
+                  onLogout={handleLogout}
+                  showOverflowItems
+                />
+              </>
+            ) : (
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Link
+                  href={`/login?next=${encodeURIComponent(pathname)}`}
+                  className="px-2 py-2 text-sm font-semibold text-stone-600 hover:text-[#0F766E] sm:px-3"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/register"
+                  className="rounded-xl bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0D635C] sm:px-4"
+                >
+                  Sign up
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 

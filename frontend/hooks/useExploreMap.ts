@@ -33,9 +33,7 @@ function getExplorerV2Base(): string {
 }
 
 function redirectToLogin(): void {
-  if (typeof window !== "undefined") {
-    window.location.href = "/login";
-  }
+  /* browse-first: stay on page as guest */
 }
 
 async function explorerV2Request<T>(

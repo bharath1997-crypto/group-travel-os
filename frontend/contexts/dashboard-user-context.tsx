@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -32,7 +31,6 @@ const DashboardUserContext = createContext<Ctx | null>(null);
 const AUTH_ME_RETRY_MS = [2000, 4000, 8000, 12000];
 
 export function DashboardUserProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const [user, setUser] = useState<DashboardUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -46,6 +44,7 @@ export function DashboardUserProvider({ children }: { children: ReactNode }) {
       }
       if (result.status === "invalid") {
         clearToken();
+        setUser(null);
         return;
       }
       const cached = getCachedSessionUser();
@@ -58,12 +57,8 @@ export function DashboardUserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoggedIn()) {
-      const next =
-        typeof window !== "undefined"
-          ? window.location.pathname + window.location.search
-          : "";
-      const path = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
-      router.replace(path);
+      setUser(null);
+      setLoading(false);
       return;
     }
 
@@ -96,12 +91,7 @@ export function DashboardUserProvider({ children }: { children: ReactNode }) {
 
         if (result.status === "invalid") {
           clearToken();
-          const next =
-            typeof window !== "undefined"
-              ? window.location.pathname + window.location.search
-              : "";
-          const path = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
-          router.replace(path);
+          setUser(null);
           finishLoading();
           return;
         }
@@ -130,7 +120,7 @@ export function DashboardUserProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       retryTimers.forEach(clearTimeout);
     };
-  }, [router]);
+  }, []);
 
   const value = useMemo(
     () => ({ user, loading, refreshUser }),

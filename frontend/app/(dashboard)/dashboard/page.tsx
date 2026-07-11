@@ -1342,7 +1342,13 @@ export default function DashboardPage() {
       if (cancelled || pageSignal.aborted) return;
       if (meRes.status === 401) {
         clearToken();
-        router.replace("/login");
+        setMe(null);
+        setStatsLoading(false);
+        setGroupsLoading(false);
+        setTripsLoading(false);
+        setPollsLoading(false);
+        setExpensesLoading(false);
+        setSmartTripDetailsLoading(false);
         return;
       }
       if (!meRes.data) {
