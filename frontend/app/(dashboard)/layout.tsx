@@ -482,10 +482,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const sidebarPrimaryLabel =
     uname && uname.length > 0 ? `@${uname}` : sidebarDisplayName;
 
+  const isExploreHub = pathname === "/explore";
   const needsZeroOuterPadding =
     isMapPage ||
     isExplorerEventsShell ||
     isExploreShortsShell ||
+    isExploreHub ||
     pathname.startsWith("/profile");
 
   const useFullWidthInner =
@@ -608,16 +610,35 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               })}
             </nav>
 
-            <div className="hidden md:block h-6 w-px bg-stone-200" />
+            {user ? (
+              <>
+                <div className="hidden md:block h-6 w-px bg-stone-200" />
 
-            <HeaderProfileMenu
-              displayName={sidebarDisplayName}
-              avatarUrl={sidebarPicUrl}
-              cartCount={cartCount}
-              notifCount={notifCount}
-              onLogout={handleLogout}
-              showOverflowItems
-            />
+                <HeaderProfileMenu
+                  displayName={sidebarDisplayName}
+                  avatarUrl={sidebarPicUrl}
+                  cartCount={cartCount}
+                  notifCount={notifCount}
+                  onLogout={handleLogout}
+                  showOverflowItems
+                />
+              </>
+            ) : (
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Link
+                  href={`/login?next=${encodeURIComponent(pathname)}`}
+                  className="px-2 py-2 text-sm font-semibold text-stone-600 hover:text-[#0F766E] sm:px-3"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/register"
+                  className="rounded-xl bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0D635C] sm:px-4"
+                >
+                  Sign up
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 

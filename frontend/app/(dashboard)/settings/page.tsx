@@ -119,7 +119,7 @@ export default function SettingsHubPage() {
     if (!window.confirm("Are you sure you want to sign out?")) return;
     localStorage.removeItem("gt_token");
     localStorage.removeItem("user");
-    window.location.href = "/login";
+    window.location.href = "/explore";
   }, []);
 
   return (

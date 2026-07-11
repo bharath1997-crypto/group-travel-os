@@ -383,7 +383,7 @@ export default function LoginActivityPage() {
     if (!window.confirm("Sign out of all devices? You will also be signed out of this session.")) return;
     localStorage.removeItem("gt_token");
     localStorage.removeItem("user");
-    window.location.href = "/login";
+    window.location.href = "/explore";
   };
 
   return (

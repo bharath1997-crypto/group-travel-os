@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
@@ -17,7 +18,7 @@ function JoinPageInner() {
   const params = useSearchParams();
   const code = (params.get("code") || params.get("invite") || "").trim();
 
-  const [phase, setPhase] = useState<"idle" | "joining" | "ok" | "err">(
+  const [phase, setPhase] = useState<"idle" | "guest" | "joining" | "ok" | "err">(
     "idle",
   );
   const [error, setError] = useState<string | null>(null);
@@ -31,8 +32,7 @@ function JoinPageInner() {
     }
     const token = getToken();
     if (!token) {
-      const next = `/join?code=${encodeURIComponent(code)}`;
-      router.replace(`/login?next=${encodeURIComponent(next)}`);
+      setPhase("guest");
       return;
     }
 
@@ -73,6 +73,36 @@ function JoinPageInner() {
         <p className="text-xs font-semibold uppercase tracking-wider text-white/60">
           Group invite
         </p>
+        {phase === "guest" ? (
+          <>
+            <h1 className="mt-2 text-lg font-bold">Join this group</h1>
+            <p className="mt-1 text-sm text-white/70">
+              Sign in to accept invite{" "}
+              <span className="font-mono text-white">{code}</span>
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <Link
+                href={`/login?next=${encodeURIComponent(`/join?code=${encodeURIComponent(code)}`)}`}
+                className="rounded-lg bg-[#0F766E] px-3 py-2.5 text-sm font-semibold text-white hover:bg-[#0D635C]"
+              >
+                Log in to join
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-lg bg-white/10 px-3 py-2.5 text-sm font-semibold hover:bg-white/15"
+              >
+                Create account
+              </Link>
+              <button
+                type="button"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-white/70 hover:text-white"
+                onClick={() => router.replace("/explore")}
+              >
+                Back to Explore
+              </button>
+            </div>
+          </>
+        ) : null}
         {phase === "idle" || phase === "joining" ? (
           <>
             <h1 className="mt-2 text-lg font-bold">Joining group…</h1>

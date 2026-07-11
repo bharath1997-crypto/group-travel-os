@@ -3,16 +3,9 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Compass,
-  Map,
-  DollarSign,
-  Radio,
-} from "lucide-react";
 
+import { useDashboardUser } from "@/contexts/dashboard-user-context";
 import { RovvyLogo } from "@/components/RovvyLogo";
-import { HeaderProfileMenu } from "@/components/HeaderProfileMenu";
-import { HeaderSearchBar } from "@/components/HeaderSearchBar";
 import { apiFetch } from "@/lib/api";
 import {
   formatDateTime,
@@ -53,13 +46,6 @@ const CITIES = [
 ];
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-
-interface UserProfile {
-  full_name?: string | null;
-  username?: string | null;
-  avatar_url?: string | null;
-  google_picture?: string | null;
-}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -112,35 +98,17 @@ function itemToDrawerItem(item: ExplorerItem): ExplorerDrawerItem {
 
 export default function ExplorePage() {
   const router = useRouter();
+  const { user } = useDashboardUser();
   const wayraRef = useRef<HTMLDivElement>(null);
 
   const [selectedCity, setSelectedCity] = useState("Chicago");
   const [searchQuery, setSearchQuery] = useState("");
   const [sections, setSections] = useState<ExploreSections | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
-  const [cartCount, setCartCount] = useState(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [selectedDrawerItem, setSelectedDrawerItem] = useState<ExplorerDrawerItem | null>(null);
 
-  // Auth
-  useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("gt_token") : null;
-    if (!token) {
-      setIsLoggedIn(false);
-      return;
-    }
-    setIsLoggedIn(true);
-    apiFetch<UserProfile>("/auth/me").then(setUserProfile).catch(() => {});
-    apiFetch<{ count: number }>("/notifications/unread-count")
-      .then((r) => setUnreadNotifCount(r.count))
-      .catch(() => {});
-    apiFetch<{ count: number }>("/cart/count")
-      .then((r) => setCartCount(Math.max(0, Math.floor(r.count))))
-      .catch(() => {});
-  }, []);
+  const isLoggedIn = Boolean(user);
 
   // Events
   useEffect(() => {
@@ -175,10 +143,8 @@ export default function ExplorePage() {
   // ─── Actions ───────────────────────────────────────────────────────────────
 
   const triggerAuthGuard = (message: string, targetPath: string) => {
-    if (!isLoggedIn) {
-      showToast(message);
-      setTimeout(() => router.push(`/login?redirect=${encodeURIComponent(targetPath)}`), 2000);
-    } else {
+    showToast(message);
+    if (isLoggedIn) {
       router.push(targetPath);
     }
   };
@@ -186,10 +152,6 @@ export default function ExplorePage() {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2500);
-  };
-
-  const handleLogout = () => {
-    router.push("/logout");
   };
 
   const handleSearch = () => {
@@ -248,97 +210,7 @@ export default function ExplorePage() {
   // ─── JSX ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-white text-slate-800 font-sans pb-16">
-      {/* ── HEADER ─────────────────────────────────────────────────────────── */}
-      <header className="dashboard-header fixed top-0 left-0 right-0 z-40 overflow-visible bg-white border-b border-stone-200 shadow-sm select-none">
-        <div className="flex h-16 items-center gap-3 overflow-visible px-3 md:gap-4 md:px-6">
-          <Link
-            href="/explore"
-            className="flex shrink-0 items-center overflow-visible focus-visible:outline-none"
-          >
-            <RovvyLogo variant="primary" height={76} className="md:hidden" />
-            <RovvyLogo variant="primary" height={96} className="hidden md:block" />
-          </Link>
-
-          {/* Search — centered in remaining space on desktop */}
-          <div className="hidden min-w-0 flex-1 items-center justify-center px-3 md:flex lg:px-6">
-            <HeaderSearchBar />
-          </div>
-
-          <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-3">
-            <nav
-              className="hidden md:flex items-center gap-0.5 xl:gap-1"
-              aria-label="Primary"
-            >
-              <Link
-                href="/explore"
-                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap text-[#0F766E] bg-[#F0FDF9] ring-1 ring-[#CCFBF1]"
-                title="Explore"
-              >
-                <Compass size={15} strokeWidth={2} />
-                <span className="hidden xl:inline">Explore</span>
-              </Link>
-              <Link
-                href="/live"
-                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
-                title="Live"
-              >
-                <Radio size={15} strokeWidth={2} />
-                <span className="hidden xl:inline">Live</span>
-              </Link>
-              <Link
-                href="/trips"
-                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
-                title="Trips"
-              >
-                <Map size={15} strokeWidth={2} />
-                <span className="hidden xl:inline">Trips</span>
-              </Link>
-
-              <Link
-                href="/split-activities"
-                className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
-                title="Split Activities"
-              >
-                <DollarSign size={15} strokeWidth={2} />
-                <span className="hidden xl:inline">Split Activities</span>
-              </Link>
-            </nav>
-
-            {isLoggedIn ? (
-              <>
-                <div className="hidden md:block h-6 w-px bg-stone-200" />
-                <HeaderProfileMenu
-                  displayName={userProfile?.full_name}
-                  avatarUrl={userProfile?.avatar_url || userProfile?.google_picture}
-                  cartCount={cartCount}
-                  notifCount={unreadNotifCount}
-                  onLogout={handleLogout}
-                  showOverflowItems
-                />
-              </>
-            ) : (
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Link
-                  href="/login"
-                  className="text-stone-600 hover:text-[#0F766E] text-sm font-semibold px-2 sm:px-3 py-2"
-                >
-                  Log in
-                </Link>
-                <Link
-                  href="/register"
-                  className="bg-[#0F766E] hover:bg-[#0D635C] text-white text-sm font-semibold px-3 sm:px-4 py-2 rounded-xl transition-colors"
-                >
-                  Sign up
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <div className="pt-16" />
-
+    <div className="min-h-full bg-white text-slate-800 font-sans pb-16">
       {/* ── 1. HERO ─────────────────────────────────────────────────────────── */}
       <ExplorerHero
         searchQuery={searchQuery}
@@ -581,7 +453,7 @@ export default function ExplorePage() {
         onToast={(msg) => {
           showToast(msg);
           if (!isLoggedIn && (msg.includes("Failed") || msg.includes("not available"))) {
-            triggerAuthGuard("Sign in to save places", "/login");
+            triggerAuthGuard("Sign in to save places", "/trips");
           }
         }}
       />

@@ -4,15 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { RovvyLogo } from "@/components/RovvyLogo";
-import { isLoggedIn } from "@/lib/auth";
 
 export default function NotFound() {
   const router = useRouter();
-  const [logged, setLogged] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setLogged(isLoggedIn());
     setMounted(true);
   }, []);
 
@@ -60,21 +57,14 @@ export default function NotFound() {
           >
             Go to Explore
           </Link>
-          {mounted && logged ? (
+          {mounted ? (
             <button
               onClick={() => router.back()}
               className="inline-flex items-center justify-center rounded-xl border border-[#334155] bg-[#1E293B]/60 px-6 py-3 text-sm font-semibold text-[#94A3B8] transition duration-300 hover:bg-[#1E293B] hover:text-white active:scale-95"
             >
               Go Back
             </button>
-          ) : (
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center rounded-xl border border-[#334155] bg-[#1E293B]/60 px-6 py-3 text-sm font-semibold text-[#94A3B8] transition duration-300 hover:bg-[#1E293B] hover:text-white active:scale-95"
-            >
-              Go to Login
-            </Link>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

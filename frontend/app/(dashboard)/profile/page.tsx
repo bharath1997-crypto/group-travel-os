@@ -44,6 +44,7 @@ import {
 } from "@/components/icons";
 
 import BrandedLoading from "@/components/BrandedLoading";
+import { GuestSignInCard } from "@/components/GuestSignInCard";
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { syncLocalProfileCache } from "@/lib/profileCache";
 import { resolveProfilePhotoUrl } from "@/lib/profilePhoto";
@@ -653,7 +654,7 @@ export default function ProfilePage() {
     );
     if (!confirmed) return;
     clearToken();
-    window.location.href = "/login";
+    window.location.href = "/explore";
   }, []);
 
   useEffect(() => {
@@ -815,15 +816,14 @@ export default function ProfilePage() {
       setBootLoading(true);
       try {
         if (!getToken()) {
-          clearToken();
-          router.replace("/login");
+          if (!c) setBootLoading(false);
           return;
         }
         const meRes = await apiFetchWithStatus<UserMe>("/auth/me");
         if (c) return;
         if (meRes.status === 401 || !meRes.data?.id) {
           clearToken();
-          router.replace("/login");
+          if (!c) setBootLoading(false);
           return;
         }
         if (
@@ -831,7 +831,7 @@ export default function ProfilePage() {
           meRes.data.username
         ) {
           clearToken();
-          router.replace("/login");
+          if (!c) setBootLoading(false);
           return;
         }
         bindAvatarStorageToUser(meRes.data.id);
@@ -874,10 +874,7 @@ export default function ProfilePage() {
         if (!c) void loadTripsAggregate();
         if (!c) void loadPosts();
       } catch {
-        if (!c) {
-          clearToken();
-          router.replace("/login");
-        }
+        if (!c) setBootLoading(false);
       } finally {
         if (!c) setBootLoading(false);
       }
@@ -1509,8 +1506,17 @@ export default function ProfilePage() {
       document.body,
     );
 
-  if (bootLoading || !me?.id) {
+  if (bootLoading) {
     return <BrandedLoading fullScreen message="Loading your profile…" />;
+  }
+
+  if (!me?.id) {
+    return (
+      <GuestSignInCard
+        title="Your profile lives here"
+        description="Sign in to view your travel profile, stats, posts, and saved places."
+      />
+    );
   }
 
   return (

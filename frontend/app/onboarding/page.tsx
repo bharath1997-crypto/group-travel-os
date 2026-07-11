@@ -222,7 +222,7 @@ export default function OnboardingWizardPage() {
 
   useEffect(() => {
     if (!isLoggedIn()) {
-      router.replace("/login");
+      router.replace("/explore");
       return;
     }
     let c = false;
@@ -253,7 +253,7 @@ export default function OnboardingWizardPage() {
           setCurrencyTouched(false);
         }
       } catch {
-        if (!c) router.replace("/login");
+        if (!c) router.replace("/explore");
       }
     })();
     return () => {

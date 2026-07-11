@@ -14,7 +14,7 @@ export default function AccountSecurityPage() {
     if (!window.confirm("Sign out of all devices?")) return;
     localStorage.removeItem("gt_token");
     localStorage.removeItem("user");
-    window.location.href = "/login";
+    window.location.href = "/explore";
   }, []);
 
   return (

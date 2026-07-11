@@ -175,7 +175,7 @@ export default function TripsPage() {
       );
       if (pageSignal.aborted) return;
       if (groupsRes.status === 401) {
-        router.push("/login");
+        setTrips([]);
         return;
       }
       const gList = groupsRes.data ?? [];
@@ -192,7 +192,7 @@ export default function TripsPage() {
       );
       if (pageSignal.aborted) return;
       if (lists.some((x) => x.status === 401)) {
-        router.push("/login");
+        setTrips([]);
         return;
       }
       const merged: MergedTrip[] = [];

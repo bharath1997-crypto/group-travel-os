@@ -320,7 +320,6 @@ export default function TripDetailPage() {
     const rTrip = await apiFetchWithStatus<TripOut>(`/trips/${id}`);
     if (rTrip.status === 401) {
       setLoading(false);
-      router.push("/login");
       return;
     }
     if (!rTrip.data) {
@@ -356,7 +355,6 @@ export default function TripDetailPage() {
       [rG, rE, rB, rP, rL, rMe].some((x) => x.status === 401)
     ) {
       setLoading(false);
-      router.push("/login");
       return;
     }
     if (rG.data) setGroup(rG.data);

@@ -85,7 +85,7 @@ export default function SettingsSecurityPage() {
         }),
       });
       clearToken();
-      router.push("/login");
+      router.push("/explore");
     } catch (err) {
       setDelMsg(err instanceof Error ? err.message : "Could not deactivate");
     }
