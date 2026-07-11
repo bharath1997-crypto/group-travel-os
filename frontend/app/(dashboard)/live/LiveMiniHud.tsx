@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Car, Bike, Compass, User, Pencil, Clock, Navigation } from "lucide-react";
+import { Car, Bike, Compass, User, PencilLine, Clock, Navigation } from "lucide-react";
 import { formatRouteDuration } from "./live-types";
 
 interface LiveMiniHudProps {
@@ -77,7 +77,7 @@ export default function LiveMiniHud({
             {workflowType === "Solo" ? "Solo" : workflowType === "Group Travel" ? "Group" : "Share"}
           </span>
           <div className="w-[1px] h-3 bg-stone-200" />
-          <Pencil className="w-3 h-3 text-stone-400" />
+          <PencilLine className="w-3 h-3 text-stone-400" />
         </div>
       </div>
     );
@@ -104,7 +104,7 @@ export default function LiveMiniHud({
             className="p-1.5 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors"
             title="Edit setup"
           >
-            <Pencil className="w-3.5 h-3.5" />
+            <PencilLine className="w-3.5 h-3.5" />
           </button>
           <button
             type="button"

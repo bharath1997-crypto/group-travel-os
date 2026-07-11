@@ -1715,6 +1715,7 @@ export default function LivePage() {
               >
                 <TravelModeChip
                   travelMode={travelMode}
+                  workflowType={workflowType}
                   status={
                     isLiveActive
                       ? "live_active"

@@ -1,12 +1,13 @@
 "use client";
 
 import { MouseEvent } from "react";
-import { Car, Bike, Compass, User, Pencil } from "lucide-react";
+import { Car, Bike, Compass, User, Users, Armchair } from "lucide-react";
 
 export type TravelModeStatus = "idle" | "route_ready" | "live_active";
 
 interface TravelModeChipProps {
   travelMode: "Drive" | "Bike" | "Trek" | "Walk";
+  workflowType: "Solo" | "Group Travel" | "Seat Share";
   status: TravelModeStatus;
   onClickEdit: (e: MouseEvent) => void;
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface TravelModeChipProps {
 
 export default function TravelModeChip({
   travelMode,
+  workflowType,
   status,
   onClickEdit,
   isOpen,
@@ -31,6 +33,20 @@ export default function TravelModeChip({
       case "Drive":
       default:
         return <Car className={sizeClass} />;
+    }
+  };
+
+  // Workflow icon selection
+  const renderWorkflowIcon = () => {
+    const sizeClass = "w-3.5 h-3.5 text-stone-500 hover:text-stone-700 transition-colors";
+    switch (workflowType) {
+      case "Group Travel":
+        return <Users className={sizeClass} />;
+      case "Seat Share":
+        return <Armchair className={sizeClass} />;
+      case "Solo":
+      default:
+        return <User className={sizeClass} />;
     }
   };
 
@@ -60,7 +76,7 @@ export default function TravelModeChip({
         {/* Vertical Divider */}
         <div className="mx-0.5 h-3.5 w-[1px] bg-stone-200" />
 
-        {/* Right half: Edit Button */}
+        {/* Right half: Edit Button displaying workflow symbol */}
         <button
           type="button"
           onClick={onClickEdit}
@@ -68,7 +84,7 @@ export default function TravelModeChip({
           title="Change travel mode or workflow"
           aria-label="Edit travel mode or workflow"
         >
-          <Pencil className="w-3.5 h-3.5 text-stone-400 hover:text-stone-700" />
+          {renderWorkflowIcon()}
         </button>
       </div>
 
