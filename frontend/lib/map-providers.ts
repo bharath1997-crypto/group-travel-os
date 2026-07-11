@@ -275,10 +275,8 @@ export function resolveStreetTileUrl(): string {
       );
     }
   }
-  if (process.env.NODE_ENV === "production") {
-    return PRODUCTION_STREET_TILE_DEFAULT.url;
-  }
-  return DEV_TILE_DEFAULTS.street.url;
+  // Same Detailed Map tiles locally and in production (CARTO Voyager).
+  return PRODUCTION_STREET_TILE_DEFAULT.url;
 }
 
 /** Resolved raster tile URLs for MapLibre `sources.*.tiles` (never blank). */
@@ -297,10 +295,7 @@ export function resolveStreetRasterTileUrls(): string[] {
 export function resolveStreetTileAttribution(): string {
   const override = process.env.NEXT_PUBLIC_MAP_TILE_ATTRIBUTION?.trim();
   if (override) return override;
-  if (process.env.NODE_ENV === "production") {
-    return PRODUCTION_STREET_TILE_DEFAULT.attribution;
-  }
-  return DEV_TILE_DEFAULTS.street.attribution;
+  return PRODUCTION_STREET_TILE_DEFAULT.attribution;
 }
 
 export function tileUrlNeedsCommercialReview(url: string): boolean {
