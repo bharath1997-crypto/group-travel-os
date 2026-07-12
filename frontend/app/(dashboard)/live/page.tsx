@@ -1661,6 +1661,14 @@ export default function LivePage() {
     return "text-emerald-700 bg-emerald-100";
   }
 
+  function statusDotClass(): string {
+    if (isLiveActive) return "bg-emerald-500 animate-pulse";
+    if (liveStage === "destination_set") return "bg-sky-500";
+    if (liveStage === "long_distance_preview") return "bg-amber-500";
+    if (liveStage === "place_preview") return "bg-amber-500";
+    return "bg-emerald-500";
+  }
+
   return (
     <div className="h-full relative select-none">
       <LiveMapComponent
@@ -2136,12 +2144,14 @@ export default function LivePage() {
             </div>
 
             {/* Status Pill Chip */}
-            <div
-              className="flex items-center gap-1.5 h-9 px-3.5 rounded-full text-xs font-semibold bg-[#E6F7F4] text-[#007F73] border border-[#007F73]/10 shadow-[0_4px_18px_rgba(15,23,42,0.05)] select-none shrink-0"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#007F73] animate-pulse" />
-              {statusPillLabel()}
-            </div>
+            {liveStage !== "static_landing" && (
+              <div
+                className={`flex items-center gap-1.5 h-9 px-3.5 rounded-full text-xs font-semibold shadow-[0_4px_18px_rgba(15,23,42,0.05)] select-none shrink-0 border border-current/10 transition-all duration-200 ${statusPillClass()}`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${statusDotClass()}`} />
+                {statusPillLabel()}
+              </div>
+            )}
           </div>
 
           {/* Nearby Suggestions Results Panel */}
