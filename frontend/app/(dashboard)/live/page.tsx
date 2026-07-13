@@ -4,15 +4,10 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
-  Compass,
   ChevronRight,
   MapPin,
   Search,
   Star,
-  Volume2,
-  VolumeX,
-  Bell,
-  Maximize2,
 } from "lucide-react";
 import { useDashboardUser } from "@/contexts/dashboard-user-context";
 import TravelModeChip from "./TravelModeChip";
@@ -22,7 +17,11 @@ import { haversineM } from "@/lib/geo";
 import PlacePreviewCard, { type PlacePreviewData } from "./PlacePreviewCard";
 import FarAwayPlacePanel from "./FarAwayPlacePanel";
 import SoloRoutePreviewPanel from "./SoloRoutePreviewPanel";
+import LiveRouteSummaryBar from "./LiveRouteSummaryBar";
 import LiveRouteOriginSetup from "./LiveRouteOriginSetup";
+import LiveMapLocationSheet, {
+  type MapLocationSheetPoint,
+} from "./LiveMapLocationSheet";
 import SoloLiveActivePanel from "./SoloLiveActivePanel";
 import SoloLiveNavigationOverlay from "./SoloLiveNavigationOverlay";
 import type {
@@ -38,12 +37,10 @@ import {
   buildGpsRouteOrigin,
   buildMapCenterRouteOrigin,
   buildMapPickRouteOrigin,
+  isUserChosenRouteOrigin,
+  routeOriginsEquivalent,
   validateRouteOriginCoords,
 } from "./live-route-origin";
-import {
-  canStartSoloLive,
-  isLongDistanceFromUser,
-} from "./live-types";
 import {
   liveGeocodingReverse,
   liveAutocompleteSearch,
@@ -79,18 +76,35 @@ import {
   DEFAULT_RECENT_SUGGESTIONS,
   type RecentSearchItem,
 } from "./live-recent-searches";
+import { filterInstantSuggestions } from "./live-search-suggestions";
+import {
+  getNearbyCategoryTitle,
+  isExactCategoryQuery,
+  nearbyResultLimitForScreen,
+  resolveLiveSearchCategory,
+} from "./live-search-categories";
+import { parsePastedLocation } from "./live-pasted-location";
+import {
+  enrichNearbyResultsForTravel,
+  enrichPlaceForTravel,
+} from "./live-place-enrich";
 import type { LiveMapRef, MapFollowMode } from "./LiveMapComponent";
 import {
   gpsStatusLabel,
   gpsStatusNeedsHelper,
   isFreshGpsStatus,
   logRovvyGps,
+  logRovvyLiveDebug,
   logRovvyMapClickResolver,
   type GpsStatus,
   type GpsState,
 } from "./live-gps";
-import { LIVE_MAP_CONTROLS_POSITION } from "./live-layout";
+import { LIVE_MAP_CONTROLS_POSITION, type LiveMapViewMode } from "./live-layout";
 import LiveMapLayerControl from "./LiveMapLayerControl";
+import LiveMapToolsControl, {
+  LIVE_MAP_CTRL_BTN,
+  LIVE_MAP_CTRL_BTN_ACTIVE,
+} from "./LiveMapToolsControl";
 import type { LiveMapLayer } from "@/lib/map-providers";
 import { mapLabelFeatureToPlacePreview } from "./live-map-labels";
 import RoviRouteIntelligencePanel from "./RoviRouteIntelligencePanel";
@@ -259,18 +273,35 @@ type BackendNearbyResponse = {
   results: BackendNearbyPlace[];
 };
 
+function resolveCategoryLabelFromPlace(place: PlacePreviewData): string {
+  const fromTags = normalizePlaceCategory(place.tags);
+  if (fromTags) return fromTags;
+  if (place.categoryLabel && !/^(node|way|relation)$/i.test(place.categoryLabel.trim())) {
+    return place.categoryLabel;
+  }
+  return "Place";
+}
+
+function resolveNearbyCategoryLabel(item: BackendNearbyPlace): string {
+  const raw = item.category?.trim();
+  if (raw && !/^(node|way|relation)$/i.test(raw)) return raw;
+  return normalizePlaceCategory((item as any).tags) || "Place";
+}
+
 async function searchNearbyPlaces(
   category: string,
   center: { lat: number; lng: number },
+  limit = nearbyResultLimitForScreen(),
 ): Promise<PlacePreviewData[]> {
   try {
+    const radiusMeters = limit >= 36 ? 15000 : limit >= 24 ? 12000 : 8000;
     const data = await apiFetch<BackendNearbyResponse>(
-      `/places/nearby?category=${encodeURIComponent(category)}&lat=${center.lat}&lng=${center.lng}&limit=15`
+      `/places/nearby?category=${encodeURIComponent(category)}&lat=${center.lat}&lng=${center.lng}&radius_meters=${radiusMeters}&limit=${limit}`,
     );
     if (!data || !data.results) return [];
-    return data.results.map((item) => ({
+    const mapped = data.results.map((item) => ({
       name: item.name,
-      categoryLabel: item.category || normalizePlaceCategory((item as any).tags) || "Place",
+      categoryLabel: resolveNearbyCategoryLabel(item),
       address: item.address,
       phone: null,
       lat: item.lat,
@@ -285,23 +316,36 @@ async function searchNearbyPlaces(
       country: null,
       tags: (item as any).tags
     }));
+    return enrichNearbyResultsForTravel(mapped, { max: 12 });
   } catch (err) {
     console.error("Failed to search nearby places", err);
     throw err;
   }
 }
 
-function getNearbyCategoryTitle(query: string): string {
-  const q = query.toLowerCase();
-  if (q.includes("gas")) return "Gas stations near you";
-  if (q.includes("coffee") || q.includes("cafe")) return "Coffee nearby";
-  if (q.includes("food") || q.includes("restaurant")) return "Restaurants near you";
-  if (q.includes("restroom") || q.includes("toilet")) return "Restrooms nearby";
-  if (q.includes("hospital") || q.includes("clinic")) return "Hospitals nearby";
-  if (q.includes("park")) return "Parks nearby";
-  if (q.includes("atm") || q.includes("bank")) return "ATMs nearby";
-  if (q.includes("parking")) return "Parking nearby";
-  return `${query} nearby`;
+function fitMapToNearbyResults(
+  map: LiveMapRef | null,
+  results: PlacePreviewData[],
+) {
+  if (!map || results.length === 0) return;
+  if (results.length === 1) {
+    map.flyToPlace(results[0].lat, results[0].lng, 14);
+    return;
+  }
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  let minLng = Infinity;
+  let maxLng = -Infinity;
+  for (const r of results) {
+    minLat = Math.min(minLat, r.lat);
+    maxLat = Math.max(maxLat, r.lat);
+    minLng = Math.min(minLng, r.lng);
+    maxLng = Math.max(maxLng, r.lng);
+  }
+  map.fitBounds([
+    [minLng, minLat],
+    [maxLng, maxLat],
+  ]);
 }
 
 export default function LivePage() {
@@ -316,6 +360,7 @@ export default function LivePage() {
   const searchBlurRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [activeLayer, setActiveLayer] = useState<LiveMapLayer>("street");
+  const [layersPanelOpen, setLayersPanelOpen] = useState(false);
   const [liveStage, setLiveStage] = useState<LiveStage>("static_landing");
   const [workflowType, setWorkflowType] =
     useState<(typeof WORKFLOW_TYPES)[number]>("Solo");
@@ -332,6 +377,7 @@ export default function LivePage() {
   const [routeOrigin, setRouteOrigin] = useState<RouteOrigin | null>(null);
   const [originPickMode, setOriginPickMode] = useState(false);
   const [showOriginSetup, setShowOriginSetup] = useState(false);
+  const [showPlaceDetailsPanel, setShowPlaceDetailsPanel] = useState(false);
   const [isLiveActive, setIsLiveActive] = useState(false);
   const [tripStatus, setTripStatus] = useState<TripStatus>("on_the_way");
   const [plannedStops, setPlannedStops] = useState<PlacePreviewData[]>([]);
@@ -358,10 +404,6 @@ export default function LivePage() {
   gpsStatusRef.current = gpsStatus;
   const liveGpsActive = gpsStatus === "active" || gpsStatus === "approximate" || gpsStatus === "requesting" || gpsStatus === "stale";
 
-  useEffect(() => {
-    console.log("[Rovvy Debug] userLocation computed value changed:", userLocation);
-  }, [userLocation]);
-
   const [toast, setToast] = useState<string | null>(null);
   const [loadingPlaceDetails, setLoadingPlaceDetails] = useState(false);
 
@@ -381,13 +423,29 @@ export default function LivePage() {
     destLng: number;
     travelMode: string;
   } | null>(null);
+  const activeRouteRef = useRef<RouteLine | null>(null);
+  activeRouteRef.current = activeRoute;
+  const routeOriginRef = useRef<RouteOrigin | null>(null);
+  routeOriginRef.current = routeOrigin;
+  const routePreviewStatusRef = useRef(routePreviewStatus);
+  routePreviewStatusRef.current = routePreviewStatus;
+  const kickRoutePreviewRef = useRef<
+    (
+      dest: PlacePreviewData,
+      options?: { active?: boolean; fitMap?: boolean; origin?: RouteOrigin | null; refreshGps?: boolean },
+    ) => void
+  >(() => {});
 
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [alertsEnabled, setAlertsEnabled] = useState(true);
   const [showGpsHelper, setShowGpsHelper] = useState(false);
+  const [mapLocationSheet, setMapLocationSheet] = useState<MapLocationSheetPoint | null>(null);
+  const [mapLocationSheetLoading, setMapLocationSheetLoading] = useState(false);
+  const [mapLocationSheetManual, setMapLocationSheetManual] = useState(false);
   const [searchAnchorHint, setSearchAnchorHint] = useState<string | null>(null);
   const [searchNeedsLocation, setSearchNeedsLocation] = useState(false);
   const [mapBearing, setMapBearing] = useState(0);
+  const [mapViewMode, setMapViewMode] = useState<LiveMapViewMode>("2d");
   const lowAccuracyToastShownRef = useRef(false);
   const [userRegion, setUserRegion] = useState<{
     lat?: number;
@@ -417,6 +475,7 @@ export default function LivePage() {
   const [nearbyError, setNearbyError] = useState<string | null>(null);
   const [expandedResultIndex, setExpandedResultIndex] = useState<number | null>(null);
   const [viewingDetailsFromNearby, setViewingDetailsFromNearby] = useState(false);
+  const [addStopMode, setAddStopMode] = useState(false);
   const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [mapClickResolving, setMapClickResolving] = useState(false);
   const [nearbyPlacesAtClick, setNearbyPlacesAtClick] = useState<PlacePreviewData[] | null>(null);
@@ -491,8 +550,28 @@ export default function LivePage() {
     if (userLocation) {
       return buildGpsRouteOrigin(userLocation.lat, userLocation.lng, gpsState.accuracyMeters);
     }
+    const center = mapRef.current?.getMapCenter();
+    if (center) {
+      return buildMapCenterRouteOrigin(center.lat, center.lng);
+    }
     return null;
   }, [userLocation, gpsState.accuracyMeters]);
+
+  /** GPS-first route origin; keeps manual picks unless GPS is available. */
+  const resolveRoutePreviewOrigin = useCallback(
+    (explicit?: RouteOrigin | null): RouteOrigin | null => {
+      if (explicit !== undefined) return explicit;
+      const gpsOrigin = userLocation
+        ? buildGpsRouteOrigin(userLocation.lat, userLocation.lng, gpsState.accuracyMeters)
+        : null;
+      if (gpsOrigin) return gpsOrigin;
+      if (isUserChosenRouteOrigin(routeOriginRef.current)) return routeOriginRef.current;
+      const center = mapRef.current?.getMapCenter();
+      if (center) return buildMapCenterRouteOrigin(center.lat, center.lng);
+      return routeOriginRef.current ?? null;
+    },
+    [userLocation, gpsState.accuracyMeters],
+  );
 
   const loadRoutePreview = useCallback(
     async (
@@ -506,21 +585,15 @@ export default function LivePage() {
         return;
       }
 
-      if (isLongDistanceFromUser(dest.distanceM)) {
-        setRoutePreviewStatus("idle");
-        setRoutePreviewError(null);
-        setActiveRoute(null);
-        return;
-      }
-
-      const origin = options?.origin !== undefined ? options.origin : (routeOrigin ?? resolveDefaultRouteOrigin());
+      const origin =
+        options?.origin !== undefined ? options.origin : resolveRoutePreviewOrigin();
       if (!dest || !validateRouteOriginCoords(origin)) {
         setRoutePreviewStatus("failed");
         if (!origin) {
           if (gpsState.status === "denied") {
-            setRoutePreviewError("GPS access denied. Enable location services or pick a starting point manually.");
+            setRoutePreviewError("Location off — enable GPS or move the map to your area.");
           } else {
-            setRoutePreviewError("GPS location unavailable. Try picking a starting point manually.");
+            setRoutePreviewError("Finding your location…");
           }
         } else {
           setRoutePreviewError("Destination is required to preview the route.");
@@ -552,7 +625,7 @@ export default function LivePage() {
       lastFetchedRouteRef.current = currentArgs;
 
       const requestId = ++routePreviewRequestRef.current;
-      setRouteOrigin(origin);
+      setRouteOrigin((prev) => (routeOriginsEquivalent(prev, origin) ? prev : origin));
       setRoutePreviewStatus("loading");
       setRoutePreviewError(null);
       setRouteLoading(true);
@@ -606,10 +679,12 @@ export default function LivePage() {
             : prev,
         );
 
-        if (options?.fitMap !== false) {
+        if (options?.fitMap !== false && route.geometry.length >= 2) {
+          const lngs = route.geometry.map((c) => c[0]);
+          const lats = route.geometry.map((c) => c[1]);
           mapRef.current?.fitBounds([
-            [route.from.lng, route.from.lat],
-            [route.to.lng, route.to.lat],
+            [Math.min(...lngs), Math.min(...lats)],
+            [Math.max(...lngs), Math.max(...lats)],
           ]);
         }
       } catch (err) {
@@ -624,24 +699,112 @@ export default function LivePage() {
         }
       }
     },
-    [routeOrigin, resolveDefaultRouteOrigin, travelMode, gpsState],
+    [resolveRoutePreviewOrigin, travelMode, gpsState],
   );
+
+  const kickRoutePreview = useCallback(
+    (
+      dest: PlacePreviewData,
+      options?: {
+        active?: boolean;
+        fitMap?: boolean;
+        origin?: RouteOrigin | null;
+        refreshGps?: boolean;
+      },
+    ) => {
+      if (options?.refreshGps) {
+        mapRef.current?.locateUser(true);
+      }
+      const origin = resolveRoutePreviewOrigin(options?.origin);
+      if (!origin) {
+        setRoutePreviewStatus("loading");
+        setRoutePreviewError(null);
+        setRouteLoading(true);
+        return;
+      }
+      void loadRoutePreview(dest, { ...options, origin });
+    },
+    [resolveRoutePreviewOrigin, loadRoutePreview],
+  );
+  kickRoutePreviewRef.current = kickRoutePreview;
 
   const applyRouteOriginAndPreview = useCallback(
     (origin: RouteOrigin) => {
       setRouteOrigin(origin);
       setShowOriginSetup(false);
       setOriginPickMode(false);
-      if (destination) {
-        void loadRoutePreview(destination, { origin });
+      const previewTarget = destination ?? selectedPlace;
+      if (previewTarget) {
+        void loadRoutePreview(previewTarget, { origin });
       }
     },
-    [destination, loadRoutePreview],
+    [destination, selectedPlace, loadRoutePreview],
+  );
+
+  const closeMapLocationSheet = useCallback(() => {
+    setMapLocationSheet(null);
+    setMapLocationSheetLoading(false);
+    setMapLocationSheetManual(false);
+  }, []);
+
+  const openMapLocationSheet = useCallback(
+    async (lat: number, lng: number, options?: { manual?: boolean }) => {
+      setMapLocationSheet({ lat, lng });
+      setMapLocationSheetManual(Boolean(options?.manual));
+      setMapLocationSheetLoading(true);
+      setShowGpsHelper(false);
+      try {
+        const details = await liveGeocodingReverse(lat, lng);
+        if (details) {
+          setMapLocationSheet({
+            lat,
+            lng,
+            name:
+              details.name ||
+              details.display_name?.split(",")[0]?.trim() ||
+              "Selected location",
+            address: details.display_name,
+          });
+        }
+      } catch {
+        // Coordinates-only sheet is fine when reverse geocode fails.
+      } finally {
+        setMapLocationSheetLoading(false);
+      }
+    },
+    [],
+  );
+
+  const mapPointToPlace = useCallback(
+    (point: MapLocationSheetPoint): PlacePreviewData => ({
+      name: point.name || "Selected location",
+      categoryLabel: "Place",
+      address: point.address || `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`,
+      phone: null,
+      lat: point.lat,
+      lng: point.lng,
+      distanceM: userLocation
+        ? haversineM(userLocation.lat, userLocation.lng, point.lat, point.lng)
+        : destination
+          ? haversineM(destination.lat, destination.lng, point.lat, point.lng)
+          : null,
+      openingHours: null,
+      openStatus: null,
+      placeKey: undefined,
+      osmType: null,
+      osmId: null,
+      city: null,
+      country: null,
+      source: "search",
+      tags: {},
+    }),
+    [userLocation, destination],
   );
 
   const handleUseCurrentLocationOrigin = useCallback(() => {
     if (!userLocation) {
-      showToast("Location unavailable. Enable GPS or choose another start point.");
+      mapRef.current?.locateUser(true);
+      showToast("Finding your location…");
       return;
     }
     applyRouteOriginAndPreview(
@@ -699,7 +862,7 @@ export default function LivePage() {
     setShowSearchPopup(false);
     setShowSuggestionsCard(false);
 
-    setNearbyCategory(query);
+    setNearbyCategory(resolveLiveSearchCategory(query)?.key ?? query);
     setNearbyLoading(true);
     setNearbyError(null);
     setNearbyResults([]);
@@ -734,8 +897,11 @@ export default function LivePage() {
     }
 
     try {
-      const results = await searchNearbyPlaces(query, anchor);
+      const limit = nearbyResultLimitForScreen();
+      const categoryKey = resolveLiveSearchCategory(query)?.key ?? query;
+      const results = await searchNearbyPlaces(categoryKey, anchor, limit);
       setNearbyResults(results);
+      fitMapToNearbyResults(mapRef.current, results);
     } catch (err) {
       setNearbyError("Nearby search is unavailable right now.");
     } finally {
@@ -743,6 +909,70 @@ export default function LivePage() {
     }
   }, [resolveAnchorCoordinate, currentUserId, refreshRecentSearches, gpsStatus]);
 
+  const instantSuggestions = useMemo(
+    () => filterInstantSuggestions(searchQuery, recentSearches, 6),
+    [searchQuery, recentSearches],
+  );
+
+  const detectedSearchCategory = useMemo(
+    () => resolveLiveSearchCategory(searchQuery),
+    [searchQuery],
+  );
+
+  const detectedPastedLocation = useMemo(
+    () => parsePastedLocation(searchQuery),
+    [searchQuery],
+  );
+
+  const addPlaceAsRouteStop = useCallback((place: PlacePreviewData) => {
+    if (!destination) {
+      showToast("Set a destination first, then add stops.");
+      return;
+    }
+    if (
+      place.placeKey &&
+      destination.placeKey &&
+      place.placeKey === destination.placeKey
+    ) {
+      showToast("This is already your destination.");
+      return;
+    }
+    if (
+      Math.abs(place.lat - destination.lat) < 0.00005 &&
+      Math.abs(place.lng - destination.lng) < 0.00005
+    ) {
+      showToast("This is already your destination.");
+      return;
+    }
+    let added = false;
+    setPlannedStops((prev) => {
+      const duplicate = prev.some(
+        (stop) =>
+          (stop.placeKey && place.placeKey && stop.placeKey === place.placeKey) ||
+          (Math.abs(stop.lat - place.lat) < 0.00005 &&
+            Math.abs(stop.lng - place.lng) < 0.00005),
+      );
+      if (duplicate) return prev;
+      added = true;
+      return [...prev, place];
+    });
+    if (!added) {
+      showToast("That stop is already on your route.");
+      return;
+    }
+    setAddStopMode(false);
+    setTripStatus("on_the_way");
+    showToast(`Stop added: ${place.name}`);
+  }, [destination]);
+
+  const dismissPlacePreviewForLive = useCallback(() => {
+    setViewingDetailsFromNearby(false);
+    setSelectedPlace(null);
+    setNearbyResults(null);
+    setNearbyCategory(null);
+    setExpandedResultIndex(null);
+    mapRef.current?.clearClickedPin();
+  }, []);
 
   const handleCloseNearbyResults = useCallback(() => {
     setNearbyResults(null);
@@ -753,40 +983,78 @@ export default function LivePage() {
     setViewingDetailsFromNearby(false);
   }, []);
 
-  const handleResultClick = useCallback((result: PlacePreviewData) => {
-    setSelectedPlace(result);
-    setViewingDetailsFromNearby(true);
-    setLiveStage("place_preview");
-    // Record as recent search when user clicks a nearby result
-    recordRecentSearch(buildPlaceRecentSearch(result), currentUserId);
-    refreshRecentSearches();
-  }, [currentUserId, refreshRecentSearches]);
-
-  const handleAddStopFromNearby = useCallback((result: PlacePreviewData) => {
-    if (!destination) {
-      showToast("Make this a destination first, then add stops.");
+  const handleResultClick = useCallback(async (result: PlacePreviewData) => {
+    if (addStopMode && isLiveActive && destination) {
+      const enriched = await enrichPlaceForTravel(result);
+      addPlaceAsRouteStop(enriched);
       return;
     }
-    setPlannedStops((prev) => [...prev, result]);
-    showToast(`${result.name} added as a stop.`);
+
+    mapRef.current?.flyToPlace(result.lat, result.lng, 15);
+    setLoadingPlaceDetails(true);
+    setPlaceMediaLoading(true);
+    const enriched = await enrichPlaceForTravel(result);
+    const categoryLabel = resolveCategoryLabelFromPlace(enriched);
+    const withCategory = { ...enriched, categoryLabel };
+    setSelectedPlace(withCategory);
+    setViewingDetailsFromNearby(true);
+    setLiveStage("place_preview");
+    recordRecentSearch(buildPlaceRecentSearch(withCategory), currentUserId);
+    refreshRecentSearches();
+
+    void resolvePlaceMedia(withCategory).then((resolution: PlaceMediaResolution) => {
+      setSelectedPlace((prev) => {
+        if (!prev || prev.lat !== withCategory.lat || prev.lng !== withCategory.lng) return prev;
+        return { ...prev, placeKey: resolution.placeKey };
+      });
+      setPlaceMedia(resolution.media);
+      setPlaceTags(resolution.tags);
+      setPlaceMediaLoading(false);
+    });
+
+    try {
+      const details = await liveGeocodingReverse(withCategory.lat, withCategory.lng);
+      if (details) {
+        const reverseGeo = extractCityCountry(details.address);
+        setSelectedPlace((prev) => {
+          if (!prev || prev.lat !== withCategory.lat || prev.lng !== withCategory.lng) return prev;
+          return {
+            ...prev,
+            name: details.name || prev.name,
+            categoryLabel: normalizePlaceCategory(details) || prev.categoryLabel,
+            address: formatStreetAddress(details.address, details.display_name || prev.address),
+            city: reverseGeo.city ?? prev.city,
+            country: reverseGeo.country ?? prev.country,
+          };
+        });
+      }
+    } finally {
+      setLoadingPlaceDetails(false);
+    }
+  }, [currentUserId, refreshRecentSearches, addStopMode, isLiveActive, destination, addPlaceAsRouteStop]);
+
+  const handleAddStopFromNearby = useCallback((result: PlacePreviewData) => {
+    addPlaceAsRouteStop(result);
     setExpandedResultIndex(null);
-  }, [destination]);
+  }, [addPlaceAsRouteStop]);
 
   const handleViewDetailsFromNearby = useCallback((result: PlacePreviewData) => {
     setSelectedPlace(result);
     setViewingDetailsFromNearby(true);
+    setShowPlaceDetailsPanel(true);
   }, []);
 
-  const handleMakeDestinationFromNearby = useCallback((result: PlacePreviewData) => {
-    setDestination(result);
+  const handleMakeDestinationFromNearby = useCallback(async (result: PlacePreviewData) => {
+    const enriched = await enrichPlaceForTravel(result);
+    setDestination(enriched);
     setLiveStage("destination_set");
     setIsLiveActive(false);
     setExpandedResultIndex(null);
     setNearbyResults(null);
     setNearbyCategory(null);
-    showToast(`Destination changed to ${result.name}.`);
-    void loadRoutePreview(result);
-  }, [loadRoutePreview]);
+    showToast(`Destination changed to ${enriched.name}.`);
+    kickRoutePreview(enriched);
+  }, [kickRoutePreview]);
 
   const handleSavePlaceFromNearby = useCallback(() => {
     showToast("Place saved.");
@@ -809,23 +1077,28 @@ export default function LivePage() {
       return;
     }
 
-    if (process.env.NEXT_PUBLIC_ROVVY_MAP_DEBUG === "true") {
-      console.info("[Rovvy Live Search] selectDestination", {
-        place,
-        targetLocation: { lat, lng },
-        origin: options?.origin,
-      });
+    if (addStopMode && isLiveActive && destination) {
+      addPlaceAsRouteStop(place);
+      return;
     }
+
+    logRovvyLiveDebug("[Rovvy Live Search] selectDestination", {
+      place,
+      targetLocation: { lat, lng },
+      origin: options?.origin,
+    });
 
     setDestination(null);
     setIsLiveActive(false);
     setActiveRoute(null);
-    setRoutePreviewStatus("idle");
+    setRoutePreviewStatus("loading");
     setRoutePreviewError(null);
-    setRouteLoading(false);
+    setRouteLoading(true);
+    lastFetchedRouteRef.current = null;
     setRouteOrigin(null);
     setOriginPickMode(false);
     setShowOriginSetup(false);
+    setShowPlaceDetailsPanel(false);
     setViewingDetailsFromNearby(false);
     setNearbyResults(null);
     setNearbyCategory(null);
@@ -878,19 +1151,17 @@ export default function LivePage() {
     });
 
     try {
+      let resolvedPlace = place;
       const details = await liveGeocodingReverse(lat, lng);
-      if (!details) return;
-
-      const hours = details.extratags?.opening_hours;
-      const reverseGeo = extractCityCountry(details.address);
-      setSelectedPlace((prev) => {
-        if (!prev || prev.lat !== lat || prev.lng !== lng) return prev;
-        const nextOsmType = details.osm_type ?? prev.osmType;
-        const nextOsmId = details.osm_id ?? prev.osmId;
-        const nextCity = reverseGeo.city ?? prev.city;
-        const nextCountry = reverseGeo.country ?? prev.country;
+      if (details) {
+        const hours = details.extratags?.opening_hours;
+        const reverseGeo = extractCityCountry(details.address);
+        const nextOsmType = details.osm_type ?? place.osmType;
+        const nextOsmId = details.osm_id ?? place.osmId;
+        const nextCity = reverseGeo.city ?? place.city;
+        const nextCountry = reverseGeo.country ?? place.country;
         const nextKey = buildPlaceKey({
-          name: details.name || prev.name,
+          name: details.name || place.name,
           lat,
           lng,
           city: nextCity,
@@ -898,15 +1169,15 @@ export default function LivePage() {
           osmType: nextOsmType,
           osmId: nextOsmId,
         });
-        return {
-          ...prev,
-          name: details.name || prev.name,
+        resolvedPlace = {
+          ...place,
+          name: details.name || place.name,
           categoryLabel:
             normalizePlaceCategory(details) ||
             (details.extratags ? normalizePlaceCategory(details.extratags) : null) ||
-            (details.name || prev.name ? "Place" : "Address") ||
-            prev.categoryLabel,
-          address: formatStreetAddress(details.address, details.display_name || prev.address),
+            (details.name || place.name ? "Place" : "Address") ||
+            place.categoryLabel,
+          address: formatStreetAddress(details.address, details.display_name || place.address),
           phone: extractPhone(details.extratags),
           openingHours: hours ?? null,
           openStatus: parseOpenStatus(hours),
@@ -916,16 +1187,39 @@ export default function LivePage() {
           country: nextCountry,
           placeKey: nextKey,
         };
-      });
+        setSelectedPlace(resolvedPlace);
+      }
+      kickRoutePreview(resolvedPlace, { fitMap: true, refreshGps: true });
     } finally {
       setLoadingPlaceDetails(false);
     }
-  }, [currentUserId, refreshRecentSearches]);
+  }, [currentUserId, refreshRecentSearches, addStopMode, isLiveActive, destination, addPlaceAsRouteStop, kickRoutePreview]);
 
   const selectDestinationFromPlace = selectDestination;
 
+  const handleMapDoubleClick = useCallback(
+    (lat: number, lng: number) => {
+      void openMapLocationSheet(lat, lng, {
+        manual: !isFreshGpsStatus(gpsStatus),
+      });
+    },
+    [openMapLocationSheet, gpsStatus],
+  );
+
   const handleMapClick = useCallback(async (lat: number, lng: number, features: any[]) => {
-    if (isLiveActive) return;
+    if (isLiveActive) {
+      if (originPickMode) {
+        void handleOriginMapPick(lat, lng);
+        return;
+      }
+      if (addStopMode) {
+        const enriched = await enrichPlaceForTravel(mapPointToPlace({ lat, lng }));
+        addPlaceAsRouteStop(enriched);
+        return;
+      }
+      void openMapLocationSheet(lat, lng, { manual: !isFreshGpsStatus(gpsStatus) });
+      return;
+    }
 
     if (originPickMode) {
       void handleOriginMapPick(lat, lng);
@@ -1056,6 +1350,80 @@ export default function LivePage() {
       setShowSearchPopup(false);
       setShowSuggestionsCard(false);
       setSearchError(null);
+
+      const category = resolveLiveSearchCategory(name);
+      if (category) {
+        void handleNearbySearch(category.key);
+        return;
+      }
+
+      const pasted = parsePastedLocation(name);
+      if (pasted) {
+        setSearchLoading(true);
+        setSearchNeedsLocation(false);
+        try {
+          if (pasted.kind === "coordinates" && pasted.lat != null && pasted.lng != null) {
+            const lat = pasted.lat;
+            const lng = pasted.lng;
+            let placeName = pasted.label;
+            let address = pasted.label;
+            let categoryLabel = "Pasted location";
+            try {
+              const details = await liveGeocodingReverse(lat, lng);
+              if (details?.display_name) {
+                address = details.display_name;
+                placeName = details.name || details.display_name.split(",")[0] || placeName;
+                categoryLabel = details.type?.replace(/_/g, " ") || categoryLabel;
+              }
+            } catch {
+              // Reverse geocode is optional for pasted coordinates.
+            }
+            await selectDestination(
+              {
+                name: placeName,
+                categoryLabel,
+                address,
+                phone: null,
+                lat,
+                lng,
+                distanceM: userLocation ? haversineM(userLocation.lat, userLocation.lng, lat, lng) : null,
+                openingHours: null,
+                openStatus: null,
+                placeKey: undefined,
+                osmType: null,
+                osmId: null,
+                city: null,
+                country: null,
+                source: "search",
+                tags: {},
+              },
+              { origin: "search" },
+            );
+            return;
+          }
+
+          if (pasted.kind === "address" && pasted.address) {
+            const anchor = resolveSearchAnchor();
+            const results = await liveAutocompleteSearch(pasted.address, anchor ?? undefined);
+            const best = results[0];
+            if (best) {
+              await selectPlace(best);
+            } else {
+              setSearchResults([]);
+              setToast("Could not find that pasted location. Try a shorter address.");
+              window.setTimeout(() => setToast(null), 3200);
+            }
+            return;
+          }
+        } catch {
+          setSearchError("Search is unavailable right now.");
+          setSearchResults([]);
+        } finally {
+          setSearchLoading(false);
+        }
+        return;
+      }
+
       setSearchLoading(true);
       setSearchNeedsLocation(false);
       try {
@@ -1081,7 +1449,58 @@ export default function LivePage() {
         setSearchLoading(false);
       }
     },
-    [resolveSearchAnchor, selectPlace],
+    [resolveSearchAnchor, selectPlace, handleNearbySearch, selectDestination, userLocation],
+  );
+
+  const handleInstantSuggestionClick = useCallback(
+    (item: RecentSearchItem) => {
+      setShowSearchPopup(false);
+      setShowSuggestionsCard(false);
+
+      if (item.type === "category_search" && item.query) {
+        setSearchQuery(item.label);
+        void handleNearbySearch(item.query);
+        return;
+      }
+
+      if (
+        (item.type === "place" ||
+          item.type === "destination" ||
+          item.type === "dropped_pin") &&
+        item.lat != null &&
+        item.lng != null
+      ) {
+        setSearchQuery(item.label);
+        void selectDestination(
+          {
+            name: item.label,
+            categoryLabel: item.category ?? item.subtitle ?? "Place",
+            address: item.address ?? "",
+            phone: null,
+            lat: item.lat,
+            lng: item.lng,
+            distanceM: null,
+            openingHours: null,
+            openStatus: null,
+            placeKey: item.placeKey,
+            osmType: null,
+            osmId: null,
+            city: null,
+            country: null,
+            source: item.source ?? "recent",
+            tags: {},
+          },
+          { origin: "search" },
+        );
+        return;
+      }
+
+      if (item.query) {
+        setSearchQuery(item.query);
+        void searchPlaceByName(item.query);
+      }
+    },
+    [handleNearbySearch, selectDestination, searchPlaceByName],
   );
 
   useEffect(() => {
@@ -1141,6 +1560,14 @@ export default function LivePage() {
         return;
       }
 
+      if (isExactCategoryQuery(searchQuery)) {
+        setSearchNeedsLocation(false);
+        setSearchError(null);
+        setSearchResults([]);
+        setSearchLoading(false);
+        return;
+      }
+
       setSearchNeedsLocation(false);
       setSearchError(null);
       setSearchLoading(true);
@@ -1156,10 +1583,15 @@ export default function LivePage() {
           abortControllerRef.current.signal,
         );
         setSearchResults(results);
+        setSearchError(null);
       } catch (err: any) {
         if (err.name !== "AbortError") {
           setSearchResults([]);
-          setSearchError("Search is unavailable right now.");
+          setSearchError(
+            err?.message?.includes("Could not reach") || err?.message?.includes("Network error")
+              ? "Search server unreachable. Is the backend running on port 8000?"
+              : "Search is unavailable right now.",
+          );
         }
       } finally {
         setSearchLoading(false);
@@ -1178,11 +1610,25 @@ export default function LivePage() {
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      const bearing = mapRef.current?.getBearing();
-      if (bearing != null) setMapBearing(Math.round(bearing));
+      const viewMode = mapRef.current?.getViewMode();
+      if (viewMode) setMapViewMode(viewMode);
     }, 500);
     return () => window.clearInterval(timer);
   }, []);
+
+  const handleBearingChange = useCallback((bearing: number) => {
+    setMapBearing(Math.round(bearing));
+  }, []);
+
+  const handleMapInteraction = useCallback((interacting: boolean) => {
+    setIsMapInteracting((prev) => (prev === interacting ? prev : interacting));
+  }, []);
+
+  const handleToggleViewMode = useCallback(() => {
+    const next: LiveMapViewMode = mapViewMode === "2d" ? "3d" : "2d";
+    mapRef.current?.setViewMode(next);
+    setMapViewMode(next);
+  }, [mapViewMode]);
 
   useEffect(() => {
     if (isFreshGpsStatus(gpsStatus)) {
@@ -1220,6 +1666,22 @@ export default function LivePage() {
     }
   }, [userLocation]);
 
+  // Auto-update process when arriving at destination during Solo Live
+  useEffect(() => {
+    if (!isLiveActive || !destination || !userLocation) return;
+    const distM = haversineM(
+      userLocation.lat,
+      userLocation.lng,
+      destination.lat,
+      destination.lng,
+    );
+    if (distM <= 150 && tripStatus !== "reached") {
+      setTripStatus("reached");
+    } else if (distM > 250 && tripStatus === "reached" && !addStopMode) {
+      setTripStatus("on_the_way");
+    }
+  }, [isLiveActive, destination, userLocation, tripStatus, addStopMode]);
+
   useEffect(() => {
     if (!userLocation) return;
     let cancelled = false;
@@ -1252,9 +1714,45 @@ export default function LivePage() {
 
   useEffect(() => {
     if (destination) {
-      void loadRoutePreview(destination);
+      kickRoutePreviewRef.current(destination, { fitMap: false });
     }
-  }, [travelMode, destination?.lat, destination?.lng, destination?.placeKey, loadRoutePreview]);
+  }, [travelMode, destination?.lat, destination?.lng, destination?.placeKey]);
+
+  useEffect(() => {
+    if (liveStage !== "place_preview" || !selectedPlace) return;
+    if (loadingPlaceDetails || mapClickResolving) return;
+    if (isUserChosenRouteOrigin(routeOriginRef.current)) return;
+    if (
+      userLocation &&
+      lastFetchedRouteRef.current &&
+      haversineM(
+        lastFetchedRouteRef.current.originLat,
+        lastFetchedRouteRef.current.originLng,
+        userLocation.lat,
+        userLocation.lng,
+      ) < 75
+    ) {
+      return;
+    }
+    kickRoutePreviewRef.current(selectedPlace, { fitMap: false });
+  }, [
+    liveStage,
+    selectedPlace?.lat,
+    selectedPlace?.lng,
+    travelMode,
+    userLocation?.lat,
+    userLocation?.lng,
+    gpsState.accuracyMeters,
+    loadingPlaceDetails,
+    mapClickResolving,
+    routeOrigin?.source,
+  ]);
+
+  useEffect(() => {
+    if (viewingDetailsFromNearby) {
+      setShowPlaceDetailsPanel(true);
+    }
+  }, [viewingDetailsFromNearby]);
 
   function resetRoviExplanation() {
     setRoviExplanation(null);
@@ -1289,7 +1787,7 @@ export default function LivePage() {
   }
 
   function handleGpsStateChange(newState: GpsState) {
-    console.log("[Rovvy Debug] gpsState after update:", newState);
+    logRovvyLiveDebug("[Rovvy Debug] gpsState after update:", newState);
     setGpsState(newState);
 
     if (newState.lat !== null && newState.lng !== null) {
@@ -1297,8 +1795,9 @@ export default function LivePage() {
       setSelectedPlace((prev) => (prev ? updatePlaceDistance(prev, loc) : prev));
       setDestination((prev) => (prev ? updatePlaceDistance(prev, loc) : prev));
       setRouteOrigin((prev) => {
-        if (!prev || prev.source === "gps") {
-          return buildGpsRouteOrigin(newState.lat!, newState.lng!, newState.accuracyMeters);
+        if (!prev || prev.source === "gps" || prev.source === "map_center") {
+          const next = buildGpsRouteOrigin(newState.lat!, newState.lng!, newState.accuracyMeters);
+          return routeOriginsEquivalent(prev, next) ? prev : next;
         }
         return prev;
       });
@@ -1310,6 +1809,11 @@ export default function LivePage() {
     }
   }
 
+  function handleClosePlaceDetails() {
+    setShowPlaceDetailsPanel(false);
+    setViewingDetailsFromNearby(false);
+  }
+
   function clearSelectedPlace() {
     setSelectedPlace(null);
     setClickedLocation(null);
@@ -1319,6 +1823,13 @@ export default function LivePage() {
     setPlaceMediaLoading(false);
     resetRoviExplanation();
     setViewingDetailsFromNearby(false);
+    setShowPlaceDetailsPanel(false);
+    setActiveRoute(null);
+    setRoutePreviewStatus("idle");
+    setRoutePreviewError(null);
+    setRouteLoading(false);
+    lastFetchedRouteRef.current = null;
+    setRouteOrigin(null);
     mapRef.current?.clearClickedPin();
 
     if (isLiveActive) return;
@@ -1335,7 +1846,6 @@ export default function LivePage() {
 
   function handleMakeDestination() {
     if (!requireSolo() || !selectedPlace) return;
-    if (locationContext && !locationContext.liveSafe) return;
     setDestination(selectedPlace);
     setIsLiveActive(false);
     setLiveStage("destination_set");
@@ -1345,9 +1855,7 @@ export default function LivePage() {
       currentUserId,
     );
     refreshRecentSearches();
-    const defaultOrigin = resolveDefaultRouteOrigin();
-    if (defaultOrigin) setRouteOrigin(defaultOrigin);
-    void loadRoutePreview(selectedPlace, { origin: defaultOrigin });
+    kickRoutePreview(selectedPlace, { fitMap: true, refreshGps: true });
   }
 
   function handleStartFromPlacePreview() {
@@ -1356,68 +1864,27 @@ export default function LivePage() {
 
   function handleGetDirections() {
     if (!requireSolo() || !selectedPlace) return;
-    if (locationContext && !locationContext.liveSafe) return;
-    if (!canStartSoloLive(selectedPlace.distanceM)) {
-      showToast("This destination is too far for Solo Live. Plan a trip first.");
-      return;
-    }
     setDestination(selectedPlace);
+    dismissPlacePreviewForLive();
     setIsLiveActive(true);
     setLiveStage("solo_drive_command");
+    setTripStatus("on_the_way");
     mapRef.current?.clearClickedPin();
     recordRecentSearch(
       { ...buildPlaceRecentSearch(selectedPlace), type: "destination" },
       currentUserId,
     );
     refreshRecentSearches();
-    const defaultOrigin = resolveDefaultRouteOrigin();
-    if (defaultOrigin) setRouteOrigin(defaultOrigin);
-    void loadRoutePreview(selectedPlace, { active: true, fitMap: false, origin: defaultOrigin });
-    if (!liveGpsActive) mapRef.current?.locateUser();
+    kickRoutePreview(selectedPlace, { active: true, fitMap: false, refreshGps: true });
   }
 
   function handleContinueFromPreview() {
     if (!requireSolo() || !selectedPlace) return;
-    if (locationContext && !locationContext.liveSafe) {
-      handleContinueAnyway();
-      return;
-    }
     handleMakeDestination();
   }
 
   function handleContinueAnyway() {
-    if (!requireSolo() || !selectedPlace) return;
-    const place = selectedPlace;
-    setDestination(place);
-    setIsLiveActive(false);
-    setLiveStage("long_distance_preview");
-    resetRoviExplanation();
-
-    // ── Trigger Route Intelligence fetch ─────────────────────────────────────
-    const destSummary = placeToLocationSummary(place);
-    const originSummary = userRegionToLocationSummary(userRegion, userLocation);
-    if (originSummary) {
-      setRouteIntelligenceLoading(true);
-      setRouteIntelligenceResponse(null);
-      setRouteIntelligenceError(null);
-      fetchRouteIntelligence(originSummary, destSummary)
-        .then((resp) => {
-          setRouteIntelligenceResponse(resp);
-        })
-        .catch((err) => {
-          setRouteIntelligenceError(
-            "Route intelligence unavailable. Check connection and try again."
-          );
-        })
-        .finally(() => {
-          setRouteIntelligenceLoading(false);
-        });
-    } else {
-      // No origin resolved — skip intelligence, just show map
-      setRouteIntelligenceError(
-        "Your location is needed to resolve route options. Enable GPS or move the map."
-      );
-    }
+    handleContinueFromPreview();
   }
 
   function handleSearchNearMe() {
@@ -1431,7 +1898,6 @@ export default function LivePage() {
     setSearchQuery("");
     setSearchResults([]);
     setShowSearchPopup(true);
-    setShowSuggestionsCard(true);
     window.setTimeout(() => searchInputRef.current?.focus(), 120);
   }
 
@@ -1446,12 +1912,10 @@ export default function LivePage() {
       showToast(routePreviewError || "Route unavailable right now.");
       return;
     }
-    if (!canStartSoloLive(destination.distanceM)) {
-      showToast("This destination is too far for Solo Live. Plan a trip first.");
-      return;
-    }
+    dismissPlacePreviewForLive();
     setIsLiveActive(true);
     setLiveStage("solo_drive_command");
+    setTripStatus("on_the_way");
     mapRef.current?.locateUser(true);
   }
 
@@ -1470,10 +1934,7 @@ export default function LivePage() {
 
   function handleRetryRoutePreview() {
     if (!destination) return;
-    const currentOrigin = (routeOrigin && routeOrigin.source !== "gps")
-      ? routeOrigin
-      : resolveDefaultRouteOrigin();
-    void loadRoutePreview(destination, { origin: currentOrigin });
+    kickRoutePreview(destination);
   }
 
   function handleBeginNavigation() {
@@ -1482,12 +1943,10 @@ export default function LivePage() {
       showToast(routePreviewError || "Route unavailable right now.");
       return;
     }
-    if (!canStartSoloLive(destination.distanceM)) {
-      showToast("This destination is too far for Solo Live navigation.");
-      return;
-    }
+    dismissPlacePreviewForLive();
     setLiveStage("solo_drive_navigation");
     setIsLiveActive(true);
+    setTripStatus("on_the_way");
     mapRef.current?.locateUser(true);
   }
 
@@ -1502,6 +1961,7 @@ export default function LivePage() {
 
   function handleEndSoloLive() {
     setIsLiveActive(false);
+    setAddStopMode(false);
     setTripStatus("on_the_way");
 
     setLiveStage("destination_set");
@@ -1509,27 +1969,79 @@ export default function LivePage() {
   }
 
   function handleAddStopFromPreview() {
-    if (!requireSolo()) return;
-    if (!destination) {
-      showToast("Make this a destination first, then add stops.");
-      return;
-    }
-    if (selectedPlace) {
-      setPlannedStops((prev) => [...prev, selectedPlace]);
-      showToast("Stop added to route.");
-    }
+    if (!requireSolo() || !selectedPlace) return;
+    addPlaceAsRouteStop(selectedPlace);
   }
 
   function handleAddStopFromLive() {
     if (!destination) return;
-    showToast("Add Stop — coming soon.");
+    setAddStopMode(true);
+    setTripStatus("stopping");
+    setShowSearchPopup(true);
+    searchInputRef.current?.focus();
+    showToast("Search or tap the map to add a stop.");
   }
 
   function handleLocateClick() {
     if (gpsStatusNeedsHelper(gpsStatus)) {
-      setShowGpsHelper(true);
+      const center = mapRef.current?.getMapCenter();
+      if (center) {
+        void openMapLocationSheet(center.lat, center.lng, { manual: true });
+      } else {
+        setShowOriginSetup(true);
+      }
+      mapRef.current?.locateUser(false);
+      return;
     }
     mapRef.current?.locateUser(true);
+  }
+
+  function handleSheetSetStartingPoint(point: MapLocationSheetPoint) {
+    closeMapLocationSheet();
+    applyRouteOriginAndPreview(
+      buildMapPickRouteOrigin(
+        point.lat,
+        point.lng,
+        point.name || "Starting point",
+        point.address,
+      ),
+    );
+    showToast("Starting point set.");
+  }
+
+  function handleSheetSetDestination(point: MapLocationSheetPoint) {
+    closeMapLocationSheet();
+    const place = mapPointToPlace(point);
+    if (isLiveActive) {
+      setDestination(place);
+      kickRoutePreview(place);
+      showToast(`Destination updated to ${place.name}.`);
+      return;
+    }
+    void selectDestination(place, { origin: "search" });
+  }
+
+  function handleSheetAddStop(point: MapLocationSheetPoint) {
+    closeMapLocationSheet();
+    addPlaceAsRouteStop(mapPointToPlace(point));
+  }
+
+  async function handleSheetCopyCoordinates(point: MapLocationSheetPoint) {
+    const text = `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast("Coordinates copied.");
+    } catch {
+      showToast(text);
+    }
+  }
+
+  function handleSheetSavePlace(point: MapLocationSheetPoint) {
+    closeMapLocationSheet();
+    const place = mapPointToPlace(point);
+    recordRecentSearch(buildPlaceRecentSearch(place), currentUserId);
+    refreshRecentSearches();
+    showToast("Place saved to recent.");
   }
 
   function handleUseMapArea() {
@@ -1587,15 +2099,16 @@ export default function LivePage() {
     }
   }
 
-  const showFarAwayPanel =
-    ((liveStage === "place_preview" && selectedPlace && !isLiveActive) ||
-      (selectedPlace && viewingDetailsFromNearby)) &&
-    locationContext != null &&
-    (locationContext.classification === "very_far_destination" ||
-      locationContext.classification === "country_mismatch");
+  const showFarAwayPanel = false;
+  const showRouteSummaryBar =
+    !isLiveActive &&
+    liveStage === "place_preview" &&
+    Boolean(selectedPlace) &&
+    !showFarAwayPanel;
   const showPlacePreview =
-    ((liveStage === "place_preview" && selectedPlace && !isLiveActive) ||
-      (selectedPlace && viewingDetailsFromNearby)) &&
+    !isLiveActive &&
+    Boolean(selectedPlace) &&
+    showPlaceDetailsPanel &&
     !showFarAwayPanel;
   const showRoutePreview =
     (liveStage === "destination_set" || isLongDistancePreview) &&
@@ -1606,8 +2119,7 @@ export default function LivePage() {
   const showNavigationOverlay =
     isLiveActive && isNavigating && destination;
 
-  const mapPinSource =
-    destination ?? (selectedPlace && !showFarAwayPanel ? selectedPlace : null);
+  const mapPinSource = destination ?? selectedPlace;
   const mapPin = mapPinSource
     ? { lat: mapPinSource.lat, lng: mapPinSource.lng }
     : null;
@@ -1626,6 +2138,7 @@ export default function LivePage() {
     if (
       liveStage !== "destination_set" &&
       liveStage !== "long_distance_preview" &&
+      liveStage !== "place_preview" &&
       !isLiveActive
     ) {
       return null;
@@ -1682,9 +2195,12 @@ export default function LivePage() {
         mapFollowMode={mapFollowMode}
         onGpsStateChange={handleGpsStateChange}
         nearbyResults={nearbyResults}
+        nearbyCategoryIcon={detectedSearchCategory?.icon ?? (nearbyCategory ? resolveLiveSearchCategory(nearbyCategory)?.icon : undefined)}
         onNearbyMarkerClick={handleResultClick}
         onMapClick={handleMapClick}
-        onMapInteraction={setIsMapInteracting}
+        onMapDoubleClick={handleMapDoubleClick}
+        onMapInteraction={handleMapInteraction}
+        onBearingChange={handleBearingChange}
       />
 
       {toast ? (
@@ -1745,10 +2261,12 @@ export default function LivePage() {
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
-                    if (e.target.value.trim().length >= 2) {
-                      setShowSuggestionsCard(false);
-                      setShowSearchPopup(true);
-                    }
+                    setShowSearchPopup(true);
+                    setShowSuggestionsCard(false);
+                  }}
+                  onFocus={(e) => {
+                    e.stopPropagation();
+                    setShowSearchPopup(true);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -1758,253 +2276,190 @@ export default function LivePage() {
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (searchQuery.trim().length < 2) {
-                      setShowSuggestionsCard(true);
-                    } else {
-                      setShowSearchPopup(true);
-                    }
+                    setShowSearchPopup(true);
                   }}
                   placeholder="Search places, stops, meet points"
                   className="w-full bg-transparent focus:outline-none text-sm text-stone-800 placeholder:text-stone-400"
                 />
                 {searchLoading ? (
-                  <span className="text-[10px] text-stone-400 shrink-0 mr-1 animate-pulse">…</span>
+                  <span className="mr-1 shrink-0 text-[10px] text-stone-400 animate-pulse">…</span>
                 ) : null}
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setShowSuggestionsCard((prev) => !prev);
-                    setShowSearchPopup(false);
+                    setShowSearchPopup((prev) => !prev);
+                    setShowSuggestionsCard(false);
+                    searchInputRef.current?.focus();
                   }}
-                  className={`h-8 px-4 rounded-full text-xs font-semibold transition-all shrink-0 cursor-pointer flex items-center justify-center ${
-                    showSuggestionsCard
+                  className={`flex h-8 shrink-0 cursor-pointer items-center justify-center rounded-full px-4 text-xs font-semibold transition-all ${
+                    showSearchPopup
                       ? "bg-[#007F73] text-white shadow-sm"
-                      : "text-[#007F73] bg-[#E6F7F4] hover:bg-[#d5f2ed]"
+                      : "bg-[#E6F7F4] text-[#007F73] hover:bg-[#d5f2ed]"
                   }`}
                 >
                   Suggestions
                 </button>
               </div>
 
-              {/* Autocomplete Dropdown Search Results */}
-              {searchQuery.trim().length >= 2 && showSearchPopup && searchNeedsLocation && !searchLoading && (
-                <div className="absolute left-0 right-0 top-full z-30 mt-1 rounded-2xl bg-white/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.12)] px-3 py-2.5 text-xs text-stone-500">
-                  Turn on location or move the map to search nearby.
-                </div>
-              )}
-              {searchQuery.trim().length >= 2 && showSearchPopup && searchLoading && searchResults.length === 0 && !searchNeedsLocation && (
-                <div className="absolute left-0 right-0 top-full z-30 mt-1 rounded-2xl bg-white/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.12)] px-3 py-2.5 text-xs text-stone-400">
-                  Searching nearby places…
-                </div>
-              )}
-              {searchQuery.trim().length >= 2 && showSearchPopup && searchError && !searchLoading && (
-                <div className="absolute left-0 right-0 top-full z-30 mt-1 rounded-2xl bg-white/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.12)] px-3 py-2.5 text-xs text-amber-700">
-                  {searchError}
-                </div>
-              )}
-              {searchQuery.trim().length >= 2 && showSearchPopup && !searchLoading && !searchNeedsLocation && !searchError && searchResults.length === 0 && (
-                <div className="absolute left-0 right-0 top-full z-30 mt-1 rounded-2xl bg-white/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.12)] px-3 py-2.5 text-xs text-stone-500">
-                  No nearby places found. Try a different search.
-                </div>
-              )}
-              {searchQuery.trim().length >= 2 && searchResults.length > 0 && showSearchPopup && (
-                <ul className="absolute left-0 right-0 top-full z-30 mt-1 max-h-52 overflow-auto rounded-2xl bg-white/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
-                  {searchResults.map((result) => {
-                    const subtitleParts = [];
-                    if (result.category && result.category !== "Place") subtitleParts.push(result.category);
-                    if (result.distanceLabel) subtitleParts.push(result.distanceLabel);
-                    
-                    const subtitle = subtitleParts.join(" · ");
-                    const addressLine = result.address !== result.name ? result.address : null;
-
-                    return (
-                      <li key={result.id}>
-                        <button
-                          type="button"
-                          className="flex w-full gap-2 px-3 py-2.5 text-left hover:bg-stone-50/80 transition-colors"
-                          onClick={() => {
-                            void selectPlace(result);
-                          }}
-                        >
-                          <span className="shrink-0 pt-0.5">
-                            {result.category === "Address" || result.category === "Building" ? "📌" : "📍"}
+              {/* Unified search dropdown — instant picks + API results */}
+              {showSearchPopup ? (
+                <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-72 overflow-auto rounded-2xl bg-white/95 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-md">
+                  {detectedSearchCategory ? (
+                    <div className="border-b border-stone-100/80 p-1.5">
+                      <button
+                        type="button"
+                        className="flex w-full items-center gap-3 rounded-xl bg-[#E6F7F4] px-3 py-2.5 text-left transition-colors hover:bg-[#d5f2ed]"
+                        onClick={() => void handleNearbySearch(detectedSearchCategory.key)}
+                      >
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg shadow-sm">
+                          {detectedSearchCategory.icon}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold text-[#007F73]">
+                            {detectedSearchCategory.label}
                           </span>
-                          <span className="min-w-0">
-                            <span className="block text-sm font-medium text-stone-800 line-clamp-1">
-                              {result.name}
-                            </span>
-                            {subtitle && (
-                              <span className="block text-xs font-medium text-teal-700 line-clamp-1 mt-0.5">
-                                {subtitle}
-                              </span>
-                            )}
-                            {addressLine && (
-                              <span className="block text-[10px] text-stone-500 line-clamp-1 mt-0.5">
-                                {addressLine}
-                              </span>
-                            )}
+                          <span className="block text-[11px] text-stone-500">
+                            Show up to {nearbyResultLimitForScreen()} on map · tap or Enter
                           </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-
-              {/* Suggestions / Quick Picks Glassmorphism Card */}
-              {showSuggestionsCard && (
-                <div className="absolute left-0 top-full z-30 mt-2 w-80 sm:w-96 rounded-2xl bg-white/95 backdrop-blur-xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)] text-stone-800 animate-in fade-in slide-in-from-top-2 duration-200">
-                  {/* Recent Searches — dynamic, localStorage-backed */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">
-                        {recentSearches.length > 0 ? "Recent Searches" : "Suggestions"}
-                      </h4>
-                      {recentSearches.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            clearRecentSearches(currentUserId);
-                            setRecentSearches([]);
-                          }}
-                          className="text-[10px] font-semibold text-stone-400 hover:text-red-500 transition-colors cursor-pointer"
-                        >
-                          Clear
-                        </button>
-                      )}
+                        </span>
+                      </button>
                     </div>
-                    <ul className="flex flex-col gap-0.5">
-                      {(recentSearches.length > 0 ? recentSearches : DEFAULT_RECENT_SUGGESTIONS).map((item) => (
-                        <li key={item.id}>
-                          <button
-                            type="button"
-                            className="flex items-center gap-2.5 w-full px-2 py-1.5 hover:bg-white/40 rounded-lg text-left transition-colors cursor-pointer group"
-                            onClick={() => {
-                              if (item.type === "category_search" && item.query) {
-                                void handleNearbySearch(item.query);
-                              } else if (
-                                (item.type === "place" ||
-                                  item.type === "destination" ||
-                                  item.type === "dropped_pin") &&
-                                item.lat != null &&
-                                item.lng != null
-                              ) {
-                                // Open place preview for known-coord items
-                                const pseudo: PlacePreviewData = {
-                                  name: item.label,
-                                  categoryLabel: item.category ?? item.subtitle ?? "Place",
-                                  address: item.address ?? "",
-                                  phone: null,
-                                  lat: item.lat,
-                                  lng: item.lng,
-                                  distanceM: null,
-                                  openingHours: null,
-                                  openStatus: null,
-                                  placeKey: item.placeKey,
-                                  source: item.source,
-                                };
-                                setSelectedPlace(pseudo);
-                                setLiveStage("place_preview");
-                                setShowSuggestionsCard(false);
-                              } else if (item.query) {
-                                void searchPlaceByName(item.query);
-                              } else {
-                                void searchPlaceByName(item.label);
-                              }
-                            }}
-                          >
-                            {/* Type icon */}
-                            <span className="text-[13px] shrink-0 w-4 text-center">
-                              {item.type === "category_search"
-                                ? "🔍"
-                                : item.type === "dropped_pin"
-                                ? "📍"
-                                : item.type === "destination"
-                                ? "🏁"
-                                : "📍"}
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block text-sm font-medium text-stone-700 truncate">
-                                {item.label}
+                  ) : null}
+
+                  {detectedPastedLocation && !detectedSearchCategory ? (
+                    <div className="border-b border-stone-100/80 p-1.5">
+                      <button
+                        type="button"
+                        className="flex w-full items-center gap-3 rounded-xl bg-amber-50 px-3 py-2.5 text-left transition-colors hover:bg-amber-100/80"
+                        onClick={() => void searchPlaceByName(searchQuery)}
+                      >
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg shadow-sm">
+                          📍
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold text-amber-900">
+                            Go to pasted location
+                          </span>
+                          <span className="block text-[11px] text-stone-500 line-clamp-2">
+                            {detectedPastedLocation.label}
+                          </span>
+                        </span>
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {instantSuggestions.length > 0 ? (
+                    <div className="border-b border-stone-100/80 p-1.5">
+                      <p className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                        {searchQuery.trim() ? "Quick matches" : recentSearches.length > 0 ? "Recent" : "Quick picks"}
+                      </p>
+                      <ul>
+                        {instantSuggestions.map((item) => (
+                          <li key={item.id}>
+                            <button
+                              type="button"
+                              className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-stone-50"
+                              onClick={() => handleInstantSuggestionClick(item)}
+                            >
+                              <span className="shrink-0 text-sm" aria-hidden>
+                                {item.type === "category_search" ? "🔎" : "🕘"}
                               </span>
-                              {item.subtitle && (
-                                <span className="block text-[10px] text-stone-400 truncate">
-                                  {item.subtitle}
+                              <span className="min-w-0">
+                                <span className="block text-sm font-medium text-stone-800 line-clamp-1">
+                                  {item.label}
                                 </span>
-                              )}
-                            </span>
-                            <ChevronRight className="w-3.5 h-3.5 text-stone-300 group-hover:text-stone-500 shrink-0 transition-colors" />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Divider */}
-                  <div className="my-3 border-t border-white/20" />
-
-                  {/* Saved Places */}
-                  <div>
-                    <h4 className="mb-2 text-[11px] font-bold text-stone-500 uppercase tracking-wider">
-                      Saved Places
-                    </h4>
-                    <ul className="flex flex-col gap-1 text-sm">
-                      {savedPlaces.map((place) => (
-                        <li key={place.name}>
-                          <button
-                            type="button"
-                            className="flex justify-between items-center w-full px-2 py-1.5 hover:bg-white/40 rounded-lg text-left transition-colors cursor-pointer"
-                            onClick={() => {
-                              void searchPlaceByName(`${place.name} ${place.address}`);
-                            }}
-                          >
-                            <span className="flex items-center gap-2 truncate">
-                              <Star className="w-3.5 h-3.5 text-amber-500 shrink-0 fill-amber-500" />
-                              <span className="font-semibold text-stone-700">{place.name}</span>
-                            </span>
-                            <ChevronRight className="w-4 h-4 text-stone-400 shrink-0" />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Divider */}
-                  <div className="my-3 border-t border-white/20" />
-
-                  {/* Quick Suggestions */}
-                  <div>
-                    <h4 className="mb-2 text-[11px] font-bold text-stone-500 uppercase tracking-wider">
-                      Quick Suggestions
-                    </h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {[
-                        { label: "⛽ Gas", query: "gas" },
-                        { label: "☕ Coffee", query: "coffee" },
-                        { label: "🍴 Food", query: "food" },
-                        { label: "🚻 Restrooms", query: "restroom" },
-                        { label: "🌲 Parks", query: "park" },
-                        { label: "🏧 ATM", query: "atm" },
-                        { label: "🏥 Hospital", query: "hospital" },
-                        { label: "🚗 Parking", query: "parking" },
-                      ].map((item) => (
-                        <button
-                          key={item.label}
-                          type="button"
-                          className="px-2.5 py-1 rounded-full text-xs font-medium text-stone-700 bg-white/40 hover:bg-white/60 border border-white/20 transition-all cursor-pointer"
-                          onClick={() => {
-                            void handleNearbySearch(item.query);
-                          }}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
+                                {item.subtitle ? (
+                                  <span className="block text-[11px] text-stone-500 line-clamp-1">
+                                    {item.subtitle}
+                                  </span>
+                                ) : null}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  </div>
+                  ) : null}
+
+                  {searchQuery.trim().length >= 2 && searchNeedsLocation && !searchLoading ? (
+                    <div className="px-3 py-2.5 text-xs text-stone-500">
+                      Turn on location or move the map to search nearby.
+                    </div>
+                  ) : null}
+
+                  {searchQuery.trim().length >= 2 && searchLoading ? (
+                    <div className="flex items-center gap-2 px-3 py-2.5 text-xs text-stone-400">
+                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-stone-200 border-t-[#007F73]" />
+                      Searching places…
+                    </div>
+                  ) : null}
+
+                  {searchQuery.trim().length >= 2 && searchError && !searchLoading ? (
+                    <div className="px-3 py-2.5 text-xs text-amber-700">{searchError}</div>
+                  ) : null}
+
+                  {searchQuery.trim().length >= 2 &&
+                  !searchLoading &&
+                  !searchNeedsLocation &&
+                  !searchError &&
+                  searchResults.length === 0 &&
+                  instantSuggestions.length === 0 ? (
+                    <div className="px-3 py-2.5 text-xs text-stone-500">
+                      No places found. Try a different spelling or pick a quick match above.
+                    </div>
+                  ) : null}
+
+                  {searchResults.length > 0 ? (
+                    <ul className="p-1.5">
+                      {searchQuery.trim().length >= 2 ? (
+                        <li className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                          Places
+                        </li>
+                      ) : null}
+                      {searchResults.map((result) => {
+                        const subtitleParts = [];
+                        if (result.category && result.category !== "Place") subtitleParts.push(result.category);
+                        if (result.distanceLabel) subtitleParts.push(result.distanceLabel);
+
+                        const subtitle = subtitleParts.join(" · ");
+                        const addressLine = result.address !== result.name ? result.address : null;
+
+                        return (
+                          <li key={result.id}>
+                            <button
+                              type="button"
+                              className="flex w-full gap-2 rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-stone-50/80"
+                              onClick={() => {
+                                void selectPlace(result);
+                              }}
+                            >
+                              <span className="shrink-0 pt-0.5">
+                                {result.category === "Address" || result.category === "Building" ? "📌" : "📍"}
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block text-sm font-medium text-stone-800 line-clamp-1">
+                                  {result.name}
+                                </span>
+                                {subtitle ? (
+                                  <span className="mt-0.5 block text-xs font-medium text-teal-700 line-clamp-1">
+                                    {subtitle}
+                                  </span>
+                                ) : null}
+                                {addressLine ? (
+                                  <span className="mt-0.5 block text-[10px] text-stone-500 line-clamp-1">
+                                    {addressLine}
+                                  </span>
+                                ) : null}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
                 </div>
-              )}
+              ) : null}
 
               {/* Setup Panel */}
               {showSetupPanel && (
@@ -2091,11 +2546,7 @@ export default function LivePage() {
                         onClick={() => {
                           setShowSetupPanel(false);
                           searchInputRef.current?.focus();
-                          if (searchQuery.trim().length < 2) {
-                            setShowSuggestionsCard(true);
-                          } else {
-                            setShowSearchPopup(true);
-                          }
+                          setShowSearchPopup(true);
                         }}
                         className="shrink-0 text-xs font-bold text-[#007F73] hover:underline"
                       >
@@ -2160,7 +2611,9 @@ export default function LivePage() {
               {/* Header */}
               <div className="flex items-center justify-between mb-3 shrink-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">📍</span>
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E6F7F4] text-base">
+                    {resolveLiveSearchCategory(nearbyCategory)?.icon ?? "🔎"}
+                  </span>
                   <div>
                     <h3 className="font-bold text-stone-800 text-sm">
                       {getNearbyCategoryTitle(nearbyCategory)}
@@ -2280,7 +2733,7 @@ export default function LivePage() {
           onChangeDestination={clearSelectedPlace}
           onPlanTrip={handlePlanTrip}
           onContinueAnyway={handleContinueFromPreview}
-          onClose={clearSelectedPlace}
+          onClose={handleClosePlaceDetails}
           onSavePlace={() => {
             // TODO: ensure_place_registry_on_action + upload photo flow
             showToast("Place saved.");
@@ -2291,9 +2744,25 @@ export default function LivePage() {
           onMakeDestination={handleMakeDestination}
           onGetDirections={handleGetDirections}
           onStartLive={handleStartFromPlacePreview}
+          stackAboveRouteSummary
+          routePreviewStatus={routePreviewStatus}
+          routeLoading={routeLoading}
+          routePreviewError={routePreviewError}
+          routeDurationSeconds={activeRoute?.durationSeconds ?? null}
+          routeDistanceMeters={activeRoute?.distanceMeters ?? null}
+          routeLastMileNotice={activeRoute?.lastMileNotice ?? null}
+          travelMode={travelMode}
           nearbyPlacesAtClick={nearbyPlacesAtClick}
           onSelectNearbyPlaceAtClick={handleSelectNearbyPlaceAtClick}
           liveStage={liveStage}
+          previewContext={
+            viewingDetailsFromNearby && nearbyCategory
+              ? {
+                  icon: resolveLiveSearchCategory(nearbyCategory)?.icon ?? "📍",
+                  searchLabel: getNearbyCategoryTitle(nearbyCategory),
+                }
+              : null
+          }
         />
       ) : null}
 
@@ -2311,7 +2780,7 @@ export default function LivePage() {
         </div>
       ) : null}
 
-      {showRoutePreview && destination && !isLongDistancePreview ? (
+      {showRoutePreview && destination ? (
         <SoloRoutePreviewPanel
           destination={destination}
           travelMode={travelMode}
@@ -2331,7 +2800,20 @@ export default function LivePage() {
         />
       ) : null}
 
-      {showRoutePreview && destination && !isLongDistancePreview ? (
+      {showRouteSummaryBar && selectedPlace ? (
+        <LiveRouteSummaryBar
+          destinationName={selectedPlace.name}
+          durationSeconds={activeRoute?.durationSeconds ?? null}
+          routePreviewStatus={routePreviewStatus}
+          routeLoading={routeLoading}
+          identifying={mapClickResolving || loadingPlaceDetails}
+          onOpenDetails={() => setShowPlaceDetailsPanel(true)}
+          onGo={handleGetDirections}
+          onClose={clearSelectedPlace}
+        />
+      ) : null}
+
+      {showOriginSetup ? (
         <LiveRouteOriginSetup
           open={showOriginSetup}
           onClose={() => setShowOriginSetup(false)}
@@ -2339,9 +2821,9 @@ export default function LivePage() {
           onUseMapCenter={handleUseMapCenterOrigin}
           onPickOnMap={handleStartOriginPick}
           onSelectSearchOrigin={handleSearchOriginSelect}
-          gpsAvailable={Boolean(userLocation)}
+          gpsAvailable={isFreshGpsStatus(gpsStatus)}
           gpsAccuracyMeters={gpsState.accuracyMeters}
-          mapCenterAvailable={true}
+          mapCenterAvailable={Boolean(mapRef.current?.getMapCenter())}
           searchBias={resolveSearchAnchor()}
         />
       ) : null}
@@ -2369,12 +2851,16 @@ export default function LivePage() {
       {showSoloLivePanel && destination ? (
         <SoloLiveActivePanel
           destination={destination}
+          plannedStops={plannedStops}
+          addStopMode={addStopMode}
+          gpsManualMode={!isFreshGpsStatus(gpsStatus)}
           liveStage={liveStage}
           tripStatus={tripStatus}
           travelMode={travelMode}
           onTripStatusChange={setTripStatus}
           onBeginNavigation={handleBeginNavigation}
           onEndSoloLive={handleEndSoloLive}
+          onSetStartingPoint={() => setShowOriginSetup(true)}
           onSaveParking={() => showToast("Parking saved.")}
           onShareTrip={() => showToast("Share trip — coming soon.")}
           onAddStop={handleAddStopFromLive}
@@ -2397,236 +2883,226 @@ export default function LivePage() {
         />
       ) : null}
 
-      {/* Right Map Controls — fixed on map workspace, always visible */}
+      {/* Rovvy Map Dock — compact bottom-left, two horizontal rows (Google Maps style) */}
       <div
-        className={`pointer-events-auto absolute z-40 flex flex-col items-center gap-4 transition-all duration-200 ${LIVE_MAP_CONTROLS_POSITION}`}
+        className={`pointer-events-auto absolute z-40 flex flex-col gap-1 transition-all duration-200 ${LIVE_MAP_CONTROLS_POSITION}`}
       >
-        {/* Zoom Cluster */}
-        <div className="flex flex-col gap-1.5">
-          <button
-            type="button"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] hover:bg-stone-50 text-stone-600 hover:text-stone-800 transition-all"
-            onClick={() => mapRef.current?.zoomIn()}
-            title="Zoom in"
-            aria-label="Zoom in"
-          >
-            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </button>
-          <button
-            type="button"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] hover:bg-stone-50 text-stone-600 hover:text-stone-800 transition-all"
-            onClick={() => mapRef.current?.zoomOut()}
-            title="Zoom out"
-            aria-label="Zoom out"
-          >
-            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none">
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </button>
-        </div>
-
-        {/* Locate + Compass Cluster */}
-        <div className="relative flex flex-col items-center gap-1.5">
-          <button
-            type="button"
-            className={`relative flex h-11 w-11 items-center justify-center rounded-full shadow-[0_8px_24px_rgba(15,23,42,0.10)] transition-all duration-200 border border-[#007F73]/20 ${
-              gpsStatus === "active"
-                ? "bg-[#007F73] hover:bg-[#00665c] text-white"
-                : gpsStatus === "approximate"
-                ? "bg-[#007F73]/90 hover:bg-[#007F73] text-white"
-                : gpsStatus === "denied"
-                ? "bg-stone-700 hover:bg-stone-800 text-white"
-                : gpsStatus === "timeout" || gpsStatus === "error" || gpsStatus === "outdated"
-                ? "bg-amber-700 hover:bg-amber-800 text-white"
-                : gpsStatus === "requesting"
-                ? "bg-[#007F73] hover:bg-[#00665c] text-white animate-pulse"
-                : "bg-[#007F73] hover:bg-[#00665c] text-white"
-            }`}
-            onClick={handleLocateClick}
-            title={
-              gpsStatus === "denied"
-                ? "Location off — click to retry"
-                : gpsStatus === "timeout" || gpsStatus === "error"
-                ? "Location unavailable — click for options"
-                : gpsStatus === "requesting"
-                ? "Finding location…"
-                : "Locate me"
-            }
-            aria-pressed={liveGpsActive}
-            aria-label="Locate me"
-          >
-            {gpsStatus === "requesting" ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-            ) : (
-              /* Google Maps-style GPS crosshair target icon */
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                className="h-5 w-5"
-                aria-hidden="true"
-              >
-                {/* Outer ring */}
-                <circle cx="12" cy="12" r="7" stroke="white" strokeWidth="1.8" fill="none" />
-                {/* Inner filled dot */}
-                <circle cx="12" cy="12" r="2.5" fill="white" />
-                {/* Crosshair lines */}
-                <line x1="12" y1="2" x2="12" y2="5.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
-                <line x1="12" y1="18.5" x2="12" y2="22" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
-                <line x1="2" y1="12" x2="5.5" y2="12" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
-                <line x1="18.5" y1="12" x2="22" y2="12" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
-            )}
-          </button>
-          
-          <button
-            type="button"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] hover:bg-stone-50 text-stone-600 hover:text-stone-800 transition-all"
-            onClick={() => mapRef.current?.resetNorth()}
-            title="Reset map orientation"
-            aria-label="Reset map orientation"
-          >
-            <Compass
-              className={`h-5 w-5 transition-transform duration-300 ${mapBearing !== 0 ? "text-[#007F73]" : "text-stone-500"}`}
-              style={{ transform: `rotate(${-mapBearing}deg)` }}
-            />
-          </button>
-
-          {gpsStatusLabel(gpsStatus) &&
-          gpsStatus !== "active" &&
-          gpsStatus !== "approximate" ? (
-            <button
-              type="button"
-              onClick={handleGpsStatusBadgeClick}
-              className={`cursor-pointer whitespace-nowrap rounded-full px-2 py-0.5 text-center text-[9px] font-semibold shadow-sm ${
-                gpsStatus === "requesting"
-                  ? "bg-blue-100 text-blue-700"
-                  : gpsStatus === "stale"
-                  ? "bg-stone-200 text-stone-600"
-                  : gpsStatus === "outdated"
-                  ? "bg-amber-100 text-amber-800"
-                  : gpsStatus === "denied"
-                  ? "bg-stone-200 text-stone-600"
-                  : gpsStatus === "timeout" || gpsStatus === "error"
-                  ? "bg-amber-100 text-amber-800"
-                  : "bg-stone-100 text-stone-500"
-              }`}
-              title="GPS status"
-            >
-              {gpsStatusLabel(gpsStatus)}
-            </button>
-          ) : null}
-          {!isFreshGpsStatus(gpsStatus) &&
-          gpsStatus !== "requesting" &&
-          (gpsStatus === "timeout" ||
-            gpsStatus === "denied" ||
-            gpsStatus === "error" ||
-            gpsStatus === "idle" ||
-            gpsStatus === "outdated" ||
-            gpsStatus === "stale") ? (
-            <div className="whitespace-nowrap rounded-full bg-stone-100 px-2 py-0.5 text-center text-[9px] font-medium text-stone-500 shadow-sm">
-              Using this map area
-            </div>
-          ) : null}
-          {showGpsHelper ? (
-            <div className="absolute right-full top-1/2 z-50 mr-3 w-56 -translate-y-1/2 rounded-xl border border-stone-200 bg-white/95 p-3 text-left shadow-xl backdrop-blur-md">
-              <p className="text-xs font-semibold text-stone-800">
-                {gpsStatus === "denied" ? "Location off" : "Location unavailable"}
-              </p>
-              <p className="mt-1 text-[11px] leading-snug text-stone-600">
-                {gpsState.errorMessage
-                  ? gpsState.errorMessage
-                  : gpsStatus === "denied"
-                  ? "Enable location permission in your browser to show your position."
-                  : "Rovvy couldn't get your exact location from this browser. You can try again or use the current map area."}
-              </p>
-              <div className="mt-3 flex flex-col gap-1.5">
-                <button
-                  type="button"
-                  onClick={handleLocateClick}
-                  className="rounded-lg bg-[#007F73] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#00665c]"
-                >
-                  Try again
-                </button>
-                {gpsStatus === "denied" ? (
-                  <a
-                    href="https://support.google.com/chrome/answer/142064?hl=en"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-lg border border-stone-200 px-3 py-1.5 text-center text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
-                  >
-                    Browser location help
-                  </a>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleUseMapArea}
-                    className="rounded-lg border border-stone-200 px-3 py-1.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
-                  >
-                    Use map area
-                  </button>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowGpsHelper(false)}
-                className="absolute right-1.5 top-1.5 px-1 text-xs text-stone-400 hover:text-stone-600"
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
-          ) : null}
-        </div>
-
-        {/* Layers + Fullscreen Cluster */}
-        <div className="flex flex-col gap-1.5">
-          <LiveMapLayerControl activeLayer={activeLayer} onLayerChange={setActiveLayer} />
-          <button
-            type="button"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] hover:bg-stone-50 text-stone-600 hover:text-stone-800 transition-all"
-            onClick={() => {
+        {/* Row 1: map tools + layer panel anchor */}
+        <div className="relative">
+          <LiveMapToolsControl
+            mapBearing={mapBearing}
+            soundEnabled={soundEnabled}
+            alertsEnabled={alertsEnabled}
+            layersActive={activeLayer !== "street" || layersPanelOpen}
+            onOpenLayers={() => setLayersPanelOpen((prev) => !prev)}
+            onResetNorth={() => mapRef.current?.resetNorth()}
+            onToggleSound={() => setSoundEnabled((prev) => !prev)}
+            onToggleAlerts={() => setAlertsEnabled((prev) => !prev)}
+            onToggleFullscreen={() => {
               if (!document.fullscreenElement) {
                 void document.documentElement.requestFullscreen();
               } else {
                 void document.exitFullscreen();
               }
             }}
-            title="Toggle fullscreen"
-            aria-label="Toggle fullscreen"
-          >
-            <Maximize2 className="h-5 w-5 text-stone-500" />
-          </button>
+          />
+          <div className="absolute top-0 left-0">
+            <LiveMapLayerControl
+              activeLayer={activeLayer}
+              onLayerChange={setActiveLayer}
+              open={layersPanelOpen}
+              onOpenChange={setLayersPanelOpen}
+              showTrigger={false}
+            />
+          </div>
         </div>
 
-        {/* Sound + Notification Cluster */}
-        <div className="flex flex-col gap-1.5">
+        {/* Row 2: zoom + locate */}
+        <div className="flex items-start gap-1">
+          {/* Zoom pair */}
+          <div
+            className="flex overflow-hidden rounded-md bg-white shadow-[0_1px_4px_rgba(0,0,0,0.22)]"
+            role="group"
+            aria-label="Zoom"
+          >
+            <button
+              type="button"
+              className="flex h-8 w-8 items-center justify-center text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-800 active:bg-stone-100"
+              onClick={() => mapRef.current?.zoomIn()}
+              title="Zoom in"
+              aria-label="Zoom in"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" fill="none" aria-hidden>
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+            <div className="w-px self-stretch bg-stone-200/90" aria-hidden />
+            <button
+              type="button"
+              className="flex h-8 w-8 items-center justify-center text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-800 active:bg-stone-100"
+              onClick={() => mapRef.current?.zoomOut()}
+              title="Zoom out"
+              aria-label="Zoom out"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" fill="none" aria-hidden>
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* 2D / 3D view toggle */}
           <button
             type="button"
-            className="hidden h-11 w-11 items-center justify-center rounded-full bg-white border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] hover:bg-stone-50 text-stone-600 hover:text-stone-800 sm:flex transition-all"
-            onClick={() => setSoundEnabled((prev) => !prev)}
-            title="Sound"
-            aria-label="Toggle sound"
+            onClick={handleToggleViewMode}
+            className={mapViewMode === "3d" ? LIVE_MAP_CTRL_BTN_ACTIVE : LIVE_MAP_CTRL_BTN}
+            title={mapViewMode === "3d" ? "Switch to 2D view" : "Switch to 3D view"}
+            aria-label={mapViewMode === "3d" ? "Switch to 2D view" : "Switch to 3D view"}
+            aria-pressed={mapViewMode === "3d"}
           >
-            {soundEnabled ? (
-              <Volume2 className="h-5 w-5 text-stone-500" />
-            ) : (
-              <VolumeX className="h-5 w-5 text-stone-300" />
-            )}
+            <span className="text-[10px] font-bold leading-none tracking-tight">
+              {mapViewMode === "3d" ? "2D" : "3D"}
+            </span>
           </button>
-          <button
-            type="button"
-            className="hidden h-11 w-11 items-center justify-center rounded-full bg-white border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] hover:bg-stone-50 text-stone-600 hover:text-stone-800 sm:flex transition-all"
-            onClick={() => setAlertsEnabled((prev) => !prev)}
-            title="Alerts"
-            aria-label="Toggle alerts"
-          >
-            <Bell
-              className={`h-5 w-5 ${alertsEnabled ? "text-amber-500" : "text-stone-500"}`}
+
+          {/* Current-location */}
+          <div className="relative flex flex-col items-center gap-0.5">
+            <button
+              type="button"
+              className={`relative flex h-8 w-8 items-center justify-center rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.22)] transition-all duration-200 ${
+                gpsStatus === "active"
+                  ? "bg-[#007F73] text-white hover:bg-[#00665c]"
+                  : gpsStatus === "approximate"
+                  ? "bg-[#007F73]/90 text-white hover:bg-[#007F73]"
+                  : gpsStatus === "denied"
+                  ? "bg-stone-700 text-white hover:bg-stone-800"
+                  : gpsStatus === "timeout" || gpsStatus === "error" || gpsStatus === "outdated"
+                  ? "bg-amber-700 text-white hover:bg-amber-800"
+                  : gpsStatus === "requesting"
+                  ? "animate-pulse bg-[#007F73] text-white hover:bg-[#00665c]"
+                  : "bg-[#007F73] text-white hover:bg-[#00665c]"
+              }`}
+              onClick={handleLocateClick}
+              title={
+                gpsStatus === "denied" || gpsStatusNeedsHelper(gpsStatus)
+                  ? "Pick location on map"
+                  : gpsStatus === "requesting"
+                  ? "Finding location…"
+                  : "Locate me"
+              }
+              aria-pressed={liveGpsActive}
+              aria-label="Locate me"
+            >
+              {gpsStatus === "requesting" ? (
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden="true">
+                  <circle cx="12" cy="12" r="7" stroke="white" strokeWidth="1.8" fill="none" />
+                  <circle cx="12" cy="12" r="2.5" fill="white" />
+                  <line x1="12" y1="2" x2="12" y2="5.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+                  <line x1="12" y1="18.5" x2="12" y2="22" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+                  <line x1="2" y1="12" x2="5.5" y2="12" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+                  <line x1="18.5" y1="12" x2="22" y2="12" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              )}
+            </button>
+
+            {gpsStatusLabel(gpsStatus) &&
+            gpsStatus !== "active" &&
+            gpsStatus !== "approximate" ? (
+              <button
+                type="button"
+                onClick={handleGpsStatusBadgeClick}
+                className={`cursor-pointer whitespace-nowrap rounded px-1.5 py-px text-center text-[8px] font-semibold leading-tight shadow-sm ${
+                  gpsStatus === "requesting"
+                    ? "bg-blue-100 text-blue-700"
+                    : gpsStatus === "stale"
+                    ? "bg-stone-200 text-stone-600"
+                    : gpsStatus === "outdated"
+                    ? "bg-amber-100 text-amber-800"
+                    : gpsStatus === "denied"
+                    ? "bg-stone-200 text-stone-600"
+                    : gpsStatus === "timeout" || gpsStatus === "error"
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-stone-100 text-stone-500"
+                }`}
+                title="GPS status"
+              >
+                {gpsStatusLabel(gpsStatus)}
+              </button>
+            ) : null}
+            {!isFreshGpsStatus(gpsStatus) &&
+            gpsStatus !== "requesting" ? (
+              <div className="whitespace-nowrap rounded bg-[#E6F7F4] px-1.5 py-px text-center text-[8px] font-semibold leading-tight text-[#0F766E] shadow-sm">
+                Pick on map
+              </div>
+            ) : null}
+            <LiveMapLocationSheet
+              open={mapLocationSheet != null}
+              point={mapLocationSheet}
+              loading={mapLocationSheetLoading}
+              manualMode={mapLocationSheetManual}
+              destinationName={destination?.name ?? null}
+              destinationLat={destination?.lat ?? null}
+              destinationLng={destination?.lng ?? null}
+              canAddStop={Boolean(destination && (isLiveActive || liveStage === "destination_set"))}
+              onClose={closeMapLocationSheet}
+              onSetStartingPoint={handleSheetSetStartingPoint}
+              onSetDestination={handleSheetSetDestination}
+              onAddStop={handleSheetAddStop}
+              onCopyCoordinates={(p) => void handleSheetCopyCoordinates(p)}
+              onSavePlace={handleSheetSavePlace}
             />
-          </button>
+            {showGpsHelper ? (
+              <div className="absolute bottom-full left-0 z-50 mb-2 w-56 rounded-xl border border-stone-200 bg-white/95 p-3 text-left shadow-xl backdrop-blur-md">
+                <p className="text-xs font-semibold text-stone-800">
+                  {gpsStatus === "denied" ? "Location off" : "Location unavailable"}
+                </p>
+                <p className="mt-1 text-[11px] leading-snug text-stone-600">
+                  {gpsState.errorMessage
+                    ? gpsState.errorMessage
+                    : gpsStatus === "denied"
+                    ? "Enable location permission in your browser to show your position."
+                    : "Rovvy couldn't get your exact location from this browser. You can try again or use the current map area."}
+                </p>
+                <div className="mt-3 flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleLocateClick}
+                    className="rounded-lg bg-[#007F73] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#00665c]"
+                  >
+                    Try again
+                  </button>
+                  {gpsStatus === "denied" ? (
+                    <a
+                      href="https://support.google.com/chrome/answer/142064?hl=en"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-lg border border-stone-200 px-3 py-1.5 text-center text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
+                    >
+                      Browser location help
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleUseMapArea}
+                      className="rounded-lg border border-stone-200 px-3 py-1.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
+                    >
+                      Use map area
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowGpsHelper(false)}
+                  className="absolute right-1.5 top-1.5 px-1 text-xs text-stone-400 hover:text-stone-600"
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 

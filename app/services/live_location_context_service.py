@@ -21,7 +21,6 @@ from app.schemas.live_location_context import (
 )
 
 LOCAL_DISTANCE_MILES = 100.0
-FAR_DISTANCE_MILES = 500.0
 METERS_PER_MILE = 1609.34
 
 UNSAFE_ACTIONS = [
@@ -294,8 +293,6 @@ def classify_location_context(context: BuiltLocationContext) -> LocationClassifi
     miles = context.distance_miles
     if miles is None:
         return "incomplete_place_data"
-    if miles > FAR_DISTANCE_MILES:
-        return "very_far_destination"
     if miles > LOCAL_DISTANCE_MILES:
         return "far_destination"
     if context.missing_address:
@@ -305,19 +302,13 @@ def classify_location_context(context: BuiltLocationContext) -> LocationClassifi
 
 def _is_future_trip_candidate(
     classification: LocationClassification,
-    context: BuiltLocationContext,
+    _context: BuiltLocationContext,
 ) -> bool:
-    if classification in {"country_mismatch", "very_far_destination"}:
-        return True
-    miles = context.distance_miles
-    return miles is not None and miles > FAR_DISTANCE_MILES
+    return classification == "country_mismatch"
 
 
 def _is_live_safe(classification: LocationClassification, context: BuiltLocationContext) -> bool:
     if context.country_mismatch:
-        return False
-    miles = context.distance_miles
-    if miles is not None and miles > FAR_DISTANCE_MILES:
         return False
     if classification == "country_mismatch":
         return False

@@ -3,11 +3,6 @@
 import { useState, useEffect } from "react";
 import {
   Bookmark,
-  Camera,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  FilePlus,
   MapPin,
   Search,
   Users,
@@ -19,7 +14,15 @@ import type { PlaceMediaItem } from "./live-place-media";
 import PlacePreviewMedia from "./PlacePreviewMedia";
 import RoviPlaceExplanationBlock from "./RoviPlaceExplanationBlock";
 import type { RoviPlaceExplanation } from "./live-rovi";
-import { LIVE_PANEL_MAX_WIDTH, LIVE_PANEL_RIGHT_INSET } from "./live-layout";
+import { LIVE_PANEL_MAX_WIDTH, LIVE_PANEL_RIGHT_INSET, LIVE_RESPONSIVE_PANEL_LAYOUT } from "./live-layout";
+import { normalizePlaceCategory } from "./live-geocoding";
+import {
+  formatDistanceMiles,
+  formatRouteDurationBracketed,
+  type RoutePreviewStatus,
+} from "./live-types";
+
+const TEAL = "#0F766E";
 
 export type PlacePreviewData = {
   name: string;
@@ -66,26 +69,33 @@ type Props = {
   onMakeDestination: () => void;
   onGetDirections: () => void;
   onStartLive: () => void;
+  routePreviewStatus?: RoutePreviewStatus;
+  routeLoading?: boolean;
+  routePreviewError?: string | null;
+  routeDurationSeconds?: number | null;
+  routeDistanceMeters?: number | null;
+  routeLastMileNotice?: string | null;
+  travelMode?: string;
   nearbyPlacesAtClick?: PlacePreviewData[] | null;
   onSelectNearbyPlaceAtClick?: (place: PlacePreviewData) => void;
   liveStage?: string;
+  /** When true, lift the sheet above the route summary bar on small screens. */
+  stackAboveRouteSummary?: boolean;
+  /** When opened from a category nearby search (e.g. waterfalls). */
+  previewContext?: { icon: string; searchLabel: string } | null;
 };
 
-const TEAL = "#0F766E";
+function isOsmGeometryLabel(label: string): boolean {
+  return /^(node|way|relation)$/i.test(label.trim());
+}
 
-function formatDistanceLabel(
-  m: number | null,
-  hasUserLocation: boolean,
-  loading: boolean,
-): string {
-  if (m != null) {
-    const miles = m / 1609.34;
-    if (miles < 0.1) return `${Math.round(m)} m away`;
-    return `${miles.toFixed(1)} mi away`;
+function resolveCategoryLabel(place: PlacePreviewData): string {
+  const fromTags = normalizePlaceCategory(place.tags);
+  if (fromTags) return fromTags;
+  if (place.categoryLabel && !isOsmGeometryLabel(place.categoryLabel)) {
+    return place.categoryLabel;
   }
-  if (!hasUserLocation) return "Turn on location to calculate distance.";
-  if (loading) return "Distance calculating…";
-  return "Distance calculating…";
+  return "Place";
 }
 
 function formatHoursLabel(place: PlacePreviewData): string {
@@ -111,17 +121,6 @@ function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-function TinyPhotoPlaceholder() {
-  return (
-    <div className="flex items-center gap-2 rounded-xl bg-stone-50 border border-stone-200 px-3 py-2 text-stone-500">
-      <Camera className="h-4 w-4 text-[#0F766E]" aria-hidden />
-      <span className="text-xs font-semibold text-stone-600">
-        No Rovvy photos yet
-      </span>
-    </div>
-  );
-}
-
 export default function PlacePreviewCard({
   place,
   loadingDetails,
@@ -145,20 +144,24 @@ export default function PlacePreviewCard({
   onMakeDestination,
   onGetDirections,
   onStartLive,
+  routePreviewStatus = "idle",
+  routeLoading = false,
+  routePreviewError = null,
+  routeDurationSeconds = null,
+  routeDistanceMeters = null,
+  routeLastMileNotice = null,
+  travelMode = "Drive",
   nearbyPlacesAtClick = null,
   onSelectNearbyPlaceAtClick,
   placeMedia = [],
   placeMediaLoading = false,
   placeTags = [],
   liveStage = "static_landing",
+  stackAboveRouteSummary = true,
+  previewContext = null,
 }: Props) {
-  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
   const [wikiSummary, setWikiSummary] = useState<{ available: boolean; summary?: string; url?: string; title?: string; attribution?: string } | null>(null);
   const [wikiLoading, setWikiLoading] = useState(false);
-
-  useEffect(() => {
-    setIsSheetExpanded(false);
-  }, [place.placeKey, place.lat, place.lng]);
 
   useEffect(() => {
     // Reset wiki summary when place changes
@@ -205,24 +208,11 @@ export default function PlacePreviewCard({
     fetchWiki();
   }, [place.name, place.categoryLabel, place.lat, place.lng, place.tags]);
 
-  const isDesktop = useMediaQuery("(min-width: 1280px)");
-  const isLaptop = useMediaQuery("(min-width: 1024px) and (max-width: 1279px)");
-  const isTabletLandscape = useMediaQuery(
-    "(min-width: 768px) and (max-width: 1023px) and (orientation: landscape)"
-  );
-  const isTabletPortrait = useMediaQuery(
-    "(min-width: 600px) and (max-width: 900px) and (orientation: portrait)"
-  );
   const isMobile = useMediaQuery("(max-width: 599px)");
 
   const isDrivingMode =
     liveStage === "solo_drive_navigation" || liveStage === "solo_drive_command";
 
-  const distanceLabel = formatDistanceLabel(
-    place.distanceM,
-    hasUserLocation,
-    loadingDetails,
-  );
   const hoursLabel = formatHoursLabel(place);
   const sourceLabel =
     dataSource === "osm"
@@ -231,35 +221,28 @@ export default function PlacePreviewCard({
 
   const displayCategory = place.name === "Dropped pin"
     ? "Selected location"
-    : (place.categoryLabel || "Place");
+    : resolveCategoryLabel(place);
 
-  const subheaderParts = [displayCategory];
-  if (place.distanceM != null && place.name !== "Dropped pin") {
-    const miles = place.distanceM / 1609.34;
-    const formattedDistance = miles < 0.1
-      ? `${Math.round(place.distanceM)} m away`
-      : `${miles.toFixed(1)} mi away`;
-    subheaderParts.push(formattedDistance);
-  }
-  const subheaderText = subheaderParts.join(" · ");
+  const subheaderText = displayCategory;
+
+  const routeReady = routePreviewStatus === "ready" && routeDurationSeconds != null;
+  const timeBracket = routeReady
+    ? formatRouteDurationBracketed(routeDurationSeconds)
+    : "";
 
   const isDroppedPinOrAddress =
     place.source === "dropped_pin" ||
     (place.source === "nominatim" && place.categoryLabel === "Address");
 
-  const secondaryActions = isDroppedPinOrAddress
-    ? [
-        { label: "Make Destination", icon: MapPin, onClick: onMakeDestination },
-        { label: "Search nearby", icon: Search, onClick: onSearchNearMe },
-        { label: "Save", icon: Bookmark, onClick: onSavePlace },
-        { label: "Create Meet Point", icon: Users, onClick: onCreateMeetPoint },
-      ]
-    : [
-        { label: "Add Stop", icon: MapPin, onClick: onAddStop },
-        { label: "Save Place", icon: Bookmark, onClick: onSavePlace },
-        { label: "Create Meet Point", icon: Users, onClick: onCreateMeetPoint },
-        { label: "Search nearby", icon: Search, onClick: onSearchNearMe },
-      ];
+  const contextNotice =
+    routeLastMileNotice ??
+    (locationContext && locationContext.classification !== "local_place"
+      ? locationContext.template?.recommendation
+      : null);
+
+  const summaryStackClass = stackAboveRouteSummary
+    ? "max-lg:!bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] max-lg:max-h-[min(55vh,calc(100dvh-8rem))]"
+    : "";
 
   // Height overrides and layout class resolution
   let layoutClass = "";
@@ -267,27 +250,13 @@ export default function PlacePreviewCard({
   if (isDrivingMode) {
     if (isMobile) {
       layoutClass =
-        "fixed inset-x-0 bottom-0 z-30 h-[160px] rounded-t-[24px] border border-stone-200 bg-white shadow-2xl flex flex-col justify-between p-4";
+        "fixed inset-x-0 bottom-0 z-30 max-h-[min(40vh,14rem)] rounded-t-xl border border-stone-200 bg-white shadow-2xl flex flex-col justify-between p-3";
     } else {
       layoutClass =
-        `absolute bottom-4 ${LIVE_PANEL_RIGHT_INSET} z-30 w-[360px] ${LIVE_PANEL_MAX_WIDTH} h-[230px] rounded-2xl border border-stone-200 bg-white shadow-2xl flex flex-col justify-between p-4`;
+        `absolute bottom-4 ${LIVE_PANEL_RIGHT_INSET} z-30 ${LIVE_PANEL_MAX_WIDTH} max-h-[min(40vh,14rem)] rounded-xl border border-stone-200 bg-white shadow-2xl flex flex-col justify-between p-3`;
     }
-  } else if (isDesktop) {
-    layoutClass =
-      `absolute ${LIVE_PANEL_RIGHT_INSET} top-[88px] z-30 w-[410px] ${LIVE_PANEL_MAX_WIDTH} max-h-[75vh] rounded-[24px] border border-stone-200/80 bg-white shadow-2xl flex flex-col overflow-hidden`;
-  } else if (isLaptop) {
-    layoutClass =
-      `absolute ${LIVE_PANEL_RIGHT_INSET} top-[76px] z-30 w-[385px] ${LIVE_PANEL_MAX_WIDTH} max-h-[70vh] rounded-2xl border border-stone-200/80 bg-white shadow-xl flex flex-col overflow-hidden`;
-  } else if (isTabletLandscape) {
-    layoutClass =
-      `absolute ${LIVE_PANEL_RIGHT_INSET} top-[72px] z-30 w-[340px] ${LIVE_PANEL_MAX_WIDTH} max-h-[68vh] rounded-2xl border border-stone-200/80 bg-white shadow-lg flex flex-col overflow-hidden`;
-  } else if (isTabletPortrait) {
-    const sheetHeight = isSheetExpanded ? "h-[75vh]" : "h-[40vh]";
-    layoutClass = `fixed inset-x-0 bottom-0 z-30 w-full ${sheetHeight} rounded-t-[24px] border-t border-stone-200 bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.08)] flex flex-col overflow-hidden transition-all duration-300 ease-out`;
   } else {
-    // Default Mobile layout
-    const sheetHeight = isSheetExpanded ? "h-[80vh]" : "h-[38vh]";
-    layoutClass = `fixed inset-x-0 bottom-0 z-30 w-full ${sheetHeight} rounded-t-[24px] border-t border-stone-200 bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.08)] flex flex-col overflow-hidden transition-all duration-300 ease-out`;
+    layoutClass = `${LIVE_RESPONSIVE_PANEL_LAYOUT} w-full ${LIVE_PANEL_MAX_WIDTH} ${summaryStackClass}`;
   }
 
   // Driving / CarPlay UI block
@@ -301,7 +270,7 @@ export default function PlacePreviewCard({
         <div className="flex-1 flex flex-col justify-between">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 pr-2">
-              <h3 className="text-lg font-bold text-stone-900 truncate">
+              <h3 className="text-base font-bold text-stone-900 truncate">
                 {place.name}
               </h3>
               <p className="text-xs text-stone-500 font-medium truncate">
@@ -349,257 +318,155 @@ export default function PlacePreviewCard({
     );
   }
 
-  // Media / Photo visibility and styling rules
-  const showMedia = !isMobile || isSheetExpanded;
-  const showSecondaryActions = !isMobile || isSheetExpanded;
-  const showDetails = !isMobile || isSheetExpanded;
-
-  const mediaMaxHeightClass = isDesktop ? "max-h-[180px]" : "max-h-[130px]";
   const hasNoPhotos = !placeMediaLoading && (!placeMedia || placeMedia.length === 0);
+  const mediaMaxHeightClass = "max-h-[8rem]";
 
   return (
-    <div className={layoutClass} role="dialog" aria-label="Place preview">
-      {/* Drag handle for mobile & tablet portrait */}
-      {(isMobile || isTabletPortrait) && (
-        <button
-          type="button"
-          onClick={() => setIsSheetExpanded((prev) => !prev)}
-          className="w-full py-2.5 flex justify-center focus:outline-none shrink-0 cursor-pointer"
-          aria-label={isSheetExpanded ? "Collapse details" : "Expand details"}
-        >
-          <div className="w-12 h-1 rounded-full bg-stone-300 hover:bg-stone-400 transition-colors" />
-        </button>
-      )}
-
-      {/* Internal scrollable content */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-2">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3">
-          <div
-            className="min-w-0 pr-2 cursor-pointer flex-1"
-            onClick={() => {
-              if (isMobile || isTabletPortrait) {
-                setIsSheetExpanded((prev) => !prev);
-              }
-            }}
-          >
-            <h3 className="text-xl font-bold leading-snug text-stone-900">
+    <div className={layoutClass} role="dialog" aria-label="Place details">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-3 pb-2">
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            {previewContext ? (
+              <span className="mb-0.5 inline-flex items-center gap-1 rounded-full bg-[#E6F7F4] px-2 py-0.5 text-xs font-semibold text-[#0F766E]">
+                <span aria-hidden>{previewContext.icon}</span>
+                {previewContext.searchLabel}
+              </span>
+            ) : null}
+            <h3 className="text-base font-bold leading-snug text-stone-900">
               {place.name}
+              {routeReady && timeBracket ? (
+                <span className="font-semibold text-[#0F766E]"> {timeBracket}</span>
+              ) : null}
             </h3>
-            <p className="mt-0.5 text-xs font-medium text-stone-500">
-              {subheaderText}
-            </p>
+            <p className="mt-0.5 truncate text-xs text-stone-500">{subheaderText}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600"
-            aria-label="Close preview"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+            aria-label="Close details"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
 
-        {/* Media Photo Row */}
-        {showMedia && (
-          <div className="mt-4">
-            {isDroppedPinOrAddress || hasNoPhotos ? (
-              <TinyPhotoPlaceholder />
-            ) : (
-              <div className={`overflow-hidden rounded-xl ${mediaMaxHeightClass}`}>
+        {contextNotice ? (
+          <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-xs leading-snug text-amber-900">
+            {contextNotice}
+          </p>
+        ) : null}
+
+        <div className="mt-3 space-y-3 border-t border-stone-100 pt-3">
+            {place.address ? (
+              <p className="text-xs leading-snug text-stone-600 line-clamp-2">{place.address}</p>
+            ) : null}
+
+            {!isDroppedPinOrAddress && !hasNoPhotos ? (
+              <div className={`overflow-hidden rounded-lg ${mediaMaxHeightClass}`}>
                 <PlacePreviewMedia
                   media={placeMedia}
                   categoryLabel={place.categoryLabel}
                   loading={placeMediaLoading}
                 />
               </div>
-            )}
-            {placeTags.length > 0 && !isDroppedPinOrAddress && !hasNoPhotos && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {placeTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-stone-600"
-                  >
-                    #{tag}
-                  </span>
-                ))}
+            ) : null}
+
+            {!isDroppedPinOrAddress ? (
+              <p className="text-xs text-stone-500">{hoursLabel}</p>
+            ) : null}
+
+            {wikiSummary?.available && wikiSummary.summary ? (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">About</p>
+                <p className="mt-1 text-xs leading-relaxed text-stone-600 line-clamp-4">{wikiSummary.summary}</p>
               </div>
-            )}
-          </div>
-        )}
+            ) : null}
 
-        {/* Trust row */}
-        {showDetails && !isDroppedPinOrAddress && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span
-              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
-              style={{ backgroundColor: TEAL }}
-            >
-              <CheckCircle2 className="h-3 w-3" />
-              Best match
-            </span>
-          </div>
-        )}
+            {nearbyPlacesAtClick && nearbyPlacesAtClick.length > 0 ? (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">Nearby here</p>
+                <ul className="mt-2 space-y-1">
+                  {nearbyPlacesAtClick.slice(0, 3).map((poi) => (
+                    <li key={poi.placeKey || poi.name}>
+                      <button
+                        type="button"
+                        onClick={() => onSelectNearbyPlaceAtClick?.(poi)}
+                        className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left hover:bg-stone-50"
+                      >
+                        <span className="truncate text-xs font-medium text-stone-800">{poi.name}</span>
+                        <span className="ml-2 shrink-0 text-[10px] text-[#0F766E]">
+                          {poi.distanceM != null ? formatDistanceMiles(poi.distanceM) : ""}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
 
-        {/* Distance & hours */}
-        <div className="mt-3 space-y-0.5 border-t border-stone-100 pt-3">
-          {isDroppedPinOrAddress ? (
-            <p className="text-xs font-semibold text-stone-700">{place.address}</p>
-          ) : (
-            <p className="text-xs font-semibold text-stone-700">{distanceLabel}</p>
-          )}
-          {showDetails && !isDroppedPinOrAddress && hoursLabel && (
-            <p className="text-[11px] text-stone-500">{hoursLabel}</p>
-          )}
+            {locationContext && locationContext.classification !== "local_place" ? (
+              <RoviPlaceExplanationBlock
+                compact
+                showAskButton={showAskRovi}
+                showSafetyActions={!locationContext.liveSafe}
+                template={null}
+                loading={roviLoading}
+                explanation={roviExplanation}
+                error={roviError}
+                onAskRovi={onAskRovi!}
+                onSearchNearMe={onSearchNearMe!}
+                onChangeDestination={onChangeDestination!}
+                onPlanTrip={onPlanTrip!}
+                onContinueAnyway={onContinueAnyway ?? onMakeDestination}
+                showContinueAnyway={Boolean(onContinueAnyway)}
+              />
+            ) : null}
+
+            <div className="flex flex-wrap gap-2">
+              {!isDroppedPinOrAddress ? (
+                <QuickAction icon={MapPin} label="Add stop" onClick={onAddStop} />
+              ) : null}
+              <QuickAction icon={Bookmark} label="Save" onClick={onSavePlace} />
+              <QuickAction icon={Users} label="Meet" onClick={onCreateMeetPoint} />
+              {onSearchNearMe ? (
+                <QuickAction icon={Search} label="Search nearby" onClick={onSearchNearMe} />
+              ) : null}
+            </div>
+
+            <p className="text-[10px] text-stone-400">{sourceLabel}</p>
         </div>
-
-        {/* Address */}
-        {place.address && !isDroppedPinOrAddress && (
-          <div className="mt-2.5">
-            <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400">
-              Address
-            </p>
-            <p className="mt-0.5 text-xs leading-snug text-stone-700 line-clamp-2">
-              {place.address}
-            </p>
-          </div>
-        )}
-
-        {/* About / Wiki Summary */}
-        {showDetails && wikiSummary?.available && wikiSummary.summary && (
-          <div className="mt-4 border-t border-stone-100 pt-3">
-            <div className="flex items-center justify-between">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400">
-                About
-              </p>
-              {wikiSummary.url && (
-                <a 
-                  href={wikiSummary.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-[9px] text-[#0F766E] hover:underline flex items-center gap-0.5"
-                >
-                  Read more
-                </a>
-              )}
-            </div>
-            <p className="mt-1.5 text-xs leading-relaxed text-stone-600 line-clamp-3">
-              {wikiSummary.summary}
-            </p>
-            <p className="mt-1 text-[9px] text-stone-400">
-              Source: {wikiSummary.attribution}
-            </p>
-          </div>
-        )}
-
-        {/* Nearby places here list */}
-        {showDetails && nearbyPlacesAtClick && nearbyPlacesAtClick.length > 0 && (
-          <div className="mt-4 border-t border-stone-100 pt-3">
-            <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400">
-              Nearby Places Here
-            </p>
-            <div className="mt-2 space-y-1.5">
-              {nearbyPlacesAtClick.slice(0, 4).map((poi) => (
-                <button
-                  key={poi.placeKey || poi.name}
-                  type="button"
-                  onClick={() => onSelectNearbyPlaceAtClick?.(poi)}
-                  className="flex w-full items-center justify-between rounded-xl bg-stone-50/80 p-2 text-left border border-stone-100 hover:bg-stone-100 transition-colors"
-                >
-                  <div className="min-w-0 flex-1 pr-2">
-                    <p className="text-[11px] font-semibold text-stone-850 truncate">
-                      {poi.name}
-                    </p>
-                    <p className="text-[9px] text-stone-500 truncate">{poi.categoryLabel}</p>
-                  </div>
-                  <span className="text-[9px] font-semibold text-[#0F766E] shrink-0">
-                    {poi.distanceM != null ? `${(poi.distanceM / 1609.34).toFixed(2)} mi` : ""}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Safety / Rovi alerts panel */}
-        {showDetails && locationContext && locationContext.classification !== "local_place" && (
-          <RoviPlaceExplanationBlock
-            showAskButton={showAskRovi}
-            showSafetyActions={!locationContext.liveSafe}
-            template={locationContext.template}
-            loading={roviLoading}
-            explanation={roviExplanation}
-            error={roviError}
-            onAskRovi={onAskRovi!}
-            onSearchNearMe={onSearchNearMe!}
-            onChangeDestination={onChangeDestination!}
-            onPlanTrip={onPlanTrip!}
-            onContinueAnyway={onContinueAnyway ?? onMakeDestination}
-            showContinueAnyway={Boolean(onContinueAnyway)}
-          />
-        )}
-
-        {/* Secondary actions grid */}
-        {showSecondaryActions && (
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            {secondaryActions.map(({ label, icon: Icon, onClick }) => (
-              <button
-                key={label}
-                type="button"
-                onClick={onClick}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white/80 px-2 py-2 text-[11px] font-semibold text-stone-700 transition-colors hover:bg-stone-50"
-              >
-                <Icon className="h-3.5 w-3.5 shrink-0 text-stone-500" />
-                <span className="truncate">{label}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Get Directions — starts Solo Live in-app */}
-        {showDetails && (
-          <div className="mt-3">
-            <button
-              type="button"
-              onClick={onGetDirections}
-              className="text-xs font-semibold text-stone-500 hover:text-[#0F766E] hover:underline"
-            >
-              Get Directions →
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* Primary actions — sticky at bottom */}
-      <div className="shrink-0 border-t border-stone-100 bg-white/95 p-4 backdrop-blur-md">
+      <div className="shrink-0 border-t border-stone-100 px-3 py-2">
         <button
           type="button"
           onClick={onMakeDestination}
-          className="w-full rounded-xl py-2.5 text-xs font-bold text-white transition-opacity hover:opacity-90 cursor-pointer"
-          style={{ backgroundColor: TEAL }}
+          className="w-full rounded-lg border border-stone-200 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
         >
-          {isDroppedPinOrAddress ? "Use this location" : "Make Destination"}
+          {isDroppedPinOrAddress ? "Use location" : "Set destination"}
         </button>
-        {!isDrivingMode && !isDroppedPinOrAddress && (
-          <button
-            type="button"
-            onClick={onStartLive}
-            className="mt-2 w-full py-1 text-xs font-semibold text-stone-500 hover:text-[#0F766E] cursor-pointer"
-          >
-            Preview route →
-          </button>
-        )}
-        {isMobile && !isSheetExpanded && (
-          <button
-            type="button"
-            onClick={() => setIsSheetExpanded(true)}
-            className="mt-2 text-xs font-bold text-[#0F766E] text-center w-full py-1 hover:underline cursor-pointer focus:outline-none"
-          >
-            Show more details
-          </button>
-        )}
       </div>
     </div>
+  );
+}
+
+function QuickAction({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: typeof MapPin;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1 rounded-full border border-stone-200 px-2.5 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
+    >
+      <Icon className="h-3 w-3 text-stone-500" />
+      {label}
+    </button>
   );
 }

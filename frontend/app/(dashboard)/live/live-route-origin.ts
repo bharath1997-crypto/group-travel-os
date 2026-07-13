@@ -50,3 +50,20 @@ export function validateRouteOriginCoords(origin: RouteOrigin | null | undefined
   if (!origin) return false;
   return Number.isFinite(origin.latitude) && Number.isFinite(origin.longitude);
 }
+
+/** User explicitly picked a start point — do not override with GPS auto-updates. */
+export function isUserChosenRouteOrigin(origin: RouteOrigin | null | undefined): boolean {
+  return origin?.source === "map_pick" || origin?.source === "search";
+}
+
+export function routeOriginsEquivalent(
+  a: RouteOrigin | null | undefined,
+  b: RouteOrigin | null | undefined,
+): boolean {
+  if (!a || !b) return !a && !b;
+  if (a.source !== b.source) return false;
+  return (
+    Math.abs(a.latitude - b.latitude) < 1e-5 &&
+    Math.abs(a.longitude - b.longitude) < 1e-5
+  );
+}

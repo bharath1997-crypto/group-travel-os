@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from app.models.user import User
 from app.schemas.live_routing import RoutePreviewRequest, RoutePreviewResponse
 from app.services.live_routing_service import LiveRoutingService
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user_optional
 
 router = APIRouter(tags=["Live Routing"])
 
@@ -15,6 +15,6 @@ router = APIRouter(tags=["Live Routing"])
 )
 async def get_route_preview(
     body: RoutePreviewRequest,
-    _user: User = Depends(get_current_user),
+    _user: User | None = Depends(get_current_user_optional),
 ) -> RoutePreviewResponse:
     return await LiveRoutingService.get_route_preview(body)

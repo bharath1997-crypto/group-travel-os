@@ -52,3 +52,8 @@ class RoutePreviewResponse(BaseModel):
     maneuvers: list[RouteManeuverOut] | None = None
     provider: str = "osrm"
     message: str | None = None
+    """When driving cannot reach the exact pin, OSRM routes to the nearest road and foot routing covers the gap."""
+    lastMileMode: Literal["walk"] | None = None
+    lastMileDistanceMeters: float | None = None
+    lastMileDurationSeconds: float | None = None
+    lastMileNotice: str | None = None

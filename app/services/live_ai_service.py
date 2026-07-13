@@ -74,9 +74,7 @@ def _risk_level(compact: RoviCompactContext) -> RoviRiskLevel:
         return "far"
     if miles <= 100:
         return "normal"
-    if miles <= 500:
-        return "far"
-    return "very_far"
+    return "far"
 
 
 def _template_fallback(compact: RoviCompactContext) -> LivePlaceExplanationResponse:

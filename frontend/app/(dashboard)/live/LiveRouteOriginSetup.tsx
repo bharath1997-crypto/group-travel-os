@@ -121,7 +121,7 @@ export default function LiveRouteOriginSetup({
                       ? gpsAccuracyMeters != null && gpsAccuracyMeters > 150
                         ? `GPS available · ±${Math.round(gpsAccuracyMeters)} m accuracy`
                         : "GPS available"
-                      : "Location unavailable"}
+                      : "Use map pick or search instead"}
                   </span>
                 </span>
               </button>

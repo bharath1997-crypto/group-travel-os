@@ -9,6 +9,7 @@ import {
   displayAccuracyRadiusMeters,
   gpsStatusFromGeolocationError,
   logRovvyGps,
+  logRovvyLiveDebug,
   type GpsStatus,
   type GpsState,
 } from "./live-gps";
@@ -26,6 +27,12 @@ import {
 import type { AutocompleteResult } from "./live-geocoding";
 import type { RouteLine, UserLocationUpdate } from "./live-types";
 import { LOCAL_LIVE_MAX_M } from "./live-types";
+import {
+  LIVE_MAP_2D_PITCH,
+  LIVE_MAP_3D_PITCH,
+  LIVE_MAP_3D_PITCH_THRESHOLD,
+  type LiveMapViewMode,
+} from "./live-layout";
 
 /** Extended arrow-cursor + custom Google Maps style pulse animations */
 const LIVE_MAP_CSS = `
@@ -38,6 +45,43 @@ const LIVE_MAP_CSS = `
 }
 .rovvy-live-map-container .maplibregl-canvas-container:active {
   cursor: default !important;
+}
+.rovvy-live-map-container .maplibregl-marker:has(.gt-user-location-marker) {
+  z-index: 6 !important;
+}
+.gt-user-location-marker {
+  position: relative;
+  z-index: 6;
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+}
+.gt-user-location-marker .gt-user-location-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gt-user-location-marker .gt-user-location-dot-core {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #1a73e8;
+}
+.user-location-popup.maplibregl-popup {
+  z-index: 5;
+}
+.user-location-popup.maplibregl-popup .maplibregl-popup-tip {
+  border-top-color: #ffffff;
 }
 @keyframes rovvy-gps-pulse {
   0% {
@@ -53,17 +97,22 @@ const LIVE_MAP_CSS = `
 
 let liveCssInjected = false;
 function injectLiveMapCursorStyle() {
-  if (typeof document === "undefined" || liveCssInjected) return;
-  const style = document.createElement("style");
-  style.id = "rovvy-live-map-css";
+  if (typeof document === "undefined") return;
+  let style = document.getElementById("rovvy-live-map-css") as HTMLStyleElement | null;
+  if (!style) {
+    style = document.createElement("style");
+    style.id = "rovvy-live-map-css";
+    document.head.appendChild(style);
+    liveCssInjected = true;
+  }
   style.textContent = LIVE_MAP_CSS;
-  document.head.appendChild(style);
-  liveCssInjected = true;
 }
 
 export type UserLocation = { lat: number; lng: number; accuracy?: number; timestamp?: number };
 
 export type { GpsStatus, GpsState } from "./live-gps";
+
+export type { LiveMapViewMode } from "./live-layout";
 
 export type LiveMapRef = {
   zoomIn: () => void;
@@ -82,6 +131,9 @@ export type LiveMapRef = {
   supportsLabelSearch: () => boolean;
   resetNorth: () => void;
   getBearing: () => number;
+  getPitch: () => number;
+  getViewMode: () => LiveMapViewMode;
+  setViewMode: (mode: LiveMapViewMode) => void;
   fitBounds: (bounds: [[number, number], [number, number]]) => void;
 };
 
@@ -98,183 +150,53 @@ type Props = {
   mapFollowMode?: MapFollowMode;
   onGpsStateChange?: (state: GpsState) => void;
   nearbyResults?: any[] | null;
+  nearbyCategoryIcon?: string;
   onNearbyMarkerClick?: (place: any) => void;
   onMapClick?: (lat: number, lng: number, features: any[]) => void;
+  onMapDoubleClick?: (lat: number, lng: number) => void;
   onLiveGpsChange?: (active: boolean) => void;
   onMapInteraction?: (interacting: boolean) => void;
+  onBearingChange?: (bearing: number) => void;
 };
 
 function createUserMarkerElement(liveActive: boolean, navigating: boolean): HTMLDivElement {
   const el = document.createElement("div");
   el.className = "gt-user-location-marker";
-  el.style.cssText = "pointer-events:none;position:relative;width:24px;height:24px;";
+  el.style.cssText =
+    "position:relative;width:28px;height:28px;pointer-events:none;z-index:6;";
 
-  if (navigating) {
-    el.innerHTML = `
-      <div style="
-        position: relative;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      ">
-        <!-- Pulse Wave 1 -->
-        <div style="
-          position: absolute;
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background: rgba(15, 118, 110, 0.15);
-          border: 1.5px solid rgba(15, 118, 110, 0.3);
-          animation: rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25, 0, 0, 1);
-          pointer-events: none;
-          z-index: 1;
-        "></div>
-        <!-- Pulse Wave 2 -->
-        <div style="
-          position: absolute;
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background: rgba(15, 118, 110, 0.1);
-          border: 1px solid rgba(15, 118, 110, 0.2);
-          animation: rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25, 0, 0, 1);
-          animation-delay: 1.2s;
-          pointer-events: none;
-          z-index: 1;
-        "></div>
+  const dotColor = navigating || liveActive ? (liveActive ? "#0F766E" : "#2563EB") : "#1A73E8";
+  const pulseColor = navigating || liveActive ? "15, 118, 110" : "26, 115, 232";
 
-        <!-- Navigation Dot -->
-        <div style="
-          position: absolute;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: #ffffff;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.35);
-          z-index: 2;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">
-          <div style="
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: ${liveActive ? "#0F766E" : "#2563EB"};
-          "></div>
-        </div>
-      </div>
-    `;
-    return el;
-  }
-
-  if (liveActive) {
-    el.innerHTML = `
-      <div style="
-        position: relative;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      ">
-        <!-- Pulse Wave 1 -->
-        <div style="
-          position: absolute;
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background: rgba(15, 118, 110, 0.15);
-          border: 1.5px solid rgba(15, 118, 110, 0.3);
-          animation: rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25, 0, 0, 1);
-          pointer-events: none;
-          z-index: 1;
-        "></div>
-        <!-- Pulse Wave 2 -->
-        <div style="
-          position: absolute;
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background: rgba(15, 118, 110, 0.1);
-          border: 1px solid rgba(15, 118, 110, 0.2);
-          animation: rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25, 0, 0, 1);
-          animation-delay: 1.2s;
-          pointer-events: none;
-          z-index: 1;
-        "></div>
-
-        <div style="
-          position: absolute;
-          font-size: 22px;
-          line-height: 1;
-          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
-          z-index: 2;
-        ">🚗</div>
-      </div>
-    `;
-    return el;
-  }
-
-  // Pure Google Maps style HTML layer marker setup
+  // All dot styling is inline — never depend on injected CSS for visibility.
   el.innerHTML = `
-    <div style="
-      position: relative;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    ">
-      <!-- Wave 1 -->
-      <div style="
-        position: absolute;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background: rgba(26, 115, 232, 0.18);
-        border: 1.5px solid rgba(26, 115, 232, 0.35);
-        animation: rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25, 0, 0, 1);
-        pointer-events: none;
-        z-index: 1;
-      "></div>
-      <!-- Wave 2 (delayed) -->
-      <div style="
-        position: absolute;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background: rgba(26, 115, 232, 0.10);
-        border: 1px solid rgba(26, 115, 232, 0.20);
-        animation: rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25, 0, 0, 1);
-        animation-delay: 1.2s;
-        pointer-events: none;
-        z-index: 1;
-      "></div>
-
-      <div style="
-        position: absolute;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: #ffffff;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.35);
-        z-index: 2;
-      "></div>
-
-      <div style="
-        position: absolute;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #1A73E8;
-        z-index: 3;
-      "></div>
+    <div style="position:relative;width:28px;height:28px;display:flex;align-items:center;justify-content:center;">
+      <div style="position:absolute;width:28px;height:28px;border-radius:50%;background:rgba(${pulseColor},0.18);border:1.5px solid rgba(${pulseColor},0.35);animation:rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25,0,0,1);pointer-events:none;z-index:1;"></div>
+      <div style="position:absolute;width:28px;height:28px;border-radius:50%;background:rgba(${pulseColor},0.10);border:1px solid rgba(${pulseColor},0.20);animation:rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25,0,0,1);animation-delay:1.2s;pointer-events:none;z-index:1;"></div>
+      <div data-gps-dot="true" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:#ffffff;box-shadow:0 1px 6px rgba(0,0,0,0.4);z-index:4;display:flex;align-items:center;justify-content:center;">
+        <div style="width:14px;height:14px;border-radius:50%;background:${dotColor};"></div>
+      </div>
     </div>
   `;
   return el;
+}
+
+function applyUserMarkerContent(
+  target: HTMLElement,
+  liveActive: boolean,
+  navigating: boolean,
+): void {
+  const fresh = createUserMarkerElement(liveActive, navigating);
+  target.className = fresh.className;
+  target.style.cssText = fresh.style.cssText;
+  target.innerHTML = fresh.innerHTML;
+}
+
+function ensureMarkerOnMap(marker: maplibregl.Marker, map: maplibregl.Map): void {
+  const el = marker.getElement();
+  if (!el.isConnected) {
+    reattachHtmlMarker(marker, map);
+  }
 }
 
 function createStartMarkerElement(): HTMLDivElement {
@@ -316,40 +238,55 @@ function createStartMarkerElement(): HTMLDivElement {
   return el;
 }
 
-function createDestinationMarkerElement(navigating: boolean): HTMLDivElement {
-  const el = document.createElement("div");
-  if (navigating) {
-    el.innerHTML = `<div style="width:22px;height:22px;border-radius:50%;background:#FFFFFF;border:4px solid #0F766E;box-shadow:0 2px 8px rgba(0,0,0,0.25);"></div>`;
-    return el;
-  }
-  el.innerHTML = `<div style="font-size:28px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">📍</div>`;
-  return el;
-}
-
-function createClickedPinMarkerElement(): HTMLDivElement {
+function createRovvyTeardropPinElement(size: "md" | "lg" = "md"): HTMLDivElement {
   const el = document.createElement("div");
   el.style.cssText = "pointer-events:none;";
+  const pinSize = size === "lg" ? 28 : 24;
+  const wrapH = size === "lg" ? 40 : 36;
   el.innerHTML = `
     <div style="
       position: relative;
-      width: 28px;
-      height: 36px;
+      width: ${pinSize + 4}px;
+      height: ${wrapH}px;
       display: flex;
       align-items: flex-start;
       justify-content: center;
     ">
       <div style="
-        width: 24px;
-        height: 24px;
+        width: ${pinSize}px;
+        height: ${pinSize}px;
         border-radius: 50% 50% 50% 0;
         transform: rotate(-45deg);
         background: #0F766E;
         border: 3px solid #ffffff;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+      "></div>
+      <div style="
+        position: absolute;
+        top: ${size === "lg" ? 8 : 7}px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: ${size === "lg" ? 9 : 8}px;
+        height: ${size === "lg" ? 9 : 8}px;
+        border-radius: 50%;
+        background: #ffffff;
       "></div>
     </div>
   `;
   return el;
+}
+
+function createDestinationMarkerElement(navigating: boolean): HTMLDivElement {
+  if (navigating) {
+    const el = document.createElement("div");
+    el.innerHTML = `<div style="width:22px;height:22px;border-radius:50%;background:#FFFFFF;border:4px solid #0F766E;box-shadow:0 2px 8px rgba(0,0,0,0.25);"></div>`;
+    return el;
+  }
+  return createRovvyTeardropPinElement("lg");
+}
+
+function createClickedPinMarkerElement(): HTMLDivElement {
+  return createRovvyTeardropPinElement("md");
 }
 
 function showClickRipple(container: HTMLElement, x: number, y: number): void {
@@ -442,33 +379,32 @@ function syncNearbyMarkersNow(
   nearbyResults: any[] | null | undefined,
   onNearbyMarkerClick: ((place: any) => void) | undefined,
   markersOut: maplibregl.Marker[],
+  categoryIcon?: string,
 ): maplibregl.Marker[] {
   markersOut.forEach((m) => m.remove());
   if (!nearbyResults || nearbyResults.length === 0) return [];
+
+  const dense = nearbyResults.length > 20;
+  const showNumbers = !dense && nearbyResults.length <= 20;
+  const icon = categoryIcon ?? "📍";
 
   const next: maplibregl.Marker[] = [];
   nearbyResults.forEach((res, index) => {
     const el = document.createElement("div");
     el.className = "nearby-result-marker";
-    el.innerHTML = `
-      <div style="
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background: #0F766E;
-        color: white;
-        font-size: 11px;
-        font-weight: 700;
-        border: 2px solid white;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        cursor: pointer;
-      ">
-        ${index + 1}
-      </div>
-    `;
+    const size = dense ? 14 : 22;
+    el.innerHTML = dense
+      ? `<div style="
+          width:${size}px;height:${size}px;border-radius:50%;
+          background:#0F766E;border:2px solid white;
+          box-shadow:0 1px 4px rgba(0,0,0,0.35);cursor:pointer;
+        " title="${res.name ?? "Place"}"></div>`
+      : `<div style="
+          display:flex;align-items:center;justify-content:center;
+          min-width:${size}px;height:${size}px;padding:0 4px;border-radius:999px;
+          background:#0F766E;color:white;font-size:${showNumbers ? 10 : 12}px;font-weight:700;
+          border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);cursor:pointer;
+        ">${showNumbers ? index + 1 : icon}</div>`;
 
     el.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -630,10 +566,13 @@ export default function LiveMapComponent({
   mapFollowMode = "default",
   onGpsStateChange,
   nearbyResults,
+  nearbyCategoryIcon,
   onNearbyMarkerClick,
   onMapClick,
+  onMapDoubleClick,
   onLiveGpsChange,
   onMapInteraction,
+  onBearingChange,
 }: Props) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<maplibregl.Map | null>(null);
@@ -669,9 +608,14 @@ export default function LiveMapComponent({
   const liveGpsActiveRef = useRef(false);
   const hasCenteredOnUserRef = useRef(false);
   const bestAccuracyCenteredRef = useRef<number | null>(null);
+  const programmaticCameraMoveRef = useRef(false);
 
-  const callbacksRef = useRef({ onGpsStateChange, onMapClick, onLiveGpsChange, onMapInteraction });
-  callbacksRef.current = { onGpsStateChange, onMapClick, onLiveGpsChange, onMapInteraction };
+  const markProgrammaticCameraMove = useCallback(() => {
+    programmaticCameraMoveRef.current = true;
+  }, []);
+
+  const callbacksRef = useRef({ onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange });
+  callbacksRef.current = { onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange };
   const isLiveActiveRef = useRef(isLiveActive);
   isLiveActiveRef.current = isLiveActive;
   const navigationModeRef = useRef(navigationMode);
@@ -683,6 +627,7 @@ export default function LiveMapComponent({
   const ensureUserMarkerRef = useRef<((lat: number, lng: number, accuracy: number | null, timestamp: number | null) => void) | null>(null);
   const nearbyMarkersRef = useRef<maplibregl.Marker[]>([]);
   const skipInitialStyleSwitchRef = useRef(true);
+  const viewModeRef = useRef<LiveMapViewMode>("2d");
   const mapPinRef = useRef(mapPin);
   mapPinRef.current = mapPin;
   const routeOriginPinRef = useRef(routeOriginPin);
@@ -691,11 +636,13 @@ export default function LiveMapComponent({
   routeLineRef.current = routeLine;
   const nearbyResultsRef = useRef(nearbyResults);
   nearbyResultsRef.current = nearbyResults;
+  const nearbyCategoryIconRef = useRef(nearbyCategoryIcon);
+  nearbyCategoryIconRef.current = nearbyCategoryIcon;
   const onNearbyMarkerClickRef = useRef(onNearbyMarkerClick);
   onNearbyMarkerClickRef.current = onNearbyMarkerClick;
 
   const restoreOverlaysAfterStyleChange = useCallback((map: maplibregl.Map) => {
-    console.log("[Rovvy Debug] marker restore after style.load, userLocation:", userLocationRef.current);
+    logRovvyLiveDebug("[Rovvy Debug] marker restore after style.load, userLocation:", userLocationRef.current);
     syncRouteLayer(map, routeLineRef.current);
 
     const loc = userLocationRef.current;
@@ -706,6 +653,9 @@ export default function LiveMapComponent({
         loc.accuracy ?? null,
         loc.timestamp ?? null,
       );
+      if (userMarkerRef.current) {
+        reattachHtmlMarker(userMarkerRef.current, map);
+      }
       syncAccuracyLayer(map, loc.lat, loc.lng, loc.accuracy ?? null);
     } else if (userMarkerRef.current) {
       reattachHtmlMarker(userMarkerRef.current, map);
@@ -769,6 +719,7 @@ export default function LiveMapComponent({
       nearbyResultsRef.current,
       onNearbyMarkerClickRef.current,
       nearbyMarkersRef.current,
+      nearbyCategoryIconRef.current,
     );
   }, []);
 
@@ -796,6 +747,8 @@ export default function LiveMapComponent({
       zoom: 14,
       minZoom: LIVE_MAP_MIN_ZOOM,
       maxZoom: LIVE_MAP_MAX_ZOOM,
+      pitch: LIVE_MAP_2D_PITCH,
+      maxPitch: LIVE_MAP_3D_PITCH,
       attributionControl: false,
     });
 
@@ -815,7 +768,7 @@ export default function LiveMapComponent({
       if (map.getZoom() > LIVE_MAP_MAX_ZOOM) {
         map.setZoom(LIVE_MAP_MAX_ZOOM);
       }
-      console.log("[Rovvy Debug] Map loaded, restoring overlays");
+      logRovvyLiveDebug("[Rovvy Debug] Map loaded, restoring overlays");
       restoreOverlaysRef.current(map);
     });
 
@@ -827,7 +780,25 @@ export default function LiveMapComponent({
       }
     });
 
+    let suppressClickUntil = 0;
+
+    map.on("dblclick", (e) => {
+      suppressClickUntil = Date.now() + 450;
+      if (clickedPinMarkerRef.current) {
+        clickedPinMarkerRef.current.remove();
+        clickedPinMarkerRef.current = null;
+      }
+      clickedPinMarkerRef.current = new maplibregl.Marker({
+        element: createClickedPinMarkerElement(),
+        anchor: "bottom",
+      })
+        .setLngLat([e.lngLat.lng, e.lngLat.lat])
+        .addTo(map);
+      callbacksRef.current.onMapDoubleClick?.(e.lngLat.lat, e.lngLat.lng);
+    });
+
     map.on("click", (e) => {
+      if (Date.now() < suppressClickUntil) return;
       const { x, y } = e.point;
       const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
         [x - 16, y - 16],
@@ -896,22 +867,40 @@ export default function LiveMapComponent({
     });
 
     map.on("movestart", () => {
+      if (programmaticCameraMoveRef.current) return;
       callbacksRef.current.onMapInteraction?.(true);
     });
 
     map.on("moveend", () => {
+      if (programmaticCameraMoveRef.current) {
+        programmaticCameraMoveRef.current = false;
+        return;
+      }
       callbacksRef.current.onMapInteraction?.(false);
     });
 
-    function ensureUserMarker(lat: number, lng: number, accuracy: number | null, timestamp: number | null) {
-      // Always show the blue location dot (user marker), even inside the accuracy uncertainty circle, matching Google Maps.
-      const showDot = true;
+    map.on("pitchend", () => {
+      viewModeRef.current =
+        map.getPitch() >= LIVE_MAP_3D_PITCH_THRESHOLD ? "3d" : "2d";
+    });
 
+    const emitBearing = () => {
+      callbacksRef.current.onBearingChange?.(map.getBearing());
+    };
+    map.on("rotate", emitBearing);
+    map.on("rotateend", emitBearing);
+    emitBearing();
+
+    function ensureUserMarker(lat: number, lng: number, accuracy: number | null, timestamp: number | null) {
       if (userMarkerRef.current) {
-        console.log("[Rovvy Debug] user marker updated at:", [lng, lat]);
         userMarkerRef.current.setLngLat([lng, lat]);
+        applyUserMarkerContent(
+          userMarkerRef.current.getElement(),
+          isLiveActiveRef.current,
+          navigationModeRef.current,
+        );
+        ensureMarkerOnMap(userMarkerRef.current, map);
       } else {
-        console.log("[Rovvy Debug] user marker created at:", [lng, lat]);
         userMarkerRef.current = new maplibregl.Marker({
           element: createUserMarkerElement(isLiveActiveRef.current, navigationModeRef.current),
           anchor: "center",
@@ -919,14 +908,18 @@ export default function LiveMapComponent({
           .setLngLat([lng, lat])
           .addTo(map);
 
-        const popup = new maplibregl.Popup({ closeButton: false, offset: 15, className: "user-location-popup" });
+        const popup = new maplibregl.Popup({
+          closeButton: false,
+          offset: 32,
+          anchor: "bottom",
+          className: "user-location-popup",
+        });
         userMarkerRef.current.setPopup(popup);
       }
 
       const markerEl = userMarkerRef.current.getElement();
-      if (markerEl) {
-        markerEl.style.display = showDot ? "" : "none";
-      }
+      markerEl.style.display = "";
+      markerEl.style.zIndex = "6";
 
       const popup = userMarkerRef.current.getPopup();
       if (popup) {
@@ -954,9 +947,9 @@ export default function LiveMapComponent({
       timestamp: number | null,
       errorMsg?: string,
     ) {
-      console.log("[Rovvy Debug] applyUserLocation called", { lat, lng, centerMap, accuracyMeters, timestamp });
+      logRovvyLiveDebug("[Rovvy Debug] applyUserLocation called", { lat, lng, centerMap, accuracyMeters, timestamp });
       if (isUnmountedRef.current) {
-        console.log("[Rovvy Debug] applyUserLocation skipped because unmounted");
+        logRovvyLiveDebug("[Rovvy Debug] applyUserLocation skipped because unmounted");
         return;
       }
       if (!liveGpsActiveRef.current && watchIdsRef.current.length > 0) {
@@ -964,7 +957,7 @@ export default function LiveMapComponent({
         callbacksRef.current.onLiveGpsChange?.(true);
       }
       userLocationRef.current = { lat, lng, accuracy: accuracyMeters || undefined, timestamp: timestamp || undefined };
-      console.log("[Rovvy Debug] LiveMapComponent set userLocationRef:", userLocationRef.current);
+      logRovvyLiveDebug("[Rovvy Debug] LiveMapComponent set userLocationRef:", userLocationRef.current);
 
       ensureUserMarker(lat, lng, accuracyMeters, timestamp);
 
@@ -1038,6 +1031,7 @@ export default function LiveMapComponent({
       });
 
       if (navigationModeRef.current && navigationFollowUserRef.current) {
+        markProgrammaticCameraMove();
         map.easeTo({
           center: [lng, lat],
           bearing: heading ?? map.getBearing(),
@@ -1060,6 +1054,7 @@ export default function LiveMapComponent({
         accuracyMeters <= 100;
 
       if (centerMap || !hasCenteredOnUserRef.current || isSignificantlyMoreAccurate) {
+        markProgrammaticCameraMove();
         map.flyTo({ center: [lng, lat], zoom: 16, essential: true });
         hasCenteredOnUserRef.current = true;
         bestAccuracyCenteredRef.current = accuracyMeters;
@@ -1094,7 +1089,7 @@ export default function LiveMapComponent({
 
     function handleGeolocationError(err: GeolocationPositionError, source: string) {
       const errMsg = geolocationErrorMessage(err);
-      console.log("[Rovvy Debug] geolocation failure", { code: err.code, message: errMsg, source });
+      logRovvyLiveDebug("[Rovvy Debug] geolocation failure", { code: err.code, message: errMsg, source });
       if (isUnmountedRef.current) return;
       const status = gpsStatusFromGeolocationError(err.code);
       logRovvyGps(`${source} error`, {
@@ -1211,7 +1206,7 @@ export default function LiveMapComponent({
       bestAccuracyCenteredRef.current = null;
 
       logRovvyGps("requesting location");
-      console.log("[Rovvy Debug] geolocation requested via startLiveGps");
+      logRovvyLiveDebug("[Rovvy Debug] geolocation requested via startLiveGps");
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -1250,21 +1245,38 @@ export default function LiveMapComponent({
       },
       flyToPlace: (lat: number, lng: number, zoom = 15) => {
         routeFitKeyRef.current = "";
+        markProgrammaticCameraMove();
         map.flyTo({ center: [lng, lat], zoom, essential: true });
       },
       searchMapLabels: (query, anchor, limit = 8) =>
         searchVisibleMapLabels(map, query, anchor, limit),
       supportsLabelSearch: () => mapSupportsLabelSearch(map),
       resetNorth: () => {
-        map.easeTo({ bearing: 0, pitch: 0, duration: 500, essential: true });
+        map.easeTo({
+          bearing: 0,
+          pitch: map.getPitch(),
+          duration: 500,
+          essential: true,
+        });
       },
       getBearing: () => map.getBearing(),
+      getPitch: () => map.getPitch(),
+      getViewMode: () =>
+        map.getPitch() >= LIVE_MAP_3D_PITCH_THRESHOLD ? "3d" : "2d",
+      setViewMode: (mode: LiveMapViewMode) => {
+        viewModeRef.current = mode;
+        map.easeTo({
+          pitch: mode === "3d" ? LIVE_MAP_3D_PITCH : LIVE_MAP_2D_PITCH,
+          duration: 500,
+          essential: true,
+        });
+      },
       fitBounds: (bounds) => {
         navigationFollowUserRef.current = false;
         map.fitBounds(bounds, { padding: 80, duration: 800 });
       },
       locateUser: (forceFresh?: boolean) => {
-        console.log("[Rovvy Debug] locateUser called", { forceFresh });
+        logRovvyLiveDebug("[Rovvy Debug] locateUser called", { forceFresh });
         const blocked = geolocationUnavailableMessage();
         if (blocked) {
           logRovvyGps("unavailable", { reason: blocked });
@@ -1284,7 +1296,7 @@ export default function LiveMapComponent({
 
         if (forceFresh) {
           logRovvyGps("forcing fresh location request");
-          console.log("[Rovvy Debug] geolocation requested via locateUser (forceFresh)");
+          logRovvyLiveDebug("[Rovvy Debug] geolocation requested via locateUser (forceFresh)");
           const ageMs = userLocationRef.current?.timestamp ? Date.now() - userLocationRef.current.timestamp : Infinity;
           const isFresh = userLocationRef.current && ageMs < 15000;
           if (!isFresh) {
@@ -1323,6 +1335,7 @@ export default function LiveMapComponent({
           navigationFollowUserRef.current = true;
           const loc = userLocationRef.current;
           if (loc) {
+            markProgrammaticCameraMove();
             map.flyTo({ center: [loc.lng, loc.lat], zoom: loc.accuracy && loc.accuracy > 150 ? 14 : 16, essential: true });
             userMarkerRef.current?.togglePopup();
           } else {
@@ -1403,6 +1416,12 @@ export default function LiveMapComponent({
     map.once("style.load", () => {
       map.setMaxZoom(LIVE_MAP_MAX_ZOOM);
       map.setMinZoom(LIVE_MAP_MIN_ZOOM);
+      map.setMaxPitch(LIVE_MAP_3D_PITCH);
+      const targetPitch =
+        viewModeRef.current === "3d" ? LIVE_MAP_3D_PITCH : LIVE_MAP_2D_PITCH;
+      if (Math.abs(map.getPitch() - targetPitch) > 0.5) {
+        map.setPitch(targetPitch);
+      }
       restoreOverlaysAfterStyleChange(map);
     });
   }, [activeLayer, restoreOverlaysAfterStyleChange]);
@@ -1446,12 +1465,9 @@ export default function LiveMapComponent({
   useEffect(() => {
     const marker = userMarkerRef.current;
     if (!marker) return;
-    const newEl = createUserMarkerElement(isLiveActive, navigationMode);
-    const existing = marker.getElement();
-    while (existing.firstChild) existing.removeChild(existing.firstChild);
-    const tmp = document.createElement("div");
-    tmp.innerHTML = newEl.innerHTML;
-    while (tmp.firstChild) existing.appendChild(tmp.firstChild);
+    applyUserMarkerContent(marker.getElement(), isLiveActive, navigationMode);
+    const map = instanceRef.current;
+    if (map) ensureMarkerOnMap(marker, map);
   }, [isLiveActive, navigationMode]);
 
   useEffect(() => {
@@ -1517,13 +1533,14 @@ export default function LiveMapComponent({
       nearbyResults,
       onNearbyMarkerClick,
       nearbyMarkersRef.current,
+      nearbyCategoryIcon,
     );
 
     return () => {
       nearbyMarkersRef.current.forEach((m) => m.remove());
       nearbyMarkersRef.current = [];
     };
-  }, [nearbyResults, onNearbyMarkerClick]);
+  }, [nearbyResults, onNearbyMarkerClick, nearbyCategoryIcon]);
 
   const routeFitKeyRef = useRef("");
 
@@ -1553,6 +1570,7 @@ export default function LiveMapComponent({
       const bounds = new maplibregl.LngLatBounds();
       bounds.extend([routeLine.from.lng, routeLine.from.lat]);
       bounds.extend([routeLine.to.lng, routeLine.to.lat]);
+      markProgrammaticCameraMove();
       map.fitBounds(bounds, { padding: 80, maxZoom: 14, essential: true });
       return;
     }
@@ -1570,8 +1588,9 @@ export default function LiveMapComponent({
       }
     }
 
+    markProgrammaticCameraMove();
     map.flyTo({ center: [mapPin.lng, mapPin.lat], zoom: 15, essential: true });
-  }, [mapPin, routeLine, mapFollowMode, navigationMode]);
+  }, [mapPin, routeLine, mapFollowMode, navigationMode, markProgrammaticCameraMove]);
 
   return (
     <div className="relative w-full h-full rovvy-live-map-container">
@@ -1723,7 +1742,7 @@ function syncAccuracyLayerNow(
   const radius = displayAccuracyRadiusMeters(accuracyMeters);
 
   if (lat == null || lng == null || radius == null) {
-    console.log("[Rovvy Debug] accuracy circle cleared/removed");
+    logRovvyLiveDebug("[Rovvy Debug] accuracy circle cleared/removed");
     try {
       if (map.getLayer(fillLayerId)) map.removeLayer(fillLayerId);
       if (map.getLayer(strokeLayerId)) map.removeLayer(strokeLayerId);
@@ -1735,7 +1754,7 @@ function syncAccuracyLayerNow(
   }
 
   const circleFeature = createGeoJsonCircle([lng, lat], radius / 1000);
-  console.log("[Rovvy Debug] accuracy circle created/updated at:", [lng, lat], "radius:", radius);
+  logRovvyLiveDebug("[Rovvy Debug] accuracy circle created/updated at:", { lng, lat, radius });
 
   try {
     const existing = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;

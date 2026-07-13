@@ -63,20 +63,20 @@ export type RouteLine = {
   durationSeconds: number;
   maneuvers?: RouteManeuver[];
   active: boolean;
+  lastMileMode?: "walk" | null;
+  lastMileDistanceMeters?: number | null;
+  lastMileDurationSeconds?: number | null;
+  lastMileNotice?: string | null;
 };
 
-export type DistanceTier = "local" | "far" | "long_distance";
+export type DistanceTier = "local" | "far";
 
 export type { PlacePreviewData };
 
 export const LOCAL_DISTANCE_MILES = 100;
-export const FAR_DISTANCE_MILES = 500;
 
 /** Under 100 miles — normal local Live destination. */
 export const LOCAL_LIVE_MAX_M = LOCAL_DISTANCE_MILES * 1609.34;
-
-/** Over 500 miles — strong far-away warning. */
-export const FAR_WARNING_MAX_M = FAR_DISTANCE_MILES * 1609.34;
 
 /** Legacy alias used by existing warning checks (~100 mi). */
 export const FAR_LOCATION_THRESHOLD_M = LOCAL_LIVE_MAX_M;
@@ -84,24 +84,15 @@ export const FAR_LOCATION_THRESHOLD_M = LOCAL_LIVE_MAX_M;
 export function getDistanceTier(distanceM: number | null): DistanceTier {
   if (distanceM == null) return "local";
   if (distanceM <= LOCAL_LIVE_MAX_M) return "local";
-  if (distanceM <= FAR_WARNING_MAX_M) return "far";
-  return "long_distance";
+  return "far";
 }
 
 export function isFarFromUser(distanceM: number | null): boolean {
   return getDistanceTier(distanceM) !== "local";
 }
 
-export function isLongDistanceFromUser(distanceM: number | null): boolean {
-  return getDistanceTier(distanceM) === "long_distance";
-}
-
 export function canDrawLocalRoute(distanceM: number | null): boolean {
   return distanceM == null || distanceM <= LOCAL_LIVE_MAX_M;
-}
-
-export function canStartSoloLive(distanceM: number | null): boolean {
-  return !isLongDistanceFromUser(distanceM);
 }
 
 export function formatDistanceMiles(m: number | null): string {
@@ -128,6 +119,19 @@ export function formatRouteDuration(durationSeconds: number | null | undefined):
   return rem > 0 ? `${hours} hr ${rem} min` : `${hours} hr`;
 }
 
+/** Bracketed travel time only — e.g. "(6 min)" — no distance or arrival clock. */
+export function formatRouteDurationBracketed(
+  durationSeconds: number | null | undefined,
+  options?: { loading?: boolean; failed?: boolean },
+): string {
+  if (options?.loading) return "(…)";
+  if (options?.failed) return "";
+  if (durationSeconds == null || !Number.isFinite(durationSeconds)) return "";
+  const inner = formatRouteDuration(durationSeconds);
+  if (inner === "Calculating…") return "(…)";
+  return `(${inner})`;
+}
+
 export function speedMpsToMph(speedMps: number | null): number {
   if (speedMps == null || Number.isNaN(speedMps) || speedMps < 0) return 0;
   return Math.round(speedMps * 2.23694);
@@ -141,6 +145,21 @@ export function formatArrivalTime(etaMinutes: number | null): string {
     d.setMinutes(d.getMinutes() + etaMinutes);
   }
   return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+export function etaMinutesFromDuration(
+  durationSeconds: number | null | undefined,
+): number | null {
+  if (durationSeconds == null || !Number.isFinite(durationSeconds)) return null;
+  return Math.max(1, Math.round(durationSeconds / 60));
+}
+
+export function formatArrivalFromDuration(
+  durationSeconds: number | null | undefined,
+): string | null {
+  const minutes = etaMinutesFromDuration(durationSeconds);
+  if (minutes == null) return null;
+  return formatArrivalTime(minutes);
 }
 
 export function etaMinutesFromDistance(distanceM: number | null): number | null {

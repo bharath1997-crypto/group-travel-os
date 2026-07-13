@@ -6,6 +6,7 @@ from fastapi import APIRouter, Query
 from app.schemas.places import PlaceResolveRequest, PlaceResolveResponse
 from app.services.places_nearby_service import PlacesNearbyService
 from app.services.place_wikipedia_service import PlaceWikipediaService
+from app.services.live_search_taxonomy_service import taxonomy_for_api
 from app.services.place_autocomplete_service import PlaceAutocompleteService
 from app.utils.database import get_db
 from sqlalchemy.orm import Session
@@ -16,6 +17,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Places"])
+
+
+@router.get("/search/taxonomy")
+async def get_search_taxonomy():
+    """Live search category registry — keywords, labels, and groups."""
+    return taxonomy_for_api()
+
 
 @router.get("/search/places")
 async def search_places(

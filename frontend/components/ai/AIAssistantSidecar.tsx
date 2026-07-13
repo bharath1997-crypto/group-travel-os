@@ -443,9 +443,12 @@ export function AIAssistantSidecar({
     return null;
   }
 
+  const isLiveRoute = pathname === "/live" || pathname.startsWith("/live/");
+
   return (
     <>
-      {/* ALWAYS VISIBLE DRAGGABLE LOGO BUTTON (keeps standard bottom-right position in mind by default) */}
+      {/* ALWAYS VISIBLE DRAGGABLE LOGO BUTTON — hidden on Live (opened via map More menu) */}
+      {!isLiveRoute ? (
       <div
         style={
           position.x === -1 || position.y === -1
@@ -478,6 +481,7 @@ export function AIAssistantSidecar({
           <WayraIcon state={birdState} size={0.9} variant="raw" animate={true} />
         </button>
       </div>
+      ) : null}
 
       {/* FLOATABLE ASSISTANT PANEL */}
       {isOpen ? (

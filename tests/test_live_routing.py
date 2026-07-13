@@ -21,17 +21,40 @@ def auth_user():
     app.dependency_overrides.pop(get_current_user, None)
 
 
-def test_route_preview_requires_auth():
+def test_route_preview_allows_guest():
+    from unittest.mock import patch, AsyncMock
+
     app.dependency_overrides.clear()
-    res = client.post(
-        "/api/v1/live/route-preview",
-        json={
-            "origin": {"latitude": 41.88, "longitude": -87.63, "source": "gps"},
-            "destination": {"latitude": 41.89, "longitude": -87.62, "name": "Target"},
-            "travelMode": "Drive",
-        },
-    )
-    assert res.status_code == 401
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {
+        "code": "Ok",
+        "routes": [
+            {
+                "distance": 1500.0,
+                "duration": 300.0,
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[-87.63, 41.88], [-87.62, 41.89]],
+                },
+            }
+        ],
+    }
+
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+        mock_get.return_value = mock_resp
+
+        res = client.post(
+            "/api/v1/live/route-preview",
+            json={
+                "origin": {"latitude": 41.88, "longitude": -87.63, "source": "gps"},
+                "destination": {"latitude": 41.89, "longitude": -87.62, "name": "Target"},
+                "travelMode": "Drive",
+            },
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert body["status"] == "ready"
 
 
 def test_route_preview_validation_error(auth_user):
@@ -82,3 +105,62 @@ def test_route_preview_success(auth_user):
         assert body["durationSeconds"] == 300.0
         assert body["geometry"]["type"] == "LineString"
         assert body["geometry"]["coordinates"] == [[-87.63, 41.88], [-87.62, 41.89]]
+
+
+def test_route_preview_adds_last_mile_walk(auth_user):
+    from unittest.mock import patch, AsyncMock
+
+    drive_resp = MagicMock()
+    drive_resp.status_code = 200
+    drive_resp.json.return_value = {
+        "code": "Ok",
+        "routes": [
+            {
+                "distance": 1000.0,
+                "duration": 120.0,
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[-87.63, 41.88], [-87.625, 41.885]],
+                },
+                "legs": [{"steps": []}],
+            }
+        ],
+    }
+
+    walk_resp = MagicMock()
+    walk_resp.status_code = 200
+    walk_resp.json.return_value = {
+        "code": "Ok",
+        "routes": [
+            {
+                "distance": 80.0,
+                "duration": 70.0,
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[-87.625, 41.885], [-87.62, 41.89]],
+                },
+            }
+        ],
+    }
+
+    async def mock_get(url, *args, **kwargs):
+        if "/route/v1/foot/" in url:
+            return walk_resp
+        return drive_resp
+
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock, side_effect=mock_get):
+        res = client.post(
+            "/api/v1/live/route-preview",
+            json={
+                "origin": {"latitude": 41.88, "longitude": -87.63, "source": "gps"},
+                "destination": {"latitude": 41.89, "longitude": -87.62, "name": "Target"},
+                "travelMode": "Drive",
+            },
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert body["status"] == "ready"
+        assert body["lastMileMode"] == "walk"
+        assert body["lastMileDistanceMeters"] == 80.0
+        assert body["lastMileNotice"]
+        assert len(body["geometry"]["coordinates"]) >= 3

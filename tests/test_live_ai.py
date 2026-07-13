@@ -8,7 +8,6 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.services.live_ai_service import clear_live_ai_cache_for_tests
 from app.services.live_location_context_service import (
-    FAR_DISTANCE_MILES,
     LOCAL_DISTANCE_MILES,
     build_location_context,
     classify_location_context,
@@ -111,7 +110,7 @@ def test_build_location_context_local_place():
     assert result.distance_miles < LOCAL_DISTANCE_MILES
 
 
-def test_classify_very_far_destination():
+def test_classify_far_domestic_destination():
     built = build_location_context(
         LiveLocationInput(lat=41.88, lng=-87.63, country="United States"),
         LiveSelectedPlaceInput(
@@ -122,7 +121,24 @@ def test_classify_very_far_destination():
             country="United States",
         ),
     )
-    assert classify_location_context(built) == "very_far_destination"
+    assert classify_location_context(built) == "far_destination"
+    result = resolve_location_context(
+        LiveLocationContextRequest(
+            user_location=LiveLocationInput(lat=41.88, lng=-87.63, country="United States"),
+            selected_place=LiveSelectedPlaceInput(
+                name="Far Place",
+                address="Los Angeles, California, United States",
+                lat=34.05,
+                lng=-118.24,
+                country="United States",
+            ),
+            workflow_type="Solo",
+            travel_mode="Drive",
+            live_stage="place_preview",
+        )
+    )
+    assert result.live_safe is True
+    assert result.future_trip_candidate is False
 
 
 def test_location_context_endpoint(auth_user):
