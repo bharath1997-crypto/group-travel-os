@@ -263,6 +263,16 @@ function toTitleCase(str: string): string {
 /** Default suggestions shown when no recent searches exist */
 export const DEFAULT_RECENT_SUGGESTIONS: RecentSearchItem[] = [
   {
+    id: "default_waterfalls",
+    label: "Waterfalls nearby",
+    subtitle: "Nearby search",
+    type: "category_search",
+    query: "waterfalls",
+    category: "waterfalls",
+    lastUsedAt: "",
+    useCount: 0,
+  },
+  {
     id: "default_coffee",
     label: "Coffee nearby",
     subtitle: "Nearby search",

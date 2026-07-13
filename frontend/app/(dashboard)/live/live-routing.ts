@@ -1,4 +1,5 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, ApiFetchError } from "@/lib/api";
+import { logRovvyLiveDebug, logRovvyLiveError, logRovvyLiveWarn } from "./live-gps";
 import type { RouteLine, RouteManeuver } from "./live-types";
 
 export function isValidRouteCoordinate(lat: number, lng: number): boolean {
@@ -28,6 +29,10 @@ interface BackendRouteResponse {
   }[] | null;
   provider: string;
   message: string | null;
+  lastMileMode?: "walk" | null;
+  lastMileDistanceMeters?: number | null;
+  lastMileDurationSeconds?: number | null;
+  lastMileNotice?: string | null;
 }
 
 export async function fetchLiveRoute(
@@ -44,36 +49,40 @@ export async function fetchLiveRoute(
     return { route: null, error: "Invalid coordinates." };
   }
 
-  console.info(`[Rovvy Route Debug] Fetching route from backend:`, {
+  logRovvyLiveDebug("[Rovvy Route Debug] Fetching route from backend:", {
     origin,
     destination,
     travelMode,
     originSource,
-    active
+    active,
   });
 
   try {
-    const response = await apiFetch<BackendRouteResponse>("/live/route-preview", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
+    const response = await apiFetch<BackendRouteResponse>(
+      "/live/route-preview",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          origin: {
+            latitude: origin.lat,
+            longitude: origin.lng,
+            source: originSource,
+          },
+          destination: {
+            latitude: destination.lat,
+            longitude: destination.lng,
+            name: null,
+          },
+          travelMode,
+        }),
       },
-      body: JSON.stringify({
-        origin: {
-          latitude: origin.lat,
-          longitude: origin.lng,
-          source: originSource
-        },
-        destination: {
-          latitude: destination.lat,
-          longitude: destination.lng,
-          name: null
-        },
-        travelMode
-      })
-    });
+      120_000,
+    );
 
-    console.info(`[Rovvy Route Debug] Backend routing response:`, response);
+    logRovvyLiveDebug("[Rovvy Route Debug] Backend routing response:", response);
 
     if (response.status === "failed" || !response.geometry || !response.geometry.coordinates) {
       return {
@@ -103,14 +112,39 @@ export async function fetchLiveRoute(
         distanceMeters: response.distanceMeters || 0,
         durationSeconds: response.durationSeconds || 0,
         maneuvers,
-        active
+        active,
+        lastMileMode: response.lastMileMode ?? null,
+        lastMileDistanceMeters: response.lastMileDistanceMeters ?? null,
+        lastMileDurationSeconds: response.lastMileDurationSeconds ?? null,
+        lastMileNotice: response.lastMileNotice ?? null,
       }
     };
   } catch (err) {
-    console.error("[Rovvy Route] Failed to fetch route from backend", err);
+    if (err instanceof ApiFetchError) {
+      const msg = err.message.toLowerCase();
+      if (msg.includes("not authenticated")) {
+        logRovvyLiveWarn("[Rovvy Route] Route preview requires sign-in on this server build");
+        return {
+          route: null,
+          error: "Sign in to preview directions on this device.",
+        };
+      }
+      if (
+        msg.includes("network error") ||
+        msg.includes("could not reach") ||
+        msg.includes("timed out")
+      ) {
+        return {
+          route: null,
+          error:
+            "Cannot reach the directions server. Start the backend with `python run.py` (port 8000), then refresh.",
+        };
+      }
+    }
+    logRovvyLiveError("[Rovvy Route] Failed to fetch route from backend", err);
     return {
       route: null,
-      error: "Directions service unavailable."
+      error: "Directions service unavailable.",
     };
   }
 }

@@ -243,7 +243,7 @@ Cursor is the Engineering Team, not the Research Team.
 Name: Rovvy (formerly Group Travel OS)
 Type: Group travel coordination platform
 Tagline: Roam together
-Branch: Production-main (always push here, NEVER to main)
+Branch: Production-main (daily dev + backend deploy; sync to main for frontend)
 Project root: D:\group travel os
 
 ## Stack
@@ -267,7 +267,13 @@ Maps: MapLibre GL JS + OpenStreetMap tiles (NOT Google Maps)
 - NEVER use Pydantic v1 style
 - NEVER put logic in route handlers
 - NEVER hardcode API keys
-- NEVER push to main (only Production-main)
+- NEVER push directly to main during normal dev (use Production-main)
+- NEVER force push
+- Frontend (rovvy.app / Vercel) deploys from **main** only
+- Backend (Cloud Run) deploys from **Production-main** on push (production-ci.yml)
+- Daily auto-sync: Production-main → main at 2 AM UTC (daily-sync-main.yml)
+- Manual frontend deploy when YOU choose: run `.\scripts\sync-to-main.ps1` from repo root
+- Or GitHub Actions → "Daily Sync to Main" → Run workflow
 - NEVER store vote counts as columns
 - NEVER write to Firebase for permanent data
 - NEVER invent routes, services, or models — check existing list first
@@ -323,11 +329,10 @@ raise AppException.unauthorized("message")
 
 ## Git Rules
 - Always: git push origin Production-main
+- When you want the live site updated: `.\scripts\sync-to-main.ps1` (you control timing)
 - Commit after each verified working step
 - Small commits, one feature at a time
 - Never force push
-
-## Environment Configuration Rule
 NEVER modify, check, or suggest changes to:
 - frontend/.env.local
 - frontend/.env.production
@@ -400,6 +405,10 @@ After every feature change, update this section in .cursorrules:
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2025-06 |
 | Browse-first auth (Phase 1 — explorer default, no login wall) | Modified | 2026-07 |
+| Live map right controls (Rovvy Map Dock: zoom rocker / locate / tools) | Modified | 2026-07 |
+| Live search instant suggestions + faster autocomplete | Modified | 2026-07 |
+| Live category search (waterfalls etc.) + map POI pins | Modified | 2026-07 |
+| Live search taxonomy DB (data/live_search_taxonomy.json) + Google Maps paste | Complete | 2026-07 |
 | Live Place Media Resolver (lazy placeKey lookup) | Complete | 2026-06 |
 | Buses page | Pending | — |
 
@@ -422,3 +431,4 @@ After every pytest run, update this section in .cursorrules:
 | tests/test_explore.py | — | — |
 | tests/test_place_media.py | 8 | 2026-06 |
 | tests/test_geocoding.py | 7 | 2026-06 |
+| tests/test_live_search_taxonomy.py | 9 | 2026-07 |

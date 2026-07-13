@@ -159,7 +159,8 @@ def _add_middleware(app: FastAPI) -> None:
     """Register all middleware. Order matters — last added runs first."""
     # Browsers may send Origin as http://[::1]:3000 while dev only listed localhost /
     # 127.0.0.1, which makes fetch() fail with a generic network error. In development,
-    # allow any localhost / loopback origin and port.
+    # allow localhost / loopback and common LAN dev origins (Next.js also advertises
+    # http://10.x.x.x:3000 on the network).
     cors_kw: dict = {
         "allow_credentials": True,
         "allow_methods": ["*"],
@@ -169,7 +170,8 @@ def _add_middleware(app: FastAPI) -> None:
     if settings.DEBUG or env in ("development", "dev", "local"):
         cors_kw["allow_origin_regex"] = (
             r"https?://"
-            r"(localhost|127\.0\.0\.1|\[::1\]|\[::ffff:127\.0\.0\.1\])"
+            r"(localhost|127\.0\.0\.1|\[::1\]|\[::ffff:127\.0\.0\.1\]|"
+            r"10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})"
             r"(:\d+)?"
         )
     else:

@@ -1,5 +1,5 @@
 import type { LiveStage } from "./live-types";
-import { FAR_DISTANCE_MILES, LOCAL_DISTANCE_MILES } from "./live-types";
+import { LOCAL_DISTANCE_MILES } from "./live-types";
 
 export type LocationClassification =
   | "local_place"
@@ -321,7 +321,6 @@ export function classifyLocationContext(built: BuiltSlice): LocationClassificati
   }
   const miles = built.distanceMiles;
   if (miles == null) return "incomplete_place_data";
-  if (miles > FAR_DISTANCE_MILES) return "very_far_destination";
   if (miles > LOCAL_DISTANCE_MILES) return "far_destination";
   if (built.missingAddress) return "incomplete_place_data";
   return "local_place";
@@ -329,17 +328,13 @@ export function classifyLocationContext(built: BuiltSlice): LocationClassificati
 
 function isFutureTripCandidate(
   classification: LocationClassification,
-  built: BuiltSlice,
+  _built: BuiltSlice,
 ): boolean {
-  if (classification === "country_mismatch" || classification === "very_far_destination") {
-    return true;
-  }
-  return built.distanceMiles != null && built.distanceMiles > FAR_DISTANCE_MILES;
+  return classification === "country_mismatch";
 }
 
 function isLiveSafe(classification: LocationClassification, built: BuiltSlice): boolean {
   if (built.countryMismatch) return false;
-  if (built.distanceMiles != null && built.distanceMiles > FAR_DISTANCE_MILES) return false;
   if (classification === "country_mismatch") return false;
   return true;
 }
@@ -379,4 +374,4 @@ export function buildRoviCacheKey(compact: RoviCompactContext): string {
   return `${compact.place_name}|${compact.place_area}|${compact.user_area}|${compact.classification}|${miles}|${compact.live_safe}`;
 }
 
-export { LOCAL_DISTANCE_MILES, FAR_DISTANCE_MILES };
+export { LOCAL_DISTANCE_MILES };

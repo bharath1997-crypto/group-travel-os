@@ -1,5 +1,6 @@
 import { haversineM } from "@/lib/geo";
 import { apiFetch } from "@/lib/api";
+import { logRovvyLiveDebug } from "./live-gps";
 
 const GEO_CACHE_TTL_MS = 8 * 60 * 1000;
 const GEO_CACHE_MAX = 200;
@@ -93,7 +94,9 @@ export type AutocompleteResult = {
 
 const SEARCH_RADIUS_KM = 10;
 const SEARCH_LIMIT = 8;
-export const SEARCH_DEBOUNCE_MS = 300;
+export const SEARCH_DEBOUNCE_MS = 150;
+
+const autocompleteCache = new Map<string, CacheEntry<AutocompleteResult[]>>();
 
 function normalizeSearchPlaceSource(raw: string | undefined): SearchPlaceSource {
   if (raw === "saved" || raw === "recent" || raw === "osm_local" || raw === "provider") {
@@ -130,8 +133,42 @@ function mapSearchPlaceToAutocomplete(result: SearchPlace): AutocompleteResult {
 }
 
 function logLiveSearchDebug(event: string, payload: Record<string, unknown>) {
-  if (process.env.NEXT_PUBLIC_ROVVY_MAP_DEBUG !== "true") return;
-  console.info(`[Rovvy Live Search] ${event}`, payload);
+  logRovvyLiveDebug(`[Rovvy Live Search] ${event}`, payload);
+}
+
+function autocompleteCacheKey(query: string, bias?: SearchBias | null): string {
+  const q = query.trim().toLowerCase();
+  if (!bias) return q;
+  return `${q}@${bias.lat.toFixed(3)},${bias.lng.toFixed(3)}`;
+}
+
+function geocodingResultToAutocomplete(
+  result: LiveGeocodingSearchResult,
+  bias?: SearchBias | null,
+): AutocompleteResult {
+  const lat = parseFloat(result.lat);
+  const lng = parseFloat(result.lon);
+  const name = result.name || result.display_name.split(",")[0]?.trim() || result.display_name;
+  const distM = bias ? haversineM(bias.lat, bias.lng, lat, lng) : null;
+  const osmType = result.osm_type ?? "node";
+  const osmId = result.osm_id ?? result.place_id;
+  const placeKey = result.osm_id ? `osm:${osmType}:${osmId}` : `geo:${result.place_id}`;
+
+  return {
+    id: String(result.place_id),
+    placeKey,
+    name,
+    category: result.type?.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "Place",
+    address: result.display_name,
+    lat,
+    lng,
+    distanceMeters: distM,
+    distanceLabel: formatDistanceLabel(distM),
+    source: "provider",
+    matchType: "text",
+    score: 0,
+    tags: {},
+  };
 }
 
 export async function liveAutocompleteSearch(
@@ -141,6 +178,10 @@ export async function liveAutocompleteSearch(
 ): Promise<AutocompleteResult[]> {
   const q = query.trim();
   if (q.length < 2) return [];
+
+  const cacheKey = autocompleteCacheKey(q, bias);
+  const cached = readCache(autocompleteCache, cacheKey);
+  if (cached) return cached;
 
   const params = new URLSearchParams({
     q,
@@ -163,17 +204,40 @@ export async function liveAutocompleteSearch(
       `/search/places?${params.toString()}`,
       abortSignal ? { signal: abortSignal } : undefined,
     );
-    const results = (data?.results || []).map((row) =>
+    let results = (data?.results || []).map((row) =>
       mapSearchPlaceToAutocomplete({
         ...row,
         source: normalizeSearchPlaceSource(row.source),
       }),
     );
+
+    if (results.length === 0) {
+      const geoRows = await liveGeocodingSearch(q, bias);
+      results = geoRows.slice(0, SEARCH_LIMIT).map((row) => geocodingResultToAutocomplete(row, bias));
+      logLiveSearchDebug("global_fallback", { query: q, count: results.length });
+    }
+
+    writeCache(autocompleteCache, cacheKey, results);
     logLiveSearchDebug("response", { query: q, count: results.length });
     return results;
   } catch (err: any) {
     if (err.name === "AbortError") throw err;
     logLiveSearchDebug("error", { query: q, message: err?.message || "unknown" });
+
+    try {
+      const geoRows = await liveGeocodingSearch(q, bias);
+      const fallback = geoRows
+        .slice(0, SEARCH_LIMIT)
+        .map((row) => geocodingResultToAutocomplete(row, bias));
+      if (fallback.length > 0) {
+        writeCache(autocompleteCache, cacheKey, fallback);
+        logLiveSearchDebug("error_fallback", { query: q, count: fallback.length });
+        return fallback;
+      }
+    } catch {
+      /* keep original error */
+    }
+
     throw err;
   }
 }
@@ -431,10 +495,23 @@ export function normalizePlaceCategory(item: any): string | null {
   if (p.highway === "bus_stop") return "Bus stop";
   if (p.public_transport === "platform") return "Transit stop";
 
-  // 7. class/type/category
-  const c = p.class || p.type || p.category;
+  // 6b. natural / water features
+  if (p.waterway) {
+    return String(p.waterway)
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char: string) => char.toUpperCase());
+  }
+  if (p.natural) {
+    return String(p.natural)
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char: string) => char.toUpperCase());
+  }
+
+  // 7. class/category (never OSM geometry types node/way/relation)
+  const c = p.class || p.category;
   if (c) {
     const val = String(c).toLowerCase().replace(/_/g, " ");
+    if (val === "node" || val === "way" || val === "relation") return null;
     if (val === "fuel" || val === "gas station") return "Gas station";
     if (val === "restaurant") return "Restaurant";
     if (val === "fast food") return "Fast food";

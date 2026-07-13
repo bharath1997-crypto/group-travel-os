@@ -22,7 +22,7 @@ export type GpsState = {
 };
 
 export const GPS_ACCEPTABLE_ACCURACY_M = 150;
-/** Below this accuracy, show blue dot only. Above it, show uncertainty circle instead of dot. */
+/** Below this accuracy, show blue dot only. Above it, show uncertainty circle as well (dot always visible). */
 export const GPS_ACCURACY_CIRCLE_MIN_M = 20;
 /** Cap map circle size so desktop Wi-Fi GPS does not cover whole neighborhoods. */
 export const GPS_ACCURACY_CIRCLE_MAX_DISPLAY_M = 120;
@@ -83,4 +83,34 @@ export function logRovvyGps(event: string, data?: Record<string, unknown>): void
 export function logRovvyMapClickResolver(message: string): void {
   if (process.env.NODE_ENV !== "development") return;
   console.log("[Rovvy Map Click Resolver]", message);
+}
+
+/** Dev-only Live diagnostics — never enabled in production builds. */
+export function isRovvyLiveDebugEnabled(): boolean {
+  return process.env.NODE_ENV === "development";
+}
+
+function writeLiveDebug(
+  level: "log" | "warn" | "error",
+  message: string,
+  data?: unknown,
+): void {
+  if (!isRovvyLiveDebugEnabled()) return;
+  if (data !== undefined) {
+    console[level](message, data);
+  } else {
+    console[level](message);
+  }
+}
+
+export function logRovvyLiveDebug(message: string, data?: unknown): void {
+  writeLiveDebug("log", message, data);
+}
+
+export function logRovvyLiveWarn(message: string, data?: unknown): void {
+  writeLiveDebug("warn", message, data);
+}
+
+export function logRovvyLiveError(message: string, data?: unknown): void {
+  writeLiveDebug("error", message, data);
 }

@@ -11,6 +11,12 @@ from typing import Any
 
 import httpx
 
+from app.services.live_search_taxonomy_service import (
+    category_osm_queries,
+    get_category_by_key,
+    resolve_category_from_query,
+)
+
 logger = logging.getLogger(__name__)
 
 OVERPASS_MIRRORS = [
@@ -145,6 +151,8 @@ def normalize_tags(tags: dict[str, Any]) -> str:
         return "Bus stop"
     elif public_transport == "platform":
         return "Transit stop"
+    elif tags.get("waterway"):
+        return str(tags["waterway"]).replace("_", " ").title()
     elif "natural" in tags:
         return tags["natural"].replace("_", " ").title()
 
@@ -195,8 +203,8 @@ def normalize_poi_result(raw: dict[str, Any], origin_lat: float, origin_lng: flo
     # Category normalization
     category_str = normalize_tags(tags)
     if category_str == "Place":
-        c = raw.get("class") or raw.get("type") or raw.get("category")
-        if c:
+        c = raw.get("class") or raw.get("category")
+        if c and str(c).lower() not in ("node", "way", "relation"):
             category_str = str(c).replace("_", " ").title()
 
     # Address parsing from OSM tags
@@ -227,6 +235,11 @@ def normalize_poi_result(raw: dict[str, Any], origin_lat: float, origin_lng: flo
             addr_parts.append(city_state)
     elif postcode:
         addr_parts.append(postcode)
+
+    if not addr_parts:
+        is_in = tags.get("is_in") or tags.get("addr:place") or tags.get("addr:suburb")
+        if is_in:
+            addr_parts.append(str(is_in))
 
     address = ", ".join(addr_parts) if addr_parts else f"Coordinates: {round(lat, 4)}, {round(lng, 4)}"
 
@@ -304,6 +317,12 @@ CATEGORY_TAG_QUERIES: dict[str, list[str]] = {
         'node["amenity"="parking"](around:{radius},{lat},{lng});',
         'way["amenity"="parking"](around:{radius},{lat},{lng});',
     ],
+    "waterfalls": [
+        'node["natural"="waterfall"](around:{radius},{lat},{lng});',
+        'way["natural"="waterfall"](around:{radius},{lat},{lng});',
+        'node["waterway"="waterfall"](around:{radius},{lat},{lng});',
+        'way["waterway"="waterfall"](around:{radius},{lat},{lng});',
+    ],
     "hotel": [
         'node["tourism"="hotel"](around:{radius},{lat},{lng});',
         'way["tourism"="hotel"](around:{radius},{lat},{lng});',
@@ -331,6 +350,9 @@ CATEGORY_TAG_QUERIES: dict[str, list[str]] = {
         'way["tourism"~"attraction|museum|hotel|motel|viewpoint|artwork|gallery"](around:{radius},{lat},{lng});',
     ],
 }
+
+# Merge taxonomy OSM queries (data/live_search_taxonomy.json) — single source of truth.
+CATEGORY_TAG_QUERIES.update(category_osm_queries())
 
 
 # ---------------------------------------------------------------------------
@@ -500,10 +522,14 @@ class PlacesNearbyService:
         """Search nearby POIs using Overpass interpreter with cache."""
         clean_cat = category.strip().lower()
 
-        # Simple category fallback matching
-        matched_key = None
-        if clean_cat in CATEGORY_TAG_QUERIES:
+        matched_key: str | None = None
+        taxonomy_cat = get_category_by_key(clean_cat) or resolve_category_from_query(clean_cat)
+        if taxonomy_cat:
+            matched_key = str(taxonomy_cat.get("key") or "")
+        elif clean_cat in CATEGORY_TAG_QUERIES:
             matched_key = clean_cat
+        elif "waterfall" in clean_cat or clean_cat.endswith(" falls"):
+            matched_key = "waterfalls"
         else:
             for k in CATEGORY_TAG_QUERIES.keys():
                 if k in clean_cat or clean_cat in k:
@@ -511,8 +537,8 @@ class PlacesNearbyService:
                     break
 
         if not matched_key:
-            # Fallback if no category matches
-            matched_key = "gas"
+            logger.info("Unknown nearby category %r — no Overpass query", category)
+            return []
 
         rounded_lat = round(lat, 3)
         rounded_lng = round(lng, 3)

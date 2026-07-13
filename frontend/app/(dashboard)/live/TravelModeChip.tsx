@@ -22,7 +22,7 @@ export default function TravelModeChip({
 }: TravelModeChipProps) {
   // Travel mode icon selection
   const renderModeIcon = () => {
-    const sizeClass = "w-4 h-4 text-stone-600";
+    const sizeClass = status === "live_active" ? "w-4 h-4 text-emerald-600" : "w-4 h-4 text-stone-600";
     switch (travelMode) {
       case "Bike":
         return <Bike className={sizeClass} />;
@@ -38,7 +38,9 @@ export default function TravelModeChip({
 
   // Workflow icon selection
   const renderWorkflowIcon = () => {
-    const sizeClass = "w-3.5 h-3.5 text-stone-500 hover:text-stone-700 transition-colors";
+    const sizeClass = status === "live_active"
+      ? "w-3.5 h-3.5 text-emerald-600 hover:text-emerald-800 transition-colors"
+      : "w-3.5 h-3.5 text-stone-500 hover:text-stone-700 transition-colors";
     switch (workflowType) {
       case "Group Travel":
         return <Users className={sizeClass} />;
@@ -50,22 +52,22 @@ export default function TravelModeChip({
     }
   };
 
-  // Status dot color mapping
+  // Status dot color mapping: Red for idle/stopped, Green for active/started
   const dotColorClass =
     status === "live_active"
-      ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
-      : status === "route_ready"
-        ? "bg-[#007F73] shadow-[0_0_8px_rgba(0,127,115,0.6)]"
-        : "bg-stone-400";
+      ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse"
+      : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]";
 
   return (
     <div className="relative shrink-0 select-none">
       {/* Container: split pill shape (capsule style circular control) */}
       <div
-        className={`flex h-8 items-center rounded-full border bg-white px-2 py-0.5 shadow-sm transition-all duration-200 ${
-          isOpen
-            ? "border-[#007F73] bg-[#E6F7F4]/30 ring-1 ring-[#007F73]/20"
-            : "border-stone-200 hover:border-[#007F73]/40 hover:bg-stone-50"
+        className={`flex h-8 items-center rounded-full border px-2 py-0.5 shadow-sm transition-all duration-200 ${
+          status === "live_active"
+            ? "border-emerald-500/30 bg-emerald-50/50"
+            : isOpen
+              ? "border-[#007F73] bg-[#E6F7F4]/30 ring-1 ring-[#007F73]/20"
+              : "border-stone-200 hover:border-[#007F73]/40 hover:bg-stone-50"
         }`}
       >
         {/* Left half: Mode Icon */}
@@ -96,3 +98,4 @@ export default function TravelModeChip({
     </div>
   );
 }
+

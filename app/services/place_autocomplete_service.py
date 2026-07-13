@@ -7,28 +7,15 @@ from sqlalchemy.orm import Session
 
 from app.models.place_registry import PlaceRegistry
 from app.services.geocoding_service import GeocodingService
+from app.services.live_search_taxonomy_service import (
+    category_keyword_map,
+    resolve_category_from_query,
+)
 from app.services.places_nearby_service import PlacesNearbyService, calculate_distance_miles
 
 logger = logging.getLogger(__name__)
 
-CATEGORY_KEYWORD_MAP = {
-    "gas": "gas",
-    "gas station": "gas",
-    "coffee": "coffee",
-    "cafe": "coffee",
-    "food": "food",
-    "restaurant": "food",
-    "restroom": "restroom",
-    "toilet": "restroom",
-    "hospital": "hospital",
-    "parking": "parking",
-    "atm": "atm",
-    "park": "parks",
-    "parks": "parks",
-    "hotel": "hotel",
-    "hotels": "hotel",
-    "motel": "hotel",
-}
+CATEGORY_KEYWORD_MAP = category_keyword_map()
 
 def _normalize_string(s: str) -> str:
     if not s:
@@ -138,9 +125,14 @@ class PlaceAutocompleteService:
         if not n_query:
             return []
 
-        # 1. Check if it's a category query
-        if n_query in CATEGORY_KEYWORD_MAP and lat is not None and lng is not None:
-            category_key = CATEGORY_KEYWORD_MAP[n_query]
+        # 1. Check if it's a category query (taxonomy synonyms: river, canal, port, parks, etc.)
+        taxonomy_cat = resolve_category_from_query(q)
+        category_key = (
+            str(taxonomy_cat["key"])
+            if taxonomy_cat
+            else CATEGORY_KEYWORD_MAP.get(n_query)
+        )
+        if category_key and lat is not None and lng is not None:
             nearby_results = await PlacesNearbyService.search_nearby_places(
                 category=category_key,
                 lat=lat,
@@ -172,39 +164,13 @@ class PlaceAutocompleteService:
 
         results_map: dict[str, dict[str, Any]] = {}
 
-        # 2. Nearby OSM text search when coordinates are available
-        if lat is not None and lng is not None:
-            osm_text_results = await PlacesNearbyService.search_places_by_text(
-                query=q,
-                lat=lat,
-                lng=lng,
-                radius_meters=min(radius_meters, 15000),
-                limit=max(limit, 12),
-            )
-            for item in osm_text_results:
-                dist_m = item.get("distanceMiles", 0.0) * 1609.34
-                score = _calculate_score(item["name"], q, dist_m)
-                tags = item.get("tags") or {}
-                category = item.get("category") or "Place"
-                if score <= 0 and n_query not in category.lower():
-                    continue
-                if score <= 0:
-                    score = 40.0
-                results_map[item["placeKey"]] = {
-                    "id": item["id"],
-                    "placeKey": item["placeKey"],
-                    "name": item["name"],
-                    "category": category,
-                    "address": item["address"],
-                    "lat": item["lat"],
-                    "lng": item["lng"],
-                    "distanceMeters": dist_m,
-                    "distanceLabel": _format_distance_label(dist_m),
-                    "source": "osm",
-                    "matchType": "text" if score >= 50 else "category",
-                    "score": score,
-                    "tags": tags,
-                }
+        # 2. Fast path: Nominatim geocoding (Overpass text scan is too slow for typeahead)
+        nominatim_results: list[dict[str, Any]] = []
+
+        try:
+            nominatim_results = await GeocodingService.search_address(q, lat, lng)
+        except Exception as exc:
+            logger.warning("Nominatim search failed: %s", exc)
 
         # 3. Search local PlaceRegistry
         stmt = select(PlaceRegistry).where(PlaceRegistry.name.ilike(f"%{q}%")).limit(20)
@@ -238,57 +204,54 @@ class PlaceAutocompleteService:
                     "tags": {}
                 }
 
-        # 4. Fallback to Nominatim if we need more results
-        if len(results_map) < limit:
-            nominatim_results = await GeocodingService.search_address(q, lat, lng)
-            for nom in nominatim_results:
-                nom_lat = float(nom.get("lat", 0.0))
-                nom_lng = float(nom.get("lon", 0.0))
-                nom_name = nom.get("name") or nom.get("display_name", "").split(",")[0]
-                nom_address = nom.get("display_name", "")
-                osm_type = nom.get("osm_type", "node")
-                osm_id = nom.get("osm_id", "")
-                place_key = f"osm:{osm_type}:{osm_id}"
-                
-                if place_key in results_map:
-                    continue
+        # 4. Merge Nominatim results
+        for nom in nominatim_results:
+            nom_lat = float(nom.get("lat", 0.0))
+            nom_lng = float(nom.get("lon", 0.0))
+            nom_name = nom.get("name") or nom.get("display_name", "").split(",")[0]
+            nom_address = nom.get("display_name", "")
+            osm_type = nom.get("osm_type", "node")
+            osm_id = nom.get("osm_id", "")
+            place_key = f"osm:{osm_type}:{osm_id}"
 
-                dist_m = None
-                dist_label = None
-                if lat is not None and lng is not None:
-                    dist_miles = calculate_distance_miles(lat, lng, nom_lat, nom_lng)
-                    dist_m = dist_miles * 1609.34
-                    dist_label = f"{round(dist_miles, 1)} mi" if dist_miles > 0.1 else f"{round(dist_m)} m"
-                
-                score = _calculate_score(nom_name, q, dist_m)
-                # boost slightly if it matches city/state
-                nom_type = nom.get("type", "")
-                nom_class = nom.get("class", "")
-                
-                category = "Address"
-                if nom_class != "place" and nom_class != "highway" and nom_class != "building":
-                    category = nom_type.replace("_", " ").title() if nom_type else "Place"
-                elif nom_class == "building":
-                    category = "Building"
-                elif nom_class == "highway":
-                    category = "Street"
-                
-                if score > 0:
-                    results_map[place_key] = {
-                        "id": place_key,
-                        "placeKey": place_key,
-                        "name": nom_name,
-                        "category": category,
-                        "address": nom_address,
-                        "lat": nom_lat,
-                        "lng": nom_lng,
-                        "distanceMeters": dist_m,
-                        "distanceLabel": dist_label,
-                        "source": "nominatim",
-                        "matchType": "text",
-                        "score": score,
-                        "tags": {}
-                    }
+            if place_key in results_map:
+                continue
+
+            dist_m = None
+            dist_label = None
+            if lat is not None and lng is not None:
+                dist_miles = calculate_distance_miles(lat, lng, nom_lat, nom_lng)
+                dist_m = dist_miles * 1609.34
+                dist_label = f"{round(dist_miles, 1)} mi" if dist_miles > 0.1 else f"{round(dist_m)} m"
+
+            score = _calculate_score(nom_name, q, dist_m)
+            nom_type = nom.get("type", "")
+            nom_class = nom.get("class", "")
+
+            category = "Address"
+            if nom_class != "place" and nom_class != "highway" and nom_class != "building":
+                category = nom_type.replace("_", " ").title() if nom_type else "Place"
+            elif nom_class == "building":
+                category = "Building"
+            elif nom_class == "highway":
+                category = "Street"
+
+            if score > 0:
+                results_map[place_key] = {
+                    "id": place_key,
+                    "placeKey": place_key,
+                    "name": nom_name,
+                    "category": category,
+                    "address": nom_address,
+                    "lat": nom_lat,
+                    "lng": nom_lng,
+                    "distanceMeters": dist_m,
+                    "distanceLabel": dist_label,
+                    "source": "nominatim",
+                    "matchType": "text",
+                    "score": score,
+                    "tags": {},
+                }
 
         # Convert to list and sort by score descending; named POIs before unnamed ties
         final_results = list(results_map.values())
