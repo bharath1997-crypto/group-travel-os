@@ -1,0 +1,289 @@
+{
+  "version": 1,
+  "description": "Rovvy Live search taxonomy — categories, synonyms, and OSM nearby queries. Single source of truth.",
+  "groups": [
+    { "id": "nature", "label": "Nature & outdoors" },
+    { "id": "water", "label": "Water" },
+    { "id": "transport", "label": "Transport & ports" },
+    { "id": "urban", "label": "Urban & daily" },
+    { "id": "stay", "label": "Stay & visit" }
+  ],
+  "categories": [
+    {
+      "key": "waterfalls",
+      "group": "nature",
+      "label": "Waterfalls nearby",
+      "mapLabel": "Waterfalls",
+      "icon": "💧",
+      "keywords": ["waterfall", "waterfalls", "falls", "cascade", "cascades"],
+      "osm_queries": [
+        "node[\"natural\"=\"waterfall\"](around:{radius},{lat},{lng});",
+        "way[\"natural\"=\"waterfall\"](around:{radius},{lat},{lng});",
+        "node[\"waterway\"=\"waterfall\"](around:{radius},{lat},{lng});",
+        "way[\"waterway\"=\"waterfall\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "mountains",
+      "group": "nature",
+      "label": "Mountains & peaks nearby",
+      "mapLabel": "Mountains",
+      "icon": "⛰️",
+      "keywords": ["mountain", "mountains", "peak", "peaks", "summit", "summits", "hill", "hills"],
+      "osm_queries": [
+        "node[\"natural\"=\"peak\"](around:{radius},{lat},{lng});",
+        "node[\"natural\"=\"volcano\"](around:{radius},{lat},{lng});",
+        "node[\"natural\"=\"ridge\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "forests",
+      "group": "nature",
+      "label": "Forests nearby",
+      "mapLabel": "Forests",
+      "icon": "🌲",
+      "keywords": ["forest", "forests", "woods", "woodland", "woodlands", "grove", "groves"],
+      "osm_queries": [
+        "node[\"natural\"=\"wood\"](around:{radius},{lat},{lng});",
+        "way[\"natural\"=\"wood\"](around:{radius},{lat},{lng});",
+        "way[\"landuse\"=\"forest\"](around:{radius},{lat},{lng});",
+        "relation[\"landuse\"=\"forest\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "rock_formations",
+      "group": "nature",
+      "label": "Rock formations nearby",
+      "mapLabel": "Rock formations",
+      "icon": "🪨",
+      "keywords": ["rock forest", "rock formation", "rock formations", "rocks", "cliff", "cliffs", "canyon", "canyons", "boulder", "boulders"],
+      "osm_queries": [
+        "node[\"natural\"=\"cliff\"](around:{radius},{lat},{lng});",
+        "node[\"natural\"=\"rock\"](around:{radius},{lat},{lng});",
+        "node[\"natural\"=\"stone\"](around:{radius},{lat},{lng});",
+        "way[\"natural\"=\"cliff\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "national_parks",
+      "group": "nature",
+      "label": "National parks nearby",
+      "mapLabel": "National parks",
+      "icon": "🏞️",
+      "keywords": ["national park", "national parks", "np", "state park", "state parks", "provincial park"],
+      "osm_queries": [
+        "relation[\"boundary\"=\"national_park\"](around:{radius},{lat},{lng});",
+        "way[\"boundary\"=\"national_park\"](around:{radius},{lat},{lng});",
+        "relation[\"boundary\"=\"protected_area\"][\"protect_class\"~\"^[1-4]$\"](around:{radius},{lat},{lng});",
+        "way[\"leisure\"=\"nature_reserve\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "parks",
+      "group": "nature",
+      "label": "Parks nearby",
+      "mapLabel": "Parks",
+      "icon": "🌳",
+      "keywords": ["park", "parks", "city park", "city parks", "community park", "public park", "playground", "playgrounds", "nature"],
+      "osm_queries": [
+        "node[\"leisure\"=\"park\"](around:{radius},{lat},{lng});",
+        "way[\"leisure\"=\"park\"](around:{radius},{lat},{lng});",
+        "relation[\"leisure\"=\"park\"](around:{radius},{lat},{lng});",
+        "node[\"tourism\"=\"attraction\"](around:{radius},{lat},{lng});",
+        "way[\"tourism\"=\"attraction\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "rivers",
+      "group": "water",
+      "label": "Rivers nearby",
+      "mapLabel": "Rivers",
+      "icon": "🌊",
+      "keywords": ["river", "rivers", "stream", "streams", "creek", "creeks", "brook", "brooks"],
+      "osm_queries": [
+        "way[\"waterway\"=\"river\"](around:{radius},{lat},{lng});",
+        "way[\"waterway\"=\"stream\"](around:{radius},{lat},{lng});",
+        "node[\"natural\"=\"water\"][\"water\"=\"river\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "canals",
+      "group": "water",
+      "label": "Canals nearby",
+      "mapLabel": "Canals",
+      "icon": "🚤",
+      "keywords": ["canal", "canals", "channel", "channels", "waterway"],
+      "osm_queries": [
+        "way[\"waterway\"=\"canal\"](around:{radius},{lat},{lng});",
+        "way[\"waterway\"=\"drain\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "lakes",
+      "group": "water",
+      "label": "Lakes nearby",
+      "mapLabel": "Lakes",
+      "icon": "🏞️",
+      "keywords": ["lake", "lakes", "pond", "ponds", "reservoir", "reservoirs", "lagoon"],
+      "osm_queries": [
+        "node[\"natural\"=\"water\"](around:{radius},{lat},{lng});",
+        "way[\"natural\"=\"water\"](around:{radius},{lat},{lng});",
+        "relation[\"natural\"=\"water\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "beaches",
+      "group": "water",
+      "label": "Beaches nearby",
+      "mapLabel": "Beaches",
+      "icon": "🏖️",
+      "keywords": ["beach", "beaches", "shore", "coast", "coastal"],
+      "osm_queries": [
+        "node[\"natural\"=\"beach\"](around:{radius},{lat},{lng});",
+        "way[\"natural\"=\"beach\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "ports",
+      "group": "transport",
+      "label": "Ports & harbours nearby",
+      "mapLabel": "Ports",
+      "icon": "⚓",
+      "keywords": ["port", "ports", "harbour", "harbor", "harbours", "harbors", "marina", "marinas", "dock", "docks", "port location", "port locations", "seaport", "seaports"],
+      "osm_queries": [
+        "node[\"landuse\"=\"port\"](around:{radius},{lat},{lng});",
+        "way[\"landuse\"=\"port\"](around:{radius},{lat},{lng});",
+        "node[\"harbour\"=\"yes\"](around:{radius},{lat},{lng});",
+        "way[\"harbour\"=\"yes\"](around:{radius},{lat},{lng});",
+        "node[\"leisure\"=\"marina\"](around:{radius},{lat},{lng});",
+        "way[\"leisure\"=\"marina\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "viewpoints",
+      "group": "nature",
+      "label": "Viewpoints nearby",
+      "mapLabel": "Viewpoints",
+      "icon": "👁️",
+      "keywords": ["viewpoint", "viewpoints", "scenic", "lookout", "overlook", "vista"],
+      "osm_queries": [
+        "node[\"tourism\"=\"viewpoint\"](around:{radius},{lat},{lng});",
+        "way[\"tourism\"=\"viewpoint\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "museums",
+      "group": "stay",
+      "label": "Museums nearby",
+      "mapLabel": "Museums",
+      "icon": "🏛️",
+      "keywords": ["museum", "museums", "gallery", "galleries", "exhibit", "exhibits"],
+      "osm_queries": [
+        "node[\"tourism\"=\"museum\"](around:{radius},{lat},{lng});",
+        "way[\"tourism\"=\"museum\"](around:{radius},{lat},{lng});",
+        "node[\"tourism\"=\"gallery\"](around:{radius},{lat},{lng});",
+        "way[\"tourism\"=\"gallery\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "food",
+      "group": "urban",
+      "label": "Restaurants nearby",
+      "mapLabel": "Food",
+      "icon": "🍽️",
+      "keywords": ["food", "restaurant", "restaurants", "eat", "dining", "eatery"],
+      "osm_queries": [
+        "node[\"amenity\"=\"restaurant\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"restaurant\"](around:{radius},{lat},{lng});",
+        "node[\"amenity\"=\"fast_food\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"fast_food\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "coffee",
+      "group": "urban",
+      "label": "Coffee nearby",
+      "mapLabel": "Coffee",
+      "icon": "☕",
+      "keywords": ["coffee", "cafe", "cafes", "espresso"],
+      "osm_queries": [
+        "node[\"amenity\"=\"cafe\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"cafe\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "gas",
+      "group": "urban",
+      "label": "Gas stations nearby",
+      "mapLabel": "Gas",
+      "icon": "⛽",
+      "keywords": ["gas", "fuel", "petrol", "gas station", "gas stations"],
+      "osm_queries": [
+        "node[\"amenity\"=\"fuel\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"fuel\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "hotel",
+      "group": "stay",
+      "label": "Hotels nearby",
+      "mapLabel": "Hotels",
+      "icon": "🏨",
+      "keywords": ["hotel", "hotels", "motel", "motels", "stay", "lodging", "inn"],
+      "osm_queries": [
+        "node[\"tourism\"=\"hotel\"](around:{radius},{lat},{lng});",
+        "way[\"tourism\"=\"hotel\"](around:{radius},{lat},{lng});",
+        "node[\"tourism\"=\"motel\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "hospital",
+      "group": "urban",
+      "label": "Hospitals nearby",
+      "mapLabel": "Hospitals",
+      "icon": "🏥",
+      "keywords": ["hospital", "hospitals", "clinic", "clinics", "medical", "urgent care", "emergency room"],
+      "osm_queries": [
+        "node[\"amenity\"=\"hospital\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"hospital\"](around:{radius},{lat},{lng});",
+        "node[\"amenity\"=\"clinic\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "parking",
+      "group": "urban",
+      "label": "Parking nearby",
+      "mapLabel": "Parking",
+      "icon": "🅿️",
+      "keywords": ["parking", "garage", "parkade", "car park"],
+      "osm_queries": [
+        "node[\"amenity\"=\"parking\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"parking\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "restroom",
+      "group": "urban",
+      "label": "Restrooms nearby",
+      "mapLabel": "Restrooms",
+      "icon": "🚻",
+      "keywords": ["restroom", "restrooms", "toilet", "toilets", "bathroom", "washroom", "wc"],
+      "osm_queries": [
+        "node[\"amenity\"=\"toilets\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"toilets\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "atm",
+      "group": "urban",
+      "label": "ATMs nearby",
+      "mapLabel": "ATMs",
+      "icon": "🏧",
+      "keywords": ["atm", "atms", "bank", "banks", "cash machine"],
+      "osm_queries": [
+        "node[\"amenity\"=\"atm\"](around:{radius},{lat},{lng});",
+        "node[\"amenity\"=\"bank\"](around:{radius},{lat},{lng});"
+      ]
+    }
+  ]
+}
