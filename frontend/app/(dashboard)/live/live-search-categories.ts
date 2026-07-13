@@ -1,5 +1,5 @@
 /** Live search — destination / POI category intents (not place names). */
-import taxonomy from "../../../../data/live_search_taxonomy.json";
+import taxonomy from "@/data/live_search_taxonomy.json";
 
 export type LiveSearchCategory = {
   key: string;
