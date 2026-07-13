@@ -16,6 +16,7 @@ import RoviPlaceExplanationBlock from "./RoviPlaceExplanationBlock";
 import type { RoviPlaceExplanation } from "./live-rovi";
 import { LIVE_PANEL_MAX_WIDTH, LIVE_PANEL_RIGHT_INSET, LIVE_RESPONSIVE_PANEL_LAYOUT } from "./live-layout";
 import { normalizePlaceCategory } from "./live-geocoding";
+import { logRovvyLiveWarn } from "./live-gps";
 import {
   formatDistanceMiles,
   formatRouteDurationBracketed,
@@ -198,7 +199,7 @@ export default function PlacePreviewCard({
         const res = await apiFetch<any>(`/api/v1/places/wiki-summary?${query.toString()}`);
         setWikiSummary(res);
       } catch (err) {
-        console.warn("Wiki fetch failed", err);
+        logRovvyLiveWarn("Wiki fetch failed", err);
         setWikiSummary({ available: false });
       } finally {
         setWikiLoading(false);

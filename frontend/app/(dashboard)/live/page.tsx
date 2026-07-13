@@ -95,6 +95,7 @@ import {
   isFreshGpsStatus,
   logRovvyGps,
   logRovvyLiveDebug,
+  logRovvyLiveError,
   logRovvyMapClickResolver,
   type GpsStatus,
   type GpsState,
@@ -318,7 +319,7 @@ async function searchNearbyPlaces(
     }));
     return enrichNearbyResultsForTravel(mapped, { max: 12 });
   } catch (err) {
-    console.error("Failed to search nearby places", err);
+    logRovvyLiveError("Failed to search nearby places", err);
     throw err;
   }
 }
@@ -689,7 +690,7 @@ export default function LivePage() {
         }
       } catch (err) {
         if (requestId !== routePreviewRequestRef.current) return;
-        console.error("[Rovvy Route] loadRoutePreview catch error:", err);
+        logRovvyLiveError("[Rovvy Route] loadRoutePreview catch error:", err);
         setRoutePreviewStatus("failed");
         setRoutePreviewError("Directions service unavailable.");
         setActiveRoute(null);

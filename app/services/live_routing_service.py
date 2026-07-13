@@ -144,7 +144,7 @@ async def append_last_mile_walk(
                     )
                     return merged, total_distance, total_duration, next_maneuvers, extras
     except Exception as exc:
-        logger.warning("[Rovvy Route Preview Audit] Last-mile walk routing failed: %s", exc)
+        logger.debug("[Rovvy Route Preview Audit] Last-mile walk routing failed: %s", exc)
 
     notice = (
         "Driving ends at the nearest road. "
@@ -198,7 +198,7 @@ async def snap_to_nearest_road(
             if waypoints and waypoints[0].get("location"):
                 return waypoints[0]["location"]
     except Exception as exc:
-        logger.warning("[Rovvy Route Preview Audit] Road snap failed: %s", exc)
+        logger.debug("[Rovvy Route Preview Audit] Road snap failed: %s", exc)
     return [lng, lat]
 
 
@@ -293,7 +293,7 @@ class LiveRoutingService:
                                 )
                             else:
                                 last_mile = None
-                            logger.info(
+                            logger.debug(
                                 "[Rovvy Route Preview Audit] Success. Provider response status: %s, Geometry coordinate count: %d",
                                 data.get("code"),
                                 len(coords),
@@ -304,7 +304,7 @@ class LiveRoutingService:
 
                 # Snapping fallback for Drive mode
                 if mode == "Drive":
-                    logger.info(
+                    logger.debug(
                         "[Rovvy Route Preview Audit] Drive route failed. Attempting nearest-road snapping..."
                     )
                     snap_origin_url = (
@@ -325,7 +325,7 @@ class LiveRoutingService:
                             if waypoints:
                                 snap_orig_coords = waypoints[0].get("location")
                     except Exception as e:
-                        logger.warning(
+                        logger.debug(
                             "[Rovvy Route Preview Audit] Origin snapping failed: %s", e
                         )
 
@@ -337,7 +337,7 @@ class LiveRoutingService:
                             if waypoints:
                                 snap_dest_coords = waypoints[0].get("location")
                     except Exception as e:
-                        logger.warning(
+                        logger.debug(
                             "[Rovvy Route Preview Audit] Destination snapping failed: %s", e
                         )
 
@@ -379,7 +379,7 @@ class LiveRoutingService:
                                     dest_lat,
                                     dest_lng,
                                 )
-                                logger.info(
+                                logger.debug(
                                     "[Rovvy Route Preview Audit] Success after snapping. Provider status: %s, Coordinate count: %d",
                                     retry_data.get("code"),
                                     len(coords),
@@ -400,20 +400,20 @@ class LiveRoutingService:
                 else:
                     msg = "No route found for selected travel mode."
 
-                logger.info(
+                logger.debug(
                     "[Rovvy Route Preview Audit] Failed. Returning user message: %s", msg
                 )
                 return RoutePreviewResponse(status="failed", message=msg)
 
             except httpx.HTTPError as exc:
-                logger.error(
-                    "[Rovvy Route Preview Audit] HTTP request to OSRM failed: %s", exc
-                )
+                logger.error("[Rovvy Route Preview Audit] HTTP request to OSRM failed")
+                logger.debug("[Rovvy Route Preview Audit] OSRM HTTP error detail: %s", exc)
                 return RoutePreviewResponse(
                     status="failed", message="Directions service unavailable."
                 )
             except Exception as exc:
-                logger.error("[Rovvy Route Preview Audit] Unexpected error: %s", exc)
+                logger.error("[Rovvy Route Preview Audit] Unexpected routing error")
+                logger.debug("[Rovvy Route Preview Audit] Unexpected routing error detail: %s", exc)
                 return RoutePreviewResponse(
                     status="failed", message="Directions service unavailable."
                 )

@@ -1,5 +1,5 @@
 import { apiFetch, ApiFetchError } from "@/lib/api";
-import { logRovvyLiveDebug } from "./live-gps";
+import { logRovvyLiveDebug, logRovvyLiveError, logRovvyLiveWarn } from "./live-gps";
 import type { RouteLine, RouteManeuver } from "./live-types";
 
 export function isValidRouteCoordinate(lat: number, lng: number): boolean {
@@ -123,7 +123,7 @@ export async function fetchLiveRoute(
     if (err instanceof ApiFetchError) {
       const msg = err.message.toLowerCase();
       if (msg.includes("not authenticated")) {
-        console.warn("[Rovvy Route] Route preview requires sign-in on this server build");
+        logRovvyLiveWarn("[Rovvy Route] Route preview requires sign-in on this server build");
         return {
           route: null,
           error: "Sign in to preview directions on this device.",
@@ -141,7 +141,7 @@ export async function fetchLiveRoute(
         };
       }
     }
-    console.error("[Rovvy Route] Failed to fetch route from backend", err);
+    logRovvyLiveError("[Rovvy Route] Failed to fetch route from backend", err);
     return {
       route: null,
       error: "Directions service unavailable.",

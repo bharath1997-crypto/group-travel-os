@@ -85,19 +85,32 @@ export function logRovvyMapClickResolver(message: string): void {
   console.log("[Rovvy Map Click Resolver]", message);
 }
 
-/** Dev-only Live map/route debug — never logs GPS or routes in production. */
+/** Dev-only Live diagnostics — never enabled in production builds. */
 export function isRovvyLiveDebugEnabled(): boolean {
-  return (
-    process.env.NODE_ENV === "development" ||
-    process.env.NEXT_PUBLIC_ROVVY_MAP_DEBUG === "true"
-  );
+  return process.env.NODE_ENV === "development";
+}
+
+function writeLiveDebug(
+  level: "log" | "warn" | "error",
+  message: string,
+  data?: unknown,
+): void {
+  if (!isRovvyLiveDebugEnabled()) return;
+  if (data !== undefined) {
+    console[level](message, data);
+  } else {
+    console[level](message);
+  }
 }
 
 export function logRovvyLiveDebug(message: string, data?: unknown): void {
-  if (!isRovvyLiveDebugEnabled()) return;
-  if (data !== undefined) {
-    console.log(message, data);
-  } else {
-    console.log(message);
-  }
+  writeLiveDebug("log", message, data);
+}
+
+export function logRovvyLiveWarn(message: string, data?: unknown): void {
+  writeLiveDebug("warn", message, data);
+}
+
+export function logRovvyLiveError(message: string, data?: unknown): void {
+  writeLiveDebug("error", message, data);
 }

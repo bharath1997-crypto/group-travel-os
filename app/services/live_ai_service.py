@@ -218,11 +218,8 @@ class LiveAIService:
                     _build_user_payload(compact),
                 )
             except Exception as exc:  # noqa: BLE001
-                logger.warning(
-                    "live_ai place_explanation gemini failed: %s",
-                    exc,
-                    exc_info=False,
-                )
+                logger.warning("live_ai place_explanation gemini failed")
+                logger.debug("live_ai place_explanation gemini failed: %s", exc)
 
         if usage:
             logger.info(

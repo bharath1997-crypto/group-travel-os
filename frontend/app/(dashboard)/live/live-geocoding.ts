@@ -1,5 +1,6 @@
 import { haversineM } from "@/lib/geo";
 import { apiFetch } from "@/lib/api";
+import { logRovvyLiveDebug } from "./live-gps";
 
 const GEO_CACHE_TTL_MS = 8 * 60 * 1000;
 const GEO_CACHE_MAX = 200;
@@ -132,8 +133,7 @@ function mapSearchPlaceToAutocomplete(result: SearchPlace): AutocompleteResult {
 }
 
 function logLiveSearchDebug(event: string, payload: Record<string, unknown>) {
-  if (process.env.NEXT_PUBLIC_ROVVY_MAP_DEBUG !== "true") return;
-  console.info(`[Rovvy Live Search] ${event}`, payload);
+  logRovvyLiveDebug(`[Rovvy Live Search] ${event}`, payload);
 }
 
 function autocompleteCacheKey(query: string, bias?: SearchBias | null): string {

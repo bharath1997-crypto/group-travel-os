@@ -10,6 +10,7 @@ import {
   gpsStatusFromGeolocationError,
   logRovvyGps,
   logRovvyLiveDebug,
+  logRovvyLiveWarn,
   type GpsStatus,
   type GpsState,
 } from "./live-gps";
@@ -775,9 +776,7 @@ export default function LiveMapComponent({
     map.on("error", (event) => {
       const error = event?.error;
       if (isRoutineTileFetchError(error)) return;
-      if (process.env.NODE_ENV === "development") {
-        console.warn("[Rovvy MapLibre]", error || event);
-      }
+      logRovvyLiveWarn("[Rovvy MapLibre]", error || event);
     });
 
     let suppressClickUntil = 0;
@@ -1067,7 +1066,7 @@ export default function LiveMapComponent({
           try {
             navigator.geolocation.clearWatch(id);
           } catch (e) {
-            console.warn("[Rovvy GPS] error clearing watch id", id, e);
+            logRovvyLiveWarn("[Rovvy GPS] error clearing watch id", { id, error: e });
           }
         });
         watchIdsRef.current = [];
@@ -1353,48 +1352,48 @@ export default function LiveMapComponent({
       try {
         stopLiveGps();
       } catch (err) {
-        console.warn("[Rovvy GPS] error in stopLiveGps unmount", err);
+        logRovvyLiveWarn("[Rovvy GPS] error in stopLiveGps unmount", err);
       }
       try {
         userMarkerRef.current?.remove();
       } catch (err) {
-        console.warn("[Rovvy GPS] error userMarkerRef remove", err);
+        logRovvyLiveWarn("[Rovvy GPS] error userMarkerRef remove", err);
       }
       userMarkerRef.current = null;
       try {
         placeMarkerRef.current?.remove();
       } catch (err) {
-        console.warn("[Rovvy GPS] error placeMarkerRef remove", err);
+        logRovvyLiveWarn("[Rovvy GPS] error placeMarkerRef remove", err);
       }
       placeMarkerRef.current = null;
       try {
         originMarkerRef.current?.remove();
       } catch (err) {
-        console.warn("[Rovvy GPS] error originMarkerRef remove", err);
+        logRovvyLiveWarn("[Rovvy GPS] error originMarkerRef remove", err);
       }
       originMarkerRef.current = null;
       try {
         startMarkerRef.current?.remove();
       } catch (err) {
-        console.warn("[Rovvy GPS] error startMarkerRef remove", err);
+        logRovvyLiveWarn("[Rovvy GPS] error startMarkerRef remove", err);
       }
       startMarkerRef.current = null;
       try {
         clickedPinMarkerRef.current?.remove();
       } catch (err) {
-        console.warn("[Rovvy GPS] error clickedPinMarkerRef remove", err);
+        logRovvyLiveWarn("[Rovvy GPS] error clickedPinMarkerRef remove", err);
       }
       clickedPinMarkerRef.current = null;
       try {
         nearbyMarkersRef.current.forEach((m) => m.remove());
       } catch (err) {
-        console.warn("[Rovvy GPS] error nearbyMarkers remove", err);
+        logRovvyLiveWarn("[Rovvy GPS] error nearbyMarkers remove", err);
       }
       nearbyMarkersRef.current = [];
       try {
         map.remove();
       } catch (err) {
-        console.warn("[Rovvy GPS] error map remove", err);
+        logRovvyLiveWarn("[Rovvy GPS] error map remove", err);
       }
       mapRef.current = null;
     };
@@ -1748,7 +1747,7 @@ function syncAccuracyLayerNow(
       if (map.getLayer(strokeLayerId)) map.removeLayer(strokeLayerId);
       if (map.getSource(sourceId)) map.removeSource(sourceId);
     } catch (err) {
-      console.warn("[Rovvy Map] Error cleaning up accuracy layer", err);
+      logRovvyLiveWarn("[Rovvy Map] Error cleaning up accuracy layer", err);
     }
     return;
   }
@@ -1771,7 +1770,7 @@ function syncAccuracyLayerNow(
       addAccuracyLayers(map, sourceId, fillLayerId, strokeLayerId);
     }
   } catch (err) {
-    console.warn("[Rovvy Map] Error syncing accuracy layer", err);
+    logRovvyLiveWarn("[Rovvy Map] Error syncing accuracy layer", err);
   }
 }
 
