@@ -39,7 +39,13 @@ export type PlacePreviewData = {
   osmType?: string | null;
   osmId?: number | null;
   city?: string | null;
+  state?: string | null;
   country?: string | null;
+  postcode?: string | null;
+  continent?: string | null;
+  terrainHint?: string | null;
+  mapPresenceNote?: string | null;
+  coordinatesLabel?: string | null;
   source?: string;
   tags?: any;
 };
@@ -76,6 +82,8 @@ type Props = {
   routeDurationSeconds?: number | null;
   routeDistanceMeters?: number | null;
   routeLastMileNotice?: string | null;
+  routeBorderNotice?: string | null;
+  routeLastMileMode?: "walk" | null;
   travelMode?: string;
   nearbyPlacesAtClick?: PlacePreviewData[] | null;
   onSelectNearbyPlaceAtClick?: (place: PlacePreviewData) => void;
@@ -151,6 +159,8 @@ export default function PlacePreviewCard({
   routeDurationSeconds = null,
   routeDistanceMeters = null,
   routeLastMileNotice = null,
+  routeBorderNotice = null,
+  routeLastMileMode = null,
   travelMode = "Drive",
   nearbyPlacesAtClick = null,
   onSelectNearbyPlaceAtClick,
@@ -161,26 +171,38 @@ export default function PlacePreviewCard({
   stackAboveRouteSummary = true,
   previewContext = null,
 }: Props) {
-  const [wikiSummary, setWikiSummary] = useState<{ available: boolean; summary?: string; url?: string; title?: string; attribution?: string } | null>(null);
+  const [wikiSummary, setWikiSummary] = useState<{
+    available: boolean;
+    summary?: string;
+    url?: string;
+    title?: string;
+    attribution?: string;
+    matchedOn?: string;
+  } | null>(null);
   const [wikiLoading, setWikiLoading] = useState(false);
 
   useEffect(() => {
-    // Reset wiki summary when place changes
     setWikiSummary(null);
-
-    const isEligibleCategory = [
-      "Landmark", "Attraction", "Museum", "Park", "Historic site",
-      "Airport", "University", "Church / Place of worship", "Stadium", "Monument"
-    ].includes(place.categoryLabel);
 
     const wikidataId = place.tags?.wikidata;
     const wikipediaTitle = place.tags?.wikipedia;
+    const isMapPick = place.source === "map_pick" || place.source === "map_click";
 
-    if (!isEligibleCategory && !wikidataId && !wikipediaTitle) {
+    if (
+      !isMapPick &&
+      !wikidataId &&
+      !wikipediaTitle &&
+      !place.city &&
+      ![
+        "Landmark", "Attraction", "Museum", "Park", "Historic site",
+        "Airport", "University", "Church / Place of worship", "Stadium", "Monument",
+        "Village", "Town", "City", "Hamlet", "Location",
+      ].includes(place.categoryLabel)
+    ) {
       return;
     }
-    
-    if (place.name === "Dropped pin" || place.categoryLabel === "Address" || !place.name) {
+
+    if (place.name === "Dropped pin" || !place.name) {
       return;
     }
 
@@ -195,8 +217,19 @@ export default function PlacePreviewCard({
         });
         if (wikidataId) query.append("wikidata_id", wikidataId);
         if (wikipediaTitle) query.append("wikipedia_title", wikipediaTitle);
+        if (place.city) query.append("city", place.city);
+        if (place.state) query.append("state", place.state);
+        if (place.country) query.append("country", place.country);
+        if (place.source) query.append("source", place.source);
 
-        const res = await apiFetch<any>(`/api/v1/places/wiki-summary?${query.toString()}`);
+        const res = await apiFetch<{
+          available: boolean;
+          summary?: string;
+          url?: string;
+          title?: string;
+          attribution?: string;
+          matchedOn?: string;
+        }>(`/places/wiki-summary?${query.toString()}`);
         setWikiSummary(res);
       } catch (err) {
         logRovvyLiveWarn("Wiki fetch failed", err);
@@ -207,7 +240,17 @@ export default function PlacePreviewCard({
     };
 
     fetchWiki();
-  }, [place.name, place.categoryLabel, place.lat, place.lng, place.tags]);
+  }, [
+    place.name,
+    place.categoryLabel,
+    place.lat,
+    place.lng,
+    place.city,
+    place.state,
+    place.country,
+    place.source,
+    place.tags,
+  ]);
 
   const isMobile = useMediaQuery("(max-width: 599px)");
 
@@ -236,10 +279,9 @@ export default function PlacePreviewCard({
     (place.source === "nominatim" && place.categoryLabel === "Address");
 
   const contextNotice =
-    routeLastMileNotice ??
-    (locationContext && locationContext.classification !== "local_place"
+    locationContext && locationContext.classification !== "local_place"
       ? locationContext.template?.recommendation
-      : null);
+      : null;
 
   const summaryStackClass = stackAboveRouteSummary
     ? "max-lg:!bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] max-lg:max-h-[min(55vh,calc(100dvh-8rem))]"
@@ -357,6 +399,90 @@ export default function PlacePreviewCard({
           </p>
         ) : null}
 
+        {place.mapPresenceNote || place.terrainHint || place.continent || place.coordinatesLabel ? (
+          <div className="mt-2 rounded-lg border border-stone-100 bg-stone-50 px-2.5 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+              Location context
+            </p>
+            {place.mapPresenceNote ? (
+              <p className="mt-1 text-xs leading-snug text-stone-700">{place.mapPresenceNote}</p>
+            ) : null}
+            {place.terrainHint ? (
+              <p className="mt-1 text-xs leading-snug text-amber-900">{place.terrainHint}</p>
+            ) : null}
+            {place.coordinatesLabel ? (
+              <p className="mt-1 font-mono text-[11px] text-stone-600">{place.coordinatesLabel}</p>
+            ) : null}
+            <dl className="mt-2 space-y-1 text-xs text-stone-600">
+              {place.city ? (
+                <div className="flex gap-2">
+                  <dt className="w-16 shrink-0 text-stone-400">City</dt>
+                  <dd className="min-w-0">{place.city}</dd>
+                </div>
+              ) : null}
+              {place.state ? (
+                <div className="flex gap-2">
+                  <dt className="w-16 shrink-0 text-stone-400">Region</dt>
+                  <dd className="min-w-0">{place.state}</dd>
+                </div>
+              ) : null}
+              {place.country ? (
+                <div className="flex gap-2">
+                  <dt className="w-16 shrink-0 text-stone-400">Country</dt>
+                  <dd className="min-w-0">{place.country}</dd>
+                </div>
+              ) : null}
+              {place.continent ? (
+                <div className="flex gap-2">
+                  <dt className="w-16 shrink-0 text-stone-400">Continent</dt>
+                  <dd className="min-w-0">{place.continent}</dd>
+                </div>
+              ) : null}
+              {place.postcode ? (
+                <div className="flex gap-2">
+                  <dt className="w-16 shrink-0 text-stone-400">Postcode</dt>
+                  <dd className="min-w-0">{place.postcode}</dd>
+                </div>
+              ) : null}
+            </dl>
+          </div>
+        ) : null}
+
+        {routePreviewStatus !== "idle" || routeLoading ? (
+          <div className="mt-2 rounded-lg border border-teal-100 bg-teal-50/80 px-2.5 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-800">
+              {travelMode} route preview
+            </p>
+            {routeLoading || routePreviewStatus === "loading" ? (
+              <p className="mt-1 text-xs text-stone-600">Calculating your {travelMode.toLowerCase()} route…</p>
+            ) : null}
+            {routePreviewStatus === "failed" && routePreviewError ? (
+              <p className="mt-1 text-xs text-amber-800">{routePreviewError}</p>
+            ) : null}
+            {routeReady ? (
+              <div className="mt-1 space-y-1 text-xs text-stone-700">
+                <p>
+                  <span className="font-semibold text-[#0F766E]">{timeBracket}</span>
+                  {routeDistanceMeters != null ? (
+                    <span className="text-stone-500">
+                      {" "}
+                      · {formatDistanceMiles(routeDistanceMeters)}
+                    </span>
+                  ) : null}
+                </p>
+                {routeLastMileMode === "walk" && routeLastMileNotice ? (
+                  <p className="rounded-md bg-amber-50 px-2 py-1 text-amber-900">{routeLastMileNotice}</p>
+                ) : null}
+                {routeBorderNotice ? (
+                  <p className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-amber-900">
+                    {routeBorderNotice}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="mt-3 space-y-3 border-t border-stone-100 pt-3">
             {place.address ? (
               <p className="text-xs leading-snug text-stone-600 line-clamp-2">{place.address}</p>
@@ -376,10 +502,30 @@ export default function PlacePreviewCard({
               <p className="text-xs text-stone-500">{hoursLabel}</p>
             ) : null}
 
+            {wikiLoading ? (
+              <p className="text-xs text-stone-400">Loading area information…</p>
+            ) : null}
+
             {wikiSummary?.available && wikiSummary.summary ? (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">About</p>
-                <p className="mt-1 text-xs leading-relaxed text-stone-600 line-clamp-4">{wikiSummary.summary}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                  {wikiSummary.matchedOn === "city" || wikiSummary.matchedOn === "region"
+                    ? `About ${wikiSummary.title || place.city || "this area"}`
+                    : "About"}
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-stone-600 line-clamp-4">
+                  {wikiSummary.summary}
+                </p>
+                {wikiSummary.url ? (
+                  <a
+                    href={wikiSummary.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 inline-block text-[11px] font-medium text-[#0F766E] hover:underline"
+                  >
+                    Read on Wikipedia
+                  </a>
+                ) : null}
               </div>
             ) : null}
 

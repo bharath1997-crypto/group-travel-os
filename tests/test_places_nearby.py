@@ -107,6 +107,10 @@ def test_resolve_click_with_useful_properties():
             "featureProperties": {
                 "name": "Shell Gas",
                 "amenity": "fuel",
+                "addr:housenumber": "1234",
+                "addr:street": "N Western Ave",
+                "addr:city": "Chicago",
+                "addr:state": "IL",
                 "osm_id": "11111",
                 "osm_type": "node",
             },
@@ -118,6 +122,33 @@ def test_resolve_click_with_useful_properties():
     assert body["place"]["category"] == "Gas station"
     assert body["place"]["source"] == "map_feature"
     assert body["place"]["placeKey"] == "osm:node:11111"
+    assert "1234 N Western Ave" in body["place"]["address"]
+    assert "Chicago" in body["place"]["address"]
+
+
+def test_resolve_click_liquor_shop_properties():
+    res = client.post(
+        "/api/v1/places/resolve-click",
+        json={
+            "lat": 41.91,
+            "lng": -87.68,
+            "clickedName": "Binny's",
+            "featureProperties": {
+                "name": "Binny's",
+                "shop": "alcohol",
+                "addr:housenumber": "2105",
+                "addr:street": "W Armitage Ave",
+                "addr:city": "Chicago",
+                "addr:state": "IL",
+                "osm_id": "22222",
+                "osm_type": "node",
+            },
+        },
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["place"]["category"] == "Liquor store"
+    assert "2105 W Armitage Ave" in body["place"]["address"]
 
 
 def test_resolve_click_with_nearby_search_enrichment():

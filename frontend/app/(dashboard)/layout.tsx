@@ -18,10 +18,12 @@ import {
   Bus,
   Heart,
   Radio,
+  Bell,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { IconCheck } from "@/components/icons";
 
@@ -356,6 +358,98 @@ function SidebarNavSection({
   );
 }
 
+function LiveHeaderNavTab({
+  active,
+  notifCount,
+  onNavigate,
+}: {
+  active: boolean;
+  notifCount: number;
+  onNavigate: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className={`relative flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-all ${
+          active
+            ? "text-[#007F73] bg-[#E6F7F4] ring-1 ring-[#007F73]/15"
+            : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
+        }`}
+        title="Live"
+        aria-expanded={open}
+        aria-haspopup="menu"
+      >
+        <Radio size={15} strokeWidth={2} aria-hidden />
+        <span className="hidden xl:inline">Live</span>
+        <ChevronDown
+          size={14}
+          strokeWidth={2}
+          className={`hidden xl:block transition-transform ${open ? "rotate-180" : ""}`}
+          aria-hidden
+        />
+        {notifCount > 0 ? (
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#E94560] px-1 text-[9px] font-bold text-white">
+            {notifCount > 9 ? "9+" : notifCount}
+          </span>
+        ) : null}
+      </button>
+
+      {open ? (
+        <div
+          role="menu"
+          aria-label="Live menu"
+          className="absolute right-0 top-[calc(100%+0.35rem)] z-50 min-w-[11rem] overflow-hidden rounded-xl border border-stone-200 bg-white py-1 shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onNavigate();
+            }}
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] font-medium text-stone-800 hover:bg-stone-50"
+          >
+            <Radio size={14} strokeWidth={2} className="text-[#007F73]" aria-hidden />
+            Live map
+          </button>
+          {notifCount > 0 ? (
+            <Link
+              href="/notifications"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-[13px] font-medium text-stone-800 hover:bg-stone-50"
+            >
+              <span className="flex items-center gap-2">
+                <Bell size={14} strokeWidth={2} className="text-stone-500" aria-hidden />
+                Notifications
+              </span>
+              <span className="rounded-full bg-[#E94560] px-1.5 py-0.5 text-[10px] font-bold text-white">
+                {notifCount > 99 ? "99+" : notifCount}
+              </span>
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function DashboardChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -590,6 +684,16 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             <nav className="hidden md:flex items-center gap-0.5 xl:gap-1" aria-label="Primary">
               {NAV_SECTIONS.map((section) => {
                 const active = sectionActive(pathname, section);
+                if (section.id === "live") {
+                  return (
+                    <LiveHeaderNavTab
+                      key={section.id}
+                      active={active}
+                      notifCount={notifCount}
+                      onNavigate={() => router.push("/live")}
+                    />
+                  );
+                }
                 return (
                   <Link
                     key={section.id}

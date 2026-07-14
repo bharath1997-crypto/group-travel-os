@@ -125,6 +125,10 @@ async def get_wiki_summary(
     lng: float = Query(..., ge=-180, le=180),
     wikidata_id: str | None = None,
     wikipedia_title: str | None = None,
+    city: str | None = None,
+    state: str | None = None,
+    country: str | None = None,
+    source: str | None = None,
 ):
     try:
         return await PlaceWikipediaService.get_wiki_summary(
@@ -134,6 +138,10 @@ async def get_wiki_summary(
             lng=lng,
             wikidata_id=wikidata_id,
             wikipedia_title=wikipedia_title,
+            city=city,
+            state=state,
+            country=country,
+            source=source,
         )
     except Exception as exc:
         raise AppException.bad_request(f"Wikipedia lookup failed: {str(exc)}")

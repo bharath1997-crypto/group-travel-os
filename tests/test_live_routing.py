@@ -41,7 +41,11 @@ def test_route_preview_allows_guest():
         ],
     }
 
-    with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get, patch(
+        "app.services.live_routing_service.BorderCrossingService.detect_crossings",
+        new_callable=AsyncMock,
+        return_value=[],
+    ):
         mock_get.return_value = mock_resp
 
         res = client.post(
@@ -87,7 +91,11 @@ def test_route_preview_success(auth_user):
         ],
     }
 
-    with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get, patch(
+        "app.services.live_routing_service.BorderCrossingService.detect_crossings",
+        new_callable=AsyncMock,
+        return_value=[],
+    ):
         mock_get.return_value = mock_resp
 
         res = client.post(
@@ -148,7 +156,11 @@ def test_route_preview_adds_last_mile_walk(auth_user):
             return walk_resp
         return drive_resp
 
-    with patch("httpx.AsyncClient.get", new_callable=AsyncMock, side_effect=mock_get):
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock, side_effect=mock_get), patch(
+        "app.services.live_routing_service.BorderCrossingService.detect_crossings",
+        new_callable=AsyncMock,
+        return_value=[],
+    ):
         res = client.post(
             "/api/v1/live/route-preview",
             json={
@@ -164,3 +176,68 @@ def test_route_preview_adds_last_mile_walk(auth_user):
         assert body["lastMileDistanceMeters"] == 80.0
         assert body["lastMileNotice"]
         assert len(body["geometry"]["coordinates"]) >= 3
+
+
+def test_route_preview_includes_border_crossing(auth_user):
+    from unittest.mock import patch, AsyncMock
+    from app.schemas.live_routing import BorderCrossingOut
+
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {
+        "code": "Ok",
+        "routes": [
+            {
+                "distance": 1500.0,
+                "duration": 300.0,
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[-87.63, 41.88], [-97.0, 49.0]],
+                },
+            }
+        ],
+    }
+
+    crossing = BorderCrossingOut(
+        latitude=49.0,
+        longitude=-97.0,
+        fromCountry="United States",
+        toCountry="Canada",
+        label="Immigration check — United States → Canada",
+        highlightGeometry=[[-97.0, 48.9], [-97.0, 49.0]],
+    )
+
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get, patch(
+        "app.services.live_routing_service.BorderCrossingService.detect_crossings",
+        new_callable=AsyncMock,
+        return_value=[crossing],
+    ), patch(
+        "app.services.live_routing_service.BorderCrossingService.build_border_notice",
+        return_value="Border notice",
+    ):
+        mock_get.return_value = mock_resp
+
+        res = client.post(
+            "/api/v1/live/route-preview",
+            json={
+                "origin": {
+                    "latitude": 41.88,
+                    "longitude": -87.63,
+                    "source": "gps",
+                    "country": "United States",
+                },
+                "destination": {
+                    "latitude": 49.0,
+                    "longitude": -97.0,
+                    "name": "Emerson",
+                    "country": "Canada",
+                },
+                "travelMode": "Drive",
+            },
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert body["status"] == "ready"
+        assert body["borderNotice"] == "Border notice"
+        assert len(body["borderCrossings"]) == 1
+        assert body["borderCrossings"][0]["toCountry"] == "Canada"

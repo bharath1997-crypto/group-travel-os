@@ -470,6 +470,15 @@ export function normalizePlaceCategory(item: any): string | null {
     if (val === "attraction") return "Attraction";
     if (val === "museum") return "Museum";
     if (val === "gallery") return "Gallery";
+    if (val === "viewpoint") return "Viewpoint";
+    if (val === "artwork") return "Artwork";
+    return val.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+  }
+
+  if (p.historic) {
+    const val = String(p.historic);
+    if (val === "monument") return "Monument";
+    if (val === "memorial") return "Memorial";
     return val.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
   }
 

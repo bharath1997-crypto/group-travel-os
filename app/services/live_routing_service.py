@@ -9,7 +9,9 @@ from app.schemas.live_routing import (
     RoutePreviewResponse,
     GeoJSONGeometry,
     RouteManeuverOut,
+    BorderCrossingOut,
 )
+from app.services.border_crossing_service import BorderCrossingService
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +170,8 @@ def build_ready_response(
     duration: float | None,
     maneuvers: list[RouteManeuverOut],
     last_mile: RoutePreviewResponse | None = None,
+    border_crossings: list[BorderCrossingOut] | None = None,
+    border_notice: str | None = None,
 ) -> RoutePreviewResponse:
     return RoutePreviewResponse(
         status="ready",
@@ -181,6 +185,8 @@ def build_ready_response(
         lastMileDistanceMeters=last_mile.lastMileDistanceMeters if last_mile else None,
         lastMileDurationSeconds=last_mile.lastMileDurationSeconds if last_mile else None,
         lastMileNotice=last_mile.lastMileNotice if last_mile else None,
+        borderCrossings=border_crossings or None,
+        borderNotice=border_notice,
     )
 
 
@@ -298,8 +304,22 @@ class LiveRoutingService:
                                 data.get("code"),
                                 len(coords),
                             )
+                            border_crossings = await BorderCrossingService.detect_crossings(
+                                coords,
+                                request.origin.country,
+                                request.destination.country,
+                            )
+                            border_notice = BorderCrossingService.build_border_notice(
+                                border_crossings
+                            )
                             return build_ready_response(
-                                coords, distance, duration, maneuvers, last_mile
+                                coords,
+                                distance,
+                                duration,
+                                maneuvers,
+                                last_mile,
+                                border_crossings,
+                                border_notice,
                             )
 
                 # Snapping fallback for Drive mode
@@ -384,8 +404,22 @@ class LiveRoutingService:
                                     retry_data.get("code"),
                                     len(coords),
                                 )
+                                border_crossings = await BorderCrossingService.detect_crossings(
+                                    coords,
+                                    request.origin.country,
+                                    request.destination.country,
+                                )
+                                border_notice = BorderCrossingService.build_border_notice(
+                                    border_crossings
+                                )
                                 return build_ready_response(
-                                    coords, distance, duration, maneuvers, last_mile
+                                    coords,
+                                    distance,
+                                    duration,
+                                    maneuvers,
+                                    last_mile,
+                                    border_crossings,
+                                    border_notice,
                                 )
 
                 # Normalize user-safe failure messages

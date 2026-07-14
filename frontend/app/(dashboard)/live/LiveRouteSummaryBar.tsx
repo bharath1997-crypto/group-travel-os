@@ -12,6 +12,9 @@ type Props = {
   routePreviewStatus?: RoutePreviewStatus;
   routeLoading?: boolean;
   identifying?: boolean;
+  travelMode?: string;
+  routeLastMileNotice?: string | null;
+  routeBorderNotice?: string | null;
   onOpenDetails?: () => void;
   onGo?: () => void;
   onClose?: () => void;
@@ -23,6 +26,9 @@ export default function LiveRouteSummaryBar({
   routePreviewStatus = "idle",
   routeLoading = false,
   identifying = false,
+  travelMode = "Drive",
+  routeLastMileNotice = null,
+  routeBorderNotice = null,
   onOpenDetails,
   onGo,
   onClose,
@@ -30,10 +36,13 @@ export default function LiveRouteSummaryBar({
   const routeReady = routePreviewStatus === "ready" && durationSeconds != null;
   const routePending = identifying || routeLoading || routePreviewStatus === "loading";
   const timeBracket = routeReady ? formatRouteDurationBracketed(durationSeconds) : "";
+  const routeCondition =
+    routeLastMileNotice ??
+    (routeBorderNotice ? "Border checkpoint marked on route" : null);
 
   return (
     <div
-      className={`pointer-events-auto fixed left-1/2 z-[135] w-[min(22rem,calc(100%-1.5rem))] -translate-x-1/2 ${LIVE_ROUTE_SUMMARY_BOTTOM} flex items-center gap-1.5 rounded-xl border border-stone-200/90 bg-white/95 px-2 py-2 shadow-md backdrop-blur-md`}
+      className={`pointer-events-auto fixed left-1/2 z-[135] w-[min(24rem,calc(100%-1.5rem))] -translate-x-1/2 ${LIVE_ROUTE_SUMMARY_BOTTOM} flex items-center gap-1.5 rounded-xl border border-stone-200/90 bg-white/95 px-2 py-2 shadow-md backdrop-blur-md`}
       role="region"
       aria-label="Route preview summary"
     >
@@ -45,9 +54,16 @@ export default function LiveRouteSummaryBar({
           ) : null}
         </p>
         {routePending ? (
-          <p className="text-xs text-stone-500">{identifying ? "Identifying…" : "Calculating route…"}</p>
+          <p className="text-xs text-stone-500">
+            {identifying ? "Identifying…" : `Calculating ${travelMode.toLowerCase()} route…`}
+          </p>
         ) : routePreviewStatus === "failed" ? (
-          <p className="text-xs text-amber-700">Route unavailable</p>
+          <p className="text-xs text-amber-700">Route unavailable for {travelMode.toLowerCase()}</p>
+        ) : routeReady ? (
+          <p className="truncate text-xs text-stone-500">
+            {travelMode} route
+            {routeCondition ? ` · ${routeCondition}` : ""}
+          </p>
         ) : null}
       </div>
 

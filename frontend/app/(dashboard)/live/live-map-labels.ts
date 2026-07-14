@@ -2,6 +2,7 @@ import type { Map as MaplibreMap, MapGeoJSONFeature } from "maplibre-gl";
 import { haversineM } from "@/lib/geo";
 import type { AutocompleteResult } from "./live-geocoding";
 import { normalizePlaceCategory } from "./live-geocoding";
+import { formatOsmAddressFromTags } from "./live-osm-address";
 
 const VECTOR_SOURCE_ID = "openmaptiles";
 const LABEL_SOURCE_LAYERS = ["poi", "place", "aerodrome_label"] as const;
@@ -346,6 +347,7 @@ export function searchVisibleMapLabels(
       if (!isInsideBounds(coords.lat, coords.lng, viewport)) continue;
 
       const category = featureCategoryLabel(feature);
+      const osmAddress = formatOsmAddressFromTags(props);
 
       let score = textScore > 0 ? textScore : 40;
       if (sourceLayer === "poi") score += 10;
@@ -362,7 +364,7 @@ export function searchVisibleMapLabels(
         anchor,
         score,
         name,
-        category,
+        osmAddress || category,
         category,
         "map_label",
       );
@@ -382,7 +384,10 @@ export function mapLabelFeatureToPlacePreview(
   const props = (feature.properties || {}) as Record<string, unknown>;
   const houseNumber = getHouseNumberFromProps(props);
   const street = getStreetFromProps(props);
-  const address = houseNumber ? formatBuildingAddress(props) : featureCategoryLabel(feature);
+  const osmAddress = formatOsmAddressFromTags(props);
+  const address = houseNumber
+    ? formatBuildingAddress(props)
+    : osmAddress || featureCategoryLabel(feature);
   const name =
     getFeatureLabelName(props) ||
     (houseNumber && street ? `${houseNumber} ${street}` : houseNumber) ||

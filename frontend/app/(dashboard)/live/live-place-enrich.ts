@@ -4,9 +4,8 @@
  */
 import { liveGeocodingReverse } from "./live-geocoding";
 import { extractCityCountry } from "./live-place-key";
+import { needsOsmAddressEnrichment } from "./live-osm-address";
 import type { PlacePreviewData } from "./PlacePreviewCard";
-
-const COORD_ADDRESS_RE = /^coordinates:\s*-?\d/i;
 
 function formatStreetAddress(
   address?: Record<string, string>,
@@ -26,11 +25,7 @@ function formatStreetAddress(
 }
 
 export function needsTravelAddressEnrichment(place: { address?: string }): boolean {
-  const addr = (place.address || "").trim();
-  if (!addr) return true;
-  if (COORD_ADDRESS_RE.test(addr)) return true;
-  if (!addr.includes(",") && addr.length < 12) return true;
-  return false;
+  return needsOsmAddressEnrichment(place.address);
 }
 
 export async function enrichPlaceForTravel(place: PlacePreviewData): Promise<PlacePreviewData> {

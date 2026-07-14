@@ -99,6 +99,12 @@ export default function SoloRoutePreviewPanel({
           </p>
         ) : null}
 
+        {routeLine?.borderNotice ? (
+          <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs leading-snug text-amber-900">
+            {routeLine.borderNotice}
+          </p>
+        ) : null}
+
         {routeLine?.lastMileNotice ? (
           <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-xs leading-snug text-amber-900">
             {routeLine.lastMileNotice}
