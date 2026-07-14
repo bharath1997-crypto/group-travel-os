@@ -55,6 +55,16 @@ export type RouteManeuver = {
   location: [number, number]; // [lng, lat]
 };
 
+export type BorderCrossing = {
+  lat: number;
+  lng: number;
+  fromCountry: string;
+  toCountry: string;
+  label: string;
+  approximate?: boolean;
+  highlightGeometry?: [number, number][];
+};
+
 export type RouteLine = {
   from: { lat: number; lng: number };
   to: { lat: number; lng: number };
@@ -67,6 +77,8 @@ export type RouteLine = {
   lastMileDistanceMeters?: number | null;
   lastMileDurationSeconds?: number | null;
   lastMileNotice?: string | null;
+  borderCrossings?: BorderCrossing[];
+  borderNotice?: string | null;
 };
 
 export type DistanceTier = "local" | "far";

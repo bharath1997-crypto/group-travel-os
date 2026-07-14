@@ -128,8 +128,21 @@ def normalize_tags(tags: dict[str, Any]) -> str:
             "attraction": "Attraction",
             "museum": "Museum",
             "gallery": "Gallery",
+            "viewpoint": "Viewpoint",
+            "artwork": "Artwork",
         }
         return tourism_map.get(tourism, tourism.replace("_", " ").title())
+
+    elif tags.get("historic"):
+        historic = str(tags["historic"])
+        historic_map = {
+            "monument": "Monument",
+            "memorial": "Memorial",
+            "castle": "Castle",
+            "ruins": "Ruins",
+            "building": "Historic building",
+        }
+        return historic_map.get(historic, historic.replace("_", " ").title())
 
     elif leisure:
         leisure_map = {
@@ -157,6 +170,50 @@ def normalize_tags(tags: dict[str, Any]) -> str:
         return tags["natural"].replace("_", " ").title()
 
     return "Place"
+
+
+def format_address_from_osm_tags(
+    tags: dict[str, Any],
+    lat: float,
+    lng: float,
+) -> str:
+    """Build a travel-friendly address from OSM addr:* tags."""
+    addr_parts: list[str] = []
+    street_number = tags.get("addr:housenumber")
+    street_name = tags.get("addr:street")
+    if street_number and street_name:
+        addr_parts.append(f"{street_number} {street_name}")
+    elif street_name:
+        addr_parts.append(str(street_name))
+
+    city = tags.get("addr:city")
+    state = tags.get("addr:state")
+    postcode = tags.get("addr:postcode")
+
+    city_state = ""
+    if city and state:
+        city_state = f"{city}, {state}"
+    elif city:
+        city_state = str(city)
+    elif state:
+        city_state = str(state)
+
+    if city_state:
+        if postcode:
+            addr_parts.append(f"{city_state} {postcode}")
+        else:
+            addr_parts.append(city_state)
+    elif postcode:
+        addr_parts.append(str(postcode))
+
+    if not addr_parts:
+        is_in = tags.get("is_in") or tags.get("addr:place") or tags.get("addr:suburb")
+        if is_in:
+            addr_parts.append(str(is_in))
+
+    if addr_parts:
+        return ", ".join(addr_parts)
+    return f"Coordinates: {round(lat, 4)}, {round(lng, 4)}"
 
 
 def normalize_poi_result(raw: dict[str, Any], origin_lat: float, origin_lng: float) -> dict[str, Any] | None:
@@ -208,40 +265,7 @@ def normalize_poi_result(raw: dict[str, Any], origin_lat: float, origin_lng: flo
             category_str = str(c).replace("_", " ").title()
 
     # Address parsing from OSM tags
-    addr_parts = []
-    street_number = tags.get("addr:housenumber")
-    street_name = tags.get("addr:street")
-    if street_number and street_name:
-        addr_parts.append(f"{street_number} {street_name}")
-    elif street_name:
-        addr_parts.append(street_name)
-
-    city = tags.get("addr:city")
-    state = tags.get("addr:state")
-    postcode = tags.get("addr:postcode")
-
-    city_state = ""
-    if city and state:
-        city_state = f"{city}, {state}"
-    elif city:
-        city_state = city
-    elif state:
-        city_state = state
-
-    if city_state:
-        if postcode:
-            addr_parts.append(f"{city_state} {postcode}")
-        else:
-            addr_parts.append(city_state)
-    elif postcode:
-        addr_parts.append(postcode)
-
-    if not addr_parts:
-        is_in = tags.get("is_in") or tags.get("addr:place") or tags.get("addr:suburb")
-        if is_in:
-            addr_parts.append(str(is_in))
-
-    address = ", ".join(addr_parts) if addr_parts else f"Coordinates: {round(lat, 4)}, {round(lng, 4)}"
+    address = format_address_from_osm_tags(tags, lat, lng)
 
     osm_id = str(raw.get("id"))
     osm_type = str(raw.get("type", "node"))
@@ -269,6 +293,14 @@ CATEGORY_TAG_QUERIES: dict[str, list[str]] = {
     "gas": [
         'node["amenity"="fuel"](around:{radius},{lat},{lng});',
         'way["amenity"="fuel"](around:{radius},{lat},{lng});',
+        'node["shop"="alcohol"](around:{radius},{lat},{lng});',
+        'way["shop"="alcohol"](around:{radius},{lat},{lng});',
+    ],
+    "liquor": [
+        'node["shop"="alcohol"](around:{radius},{lat},{lng});',
+        'way["shop"="alcohol"](around:{radius},{lat},{lng});',
+        'node["shop"="beverages"](around:{radius},{lat},{lng});',
+        'way["shop"="beverages"](around:{radius},{lat},{lng});',
     ],
     "coffee": [
         'node["amenity"="cafe"](around:{radius},{lat},{lng});',
@@ -283,6 +315,10 @@ CATEGORY_TAG_QUERIES: dict[str, list[str]] = {
         'way["amenity"="fast_food"](around:{radius},{lat},{lng});',
         'node["amenity"="food_court"](around:{radius},{lat},{lng});',
         'way["amenity"="food_court"](around:{radius},{lat},{lng});',
+        'node["amenity"="bar"](around:{radius},{lat},{lng});',
+        'way["amenity"="bar"](around:{radius},{lat},{lng});',
+        'node["amenity"="pub"](around:{radius},{lat},{lng});',
+        'way["amenity"="pub"](around:{radius},{lat},{lng});',
     ],
     "restroom": [
         'node["amenity"="toilets"](around:{radius},{lat},{lng});',
@@ -763,7 +799,7 @@ out center;"""
             address = (
                 props.get("address")
                 or props.get("addr:full")
-                or f"Coordinates: {round(lat, 4)}, {round(lng, 4)}"
+                or format_address_from_osm_tags(props, lat, lng)
             )
             osm_id = str(props.get("osm_id") or props.get("id") or "")
             osm_type = str(props.get("osm_type") or "node")

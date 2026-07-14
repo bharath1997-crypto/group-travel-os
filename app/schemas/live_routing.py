@@ -10,6 +10,7 @@ class RouteCoordinateOrigin(BaseModel):
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
     source: Literal["gps", "search", "map_pick", "map_center"]
+    country: str | None = None
 
 
 class RouteCoordinateDestination(BaseModel):
@@ -18,6 +19,7 @@ class RouteCoordinateDestination(BaseModel):
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
     name: str | None = None
+    country: str | None = None
 
 
 class RoutePreviewRequest(BaseModel):
@@ -42,6 +44,18 @@ class RouteManeuverOut(BaseModel):
     location: list[float]  # [lng, lat]
 
 
+class BorderCrossingOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    latitude: float
+    longitude: float
+    fromCountry: str
+    toCountry: str
+    label: str
+    approximate: bool = False
+    highlightGeometry: list[list[float]] | None = None
+
+
 class RoutePreviewResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -57,3 +71,5 @@ class RoutePreviewResponse(BaseModel):
     lastMileDistanceMeters: float | None = None
     lastMileDurationSeconds: float | None = None
     lastMileNotice: str | None = None
+    borderCrossings: list[BorderCrossingOut] | None = None
+    borderNotice: str | None = None

@@ -102,16 +102,21 @@ import {
 } from "./live-gps";
 import { LIVE_MAP_CONTROLS_POSITION, type LiveMapViewMode } from "./live-layout";
 import LiveMapLayerControl from "./LiveMapLayerControl";
+import LiveMapRightControls from "./LiveMapRightControls";
+import LiveMapClickPopup from "./LiveMapClickPopup";
+import { buildPlaceFromMapPick, formatMapCoordinates } from "./live-map-pick-context";
+import type { MapClickPayload } from "./LiveMapComponent";
 import {
   DEFAULT_LIVE_MAP_LAYER,
   loadLiveMapLayerPreference,
   saveLiveMapLayerPreference,
 } from "./live-map-layer-preference";
 import { mergeAutocompleteResults } from "./live-search-merge";
-import LiveMapToolsControl, {
-  LIVE_MAP_CTRL_BTN,
-  LIVE_MAP_CTRL_BTN_ACTIVE,
-} from "./LiveMapToolsControl";
+import {
+  getPoiMarkerPresentation,
+  resolvePoiMapIcon,
+} from "./live-poi-icons";
+import LiveMapToolsControl from "./LiveMapToolsControl";
 import type { LiveMapLayer } from "@/lib/map-providers";
 import { mapLabelFeatureToPlacePreview } from "./live-map-labels";
 import RoviRouteIntelligencePanel from "./RoviRouteIntelligencePanel";
@@ -448,8 +453,6 @@ export default function LivePage() {
     ) => void
   >(() => {});
 
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [alertsEnabled, setAlertsEnabled] = useState(true);
   const [showGpsHelper, setShowGpsHelper] = useState(false);
   const [mapLocationSheet, setMapLocationSheet] = useState<MapLocationSheetPoint | null>(null);
   const [mapLocationSheetLoading, setMapLocationSheetLoading] = useState(false);
@@ -457,6 +460,7 @@ export default function LivePage() {
   const [searchAnchorHint, setSearchAnchorHint] = useState<string | null>(null);
   const [searchNeedsLocation, setSearchNeedsLocation] = useState(false);
   const [mapBearing, setMapBearing] = useState(0);
+  const [mapZoom, setMapZoom] = useState(14);
   const [mapViewMode, setMapViewMode] = useState<LiveMapViewMode>("2d");
   const lowAccuracyToastShownRef = useRef(false);
   const [userRegion, setUserRegion] = useState<{
@@ -491,6 +495,16 @@ export default function LivePage() {
   const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [mapClickResolving, setMapClickResolving] = useState(false);
   const [nearbyPlacesAtClick, setNearbyPlacesAtClick] = useState<PlacePreviewData[] | null>(null);
+  const [mapClickMenu, setMapClickMenu] = useState<{
+    lat: number;
+    lng: number;
+    screenX: number;
+    screenY: number;
+  } | null>(null);
+  const [mapClickPin, setMapClickPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [coordinateOverlay, setCoordinateOverlay] = useState<{ lat: number; lng: number } | null>(null);
+  const coordinateOverlayRef = useRef(coordinateOverlay);
+  coordinateOverlayRef.current = coordinateOverlay;
 
   // ─── Recent searches (dynamic, localStorage-backed) ────────────────────────
   const [recentSearches, setRecentSearches] = useState<RecentSearchItem[]>([]);
@@ -519,6 +533,8 @@ export default function LivePage() {
         setShowSetupPanel(false);
         setShowSuggestionsCard(false);
         setShowSearchPopup(false);
+        setMapClickMenu(null);
+        if (!coordinateOverlayRef.current) setMapClickPin(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -650,6 +666,11 @@ export default function LivePage() {
           travelMode,
           options?.active ?? false,
           origin.source,
+          {
+            originCountry: userRegion?.country ?? null,
+            destinationCountry: dest.country ?? null,
+            destinationName: dest.name ?? null,
+          },
         );
 
         if (requestId !== routePreviewRequestRef.current) return;
@@ -711,7 +732,7 @@ export default function LivePage() {
         }
       }
     },
-    [resolveRoutePreviewOrigin, travelMode, gpsState],
+    [resolveRoutePreviewOrigin, travelMode, gpsState, userRegion?.country],
   );
 
   const kickRoutePreview = useCallback(
@@ -1043,7 +1064,9 @@ export default function LivePage() {
     } finally {
       setLoadingPlaceDetails(false);
     }
-  }, [currentUserId, refreshRecentSearches, addStopMode, isLiveActive, destination, addPlaceAsRouteStop]);
+
+    kickRoutePreview(withCategory, { fitMap: true });
+  }, [currentUserId, refreshRecentSearches, addStopMode, isLiveActive, destination, addPlaceAsRouteStop, kickRoutePreview]);
 
   const handleAddStopFromNearby = useCallback((result: PlacePreviewData) => {
     addPlaceAsRouteStop(result);
@@ -1080,7 +1103,12 @@ export default function LivePage() {
 
   const selectDestination = useCallback(async (
     place: PlacePreviewData,
-    options?: { origin?: "search" | "map_click"; clickLat?: number; clickLng?: number },
+    options?: {
+      origin?: "search" | "map_click";
+      clickLat?: number;
+      clickLng?: number;
+      openDetailsPanel?: boolean;
+    },
   ) => {
     const lat = place.lat;
     const lng = place.lng;
@@ -1103,14 +1131,17 @@ export default function LivePage() {
     setDestination(null);
     setIsLiveActive(false);
     setActiveRoute(null);
-    setRoutePreviewStatus("loading");
+    setRoutePreviewStatus("idle");
     setRoutePreviewError(null);
-    setRouteLoading(true);
+    setRouteLoading(false);
     lastFetchedRouteRef.current = null;
     setRouteOrigin(null);
     setOriginPickMode(false);
     setShowOriginSetup(false);
-    setShowPlaceDetailsPanel(false);
+    setShowPlaceDetailsPanel(Boolean(options?.openDetailsPanel));
+    setMapClickMenu(null);
+    setCoordinateOverlay(null);
+    setMapClickPin(null);
     setViewingDetailsFromNearby(false);
     setNearbyResults(null);
     setNearbyCategory(null);
@@ -1142,7 +1173,7 @@ export default function LivePage() {
     setLiveStage("place_preview");
     setSearchQuery(place.name);
     setLoadingPlaceDetails(true);
-    mapRef.current?.flyToPlace(lat, lng);
+    mapRef.current?.flyToPlace(lat, lng, 12);
 
     recordRecentSearch(
       place.source === "dropped_pin"
@@ -1164,80 +1195,59 @@ export default function LivePage() {
 
     try {
       let resolvedPlace = place;
-      const details = await liveGeocodingReverse(lat, lng);
-      if (details) {
-        const hours = details.extratags?.opening_hours;
-        const reverseGeo = extractCityCountry(details.address);
-        const nextOsmType = details.osm_type ?? place.osmType;
-        const nextOsmId = details.osm_id ?? place.osmId;
-        const nextCity = reverseGeo.city ?? place.city;
-        const nextCountry = reverseGeo.country ?? place.country;
-        const nextKey = buildPlaceKey({
-          name: details.name || place.name,
-          lat,
-          lng,
-          city: nextCity,
-          country: nextCountry,
-          osmType: nextOsmType,
-          osmId: nextOsmId,
-        });
-        resolvedPlace = {
-          ...place,
-          name: details.name || place.name,
-          categoryLabel:
-            normalizePlaceCategory(details) ||
-            (details.extratags ? normalizePlaceCategory(details.extratags) : null) ||
-            (details.name || place.name ? "Place" : "Address") ||
-            place.categoryLabel,
-          address: formatStreetAddress(details.address, details.display_name || place.address),
-          phone: extractPhone(details.extratags),
-          openingHours: hours ?? null,
-          openStatus: parseOpenStatus(hours),
-          osmType: nextOsmType,
-          osmId: nextOsmId,
-          city: nextCity,
-          country: nextCountry,
-          placeKey: nextKey,
-        };
-        setSelectedPlace(resolvedPlace);
+      if (place.source !== "map_pick") {
+        const details = await liveGeocodingReverse(lat, lng);
+        if (details) {
+          const hours = details.extratags?.opening_hours;
+          const reverseGeo = extractCityCountry(details.address);
+          const nextOsmType = details.osm_type ?? place.osmType;
+          const nextOsmId = details.osm_id ?? place.osmId;
+          const nextCity = reverseGeo.city ?? place.city;
+          const nextCountry = reverseGeo.country ?? place.country;
+          const nextKey = buildPlaceKey({
+            name: details.name || place.name,
+            lat,
+            lng,
+            city: nextCity,
+            country: nextCountry,
+            osmType: nextOsmType,
+            osmId: nextOsmId,
+          });
+          resolvedPlace = {
+            ...place,
+            name: details.name || place.name,
+            categoryLabel:
+              normalizePlaceCategory(details) ||
+              (details.extratags ? normalizePlaceCategory(details.extratags) : null) ||
+              (details.name || place.name ? "Place" : "Address") ||
+              place.categoryLabel,
+            address: formatStreetAddress(details.address, details.display_name || place.address),
+            phone: extractPhone(details.extratags),
+            openingHours: hours ?? null,
+            openStatus: parseOpenStatus(hours),
+            osmType: nextOsmType,
+            osmId: nextOsmId,
+            city: nextCity,
+            country: nextCountry,
+            placeKey: nextKey,
+          };
+          setSelectedPlace(resolvedPlace);
+        }
       }
-      kickRoutePreview(resolvedPlace, { fitMap: true, refreshGps: true });
     } finally {
       setLoadingPlaceDetails(false);
     }
+
+    kickRoutePreview(place, { fitMap: true });
   }, [currentUserId, refreshRecentSearches, addStopMode, isLiveActive, destination, addPlaceAsRouteStop, kickRoutePreview]);
 
   const selectDestinationFromPlace = selectDestination;
 
-  const handleMapDoubleClick = useCallback(
-    (lat: number, lng: number) => {
-      void openMapLocationSheet(lat, lng, {
-        manual: !isFreshGpsStatus(gpsStatus),
-      });
-    },
-    [openMapLocationSheet, gpsStatus],
-  );
+  const closeMapClickMenu = useCallback(() => {
+    setMapClickMenu(null);
+  }, []);
 
-  const handleMapClick = useCallback(async (lat: number, lng: number, features: any[]) => {
-    if (isLiveActive) {
-      if (originPickMode) {
-        void handleOriginMapPick(lat, lng);
-        return;
-      }
-      if (addStopMode) {
-        const enriched = await enrichPlaceForTravel(mapPointToPlace({ lat, lng }));
-        addPlaceAsRouteStop(enriched);
-        return;
-      }
-      void openMapLocationSheet(lat, lng, { manual: !isFreshGpsStatus(gpsStatus) });
-      return;
-    }
-
-    if (originPickMode) {
-      void handleOriginMapPick(lat, lng);
-      return;
-    }
-
+  const openMapClickMenu = useCallback((payload: MapClickPayload) => {
     setViewingDetailsFromNearby(false);
     setShowSearchPopup(false);
     setShowSuggestionsCard(false);
@@ -1246,107 +1256,116 @@ export default function LivePage() {
     setNearbyError(null);
     setExpandedResultIndex(null);
     resetRoviExplanation();
-
-    setMapClickResolving(true);
     setNearbyPlacesAtClick(null);
+    setCoordinateOverlay(null);
+    setMapClickMenu({
+      lat: payload.lat,
+      lng: payload.lng,
+      screenX: payload.screenX,
+      screenY: payload.screenY,
+    });
+    setMapClickPin({ lat: payload.lat, lng: payload.lng });
+  }, []);
 
-    const fallbackPlace = buildDroppedPinPlace(lat, lng, userLocation);
-
+  const handlePickMapLocation = useCallback(async () => {
+    if (!mapClickMenu) return;
+    const { lat, lng } = mapClickMenu;
+    setMapClickResolving(true);
+    setMapClickMenu(null);
     try {
-      const scored = features
-        .map((f) => ({ feature: f, score: scoreFeature(f) }))
-        .sort((a, b) => b.score - a.score);
+      const details = await liveGeocodingReverse(lat, lng);
+      const place = buildPlaceFromMapPick(lat, lng, details, userLocation);
+      await selectDestination(place, {
+        origin: "map_click",
+        clickLat: lat,
+        clickLng: lng,
+        openDetailsPanel: true,
+      });
+    } catch {
+      const place = buildPlaceFromMapPick(lat, lng, null, userLocation);
+      await selectDestination(place, {
+        origin: "map_click",
+        clickLat: lat,
+        clickLng: lng,
+        openDetailsPanel: true,
+      });
+    } finally {
+      setMapClickResolving(false);
+    }
+  }, [mapClickMenu, userLocation, selectDestination]);
 
-      const bestFeatureObj = scored[0];
-      const bestFeature = bestFeatureObj?.feature;
-      const clickedName = bestFeature
-        ? (bestFeature.properties?.name ||
-           bestFeature.properties?.name_en ||
-           bestFeature.properties?.display_name ||
-           bestFeature.properties?.title ||
-           null)
-        : null;
+  const handleFindMapCoordinates = useCallback(() => {
+    if (!mapClickMenu) return;
+    const { lat, lng } = mapClickMenu;
+    setMapClickMenu(null);
+    setCoordinateOverlay({ lat, lng });
+    setMapClickPin({ lat, lng });
+    showToast(formatMapCoordinates(lat, lng));
+  }, [mapClickMenu]);
 
-      if (bestFeature && clickedName && bestFeatureObj.score >= 40) {
-        const labelPlace = mapLabelFeatureToPlacePreview(bestFeature, lat, lng, userLocation);
-        setMapClickResolving(false);
-        await selectDestinationFromPlace(labelPlace, {
-          origin: "map_click",
-          clickLat: lat,
-          clickLng: lng,
-        });
+  const handleMapDoubleClick = useCallback(
+    (payload: Omit<MapClickPayload, "features">) => {
+      if (isLiveActive) {
+        if (originPickMode) {
+          void handleOriginMapPick(payload.lat, payload.lng);
+          return;
+        }
+        if (addStopMode) {
+          void enrichPlaceForTravel(mapPointToPlace({ lat: payload.lat, lng: payload.lng })).then(
+            addPlaceAsRouteStop,
+          );
+          return;
+        }
+      }
+      if (originPickMode) {
+        void handleOriginMapPick(payload.lat, payload.lng);
+        return;
+      }
+      openMapClickMenu({ ...payload, features: [] });
+    },
+    [
+      isLiveActive,
+      originPickMode,
+      addStopMode,
+      handleOriginMapPick,
+      mapPointToPlace,
+      addPlaceAsRouteStop,
+      openMapClickMenu,
+    ],
+  );
+
+  const handleMapClick = useCallback(
+    (payload: MapClickPayload) => {
+      if (isLiveActive) {
+        if (originPickMode) {
+          void handleOriginMapPick(payload.lat, payload.lng);
+          return;
+        }
+        if (addStopMode) {
+          void enrichPlaceForTravel(mapPointToPlace({ lat: payload.lat, lng: payload.lng })).then(
+            addPlaceAsRouteStop,
+          );
+          return;
+        }
+      }
+
+      if (originPickMode) {
+        void handleOriginMapPick(payload.lat, payload.lng);
         return;
       }
 
-      let featureProperties: any = null;
-      if (bestFeature) {
-        const p = bestFeature.properties || {};
-        featureProperties = {};
-        const keysToPreserve = [
-          "name", "amenity", "shop", "tourism", "leisure", "healthcare",
-          "public_transport", "highway", "brand", "operator",
-          "class", "type", "category", "subclass", "kind",
-          "maki", "icon", "symbol", "marker-symbol",
-          "religion",
-          "osm_id", "osm_type"
-        ];
-        keysToPreserve.forEach((key) => {
-          if (p[key] !== undefined) {
-            featureProperties[key] = p[key];
-          }
-        });
-        if (bestFeature.layer?.id) {
-          featureProperties["layer.id"] = bestFeature.layer.id;
-        }
-        if (bestFeature.layer?.["source-layer"]) {
-          featureProperties["sourceLayer"] = bestFeature.layer["source-layer"];
-        }
-        if (bestFeature.id) {
-          featureProperties["id"] = bestFeature.id;
-        }
-      }
-
-      const response = await apiFetch<{ place: any; candidates: any[] }>("/places/resolve-click", {
-        method: "POST",
-        body: JSON.stringify({
-          lat,
-          lng,
-          clickedName,
-          featureProperties,
-          radiusMeters: 75
-        })
-      });
-
-      if (!response || !response.place) {
-        throw new Error("Invalid response from click resolver");
-      }
-
-      const p = response.place;
-      const primaryPlace = mapResolveClickPlace(p, userLocation);
-
-      const otherCandidates = (response.candidates || [])
-        .filter((c: any) => c.placeKey !== p.placeKey)
-        .map((c: any) => mapResolveClickPlace(c, userLocation));
-
-      setMapClickResolving(false);
-      await selectDestinationFromPlace(primaryPlace, {
-        origin: "map_click",
-        clickLat: lat,
-        clickLng: lng,
-      });
-      if (otherCandidates.length > 0) {
-        setNearbyPlacesAtClick(otherCandidates);
-      }
-    } catch {
-      logRovvyMapClickResolver("backend unavailable, using dropped pin fallback.");
-      setMapClickResolving(false);
-      await selectDestinationFromPlace(fallbackPlace, {
-        origin: "map_click",
-        clickLat: lat,
-        clickLng: lng,
-      });
-    }
-  }, [isLiveActive, userLocation, selectDestination, originPickMode, handleOriginMapPick]);
+      openMapClickMenu(payload);
+    },
+    [
+      isLiveActive,
+      originPickMode,
+      addStopMode,
+      handleOriginMapPick,
+      mapPointToPlace,
+      addPlaceAsRouteStop,
+      openMapClickMenu,
+    ],
+  );
 
   const selectPlace = useCallback(async (result: AutocompleteResult) => {
     const anchor = resolveSearchAnchor();
@@ -1637,6 +1656,10 @@ export default function LivePage() {
     setMapBearing(Math.round(bearing));
   }, []);
 
+  const handleZoomChange = useCallback((zoom: number) => {
+    setMapZoom(zoom);
+  }, []);
+
   const handleMapInteraction = useCallback((interacting: boolean) => {
     setIsMapInteracting((prev) => (prev === interacting ? prev : interacting));
   }, []);
@@ -1730,40 +1753,11 @@ export default function LivePage() {
   }, []);
 
   useEffect(() => {
-    if (destination) {
-      kickRoutePreviewRef.current(destination, { fitMap: false });
+    const previewTarget = destination ?? selectedPlace;
+    if (previewTarget) {
+      kickRoutePreviewRef.current(previewTarget, { fitMap: false });
     }
-  }, [travelMode, destination?.lat, destination?.lng, destination?.placeKey]);
-
-  useEffect(() => {
-    if (liveStage !== "place_preview" || !selectedPlace) return;
-    if (loadingPlaceDetails || mapClickResolving) return;
-    if (isUserChosenRouteOrigin(routeOriginRef.current)) return;
-    if (
-      userLocation &&
-      lastFetchedRouteRef.current &&
-      haversineM(
-        lastFetchedRouteRef.current.originLat,
-        lastFetchedRouteRef.current.originLng,
-        userLocation.lat,
-        userLocation.lng,
-      ) < 75
-    ) {
-      return;
-    }
-    kickRoutePreviewRef.current(selectedPlace, { fitMap: false });
-  }, [
-    liveStage,
-    selectedPlace?.lat,
-    selectedPlace?.lng,
-    travelMode,
-    userLocation?.lat,
-    userLocation?.lng,
-    gpsState.accuracyMeters,
-    loadingPlaceDetails,
-    mapClickResolving,
-    routeOrigin?.source,
-  ]);
+  }, [travelMode, destination?.lat, destination?.lng, destination?.placeKey, selectedPlace?.lat, selectedPlace?.lng, selectedPlace?.placeKey]);
 
   useEffect(() => {
     if (viewingDetailsFromNearby) {
@@ -1783,8 +1777,12 @@ export default function LivePage() {
       address: place.address,
       lat: place.lat,
       lng: place.lng,
+      city: place.city ?? undefined,
+      state: place.state ?? undefined,
+      country: place.country ?? undefined,
       category: place.categoryLabel,
       hasOpeningHours: Boolean(place.openingHours || place.openStatus),
+      source: place.source,
     };
   }
 
@@ -1841,6 +1839,9 @@ export default function LivePage() {
     resetRoviExplanation();
     setViewingDetailsFromNearby(false);
     setShowPlaceDetailsPanel(false);
+    setMapClickMenu(null);
+    setMapClickPin(null);
+    setCoordinateOverlay(null);
     setActiveRoute(null);
     setRoutePreviewStatus("idle");
     setRoutePreviewError(null);
@@ -2199,12 +2200,22 @@ export default function LivePage() {
     return "bg-emerald-500";
   }
 
+  const crossBorderAlert = useMemo(() => {
+    if (!locationContext?.countryMismatch) return null;
+    return {
+      fromCountry: userRegion?.country ?? null,
+      toCountry: roviTargetPlace?.country ?? null,
+    };
+  }, [locationContext?.countryMismatch, userRegion?.country, roviTargetPlace?.country]);
+
   return (
     <div className="h-full relative select-none">
       <LiveMapComponent
         activeLayer={activeLayer}
         mapRef={mapRef}
         mapPin={mapPin ? { lat: mapPin.lat, lng: mapPin.lng } : null}
+        mapClickPin={mapClickPin}
+        coordinateOverlay={coordinateOverlay}
         routeOriginPin={routeOriginPin}
         routeLine={routeLine}
         isLiveActive={isLiveActive}
@@ -2212,12 +2223,34 @@ export default function LivePage() {
         mapFollowMode={mapFollowMode}
         onGpsStateChange={handleGpsStateChange}
         nearbyResults={nearbyResults}
-        nearbyCategoryIcon={detectedSearchCategory?.icon ?? (nearbyCategory ? resolveLiveSearchCategory(nearbyCategory)?.icon : undefined)}
         onNearbyMarkerClick={handleResultClick}
         onMapClick={handleMapClick}
         onMapDoubleClick={handleMapDoubleClick}
         onMapInteraction={handleMapInteraction}
         onBearingChange={handleBearingChange}
+        onZoomChange={handleZoomChange}
+        crossBorderAlert={crossBorderAlert}
+      />
+
+      {mapClickMenu ? (
+        <LiveMapClickPopup
+          screenX={mapClickMenu.screenX}
+          screenY={mapClickMenu.screenY}
+          onPickLocation={() => void handlePickMapLocation()}
+          onFindCoordinates={handleFindMapCoordinates}
+          onClose={closeMapClickMenu}
+          loading={mapClickResolving}
+        />
+      ) : null}
+
+      <LiveMapRightControls
+        bearing={mapBearing}
+        zoom={mapZoom}
+        activeLayer={activeLayer}
+        onResetNorth={() => mapRef.current?.resetNorth()}
+        onZoomIn={() => mapRef.current?.zoomIn()}
+        onZoomOut={() => mapRef.current?.zoomOut()}
+        onZoomChange={(zoom) => mapRef.current?.setZoom(zoom)}
       />
 
       {toast ? (
@@ -2380,7 +2413,9 @@ export default function LivePage() {
                               onClick={() => handleInstantSuggestionClick(item)}
                             >
                               <span className="shrink-0 text-sm" aria-hidden>
-                                {item.type === "category_search" ? "🔎" : "🕘"}
+                                {item.type === "category_search"
+                                  ? (resolveLiveSearchCategory(item.category ?? "")?.icon ?? "🔎")
+                                  : "🕘"}
                               </span>
                               <span className="min-w-0">
                                 <span className="block text-sm font-medium text-stone-800 line-clamp-1">
@@ -2452,7 +2487,7 @@ export default function LivePage() {
                               }}
                             >
                               <span className="shrink-0 pt-0.5">
-                                {result.category === "Address" || result.category === "Building" ? "📌" : "📍"}
+                                {resolvePoiMapIcon({ categoryLabel: result.category, name: result.name })}
                               </span>
                               <span className="min-w-0">
                                 <span className="block text-sm font-medium text-stone-800 line-clamp-1">
@@ -2678,20 +2713,37 @@ export default function LivePage() {
                 <div className="overflow-y-auto pr-1 flex-1 space-y-2 max-h-[380px]">
                   {nearbyResults.map((res, index) => {
                     const distanceMiles = res.distanceM ? (res.distanceM / 1609.34).toFixed(1) : null;
+                    const presentation = getPoiMarkerPresentation(res);
                     return (
                       <div
                         key={res.placeKey}
-                        className="p-3 rounded-xl border transition-all cursor-pointer bg-white/40 border-stone-200/40 hover:bg-white/60 hover:border-stone-300/60"
+                        className={`p-3 rounded-xl border transition-all cursor-pointer bg-white/40 hover:bg-white/60 ${
+                          presentation.landmark
+                            ? "border-amber-300/70 hover:border-amber-400/80"
+                            : "border-stone-200/40 hover:border-stone-300/60"
+                        }`}
                         onClick={() => handleResultClick(res)}
                       >
                         <div className="flex items-start gap-2.5">
-                          {/* Number Badge */}
-                          <div className="w-5 h-5 rounded-full bg-[#0F766E] text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
-                            {index + 1}
+                          <div
+                            className={`relative w-7 h-7 rounded-full text-white flex items-center justify-center text-sm shrink-0 mt-0.5 ${
+                              presentation.landmark ? "ring-2 ring-amber-200" : ""
+                            }`}
+                            style={{ backgroundColor: presentation.background }}
+                          >
+                            <span aria-hidden>{presentation.icon}</span>
+                            <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full bg-[#1E293B] text-white text-[9px] font-bold flex items-center justify-center border border-white">
+                              {index + 1}
+                            </span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h4 className="font-semibold text-stone-800 text-xs truncate">
-                              {res.name}
+                            <h4 className="font-semibold text-stone-800 text-xs truncate flex items-center gap-1">
+                              <span className="truncate">{res.name}</span>
+                              {presentation.landmark ? (
+                                <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide text-amber-700">
+                                  Landmark
+                                </span>
+                              ) : null}
                             </h4>
                             <p className="text-[11px] text-stone-500 truncate mt-0.5">
                               {res.categoryLabel}{distanceMiles ? ` · ${distanceMiles} mi` : ""}
@@ -2768,6 +2820,8 @@ export default function LivePage() {
           routeDurationSeconds={activeRoute?.durationSeconds ?? null}
           routeDistanceMeters={activeRoute?.distanceMeters ?? null}
           routeLastMileNotice={activeRoute?.lastMileNotice ?? null}
+          routeBorderNotice={activeRoute?.borderNotice ?? null}
+          routeLastMileMode={activeRoute?.lastMileMode ?? null}
           travelMode={travelMode}
           nearbyPlacesAtClick={nearbyPlacesAtClick}
           onSelectNearbyPlaceAtClick={handleSelectNearbyPlaceAtClick}
@@ -2824,6 +2878,9 @@ export default function LivePage() {
           routePreviewStatus={routePreviewStatus}
           routeLoading={routeLoading}
           identifying={mapClickResolving || loadingPlaceDetails}
+          travelMode={travelMode}
+          routeLastMileNotice={activeRoute?.lastMileNotice ?? null}
+          routeBorderNotice={activeRoute?.borderNotice ?? null}
           onOpenDetails={() => setShowPlaceDetailsPanel(true)}
           onGo={handleGetDirections}
           onClose={clearSelectedPlace}
@@ -2900,21 +2957,14 @@ export default function LivePage() {
         />
       ) : null}
 
-      {/* Rovvy Map Dock — compact bottom-left, two horizontal rows (Google Maps style) */}
+      {/* Rovvy Map Dock — compact bottom-left: layers, fullscreen, GPS */}
       <div
-        className={`pointer-events-auto absolute z-40 flex flex-col gap-1 transition-all duration-200 ${LIVE_MAP_CONTROLS_POSITION}`}
+        className={`pointer-events-auto absolute z-40 transition-all duration-200 ${LIVE_MAP_CONTROLS_POSITION}`}
       >
-        {/* Row 1: map tools + layer panel anchor */}
-        <div className="relative">
+        <div className="relative flex items-center gap-1">
           <LiveMapToolsControl
-            mapBearing={mapBearing}
-            soundEnabled={soundEnabled}
-            alertsEnabled={alertsEnabled}
-            layersActive={activeLayer !== DEFAULT_LIVE_MAP_LAYER || layersPanelOpen}
+            layersPanelOpen={layersPanelOpen}
             onOpenLayers={() => setLayersPanelOpen((prev) => !prev)}
-            onResetNorth={() => mapRef.current?.resetNorth()}
-            onToggleSound={() => setSoundEnabled((prev) => !prev)}
-            onToggleAlerts={() => setAlertsEnabled((prev) => !prev)}
             onToggleFullscreen={() => {
               if (!document.fullscreenElement) {
                 void document.documentElement.requestFullscreen();
@@ -2923,70 +2973,11 @@ export default function LivePage() {
               }
             }}
           />
-          <div className="absolute top-0 left-0">
-            <LiveMapLayerControl
-              activeLayer={activeLayer}
-              onLayerChange={handleLayerChange}
-              open={layersPanelOpen}
-              onOpenChange={setLayersPanelOpen}
-              showTrigger={false}
-            />
-          </div>
-        </div>
 
-        {/* Row 2: zoom + locate */}
-        <div className="flex items-start gap-1">
-          {/* Zoom pair */}
-          <div
-            className="flex overflow-hidden rounded-md bg-white shadow-[0_1px_4px_rgba(0,0,0,0.22)]"
-            role="group"
-            aria-label="Zoom"
-          >
-            <button
-              type="button"
-              className="flex h-8 w-8 items-center justify-center text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-800 active:bg-stone-100"
-              onClick={() => mapRef.current?.zoomIn()}
-              title="Zoom in"
-              aria-label="Zoom in"
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" fill="none" aria-hidden>
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </button>
-            <div className="w-px self-stretch bg-stone-200/90" aria-hidden />
-            <button
-              type="button"
-              className="flex h-8 w-8 items-center justify-center text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-800 active:bg-stone-100"
-              onClick={() => mapRef.current?.zoomOut()}
-              title="Zoom out"
-              aria-label="Zoom out"
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" fill="none" aria-hidden>
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </button>
-          </div>
-
-          {/* 2D / 3D view toggle */}
-          <button
-            type="button"
-            onClick={handleToggleViewMode}
-            className={mapViewMode === "3d" ? LIVE_MAP_CTRL_BTN_ACTIVE : LIVE_MAP_CTRL_BTN}
-            title={mapViewMode === "3d" ? "Switch to 2D view" : "Switch to 3D view"}
-            aria-label={mapViewMode === "3d" ? "Switch to 2D view" : "Switch to 3D view"}
-            aria-pressed={mapViewMode === "3d"}
-          >
-            <span className="text-[10px] font-bold leading-none tracking-tight">
-              {mapViewMode === "3d" ? "2D" : "3D"}
-            </span>
-          </button>
-
-          {/* Current-location */}
           <div className="relative flex flex-col items-center gap-0.5">
             <button
               type="button"
-              className={`relative flex h-8 w-8 items-center justify-center rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.22)] transition-all duration-200 ${
+              className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.22)] transition-all duration-200 ${
                 gpsStatus === "active"
                   ? "bg-[#007F73] text-white hover:bg-[#00665c]"
                   : gpsStatus === "approximate"
@@ -3120,6 +3111,16 @@ export default function LivePage() {
               </div>
             ) : null}
           </div>
+
+          <LiveMapLayerControl
+            activeLayer={activeLayer}
+            onLayerChange={handleLayerChange}
+            open={layersPanelOpen}
+            onOpenChange={setLayersPanelOpen}
+            showTrigger={false}
+            mapViewMode={mapViewMode}
+            onToggleViewMode={handleToggleViewMode}
+          />
         </div>
       </div>
 

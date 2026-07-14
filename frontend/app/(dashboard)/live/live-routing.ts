@@ -1,6 +1,6 @@
 import { apiFetch, ApiFetchError } from "@/lib/api";
 import { logRovvyLiveDebug, logRovvyLiveError, logRovvyLiveWarn } from "./live-gps";
-import type { RouteLine, RouteManeuver } from "./live-types";
+import type { RouteLine, RouteManeuver, BorderCrossing } from "./live-types";
 
 export function isValidRouteCoordinate(lat: number, lng: number): boolean {
   return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
@@ -33,14 +33,31 @@ interface BackendRouteResponse {
   lastMileDistanceMeters?: number | null;
   lastMileDurationSeconds?: number | null;
   lastMileNotice?: string | null;
+  borderCrossings?: {
+    latitude: number;
+    longitude: number;
+    fromCountry: string;
+    toCountry: string;
+    label: string;
+    approximate?: boolean;
+    highlightGeometry?: [number, number][];
+  }[] | null;
+  borderNotice?: string | null;
 }
+
+export type FetchRouteOptions = {
+  originCountry?: string | null;
+  destinationCountry?: string | null;
+  destinationName?: string | null;
+};
 
 export async function fetchLiveRoute(
   origin: { lat: number; lng: number },
   destination: { lat: number; lng: number },
   travelMode: string = "Drive",
   active: boolean = false,
-  originSource: string = "gps"
+  originSource: string = "gps",
+  options?: FetchRouteOptions,
 ): Promise<FetchRouteResult> {
   if (
     !isValidRouteCoordinate(origin.lat, origin.lng) ||
@@ -70,11 +87,13 @@ export async function fetchLiveRoute(
             latitude: origin.lat,
             longitude: origin.lng,
             source: originSource,
+            country: options?.originCountry ?? null,
           },
           destination: {
             latitude: destination.lat,
             longitude: destination.lng,
-            name: null,
+            name: options?.destinationName ?? null,
+            country: options?.destinationCountry ?? null,
           },
           travelMode,
         }),
@@ -104,6 +123,16 @@ export async function fetchLiveRoute(
       location: m.location
     }));
 
+    const borderCrossings: BorderCrossing[] = (response.borderCrossings || []).map((crossing) => ({
+      lat: crossing.latitude,
+      lng: crossing.longitude,
+      fromCountry: crossing.fromCountry,
+      toCountry: crossing.toCountry,
+      label: crossing.label,
+      approximate: crossing.approximate,
+      highlightGeometry: crossing.highlightGeometry ?? undefined,
+    }));
+
     return {
       route: {
         from: origin,
@@ -117,6 +146,8 @@ export async function fetchLiveRoute(
         lastMileDistanceMeters: response.lastMileDistanceMeters ?? null,
         lastMileDurationSeconds: response.lastMileDurationSeconds ?? null,
         lastMileNotice: response.lastMileNotice ?? null,
+        borderCrossings: borderCrossings.length > 0 ? borderCrossings : undefined,
+        borderNotice: response.borderNotice ?? null,
       }
     };
   } catch (err) {

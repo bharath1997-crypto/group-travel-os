@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Layers, Map, Moon, Satellite, Sparkles } from "lucide-react";
+import { Check, Layers, Map, Moon, Mountain, Satellite, Sparkles } from "lucide-react";
 import type { LiveMapLayer } from "@/lib/map-providers";
+import { LIVE_MAP_LAYERS_PANEL_OFFSET } from "./live-layout";
 
 const LIVE_MAP_LAYER_OPTIONS = [
   {
@@ -27,6 +28,13 @@ const LIVE_MAP_LAYER_OPTIONS = [
     previewClass: "bg-gradient-to-br from-[#3D5A45] via-[#6B705C] to-[#2C3E2D]",
   },
   {
+    id: "terrain" as const,
+    label: "Terrain",
+    description: "Topography with elevation contours",
+    icon: "terrain" as const,
+    previewClass: "bg-gradient-to-br from-[#8B7355] via-[#6B8E5A] to-[#4A6741]",
+  },
+  {
     id: "hybrid" as const,
     label: "Hybrid",
     description: "Satellite with labels",
@@ -47,6 +55,7 @@ const LAYER_LABELS: Record<LiveMapLayer, string> = {
   street: "Detailed Map",
   clean: "Clean Map",
   satellite: "Satellite",
+  terrain: "Terrain",
   hybrid: "Hybrid",
   dark: "Dark",
 };
@@ -60,6 +69,8 @@ function LayerOptionIcon({ icon }: { icon: (typeof LIVE_MAP_LAYER_OPTIONS)[numbe
       return <Sparkles className={className} aria-hidden />;
     case "satellite":
       return <Satellite className={className} aria-hidden />;
+    case "terrain":
+      return <Mountain className={className} aria-hidden />;
     case "layers":
       return <Layers className={className} aria-hidden />;
     case "moon":
@@ -70,7 +81,7 @@ function LayerOptionIcon({ icon }: { icon: (typeof LIVE_MAP_LAYER_OPTIONS)[numbe
 function LayerPreview({ option }: { option: (typeof LIVE_MAP_LAYER_OPTIONS)[number] }) {
   return (
     <div
-      className={`relative h-11 w-11 shrink-0 rounded-xl border border-stone-200/80 shadow-inner ${option.previewClass}`}
+      className={`relative h-10 w-10 shrink-0 rounded-xl border border-stone-200/80 shadow-inner ${option.previewClass}`}
       aria-hidden
     >
       {option.id === "street" ? (
@@ -97,6 +108,14 @@ function LayerPreview({ option }: { option: (typeof LIVE_MAP_LAYER_OPTIONS)[numb
           </div>
         </>
       ) : null}
+      {option.id === "terrain" ? (
+        <>
+          <div className="absolute inset-x-1 top-3 h-px bg-white/30" />
+          <div className="absolute inset-x-2 top-5 h-px bg-white/20" />
+          <div className="absolute inset-x-1 top-7 h-px bg-white/15" />
+          <div className="absolute bottom-1.5 left-1.5 h-2 w-3 rounded-sm bg-[#5C7A3A]/50" />
+        </>
+      ) : null}
       {option.id === "dark" ? (
         <div className="absolute inset-x-2 top-4 h-px bg-white/15" />
       ) : null}
@@ -112,6 +131,8 @@ type Props = {
   onOpenChange?: (open: boolean) => void;
   /** Hide the floating layers orb (panel only). Default true. */
   showTrigger?: boolean;
+  mapViewMode?: "2d" | "3d";
+  onToggleViewMode?: () => void;
 };
 
 export default function LiveMapLayerControl({
@@ -120,6 +141,8 @@ export default function LiveMapLayerControl({
   open: openProp,
   onOpenChange,
   showTrigger = true,
+  mapViewMode,
+  onToggleViewMode,
 }: Props) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isControlled = openProp !== undefined;
@@ -182,7 +205,7 @@ export default function LiveMapLayerControl({
           aria-haspopup="dialog"
         >
           <Layers
-            className={`h-5 w-5 transition-colors ${open || activeLayer !== "clean" ? "text-[#007F73]" : "text-stone-500"}`}
+            className={`h-5 w-5 transition-colors ${open ? "text-[#007F73]" : "text-stone-500"}`}
           />
         </button>
       ) : null}
@@ -191,17 +214,17 @@ export default function LiveMapLayerControl({
         <div
           role="dialog"
           aria-label="Map layers"
-          className="pointer-events-auto absolute bottom-full left-0 z-50 mb-2 w-[min(18.5rem,calc(100vw-2rem))] max-md:fixed max-md:inset-x-4 max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] max-md:left-auto max-md:mb-0 max-md:w-auto"
+          className={`pointer-events-auto absolute bottom-full left-0 z-[60] w-[min(18.5rem,calc(100vw-2rem))] ${LIVE_MAP_LAYERS_PANEL_OFFSET} max-md:fixed max-md:inset-x-4 max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] max-md:left-auto max-md:mb-0 max-md:w-auto`}
         >
           <div className="overflow-hidden rounded-2xl bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.14)] backdrop-blur-md">
-            <div className="border-b border-stone-100/80 px-4 py-3">
+            <div className="border-b border-stone-100/80 px-4 py-2.5">
               <h3 className="text-sm font-semibold text-stone-900">Map layers</h3>
               <p className="mt-0.5 text-[11px] text-stone-500">
                 Current: {LAYER_LABELS[activeLayer]}
               </p>
             </div>
 
-            <ul className="flex max-h-[min(24rem,60vh)] flex-col gap-1 overflow-y-auto p-2">
+            <ul className="flex max-h-[min(26rem,62vh)] flex-col gap-0.5 overflow-y-auto p-1.5">
               {LIVE_MAP_LAYER_OPTIONS.map((option) => {
                 const selected = activeLayer === option.id;
                 return (
@@ -209,7 +232,7 @@ export default function LiveMapLayerControl({
                     <button
                       type="button"
                       onClick={() => selectLayer(option.id)}
-                      className={`flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors ${
+                      className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors ${
                         selected
                           ? "border border-[#007F73] bg-[#E6F7F4]"
                           : "border border-transparent hover:bg-stone-50"
@@ -242,6 +265,22 @@ export default function LiveMapLayerControl({
                 );
               })}
             </ul>
+
+            {onToggleViewMode ? (
+              <div className="border-t border-stone-100/80 p-2">
+                <button
+                  type="button"
+                  onClick={onToggleViewMode}
+                  className={`flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
+                    mapViewMode === "3d"
+                      ? "bg-[#E6F7F4] text-[#007F73]"
+                      : "bg-stone-50 text-stone-700 hover:bg-stone-100"
+                  }`}
+                >
+                  {mapViewMode === "3d" ? "Switch to 2D view" : "Switch to 3D view"}
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

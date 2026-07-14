@@ -38,6 +38,17 @@ export const LIVE_RESPONSIVE_PANEL_LAYOUT = [
 export const LIVE_ROUTE_SUMMARY_BOTTOM =
   "bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] md:bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))]";
 
+/** Gap between the layers panel and the top of the full map dock (tools + zoom rows). */
+export const LIVE_MAP_LAYERS_PANEL_OFFSET = "mb-2";
+
+/** Top-right compass — below header with edge gaps, not touching nav bar or screen edge. */
+export const LIVE_MAP_COMPASS_POSITION =
+  "top-[calc(4.75rem+env(safe-area-inset-top,0px))] right-4 md:top-[calc(5rem+env(safe-area-inset-top,0px))] md:right-5";
+
+/** Vertical zoom — stacked directly under the compass button. */
+export const LIVE_MAP_ZOOM_CONTROL_POSITION =
+  "top-[calc(7.75rem+env(safe-area-inset-top,0px))] right-4 md:top-[calc(8rem+env(safe-area-inset-top,0px))] md:right-5";
+
 /** Live map view tilt — flat vs perspective (Google Maps–style 2D/3D). */
 export type LiveMapViewMode = "2d" | "3d";
 

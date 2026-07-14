@@ -405,11 +405,21 @@ After every feature change, update this section in .cursorrules:
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2025-06 |
 | Browse-first auth (Phase 1 — explorer default, no login wall) | Modified | 2026-07 |
+| Live POI category icons (churches, libraries, schools, parks, landmarks) | Complete | 2026-07 |
+| Live map terrain layer (Esri World Topo) | Complete | 2026-07 |
+| Live map route persists across layer switches | Modified | 2026-07 |
+| Live map compass (top-right, transparent, expandable) | Complete | 2026-07 |
+| Live map zoom scale control (right edge slider) | Complete | 2026-07 |
+| Browse-first place pick (auto route preview on place select) | Modified | 2026-07 |
+| Live map click menu (pick location / find coordinates + context card) | Complete | 2026-07 |
+| Live map dock simplified (layers, fullscreen, GPS only) | Modified | 2026-07 |
+| Live map pick Wikipedia enrichment (live API, city fallback) | Complete | 2026-07 |
 | Live map right controls (Rovvy Map Dock: zoom rocker / locate / tools) | Modified | 2026-07 |
 | Live search instant suggestions + faster autocomplete | Modified | 2026-07 |
 | Live category search (waterfalls etc.) + map POI pins | Modified | 2026-07 |
 | Live search taxonomy DB (data/live_search_taxonomy.json) + Google Maps paste | Complete | 2026-07 |
 | Live Place Media Resolver (lazy placeKey lookup) | Complete | 2026-06 |
+| Live border immigration check (cross-country route detection + map highlight) | Modified | 2026-07 |
 | Buses page | Pending | — |
 
 ---
@@ -430,5 +440,7 @@ After every pytest run, update this section in .cursorrules:
 | tests/test_buddy.py | — | — |
 | tests/test_explore.py | — | — |
 | tests/test_place_media.py | 8 | 2026-06 |
-| tests/test_geocoding.py | 7 | 2026-06 |
-| tests/test_live_search_taxonomy.py | 9 | 2026-07 |
+| tests/test_place_wikipedia.py | 3 | 2026-07 |
+| tests/test_live_search_taxonomy.py | 11 | 2026-07 |
+| tests/test_live_routing.py | 5 | 2026-07 |
+| tests/test_border_crossing.py | 3 | 2026-07 |

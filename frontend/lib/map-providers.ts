@@ -196,6 +196,10 @@ export const DEV_TILE_DEFAULTS = {
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     attribution: "© Esri",
   },
+  terrain: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+    attribution: "© Esri",
+  },
   dark: {
     url: "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
     attribution: "© CARTO",
@@ -310,7 +314,7 @@ export const OPENFREEMAP_STREET_STYLE_URL =
 export const LIVE_MAP_MAX_ZOOM = 19;
 export const LIVE_MAP_MIN_ZOOM = 2;
 
-export type LiveMapLayer = "street" | "clean" | "satellite" | "hybrid" | "dark";
+export type LiveMapLayer = "street" | "clean" | "satellite" | "terrain" | "hybrid" | "dark";
 
 export type LiveMapStyle = StyleSpecification | string;
 
@@ -434,6 +438,21 @@ export function getLiveMapLibreLayerStyles(): Record<LiveMapLayer, LiveMapStyle>
       },
       layers: [
         { id: "esri-tiles", type: "raster", source: "esri", minzoom: 0, maxzoom: LIVE_MAP_MAX_ZOOM },
+      ],
+    },
+    terrain: {
+      version: 8,
+      sources: {
+        esri: {
+          type: "raster",
+          tiles: [DEV_TILE_DEFAULTS.terrain.url],
+          tileSize: 256,
+          attribution: DEV_TILE_DEFAULTS.terrain.attribution,
+          maxzoom: LIVE_MAP_MAX_ZOOM,
+        },
+      },
+      layers: [
+        { id: "esri-topo-tiles", type: "raster", source: "esri", minzoom: 0, maxzoom: LIVE_MAP_MAX_ZOOM },
       ],
     },
     dark: {

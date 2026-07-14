@@ -40,13 +40,37 @@ def test_exact_category_query():
     assert is_exact_category_query("Niagara Falls") is False
 
 
+def test_resolve_liquor_and_gas_categories():
+    assert resolve_category_from_query("liquor store")["key"] == "liquor"
+    assert resolve_category_from_query("gas station")["key"] == "gas"
+    assert resolve_category_from_query("restaurant")["key"] == "food"
+
+
+def test_resolve_civic_categories():
+    assert resolve_category_from_query("church")["key"] == "churches"
+    assert resolve_category_from_query("library")["key"] == "libraries"
+    assert resolve_category_from_query("school")["key"] == "schools"
+    assert resolve_category_from_query("college")["key"] == "schools"
+    assert resolve_category_from_query("university")["key"] == "schools"
+    assert resolve_category_from_query("landmark")["key"] == "landmarks"
+    assert resolve_category_from_query("monument")["key"] == "landmarks"
+    assert resolve_category_from_query("park")["key"] == "parks"
+
+
 def test_osm_queries_present_for_new_categories():
     queries = category_osm_queries()
     assert "rivers" in queries
     assert "canals" in queries
     assert "ports" in queries
+    assert "liquor" in queries
     assert "national_parks" in queries
+    assert "churches" in queries
+    assert "libraries" in queries
+    assert "schools" in queries
+    assert "landmarks" in queries
     assert len(queries["ports"]) >= 2
+    assert any("shop" in q and "alcohol" in q for q in queries["gas"])
+    assert any("place_of_worship" in q for q in queries["churches"])
 
 
 def test_keyword_map_includes_synonyms():

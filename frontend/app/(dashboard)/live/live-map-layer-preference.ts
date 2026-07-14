@@ -4,7 +4,7 @@ const STORAGE_KEY = "rovvy_live_map_layer";
 
 export const DEFAULT_LIVE_MAP_LAYER: LiveMapLayer = "clean";
 
-const VALID_LAYERS: LiveMapLayer[] = ["street", "clean", "satellite", "hybrid", "dark"];
+const VALID_LAYERS: LiveMapLayer[] = ["street", "clean", "satellite", "terrain", "hybrid", "dark"];
 
 export function loadLiveMapLayerPreference(): LiveMapLayer {
   if (typeof window === "undefined") return DEFAULT_LIVE_MAP_LAYER;

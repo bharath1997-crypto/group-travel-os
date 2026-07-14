@@ -6,6 +6,7 @@
     { "id": "water", "label": "Water" },
     { "id": "transport", "label": "Transport & ports" },
     { "id": "urban", "label": "Urban & daily" },
+    { "id": "civic", "label": "Civic & landmarks" },
     { "id": "stay", "label": "Stay & visit" }
   ],
   "categories": [
@@ -191,12 +192,16 @@
       "label": "Restaurants nearby",
       "mapLabel": "Food",
       "icon": "🍽️",
-      "keywords": ["food", "restaurant", "restaurants", "eat", "dining", "eatery"],
+      "keywords": ["food", "restaurant", "restaurants", "eat", "dining", "eatery", "bar", "pub"],
       "osm_queries": [
         "node[\"amenity\"=\"restaurant\"](around:{radius},{lat},{lng});",
         "way[\"amenity\"=\"restaurant\"](around:{radius},{lat},{lng});",
         "node[\"amenity\"=\"fast_food\"](around:{radius},{lat},{lng});",
-        "way[\"amenity\"=\"fast_food\"](around:{radius},{lat},{lng});"
+        "way[\"amenity\"=\"fast_food\"](around:{radius},{lat},{lng});",
+        "node[\"amenity\"=\"bar\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"bar\"](around:{radius},{lat},{lng});",
+        "node[\"amenity\"=\"pub\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"pub\"](around:{radius},{lat},{lng});"
       ]
     },
     {
@@ -220,7 +225,23 @@
       "keywords": ["gas", "fuel", "petrol", "gas station", "gas stations"],
       "osm_queries": [
         "node[\"amenity\"=\"fuel\"](around:{radius},{lat},{lng});",
-        "way[\"amenity\"=\"fuel\"](around:{radius},{lat},{lng});"
+        "way[\"amenity\"=\"fuel\"](around:{radius},{lat},{lng});",
+        "node[\"shop\"=\"alcohol\"](around:{radius},{lat},{lng});",
+        "way[\"shop\"=\"alcohol\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "liquor",
+      "group": "urban",
+      "label": "Liquor stores nearby",
+      "mapLabel": "Liquor",
+      "icon": "🍾",
+      "keywords": ["liquor", "liquor store", "liquor stores", "wine shop", "spirits", "alcohol", "beverage store"],
+      "osm_queries": [
+        "node[\"shop\"=\"alcohol\"](around:{radius},{lat},{lng});",
+        "way[\"shop\"=\"alcohol\"](around:{radius},{lat},{lng});",
+        "node[\"shop\"=\"beverages\"](around:{radius},{lat},{lng});",
+        "way[\"shop\"=\"beverages\"](around:{radius},{lat},{lng});"
       ]
     },
     {
@@ -283,6 +304,68 @@
       "osm_queries": [
         "node[\"amenity\"=\"atm\"](around:{radius},{lat},{lng});",
         "node[\"amenity\"=\"bank\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "churches",
+      "group": "civic",
+      "label": "Churches & places of worship nearby",
+      "mapLabel": "Churches",
+      "icon": "⛪",
+      "keywords": ["church", "churches", "chapel", "cathedral", "worship", "mosque", "synagogue", "temple", "gurdwara"],
+      "osm_queries": [
+        "node[\"amenity\"=\"place_of_worship\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"place_of_worship\"](around:{radius},{lat},{lng});",
+        "node[\"building\"=\"church\"](around:{radius},{lat},{lng});",
+        "way[\"building\"=\"church\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "libraries",
+      "group": "civic",
+      "label": "Libraries nearby",
+      "mapLabel": "Libraries",
+      "icon": "📚",
+      "keywords": ["library", "libraries", "public library", "book", "books"],
+      "osm_queries": [
+        "node[\"amenity\"=\"library\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"library\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "schools",
+      "group": "civic",
+      "label": "Schools & colleges nearby",
+      "mapLabel": "Schools",
+      "icon": "🏫",
+      "keywords": ["school", "schools", "college", "colleges", "university", "universities", "academy", "campus", "kindergarten", "high school"],
+      "osm_queries": [
+        "node[\"amenity\"=\"school\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"school\"](around:{radius},{lat},{lng});",
+        "node[\"amenity\"=\"college\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"college\"](around:{radius},{lat},{lng});",
+        "node[\"amenity\"=\"university\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"university\"](around:{radius},{lat},{lng});",
+        "node[\"amenity\"=\"kindergarten\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"kindergarten\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "landmarks",
+      "group": "civic",
+      "label": "Landmarks nearby",
+      "mapLabel": "Landmarks",
+      "icon": "⭐",
+      "keywords": ["landmark", "landmarks", "monument", "monuments", "memorial", "memorials", "historic", "statue", "sculpture", "attraction", "attractions"],
+      "osm_queries": [
+        "node[\"tourism\"=\"attraction\"](around:{radius},{lat},{lng});",
+        "way[\"tourism\"=\"attraction\"](around:{radius},{lat},{lng});",
+        "node[\"historic\"=\"monument\"](around:{radius},{lat},{lng});",
+        "node[\"historic\"=\"memorial\"](around:{radius},{lat},{lng});",
+        "way[\"historic\"=\"monument\"](around:{radius},{lat},{lng});",
+        "way[\"historic\"=\"memorial\"](around:{radius},{lat},{lng});",
+        "node[\"tourism\"=\"artwork\"](around:{radius},{lat},{lng});",
+        "way[\"tourism\"=\"artwork\"](around:{radius},{lat},{lng});"
       ]
     }
   ]
