@@ -8,14 +8,14 @@ const LIVE_MAP_LAYER_OPTIONS = [
   {
     id: "street" as const,
     label: "Detailed Map",
-    description: "Full street detail",
+    description: "Every house number always visible",
     icon: "map" as const,
     previewClass: "bg-gradient-to-br from-[#E8F5F3] via-[#F8FAFC] to-[#D1FAE5]",
   },
   {
     id: "clean" as const,
     label: "Clean Map",
-    description: "Simplified street view",
+    description: "Best for rides — zoom in for house numbers",
     icon: "clean" as const,
     previewClass: "bg-gradient-to-br from-[#F1F5F9] via-[#FFFFFF] to-[#ECFEFF]",
   },
@@ -182,7 +182,7 @@ export default function LiveMapLayerControl({
           aria-haspopup="dialog"
         >
           <Layers
-            className={`h-5 w-5 transition-colors ${open || activeLayer !== "street" ? "text-[#007F73]" : "text-stone-500"}`}
+            className={`h-5 w-5 transition-colors ${open || activeLayer !== "clean" ? "text-[#007F73]" : "text-stone-500"}`}
           />
         </button>
       ) : null}

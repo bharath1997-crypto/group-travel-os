@@ -102,6 +102,12 @@ import {
 } from "./live-gps";
 import { LIVE_MAP_CONTROLS_POSITION, type LiveMapViewMode } from "./live-layout";
 import LiveMapLayerControl from "./LiveMapLayerControl";
+import {
+  DEFAULT_LIVE_MAP_LAYER,
+  loadLiveMapLayerPreference,
+  saveLiveMapLayerPreference,
+} from "./live-map-layer-preference";
+import { mergeAutocompleteResults } from "./live-search-merge";
 import LiveMapToolsControl, {
   LIVE_MAP_CTRL_BTN,
   LIVE_MAP_CTRL_BTN_ACTIVE,
@@ -360,7 +366,12 @@ export default function LivePage() {
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchBlurRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [activeLayer, setActiveLayer] = useState<LiveMapLayer>("street");
+  const [activeLayer, setActiveLayer] = useState<LiveMapLayer>(() => loadLiveMapLayerPreference());
+  const handleLayerChange = useCallback((layer: LiveMapLayer) => {
+    setActiveLayer(layer);
+    saveLiveMapLayerPreference(layer);
+  }, []);
+
   const [layersPanelOpen, setLayersPanelOpen] = useState(false);
   const [liveStage, setLiveStage] = useState<LiveStage>("static_landing");
   const [workflowType, setWorkflowType] =
@@ -1583,7 +1594,12 @@ export default function LivePage() {
           anchor,
           abortControllerRef.current.signal,
         );
-        setSearchResults(results);
+        const map = mapRef.current;
+        const mapResults =
+          map?.supportsLabelSearch() && map
+            ? map.searchMapLabels(searchQuery, anchor, 6)
+            : [];
+        setSearchResults(mergeAutocompleteResults(results, mapResults));
         setSearchError(null);
       } catch (err: any) {
         if (err.name !== "AbortError") {
@@ -2894,7 +2910,7 @@ export default function LivePage() {
             mapBearing={mapBearing}
             soundEnabled={soundEnabled}
             alertsEnabled={alertsEnabled}
-            layersActive={activeLayer !== "street" || layersPanelOpen}
+            layersActive={activeLayer !== DEFAULT_LIVE_MAP_LAYER || layersPanelOpen}
             onOpenLayers={() => setLayersPanelOpen((prev) => !prev)}
             onResetNorth={() => mapRef.current?.resetNorth()}
             onToggleSound={() => setSoundEnabled((prev) => !prev)}
@@ -2910,7 +2926,7 @@ export default function LivePage() {
           <div className="absolute top-0 left-0">
             <LiveMapLayerControl
               activeLayer={activeLayer}
-              onLayerChange={setActiveLayer}
+              onLayerChange={handleLayerChange}
               open={layersPanelOpen}
               onOpenChange={setLayersPanelOpen}
               showTrigger={false}
