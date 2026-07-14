@@ -25,6 +25,7 @@ import {
   mapSupportsLabelSearch,
   searchVisibleMapLabels,
 } from "./live-map-labels";
+import { ensureCleanMapHouseNumberLabels } from "./live-clean-map-housenumbers";
 import type { AutocompleteResult } from "./live-geocoding";
 import type { RouteLine, UserLocationUpdate } from "./live-types";
 import { LOCAL_LIVE_MAX_M } from "./live-types";
@@ -641,6 +642,8 @@ export default function LiveMapComponent({
   nearbyCategoryIconRef.current = nearbyCategoryIcon;
   const onNearbyMarkerClickRef = useRef(onNearbyMarkerClick);
   onNearbyMarkerClickRef.current = onNearbyMarkerClick;
+  const activeLayerRef = useRef(activeLayer);
+  activeLayerRef.current = activeLayer;
 
   const restoreOverlaysAfterStyleChange = useCallback((map: maplibregl.Map) => {
     logRovvyLiveDebug("[Rovvy Debug] marker restore after style.load, userLocation:", userLocationRef.current);
@@ -722,6 +725,10 @@ export default function LiveMapComponent({
       nearbyMarkersRef.current,
       nearbyCategoryIconRef.current,
     );
+
+    if (activeLayerRef.current === "clean") {
+      ensureCleanMapHouseNumberLabels(map);
+    }
   }, []);
 
   const restoreOverlaysRef = useRef(restoreOverlaysAfterStyleChange);
