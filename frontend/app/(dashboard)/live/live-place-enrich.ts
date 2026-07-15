@@ -47,6 +47,7 @@ export async function enrichPlaceForTravel(place: PlacePreviewData): Promise<Pla
     ...place,
     address: travelAddress,
     city: reverseGeo.city ?? place.city,
+    state: details.address?.state ?? place.state,
     country: reverseGeo.country ?? place.country,
   };
 }

@@ -11,6 +11,34 @@ WIKI_HEADERS = {"User-Agent": "Rovvy/1.0 (https://rovvy.app; backend@rovvy.app)"
 WIKI_SEARCH_URL = "https://en.wikipedia.org/w/api.php"
 WIKI_SUMMARY_URL = "https://en.wikipedia.org/api/rest_v1/page/summary"
 
+_STREET_NAME_MARKERS = (
+    " avenue",
+    " ave",
+    " street",
+    " st ",
+    " road",
+    " rd ",
+    " boulevard",
+    " blvd",
+    " drive",
+    " dr ",
+    " lane",
+    " way",
+    " court",
+    " ct ",
+    " highway",
+    " hwy",
+    " circle",
+    " terrace",
+    " parkway",
+    " pkway",
+    " place",
+    " trail",
+    " route",
+)
+
+_ADDRESS_CATEGORIES = {"Address", "Coordinates", "Place"}
+
 _wiki_cache: dict[str, tuple[float, Any]] = {}
 CACHE_TTL = 86400  # 24 hours — in-memory only, not stored in Postgres
 MAX_CACHE_SIZE = 1000
@@ -37,6 +65,28 @@ def _normalize_wikipedia_title(raw: str) -> str:
         if len(lang) <= 3:
             return title
     return raw
+
+
+def _is_street_like_name(name: str) -> bool:
+    lower = f" {name.lower().strip()} "
+    if not lower.strip():
+        return False
+    if name.strip()[0].isdigit():
+        return True
+    return any(marker in lower for marker in _STREET_NAME_MARKERS)
+
+
+def _should_prefer_geo_lookup(
+    *,
+    name: str,
+    category: str,
+    source: str | None,
+) -> bool:
+    if category in _ADDRESS_CATEGORIES:
+        return True
+    if source in {"map_pick", "map_click", "nominatim", "search"}:
+        return True
+    return _is_street_like_name(name)
 
 
 def _build_summary_result(data: dict[str, Any], matched_on: str) -> dict[str, Any]:
@@ -73,6 +123,46 @@ async def _search_title(client: httpx.AsyncClient, query: str) -> str | None:
     if not hits:
         return None
     return str(hits[0].get("title") or "") or None
+
+
+async def _geosearch_nearby_titles(
+    client: httpx.AsyncClient,
+    lat: float,
+    lng: float,
+    *,
+    radius_m: int = 15000,
+    limit: int = 12,
+) -> set[str]:
+    resp = await client.get(
+        WIKI_SEARCH_URL,
+        params={
+            "action": "query",
+            "generator": "geosearch",
+            "ggscoord": f"{lat}|{lng}",
+            "ggsradius": radius_m,
+            "ggslimit": limit,
+            "prop": "info",
+            "inprop": "url",
+            "format": "json",
+        },
+        headers=WIKI_HEADERS,
+        timeout=4.0,
+    )
+    if resp.status_code != 200:
+        return set()
+
+    pages = resp.json().get("query", {}).get("pages", {})
+    if not isinstance(pages, dict):
+        return set()
+
+    titles: set[str] = set()
+    for page in pages.values():
+        if not isinstance(page, dict):
+            continue
+        title = str(page.get("title") or "").strip().lower()
+        if title:
+            titles.add(title)
+    return titles
 
 
 async def _geosearch_title(
@@ -201,7 +291,8 @@ class PlaceWikipediaService:
             candidates.append(("place", _normalize_wikipedia_title(wikipedia_title)))
 
         if name and name.lower() not in {"dropped pin", "selected coordinates", "selected location"}:
-            candidates.append(("place", name))
+            if not _is_street_like_name(name):
+                candidates.append(("place", name))
 
         if city:
             candidates.append(("city", city))
@@ -277,6 +368,33 @@ class PlaceWikipediaService:
                         _set_to_cache(cache_key, result)
                         return result
 
+                prefer_geo = _should_prefer_geo_lookup(
+                    name=name,
+                    category=category,
+                    source=source,
+                )
+                nearby_titles: set[str] | None = None
+
+                async def ensure_nearby_titles() -> set[str]:
+                    nonlocal nearby_titles
+                    if nearby_titles is None:
+                        nearby_titles = await _geosearch_nearby_titles(client, lat, lng)
+                    return nearby_titles
+
+                if prefer_geo:
+                    geo_title = await _geosearch_title(
+                        client,
+                        lat,
+                        lng,
+                        name_hint=city or state,
+                    )
+                    if geo_title:
+                        summary = await _fetch_summary(client, geo_title)
+                        if summary:
+                            result = _build_summary_result(summary, "nearby")
+                            _set_to_cache(cache_key, result)
+                            return result
+
                 for matched_on, query in cls._lookup_candidates(
                     name=name,
                     city=city,
@@ -287,24 +405,29 @@ class PlaceWikipediaService:
                     title = await _search_title(client, query)
                     if not title:
                         continue
+                    if prefer_geo and matched_on == "place":
+                        local_titles = await ensure_nearby_titles()
+                        if title.strip().lower() not in local_titles:
+                            continue
                     summary = await _fetch_summary(client, title)
                     if summary:
                         result = _build_summary_result(summary, matched_on)
                         _set_to_cache(cache_key, result)
                         return result
 
-                geo_title = await _geosearch_title(
-                    client,
-                    lat,
-                    lng,
-                    name_hint=city or name,
-                )
-                if geo_title:
-                    summary = await _fetch_summary(client, geo_title)
-                    if summary:
-                        result = _build_summary_result(summary, "nearby")
-                        _set_to_cache(cache_key, result)
-                        return result
+                if not prefer_geo:
+                    geo_title = await _geosearch_title(
+                        client,
+                        lat,
+                        lng,
+                        name_hint=city or name,
+                    )
+                    if geo_title:
+                        summary = await _fetch_summary(client, geo_title)
+                        if summary:
+                            result = _build_summary_result(summary, "nearby")
+                            _set_to_cache(cache_key, result)
+                            return result
         except Exception as exc:
             logger.warning("Wikipedia lookup failed for %s: %s", name, exc)
 

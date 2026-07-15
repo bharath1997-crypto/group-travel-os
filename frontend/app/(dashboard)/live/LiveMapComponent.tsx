@@ -16,16 +16,25 @@ import {
 } from "./live-gps";
 import {
   getLiveMapLibreLayerStyles,
-  LIVE_MAP_MAX_ZOOM,
   LIVE_MAP_MIN_ZOOM,
   warnIfUnsafeProductionTiles,
   type LiveMapLayer,
 } from "@/lib/map-providers";
 import {
+  applyLiveMapZoomLimits,
+  clampLiveMapZoom,
+  enforceLiveMapZoomCap,
+  isAtLiveMapMaxZoom,
+  resolveLiveMapMaxZoom,
+} from "./live-map-zoom-limits";
+import {
   mapSupportsLabelSearch,
   searchVisibleMapLabels,
 } from "./live-map-labels";
 import { ensureCleanMapHouseNumberLabels } from "./live-clean-map-housenumbers";
+import { syncTravelLayerOverlay } from "./live-travel-layer-sync";
+import { syncDarkMapStreetLabels } from "./live-dark-map-labels";
+import { createMeetupMarkerElement } from "./live-meetup-marker";
 import { getPoiMarkerPresentation } from "./live-poi-icons";
 import type { AutocompleteResult } from "./live-geocoding";
 import type { RouteLine, UserLocationUpdate } from "./live-types";
@@ -43,6 +52,7 @@ import {
   LIVE_MAP_3D_PITCH_THRESHOLD,
   type LiveMapViewMode,
 } from "./live-layout";
+import { bearingAlongRoute, blendBearing } from "./live-route-bearing";
 
 /** Extended arrow-cursor + custom Google Maps style pulse animations */
 const LIVE_MAP_CSS = `
@@ -128,6 +138,7 @@ export type LiveMapRef = {
   zoomIn: () => void;
   zoomOut: () => void;
   getZoom: () => number;
+  getMaxZoom: () => number;
   setZoom: (zoom: number) => void;
   locateUser: (forceFresh?: boolean) => void;
   getUserLocation: () => UserLocation | null;
@@ -146,7 +157,9 @@ export type LiveMapRef = {
   getPitch: () => number;
   getViewMode: () => LiveMapViewMode;
   setViewMode: (mode: LiveMapViewMode) => void;
+  enterNavigationView: () => void;
   fitBounds: (bounds: [[number, number], [number, number]]) => void;
+  restoreMapOverlays: () => void;
 };
 
 export type MapFollowMode = "default" | "local-only" | "off";
@@ -161,8 +174,12 @@ export type MapClickPayload = {
 
 type Props = {
   activeLayer: LiveMapLayer;
+  travelLayerEnabled?: boolean;
   mapRef: React.MutableRefObject<LiveMapRef | null>;
   mapPin?: { lat: number; lng: number } | null;
+  pinMode?: "meetup" | "selected";
+  pinLabel?: string | null;
+  mapZoom?: number;
   mapClickPin?: { lat: number; lng: number } | null;
   coordinateOverlay?: { lat: number; lng: number } | null;
   routeOriginPin?: { lat: number; lng: number } | null;
@@ -179,10 +196,13 @@ type Props = {
   onMapInteraction?: (interacting: boolean) => void;
   onBearingChange?: (bearing: number) => void;
   onZoomChange?: (zoom: number) => void;
+  onMaxZoomCapChange?: (maxZoom: number) => void;
   crossBorderAlert?: {
     fromCountry?: string | null;
     toCountry?: string | null;
   } | null;
+  /** When false, keep the camera on the selected pin even if a route line exists. */
+  autoFitRoute?: boolean;
 };
 
 function createUserMarkerElement(liveActive: boolean, navigating: boolean): HTMLDivElement {
@@ -197,8 +217,8 @@ function createUserMarkerElement(liveActive: boolean, navigating: boolean): HTML
   // All dot styling is inline — never depend on injected CSS for visibility.
   el.innerHTML = `
     <div style="position:relative;width:28px;height:28px;display:flex;align-items:center;justify-content:center;">
-      <div style="position:absolute;width:28px;height:28px;border-radius:50%;background:rgba(${pulseColor},0.18);border:1.5px solid rgba(${pulseColor},0.35);animation:rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25,0,0,1);pointer-events:none;z-index:1;"></div>
-      <div style="position:absolute;width:28px;height:28px;border-radius:50%;background:rgba(${pulseColor},0.10);border:1px solid rgba(${pulseColor},0.20);animation:rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25,0,0,1);animation-delay:1.2s;pointer-events:none;z-index:1;"></div>
+      <div style="position:absolute;width:28px;height:28px;border-radius:50%;background:rgba(${pulseColor},0.12);border:1px solid rgba(${pulseColor},0.28);animation:rovvy-gps-pulse 3.2s infinite cubic-bezier(0.25,0,0,1);pointer-events:none;z-index:1;"></div>
+      <div style="position:absolute;width:28px;height:28px;border-radius:50%;background:rgba(${pulseColor},0.06);border:1px dashed rgba(${pulseColor},0.22);animation:rovvy-gps-pulse 3.2s infinite cubic-bezier(0.25,0,0,1);animation-delay:1.6s;pointer-events:none;z-index:1;"></div>
       <div data-gps-dot="true" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:#ffffff;box-shadow:0 1px 6px rgba(0,0,0,0.4);z-index:4;display:flex;align-items:center;justify-content:center;">
         <div style="width:14px;height:14px;border-radius:50%;background:${dotColor};"></div>
       </div>
@@ -599,6 +619,37 @@ function syncBorderCrossingLayersNow(
   }
 }
 
+function removeWalkRouteLayers(map: maplibregl.Map) {
+  const walkLayerIds = [
+    "live-route-walk-line",
+    "live-route-walk-casing",
+  ];
+  for (const id of walkLayerIds) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource("live-route-walk")) map.removeSource("live-route-walk");
+}
+
+function splitRouteGeometry(routeLine: RouteLine): {
+  drive: [number, number][];
+  walk: [number, number][] | null;
+} {
+  const geometry = routeLine.geometry;
+  const walkIdx = routeLine.walkStartIndex;
+  if (
+    routeLine.lastMileMode === "walk" &&
+    walkIdx != null &&
+    walkIdx >= 0 &&
+    walkIdx < geometry.length - 1
+  ) {
+    return {
+      drive: geometry.slice(0, walkIdx + 1),
+      walk: geometry.slice(walkIdx),
+    };
+  }
+  return { drive: geometry, walk: null };
+}
+
 function syncRouteLayerNow(
   map: maplibregl.Map,
   routeLine: RouteLine | null | undefined,
@@ -614,16 +665,19 @@ function syncRouteLayerNow(
     if (map.getLayer(layerId)) map.removeLayer(layerId);
     if (map.getLayer(casingLayerId)) map.removeLayer(casingLayerId);
     if (map.getSource(sourceId)) map.removeSource(sourceId);
+    removeWalkRouteLayers(map);
     syncBorderCrossingLayersNow(map, null, activeLayer);
     return;
   }
+
+  const { drive, walk } = splitRouteGeometry(routeLine);
 
   const data: GeoJSON.Feature<GeoJSON.LineString> = {
     type: "Feature",
     properties: {},
     geometry: {
       type: "LineString",
-      coordinates: routeLine.geometry,
+      coordinates: drive,
     },
   };
 
@@ -704,6 +758,68 @@ function syncRouteLayerNow(
   }
 
   syncBorderCrossingLayersNow(map, routeLine, activeLayer);
+
+  if (walk && walk.length >= 2) {
+    const walkSourceId = "live-route-walk";
+    const walkCasingId = "live-route-walk-casing";
+    const walkLayerId = "live-route-walk-line";
+    const walkData: GeoJSON.Feature<GeoJSON.LineString> = {
+      type: "Feature",
+      properties: {},
+      geometry: { type: "LineString", coordinates: walk },
+    };
+    const walkSource = map.getSource(walkSourceId) as maplibregl.GeoJSONSource | undefined;
+    if (walkSource) {
+      walkSource.setData(walkData);
+    } else {
+      map.addSource(walkSourceId, { type: "geojson", data: walkData });
+    }
+    const walkApprox = routeLine.lastMileApproximate === true;
+    const walkColor = walkApprox ? "#F59E0B" : "#B45309";
+    const walkDash: number[] = walkApprox ? [1.5, 2.5] : [2, 1.5];
+    const walkCasingPaint = {
+      "line-color": "#FFFFFF",
+      "line-width": routeLine.active ? 8 : 6,
+      "line-opacity": 0.55,
+    };
+    const walkCorePaint = {
+      "line-color": walkColor,
+      "line-width": routeLine.active ? 5 : 4,
+      "line-opacity": 0.92,
+      "line-dasharray": walkDash,
+    };
+    if (map.getLayer(walkCasingId)) {
+      map.setPaintProperty(walkCasingId, "line-width", walkCasingPaint["line-width"]);
+    } else {
+      map.addLayer(
+        {
+          id: walkCasingId,
+          type: "line",
+          source: walkSourceId,
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: walkCasingPaint,
+        },
+        beforeId,
+      );
+    }
+    if (map.getLayer(walkLayerId)) {
+      map.setPaintProperty(walkLayerId, "line-color", walkCorePaint["line-color"]);
+      map.setPaintProperty(walkLayerId, "line-dasharray", walkCorePaint["line-dasharray"]);
+    } else {
+      map.addLayer(
+        {
+          id: walkLayerId,
+          type: "line",
+          source: walkSourceId,
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: walkCorePaint,
+        },
+        beforeId,
+      );
+    }
+  } else {
+    removeWalkRouteLayers(map);
+  }
 }
 
 function syncRouteLayer(
@@ -803,8 +919,12 @@ function syncNearbyMarkersNow(
 
 export default function LiveMapComponent({
   activeLayer,
+  travelLayerEnabled = false,
   mapRef,
   mapPin,
+  pinMode = "selected",
+  pinLabel,
+  mapZoom = 14,
   mapClickPin,
   coordinateOverlay,
   routeOriginPin,
@@ -821,7 +941,9 @@ export default function LiveMapComponent({
   onMapInteraction,
   onBearingChange,
   onZoomChange,
+  onMaxZoomCapChange,
   crossBorderAlert = null,
+  autoFitRoute = true,
 }: Props) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<maplibregl.Map | null>(null);
@@ -863,8 +985,8 @@ export default function LiveMapComponent({
     programmaticCameraMoveRef.current = true;
   }, []);
 
-  const callbacksRef = useRef({ onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange, onZoomChange });
-  callbacksRef.current = { onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange, onZoomChange };
+  const callbacksRef = useRef({ onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange, onZoomChange, onMaxZoomCapChange });
+  callbacksRef.current = { onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange, onZoomChange, onMaxZoomCapChange };
   const isLiveActiveRef = useRef(isLiveActive);
   isLiveActiveRef.current = isLiveActive;
   const navigationModeRef = useRef(navigationMode);
@@ -888,15 +1010,26 @@ export default function LiveMapComponent({
   routeOriginPinRef.current = routeOriginPin;
   const routeLineRef = useRef(routeLine);
   routeLineRef.current = routeLine;
+  const autoFitRouteRef = useRef(autoFitRoute);
+  autoFitRouteRef.current = autoFitRoute;
   const nearbyResultsRef = useRef(nearbyResults);
   nearbyResultsRef.current = nearbyResults;
   const onNearbyMarkerClickRef = useRef(onNearbyMarkerClick);
   onNearbyMarkerClickRef.current = onNearbyMarkerClick;
   const activeLayerRef = useRef(activeLayer);
   activeLayerRef.current = activeLayer;
+  const travelLayerEnabledRef = useRef(travelLayerEnabled);
+  travelLayerEnabledRef.current = travelLayerEnabled;
+
+  const zoomContext = useCallback(
+    () => ({ travelLayerEnabled: travelLayerEnabledRef.current }),
+    [],
+  );
 
   const restoreOverlaysAfterStyleChange = useCallback((map: maplibregl.Map) => {
     logRovvyLiveDebug("[Rovvy Debug] marker restore after style.load, userLocation:", userLocationRef.current);
+    syncTravelLayerOverlay(map, travelLayerEnabledRef.current, activeLayerRef.current);
+    syncDarkMapStreetLabels(map, activeLayerRef.current === "dark");
     syncRouteLayerNow(map, routeLineRef.current, activeLayerRef.current);
 
     const loc = userLocationRef.current;
@@ -992,7 +1125,9 @@ export default function LiveMapComponent({
     );
 
     if (activeLayerRef.current === "clean") {
-      ensureCleanMapHouseNumberLabels(map);
+      ensureCleanMapHouseNumberLabels(map, {
+        travelLayerEnabled: travelLayerEnabledRef.current,
+      });
     }
   }, []);
 
@@ -1013,13 +1148,16 @@ export default function LiveMapComponent({
     isUnmountedRef.current = false;
 
     const layerStyles = getLiveMapLibreLayerStyles();
+    const initialMaxZoom = resolveLiveMapMaxZoom(null, activeLayer, {
+      travelLayerEnabled,
+    });
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: layerStyles[activeLayer] || layerStyles.street,
       center: [-87.726, 41.922], // Pulaski Road, Chicago baseline coordinates
       zoom: 14,
       minZoom: LIVE_MAP_MIN_ZOOM,
-      maxZoom: LIVE_MAP_MAX_ZOOM,
+      maxZoom: initialMaxZoom,
       pitch: LIVE_MAP_2D_PITCH,
       maxPitch: LIVE_MAP_3D_PITCH,
       attributionControl: false,
@@ -1038,10 +1176,13 @@ export default function LiveMapComponent({
       }
     });
 
+    const enforceZoomCap = () => {
+      enforceLiveMapZoomCap(map, activeLayerRef.current, zoomContext());
+    };
+
     map.on("load", () => {
-      if (map.getZoom() > LIVE_MAP_MAX_ZOOM) {
-        map.setZoom(LIVE_MAP_MAX_ZOOM);
-      }
+      const maxZoom = applyLiveMapZoomLimits(map, activeLayerRef.current, zoomContext());
+      callbacksRef.current.onMaxZoomCapChange?.(maxZoom);
       logRovvyLiveDebug("[Rovvy Debug] Map loaded, restoring overlays");
       restoreOverlaysRef.current(map);
     });
@@ -1158,6 +1299,7 @@ export default function LiveMapComponent({
     emitBearing();
 
     const emitZoom = () => {
+      enforceZoomCap();
       callbacksRef.current.onZoomChange?.(map.getZoom());
     };
     map.on("zoom", emitZoom);
@@ -1304,13 +1446,22 @@ export default function LiveMapComponent({
       });
 
       if (navigationModeRef.current && navigationFollowUserRef.current) {
+        const route = routeLineRef.current;
+        let bearing = heading ?? map.getBearing();
+        if (route?.geometry && route.geometry.length >= 2) {
+          const routeBearing = bearingAlongRoute(route.geometry, lng, lat);
+          const blended = blendBearing(heading, routeBearing, heading != null ? 0.4 : 1);
+          if (blended != null) bearing = blended;
+        }
+
         markProgrammaticCameraMove();
+        viewModeRef.current = "3d";
         map.easeTo({
           center: [lng, lat],
-          bearing: heading ?? map.getBearing(),
-          zoom: 17,
-          pitch: 0,
-          padding: { top: 140, bottom: 220, left: 48, right: 48 },
+          bearing,
+          zoom: clampLiveMapZoom(17.5, map, activeLayerRef.current, zoomContext()),
+          pitch: LIVE_MAP_3D_PITCH,
+          padding: { top: 72, bottom: 260, left: 40, right: 40 },
           duration: 900,
           essential: true,
         });
@@ -1339,7 +1490,11 @@ export default function LiveMapComponent({
         }
 
         markProgrammaticCameraMove();
-        map.flyTo({ center: [lng, lat], zoom: 16, essential: true });
+        map.flyTo({
+          center: [lng, lat],
+          zoom: clampLiveMapZoom(16, map, activeLayerRef.current, zoomContext()),
+          essential: true,
+        });
         hasCenteredOnUserRef.current = true;
         bestAccuracyCenteredRef.current = accuracyMeters;
       }
@@ -1514,12 +1669,14 @@ export default function LiveMapComponent({
 
     mapRef.current = {
       zoomIn: () => {
-        if (map.getZoom() < LIVE_MAP_MAX_ZOOM) map.zoomIn();
+        if (isAtLiveMapMaxZoom(map.getZoom(), map, activeLayerRef.current, zoomContext())) return;
+        map.zoomIn();
       },
       zoomOut: () => map.zoomOut(),
       getZoom: () => map.getZoom(),
+      getMaxZoom: () => resolveLiveMapMaxZoom(map, activeLayerRef.current, zoomContext()),
       setZoom: (zoom: number) => {
-        const next = Math.min(LIVE_MAP_MAX_ZOOM, Math.max(LIVE_MAP_MIN_ZOOM, zoom));
+        const next = clampLiveMapZoom(zoom, map, activeLayerRef.current, zoomContext());
         map.easeTo({ zoom: next, duration: 180, essential: true });
       },
       getUserLocation: () => userLocationRef.current,
@@ -1535,7 +1692,8 @@ export default function LiveMapComponent({
       flyToPlace: (lat: number, lng: number, zoom = 15) => {
         routeFitKeyRef.current = "";
         markProgrammaticCameraMove();
-        map.flyTo({ center: [lng, lat], zoom, essential: true });
+        const cappedZoom = clampLiveMapZoom(zoom, map, activeLayerRef.current, zoomContext());
+        map.flyTo({ center: [lng, lat], zoom: cappedZoom, essential: true });
       },
       searchMapLabels: (query, anchor, limit = 8) =>
         searchVisibleMapLabels(map, query, anchor, limit),
@@ -1560,9 +1718,50 @@ export default function LiveMapComponent({
           essential: true,
         });
       },
+      enterNavigationView: () => {
+        navigationFollowUserRef.current = true;
+        viewModeRef.current = "3d";
+
+        const loc = userLocationRef.current;
+        const route = routeLineRef.current;
+        let bearing = map.getBearing();
+        let center: [number, number] = loc
+          ? [loc.lng, loc.lat]
+          : [map.getCenter().lng, map.getCenter().lat];
+
+        if (route?.geometry && route.geometry.length >= 2) {
+          const anchorLng = loc?.lng ?? route.geometry[0][0];
+          const anchorLat = loc?.lat ?? route.geometry[0][1];
+          if (!loc) {
+            center = [route.geometry[0][0], route.geometry[0][1]];
+          }
+          const routeBearing = bearingAlongRoute(route.geometry, anchorLng, anchorLat);
+          if (routeBearing != null) bearing = routeBearing;
+        }
+
+        markProgrammaticCameraMove();
+        map.easeTo({
+          center,
+          bearing,
+          zoom: clampLiveMapZoom(
+            17.5,
+            map,
+            activeLayerRef.current,
+            zoomContext(),
+          ),
+          pitch: LIVE_MAP_3D_PITCH,
+          padding: { top: 72, bottom: 260, left: 40, right: 40 },
+          duration: 700,
+          essential: true,
+        });
+      },
       fitBounds: (bounds) => {
         navigationFollowUserRef.current = false;
         map.fitBounds(bounds, { padding: 80, duration: 800 });
+      },
+      restoreMapOverlays: () => {
+        routeFitKeyRef.current = "";
+        restoreOverlaysRef.current(map);
       },
       locateUser: (forceFresh?: boolean) => {
         logRovvyLiveDebug("[Rovvy Debug] locateUser called", { forceFresh });
@@ -1625,7 +1824,11 @@ export default function LiveMapComponent({
           const loc = userLocationRef.current;
           if (loc) {
             markProgrammaticCameraMove();
-            map.flyTo({ center: [loc.lng, loc.lat], zoom: loc.accuracy && loc.accuracy > 150 ? 14 : 16, essential: true });
+            map.flyTo({
+              center: [loc.lng, loc.lat],
+              zoom: clampLiveMapZoom(loc.accuracy && loc.accuracy > 150 ? 14 : 16, map, activeLayerRef.current, zoomContext()),
+              essential: true,
+            });
             userMarkerRef.current?.togglePopup();
           } else {
             startLiveGps();
@@ -1710,8 +1913,8 @@ export default function LiveMapComponent({
     styleTransitionRef.current = true;
     map.setStyle(layerStyles[activeLayer] || layerStyles.street, { diff: false });
     map.once("style.load", () => {
-      map.setMaxZoom(LIVE_MAP_MAX_ZOOM);
-      map.setMinZoom(LIVE_MAP_MIN_ZOOM);
+      const maxZoom = applyLiveMapZoomLimits(map, activeLayer, zoomContext());
+      callbacksRef.current.onMaxZoomCapChange?.(maxZoom);
       map.setMaxPitch(LIVE_MAP_3D_PITCH);
       const targetPitch =
         viewModeRef.current === "3d" ? LIVE_MAP_3D_PITCH : LIVE_MAP_2D_PITCH;
@@ -1728,6 +1931,18 @@ export default function LiveMapComponent({
   useEffect(() => {
     const map = instanceRef.current;
     if (!map) return;
+    try {
+      if (!map.isStyleLoaded()) return;
+    } catch {
+      return;
+    }
+    const maxZoom = applyLiveMapZoomLimits(map, activeLayer, zoomContext());
+    callbacksRef.current.onMaxZoomCapChange?.(maxZoom);
+  }, [activeLayer]);
+
+  useEffect(() => {
+    const map = instanceRef.current;
+    if (!map) return;
 
     const applyRoute = () => {
       if (styleTransitionRef.current || !isMapStyleReady(map)) return;
@@ -1740,6 +1955,19 @@ export default function LiveMapComponent({
       map.off("styledata", applyRoute);
     };
   }, [routeLine, activeLayer]);
+
+  useEffect(() => {
+    const map = instanceRef.current;
+    if (!map) return;
+    syncTravelLayerOverlay(map, travelLayerEnabled, activeLayer);
+    if (activeLayer === "clean" && isMapStyleReady(map)) {
+      ensureCleanMapHouseNumberLabels(map, { travelLayerEnabled });
+    }
+    const maxZoom = applyLiveMapZoomLimits(map, activeLayer, {
+      travelLayerEnabled,
+    });
+    callbacksRef.current.onMaxZoomCapChange?.(maxZoom);
+  }, [travelLayerEnabled, activeLayer]);
 
   useEffect(() => {
     const map = instanceRef.current;
@@ -1800,6 +2028,12 @@ export default function LiveMapComponent({
   useEffect(() => {
     const map = instanceRef.current;
     if (!map) return;
+    syncDarkMapStreetLabels(map, activeLayer === "dark");
+  }, [activeLayer]);
+
+  useEffect(() => {
+    const map = instanceRef.current;
+    if (!map) return;
 
     if (!mapPin) {
       placeMarkerRef.current?.remove();
@@ -1807,9 +2041,19 @@ export default function LiveMapComponent({
       return;
     }
 
-    const el = navigationMode
-      ? createDestinationMarkerElement(navigationMode)
-      : createExactSelectedPlaceMarkerElement(mapPin.lat, mapPin.lng);
+    let el: HTMLDivElement;
+    let anchor: "center" | "bottom" = "center";
+    if (navigationMode) {
+      el = pinLabel
+        ? createMeetupMarkerElement(pinLabel, mapZoom)
+        : createDestinationMarkerElement(navigationMode);
+      anchor = pinLabel ? "bottom" : "center";
+    } else if (pinMode === "meetup") {
+      el = createMeetupMarkerElement(pinLabel ?? undefined, mapZoom);
+      anchor = "bottom";
+    } else {
+      el = createExactSelectedPlaceMarkerElement(mapPin.lat, mapPin.lng);
+    }
 
     if (placeMarkerRef.current) {
       placeMarkerRef.current.remove();
@@ -1818,11 +2062,11 @@ export default function LiveMapComponent({
 
     placeMarkerRef.current = new maplibregl.Marker({
       element: el,
-      anchor: navigationMode ? "center" : "center",
+      anchor,
     })
       .setLngLat([mapPin.lng, mapPin.lat])
       .addTo(map);
-  }, [mapPin, navigationMode]);
+  }, [mapPin, navigationMode, pinMode, pinLabel, mapZoom]);
 
   useEffect(() => {
     const map = instanceRef.current;
@@ -1929,17 +2173,22 @@ export default function LiveMapComponent({
     const followMode = mapFollowModeRef.current;
     if (followMode === "off") return;
 
-    const fitKey = routeLine
+    const shouldFitRoute = autoFitRouteRef.current && Boolean(routeLine);
+    const fitKey = shouldFitRoute
       ? `route:${mapPin.lat.toFixed(4)},${mapPin.lng.toFixed(4)}`
-      : crossBorderAlert
+      : crossBorderAlert && !routeLine
         ? `cross:${mapPin.lat.toFixed(4)},${mapPin.lng.toFixed(4)}`
         : `pin:${mapPin.lat.toFixed(4)},${mapPin.lng.toFixed(4)}`;
     if (routeFitKeyRef.current === fitKey) return;
     routeFitKeyRef.current = fitKey;
 
-    if (!routeLine && mapPin) {
+    if (!shouldFitRoute) {
       markProgrammaticCameraMove();
-      map.flyTo({ center: [mapPin.lng, mapPin.lat], zoom: 14, essential: true });
+      map.flyTo({
+        center: [mapPin.lng, mapPin.lat],
+        zoom: clampLiveMapZoom(14, map, activeLayerRef.current, zoomContext()),
+        essential: true,
+      });
       return;
     }
 
@@ -2008,8 +2257,12 @@ export default function LiveMapComponent({
     }
 
     markProgrammaticCameraMove();
-    map.flyTo({ center: [mapPin.lng, mapPin.lat], zoom: 15, essential: true });
-  }, [mapPin, routeLine, mapFollowMode, navigationMode, markProgrammaticCameraMove, crossBorderAlert]);
+    map.flyTo({
+      center: [mapPin.lng, mapPin.lat],
+      zoom: clampLiveMapZoom(15, map, activeLayerRef.current, zoomContext()),
+      essential: true,
+    });
+  }, [mapPin, routeLine, mapFollowMode, navigationMode, markProgrammaticCameraMove, crossBorderAlert, autoFitRoute]);
 
   return (
     <div className="relative w-full h-full rovvy-live-map-container">
@@ -2228,7 +2481,7 @@ function addAccuracyLayers(
       source: sourceId,
       paint: {
         "fill-color": "#1A73E8",
-        "fill-opacity": 0.15,
+        "fill-opacity": 0.12,
       },
     },
     beforeId
@@ -2241,8 +2494,9 @@ function addAccuracyLayers(
       source: sourceId,
       paint: {
         "line-color": "#1A73E8",
-        "line-width": 1,
-        "line-opacity": 0.4,
+        "line-width": 1.5,
+        "line-opacity": 0.5,
+        "line-dasharray": [5, 4],
       },
     },
     beforeId

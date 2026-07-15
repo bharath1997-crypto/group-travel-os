@@ -169,6 +169,15 @@ export const TILE_PROVIDER_REGISTRY: TileProviderEntry[] = [
     usedIn: ["live/LiveMapLayerControl.tsx (clean layer)"],
   },
   {
+    provider: "OpenRailwayMap",
+    layer: "street",
+    url: "https://tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png",
+    attribution: "© OpenRailwayMap © OpenStreetMap contributors",
+    productionRisk: "medium",
+    reason: "Global railway overlay for Live Travel layer toggle",
+    usedIn: ["live/live-travel-layer-sync.ts (travel overlay)"],
+  },
+  {
     provider: "MapLibre demo",
     layer: "street",
     url: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
@@ -310,11 +319,49 @@ export function tileUrlNeedsCommercialReview(url: string): boolean {
 export const OPENFREEMAP_STREET_STYLE_URL =
   "https://tiles.openfreemap.org/styles/liberty";
 
-/** Live Tab zoom limits — public OSM raster tiles are available through z19 only. */
-export const LIVE_MAP_MAX_ZOOM = 19;
-export const LIVE_MAP_MIN_ZOOM = 2;
-
 export type LiveMapLayer = "street" | "clean" | "satellite" | "terrain" | "hybrid" | "dark";
+
+/** Live Tab zoom limits — hard cap per layer so users never see blank tiles. */
+export const LIVE_MAP_MIN_ZOOM = 2;
+/** OpenFreeMap vector (Clean Map) — native tile data to z14; z16 with travel overlay overzoom. */
+export const LIVE_MAP_VECTOR_MAX_ZOOM = 14;
+/** Clean Map + Travel layer — extra headroom without housenumber clutter. */
+export const LIVE_MAP_CLEAN_TRAVEL_MAX_ZOOM = 16;
+/** Last native Esri raster tile level (z16 tiles overzoom for hybrid cap). */
+export const LIVE_MAP_ESRI_NATIVE_TILE_MAX_ZOOM = 16;
+/** Satellite & terrain — hard camera stop at 16.5. */
+export const LIVE_MAP_SATELLITE_MAX_ZOOM = 16.5;
+export const LIVE_MAP_TERRAIN_MAX_ZOOM = 16.5;
+/** Hybrid imagery + labels — hard camera stop at 16. */
+export const LIVE_MAP_HYBRID_MAX_ZOOM = 16;
+/** Dark (night) CARTO raster — hard camera stop at 17.5. */
+export const LIVE_MAP_DARK_MAX_ZOOM = 17.5;
+/** @deprecated Use LIVE_MAP_SATELLITE_MAX_ZOOM */
+export const LIVE_MAP_ESRI_VIEW_MAX_ZOOM = LIVE_MAP_SATELLITE_MAX_ZOOM;
+/** @deprecated Use LIVE_MAP_ESRI_VIEW_MAX_ZOOM */
+export const LIVE_MAP_ESRI_MAX_ZOOM = LIVE_MAP_ESRI_VIEW_MAX_ZOOM;
+/** CARTO + OSM raster (Detailed Map). */
+export const LIVE_MAP_CARTO_STREET_MAX_ZOOM = 18;
+
+/** Per-layer max zoom — last level with structural tile data for each basemap. */
+export const LIVE_MAP_LAYER_MAX_ZOOM: Record<LiveMapLayer, number> = {
+  street: LIVE_MAP_CARTO_STREET_MAX_ZOOM,
+  clean: LIVE_MAP_VECTOR_MAX_ZOOM,
+  satellite: LIVE_MAP_SATELLITE_MAX_ZOOM,
+  terrain: LIVE_MAP_TERRAIN_MAX_ZOOM,
+  hybrid: LIVE_MAP_HYBRID_MAX_ZOOM,
+  dark: LIVE_MAP_DARK_MAX_ZOOM,
+};
+
+export function getLiveMapMaxZoom(
+  layer: LiveMapLayer,
+  options?: { travelLayerEnabled?: boolean },
+): number {
+  if (layer === "clean" && options?.travelLayerEnabled) {
+    return LIVE_MAP_CLEAN_TRAVEL_MAX_ZOOM;
+  }
+  return LIVE_MAP_LAYER_MAX_ZOOM[layer];
+}
 
 export type LiveMapStyle = StyleSpecification | string;
 
@@ -322,6 +369,14 @@ function resolveHybridLabelTileUrl(): string | null {
   const override = process.env.NEXT_PUBLIC_MAP_HYBRID_LABEL_URL?.trim();
   if (override === "none") return null;
   return override || DEV_TILE_DEFAULTS.hybridLabels.transport;
+}
+
+function buildRasterBackgroundLayer(): StyleSpecification["layers"][number] {
+  return {
+    id: "rovvy-raster-background",
+    type: "background",
+    paint: { "background-color": "#d4dde4" },
+  };
 }
 
 function buildHybridStyle(streetFallback: LiveMapStyle): LiveMapStyle {
@@ -346,30 +401,31 @@ function buildHybridStyle(streetFallback: LiveMapStyle): LiveMapStyle {
       tiles: [DEV_TILE_DEFAULTS.satellite.url],
       tileSize: 256,
       attribution: `${DEV_TILE_DEFAULTS.satellite.attribution} ${DEV_TILE_DEFAULTS.hybridLabels.attribution}`,
-      maxzoom: LIVE_MAP_MAX_ZOOM,
+      maxzoom: LIVE_MAP_ESRI_NATIVE_TILE_MAX_ZOOM,
     },
     "esri-labels-transport": {
       type: "raster",
       tiles: [labelUrl],
       tileSize: 256,
-      maxzoom: LIVE_MAP_MAX_ZOOM,
+      maxzoom: LIVE_MAP_ESRI_NATIVE_TILE_MAX_ZOOM,
     },
   };
 
   const layers: StyleSpecification["layers"] = [
+    buildRasterBackgroundLayer(),
     {
       id: "esri-imagery",
       type: "raster",
       source: "esri",
       minzoom: 0,
-      maxzoom: LIVE_MAP_MAX_ZOOM,
+      maxzoom: LIVE_MAP_ESRI_NATIVE_TILE_MAX_ZOOM,
     },
     {
       id: "esri-labels-transport",
       type: "raster",
       source: "esri-labels-transport",
       minzoom: 0,
-      maxzoom: LIVE_MAP_MAX_ZOOM,
+      maxzoom: LIVE_MAP_ESRI_NATIVE_TILE_MAX_ZOOM,
     },
   ];
 
@@ -378,14 +434,14 @@ function buildHybridStyle(streetFallback: LiveMapStyle): LiveMapStyle {
       type: "raster",
       tiles: [placesUrl],
       tileSize: 256,
-      maxzoom: LIVE_MAP_MAX_ZOOM,
+      maxzoom: LIVE_MAP_ESRI_NATIVE_TILE_MAX_ZOOM,
     };
     layers.push({
       id: "esri-labels-places",
       type: "raster",
       source: "esri-labels-places",
       minzoom: 0,
-      maxzoom: LIVE_MAP_MAX_ZOOM,
+      maxzoom: LIVE_MAP_ESRI_NATIVE_TILE_MAX_ZOOM,
     });
   }
 
@@ -409,11 +465,11 @@ function buildDetailedStreetStyle(): LiveMapStyle {
         tiles: tileUrls,
         tileSize: 256,
         attribution: streetAttribution,
-        maxzoom: LIVE_MAP_MAX_ZOOM,
+        maxzoom: LIVE_MAP_CARTO_STREET_MAX_ZOOM,
       },
     },
     layers: [
-      { id: "osm-tiles", type: "raster", source: "osm", minzoom: 0, maxzoom: LIVE_MAP_MAX_ZOOM },
+      { id: "osm-tiles", type: "raster", source: "osm", minzoom: 0, maxzoom: LIVE_MAP_CARTO_STREET_MAX_ZOOM },
     ],
   };
 }
@@ -433,11 +489,12 @@ export function getLiveMapLibreLayerStyles(): Record<LiveMapLayer, LiveMapStyle>
           tiles: [DEV_TILE_DEFAULTS.satellite.url],
           tileSize: 256,
           attribution: DEV_TILE_DEFAULTS.satellite.attribution,
-          maxzoom: LIVE_MAP_MAX_ZOOM,
+          maxzoom: LIVE_MAP_ESRI_NATIVE_TILE_MAX_ZOOM,
         },
       },
       layers: [
-        { id: "esri-tiles", type: "raster", source: "esri", minzoom: 0, maxzoom: LIVE_MAP_MAX_ZOOM },
+        buildRasterBackgroundLayer(),
+        { id: "esri-tiles", type: "raster", source: "esri", minzoom: 0, maxzoom: LIVE_MAP_ESRI_MAX_ZOOM },
       ],
     },
     terrain: {
@@ -448,11 +505,12 @@ export function getLiveMapLibreLayerStyles(): Record<LiveMapLayer, LiveMapStyle>
           tiles: [DEV_TILE_DEFAULTS.terrain.url],
           tileSize: 256,
           attribution: DEV_TILE_DEFAULTS.terrain.attribution,
-          maxzoom: LIVE_MAP_MAX_ZOOM,
+          maxzoom: LIVE_MAP_ESRI_NATIVE_TILE_MAX_ZOOM,
         },
       },
       layers: [
-        { id: "esri-topo-tiles", type: "raster", source: "esri", minzoom: 0, maxzoom: LIVE_MAP_MAX_ZOOM },
+        buildRasterBackgroundLayer(),
+        { id: "esri-topo-tiles", type: "raster", source: "esri", minzoom: 0, maxzoom: LIVE_MAP_ESRI_MAX_ZOOM },
       ],
     },
     dark: {
@@ -463,11 +521,11 @@ export function getLiveMapLibreLayerStyles(): Record<LiveMapLayer, LiveMapStyle>
           tiles: [DEV_TILE_DEFAULTS.dark.url],
           tileSize: 256,
           attribution: DEV_TILE_DEFAULTS.dark.attribution,
-          maxzoom: LIVE_MAP_MAX_ZOOM,
+          maxzoom: LIVE_MAP_DARK_MAX_ZOOM,
         },
       },
       layers: [
-        { id: "carto-tiles", type: "raster", source: "carto", minzoom: 0, maxzoom: LIVE_MAP_MAX_ZOOM },
+        { id: "carto-tiles", type: "raster", source: "carto", minzoom: 0, maxzoom: LIVE_MAP_DARK_MAX_ZOOM },
       ],
     },
     hybrid: buildHybridStyle(detailedStreetStyle),

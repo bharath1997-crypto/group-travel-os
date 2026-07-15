@@ -71,5 +71,9 @@ class RoutePreviewResponse(BaseModel):
     lastMileDistanceMeters: float | None = None
     lastMileDurationSeconds: float | None = None
     lastMileNotice: str | None = None
+    """Index in geometry.coordinates where the walk/hike segment begins (drive ends at index-1)."""
+    walkStartIndex: int | None = None
+    """True when the walk segment is approximate (no trail graph found)."""
+    lastMileApproximate: bool | None = None
     borderCrossings: list[BorderCrossingOut] | None = None
     borderNotice: str | None = None

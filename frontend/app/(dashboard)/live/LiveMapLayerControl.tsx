@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Layers, Map, Moon, Mountain, Satellite, Sparkles } from "lucide-react";
+import { Check, Layers, Map, Moon, Mountain, Route, Satellite, Sparkles, Train } from "lucide-react";
 import type { LiveMapLayer } from "@/lib/map-providers";
 import { LIVE_MAP_LAYERS_PANEL_OFFSET } from "./live-layout";
 
@@ -126,6 +126,8 @@ function LayerPreview({ option }: { option: (typeof LIVE_MAP_LAYER_OPTIONS)[numb
 type Props = {
   activeLayer: LiveMapLayer;
   onLayerChange: (layer: LiveMapLayer) => void;
+  travelLayerEnabled?: boolean;
+  onTravelLayerChange?: (enabled: boolean) => void;
   /** Controlled open state — used when opened from Map Tools. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -138,6 +140,8 @@ type Props = {
 export default function LiveMapLayerControl({
   activeLayer,
   onLayerChange,
+  travelLayerEnabled = false,
+  onTravelLayerChange,
   open: openProp,
   onOpenChange,
   showTrigger = true,
@@ -265,6 +269,52 @@ export default function LiveMapLayerControl({
                 );
               })}
             </ul>
+
+            {onTravelLayerChange ? (
+              <div className="border-t border-stone-100/80 p-2">
+                <button
+                  type="button"
+                  onClick={() => onTravelLayerChange(!travelLayerEnabled)}
+                  className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors ${
+                    travelLayerEnabled
+                      ? "border border-[#007F73] bg-[#E6F7F4]"
+                      : "border border-transparent hover:bg-stone-50"
+                  }`}
+                  aria-pressed={travelLayerEnabled}
+                >
+                  <div
+                    className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border shadow-inner ${
+                      travelLayerEnabled
+                        ? "border-[#007F73]/30 bg-gradient-to-br from-[#E6F7F4] via-white to-[#D1FAE5]"
+                        : "border-stone-200/80 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E2E8F0]"
+                    }`}
+                    aria-hidden
+                  >
+                    <Route className="h-4 w-4 text-[#007F73]" />
+                    <Train className="absolute bottom-1.5 right-1.5 h-3 w-3 text-stone-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`text-sm font-semibold ${travelLayerEnabled ? "text-[#007F73]" : "text-stone-800"}`}
+                      >
+                        Travel layer
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[11px] leading-snug text-stone-500">
+                      Highways, city routes, railways & transit — zoom for detail
+                    </p>
+                  </div>
+                  {travelLayerEnabled ? (
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#007F73] text-white">
+                      <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+                    </span>
+                  ) : (
+                    <span className="h-6 w-6 shrink-0" aria-hidden />
+                  )}
+                </button>
+              </div>
+            ) : null}
 
             {onToggleViewMode ? (
               <div className="border-t border-stone-100/80 p-2">

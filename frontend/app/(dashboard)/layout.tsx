@@ -39,6 +39,10 @@ import {
   DashboardUserProvider,
   useDashboardUser,
 } from "@/contexts/dashboard-user-context";
+import {
+  readLiveImmersiveChrome,
+  type LiveImmersiveChromeState,
+} from "@/app/(dashboard)/live/live-immersive-chrome";
 import { API_BASE, apiFetch } from "@/lib/api";
 
 const CORAL = "#E94560";
@@ -458,7 +462,9 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     pathname.startsWith("/travel-hub");
   const hideBottomNav = false;
 
-  const isMapPage = pathname === "/map" || pathname === "/explore/map" || pathname === "/live" || pathname.startsWith("/live");
+  const isLivePage = pathname === "/live" || pathname.startsWith("/live/");
+  const isMapPage =
+    pathname === "/map" || pathname === "/explore/map" || isLivePage;
   const isExplorerEventsShell = pathname.startsWith("/explore/events");
   const isExploreShortsShell = pathname.startsWith("/explore/shorts");
   const isFlightsPage = pathname.startsWith("/flights");
@@ -481,6 +487,21 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const [sidebarProfileLoading, setSidebarProfileLoading] = useState(true);
   const [notifCount, setNotifCount] = useState(0);
   const [cartCount, setCartCount] = useState(0);
+  const [liveChrome, setLiveChrome] = useState<LiveImmersiveChromeState>({
+    active: false,
+    darkMap: false,
+  });
+
+  useEffect(() => {
+    if (!isLivePage) {
+      setLiveChrome({ active: false, darkMap: false });
+      return;
+    }
+    const sync = () => setLiveChrome(readLiveImmersiveChrome());
+    sync();
+    window.addEventListener("rovvy-live-chrome", sync);
+    return () => window.removeEventListener("rovvy-live-chrome", sync);
+  }, [isLivePage, pathname]);
 
   useEffect(() => {
     setMounted(true);
@@ -653,16 +674,24 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
   // Header height: 56px primary row + 44px sub-nav row when present
   const headerPx = hasSubNav ? 100 : 56;
+  const liveImmersiveHeader = isLivePage && liveChrome.active;
+  const liveDarkHeader = liveImmersiveHeader && liveChrome.darkMap;
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-[#F8F9FA]">
+    <div className={`min-h-screen min-h-[100dvh] ${isLivePage ? "bg-[#0F172A]" : "bg-[#F8F9FA]"}`}>
       <ConnectionStatusBanner />
 
       {/* ═══════════════════════════════════════════════════
           FIXED TOP HEADER — never hides on scroll
       ═══════════════════════════════════════════════════ */}
       <header
-        className="dashboard-header fixed top-0 left-0 right-0 z-40 overflow-visible border-b border-slate-100 bg-white shadow-[0_2px_8px_-1px_rgba(15,23,42,0.05)] select-none"
+        className={`dashboard-header fixed top-0 left-0 right-0 z-40 overflow-visible select-none transition-colors duration-300 ${
+          liveDarkHeader
+            ? "border-b border-white/10 bg-slate-950/55 shadow-none backdrop-blur-xl"
+            : liveImmersiveHeader
+              ? "border-b border-white/25 bg-white/70 shadow-[0_4px_24px_rgba(15,23,42,0.06)] backdrop-blur-xl"
+              : "border-b border-slate-100 bg-white shadow-[0_2px_8px_-1px_rgba(15,23,42,0.05)]"
+        }`}
       >
         <div className="flex h-14 items-center gap-3 overflow-visible px-3 md:gap-4 md:px-6">
           {/* Logo — image taller than the bar for a zoomed-in wordmark */}
@@ -670,8 +699,16 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             href="/explore"
             className="flex shrink-0 items-center overflow-visible focus-visible:outline-none"
           >
-            <RovvyLogo variant="primary" height={68} className="md:hidden" />
-            <RovvyLogo variant="primary" height={84} className="hidden md:block" />
+            <RovvyLogo
+              variant={liveDarkHeader ? "white" : "primary"}
+              height={68}
+              className="md:hidden"
+            />
+            <RovvyLogo
+              variant={liveDarkHeader ? "white" : "primary"}
+              height={84}
+              className="hidden md:block"
+            />
           </Link>
 
           {/* Search — centered in remaining space on desktop */}
@@ -700,8 +737,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                     href={section.href}
                     className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-all ${
                       active
-                        ? "text-[#007F73] bg-[#E6F7F4] ring-1 ring-[#007F73]/15"
-                        : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
+                        ? liveDarkHeader
+                          ? "bg-teal-500/20 text-teal-200 ring-1 ring-teal-300/30"
+                          : "text-[#007F73] bg-[#E6F7F4] ring-1 ring-[#007F73]/15"
+                        : liveDarkHeader
+                          ? "text-slate-300 hover:text-white hover:bg-white/10"
+                          : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
                     }`}
                     title={section.label}
                   >
@@ -716,7 +757,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
             {user ? (
               <>
-                <div className="hidden md:block h-6 w-px bg-stone-200" />
+                <div className={`hidden md:block h-6 w-px ${liveDarkHeader ? "bg-white/15" : "bg-stone-200"}`} />
 
                 <HeaderProfileMenu
                   displayName={sidebarDisplayName}
@@ -731,7 +772,11 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               <div className="flex items-center gap-2 sm:gap-3">
                 <Link
                   href={`/login?next=${encodeURIComponent(pathname)}`}
-                  className="px-2 py-2 text-sm font-semibold text-stone-600 hover:text-[#0F766E] sm:px-3"
+                  className={`px-2 py-2 text-sm font-semibold sm:px-3 ${
+                    liveDarkHeader
+                      ? "text-slate-200 hover:text-white"
+                      : "text-stone-600 hover:text-[#0F766E]"
+                  }`}
                 >
                   Log in
                 </Link>
@@ -785,13 +830,13 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           }
         >
           {isMapPage ? (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+            <div className={`flex min-h-0 flex-1 flex-col overflow-hidden ${isLivePage ? "bg-transparent" : "bg-white"}`}>
               <div className="sr-only" aria-hidden>
                 <PresenceHeartbeat />
               </div>
               <PostOAuthWelcomeModal />
               <VerificationBanner />
-              <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+              <div className={`relative flex min-h-0 flex-1 flex-col overflow-hidden ${isLivePage ? "bg-transparent" : "bg-white"}`}>
                 {children}
               </div>
             </div>

@@ -102,6 +102,8 @@ import {
 } from "./live-gps";
 import { LIVE_MAP_CONTROLS_POSITION, type LiveMapViewMode } from "./live-layout";
 import LiveMapLayerControl from "./LiveMapLayerControl";
+import LiveImmersiveChrome from "./LiveImmersiveChrome";
+import { isImmersiveDarkMapLayer } from "./live-immersive-chrome";
 import LiveMapRightControls from "./LiveMapRightControls";
 import LiveMapClickPopup from "./LiveMapClickPopup";
 import { buildPlaceFromMapPick, formatMapCoordinates } from "./live-map-pick-context";
@@ -111,13 +113,17 @@ import {
   loadLiveMapLayerPreference,
   saveLiveMapLayerPreference,
 } from "./live-map-layer-preference";
+import {
+  loadLiveTravelLayerPreference,
+  saveLiveTravelLayerPreference,
+} from "./live-travel-layer-preference";
 import { mergeAutocompleteResults } from "./live-search-merge";
 import {
   getPoiMarkerPresentation,
   resolvePoiMapIcon,
 } from "./live-poi-icons";
 import LiveMapToolsControl from "./LiveMapToolsControl";
-import type { LiveMapLayer } from "@/lib/map-providers";
+import { getLiveMapMaxZoom, type LiveMapLayer } from "@/lib/map-providers";
 import { mapLabelFeatureToPlacePreview } from "./live-map-labels";
 import RoviRouteIntelligencePanel from "./RoviRouteIntelligencePanel";
 import {
@@ -372,10 +378,27 @@ export default function LivePage() {
   const searchBlurRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [activeLayer, setActiveLayer] = useState<LiveMapLayer>(() => loadLiveMapLayerPreference());
-  const handleLayerChange = useCallback((layer: LiveMapLayer) => {
-    setActiveLayer(layer);
-    saveLiveMapLayerPreference(layer);
-  }, []);
+  const [travelLayerEnabled, setTravelLayerEnabled] = useState(() =>
+    loadLiveTravelLayerPreference(),
+  );
+
+  const handleLayerChange = useCallback(
+    (layer: LiveMapLayer) => {
+      setActiveLayer(layer);
+      setMapMaxZoom(getLiveMapMaxZoom(layer, { travelLayerEnabled }));
+      saveLiveMapLayerPreference(layer);
+    },
+    [travelLayerEnabled],
+  );
+
+  const handleTravelLayerChange = useCallback(
+    (enabled: boolean) => {
+      setTravelLayerEnabled(enabled);
+      saveLiveTravelLayerPreference(enabled);
+      setMapMaxZoom(getLiveMapMaxZoom(activeLayer, { travelLayerEnabled: enabled }));
+    },
+    [activeLayer],
+  );
 
   const [layersPanelOpen, setLayersPanelOpen] = useState(false);
   const [liveStage, setLiveStage] = useState<LiveStage>("static_landing");
@@ -461,6 +484,11 @@ export default function LivePage() {
   const [searchNeedsLocation, setSearchNeedsLocation] = useState(false);
   const [mapBearing, setMapBearing] = useState(0);
   const [mapZoom, setMapZoom] = useState(14);
+  const [mapMaxZoom, setMapMaxZoom] = useState(() =>
+    getLiveMapMaxZoom(loadLiveMapLayerPreference(), {
+      travelLayerEnabled: loadLiveTravelLayerPreference(),
+    }),
+  );
   const [mapViewMode, setMapViewMode] = useState<LiveMapViewMode>("2d");
   const lowAccuracyToastShownRef = useRef(false);
   const [userRegion, setUserRegion] = useState<{
@@ -647,7 +675,12 @@ export default function LivePage() {
         lastFetchedRouteRef.current.destLng === currentArgs.destLng &&
         lastFetchedRouteRef.current.travelMode === currentArgs.travelMode;
 
-      if (isDuplicate && !options?.active) {
+      if (isDuplicate) {
+        if (options?.active && activeRouteRef.current) {
+          setActiveRoute({ ...activeRouteRef.current, active: true });
+          setRoutePreviewStatus("ready");
+          setRouteLoading(false);
+        }
         return;
       }
       lastFetchedRouteRef.current = currentArgs;
@@ -1660,6 +1693,10 @@ export default function LivePage() {
     setMapZoom(zoom);
   }, []);
 
+  const handleMaxZoomCapChange = useCallback((maxZoom: number) => {
+    setMapMaxZoom(maxZoom);
+  }, []);
+
   const handleMapInteraction = useCallback((interacting: boolean) => {
     setIsMapInteracting((prev) => (prev === interacting ? prev : interacting));
   }, []);
@@ -1764,6 +1801,22 @@ export default function LivePage() {
       setShowPlaceDetailsPanel(true);
     }
   }, [viewingDetailsFromNearby]);
+
+  useEffect(() => {
+    const refocusSelectedPlaceOnMap = () => {
+      if (document.visibilityState !== "visible") return;
+      mapRef.current?.restoreMapOverlays();
+      if (!showPlaceDetailsPanel || !selectedPlace) return;
+      mapRef.current?.flyToPlace(selectedPlace.lat, selectedPlace.lng, 14);
+    };
+
+    document.addEventListener("visibilitychange", refocusSelectedPlaceOnMap);
+    window.addEventListener("focus", refocusSelectedPlaceOnMap);
+    return () => {
+      document.removeEventListener("visibilitychange", refocusSelectedPlaceOnMap);
+      window.removeEventListener("focus", refocusSelectedPlaceOnMap);
+    };
+  }, [showPlaceDetailsPanel, selectedPlace?.lat, selectedPlace?.lng]);
 
   function resetRoviExplanation() {
     setRoviExplanation(null);
@@ -1880,20 +1933,37 @@ export default function LivePage() {
     handleMakeDestination();
   }
 
+  function activateRouteForNavigation() {
+    setActiveRoute((prev) => (prev ? { ...prev, active: true } : prev));
+  }
+
+  function startWazeNavigation() {
+    setMapViewMode("3d");
+    mapRef.current?.setViewMode("3d");
+    mapRef.current?.enterNavigationView();
+    mapRef.current?.locateUser(true);
+  }
+
   function handleGetDirections() {
     if (!requireSolo() || !selectedPlace) return;
-    setDestination(selectedPlace);
+    if (routePreviewStatus !== "ready" || !activeRoute) {
+      showToast(routePreviewError || "Route unavailable right now.");
+      return;
+    }
+    const dest = selectedPlace;
+    setDestination(dest);
     dismissPlacePreviewForLive();
     setIsLiveActive(true);
-    setLiveStage("solo_drive_command");
+    setLiveStage("solo_drive_navigation");
     setTripStatus("on_the_way");
     mapRef.current?.clearClickedPin();
     recordRecentSearch(
-      { ...buildPlaceRecentSearch(selectedPlace), type: "destination" },
+      { ...buildPlaceRecentSearch(dest), type: "destination" },
       currentUserId,
     );
     refreshRecentSearches();
-    kickRoutePreview(selectedPlace, { active: true, fitMap: false, refreshGps: true });
+    activateRouteForNavigation();
+    startWazeNavigation();
   }
 
   function handleContinueFromPreview() {
@@ -1932,9 +2002,10 @@ export default function LivePage() {
     }
     dismissPlacePreviewForLive();
     setIsLiveActive(true);
-    setLiveStage("solo_drive_command");
+    setLiveStage("solo_drive_navigation");
     setTripStatus("on_the_way");
-    mapRef.current?.locateUser(true);
+    activateRouteForNavigation();
+    startWazeNavigation();
   }
 
   function handleChangeDestination() {
@@ -1965,7 +2036,8 @@ export default function LivePage() {
     setLiveStage("solo_drive_navigation");
     setIsLiveActive(true);
     setTripStatus("on_the_way");
-    mapRef.current?.locateUser(true);
+    activateRouteForNavigation();
+    startWazeNavigation();
   }
 
   function handleRouteOverview() {
@@ -1981,6 +2053,8 @@ export default function LivePage() {
     setIsLiveActive(false);
     setAddStopMode(false);
     setTripStatus("on_the_way");
+    setMapViewMode("2d");
+    mapRef.current?.setViewMode("2d");
 
     setLiveStage("destination_set");
     showToast("Solo Live ended.");
@@ -2153,14 +2227,14 @@ export default function LivePage() {
 
   const routeLine: RouteLine | null = useMemo(() => {
     if (!activeRoute) return null;
-    if (
-      liveStage !== "destination_set" &&
-      liveStage !== "long_distance_preview" &&
-      liveStage !== "place_preview" &&
-      !isLiveActive
-    ) {
-      return null;
-    }
+    const showRoute =
+      isLiveActive ||
+      liveStage === "destination_set" ||
+      liveStage === "long_distance_preview" ||
+      liveStage === "place_preview" ||
+      liveStage === "solo_drive_navigation" ||
+      liveStage === "solo_drive_command";
+    if (!showRoute) return null;
     return {
       ...activeRoute,
       active: isLiveActive,
@@ -2208,12 +2282,23 @@ export default function LivePage() {
     };
   }, [locationContext?.countryMismatch, userRegion?.country, roviTargetPlace?.country]);
 
+  const autoFitRouteOnMap =
+    !isNavigating &&
+    (liveStage === "destination_set" ||
+      liveStage === "long_distance_preview" ||
+      (isLiveActive && liveStage === "solo_drive_command"));
+
   return (
     <div className="h-full relative select-none">
+      <LiveImmersiveChrome activeLayer={activeLayer} />
       <LiveMapComponent
         activeLayer={activeLayer}
+        travelLayerEnabled={travelLayerEnabled}
         mapRef={mapRef}
         mapPin={mapPin ? { lat: mapPin.lat, lng: mapPin.lng } : null}
+        pinMode={destination ? "meetup" : "selected"}
+        pinLabel={destination?.name ?? selectedPlace?.name ?? null}
+        mapZoom={mapZoom}
         mapClickPin={mapClickPin}
         coordinateOverlay={coordinateOverlay}
         routeOriginPin={routeOriginPin}
@@ -2229,7 +2314,9 @@ export default function LivePage() {
         onMapInteraction={handleMapInteraction}
         onBearingChange={handleBearingChange}
         onZoomChange={handleZoomChange}
+        onMaxZoomCapChange={handleMaxZoomCapChange}
         crossBorderAlert={crossBorderAlert}
+        autoFitRoute={autoFitRouteOnMap}
       />
 
       {mapClickMenu ? (
@@ -2246,6 +2333,7 @@ export default function LivePage() {
       <LiveMapRightControls
         bearing={mapBearing}
         zoom={mapZoom}
+        maxZoom={mapMaxZoom}
         activeLayer={activeLayer}
         onResetNorth={() => mapRef.current?.resetNorth()}
         onZoomIn={() => mapRef.current?.zoomIn()}
@@ -2273,20 +2361,21 @@ export default function LivePage() {
       {/* Floating in-map search bar & selectors */}
       {!isNavigating ? (
         <div
-          className={`absolute top-4 left-4 z-30 flex flex-col gap-4 max-w-[calc(100%-2rem)] transition-all duration-300 ${
+          className={`absolute left-1/2 top-[calc(0.5rem+env(safe-area-inset-top,0px))] z-30 flex w-[min(100%,28rem)] -translate-x-1/2 flex-col gap-3 px-3 transition-all duration-300 sm:w-[min(100%,32rem)] md:top-[calc(0.65rem+env(safe-area-inset-top,0px))] ${
             isMapInteracting
-              ? "opacity-0 pointer-events-none translate-y-[-10px]"
-              : "opacity-100 pointer-events-auto translate-y-0"
+              ? "pointer-events-none translate-y-[-10px] opacity-0"
+              : "pointer-events-auto translate-y-0 opacity-100"
           }`}
         >
-          {/* Top Row: Search Bar & Selectors */}
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Search Bar Container */}
-            <div className="relative" id="search-container">
-              {/* Floating Search Bar */}
-              <div
-                className="flex h-11 items-center gap-2 pl-2 pr-1.5 rounded-full bg-white/95 backdrop-blur-md border border-[rgba(15,23,42,0.10)] shadow-[0_8px_24px_rgba(15,23,42,0.10)] w-80 sm:w-[420px]"
-              >
+          {/* Centered search bar */}
+          <div className="relative w-full" id="search-container">
+            <div
+              className={`flex h-11 w-full items-center gap-2 rounded-full border pl-2 pr-1.5 shadow-[0_8px_24px_rgba(15,23,42,0.10)] backdrop-blur-md ${
+                isImmersiveDarkMapLayer(activeLayer)
+                  ? "border-white/15 bg-slate-950/72 text-white"
+                  : "border-[rgba(15,23,42,0.10)] bg-white/95"
+              }`}
+            >
                 <TravelModeChip
                   travelMode={travelMode}
                   workflowType={workflowType}
@@ -2329,7 +2418,11 @@ export default function LivePage() {
                     setShowSearchPopup(true);
                   }}
                   placeholder="Search places, stops, meet points"
-                  className="w-full bg-transparent focus:outline-none text-sm text-stone-800 placeholder:text-stone-400"
+                  className={`w-full bg-transparent text-sm focus:outline-none ${
+                    isImmersiveDarkMapLayer(activeLayer)
+                      ? "text-white placeholder:text-slate-400"
+                      : "text-stone-800 placeholder:text-stone-400"
+                  }`}
                 />
                 {searchLoading ? (
                   <span className="mr-1 shrink-0 text-[10px] text-stone-400 animate-pulse">…</span>
@@ -2649,13 +2742,12 @@ export default function LivePage() {
             {/* Status Pill Chip */}
             {liveStage !== "static_landing" && (
               <div
-                className={`flex items-center gap-1.5 h-9 px-3.5 rounded-full text-xs font-semibold shadow-[0_4px_18px_rgba(15,23,42,0.05)] select-none shrink-0 border border-current/10 transition-all duration-200 ${statusPillClass()}`}
+                className={`mx-auto flex h-9 shrink-0 select-none items-center gap-1.5 self-center rounded-full border border-current/10 px-3.5 text-xs font-semibold shadow-[0_4px_18px_rgba(15,23,42,0.05)] transition-all duration-200 ${statusPillClass()}`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${statusDotClass()}`} />
                 {statusPillLabel()}
               </div>
             )}
-          </div>
 
           {/* Nearby Suggestions Results Panel */}
           {nearbyCategory && !selectedPlace && (
@@ -3115,6 +3207,8 @@ export default function LivePage() {
           <LiveMapLayerControl
             activeLayer={activeLayer}
             onLayerChange={handleLayerChange}
+            travelLayerEnabled={travelLayerEnabled}
+            onTravelLayerChange={handleTravelLayerChange}
             open={layersPanelOpen}
             onOpenChange={setLayersPanelOpen}
             showTrigger={false}

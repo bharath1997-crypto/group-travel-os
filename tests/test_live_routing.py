@@ -176,6 +176,152 @@ def test_route_preview_adds_last_mile_walk(auth_user):
         assert body["lastMileDistanceMeters"] == 80.0
         assert body["lastMileNotice"]
         assert len(body["geometry"]["coordinates"]) >= 3
+        assert body["walkStartIndex"] == 1
+        assert body["lastMileApproximate"] is False
+
+
+def test_route_preview_last_mile_approximate_when_foot_unavailable(auth_user):
+    from unittest.mock import patch, AsyncMock
+
+    drive_resp = MagicMock()
+    drive_resp.status_code = 200
+    drive_resp.json.return_value = {
+        "code": "Ok",
+        "routes": [
+            {
+                "distance": 5000.0,
+                "duration": 600.0,
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[-105.9, 35.8], [-105.85, 35.82]],
+                },
+                "legs": [{"steps": []}],
+            }
+        ],
+    }
+
+    empty_walk = MagicMock()
+    empty_walk.status_code = 200
+    empty_walk.json.return_value = {"code": "Ok", "routes": []}
+
+    async def mock_get(url, *args, **kwargs):
+        if "/route/v1/foot/" in url:
+            return empty_walk
+        return drive_resp
+
+    async def mock_post(url, *args, **kwargs):
+        resp = MagicMock()
+        resp.status_code = 404
+        return resp
+
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock, side_effect=mock_get), patch(
+        "httpx.AsyncClient.post", new_callable=AsyncMock, side_effect=mock_post
+    ), patch(
+        "app.services.live_routing_service.BorderCrossingService.detect_crossings",
+        new_callable=AsyncMock,
+        return_value=[],
+    ), patch(
+        "app.services.live_routing_service.settings.google_routes_api_key",
+        "test-google-key",
+    ):
+        res = client.post(
+            "/api/v1/live/route-preview",
+            json={
+                "origin": {"latitude": 35.7, "longitude": -106.0, "source": "gps"},
+                "destination": {
+                    "latitude": 35.93572,
+                    "longitude": -105.78893,
+                    "name": "Sierra Mosca Trail",
+                },
+                "travelMode": "Drive",
+            },
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert body["status"] == "ready"
+        assert body["lastMileMode"] == "walk"
+        assert body["lastMileApproximate"] is True
+        assert body["walkStartIndex"] == 1
+        assert len(body["geometry"]["coordinates"]) > 2
+
+
+def test_route_preview_rejects_degenerate_zero_meter_foot(auth_user):
+    from unittest.mock import patch, AsyncMock
+
+    drive_resp = MagicMock()
+    drive_resp.status_code = 200
+    drive_resp.json.return_value = {
+        "code": "Ok",
+        "routes": [
+            {
+                "distance": 25000.0,
+                "duration": 7000.0,
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[-107.2, 40.81], [-107.19, 40.812]],
+                },
+                "legs": [{"steps": []}],
+            }
+        ],
+    }
+
+    zero_walk = MagicMock()
+    zero_walk.status_code = 200
+    zero_walk.json.return_value = {
+        "code": "Ok",
+        "routes": [
+            {
+                "distance": 0.0,
+                "duration": 0.0,
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[-107.19, 40.812], [-107.19, 40.812]],
+                },
+            }
+        ],
+    }
+
+    async def mock_get(url, *args, **kwargs):
+        if "/route/v1/foot/" in url:
+            return zero_walk
+        return drive_resp
+
+    async def mock_post(url, *args, **kwargs):
+        resp = MagicMock()
+        resp.status_code = 404
+        return resp
+
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock, side_effect=mock_get), patch(
+        "httpx.AsyncClient.post", new_callable=AsyncMock, side_effect=mock_post
+    ), patch(
+        "app.services.live_routing_service.BorderCrossingService.detect_crossings",
+        new_callable=AsyncMock,
+        return_value=[],
+    ):
+        res = client.post(
+            "/api/v1/live/route-preview",
+            json={
+                "origin": {"latitude": 40.7, "longitude": -107.3, "source": "gps"},
+                "destination": {
+                    "latitude": 40.81301,
+                    "longitude": -107.18569,
+                    "name": "Slater Park Road",
+                },
+                "travelMode": "Drive",
+            },
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert body["status"] == "ready"
+        assert body["lastMileMode"] == "walk"
+        assert body["lastMileApproximate"] is True
+        assert (body["lastMileDistanceMeters"] or 0) > 100
+        assert body["walkStartIndex"] == 1
+        coords = body["geometry"]["coordinates"]
+        assert len(coords) > 2
+        end_lng, end_lat = coords[-1]
+        assert abs(end_lat - 40.81301) < 0.001
+        assert abs(end_lng - (-107.18569)) < 0.001
 
 
 def test_route_preview_includes_border_crossing(auth_user):

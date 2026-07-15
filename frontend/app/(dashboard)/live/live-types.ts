@@ -77,6 +77,10 @@ export type RouteLine = {
   lastMileDistanceMeters?: number | null;
   lastMileDurationSeconds?: number | null;
   lastMileNotice?: string | null;
+  /** Index in geometry where walk/hike segment begins. */
+  walkStartIndex?: number | null;
+  /** True when walk segment is approximate (no trail graph). */
+  lastMileApproximate?: boolean | null;
   borderCrossings?: BorderCrossing[];
   borderNotice?: string | null;
 };
