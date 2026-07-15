@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 
-import { LIVE_MAP_MAX_ZOOM, LIVE_MAP_MIN_ZOOM } from "@/lib/map-providers";
+import { LIVE_MAP_MIN_ZOOM } from "@/lib/map-providers";
+import { LIVE_MAP_ZOOM_CAP_EPSILON } from "./live-map-zoom-limits";
 import type { LiveMapLayer } from "@/lib/map-providers";
 import { LIVE_MAP_ZOOM_CONTROL_POSITION } from "./live-layout";
 import {
@@ -15,6 +16,7 @@ import {
 
 type Props = {
   zoom: number;
+  maxZoom: number;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomChange: (zoom: number) => void;
@@ -42,6 +44,7 @@ function ZoomScaleTicks({ isDark }: { isDark: boolean }) {
 
 export default function LiveMapZoomControl({
   zoom,
+  maxZoom,
   onZoomIn,
   onZoomOut,
   onZoomChange,
@@ -75,8 +78,8 @@ export default function LiveMapZoomControl({
     [],
   );
 
-  const clampedZoom = Math.min(LIVE_MAP_MAX_ZOOM, Math.max(LIVE_MAP_MIN_ZOOM, zoom));
-  const canZoomIn = clampedZoom < LIVE_MAP_MAX_ZOOM;
+  const clampedZoom = Math.min(maxZoom, Math.max(LIVE_MAP_MIN_ZOOM, zoom));
+  const canZoomIn = clampedZoom + LIVE_MAP_ZOOM_CAP_EPSILON < maxZoom;
   const canZoomOut = clampedZoom > LIVE_MAP_MIN_ZOOM;
 
   const handleZoomIn = () => {
@@ -130,7 +133,7 @@ export default function LiveMapZoomControl({
               <input
                 type="range"
                 min={LIVE_MAP_MIN_ZOOM}
-                max={LIVE_MAP_MAX_ZOOM}
+                max={maxZoom}
                 step={0.5}
                 value={clampedZoom}
                 onPointerDown={revealScale}

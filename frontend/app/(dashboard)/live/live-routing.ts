@@ -33,6 +33,8 @@ interface BackendRouteResponse {
   lastMileDistanceMeters?: number | null;
   lastMileDurationSeconds?: number | null;
   lastMileNotice?: string | null;
+  walkStartIndex?: number | null;
+  lastMileApproximate?: boolean | null;
   borderCrossings?: {
     latitude: number;
     longitude: number;
@@ -146,6 +148,8 @@ export async function fetchLiveRoute(
         lastMileDistanceMeters: response.lastMileDistanceMeters ?? null,
         lastMileDurationSeconds: response.lastMileDurationSeconds ?? null,
         lastMileNotice: response.lastMileNotice ?? null,
+        walkStartIndex: response.walkStartIndex ?? null,
+        lastMileApproximate: response.lastMileApproximate ?? null,
         borderCrossings: borderCrossings.length > 0 ? borderCrossings : undefined,
         borderNotice: response.borderNotice ?? null,
       }

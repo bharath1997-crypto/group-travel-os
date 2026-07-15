@@ -8,6 +8,7 @@ import { LIVE_MAP_COMPASS_POSITION } from "./live-layout";
 type Props = {
   bearing: number;
   zoom: number;
+  maxZoom: number;
   activeLayer: LiveMapLayer;
   onResetNorth: () => void;
   onZoomIn: () => void;
@@ -19,6 +20,7 @@ type Props = {
 export default function LiveMapRightControls({
   bearing,
   zoom,
+  maxZoom,
   activeLayer,
   onResetNorth,
   onZoomIn,
@@ -40,6 +42,7 @@ export default function LiveMapRightControls({
       <div className="pointer-events-auto">
         <LiveMapZoomControl
           zoom={zoom}
+          maxZoom={maxZoom}
           activeLayer={activeLayer}
           onZoomIn={onZoomIn}
           onZoomOut={onZoomOut}
