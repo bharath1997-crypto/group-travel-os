@@ -258,10 +258,13 @@ def _register_routes(app: FastAPI) -> None:
     # Step 20 — Polls
     from app.routes.polls import polls_router, trip_polls_router
     from app.routes.invite import invite_router
+    from app.routes.bookings import bookings_router, trip_bookings_router
 
     app.include_router(trip_polls_router, prefix="/api/v1")
     app.include_router(polls_router, prefix="/api/v1")
     app.include_router(invite_router, prefix="/api/v1")
+    app.include_router(trip_bookings_router, prefix="/api/v1")
+    app.include_router(bookings_router, prefix="/api/v1")
 
     # Step 22 — Expenses
     from app.routes.expenses import currencies_router, expenses_router
