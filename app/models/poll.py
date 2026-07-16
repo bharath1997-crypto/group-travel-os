@@ -7,7 +7,7 @@ import enum
 import uuid
 from datetime import date, datetime, timezone
 
-from sqlalchemy import Date, DateTime, Enum, ForeignKey, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, Date, DateTime, Enum, ForeignKey, Index, String, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -141,7 +141,25 @@ class Vote(Base):
     __tablename__ = "votes"
 
     __table_args__ = (
-        UniqueConstraint("poll_id", "user_id", name="uq_votes_poll_user"),
+        CheckConstraint(
+            "(user_id IS NOT NULL AND guest_identifier IS NULL) "
+            "OR (user_id IS NULL AND guest_identifier IS NOT NULL)",
+            name="ck_votes_user_or_guest",
+        ),
+        Index(
+            "uq_votes_poll_user",
+            "poll_id",
+            "user_id",
+            unique=True,
+            postgresql_where=text("user_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_votes_poll_guest",
+            "poll_id",
+            "guest_identifier",
+            unique=True,
+            postgresql_where=text("guest_identifier IS NOT NULL"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -160,12 +178,13 @@ class Vote(Base):
         ForeignKey("poll_options.id", ondelete="CASCADE"),
         nullable=False,
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="RESTRICT"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
+    guest_identifier: Mapped[str | None] = mapped_column(String(64), nullable=True)
     voted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -177,7 +196,7 @@ class Vote(Base):
         back_populates="votes",
         foreign_keys=[option_id],
     )
-    user: Mapped["User"] = relationship(
+    user: Mapped["User | None"] = relationship(
         "User",
         foreign_keys=[user_id],
         back_populates="votes",

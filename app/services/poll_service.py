@@ -16,6 +16,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
+from app.dependencies.actor import ActorContext
 from app.models.group import GroupMember, MemberRole
 from app.models.poll import Poll, PollOption, PollStatus, PollType, Vote
 from app.models.trip import Trip
@@ -213,14 +214,20 @@ class PollService:
         db: Session,
         poll_id: uuid.UUID,
         option_id: uuid.UUID,
-        current_user: User,
+        actor: ActorContext,
     ) -> Poll:
         poll = db.execute(select(Poll).where(Poll.id == poll_id)).scalar_one_or_none()
         if not poll:
             AppException.not_found("Poll not found")
 
         trip = db.execute(select(Trip).where(Trip.id == poll.trip_id)).scalar_one()
-        TripService._verify_membership(db, trip.group_id, current_user.id)
+
+        if actor.is_guest:
+            if actor.trip_id is None or actor.trip_id != poll.trip_id:
+                AppException.forbidden("Guest token is not valid for this poll")
+        else:
+            assert actor.user_id is not None
+            TripService._verify_membership(db, trip.group_id, actor.user_id)
 
         if poll.status != PollStatus.open:
             AppException.bad_request("This poll is not open for voting")
@@ -233,12 +240,22 @@ class PollService:
             if now > deadline:
                 AppException.bad_request("This poll has closed")
 
-        existing = db.execute(
-            select(Vote).where(
-                Vote.poll_id == poll_id,
-                Vote.user_id == current_user.id,
-            )
-        ).scalar_one_or_none()
+        if actor.is_guest:
+            assert actor.guest_identifier is not None
+            existing = db.execute(
+                select(Vote).where(
+                    Vote.poll_id == poll_id,
+                    Vote.guest_identifier == actor.guest_identifier,
+                )
+            ).scalar_one_or_none()
+        else:
+            assert actor.user_id is not None
+            existing = db.execute(
+                select(Vote).where(
+                    Vote.poll_id == poll_id,
+                    Vote.user_id == actor.user_id,
+                )
+            ).scalar_one_or_none()
         if existing:
             AppException.conflict("You have already voted on this poll")
 
@@ -251,19 +268,42 @@ class PollService:
         if not option:
             AppException.bad_request("This option does not belong to this poll")
 
-        db.add(
-            Vote(
-                poll_id=poll_id,
-                option_id=option_id,
-                user_id=current_user.id,
+        if actor.is_guest:
+            db.add(
+                Vote(
+                    poll_id=poll_id,
+                    option_id=option_id,
+                    user_id=None,
+                    guest_identifier=actor.guest_identifier,
+                )
             )
-        )
+            logger.info(
+                "Guest vote cast: poll %s option %s guest %s",
+                poll_id,
+                option_id,
+                actor.guest_identifier,
+            )
+        else:
+            db.add(
+                Vote(
+                    poll_id=poll_id,
+                    option_id=option_id,
+                    user_id=actor.user_id,
+                    guest_identifier=None,
+                )
+            )
+            logger.info(
+                "Vote cast: poll %s option %s user %s",
+                poll_id,
+                option_id,
+                actor.user_id,
+            )
+
         db.commit()
 
         out = _load_poll_with_options(db, poll_id)
         assert out is not None
         _attach_vote_counts_to_options(db, out)
-        logger.info("Vote cast: poll %s option %s user %s", poll_id, option_id, current_user.id)
         return out
 
     @staticmethod

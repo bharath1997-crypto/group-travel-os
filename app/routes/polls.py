@@ -19,8 +19,9 @@ from app.schemas.poll import (
     poll_results_to_out,
     poll_to_out,
 )
-from app.services.poll_service import PollService
+from app.dependencies.actor import ActorContext, get_current_actor
 from app.dependencies.authz import require_trip_admin
+from app.services.poll_service import PollService
 from app.utils.auth import get_current_user
 from app.utils.database import get_db
 
@@ -116,9 +117,9 @@ def cast_vote(
     poll_id: uuid.UUID,
     data: CastVoteRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    actor: ActorContext = Depends(get_current_actor),
 ):
-    poll = PollService.cast_vote(db, poll_id, data.option_id, current_user)
+    poll = PollService.cast_vote(db, poll_id, data.option_id, actor)
     return poll_to_out(poll)
 
 

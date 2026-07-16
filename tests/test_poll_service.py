@@ -8,6 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi import HTTPException
 
+from app.dependencies.actor import ActorContext
 from app.models.group import GroupMember, MemberRole
 from app.models.poll import Poll, PollOption, PollStatus, PollType
 from app.models.trip import Trip, TripStatus
@@ -230,7 +231,9 @@ def test_cast_vote_success(db, mock_user):
         exec_result(scalar_one=1),
         exec_result(scalar_one=0),
     ]
-    out = PollService.cast_vote(db, poll.id, opt_a.id, mock_user)
+    out = PollService.cast_vote(
+        db, poll.id, opt_a.id, ActorContext(user_id=mock_user.id)
+    )
     assert hasattr(out.options[0], "vote_count")
     db.add.assert_called()
     db.commit.assert_called_once()
@@ -247,7 +250,9 @@ def test_cast_vote_conflict_when_already_voted(db, mock_user):
         exec_result(scalar_one_or_none=prior),
     ]
     with pytest.raises(HTTPException) as ei:
-        PollService.cast_vote(db, poll.id, opt_a.id, mock_user)
+        PollService.cast_vote(
+            db, poll.id, opt_a.id, ActorContext(user_id=mock_user.id)
+        )
     assert ei.value.status_code == 409
 
 
@@ -263,7 +268,9 @@ def test_cast_vote_bad_request_when_option_not_on_poll(db, mock_user):
         exec_result(scalar_one_or_none=None),
     ]
     with pytest.raises(HTTPException) as ei:
-        PollService.cast_vote(db, poll.id, wrong_opt_id, mock_user)
+        PollService.cast_vote(
+            db, poll.id, wrong_opt_id, ActorContext(user_id=mock_user.id)
+        )
     assert ei.value.status_code == 400
 
 
@@ -276,7 +283,9 @@ def test_cast_vote_closed_poll(db, mock_user):
         exec_result(scalar_one_or_none=_member(trip.group_id, mock_user.id)),
     ]
     with pytest.raises(HTTPException) as ei:
-        PollService.cast_vote(db, poll.id, opt_a.id, mock_user)
+        PollService.cast_vote(
+            db, poll.id, opt_a.id, ActorContext(user_id=mock_user.id)
+        )
     assert ei.value.status_code == 400
 
 
