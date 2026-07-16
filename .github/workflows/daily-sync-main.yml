@@ -13,6 +13,23 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_PAT }}
+          ref: Production-main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip setuptools wheel
+          pip install --prefer-binary -r requirements-ci.txt
+
+      - name: Run DB migrations
+        run: alembic upgrade head
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          SECRET_KEY: ci-migration-placeholder-secret-key-min-length
+
       - name: Merge Production-main into main
         run: |
           git config user.name "github-actions[bot]"

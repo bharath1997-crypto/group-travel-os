@@ -22,6 +22,7 @@ from app.schemas.trip_public import (
 from app.services.trip_join_request_service import TripJoinRequestService
 from app.services.trip_public_service import TripPublicService
 from app.services.trip_service import TripService
+from app.dependencies.authz import require_trip_admin
 from app.utils.auth import get_current_user, get_current_user_optional
 from app.utils.database import get_db
 
@@ -56,6 +57,7 @@ def list_my_trips(
                 created_by=trip.created_by,
                 created_at=trip.created_at,
                 updated_at=trip.updated_at,
+                locked_at=trip.locked_at,
             )
         )
     return out
@@ -301,6 +303,21 @@ def change_trip_status(
     current_user: User = Depends(get_current_user),
 ):
     trip = TripService.change_status(db, trip_id, data.status, current_user)
+    return trip
+
+
+@trips_router.post(
+    "/{trip_id}/lock",
+    response_model=TripOut,
+    status_code=status.HTTP_200_OK,
+    summary="Lock trip after decision polls are resolved",
+)
+def lock_trip(
+    trip_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_trip_admin),
+):
+    trip = TripService.lock_trip(db, trip_id, current_user)
     return trip
 
 

@@ -1,7 +1,7 @@
 """
 app/schemas/poll.py — Poll request and response schemas (Pydantic v2)
 """
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
@@ -11,8 +11,10 @@ from app.models.poll import Poll, PollStatus, PollType
 
 
 class PollOptionCreate(BaseModel):
-    label: str = Field(..., min_length=1, max_length=300)
+    label: str | None = Field(None, max_length=300)
     location_id: UUID | None = None
+    start_date: date | None = None
+    end_date: date | None = None
 
 
 class PollCreate(BaseModel):
@@ -24,6 +26,10 @@ class PollCreate(BaseModel):
 
 class PollCreateWithTrip(PollCreate):
     trip_id: UUID
+
+
+class PollResolveRequest(BaseModel):
+    option_id: UUID | None = None
 
 
 class CastVoteRequest(BaseModel):
@@ -50,6 +56,7 @@ class PollOut(BaseModel):
     status: PollStatus
     created_by: UUID
     closes_at: datetime | None
+    resolved_option_id: UUID | None = None
     created_at: datetime
     options: list[PollOptionOut] = []
 
@@ -86,6 +93,7 @@ def poll_to_out(poll: Poll) -> PollOut:
         status=poll.status,
         created_by=poll.created_by,
         closes_at=poll.closes_at,
+        resolved_option_id=poll.resolved_option_id,
         created_at=poll.created_at,
         options=opts,
     )
@@ -122,6 +130,7 @@ def poll_results_to_out(data: dict[str, Any]) -> PollResultsOut:
         status=poll_orm.status,
         created_by=poll_orm.created_by,
         closes_at=poll_orm.closes_at,
+        resolved_option_id=poll_orm.resolved_option_id,
         created_at=poll_orm.created_at,
         options=opts,
     )

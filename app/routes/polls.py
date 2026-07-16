@@ -14,11 +14,13 @@ from app.schemas.poll import (
     PollCreate,
     PollCreateWithTrip,
     PollOut,
+    PollResolveRequest,
     PollResultsOut,
     poll_results_to_out,
     poll_to_out,
 )
 from app.services.poll_service import PollService
+from app.dependencies.authz import require_trip_admin
 from app.utils.auth import get_current_user
 from app.utils.database import get_db
 
@@ -117,6 +119,23 @@ def cast_vote(
     current_user: User = Depends(get_current_user),
 ):
     poll = PollService.cast_vote(db, poll_id, data.option_id, current_user)
+    return poll_to_out(poll)
+
+
+@polls_router.patch(
+    "/{poll_id}/resolve",
+    response_model=PollOut,
+    status_code=status.HTTP_200_OK,
+    summary="Resolve a closed poll and record the winning option",
+)
+def resolve_poll(
+    poll_id: uuid.UUID,
+    data: PollResolveRequest | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_trip_admin),
+):
+    body = data or PollResolveRequest()
+    poll = PollService.resolve_poll(db, poll_id, current_user, option_id=body.option_id)
     return poll_to_out(poll)
 
 

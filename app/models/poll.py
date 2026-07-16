@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Date, DateTime, Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -60,6 +60,12 @@ class Poll(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    resolved_option_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("poll_options.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -70,11 +76,20 @@ class Poll(Base):
     options: Mapped[list["PollOption"]] = relationship(
         "PollOption",
         back_populates="poll",
+        foreign_keys="PollOption.poll_id",
+        primaryjoin="Poll.id == PollOption.poll_id",
         cascade="all, delete-orphan",
     )
     creator: Mapped["User"] = relationship(
         "User",
         foreign_keys=[created_by],
+    )
+    resolved_option: Mapped["PollOption | None"] = relationship(
+        "PollOption",
+        foreign_keys=[resolved_option_id],
+        primaryjoin="Poll.resolved_option_id == PollOption.id",
+        uselist=False,
+        viewonly=True,
     )
 
 
@@ -98,13 +113,19 @@ class PollOption(Base):
         nullable=True,
     )
     label: Mapped[str] = mapped_column(String(300), nullable=False)
+    start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
 
-    poll: Mapped["Poll"] = relationship("Poll", back_populates="options")
+    poll: Mapped["Poll"] = relationship(
+        "Poll",
+        back_populates="options",
+        foreign_keys=[poll_id],
+    )
     location: Mapped["Location | None"] = relationship(
         "Location",
         foreign_keys=[location_id],

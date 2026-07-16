@@ -9,17 +9,23 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Any
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import select, update
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.group import Group, GroupMember, MemberRole
+from app.models.poll import Poll, PollStatus
 from app.models.trip import Trip, TripStatus
 from app.models.trip_roster import TripRoster
 from app.models.user import User
 from app.utils.exceptions import AppException
+
+from app.services.trip_decision_service import (
+    apply_all_resolved_polls_to_trip,
+    decision_poll_types,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -308,6 +314,57 @@ class TripService:
         db.refresh(trip)
         logger.info("Trip %s status -> %s", trip.id, new_status.value)
         return trip
+
+    @staticmethod
+    def lock_trip(db: Session, trip_id: uuid.UUID, current_user: User) -> Trip:
+        trip = db.execute(select(Trip).where(Trip.id == trip_id)).scalar_one_or_none()
+        if not trip:
+            AppException.not_found("Trip not found")
+
+        decision_polls = db.execute(
+            select(Poll)
+            .where(
+                Poll.trip_id == trip_id,
+                Poll.poll_type.in_(tuple(decision_poll_types())),
+            )
+            .options(selectinload(Poll.options))
+        ).scalars().all()
+
+        if decision_polls:
+            unresolved = [
+                p
+                for p in decision_polls
+                if p.status != PollStatus.resolved or p.resolved_option_id is None
+            ]
+            if unresolved:
+                AppException.bad_request(
+                    "All destination and date polls must be resolved before locking the trip"
+                )
+
+        apply_all_resolved_polls_to_trip(
+            db,
+            trip,
+            list(decision_polls),
+            applied_by=current_user.id,
+        )
+
+        result = db.execute(
+            update(Trip)
+            .where(Trip.id == trip_id, Trip.status == TripStatus.planning)
+            .values(
+                status=TripStatus.locked,
+                locked_at=datetime.now(timezone.utc),
+            )
+        )
+        if result.rowcount == 0:
+            AppException.conflict(
+                "Trip cannot be locked — not in planning state or already locked"
+            )
+
+        db.commit()
+        locked = db.execute(select(Trip).where(Trip.id == trip_id)).scalar_one()
+        logger.info("Trip locked: %s", locked.id)
+        return locked
 
     @staticmethod
     def set_roster_note(
