@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date
 from unittest.mock import MagicMock
 
 import pytest
@@ -111,6 +112,67 @@ def test_create_poll_bad_request_fewer_than_two_options(db, mock_user):
             mock_user,
         )
     assert ei.value.status_code == 400
+
+
+def test_create_date_option_requires_dates(db, mock_user):
+    mock_user.id = uuid.uuid4()
+    trip, _, _, _ = _trip_and_poll(mock_user)
+    db.execute.side_effect = [
+        exec_result(scalar_one_or_none=trip),
+        exec_result(scalar_one_or_none=_member(trip.group_id, mock_user.id)),
+    ]
+    with pytest.raises(HTTPException) as ei:
+        PollService.create_poll(
+            db,
+            trip.id,
+            "When?",
+            PollType.date,
+            [{"label": "Week 1"}, {"label": "Week 2"}],
+            None,
+            mock_user,
+        )
+    assert ei.value.status_code == 400
+    assert "start_date and end_date required" in ei.value.detail
+
+
+def test_create_date_option_success(db, mock_user):
+    mock_user.id = uuid.uuid4()
+    trip, _, _, _ = _trip_and_poll(mock_user)
+    n = {"i": 0}
+
+    def se(_stmt=None):
+        n["i"] += 1
+        if n["i"] == 1:
+            return exec_result(scalar_one_or_none=trip)
+        if n["i"] == 2:
+            return exec_result(scalar_one_or_none=_member(trip.group_id, mock_user.id))
+        if n["i"] == 3:
+            poll_obj = db.add.call_args_list[0][0][0]
+            added_options = [call[0][0] for call in db.add.call_args_list[1:]]
+            poll_obj.options = added_options
+            return exec_result(scalar_one_or_none=poll_obj)
+        return exec_result(scalar_one=0)
+
+    db.execute.side_effect = se
+    options = [
+        {"start_date": date(2026, 9, 1), "end_date": date(2026, 9, 5)},
+        {"start_date": date(2026, 10, 1), "end_date": date(2026, 10, 7)},
+    ]
+    out = PollService.create_poll(
+        db,
+        trip.id,
+        "When?",
+        PollType.date,
+        options,
+        None,
+        mock_user,
+    )
+    assert out.question == "When?"
+    assert len(out.options) == 2
+    assert out.options[0].label == "2026-09-01 to 2026-09-05"
+    assert out.options[0].start_date == date(2026, 9, 1)
+    assert out.options[0].end_date == date(2026, 9, 5)
+    assert out.options[1].label == "2026-10-01 to 2026-10-07"
 
 
 def test_get_poll_success(db, mock_user):

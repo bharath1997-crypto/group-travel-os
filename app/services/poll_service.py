@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 
 from sqlalchemy import func, select
@@ -20,6 +20,10 @@ from app.models.group import GroupMember, MemberRole
 from app.models.poll import Poll, PollOption, PollStatus, PollType, Vote
 from app.models.trip import Trip
 from app.models.user import User
+from app.services.trip_decision_service import (
+    apply_all_resolved_polls_to_trip,
+    decision_poll_types,
+)
 from app.services.trip_service import TripService
 from app.utils.exceptions import AppException
 
@@ -65,7 +69,65 @@ def _load_poll_with_options(db: Session, poll_id: uuid.UUID) -> Poll | None:
     ).scalar_one_or_none()
 
 
+def _parse_option_location_id(raw: dict[str, Any]) -> uuid.UUID | None:
+    loc_id = raw.get("location_id")
+    if loc_id is None:
+        return None
+    if isinstance(loc_id, uuid.UUID):
+        return loc_id
+    try:
+        return uuid.UUID(str(loc_id))
+    except (ValueError, TypeError):
+        AppException.bad_request("Invalid location_id for poll option")
+
+
+def _parse_option_date(value: Any) -> date | None:
+    if value is None:
+        return None
+    if isinstance(value, date):
+        return value
+    try:
+        return date.fromisoformat(str(value))
+    except (ValueError, TypeError):
+        AppException.bad_request("Invalid date for poll option")
+
+
 class PollService:
+
+    @staticmethod
+    def create_poll_option(poll: Poll, raw: dict[str, Any]) -> PollOption:
+        label = raw.get("label")
+        location_id = _parse_option_location_id(raw)
+        start_date = _parse_option_date(raw.get("start_date"))
+        end_date = _parse_option_date(raw.get("end_date"))
+
+        if poll.poll_type == PollType.date:
+            if start_date is None or end_date is None:
+                AppException.bad_request(
+                    "start_date and end_date required for date polls"
+                )
+            display_label = (
+                str(label).strip()
+                if label is not None and str(label).strip()
+                else f"{start_date} to {end_date}"
+            )
+            return PollOption(
+                poll_id=poll.id,
+                label=display_label,
+                location_id=None,
+                start_date=start_date,
+                end_date=end_date,
+            )
+
+        if label is None or not str(label).strip():
+            AppException.bad_request("Each option must have a non-empty label")
+        return PollOption(
+            poll_id=poll.id,
+            label=str(label).strip(),
+            location_id=location_id,
+            start_date=None,
+            end_date=None,
+        )
 
     @staticmethod
     def create_poll(
@@ -86,21 +148,6 @@ class PollService:
         if len(options) < 2:
             AppException.bad_request("A poll must have at least two options")
 
-        normalized: list[tuple[str, uuid.UUID | None]] = []
-        for raw in options:
-            if not isinstance(raw, dict):
-                AppException.bad_request("Each option must be a dict with label and optional location_id")
-            label = raw.get("label")
-            if label is None or not str(label).strip():
-                AppException.bad_request("Each option must have a non-empty label")
-            loc_id = raw.get("location_id")
-            if loc_id is not None and not isinstance(loc_id, uuid.UUID):
-                try:
-                    loc_id = uuid.UUID(str(loc_id))
-                except (ValueError, TypeError):
-                    AppException.bad_request("Invalid location_id for poll option")
-            normalized.append((str(label).strip(), loc_id))
-
         poll = Poll(
             trip_id=trip_id,
             question=question,
@@ -112,14 +159,12 @@ class PollService:
         db.add(poll)
         db.flush()
 
-        for label, loc_id in normalized:
-            db.add(
-                PollOption(
-                    poll_id=poll.id,
-                    label=label,
-                    location_id=loc_id,
+        for raw in options:
+            if not isinstance(raw, dict):
+                AppException.bad_request(
+                    "Each option must be a dict with label and optional location_id"
                 )
-            )
+            db.add(PollService.create_poll_option(poll, raw))
 
         db.commit()
         out = _load_poll_with_options(db, poll.id)
@@ -240,6 +285,66 @@ class PollService:
         assert out is not None
         _attach_vote_counts_to_options(db, out)
         logger.info("Poll closed: %s", poll_id)
+        return out
+
+    @staticmethod
+    def resolve_poll(
+        db: Session,
+        poll_id: uuid.UUID,
+        current_user: User,
+        option_id: uuid.UUID | None = None,
+    ) -> Poll:
+        poll = _load_poll_with_options(db, poll_id)
+        if not poll:
+            AppException.not_found("Poll not found")
+
+        if poll.status == PollStatus.resolved:
+            AppException.bad_request("This poll is already resolved")
+
+        if poll.status == PollStatus.open:
+            AppException.bad_request("Close this poll before resolving the winner")
+
+        if option_id is not None:
+            option = db.execute(
+                select(PollOption).where(
+                    PollOption.id == option_id,
+                    PollOption.poll_id == poll_id,
+                )
+            ).scalar_one_or_none()
+            if not option:
+                AppException.bad_request("This option does not belong to this poll")
+            winner_id = option_id
+        else:
+            if not poll.options:
+                AppException.bad_request("Poll has no options")
+
+            vote_rows = db.execute(
+                select(Vote.option_id, func.count())
+                .where(Vote.poll_id == poll_id)
+                .group_by(Vote.option_id)
+            ).all()
+            count_by_option: dict[uuid.UUID, int] = {
+                row[0]: int(row[1]) for row in vote_rows
+            }
+            for opt in poll.options:
+                count_by_option.setdefault(opt.id, 0)
+
+            max_count = max(count_by_option[opt.id] for opt in poll.options)
+            winners = [
+                opt.id for opt in poll.options if count_by_option[opt.id] == max_count
+            ]
+            if len(winners) > 1:
+                AppException.conflict("Tie detected — resolve manually with option_id")
+            winner_id = winners[0]
+
+        poll.resolved_option_id = winner_id
+        poll.status = PollStatus.resolved
+        db.commit()
+
+        out = _load_poll_with_options(db, poll_id)
+        assert out is not None
+        _attach_vote_counts_to_options(db, out)
+        logger.info("Poll resolved: %s winner %s", poll_id, winner_id)
         return out
 
     @staticmethod

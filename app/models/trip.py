@@ -16,6 +16,7 @@ from app.utils.database import Base
 
 class TripStatus(str, enum.Enum):
     planning = "planning"
+    locked = "locked"
     confirmed = "confirmed"
     ongoing = "ongoing"
     completed = "completed"
@@ -66,6 +67,10 @@ class Trip(Base):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
+    )
+    locked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
 
     group: Mapped["Group"] = relationship("Group", back_populates="trips")

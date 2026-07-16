@@ -40,4 +40,5 @@ class TripOut(BaseModel):
     created_by: UUID
     created_at: datetime
     updated_at: datetime
+    locked_at: datetime | None = None
     my_role: str | None = None

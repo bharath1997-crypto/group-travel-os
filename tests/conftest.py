@@ -85,6 +85,8 @@ def exec_result(
     scalar_one_or_none: object = _SENT,
     scalar_one: object = _SENT,
     scalars_all: list | None = None,
+    rows_all: list | None = None,
+    rowcount: int | None = None,
 ) -> MagicMock:
     """
     Mock return value for db.execute(stmt) matching SQLAlchemy 2.0 call patterns
@@ -105,6 +107,10 @@ def exec_result(
     uniq.all.return_value = rows
     scalars.unique.return_value = uniq
     m.scalars.return_value = scalars
+    if rows_all is not None:
+        m.all.return_value = rows_all
+    if rowcount is not None:
+        m.rowcount = rowcount
     return m
 
 
