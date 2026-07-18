@@ -314,47 +314,47 @@ export default function LiveMapLayerControl({
               </p>
             </div>
 
-            <ul className="flex max-h-[min(26rem,62vh)] flex-col gap-0.5 overflow-y-auto p-1.5">
+            <div className="grid grid-cols-3 gap-2 p-3">
               {LIVE_MAP_LAYER_OPTIONS.map((option) => {
                 const selected = activeLayer === option.id;
+                const labelText = option.label.replace(" Map", "");
                 return (
-                  <li key={option.id}>
-                    <button
-                      type="button"
-                      onClick={() => selectLayer(option.id)}
-                      className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors ${
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => selectLayer(option.id)}
+                    className="group flex flex-col items-center gap-1 focus:outline-none cursor-pointer"
+                    aria-pressed={selected}
+                  >
+                    {/* Frame container */}
+                    <div
+                      className={`relative flex h-14 w-full items-center justify-center rounded-xl border transition-all duration-200 ${
                         selected
-                          ? "border border-[#007F73] bg-[#E6F7F4]"
-                          : "border border-transparent hover:bg-stone-50"
+                          ? "border-[#007F73] bg-[#E6F7F4] shadow-sm ring-1 ring-[#007F73]/30"
+                          : "border-stone-200/80 bg-white hover:bg-stone-50 hover:border-stone-300"
                       }`}
-                      aria-pressed={selected}
                     >
+                      {/* Inside the frame, render the preview, centered, without text */}
                       <LayerPreview option={option} />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`text-sm font-semibold ${selected ? "text-[#007F73]" : "text-stone-800"}`}
-                          >
-                            {option.label}
-                          </span>
-                          <LayerOptionIcon icon={option.icon} />
-                        </div>
-                        <p className="mt-0.5 text-[11px] leading-snug text-stone-500">
-                          {option.description}
-                        </p>
-                      </div>
-                      {selected ? (
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#007F73] text-white">
-                          <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+
+                      {selected && (
+                        <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-2 ring-white">
+                          <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
                         </span>
-                      ) : (
-                        <span className="h-6 w-6 shrink-0" aria-hidden />
                       )}
-                    </button>
-                  </li>
+                    </div>
+                    {/* Downside: EXACT model/layer name */}
+                    <span
+                      className={`text-[10px] font-bold tracking-wide transition-colors ${
+                        selected ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"
+                      }`}
+                    >
+                      {labelText}
+                    </span>
+                  </button>
                 );
               })}
-            </ul>
+            </div>
 
             {onTravelLayerChange || onSeaRoutesChange || onCruiseRoutesChange || onFootRoutesChange || onFriendTrackingChange ? (
               <div className="border-t border-stone-100/80 p-2">
