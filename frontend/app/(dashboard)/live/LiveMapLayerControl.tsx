@@ -14,6 +14,7 @@ import {
   Ship,
   Sparkles,
   Train,
+  Users,
 } from "lucide-react";
 import type { LiveMapLayer } from "@/lib/map-providers";
 import { LIVE_MAP_LAYERS_PANEL_OFFSET } from "./live-layout";
@@ -187,6 +188,8 @@ type Props = {
   onCruiseRoutesChange?: (enabled: boolean) => void;
   footRoutesEnabled?: boolean;
   onFootRoutesChange?: (enabled: boolean) => void;
+  friendTrackingEnabled?: boolean;
+  onFriendTrackingChange?: (enabled: boolean) => void;
   /** Controlled open state — used when opened from Map Tools. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -215,6 +218,8 @@ export default function LiveMapLayerControl({
   onCruiseRoutesChange,
   footRoutesEnabled = false,
   onFootRoutesChange,
+  friendTrackingEnabled = true,
+  onFriendTrackingChange,
   open: openProp,
   onOpenChange,
   showTrigger = true,
@@ -351,12 +356,34 @@ export default function LiveMapLayerControl({
               })}
             </ul>
 
-            {onTravelLayerChange || onSeaRoutesChange || onCruiseRoutesChange || onFootRoutesChange ? (
+            {onTravelLayerChange || onSeaRoutesChange || onCruiseRoutesChange || onFootRoutesChange || onFriendTrackingChange ? (
               <div className="border-t border-stone-100/80 p-2">
                 <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-stone-400">
                   Overlays
                 </p>
                 <div className="flex flex-col gap-1">
+                  {onFriendTrackingChange ? (
+                    <OverlayToggle
+                      enabled={friendTrackingEnabled}
+                      onChange={onFriendTrackingChange}
+                      title="Friend tracking"
+                      description="Show/hide live coordinates of group members on the map"
+                      preview={
+                        <div
+                          className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border shadow-inner ${
+                            friendTrackingEnabled
+                              ? "border-[#0F766E]/30 bg-gradient-to-br from-[#E6F7F4] via-white to-[#D1FAE5]"
+                              : "border-stone-200/80 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E2E8F0]"
+                          }`}
+                          aria-hidden
+                        >
+                          <Users
+                            className={`h-4 w-4 ${friendTrackingEnabled ? "text-[#0F766E]" : "text-stone-500"}`}
+                          />
+                        </div>
+                      }
+                    />
+                  ) : null}
                   {onTravelLayerChange ? (
                     <OverlayToggle
                       enabled={travelLayerEnabled}

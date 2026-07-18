@@ -1798,17 +1798,44 @@ export default function LiveMapComponent({
           const { latitude, longitude, accuracy, speed, heading } = pos.coords;
           applyUserLocation(latitude, longitude, true, speed, heading, accuracy, pos.timestamp);
         },
-        (err) => handleGeolocationError(err, "getCurrentPosition"),
-        { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 },
+        (err) => {
+          logRovvyLiveWarn("[Rovvy GPS] startLiveGps high accuracy getCurrentPosition failed, falling back to low accuracy", err);
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const { latitude, longitude, accuracy, speed, heading } = pos.coords;
+              applyUserLocation(latitude, longitude, true, speed, heading, accuracy, pos.timestamp);
+            },
+            (err2) => handleGeolocationError(err2, "getCurrentPosition"),
+            { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+          );
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
       );
 
-      const wId = navigator.geolocation.watchPosition(
+      let wId = navigator.geolocation.watchPosition(
         (pos) => {
           const { latitude, longitude, accuracy, speed, heading } = pos.coords;
           applyUserLocation(latitude, longitude, false, speed, heading, accuracy, pos.timestamp);
         },
-        (err) => handleGeolocationError(err, "watchPosition"),
-        { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 },
+        (err) => {
+          logRovvyLiveWarn("[Rovvy GPS] startLiveGps watchPosition high accuracy failed, falling back to low accuracy", err);
+          navigator.geolocation.clearWatch(wId);
+          const lowWId = navigator.geolocation.watchPosition(
+            (pos) => {
+              const { latitude, longitude, accuracy, speed, heading } = pos.coords;
+              applyUserLocation(latitude, longitude, false, speed, heading, accuracy, pos.timestamp);
+            },
+            (err2) => handleGeolocationError(err2, "watchPosition"),
+            { enableHighAccuracy: false, timeout: 20000, maximumAge: 10000 }
+          );
+          const idx = watchIdsRef.current.indexOf(wId);
+          if (idx !== -1) {
+            watchIdsRef.current[idx] = lowWId;
+          } else {
+            watchIdsRef.current.push(lowWId);
+          }
+        },
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 },
       );
       watchIdsRef.current.push(wId);
     }
@@ -1969,11 +1996,25 @@ export default function LiveMapComponent({
                 startLiveGps();
               }
             },
-            (err) => handleGeolocationError(err, "locateUser"),
+            (err) => {
+              logRovvyLiveWarn("[Rovvy GPS] locateUser high accuracy getCurrentPosition failed, falling back to low accuracy", err);
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  const { latitude, longitude, accuracy, speed, heading } = pos.coords;
+                  applyUserLocation(latitude, longitude, true, speed, heading, accuracy, pos.timestamp);
+                  userMarkerRef.current?.togglePopup();
+                  if (!liveGpsActiveRef.current) {
+                    startLiveGps();
+                  }
+                },
+                (err2) => handleGeolocationError(err2, "locateUser"),
+                { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+              );
+            },
             {
               enableHighAccuracy: true,
-              timeout: 30000,     // Widen timeout to 30 seconds to allow slow hardware links to hook
-              maximumAge: 10000,  // Allow a 10-second cache threshold so taps feel instant if a watch step just completed
+              timeout: 15000,
+              maximumAge: 0,
             },
           );
           return;

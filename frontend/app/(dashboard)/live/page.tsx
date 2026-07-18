@@ -128,6 +128,10 @@ import {
   loadLiveFootRoutesPreference,
   saveLiveFootRoutesPreference,
 } from "./live-foot-routes-preference";
+import {
+  loadLiveFriendTrackingPreference,
+  saveLiveFriendTrackingPreference,
+} from "./live-friend-preference";
 import { mergeAutocompleteResults } from "./live-search-merge";
 import {
   getPoiMarkerPresentation,
@@ -435,6 +439,11 @@ export default function LivePage() {
     saveLiveFootRoutesPreference(enabled);
   }, []);
 
+  const handleFriendTrackingChange = useCallback((enabled: boolean) => {
+    setFriendTrackingEnabled(enabled);
+    saveLiveFriendTrackingPreference(enabled);
+  }, []);
+
   const [layersPanelOpen, setLayersPanelOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -488,7 +497,9 @@ export default function LivePage() {
   );
 
   const DEV_SHOW_MOCK_FRIENDS = false;
-  const [friendTrackingEnabled, setFriendTrackingEnabled] = useState(true);
+  const [friendTrackingEnabled, setFriendTrackingEnabled] = useState(() =>
+    loadLiveFriendTrackingPreference(),
+  );
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   const friendsLocations = useMemo<FriendLocation[]>(() => {
@@ -2180,7 +2191,7 @@ export default function LivePage() {
   }
 
   function handleLocateClick() {
-    if (gpsStatusNeedsHelper(gpsStatus)) {
+    if (gpsStatus === "denied") {
       const center = mapRef.current?.getMapCenter();
       if (center) {
         void openMapLocationSheet(center.lat, center.lng, { manual: true });
@@ -3203,6 +3214,8 @@ export default function LivePage() {
             onCruiseRoutesChange={handleCruiseRoutesChange}
             footRoutesEnabled={footRoutesEnabled}
             onFootRoutesChange={handleFootRoutesChange}
+            friendTrackingEnabled={friendTrackingEnabled}
+            onFriendTrackingChange={handleFriendTrackingChange}
             open={layersPanelOpen}
             onOpenChange={setLayersPanelOpen}
             showTrigger={false}
