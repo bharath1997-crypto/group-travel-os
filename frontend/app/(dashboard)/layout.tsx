@@ -700,8 +700,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
   // Header height: 56px primary row + 44px sub-nav row when present
   const headerPx = hasSubNav ? 100 : 56;
-  const liveImmersiveHeader = isLivePage && liveChrome.active;
-  const liveDarkHeader = liveImmersiveHeader && liveChrome.darkMap;
+  const liveImmersiveHeader = false;
+  const liveDarkHeader = false;
 
   return (
     <div
@@ -860,7 +860,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   : "overflow-y-auto pb-[calc(56px+env(safe-area-inset-bottom,0px))]"
               }`
         }`}
-        style={isLivePage ? undefined : { paddingTop: `${headerPx}px` }}
+        style={{ paddingTop: `${headerPx}px` }}
       >
         <main
           className={
