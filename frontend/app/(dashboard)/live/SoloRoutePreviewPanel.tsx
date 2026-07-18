@@ -3,12 +3,15 @@
 import type { PlacePreviewData } from "./PlacePreviewCard";
 import type { RouteLine, RouteOrigin, RoutePreviewStatus } from "./live-types";
 import {
-  formatRouteDurationBracketed,
+  formatRouteDuration,
   formatRouteOriginLabel,
   isFarFromUser,
 } from "./live-types";
 import { isLowGpsAccuracy } from "./live-route-origin";
 import { LIVE_PANEL_MAX_WIDTH, LIVE_RESPONSIVE_PANEL_LAYOUT } from "./live-layout";
+import LiveAiSuggestionsBlock from "./LiveAiSuggestionsBlock";
+import { buildRoutePreviewAiSuggestions } from "./live-ai-suggestions";
+import { formatPlaceSubtitle } from "./live-place-display";
 
 const TEAL = "#0F766E";
 
@@ -47,7 +50,7 @@ export default function SoloRoutePreviewPanel({
   routePreviewStatus,
   routePreviewError,
 }: Props) {
-  const farWarning = isFarFromUser(destination.distanceM);
+  const farFromUser = isFarFromUser(destination.distanceM);
   const showPlanTripOption = planningMode;
   const routeReady =
     routePreviewStatus === "ready" &&
@@ -55,13 +58,28 @@ export default function SoloRoutePreviewPanel({
     Array.isArray(routeLine.geometry) &&
     routeLine.geometry.length > 0;
 
-  const timeBracket = formatRouteDurationBracketed(routeLine?.durationSeconds, {
-    loading: routeLoading || routePreviewStatus === "loading",
-    failed: routePreviewStatus === "failed",
-  });
+  const routeDurationLabel =
+    routeReady && routeLine?.durationSeconds != null
+      ? formatRouteDuration(routeLine.durationSeconds)
+      : routeLoading || routePreviewStatus === "loading"
+        ? "Calculating…"
+        : "";
 
   const lowGpsWarning =
     routeOrigin?.source === "gps" && isLowGpsAccuracy(routeOrigin.accuracyMeters ?? null);
+
+  const aiSuggestions = buildRoutePreviewAiSuggestions({
+    destinationName: destination.name,
+    farFromUser,
+    lastMileNotice:
+      routeLine?.lastMileMode === "walk" ? routeLine?.lastMileNotice : null,
+    borderNotice: routeLine?.borderNotice,
+    lowGps: lowGpsWarning,
+    routeError:
+      routePreviewStatus === "failed"
+        ? routePreviewError || "Route unavailable."
+        : null,
+  });
 
   return (
     <div
@@ -81,34 +99,23 @@ export default function SoloRoutePreviewPanel({
 
         <h3 className="pr-8 text-base font-bold leading-snug text-stone-900">
           {destination.name}
-          {timeBracket ? (
-            <span className="font-semibold text-[#0F766E]"> {timeBracket}</span>
-          ) : null}
         </h3>
-        <p className="mt-0.5 truncate text-xs text-stone-500">{travelMode}</p>
-
-        {farWarning ? (
-          <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800">
-            Far from your current area.
-          </p>
+        <p className="mt-0.5 text-xs text-stone-500">{formatPlaceSubtitle(destination)}</p>
+        {routeDurationLabel ? (
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center rounded-full bg-[#E6F7F4] px-2 py-0.5 text-xs font-semibold text-[#0F766E]">
+              {routeDurationLabel}
+            </span>
+            <span className="text-xs text-stone-500">{travelMode}</span>
+          </div>
         ) : null}
 
-        {routePreviewStatus === "failed" ? (
-          <p className="mt-2 text-xs text-amber-800">
-            {routePreviewError || "Route unavailable."}
-          </p>
-        ) : null}
-
-        {routeLine?.borderNotice ? (
-          <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs leading-snug text-amber-900">
-            {routeLine.borderNotice}
-          </p>
-        ) : null}
-
-        {routeLine?.lastMileNotice ? (
-          <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-xs leading-snug text-amber-900">
-            {routeLine.lastMileNotice}
-          </p>
+        {aiSuggestions.length > 0 ? (
+          <LiveAiSuggestionsBlock
+            suggestions={aiSuggestions}
+            destinationName={destination.name}
+            className="mt-2"
+          />
         ) : null}
 
         <div className="mt-3 space-y-2 border-t border-stone-100 pt-3 text-xs text-stone-600">
@@ -116,9 +123,6 @@ export default function SoloRoutePreviewPanel({
             <span className="text-stone-500">From:</span>{" "}
             {formatRouteOriginLabel(routeOrigin)}
           </p>
-          {lowGpsWarning ? (
-            <p className="text-amber-800">Low GPS accuracy — go outdoors for a better fix.</p>
-          ) : null}
           {onEditOrigin ? (
             <button
               type="button"

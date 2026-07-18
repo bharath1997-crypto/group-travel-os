@@ -272,9 +272,11 @@ input[type="date"]::-webkit-outer-spin-button {
 }
 
 /* Live tab — map fills dashboard content below global header */
+html.live-mode,
 body.live-mode {
   overflow: hidden;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
 }
 
 body.live-mode .dashboard-sidebar {
@@ -288,8 +290,8 @@ body.live-mode [class*="lg:ml-"],
 body.live-mode [class*="lg:pl-"] {
   margin-left: 0 !important;
   padding-left: 0 !important;
-  width: 100vw !important;
-  max-width: 100vw !important;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 body.live-mode .dashboard-content-shell,
@@ -298,8 +300,8 @@ body.live-mode .dashboard-main-live,
 body.live-mode .live-page-shell {
   margin-left: 0 !important;
   padding-left: 0 !important;
-  width: 100vw !important;
-  max-width: 100vw !important;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 body.live-mode .dashboard-main-live {

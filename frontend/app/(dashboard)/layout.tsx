@@ -481,6 +481,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     pathname === "/live" ||
     isTripSpacePage;
 
+  const liveHeaderPx = (() => {
+    const section = NAV_SECTIONS.find((s) => sectionActive(pathname, s));
+    const subs = section?.subs ?? [];
+    return subs.length > 0 ? 100 : 56;
+  })();
+
   const [isMdUp, setIsMdUp] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [sidebarMe, setSidebarMe] = useState<SidebarAuthMe | null>(null);
@@ -491,6 +497,23 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     active: false,
     darkMap: false,
   });
+
+  useEffect(() => {
+    if (!isLivePage) {
+      document.documentElement.style.removeProperty("--rovvy-header-h");
+      document.documentElement.classList.remove("live-mode");
+      document.body.classList.remove("live-mode");
+      return;
+    }
+    document.documentElement.style.setProperty("--rovvy-header-h", `${liveHeaderPx}px`);
+    document.documentElement.classList.add("live-mode");
+    document.body.classList.add("live-mode");
+    return () => {
+      document.documentElement.style.removeProperty("--rovvy-header-h");
+      document.documentElement.classList.remove("live-mode");
+      document.body.classList.remove("live-mode");
+    };
+  }, [isLivePage, liveHeaderPx]);
 
   useEffect(() => {
     if (!isLivePage) {
@@ -605,6 +628,9 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     isExploreHub ||
     pathname.startsWith("/profile");
 
+  /** Full-bleed shells that must clip (all map routes + shorts player). */
+  const needsMainOverflowHidden = isMapPage || isExploreShortsShell;
+
   const useFullWidthInner =
     isMapPage ||
     isExplorerEventsShell ||
@@ -678,7 +704,13 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const liveDarkHeader = liveImmersiveHeader && liveChrome.darkMap;
 
   return (
-    <div className={`min-h-screen min-h-[100dvh] ${isLivePage ? "bg-[#0F172A]" : "bg-[#F8F9FA]"}`}>
+    <div
+      className={`${
+        isLivePage
+          ? "flex h-screen max-h-[100dvh] flex-col overflow-hidden"
+          : "min-h-screen min-h-[100dvh]"
+      } ${isLivePage ? "bg-[#0F172A]" : "bg-[#F8F9FA]"}`}
+    >
       <ConnectionStatusBanner />
 
       {/* ═══════════════════════════════════════════════════
@@ -819,13 +851,23 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           MAIN CONTENT — padded to clear the fixed header
       ═══════════════════════════════════════════════════ */}
       <div
-        className="dashboard-content-shell main-content flex h-screen h-[100dvh] w-full max-w-[100vw] flex-col overflow-y-auto md:pb-0 pb-[calc(56px+env(safe-area-inset-bottom,0px))]"
-        style={{ paddingTop: `${headerPx}px` }}
+        className={`dashboard-content-shell main-content flex min-h-0 w-full max-w-[100vw] flex-col md:pb-0 ${
+          isLivePage
+            ? "flex-1 overflow-hidden pb-0"
+            : `h-[100dvh] ${
+                isMapPage
+                  ? "overflow-hidden pb-0"
+                  : "overflow-y-auto pb-[calc(56px+env(safe-area-inset-bottom,0px))]"
+              }`
+        }`}
+        style={isLivePage ? undefined : { paddingTop: `${headerPx}px` }}
       >
         <main
           className={
             needsZeroOuterPadding
-              ? "flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+              ? needsMainOverflowHidden
+                ? "dashboard-main-live flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+                : "flex flex-col p-0 min-h-min"
               : "min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-4 xl:p-5"
           }
         >

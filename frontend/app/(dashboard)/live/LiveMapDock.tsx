@@ -1,8 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Layers, Maximize2, Minimize2, Compass, Volume2, VolumeX } from "lucide-react";
-import Image from "next/image";
+import {
+  Layers,
+  Maximize2,
+  Minimize2,
+  Compass,
+  Volume2,
+  VolumeX,
+  Bell,
+  BellOff,
+} from "lucide-react";
 import type { LiveMapLayer } from "@/lib/map-providers";
 
 type Props = {
@@ -11,13 +19,12 @@ type Props = {
   onOpenLayers: () => void;
   bearing: number;
   onResetNorth: () => void;
-  gpsStatus: string;
-  liveGpsActive: boolean;
-  onLocate: () => void;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
+  notificationsEnabled: boolean;
+  onToggleNotifications: () => void;
 };
 
 export default function LiveMapDock({
@@ -26,13 +33,12 @@ export default function LiveMapDock({
   onOpenLayers,
   bearing,
   onResetNorth,
-  gpsStatus,
-  liveGpsActive,
-  onLocate,
   isFullscreen,
   onToggleFullscreen,
   soundEnabled,
   onToggleSound,
+  notificationsEnabled,
+  onToggleNotifications,
 }: Props) {
   const isDark = activeLayer === "dark";
   const normalizedBearing = ((bearing % 360) + 360) % 360;
@@ -41,25 +47,24 @@ export default function LiveMapDock({
   // Mascot interaction speech bubble state
   const [mascotBubble, setMascotBubble] = useState<string | null>(null);
 
-  // Let Rovi say something when states change
+  // Auto welcome bubble on mount
   useEffect(() => {
-    if (gpsStatus === "active") {
-      setMascotBubble("GPS Locked!");
-    } else if (gpsStatus === "requesting") {
-      setMascotBubble("Locating you...");
-    } else if (gpsStatus === "error" || gpsStatus === "timeout") {
-      setMascotBubble("GPS signal lost!");
-    }
-    const timer = setTimeout(() => setMascotBubble(null), 3000);
-    return () => clearTimeout(timer);
-  }, [gpsStatus]);
+    const timer = setTimeout(() => {
+      setMascotBubble("Explore together! 🐒");
+    }, 1500);
+    const hideTimer = setTimeout(() => setMascotBubble(null), 5000);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(hideTimer);
+    };
+  }, []);
 
   const dockClass = isDark
-    ? "bg-slate-900/85 border border-white/10 text-slate-100 shadow-[0_12px_40px_rgba(0,0,0,0.5)] backdrop-blur-md rounded-2xl p-1 flex items-center gap-1 select-none"
-    : "bg-white/85 border border-stone-200/60 text-stone-700 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-md rounded-2xl p-1 flex items-center gap-1 select-none";
+    ? "bg-slate-900/90 border border-white/10 text-slate-100 shadow-[0_12px_40px_rgba(0,0,0,0.5)] backdrop-blur-md rounded-2xl p-1 flex items-center gap-1 select-none pointer-events-auto"
+    : "bg-white/90 border border-stone-200/60 text-stone-700 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-md rounded-2xl p-1 flex items-center gap-1 select-none pointer-events-auto";
 
   const btnClass = (isActive: boolean) => {
-    const base = "relative flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200 focus:outline-none";
+    const base = "relative flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200 focus:outline-none cursor-pointer";
     if (isActive) {
       return `${base} ${
         isDark
@@ -74,43 +79,17 @@ export default function LiveMapDock({
     }`;
   };
 
-  // Determine GPS Button styling based on status
-  const getGpsBtnClass = () => {
-    const base = "relative flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200 focus:outline-none";
-    if (gpsStatus === "requesting") {
-      return `${base} animate-pulse ${
-        isDark ? "bg-teal-500/20 text-teal-300" : "bg-teal-50 text-[#0f766e]"
-      }`;
-    }
-    if (gpsStatus === "active" || gpsStatus === "approximate") {
-      return `${base} ${
-        isDark ? "bg-teal-500/30 text-teal-300" : "bg-teal-500 text-white shadow-sm"
-      }`;
-    }
-    if (gpsStatus === "denied") {
-      return `${base} ${
-        isDark ? "bg-slate-800 text-slate-500" : "bg-stone-100 text-stone-400"
-      }`;
-    }
-    if (gpsStatus === "timeout" || gpsStatus === "error" || gpsStatus === "outdated") {
-      return `${base} ${
-        isDark ? "bg-amber-500/20 text-amber-300" : "bg-amber-50 text-amber-700"
-      }`;
-    }
-    // Default / idle
-    return `${base} ${
-      isDark ? "hover:bg-white/5 text-slate-300" : "hover:bg-stone-50 text-stone-600"
-    }`;
-  };
-
   return (
-    <div className="relative">
+    <div className="relative select-none pointer-events-none">
       {/* 3D Rovi Monkey Mascot Placeholder sitting on top */}
       <div 
-        className="absolute -top-[34px] left-6 z-50 pointer-events-auto cursor-pointer"
-        onMouseEnter={() => setMascotBubble("Hey! I'm Rovi 🐒")}
+        className="absolute -top-[34px] right-6 z-50 pointer-events-auto cursor-pointer"
+        onMouseEnter={() => setMascotBubble("Need a hand? 🐒")}
         onMouseLeave={() => setMascotBubble(null)}
-        onClick={() => setMascotBubble("Let's explore together!")}
+        onClick={() => {
+          setMascotBubble("Toggling layers! 🗺️");
+          onOpenLayers();
+        }}
       >
         <div className="relative flex flex-col items-center">
           {/* Speech Bubble */}
@@ -121,17 +100,17 @@ export default function LiveMapDock({
             </div>
           )}
           {/* Monkey Mascot Capsule */}
-          <div className="flex h-7 items-center gap-1 rounded-full bg-slate-900/90 text-white px-2 py-0.5 text-[10px] font-medium shadow-md border border-white/10 backdrop-blur-sm transition-all duration-300 hover:scale-105 active:scale-95">
-            <span className="text-xs animate-bounce" style={{ animationDuration: "1.5s" }}>🐒</span>
+          <div className="flex h-7 items-center gap-1 rounded-full bg-slate-900/95 text-white px-2 py-0.5 text-[10px] font-medium shadow-md border border-white/10 backdrop-blur-sm transition-all duration-300 hover:scale-105 active:scale-95">
+            <span className="text-xs animate-bounce" style={{ animationDuration: "2s" }}>🐒</span>
             <span className="font-semibold tracking-wide uppercase text-[8px] text-teal-400">Rovi</span>
           </div>
         </div>
       </div>
 
-      {/* The Horizontal 5-Box Dock Container */}
+      {/* Option B: Horizontal 5-Box Rounded Dock */}
       <div className={dockClass} role="group" aria-label="Map Controls Dock">
         
-        {/* Box 1: Layers */}
+        {/* Box 1: Layers Launcher */}
         <button
           type="button"
           onClick={onOpenLayers}
@@ -165,43 +144,7 @@ export default function LiveMapDock({
           )}
         </button>
 
-        {/* Box 3: GPS (Locate Me) */}
-        <button
-          type="button"
-          onClick={onLocate}
-          className={getGpsBtnClass()}
-          title={
-            gpsStatus === "requesting"
-              ? "Finding location…"
-              : gpsStatus === "denied"
-              ? "Location permission denied"
-              : "Locate me"
-          }
-          aria-label="Locate me"
-        >
-          {gpsStatus === "requesting" ? (
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          ) : (
-            <svg 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              className="h-4.5 w-4.5" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="7" />
-              <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-              <line x1="12" y1="2" x2="12" y2="4" />
-              <line x1="12" y1="20" x2="12" y2="22" />
-              <line x1="2" y1="12" x2="4" y2="12" />
-              <line x1="20" y1="12" x2="22" y2="12" />
-            </svg>
-          )}
-        </button>
-
-        {/* Box 4: Fullscreen */}
+        {/* Box 3: Fullscreen Toggle */}
         <button
           type="button"
           onClick={onToggleFullscreen}
@@ -216,18 +159,33 @@ export default function LiveMapDock({
           )}
         </button>
 
-        {/* Box 5: Sound / Audio Assistant */}
+        {/* Box 4: Sound Toggle */}
         <button
           type="button"
           onClick={onToggleSound}
-          className={btnClass(!soundEnabled)}
+          className={btnClass(soundEnabled)}
           title={soundEnabled ? "Mute audio guide" : "Unmute audio guide"}
           aria-label="Toggle Sound"
         >
           {soundEnabled ? (
-            <Volume2 className="h-4.5 w-4.5" />
+            <Volume2 className="h-4.5 w-4.5 text-teal-600 dark:text-teal-400" />
           ) : (
             <VolumeX className="h-4.5 w-4.5 text-stone-400" />
+          )}
+        </button>
+
+        {/* Box 5: Notifications Toggle */}
+        <button
+          type="button"
+          onClick={onToggleNotifications}
+          className={btnClass(notificationsEnabled)}
+          title={notificationsEnabled ? "Mute notifications" : "Unmute notifications"}
+          aria-label="Toggle Notifications"
+        >
+          {notificationsEnabled ? (
+            <Bell className="h-4.5 w-4.5 text-teal-600 dark:text-teal-400" />
+          ) : (
+            <BellOff className="h-4.5 w-4.5 text-stone-400" />
           )}
         </button>
       </div>

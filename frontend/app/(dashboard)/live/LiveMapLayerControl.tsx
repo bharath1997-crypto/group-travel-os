@@ -1,7 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Layers, Map, Moon, Mountain, Route, Satellite, Sparkles, Train } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  Check,
+  Footprints,
+  Layers,
+  Map,
+  Moon,
+  Mountain,
+  Route,
+  Sailboat,
+  Satellite,
+  Ship,
+  Sparkles,
+  Train,
+} from "lucide-react";
 import type { LiveMapLayer } from "@/lib/map-providers";
 import { LIVE_MAP_LAYERS_PANEL_OFFSET } from "./live-layout";
 
@@ -123,11 +136,57 @@ function LayerPreview({ option }: { option: (typeof LIVE_MAP_LAYER_OPTIONS)[numb
   );
 }
 
+type OverlayToggleProps = {
+  enabled: boolean;
+  onChange: (enabled: boolean) => void;
+  title: string;
+  description: string;
+  preview: ReactNode;
+};
+
+function OverlayToggle({ enabled, onChange, title, description, preview }: OverlayToggleProps) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!enabled)}
+      className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors ${
+        enabled
+          ? "border border-[#007F73] bg-[#E6F7F4]"
+          : "border border-transparent hover:bg-stone-50"
+      }`}
+      aria-pressed={enabled}
+    >
+      {preview}
+      <div className="min-w-0 flex-1">
+        <span
+          className={`text-sm font-semibold ${enabled ? "text-[#007F73]" : "text-stone-800"}`}
+        >
+          {title}
+        </span>
+        <p className="mt-0.5 text-[11px] leading-snug text-stone-500">{description}</p>
+      </div>
+      {enabled ? (
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#007F73] text-white">
+          <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+        </span>
+      ) : (
+        <span className="h-6 w-6 shrink-0" aria-hidden />
+      )}
+    </button>
+  );
+}
+
 type Props = {
   activeLayer: LiveMapLayer;
   onLayerChange: (layer: LiveMapLayer) => void;
   travelLayerEnabled?: boolean;
   onTravelLayerChange?: (enabled: boolean) => void;
+  seaRoutesEnabled?: boolean;
+  onSeaRoutesChange?: (enabled: boolean) => void;
+  cruiseRoutesEnabled?: boolean;
+  onCruiseRoutesChange?: (enabled: boolean) => void;
+  footRoutesEnabled?: boolean;
+  onFootRoutesChange?: (enabled: boolean) => void;
   /** Controlled open state — used when opened from Map Tools. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -135,6 +194,14 @@ type Props = {
   showTrigger?: boolean;
   mapViewMode?: "2d" | "3d";
   onToggleViewMode?: () => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  soundEnabled?: boolean;
+  onToggleSound?: () => void;
+  notificationsEnabled?: boolean;
+  onToggleNotifications?: () => void;
+  bearing?: number;
+  onResetNorth?: () => void;
 };
 
 export default function LiveMapLayerControl({
@@ -142,11 +209,25 @@ export default function LiveMapLayerControl({
   onLayerChange,
   travelLayerEnabled = false,
   onTravelLayerChange,
+  seaRoutesEnabled = false,
+  onSeaRoutesChange,
+  cruiseRoutesEnabled = false,
+  onCruiseRoutesChange,
+  footRoutesEnabled = false,
+  onFootRoutesChange,
   open: openProp,
   onOpenChange,
   showTrigger = true,
   mapViewMode,
   onToggleViewMode,
+  isFullscreen,
+  onToggleFullscreen,
+  soundEnabled,
+  onToggleSound,
+  notificationsEnabled,
+  onToggleNotifications,
+  bearing,
+  onResetNorth,
 }: Props) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isControlled = openProp !== undefined;
@@ -218,7 +299,7 @@ export default function LiveMapLayerControl({
         <div
           role="dialog"
           aria-label="Map layers"
-          className={`pointer-events-auto absolute bottom-full left-0 z-[60] w-[min(18.5rem,calc(100vw-2rem))] ${LIVE_MAP_LAYERS_PANEL_OFFSET} max-md:fixed max-md:inset-x-4 max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] max-md:left-auto max-md:mb-0 max-md:w-auto`}
+          className={`pointer-events-auto absolute bottom-full right-0 z-[60] w-[min(18.5rem,calc(100vw-2rem))] ${LIVE_MAP_LAYERS_PANEL_OFFSET} max-md:fixed max-md:inset-x-4 max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] max-md:left-auto max-md:mb-0 max-md:w-auto`}
         >
           <div className="overflow-hidden rounded-2xl bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.14)] backdrop-blur-md">
             <div className="border-b border-stone-100/80 px-4 py-2.5">
@@ -270,49 +351,144 @@ export default function LiveMapLayerControl({
               })}
             </ul>
 
-            {onTravelLayerChange ? (
+            {onTravelLayerChange || onSeaRoutesChange || onCruiseRoutesChange || onFootRoutesChange ? (
               <div className="border-t border-stone-100/80 p-2">
-                <button
-                  type="button"
-                  onClick={() => onTravelLayerChange(!travelLayerEnabled)}
-                  className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors ${
-                    travelLayerEnabled
-                      ? "border border-[#007F73] bg-[#E6F7F4]"
-                      : "border border-transparent hover:bg-stone-50"
-                  }`}
-                  aria-pressed={travelLayerEnabled}
-                >
-                  <div
-                    className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border shadow-inner ${
-                      travelLayerEnabled
-                        ? "border-[#007F73]/30 bg-gradient-to-br from-[#E6F7F4] via-white to-[#D1FAE5]"
-                        : "border-stone-200/80 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E2E8F0]"
-                    }`}
-                    aria-hidden
-                  >
-                    <Route className="h-4 w-4 text-[#007F73]" />
-                    <Train className="absolute bottom-1.5 right-1.5 h-3 w-3 text-stone-500" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`text-sm font-semibold ${travelLayerEnabled ? "text-[#007F73]" : "text-stone-800"}`}
-                      >
-                        Travel layer
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-[11px] leading-snug text-stone-500">
-                      Highways, city routes, railways & transit — zoom for detail
-                    </p>
-                  </div>
-                  {travelLayerEnabled ? (
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#007F73] text-white">
-                      <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
-                    </span>
-                  ) : (
-                    <span className="h-6 w-6 shrink-0" aria-hidden />
-                  )}
-                </button>
+                <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                  Overlays
+                </p>
+                <div className="flex flex-col gap-1">
+                  {onTravelLayerChange ? (
+                    <OverlayToggle
+                      enabled={travelLayerEnabled}
+                      onChange={onTravelLayerChange}
+                      title="Travel layer"
+                      description="Highways, city routes, railways & transit"
+                      preview={
+                        <div
+                          className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border shadow-inner ${
+                            travelLayerEnabled
+                              ? "border-[#007F73]/30 bg-gradient-to-br from-[#E6F7F4] via-white to-[#D1FAE5]"
+                              : "border-stone-200/80 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E2E8F0]"
+                          }`}
+                          aria-hidden
+                        >
+                          <Route className="h-4 w-4 text-[#007F73]" />
+                          <Train className="absolute bottom-1.5 right-1.5 h-3 w-3 text-stone-500" />
+                        </div>
+                      }
+                    />
+                  ) : null}
+                  {onSeaRoutesChange ? (
+                    <OverlayToggle
+                      enabled={seaRoutesEnabled}
+                      onChange={onSeaRoutesChange}
+                      title="Sea routes"
+                      description="Sky-blue shipping lanes & teal ferry links (zoom in for ferries)"
+                      preview={
+                        <div
+                          className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border shadow-inner ${
+                            seaRoutesEnabled
+                              ? "border-blue-400/50 bg-gradient-to-br from-[#0C4A6E] via-[#0369A1] to-[#38BDF8]"
+                              : "border-stone-200/80 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E2E8F0]"
+                          }`}
+                          aria-hidden
+                        >
+                          <svg viewBox="0 0 40 40" className="absolute inset-0 h-full w-full" aria-hidden>
+                            <path
+                              d="M4 28 Q14 18 22 22 T36 14"
+                              fill="none"
+                              stroke={seaRoutesEnabled ? "#7DD3FC" : "#94A3B8"}
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                            />
+                            <path
+                              d="M8 32 Q18 26 28 30"
+                              fill="none"
+                              stroke={seaRoutesEnabled ? "#5EEAD4" : "#CBD5E1"}
+                              strokeWidth="1.5"
+                              strokeDasharray="3 2"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <Ship
+                            className={`relative h-3.5 w-3.5 ${seaRoutesEnabled ? "text-white" : "text-blue-600"}`}
+                          />
+                        </div>
+                      }
+                    />
+                  ) : null}
+                  {onCruiseRoutesChange ? (
+                    <OverlayToggle
+                      enabled={cruiseRoutesEnabled}
+                      onChange={onCruiseRoutesChange}
+                      title="Cruise routes"
+                      description="Gold cruise paths — visible worldwide on satellite"
+                      preview={
+                        <div
+                          className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border shadow-inner ${
+                            cruiseRoutesEnabled
+                              ? "border-amber-400/50 bg-gradient-to-br from-[#78350F] via-[#B45309] to-[#FBBF24]"
+                              : "border-stone-200/80 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E2E8F0]"
+                          }`}
+                          aria-hidden
+                        >
+                          <svg viewBox="0 0 40 40" className="absolute inset-0 h-full w-full" aria-hidden>
+                            <path
+                              d="M6 26 Q20 8 34 24"
+                              fill="none"
+                              stroke={cruiseRoutesEnabled ? "#FDE68A" : "#94A3B8"}
+                              strokeWidth="2.5"
+                              strokeDasharray="4 2"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <Sailboat
+                            className={`relative h-3.5 w-3.5 ${cruiseRoutesEnabled ? "text-white" : "text-violet-600"}`}
+                          />
+                        </div>
+                      }
+                    />
+                  ) : null}
+                  {onFootRoutesChange ? (
+                    <OverlayToggle
+                      enabled={footRoutesEnabled}
+                      onChange={onFootRoutesChange}
+                      title="Foot routes"
+                      description="Green trekking trails & hiking paths worldwide (OSM)"
+                      preview={
+                        <div
+                          className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border shadow-inner ${
+                            footRoutesEnabled
+                              ? "border-emerald-400/50 bg-gradient-to-br from-[#14532D] via-[#166534] to-[#4ADE80]"
+                              : "border-stone-200/80 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E2E8F0]"
+                          }`}
+                          aria-hidden
+                        >
+                          <svg viewBox="0 0 40 40" className="absolute inset-0 h-full w-full" aria-hidden>
+                            <path
+                              d="M6 30 Q14 14 22 20 T34 10"
+                              fill="none"
+                              stroke={footRoutesEnabled ? "#BBF7D0" : "#94A3B8"}
+                              strokeWidth="3"
+                              strokeDasharray="3 2"
+                              strokeLinecap="round"
+                            />
+                            <path
+                              d="M8 34 Q18 24 30 28"
+                              fill="none"
+                              stroke={footRoutesEnabled ? "#4ADE80" : "#CBD5E1"}
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <Footprints
+                            className={`relative h-3.5 w-3.5 ${footRoutesEnabled ? "text-white" : "text-emerald-700"}`}
+                          />
+                        </div>
+                      }
+                    />
+                  ) : null}
+                </div>
               </div>
             ) : null}
 
@@ -329,6 +505,63 @@ export default function LiveMapLayerControl({
                 >
                   {mapViewMode === "3d" ? "Switch to 2D view" : "Switch to 3D view"}
                 </button>
+              </div>
+            ) : null}
+            {onToggleFullscreen || onToggleSound || onToggleNotifications || onResetNorth ? (
+              <div className="border-t border-stone-100/80 p-2">
+                <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                  Map settings & tools
+                </p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {onToggleFullscreen && (
+                    <button
+                      type="button"
+                      onClick={onToggleFullscreen}
+                      className={`flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition-colors cursor-pointer ${
+                        isFullscreen
+                          ? "bg-[#E6F7F4] text-[#007F73] border border-[#007F73]/25"
+                          : "bg-stone-50 text-stone-700 hover:bg-stone-100 border border-transparent"
+                      }`}
+                    >
+                      {isFullscreen ? "Exit Full" : "Fullscreen"}
+                    </button>
+                  )}
+                  {onToggleSound && (
+                    <button
+                      type="button"
+                      onClick={onToggleSound}
+                      className={`flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition-colors cursor-pointer ${
+                        soundEnabled
+                          ? "bg-[#E6F7F4] text-[#007F73] border border-[#007F73]/25"
+                          : "bg-stone-50 text-stone-700 hover:bg-stone-100 border border-transparent"
+                      }`}
+                    >
+                      {soundEnabled ? "Sound On" : "Sound Off"}
+                    </button>
+                  )}
+                  {onToggleNotifications && (
+                    <button
+                      type="button"
+                      onClick={onToggleNotifications}
+                      className={`flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition-colors cursor-pointer ${
+                        notificationsEnabled
+                          ? "bg-[#E6F7F4] text-[#007F73] border border-[#007F73]/25"
+                          : "bg-stone-50 text-stone-700 hover:bg-stone-100 border border-transparent"
+                      }`}
+                    >
+                      {notificationsEnabled ? "Notifs On" : "Notifs Off"}
+                    </button>
+                  )}
+                  {onResetNorth && (
+                    <button
+                      type="button"
+                      onClick={onResetNorth}
+                      className="flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold bg-stone-50 text-stone-700 hover:bg-stone-100 border border-transparent cursor-pointer"
+                    >
+                      Reset North
+                    </button>
+                  )}
+                </div>
               </div>
             ) : null}
           </div>

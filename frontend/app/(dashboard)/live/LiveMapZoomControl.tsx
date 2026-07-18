@@ -4,14 +4,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 
 import { LIVE_MAP_MIN_ZOOM } from "@/lib/map-providers";
-import { LIVE_MAP_ZOOM_CAP_EPSILON } from "./live-map-zoom-limits";
+import {
+  clampLiveMapZoomValue,
+  liveMapZoomInButtonLevel,
+  liveMapZoomOutButtonLevel,
+} from "./live-map-zoom-limits";
 import type { LiveMapLayer } from "@/lib/map-providers";
 import { LIVE_MAP_ZOOM_CONTROL_POSITION } from "./live-layout";
 import {
   isLiveMapDarkLayer,
   LIVE_MAP_ZOOM_SCALE_VISIBLE_MS,
-  liveMapRightBtn,
   liveMapRightShell,
+  liveMapZoomInBtn,
+  liveMapZoomOutBtn,
 } from "./live-map-right-controls";
 
 type Props = {
@@ -78,18 +83,20 @@ export default function LiveMapZoomControl({
     [],
   );
 
-  const clampedZoom = Math.min(maxZoom, Math.max(LIVE_MAP_MIN_ZOOM, zoom));
-  const canZoomIn = clampedZoom + LIVE_MAP_ZOOM_CAP_EPSILON < maxZoom;
-  const canZoomOut = clampedZoom > LIVE_MAP_MIN_ZOOM;
+  const clampedZoom = clampLiveMapZoomValue(zoom, LIVE_MAP_MIN_ZOOM, maxZoom);
+  const zoomInLevel = liveMapZoomInButtonLevel(clampedZoom, maxZoom);
+  const zoomOutLevel = liveMapZoomOutButtonLevel(clampedZoom);
+  const atMaxZoom = zoomInLevel === "max";
+  const atMinZoom = zoomOutLevel === "min";
 
   const handleZoomIn = () => {
     revealScale();
-    onZoomIn();
+    if (!atMaxZoom) onZoomIn();
   };
 
   const handleZoomOut = () => {
     revealScale();
-    onZoomOut();
+    if (!atMinZoom) onZoomOut();
   };
 
   const panel = (
@@ -98,67 +105,84 @@ export default function LiveMapZoomControl({
       role="group"
       aria-label="Map zoom"
     >
-        <button
-          type="button"
-          onClick={handleZoomIn}
-          disabled={!canZoomIn}
-          className={liveMapRightBtn(isDark, !canZoomIn)}
-          title="Zoom in"
-          aria-label="Zoom in"
-        >
-          <Plus className="h-[18px] w-[18px] stroke-[2.5]" aria-hidden />
-        </button>
+      <button
+        type="button"
+        onClick={handleZoomIn}
+        className={liveMapZoomInBtn(isDark, zoomInLevel)}
+        title={
+          atMaxZoom
+            ? "Maximum zoom for this map layer"
+            : zoomInLevel === "approaching"
+              ? "Near maximum zoom"
+              : "Zoom in"
+        }
+        aria-label={atMaxZoom ? "Maximum zoom reached" : "Zoom in"}
+        aria-disabled={atMaxZoom}
+      >
+        <Plus className="h-[18px] w-[18px] stroke-[2.5]" aria-hidden />
+      </button>
 
-        <div
-          className={`grid transition-all duration-300 ease-out ${
-            scaleVisible
-              ? "grid-rows-[1fr] opacity-100"
-              : "grid-rows-[0fr] opacity-0"
-          }`}
-        >
-          <div className="overflow-hidden">
-            <div
-              className={`flex flex-col items-center gap-1 border-y px-1 py-1.5 ${
-                isDark ? "border-white/12" : "border-stone-200/55"
+      <div
+        className={`grid transition-all duration-300 ease-out ${
+          scaleVisible
+            ? "grid-rows-[1fr] opacity-100"
+            : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div
+            className={`flex flex-col items-center gap-1 border-y px-1 py-1.5 ${
+              isDark ? "border-white/12" : "border-stone-200/55"
+            }`}
+          >
+            <span
+              className={`text-[10px] font-semibold tabular-nums leading-none ${
+                atMaxZoom
+                  ? "text-red-500"
+                  : zoomInLevel === "approaching"
+                    ? "text-amber-600"
+                    : isDark
+                      ? "text-white/95"
+                      : "text-stone-800"
               }`}
             >
-              <span
-                className={`text-[10px] font-semibold tabular-nums leading-none ${
-                  isDark ? "text-white/95" : "text-stone-800"
-                }`}
-              >
-                {clampedZoom.toFixed(1)}
-              </span>
-              <ZoomScaleTicks isDark={isDark} />
-              <input
-                type="range"
-                min={LIVE_MAP_MIN_ZOOM}
-                max={maxZoom}
-                step={0.5}
-                value={clampedZoom}
-                onPointerDown={revealScale}
-                onChange={(event) => {
-                  revealScale();
-                  onZoomChange(Number(event.target.value));
-                }}
-                className="sr-only"
-                aria-label="Zoom level"
-                tabIndex={scaleVisible ? 0 : -1}
-              />
-            </div>
+              {clampedZoom.toFixed(1)}
+            </span>
+            <ZoomScaleTicks isDark={isDark} />
+            <input
+              type="range"
+              min={LIVE_MAP_MIN_ZOOM}
+              max={maxZoom}
+              step={0.5}
+              value={clampedZoom}
+              onPointerDown={revealScale}
+              onChange={(event) => {
+                revealScale();
+                const next = clampLiveMapZoomValue(
+                  Number(event.target.value),
+                  LIVE_MAP_MIN_ZOOM,
+                  maxZoom,
+                );
+                onZoomChange(next);
+              }}
+              className="sr-only"
+              aria-label="Zoom level"
+              tabIndex={scaleVisible ? 0 : -1}
+            />
           </div>
         </div>
+      </div>
 
-        <button
-          type="button"
-          onClick={handleZoomOut}
-          disabled={!canZoomOut}
-          className={liveMapRightBtn(isDark, !canZoomOut)}
-          title="Zoom out"
-          aria-label="Zoom out"
-        >
-          <Minus className="h-[18px] w-[18px] stroke-[2.5]" aria-hidden />
-        </button>
+      <button
+        type="button"
+        onClick={handleZoomOut}
+        className={liveMapZoomOutBtn(isDark, zoomOutLevel)}
+        title={atMinZoom ? "Minimum zoom reached" : "Zoom out"}
+        aria-label={atMinZoom ? "Minimum zoom reached" : "Zoom out"}
+        aria-disabled={atMinZoom}
+      >
+        <Minus className="h-[18px] w-[18px] stroke-[2.5]" aria-hidden />
+      </button>
     </div>
   );
 

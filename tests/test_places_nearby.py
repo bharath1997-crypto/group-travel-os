@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
 
 from app.main import app
-from app.services.places_nearby_service import PlacesNearbyService
+from app.services.places_nearby_service import PlacesNearbyService, normalize_tags
 
 client = TestClient(app)
 
@@ -251,6 +251,19 @@ def test_resolve_click_fallback_dropped_pin():
         body = res.json()
         assert body["place"]["category"] == "Dropped pin"
         assert body["place"]["source"] == "dropped_pin"
+
+
+def test_normalize_port_and_beach_tags():
+    assert normalize_tags({"landuse": "port", "name": "Port of Rotterdam"}) == "Port"
+    assert normalize_tags({"harbour": "yes", "name": "Harbour"}) == "Port"
+    assert normalize_tags({"industrial": "port", "name": "Container Terminal"}) == "Port"
+    assert normalize_tags({"man_made": "pier", "name": "Pier 33"}) == "Port"
+    assert normalize_tags({"leisure": "marina", "name": "Marina Bay"}) == "Marina"
+    assert normalize_tags({"natural": "beach", "name": "Copacabana"}) == "Beach"
+    assert normalize_tags({"leisure": "beach_resort", "name": "Resort Beach"}) == "Beach"
+    assert normalize_tags({"tourism": "attraction", "name": "Bondi Beach"}) == "Beach"
+    assert normalize_tags({"aeroway": "aerodrome", "name": "O'Hare"}) == "Airport"
+    assert normalize_tags({"amenity": "cinema", "name": "AMC Theater"}) == "Cinema"
 
 
 def test_search_places_validation_error():

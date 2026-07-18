@@ -49,3 +49,4 @@ class TripListOut(BaseModel):
     created_by: UUID
     created_at: datetime
     updated_at: datetime
+    locked_at: datetime | None = None

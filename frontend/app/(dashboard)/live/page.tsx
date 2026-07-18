@@ -487,10 +487,12 @@ export default function LivePage() {
     [gpsState.lat, gpsState.lng]
   );
 
+  const DEV_SHOW_MOCK_FRIENDS = false;
   const [friendTrackingEnabled, setFriendTrackingEnabled] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   const friendsLocations = useMemo<FriendLocation[]>(() => {
-    if (workflowType !== "Group Travel") return [];
+    if (!DEV_SHOW_MOCK_FRIENDS || workflowType !== "Group Travel") return [];
     
     // Base coordinates to offset from (use userLocation, routeOrigin, or Chicago baseline)
     const baseLat = userLocation?.lat ?? routeOrigin?.latitude ?? 41.922;
@@ -3162,13 +3164,12 @@ export default function LivePage() {
         />
       ) : null}
 
-      {/* Rovvy Map Dock — compact bottom-left: layers, fullscreen, GPS */}
-      {/* Rovvy Map Dock — compact bottom-left: layers, fullscreen, GPS */}
+      {/* GPS / Location Control — separate bottom-left */}
       <div
         className={`pointer-events-auto absolute z-40 transition-all duration-200 ${LIVE_MAP_CONTROLS_POSITION}`}
       >
         <div className="relative flex flex-col items-start gap-1">
-          {showGpsHelper ? (
+          {showGpsHelper && (
             <div className="absolute bottom-full left-0 z-50 mb-3 w-56 rounded-xl border border-stone-200 bg-white/95 p-3 text-left shadow-xl backdrop-blur-md">
               <p className="text-xs font-semibold text-stone-800">
                 {gpsStatus === "denied" ? "Location off" : "Location unavailable"}
@@ -3216,47 +3217,73 @@ export default function LivePage() {
                 ×
               </button>
             </div>
-          ) : null}
+          )}
 
-          <LiveMapDock
-            activeLayer={activeLayer}
-            layersPanelOpen={layersPanelOpen}
-            onOpenLayers={() => setLayersPanelOpen((prev) => !prev)}
-            bearing={mapBearing}
-            onResetNorth={() => mapRef.current?.resetNorth()}
-            gpsStatus={gpsStatus}
-            liveGpsActive={liveGpsActive}
-            onLocate={handleLocateClick}
-            isFullscreen={isFullscreen}
-            onToggleFullscreen={() => {
-              if (!document.fullscreenElement) {
-                void document.documentElement.requestFullscreen();
-              } else {
-                void document.exitFullscreen();
-              }
-            }}
-            soundEnabled={soundEnabled}
-            onToggleSound={() => setSoundEnabled((prev) => !prev)}
-          />
+          <button
+            type="button"
+            className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-[0_8px_24px_rgba(15,23,42,0.10)] border border-stone-200/60 backdrop-blur-md transition-all duration-200 cursor-pointer ${
+              activeLayer === "dark" ? "bg-slate-900/90 text-white" : "bg-white/95 text-stone-700 hover:bg-white"
+            } ${
+              gpsStatus === "active" || gpsStatus === "approximate"
+                ? "ring-1 ring-[#007F73]/50 text-[#007F73]"
+                : ""
+            }`}
+            onClick={handleLocateClick}
+            title={
+              gpsStatus === "denied"
+                ? "Location permission denied"
+                : gpsStatus === "requesting"
+                ? "Finding location…"
+                : "Locate me"
+            }
+            aria-label="Locate me"
+          >
+            {gpsStatus === "requesting" ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#007F73] border-t-transparent" />
+            ) : (
+              <svg 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                className="h-5 w-5" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="7" />
+                <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+                <line x1="12" y1="2" x2="12" y2="4" />
+                <line x1="12" y1="20" x2="12" y2="22" />
+                <line x1="2" y1="12" x2="4" y2="12" />
+                <line x1="20" y1="12" x2="22" y2="12" />
+              </svg>
+            )}
+          </button>
+        </div>
+      </div>
 
-          <LiveMapLocationSheet
-            open={mapLocationSheet != null}
-            point={mapLocationSheet}
-            loading={mapLocationSheetLoading}
-            manualMode={mapLocationSheetManual}
-            destinationName={destination?.name ?? null}
-            destinationLat={destination?.lat ?? null}
-            destinationLng={destination?.lng ?? null}
-            canAddStop={Boolean(destination && (isLiveActive || liveStage === "destination_set"))}
-            onClose={closeMapLocationSheet}
-            onSetStartingPoint={handleSheetSetStartingPoint}
-            onSetDestination={handleSheetSetDestination}
-            onAddStop={handleSheetAddStop}
-            onCopyCoordinates={(p) => void handleSheetCopyCoordinates(p)}
-            onSavePlace={handleSheetSavePlace}
-          />
+      <LiveMapLocationSheet
+        open={mapLocationSheet != null}
+        point={mapLocationSheet}
+        loading={mapLocationSheetLoading}
+        manualMode={mapLocationSheetManual}
+        destinationName={destination?.name ?? null}
+        destinationLat={destination?.lat ?? null}
+        destinationLng={destination?.lng ?? null}
+        canAddStop={Boolean(destination && (isLiveActive || liveStage === "destination_set"))}
+        onClose={closeMapLocationSheet}
+        onSetStartingPoint={handleSheetSetStartingPoint}
+        onSetDestination={handleSheetSetDestination}
+        onAddStop={handleSheetAddStop}
+        onCopyCoordinates={(p) => void handleSheetCopyCoordinates(p)}
+        onSavePlace={handleSheetSavePlace}
+      />
 
-
+      {/* Option B Map Controls Dock — lower-right */}
+      <div
+        className="pointer-events-auto absolute z-40 transition-all duration-200 bottom-4 right-4 md:bottom-5 md:right-5"
+      >
+        <div className="relative flex flex-col items-end gap-2">
           <LiveMapLayerControl
             activeLayer={activeLayer}
             onLayerChange={handleLayerChange}
@@ -3273,6 +3300,40 @@ export default function LivePage() {
             showTrigger={false}
             mapViewMode={mapViewMode}
             onToggleViewMode={handleToggleViewMode}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={() => {
+              if (!document.fullscreenElement) {
+                void document.documentElement.requestFullscreen();
+              } else {
+                void document.exitFullscreen();
+              }
+            }}
+            soundEnabled={soundEnabled}
+            onToggleSound={() => setSoundEnabled((prev) => !prev)}
+            notificationsEnabled={notificationsEnabled}
+            onToggleNotifications={() => setNotificationsEnabled((prev) => !prev)}
+            bearing={mapBearing}
+            onResetNorth={() => mapRef.current?.resetNorth()}
+          />
+
+          <LiveMapDock
+            activeLayer={activeLayer}
+            layersPanelOpen={layersPanelOpen}
+            onOpenLayers={() => setLayersPanelOpen((prev) => !prev)}
+            bearing={mapBearing}
+            onResetNorth={() => mapRef.current?.resetNorth()}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={() => {
+              if (!document.fullscreenElement) {
+                void document.documentElement.requestFullscreen();
+              } else {
+                void document.exitFullscreen();
+              }
+            }}
+            soundEnabled={soundEnabled}
+            onToggleSound={() => setSoundEnabled((prev) => !prev)}
+            notificationsEnabled={notificationsEnabled}
+            onToggleNotifications={() => setNotificationsEnabled((prev) => !prev)}
           />
         </div>
       </div>
