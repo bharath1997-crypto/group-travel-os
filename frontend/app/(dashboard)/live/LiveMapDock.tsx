@@ -59,37 +59,33 @@ export default function LiveMapDock({
     };
   }, []);
 
-  const dockClass = isDark
-    ? "bg-slate-900/90 border border-white/10 text-slate-100 shadow-[0_12px_40px_rgba(0,0,0,0.5)] backdrop-blur-md rounded-2xl p-1 flex items-center gap-1 select-none pointer-events-auto"
-    : "bg-white/90 border border-stone-200/60 text-stone-700 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-md rounded-2xl p-1 flex items-center gap-1 select-none pointer-events-auto";
-
+  // Visual button styling: Each box is a separate glassmorphic cube/tile
   const btnClass = (isActive: boolean) => {
-    const base = "relative flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200 focus:outline-none cursor-pointer";
+    const base =
+      "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-md border backdrop-blur-md transition-all duration-200 focus:outline-none cursor-pointer";
     if (isActive) {
       return `${base} ${
         isDark
-          ? "bg-teal-500/20 text-teal-300 ring-1 ring-teal-400/30"
-          : "bg-teal-50 text-[#0f766e] ring-1 ring-teal-100/80"
+          ? "bg-teal-500/25 border-teal-400/40 text-teal-300 ring-1 ring-teal-400/30"
+          : "bg-teal-50 border-[#0f766e]/30 text-[#0f766e] ring-1 ring-teal-100/80"
       }`;
     }
     return `${base} ${
       isDark
-        ? "hover:bg-white/5 active:bg-white/10 text-slate-300"
-        : "hover:bg-stone-50 active:bg-stone-100 text-stone-600"
+        ? "bg-slate-900/90 border-white/10 hover:bg-slate-800/90 text-slate-300"
+        : "bg-white/90 border-stone-200/60 hover:bg-stone-50 text-stone-600"
     }`;
   };
 
   return (
     <div className="relative select-none pointer-events-none">
-      {/* 3D Rovi Monkey Mascot Placeholder sitting on top */}
-      <div 
-        className="absolute -top-[34px] right-6 z-50 pointer-events-auto cursor-pointer"
+      {/* 3D Rovi Monkey Mascot Placeholder (temporary monkey emoji) */}
+      <div
+        className="absolute -top-[32px] right-6 z-50 pointer-events-auto cursor-pointer"
         onMouseEnter={() => setMascotBubble("Need a hand? 🐒")}
         onMouseLeave={() => setMascotBubble(null)}
-        onClick={() => {
-          setMascotBubble("Toggling layers! 🗺️");
-          onOpenLayers();
-        }}
+        data-live-layers-trigger
+        onClick={onOpenLayers}
       >
         <div className="relative flex flex-col items-center">
           {/* Speech Bubble */}
@@ -99,20 +95,19 @@ export default function LiveMapDock({
               <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
             </div>
           )}
-          {/* Monkey Mascot Capsule */}
-          <div className="flex h-7 items-center gap-1 rounded-full bg-slate-900/95 text-white px-2 py-0.5 text-[10px] font-medium shadow-md border border-white/10 backdrop-blur-sm transition-all duration-300 hover:scale-105 active:scale-95">
-            <span className="text-xs animate-bounce" style={{ animationDuration: "2s" }}>🐒</span>
-            <span className="font-semibold tracking-wide uppercase text-[8px] text-teal-400">Rovi</span>
+          {/* 28px Mascot Circle */}
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-white shadow-md border border-white/10 backdrop-blur-sm transition-all duration-300 hover:scale-110 active:scale-95 text-base">
+            🐒
           </div>
         </div>
       </div>
 
-      {/* Option B: Horizontal 5-Box Rounded Dock */}
-      <div className={dockClass} role="group" aria-label="Map Controls Dock">
-        
+      {/* Option B: Five distinct tile boxes placed side-by-side */}
+      <div className="flex items-center gap-1.5 pointer-events-auto" role="group" aria-label="Map Controls Dock">
         {/* Box 1: Layers Launcher */}
         <button
           type="button"
+          data-live-layers-trigger
           onClick={onOpenLayers}
           className={btnClass(layersPanelOpen)}
           title="Map layers"
@@ -135,8 +130,8 @@ export default function LiveMapDock({
           title={offNorth ? "Reset map to North" : "Facing North"}
           aria-label={offNorth ? "Reset map to North" : "Facing North"}
         >
-          <Compass 
-            className="h-4.5 w-4.5 transition-transform duration-200 ease-out" 
+          <Compass
+            className="h-4.5 w-4.5 transition-transform duration-200 ease-out"
             style={{ transform: `rotate(${-normalizedBearing}deg)` }}
           />
           {offNorth && (
@@ -152,11 +147,7 @@ export default function LiveMapDock({
           title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
           aria-label="Toggle Fullscreen"
         >
-          {isFullscreen ? (
-            <Minimize2 className="h-4.5 w-4.5" />
-          ) : (
-            <Maximize2 className="h-4.5 w-4.5" />
-          )}
+          {isFullscreen ? <Minimize2 className="h-4.5 w-4.5" /> : <Maximize2 className="h-4.5 w-4.5" />}
         </button>
 
         {/* Box 4: Sound Toggle */}
