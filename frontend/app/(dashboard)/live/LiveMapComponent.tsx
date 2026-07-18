@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { geolocationUnavailableMessage, geolocationErrorMessage, haversineM } from "@/lib/geo";
@@ -24,7 +24,9 @@ import {
   applyLiveMapZoomLimits,
   clampLiveMapZoom,
   enforceLiveMapZoomCap,
+  ensureLiveMapFallbackBackground,
   isAtLiveMapMaxZoom,
+  isAtLiveMapMinZoom,
   resolveLiveMapMaxZoom,
 } from "./live-map-zoom-limits";
 import {
@@ -33,7 +35,10 @@ import {
 } from "./live-map-labels";
 import { ensureCleanMapHouseNumberLabels } from "./live-clean-map-housenumbers";
 import { syncTravelLayerOverlay } from "./live-travel-layer-sync";
+import { syncSeaRoutesOverlay } from "./live-sea-routes-sync";
+import { syncFootRoutesOverlay } from "./live-foot-routes-sync";
 import { syncDarkMapStreetLabels } from "./live-dark-map-labels";
+import { syncFriendLocationsOverlay, type FriendLocation } from "./live-friend-layer-sync";
 import { createMeetupMarkerElement } from "./live-meetup-marker";
 import { getPoiMarkerPresentation } from "./live-poi-icons";
 import type { AutocompleteResult } from "./live-geocoding";
@@ -53,6 +58,13 @@ import {
   type LiveMapViewMode,
 } from "./live-layout";
 import { bearingAlongRoute, blendBearing } from "./live-route-bearing";
+import {
+  applyLiveGlobeMode,
+  bindLiveGlobeMode,
+  isLiveGlobeViewZoom,
+  resolveLiveLocateZoom,
+  syncLiveGlobeBackground,
+} from "./live-map-globe";
 
 /** Extended arrow-cursor + custom Google Maps style pulse animations */
 const LIVE_MAP_CSS = `
@@ -96,6 +108,19 @@ const LIVE_MAP_CSS = `
   height: 14px;
   border-radius: 50%;
   background: #1a73e8;
+}
+.gt-user-location-marker.gt-user-location-marker--globe {
+  width: 44px;
+  height: 44px;
+}
+.gt-user-location-marker.gt-user-location-marker--globe .gt-user-location-dot {
+  width: 30px;
+  height: 30px;
+  box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.35), 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+.gt-user-location-marker.gt-user-location-marker--globe .gt-user-location-dot-core {
+  width: 20px;
+  height: 20px;
 }
 .user-location-popup.maplibregl-popup {
   z-index: 5;
@@ -175,6 +200,11 @@ export type MapClickPayload = {
 type Props = {
   activeLayer: LiveMapLayer;
   travelLayerEnabled?: boolean;
+  seaRoutesEnabled?: boolean;
+  cruiseRoutesEnabled?: boolean;
+  footRoutesEnabled?: boolean;
+  friends?: FriendLocation[];
+  friendTrackingEnabled?: boolean;
   mapRef: React.MutableRefObject<LiveMapRef | null>;
   mapPin?: { lat: number; lng: number } | null;
   pinMode?: "meetup" | "selected";
@@ -917,9 +947,27 @@ function syncNearbyMarkersNow(
   return next;
 }
 
+function updateUserMarkerGlobeScale(
+  map: maplibregl.Map,
+  marker: maplibregl.Marker | null,
+): void {
+  if (!marker) return;
+  const el = marker.getElement();
+  if (!el) return;
+  el.classList.toggle(
+    "gt-user-location-marker--globe",
+    isLiveGlobeViewZoom(map.getZoom()),
+  );
+}
+
 export default function LiveMapComponent({
   activeLayer,
   travelLayerEnabled = false,
+  seaRoutesEnabled = false,
+  cruiseRoutesEnabled = false,
+  footRoutesEnabled = false,
+  friends = [],
+  friendTrackingEnabled = false,
   mapRef,
   mapPin,
   pinMode = "selected",
@@ -946,6 +994,8 @@ export default function LiveMapComponent({
   autoFitRoute = true,
 }: Props) {
   const mapContainer = useRef<HTMLDivElement>(null);
+  const mapShellRef = useRef<HTMLDivElement>(null);
+  const [mapContainerReady, setMapContainerReady] = useState(false);
   const instanceRef = useRef<maplibregl.Map | null>(null);
   const [debugInfo, setDebugInfo] = useState<{
     lat: number;
@@ -1020,6 +1070,16 @@ export default function LiveMapComponent({
   activeLayerRef.current = activeLayer;
   const travelLayerEnabledRef = useRef(travelLayerEnabled);
   travelLayerEnabledRef.current = travelLayerEnabled;
+  const seaRoutesEnabledRef = useRef(seaRoutesEnabled);
+  seaRoutesEnabledRef.current = seaRoutesEnabled;
+  const cruiseRoutesEnabledRef = useRef(cruiseRoutesEnabled);
+  cruiseRoutesEnabledRef.current = cruiseRoutesEnabled;
+  const footRoutesEnabledRef = useRef(footRoutesEnabled);
+  footRoutesEnabledRef.current = footRoutesEnabled;
+  const friendsRef = useRef(friends);
+  friendsRef.current = friends;
+  const friendTrackingEnabledRef = useRef(friendTrackingEnabled);
+  friendTrackingEnabledRef.current = friendTrackingEnabled;
 
   const zoomContext = useCallback(
     () => ({ travelLayerEnabled: travelLayerEnabledRef.current }),
@@ -1028,9 +1088,16 @@ export default function LiveMapComponent({
 
   const restoreOverlaysAfterStyleChange = useCallback((map: maplibregl.Map) => {
     logRovvyLiveDebug("[Rovvy Debug] marker restore after style.load, userLocation:", userLocationRef.current);
+    applyLiveGlobeMode(map, activeLayerRef.current);
     syncTravelLayerOverlay(map, travelLayerEnabledRef.current, activeLayerRef.current);
+    syncSeaRoutesOverlay(map, {
+      seaRoutesEnabled: seaRoutesEnabledRef.current,
+      cruiseRoutesEnabled: cruiseRoutesEnabledRef.current,
+    }, activeLayerRef.current);
+    syncFootRoutesOverlay(map, footRoutesEnabledRef.current, activeLayerRef.current);
     syncDarkMapStreetLabels(map, activeLayerRef.current === "dark");
     syncRouteLayerNow(map, routeLineRef.current, activeLayerRef.current);
+    syncFriendLocationsOverlay(map, friendsRef.current || [], !!friendTrackingEnabledRef.current);
 
     const loc = userLocationRef.current;
     if (loc) {
@@ -1042,10 +1109,12 @@ export default function LiveMapComponent({
       );
       if (userMarkerRef.current) {
         reattachHtmlMarker(userMarkerRef.current, map);
+        updateUserMarkerGlobeScale(map, userMarkerRef.current);
       }
       syncAccuracyLayer(map, loc.lat, loc.lng, loc.accuracy ?? null);
     } else if (userMarkerRef.current) {
       reattachHtmlMarker(userMarkerRef.current, map);
+      updateUserMarkerGlobeScale(map, userMarkerRef.current);
     }
 
     const pin = mapPinRef.current;
@@ -1143,8 +1212,43 @@ export default function LiveMapComponent({
     warnIfUnsafeProductionTiles("live");
   }, []);
 
+  useLayoutEffect(() => {
+    const shell = mapShellRef.current;
+    const container = mapContainer.current;
+    if (!shell && !container) return;
+
+    const measure = () => {
+      const el = mapContainer.current;
+      if (!el) return;
+      const { clientWidth, clientHeight } = el;
+      if (clientWidth > 0 && clientHeight > 0) {
+        setMapContainerReady(true);
+      }
+    };
+
+    measure();
+    const targets = [shell, container].filter(Boolean) as HTMLElement[];
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => measure())
+        : null;
+    targets.forEach((target) => resizeObserver?.observe(target));
+    window.addEventListener("resize", measure);
+    const raf = requestAnimationFrame(measure);
+    const t1 = window.setTimeout(measure, 0);
+    const t2 = window.setTimeout(measure, 120);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.removeEventListener("resize", measure);
+      resizeObserver?.disconnect();
+    };
+  }, []);
+
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (!mapContainerReady || !mapContainer.current) return;
     isUnmountedRef.current = false;
 
     const layerStyles = getLiveMapLibreLayerStyles();
@@ -1158,6 +1262,7 @@ export default function LiveMapComponent({
       zoom: 14,
       minZoom: LIVE_MAP_MIN_ZOOM,
       maxZoom: initialMaxZoom,
+      renderWorldCopies: false,
       pitch: LIVE_MAP_2D_PITCH,
       maxPitch: LIVE_MAP_3D_PITCH,
       attributionControl: false,
@@ -1165,6 +1270,8 @@ export default function LiveMapComponent({
     });
 
     instanceRef.current = map;
+
+    const unbindGlobeMode = bindLiveGlobeMode(map, () => activeLayerRef.current);
 
     map.on("styleimagemissing", (e) => {
       const id = e.id;
@@ -1181,10 +1288,14 @@ export default function LiveMapComponent({
     };
 
     map.on("load", () => {
+      map.resize();
+      applyLiveGlobeMode(map, activeLayerRef.current);
+      ensureLiveMapFallbackBackground(map);
       const maxZoom = applyLiveMapZoomLimits(map, activeLayerRef.current, zoomContext());
       callbacksRef.current.onMaxZoomCapChange?.(maxZoom);
       logRovvyLiveDebug("[Rovvy Debug] Map loaded, restoring overlays");
       restoreOverlaysRef.current(map);
+      updateUserMarkerGlobeScale(map, userMarkerRef.current);
     });
 
     map.on("error", (event) => {
@@ -1271,6 +1382,7 @@ export default function LiveMapComponent({
       if (navigationModeRef.current) {
         navigationFollowUserRef.current = false;
       }
+      enforceZoomCap();
     });
 
     map.on("movestart", () => {
@@ -1283,6 +1395,7 @@ export default function LiveMapComponent({
         programmaticCameraMoveRef.current = false;
         return;
       }
+      enforceZoomCap();
       callbacksRef.current.onMapInteraction?.(false);
     });
 
@@ -1300,11 +1413,38 @@ export default function LiveMapComponent({
 
     const emitZoom = () => {
       enforceZoomCap();
-      callbacksRef.current.onZoomChange?.(map.getZoom());
+      updateUserMarkerGlobeScale(map, userMarkerRef.current);
+      syncLiveGlobeBackground(map);
+      callbacksRef.current.onZoomChange?.(
+        clampLiveMapZoom(map.getZoom(), map, activeLayerRef.current, zoomContext()),
+      );
     };
     map.on("zoom", emitZoom);
-    map.on("zoomend", emitZoom);
+    map.on("zoomend", () => {
+      applyLiveMapZoomLimits(map, activeLayerRef.current, zoomContext());
+      emitZoom();
+    });
     emitZoom();
+
+    const containerEl = mapContainer.current;
+    const resizeMap = () => {
+      if (isUnmountedRef.current) return;
+      try {
+        map.resize();
+      } catch (err) {
+        logRovvyLiveWarn("[Rovvy Map] resize failed", err);
+      }
+    };
+    requestAnimationFrame(resizeMap);
+    window.setTimeout(resizeMap, 0);
+    window.setTimeout(resizeMap, 120);
+    const onWindowResize = () => resizeMap();
+    window.addEventListener("resize", onWindowResize);
+    const resizeObserver =
+      containerEl && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => resizeMap())
+        : null;
+    resizeObserver?.observe(containerEl);
 
     function ensureUserMarker(lat: number, lng: number, accuracy: number | null, timestamp: number | null) {
       if (userMarkerRef.current) {
@@ -1335,6 +1475,7 @@ export default function LiveMapComponent({
       const markerEl = userMarkerRef.current.getElement();
       markerEl.style.display = "";
       markerEl.style.zIndex = "6";
+      updateUserMarkerGlobeScale(map, userMarkerRef.current);
 
       const popup = userMarkerRef.current.getPopup();
       if (popup) {
@@ -1492,7 +1633,12 @@ export default function LiveMapComponent({
         markProgrammaticCameraMove();
         map.flyTo({
           center: [lng, lat],
-          zoom: clampLiveMapZoom(16, map, activeLayerRef.current, zoomContext()),
+          zoom: clampLiveMapZoom(
+            resolveLiveLocateZoom(map.getZoom(), accuracyMeters),
+            map,
+            activeLayerRef.current,
+            zoomContext(),
+          ),
           essential: true,
         });
         hasCenteredOnUserRef.current = true;
@@ -1669,10 +1815,24 @@ export default function LiveMapComponent({
 
     mapRef.current = {
       zoomIn: () => {
-        if (isAtLiveMapMaxZoom(map.getZoom(), map, activeLayerRef.current, zoomContext())) return;
-        map.zoomIn();
+        const maxZoom = resolveLiveMapMaxZoom(map, activeLayerRef.current, zoomContext());
+        const current = map.getZoom();
+        if (isAtLiveMapMaxZoom(current, map, activeLayerRef.current, zoomContext())) {
+          if (current > maxZoom) map.setZoom(maxZoom);
+          return;
+        }
+        const next = Math.min(maxZoom, current + 1);
+        map.easeTo({ zoom: next, duration: 180, essential: true });
       },
-      zoomOut: () => map.zoomOut(),
+      zoomOut: () => {
+        const current = map.getZoom();
+        if (isAtLiveMapMinZoom(current)) {
+          if (current < LIVE_MAP_MIN_ZOOM) map.setZoom(LIVE_MAP_MIN_ZOOM);
+          return;
+        }
+        const next = Math.max(LIVE_MAP_MIN_ZOOM, current - 1);
+        map.easeTo({ zoom: next, duration: 180, essential: true });
+      },
       getZoom: () => map.getZoom(),
       getMaxZoom: () => resolveLiveMapMaxZoom(map, activeLayerRef.current, zoomContext()),
       setZoom: (zoom: number) => {
@@ -1826,9 +1986,15 @@ export default function LiveMapComponent({
             markProgrammaticCameraMove();
             map.flyTo({
               center: [loc.lng, loc.lat],
-              zoom: clampLiveMapZoom(loc.accuracy && loc.accuracy > 150 ? 14 : 16, map, activeLayerRef.current, zoomContext()),
+              zoom: clampLiveMapZoom(
+                resolveLiveLocateZoom(map.getZoom(), loc.accuracy),
+                map,
+                activeLayerRef.current,
+                zoomContext(),
+              ),
               essential: true,
             });
+            updateUserMarkerGlobeScale(map, userMarkerRef.current);
             userMarkerRef.current?.togglePopup();
           } else {
             startLiveGps();
@@ -1841,6 +2007,9 @@ export default function LiveMapComponent({
 
     return () => {
       isUnmountedRef.current = true;
+      unbindGlobeMode();
+      window.removeEventListener("resize", onWindowResize);
+      resizeObserver?.disconnect();
       ensureUserMarkerRef.current = null;
       try {
         stopLiveGps();
@@ -1897,7 +2066,7 @@ export default function LiveMapComponent({
       mapRef.current = null;
     };
 
-  }, [mapRef]);
+  }, [mapRef, mapContainerReady]);
 
   useEffect(() => {
     if (!instanceRef.current) return;
@@ -1913,6 +2082,9 @@ export default function LiveMapComponent({
     styleTransitionRef.current = true;
     map.setStyle(layerStyles[activeLayer] || layerStyles.street, { diff: false });
     map.once("style.load", () => {
+      map.resize();
+      applyLiveGlobeMode(map, activeLayerRef.current);
+      ensureLiveMapFallbackBackground(map);
       const maxZoom = applyLiveMapZoomLimits(map, activeLayer, zoomContext());
       callbacksRef.current.onMaxZoomCapChange?.(maxZoom);
       map.setMaxPitch(LIVE_MAP_3D_PITCH);
@@ -1927,6 +2099,17 @@ export default function LiveMapComponent({
       });
     });
   }, [activeLayer, restoreOverlaysAfterStyleChange]);
+
+  useEffect(() => {
+    const map = instanceRef.current;
+    if (!map) return;
+    try {
+      if (!map.isStyleLoaded()) return;
+    } catch {
+      return;
+    }
+    applyLiveGlobeMode(map, activeLayer);
+  }, [activeLayer]);
 
   useEffect(() => {
     const map = instanceRef.current;
@@ -1960,6 +2143,8 @@ export default function LiveMapComponent({
     const map = instanceRef.current;
     if (!map) return;
     syncTravelLayerOverlay(map, travelLayerEnabled, activeLayer);
+    syncSeaRoutesOverlay(map, { seaRoutesEnabled, cruiseRoutesEnabled }, activeLayer);
+    syncFootRoutesOverlay(map, footRoutesEnabled, activeLayer);
     if (activeLayer === "clean" && isMapStyleReady(map)) {
       ensureCleanMapHouseNumberLabels(map, { travelLayerEnabled });
     }
@@ -1967,7 +2152,13 @@ export default function LiveMapComponent({
       travelLayerEnabled,
     });
     callbacksRef.current.onMaxZoomCapChange?.(maxZoom);
-  }, [travelLayerEnabled, activeLayer]);
+  }, [travelLayerEnabled, seaRoutesEnabled, cruiseRoutesEnabled, footRoutesEnabled, activeLayer]);
+
+  useEffect(() => {
+    const map = instanceRef.current;
+    if (!map) return;
+    syncFriendLocationsOverlay(map, friends || [], !!friendTrackingEnabled);
+  }, [friends, friendTrackingEnabled]);
 
   useEffect(() => {
     const map = instanceRef.current;
@@ -2265,8 +2456,15 @@ export default function LiveMapComponent({
   }, [mapPin, routeLine, mapFollowMode, navigationMode, markProgrammaticCameraMove, crossBorderAlert, autoFitRoute]);
 
   return (
-    <div className="relative w-full h-full rovvy-live-map-container">
-      <div ref={mapContainer} className="w-full h-full" />
+    <div
+      ref={mapShellRef}
+      className="absolute inset-0 rovvy-live-map-container"
+      style={{ width: "100%", height: "100%" }}
+    >
+      <div
+        ref={mapContainer}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+      />
       {crossBorderAlert ? (
         <div className="pointer-events-none absolute left-1/2 top-3 z-[90] w-[min(92%,22rem)] -translate-x-1/2 rounded-xl border border-amber-300/80 bg-amber-50/95 px-3 py-2 text-center text-xs font-semibold leading-snug text-amber-900 shadow-[0_0_18px_rgba(245,158,11,0.35)] backdrop-blur-sm">
           Cross-border travel
