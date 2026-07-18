@@ -251,9 +251,8 @@ export default function LiveMapLayerControl({
   const selectLayer = useCallback(
     (layer: LiveMapLayer) => {
       onLayerChange(layer);
-      setOpen(false);
     },
-    [onLayerChange, setOpen],
+    [onLayerChange],
   );
 
   useEffect(() => {
@@ -304,17 +303,12 @@ export default function LiveMapLayerControl({
         <div
           role="dialog"
           aria-label="Map layers"
-          className={`pointer-events-auto absolute bottom-full left-0 z-[60] w-[min(18.5rem,calc(100vw-2rem))] ${LIVE_MAP_LAYERS_PANEL_OFFSET} max-md:fixed max-md:inset-x-4 max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] max-md:right-auto max-md:mb-0 max-md:w-auto`}
+          className={`pointer-events-auto absolute bottom-full left-0 z-[60] ${LIVE_MAP_LAYERS_PANEL_OFFSET}`}
         >
-          <div className="overflow-hidden rounded-2xl bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.14)] backdrop-blur-md">
-            <div className="border-b border-stone-100/80 px-4 py-2.5">
-              <h3 className="text-sm font-semibold text-stone-900">Map layers</h3>
-              <p className="mt-0.5 text-[11px] text-stone-500">
-                Current: {LAYER_LABELS[activeLayer]}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 p-3">
+          <div className="overflow-hidden rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-white/20 dark:border-slate-800/30 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-md p-2.5 flex items-center gap-3 w-[min(32rem,calc(100vw-2rem))] select-none">
+            
+            {/* Left section: Main Layers */}
+            <div className="flex items-center gap-2 shrink-0">
               {LIVE_MAP_LAYER_OPTIONS.map((option) => {
                 const selected = activeLayer === option.id;
                 const labelText = option.label.replace(" Map", "");
@@ -323,29 +317,27 @@ export default function LiveMapLayerControl({
                     key={option.id}
                     type="button"
                     onClick={() => selectLayer(option.id)}
-                    className="group flex flex-col items-center gap-1 focus:outline-none cursor-pointer"
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
                     aria-pressed={selected}
                   >
                     {/* Frame container */}
                     <div
-                      className={`relative flex h-14 w-full items-center justify-center rounded-xl border transition-all duration-200 ${
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         selected
-                          ? "border-[#007F73] bg-[#E6F7F4] shadow-sm ring-1 ring-[#007F73]/30"
-                          : "border-stone-200/80 bg-white hover:bg-stone-50 hover:border-stone-300"
+                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >
-                      {/* Inside the frame, render the preview, centered, without text */}
                       <LayerPreview option={option} />
-
                       {selected && (
-                        <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-2 ring-white">
-                          <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
                         </span>
                       )}
                     </div>
                     {/* Downside: EXACT model/layer name */}
                     <span
-                      className={`text-[10px] font-bold tracking-wide transition-colors ${
+                      className={`text-[9px] font-extrabold tracking-wide transition-colors ${
                         selected ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"
                       }`}
                     >
@@ -356,241 +348,178 @@ export default function LiveMapLayerControl({
               })}
             </div>
 
-            {onTravelLayerChange || onSeaRoutesChange || onCruiseRoutesChange || onFootRoutesChange || onFriendTrackingChange ? (
-              <div className="border-t border-stone-100/80 p-2">
-                <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-stone-400">
-                  Overlays
-                </p>
-                <div className="flex flex-col gap-1">
-                  {onFriendTrackingChange ? (
-                    <OverlayToggle
-                      enabled={friendTrackingEnabled}
-                      onChange={onFriendTrackingChange}
-                      title="Friend tracking"
-                      description="Show/hide live coordinates of group members on the map"
-                      preview={
-                        <div
-                          className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border shadow-inner ${
-                            friendTrackingEnabled
-                              ? "border-[#0F766E]/30 bg-gradient-to-br from-[#E6F7F4] via-white to-[#D1FAE5]"
-                              : "border-stone-200/80 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E2E8F0]"
-                          }`}
-                          aria-hidden
-                        >
-                          <Users
-                            className={`h-4 w-4 ${friendTrackingEnabled ? "text-[#0F766E]" : "text-stone-500"}`}
-                          />
-                        </div>
-                      }
-                    />
-                  ) : null}
-                  {onTravelLayerChange ? (
-                    <OverlayToggle
-                      enabled={travelLayerEnabled}
-                      onChange={onTravelLayerChange}
-                      title="Travel layer"
-                      description="Highways, city routes, railways & transit"
-                      preview={
-                        <div
-                          className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border shadow-inner ${
-                            travelLayerEnabled
-                              ? "border-[#007F73]/30 bg-gradient-to-br from-[#E6F7F4] via-white to-[#D1FAE5]"
-                              : "border-stone-200/80 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E2E8F0]"
-                          }`}
-                          aria-hidden
-                        >
-                          <Route className="h-4 w-4 text-[#007F73]" />
-                          <Train className="absolute bottom-1.5 right-1.5 h-3 w-3 text-stone-500" />
-                        </div>
-                      }
-                    />
-                  ) : null}
-                  {onSeaRoutesChange ? (
-                    <OverlayToggle
-                      enabled={seaRoutesEnabled}
-                      onChange={onSeaRoutesChange}
-                      title="Sea routes"
-                      description="Sky-blue shipping lanes & teal ferry links (zoom in for ferries)"
-                      preview={
-                        <div
-                          className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border shadow-inner ${
-                            seaRoutesEnabled
-                              ? "border-blue-400/50 bg-gradient-to-br from-[#0C4A6E] via-[#0369A1] to-[#38BDF8]"
-                              : "border-stone-200/80 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E2E8F0]"
-                          }`}
-                          aria-hidden
-                        >
-                          <svg viewBox="0 0 40 40" className="absolute inset-0 h-full w-full" aria-hidden>
-                            <path
-                              d="M4 28 Q14 18 22 22 T36 14"
-                              fill="none"
-                              stroke={seaRoutesEnabled ? "#7DD3FC" : "#94A3B8"}
-                              strokeWidth="2.5"
-                              strokeLinecap="round"
-                            />
-                            <path
-                              d="M8 32 Q18 26 28 30"
-                              fill="none"
-                              stroke={seaRoutesEnabled ? "#5EEAD4" : "#CBD5E1"}
-                              strokeWidth="1.5"
-                              strokeDasharray="3 2"
-                              strokeLinecap="round"
-                            />
-                          </svg>
-                          <Ship
-                            className={`relative h-3.5 w-3.5 ${seaRoutesEnabled ? "text-white" : "text-blue-600"}`}
-                          />
-                        </div>
-                      }
-                    />
-                  ) : null}
-                  {onCruiseRoutesChange ? (
-                    <OverlayToggle
-                      enabled={cruiseRoutesEnabled}
-                      onChange={onCruiseRoutesChange}
-                      title="Cruise routes"
-                      description="Gold cruise paths — visible worldwide on satellite"
-                      preview={
-                        <div
-                          className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border shadow-inner ${
-                            cruiseRoutesEnabled
-                              ? "border-amber-400/50 bg-gradient-to-br from-[#78350F] via-[#B45309] to-[#FBBF24]"
-                              : "border-stone-200/80 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E2E8F0]"
-                          }`}
-                          aria-hidden
-                        >
-                          <svg viewBox="0 0 40 40" className="absolute inset-0 h-full w-full" aria-hidden>
-                            <path
-                              d="M6 26 Q20 8 34 24"
-                              fill="none"
-                              stroke={cruiseRoutesEnabled ? "#FDE68A" : "#94A3B8"}
-                              strokeWidth="2.5"
-                              strokeDasharray="4 2"
-                              strokeLinecap="round"
-                            />
-                          </svg>
-                          <Sailboat
-                            className={`relative h-3.5 w-3.5 ${cruiseRoutesEnabled ? "text-white" : "text-violet-600"}`}
-                          />
-                        </div>
-                      }
-                    />
-                  ) : null}
-                  {onFootRoutesChange ? (
-                    <OverlayToggle
-                      enabled={footRoutesEnabled}
-                      onChange={onFootRoutesChange}
-                      title="Foot routes"
-                      description="Green trekking trails & hiking paths worldwide (OSM)"
-                      preview={
-                        <div
-                          className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border shadow-inner ${
-                            footRoutesEnabled
-                              ? "border-emerald-400/50 bg-gradient-to-br from-[#14532D] via-[#166534] to-[#4ADE80]"
-                              : "border-stone-200/80 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E2E8F0]"
-                          }`}
-                          aria-hidden
-                        >
-                          <svg viewBox="0 0 40 40" className="absolute inset-0 h-full w-full" aria-hidden>
-                            <path
-                              d="M6 30 Q14 14 22 20 T34 10"
-                              fill="none"
-                              stroke={footRoutesEnabled ? "#BBF7D0" : "#94A3B8"}
-                              strokeWidth="3"
-                              strokeDasharray="3 2"
-                              strokeLinecap="round"
-                            />
-                            <path
-                              d="M8 34 Q18 24 30 28"
-                              fill="none"
-                              stroke={footRoutesEnabled ? "#4ADE80" : "#CBD5E1"}
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                            />
-                          </svg>
-                          <Footprints
-                            className={`relative h-3.5 w-3.5 ${footRoutesEnabled ? "text-white" : "text-emerald-700"}`}
-                          />
-                        </div>
-                      }
-                    />
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
+            {/* Small Single Divider Line */}
+            <div className="h-10 w-px bg-stone-300/80 dark:bg-stone-700/80 shrink-0 self-center" />
 
-            {onToggleViewMode ? (
-              <div className="border-t border-stone-100/80 p-2">
-                <button
-                  type="button"
-                  onClick={onToggleViewMode}
-                  className={`flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
-                    mapViewMode === "3d"
-                      ? "bg-[#E6F7F4] text-[#007F73]"
-                      : "bg-stone-50 text-stone-700 hover:bg-stone-100"
-                  }`}
-                >
-                  {mapViewMode === "3d" ? "Switch to 2D view" : "Switch to 3D view"}
-                </button>
+            {/* Right section: Horizontal Overlays Slider */}
+            <div className="flex-1 overflow-hidden relative">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 px-0.5 select-none scroll-smooth">
+                
+                {/* Overlay 1: Friend tracking */}
+                {onFriendTrackingChange && (
+                  <button
+                    type="button"
+                    onClick={() => onFriendTrackingChange(!friendTrackingEnabled)}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
+                  >
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        friendTrackingEnabled
+                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <Users className={`h-4.5 w-4.5 ${friendTrackingEnabled ? "text-[#007F73]" : "text-stone-500"}`} />
+                      {friendTrackingEnabled && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${friendTrackingEnabled ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                      Friends
+                    </span>
+                  </button>
+                )}
+
+                {/* Overlay 2: Travel layer */}
+                {onTravelLayerChange && (
+                  <button
+                    type="button"
+                    onClick={() => onTravelLayerChange(!travelLayerEnabled)}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
+                  >
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        travelLayerEnabled
+                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <Route className={`h-4.5 w-4.5 ${travelLayerEnabled ? "text-[#007F73]" : "text-stone-500"}`} />
+                      {travelLayerEnabled && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${travelLayerEnabled ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                      Travel
+                    </span>
+                  </button>
+                )}
+
+                {/* Overlay 3: Sea routes */}
+                {onSeaRoutesChange && (
+                  <button
+                    type="button"
+                    onClick={() => onSeaRoutesChange(!seaRoutesEnabled)}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
+                  >
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        seaRoutesEnabled
+                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <Ship className={`h-4.5 w-4.5 ${seaRoutesEnabled ? "text-[#007F73]" : "text-stone-500"}`} />
+                      {seaRoutesEnabled && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${seaRoutesEnabled ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                      Sea
+                    </span>
+                  </button>
+                )}
+
+                {/* Overlay 4: Cruise routes */}
+                {onCruiseRoutesChange && (
+                  <button
+                    type="button"
+                    onClick={() => onCruiseRoutesChange(!cruiseRoutesEnabled)}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
+                  >
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        cruiseRoutesEnabled
+                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <Sailboat className={`h-4.5 w-4.5 ${cruiseRoutesEnabled ? "text-[#007F73]" : "text-stone-500"}`} />
+                      {cruiseRoutesEnabled && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${cruiseRoutesEnabled ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                      Cruise
+                    </span>
+                  </button>
+                )}
+
+                {/* Overlay 5: Foot routes */}
+                {onFootRoutesChange && (
+                  <button
+                    type="button"
+                    onClick={() => onFootRoutesChange(!footRoutesEnabled)}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
+                  >
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        footRoutesEnabled
+                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <Footprints className={`h-4.5 w-4.5 ${footRoutesEnabled ? "text-[#007F73]" : "text-stone-500"}`} />
+                      {footRoutesEnabled && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${footRoutesEnabled ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                      Foot
+                    </span>
+                  </button>
+                )}
+
+                {/* Optional: 3D perspective Toggle */}
+                {onToggleViewMode && (
+                  <button
+                    type="button"
+                    onClick={onToggleViewMode}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
+                  >
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        mapViewMode === "3d"
+                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <Mountain className={`h-4.5 w-4.5 ${mapViewMode === "3d" ? "text-[#007F73]" : "text-stone-500"}`} />
+                      {mapViewMode === "3d" && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${mapViewMode === "3d" ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                      3D View
+                    </span>
+                  </button>
+                )}
+
               </div>
-            ) : null}
-            {onToggleFullscreen || onToggleSound || onToggleNotifications || onResetNorth ? (
-              <div className="border-t border-stone-100/80 p-2">
-                <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-stone-400">
-                  Map settings & tools
-                </p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {onToggleFullscreen && (
-                    <button
-                      type="button"
-                      onClick={onToggleFullscreen}
-                      className={`flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition-colors cursor-pointer ${
-                        isFullscreen
-                          ? "bg-[#E6F7F4] text-[#007F73] border border-[#007F73]/25"
-                          : "bg-stone-50 text-stone-700 hover:bg-stone-100 border border-transparent"
-                      }`}
-                    >
-                      {isFullscreen ? "Exit Full" : "Fullscreen"}
-                    </button>
-                  )}
-                  {onToggleSound && (
-                    <button
-                      type="button"
-                      onClick={onToggleSound}
-                      className={`flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition-colors cursor-pointer ${
-                        soundEnabled
-                          ? "bg-[#E6F7F4] text-[#007F73] border border-[#007F73]/25"
-                          : "bg-stone-50 text-stone-700 hover:bg-stone-100 border border-transparent"
-                      }`}
-                    >
-                      {soundEnabled ? "Sound On" : "Sound Off"}
-                    </button>
-                  )}
-                  {onToggleNotifications && (
-                    <button
-                      type="button"
-                      onClick={onToggleNotifications}
-                      className={`flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition-colors cursor-pointer ${
-                        notificationsEnabled
-                          ? "bg-[#E6F7F4] text-[#007F73] border border-[#007F73]/25"
-                          : "bg-stone-50 text-stone-700 hover:bg-stone-100 border border-transparent"
-                      }`}
-                    >
-                      {notificationsEnabled ? "Notifs On" : "Notifs Off"}
-                    </button>
-                  )}
-                  {onResetNorth && (
-                    <button
-                      type="button"
-                      onClick={onResetNorth}
-                      className="flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold bg-stone-50 text-stone-700 hover:bg-stone-100 border border-transparent cursor-pointer"
-                    >
-                      Reset North
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : null}
+            </div>
+
           </div>
         </div>
       ) : null}
