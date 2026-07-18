@@ -3198,11 +3198,11 @@ export default function LivePage() {
         onSavePlace={handleSheetSavePlace}
       />
 
-      {/* Option B Map Controls Dock — lower-right */}
+      {/* Option B Map Controls Dock — lower-left */}
       <div
-        className="pointer-events-auto absolute z-40 transition-all duration-200 bottom-20 right-6"
+        className="pointer-events-auto absolute z-40 transition-all duration-200 bottom-4 left-4"
       >
-        <div className="relative flex flex-col items-end gap-2">
+        <div className="relative flex flex-col items-start gap-2">
           <LiveMapLayerControl
             activeLayer={activeLayer}
             onLayerChange={handleLayerChange}

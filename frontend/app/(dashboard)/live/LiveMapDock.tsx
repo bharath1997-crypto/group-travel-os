@@ -44,21 +44,6 @@ export default function LiveMapDock({
   const normalizedBearing = ((bearing % 360) + 360) % 360;
   const offNorth = normalizedBearing > 0.5 && normalizedBearing < 359.5;
 
-  // Mascot interaction speech bubble state
-  const [mascotBubble, setMascotBubble] = useState<string | null>(null);
-
-  // Auto welcome bubble on mount
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setMascotBubble("Explore together! 🐒");
-    }, 1500);
-    const hideTimer = setTimeout(() => setMascotBubble(null), 5000);
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(hideTimer);
-    };
-  }, []);
-
   // Visual button styling: Each box is a separate glassmorphic cube/tile
   const btnClass = (isActive: boolean) => {
     const base =
@@ -79,28 +64,6 @@ export default function LiveMapDock({
 
   return (
     <div className="relative select-none pointer-events-none">
-      {/* 3D Rovi Monkey Mascot Placeholder (temporary monkey emoji) */}
-      <div
-        className="absolute -top-[32px] right-6 z-50 pointer-events-auto cursor-pointer"
-        onMouseEnter={() => setMascotBubble("Need a hand? 🐒")}
-        onMouseLeave={() => setMascotBubble(null)}
-        data-live-layers-trigger
-        onClick={onOpenLayers}
-      >
-        <div className="relative flex flex-col items-center">
-          {/* Speech Bubble */}
-          {mascotBubble && (
-            <div className="absolute bottom-full mb-1.5 whitespace-nowrap rounded-lg bg-slate-900 text-white px-2 py-1 text-[10px] font-medium shadow-md border border-white/10 animate-fade-in">
-              {mascotBubble}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
-            </div>
-          )}
-          {/* 28px Mascot Circle */}
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-white shadow-md border border-white/10 backdrop-blur-sm transition-all duration-300 hover:scale-110 active:scale-95 text-base">
-            🐒
-          </div>
-        </div>
-      </div>
 
       {/* Option B: Five distinct tile boxes placed side-by-side */}
       <div className="flex items-center gap-1.5 pointer-events-auto" role="group" aria-label="Map Controls Dock">
