@@ -169,6 +169,7 @@ export default function PlacePreviewCard({
   } | null>(null);
   const [wikiLoading, setWikiLoading] = useState(false);
   const [wikiExpanded, setWikiExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<"guide" | "about" | "info">("guide");
 
   useEffect(() => {
     setWikiSummary(null);
@@ -406,52 +407,113 @@ export default function PlacePreviewCard({
           </button>
         </div>
 
-        {aiSuggestions.length > 0 ? (
-          <LiveAiSuggestionsBlock
-            suggestions={aiSuggestions}
-            destinationName={place.name}
-            className="mt-2"
-          />
-        ) : null}
+        {/* Tab Selection */}
+        <div className="flex border-b border-stone-100 mt-3 mb-2.5 text-xs font-semibold text-stone-500">
+          <button
+            type="button"
+            onClick={() => setActiveTab("guide")}
+            className={`flex-1 py-1.5 text-center border-b-2 transition-all ${
+              activeTab === "guide"
+                ? "border-[#0F766E] text-[#0F766E]"
+                : "border-transparent hover:text-stone-800"
+            }`}
+          >
+            Guide
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("about")}
+            className={`flex-1 py-1.5 text-center border-b-2 transition-all ${
+              activeTab === "about"
+                ? "border-[#0F766E] text-[#0F766E]"
+                : "border-transparent hover:text-stone-800"
+            }`}
+          >
+            About
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("info")}
+            className={`flex-1 py-1.5 text-center border-b-2 transition-all ${
+              activeTab === "info"
+                ? "border-[#0F766E] text-[#0F766E]"
+                : "border-transparent hover:text-stone-800"
+            }`}
+          >
+            Info
+          </button>
+        </div>
 
-        {place.mapPresenceNote || locationFields.length > 0 || place.coordinatesLabel ? (
-          <div className="mt-2 rounded-lg border border-stone-100 bg-stone-50 px-2.5 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
-              Location context
-            </p>
-            {place.mapPresenceNote ? (
-              <p className="mt-1 text-xs leading-snug text-stone-700">{place.mapPresenceNote}</p>
+        {/* Tab Contents */}
+        {activeTab === "guide" && (
+          <div className="space-y-3">
+            {aiSuggestions.length > 0 ? (
+              <LiveAiSuggestionsBlock
+                suggestions={aiSuggestions}
+                destinationName={place.name}
+                className="mt-1"
+              />
             ) : null}
-            {place.coordinatesLabel ? (
-              <p className="mt-1 font-mono text-[11px] text-stone-600">{place.coordinatesLabel}</p>
+
+            {(routeLoading || routePreviewStatus === "loading") && routePreviewStatus !== "idle" ? (
+              <div className="rounded-lg border border-teal-100 bg-teal-50/80 px-2.5 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-800">
+                  {travelMode} route preview
+                </p>
+                <p className="mt-1 text-xs text-stone-600">
+                  Calculating your {travelMode.toLowerCase()} route…
+                </p>
+              </div>
             ) : null}
-            <dl className="mt-2 space-y-1 text-xs text-stone-600">
-              {locationFields.map((field) => (
-                <div key={`${field.label}-${field.value}`} className="flex gap-2">
-                  <dt className="w-16 shrink-0 text-stone-400">{field.label}</dt>
-                  <dd className="min-w-0">{field.value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        ) : null}
 
-        {(routeLoading || routePreviewStatus === "loading") && routePreviewStatus !== "idle" ? (
-          <div className="mt-2 rounded-lg border border-teal-100 bg-teal-50/80 px-2.5 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-800">
-              {travelMode} route preview
-            </p>
-            <p className="mt-1 text-xs text-stone-600">
-              Calculating your {travelMode.toLowerCase()} route…
-            </p>
-          </div>
-        ) : null}
-
-        <div className="mt-3 space-y-3 border-t border-stone-100 pt-3">
             {place.address ? (
               <p className="text-xs leading-snug text-stone-600 line-clamp-2">{place.address}</p>
             ) : null}
 
+            {!isDroppedPinOrAddress && hoursLabel ? (
+              <p className="text-xs text-stone-500">{hoursLabel}</p>
+            ) : null}
+
+            <div className="space-y-3 border-t border-stone-100 pt-3">
+              {!isDroppedPinOrAddress ? (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                    Navigation
+                  </p>
+                  <div className="mt-1.5">
+                    <QuickAction icon={MapPin} label="Add stop" onClick={onAddStop} />
+                  </div>
+                </div>
+              ) : null}
+
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                  Save &amp; meet
+                </p>
+                <div className="mt-1.5 flex flex-wrap gap-2">
+                  <QuickAction icon={Bookmark} label="Save" onClick={onSavePlace} />
+                  <QuickAction icon={Users} label="Meet" onClick={onCreateMeetPoint} />
+                </div>
+              </div>
+
+              {(onSearchNearMe || showAskRovi) ? (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                    Explore
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-2">
+                    {onSearchNearMe ? (
+                      <QuickAction icon={Search} label="Search nearby" onClick={onSearchNearMe} />
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "about" && (
+          <div className="space-y-3">
             {!isDroppedPinOrAddress && !hasNoPhotos ? (
               <div className={`overflow-hidden rounded-lg ${mediaMaxHeightClass}`}>
                 <PlacePreviewMedia
@@ -460,10 +522,6 @@ export default function PlacePreviewCard({
                   loading={placeMediaLoading}
                 />
               </div>
-            ) : null}
-
-            {!isDroppedPinOrAddress && hoursLabel ? (
-              <p className="text-xs text-stone-500">{hoursLabel}</p>
             ) : null}
 
             {wikiLoading ? (
@@ -508,6 +566,50 @@ export default function PlacePreviewCard({
               </div>
             ) : null}
 
+            {locationContext && locationContext.classification !== "local_place" ? (
+              <RoviPlaceExplanationBlock
+                compact
+                showAskButton={showAskRovi}
+                showSafetyActions={!locationContext.liveSafe}
+                template={null}
+                loading={roviLoading}
+                explanation={roviExplanation}
+                error={roviError}
+                onAskRovi={onAskRovi!}
+                onSearchNearMe={onSearchNearMe!}
+                onChangeDestination={onChangeDestination!}
+                onPlanTrip={onPlanTrip!}
+                onContinueAnyway={onContinueAnyway ?? onMakeDestination}
+                showContinueAnyway={Boolean(onContinueAnyway)}
+              />
+            ) : null}
+          </div>
+        )}
+
+        {activeTab === "info" && (
+          <div className="space-y-3">
+            {place.mapPresenceNote || locationFields.length > 0 || place.coordinatesLabel ? (
+              <div className="rounded-lg border border-stone-100 bg-stone-50 px-2.5 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                  Location context
+                </p>
+                {place.mapPresenceNote ? (
+                  <p className="mt-1 text-xs leading-snug text-stone-700">{place.mapPresenceNote}</p>
+                ) : null}
+                {place.coordinatesLabel ? (
+                  <p className="mt-1 font-mono text-[11px] text-stone-600">{place.coordinatesLabel}</p>
+                ) : null}
+                <dl className="mt-2 space-y-1 text-xs text-stone-600">
+                  {locationFields.map((field) => (
+                    <div key={`${field.label}-${field.value}`} className="flex gap-2">
+                      <dt className="w-16 shrink-0 text-stone-400">{field.label}</dt>
+                      <dd className="min-w-0">{field.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            ) : null}
+
             {nearbyPlacesAtClick && nearbyPlacesAtClick.length > 0 ? (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">Nearby here</p>
@@ -530,62 +632,9 @@ export default function PlacePreviewCard({
               </div>
             ) : null}
 
-            {locationContext && locationContext.classification !== "local_place" ? (
-              <RoviPlaceExplanationBlock
-                compact
-                showAskButton={showAskRovi}
-                showSafetyActions={!locationContext.liveSafe}
-                template={null}
-                loading={roviLoading}
-                explanation={roviExplanation}
-                error={roviError}
-                onAskRovi={onAskRovi!}
-                onSearchNearMe={onSearchNearMe!}
-                onChangeDestination={onChangeDestination!}
-                onPlanTrip={onPlanTrip!}
-                onContinueAnyway={onContinueAnyway ?? onMakeDestination}
-                showContinueAnyway={Boolean(onContinueAnyway)}
-              />
-            ) : null}
-
-            <div className="space-y-3">
-              {!isDroppedPinOrAddress ? (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
-                    Navigation
-                  </p>
-                  <div className="mt-1.5">
-                    <QuickAction icon={MapPin} label="Add stop" onClick={onAddStop} />
-                  </div>
-                </div>
-              ) : null}
-
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
-                  Save &amp; meet
-                </p>
-                <div className="mt-1.5 flex flex-wrap gap-2">
-                  <QuickAction icon={Bookmark} label="Save" onClick={onSavePlace} />
-                  <QuickAction icon={Users} label="Meet" onClick={onCreateMeetPoint} />
-                </div>
-              </div>
-
-              {(onSearchNearMe || showAskRovi) ? (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
-                    Explore
-                  </p>
-                  <div className="mt-1.5 flex flex-wrap gap-2">
-                    {onSearchNearMe ? (
-                      <QuickAction icon={Search} label="Search nearby" onClick={onSearchNearMe} />
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-
-            <p className="text-[10px] text-stone-400">{sourceLabel}</p>
-        </div>
+            <p className="text-[10px] text-stone-400 pt-2 border-t border-stone-100">{sourceLabel}</p>
+          </div>
+        )}
       </div>
 
       <div className="sticky bottom-0 z-10 shrink-0 border-t border-stone-100 bg-white px-3 py-2 shadow-[0_-6px_16px_rgba(0,0,0,0.06)]">

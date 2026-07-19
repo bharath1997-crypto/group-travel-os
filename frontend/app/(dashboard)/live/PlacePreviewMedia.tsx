@@ -91,17 +91,29 @@ export default function PlacePreviewMedia({
     setActiveIndex((i) => (i >= visible.length - 1 ? 0 : i + 1));
   }
 
-  return (
-    <div className="overflow-hidden rounded-xl border border-stone-200 bg-stone-50">
-      <div className="relative aspect-[16/9] w-full bg-stone-200">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={current.thumbnailUrl}
-          alt={current.caption || categoryLabel || "Place photo"}
-          className="h-full w-full object-cover"
-          loading="lazy"
-          onError={() => markBroken(current.id)}
-        />
+    const isVideo = current.storageUrl?.match(/\.(mp4|webm|ogg|mov)$/i) || current.tags?.includes("video");
+
+    return (
+      <div className="overflow-hidden rounded-xl border border-stone-200 bg-stone-50">
+        <div className="relative aspect-[16/9] w-full bg-stone-200">
+          {isVideo ? (
+            <video
+              src={current.storageUrl}
+              poster={current.thumbnailUrl}
+              controls
+              playsInline
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={current.thumbnailUrl}
+              alt={current.caption || categoryLabel || "Place photo"}
+              className="h-full w-full object-cover"
+              loading="lazy"
+              onError={() => markBroken(current.id)}
+            />
+          )}
         {visible.length > 1 ? (
           <>
             <button
