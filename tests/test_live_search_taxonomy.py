@@ -28,6 +28,13 @@ def test_resolve_port_synonyms():
     assert resolve_category_from_query("harbour")["key"] == "ports"
 
 
+def test_resolve_airport_and_cinema_synonyms():
+    assert resolve_category_from_query("airport")["key"] == "airports"
+    assert resolve_category_from_query("international airport")["key"] == "airports"
+    assert resolve_category_from_query("movie theater")["key"] == "cinemas"
+    assert resolve_category_from_query("cinema")["key"] == "cinemas"
+
+
 def test_resolve_nature_categories():
     assert resolve_category_from_query("national park")["key"] == "national_parks"
     assert resolve_category_from_query("forest")["key"] == "forests"
@@ -62,13 +69,19 @@ def test_osm_queries_present_for_new_categories():
     assert "rivers" in queries
     assert "canals" in queries
     assert "ports" in queries
+    assert "airports" in queries
+    assert "cinemas" in queries
+    assert "beaches" in queries
     assert "liquor" in queries
     assert "national_parks" in queries
     assert "churches" in queries
     assert "libraries" in queries
     assert "schools" in queries
     assert "landmarks" in queries
-    assert len(queries["ports"]) >= 2
+    assert len(queries["ports"]) >= 10
+    assert any("ferry_terminal" in q for q in queries["ports"])
+    assert any("industrial" in q for q in queries["ports"])
+    assert any("relation" in q and "beach" in q for q in queries["beaches"])
     assert any("shop" in q and "alcohol" in q for q in queries["gas"])
     assert any("place_of_worship" in q for q in queries["churches"])
 

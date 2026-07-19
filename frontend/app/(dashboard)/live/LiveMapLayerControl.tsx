@@ -1,7 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Layers, Map, Moon, Mountain, Route, Satellite, Sparkles, Train } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  Check,
+  Footprints,
+  Layers,
+  Map,
+  Moon,
+  Mountain,
+  Route,
+  Sailboat,
+  Satellite,
+  Ship,
+  Sparkles,
+  Train,
+  Users,
+} from "lucide-react";
 import type { LiveMapLayer } from "@/lib/map-providers";
 import { LIVE_MAP_LAYERS_PANEL_OFFSET } from "./live-layout";
 
@@ -123,11 +137,59 @@ function LayerPreview({ option }: { option: (typeof LIVE_MAP_LAYER_OPTIONS)[numb
   );
 }
 
+type OverlayToggleProps = {
+  enabled: boolean;
+  onChange: (enabled: boolean) => void;
+  title: string;
+  description: string;
+  preview: ReactNode;
+};
+
+function OverlayToggle({ enabled, onChange, title, description, preview }: OverlayToggleProps) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!enabled)}
+      className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors ${
+        enabled
+          ? "border border-[#007F73] bg-[#E6F7F4]"
+          : "border border-transparent hover:bg-stone-50"
+      }`}
+      aria-pressed={enabled}
+    >
+      {preview}
+      <div className="min-w-0 flex-1">
+        <span
+          className={`text-sm font-semibold ${enabled ? "text-[#007F73]" : "text-stone-800"}`}
+        >
+          {title}
+        </span>
+        <p className="mt-0.5 text-[11px] leading-snug text-stone-500">{description}</p>
+      </div>
+      {enabled ? (
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#007F73] text-white">
+          <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+        </span>
+      ) : (
+        <span className="h-6 w-6 shrink-0" aria-hidden />
+      )}
+    </button>
+  );
+}
+
 type Props = {
   activeLayer: LiveMapLayer;
   onLayerChange: (layer: LiveMapLayer) => void;
   travelLayerEnabled?: boolean;
   onTravelLayerChange?: (enabled: boolean) => void;
+  seaRoutesEnabled?: boolean;
+  onSeaRoutesChange?: (enabled: boolean) => void;
+  cruiseRoutesEnabled?: boolean;
+  onCruiseRoutesChange?: (enabled: boolean) => void;
+  footRoutesEnabled?: boolean;
+  onFootRoutesChange?: (enabled: boolean) => void;
+  friendTrackingEnabled?: boolean;
+  onFriendTrackingChange?: (enabled: boolean) => void;
   /** Controlled open state — used when opened from Map Tools. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -135,6 +197,14 @@ type Props = {
   showTrigger?: boolean;
   mapViewMode?: "2d" | "3d";
   onToggleViewMode?: () => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  soundEnabled?: boolean;
+  onToggleSound?: () => void;
+  notificationsEnabled?: boolean;
+  onToggleNotifications?: () => void;
+  bearing?: number;
+  onResetNorth?: () => void;
 };
 
 export default function LiveMapLayerControl({
@@ -142,11 +212,27 @@ export default function LiveMapLayerControl({
   onLayerChange,
   travelLayerEnabled = false,
   onTravelLayerChange,
+  seaRoutesEnabled = false,
+  onSeaRoutesChange,
+  cruiseRoutesEnabled = false,
+  onCruiseRoutesChange,
+  footRoutesEnabled = false,
+  onFootRoutesChange,
+  friendTrackingEnabled = true,
+  onFriendTrackingChange,
   open: openProp,
   onOpenChange,
   showTrigger = true,
   mapViewMode,
   onToggleViewMode,
+  isFullscreen,
+  onToggleFullscreen,
+  soundEnabled,
+  onToggleSound,
+  notificationsEnabled,
+  onToggleNotifications,
+  bearing,
+  onResetNorth,
 }: Props) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isControlled = openProp !== undefined;
@@ -165,9 +251,8 @@ export default function LiveMapLayerControl({
   const selectLayer = useCallback(
     (layer: LiveMapLayer) => {
       onLayerChange(layer);
-      setOpen(false);
     },
-    [onLayerChange, setOpen],
+    [onLayerChange],
   );
 
   useEffect(() => {
@@ -218,119 +303,223 @@ export default function LiveMapLayerControl({
         <div
           role="dialog"
           aria-label="Map layers"
-          className={`pointer-events-auto absolute bottom-full left-0 z-[60] w-[min(18.5rem,calc(100vw-2rem))] ${LIVE_MAP_LAYERS_PANEL_OFFSET} max-md:fixed max-md:inset-x-4 max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] max-md:left-auto max-md:mb-0 max-md:w-auto`}
+          className={`pointer-events-auto absolute bottom-full left-0 z-[60] ${LIVE_MAP_LAYERS_PANEL_OFFSET}`}
         >
-          <div className="overflow-hidden rounded-2xl bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.14)] backdrop-blur-md">
-            <div className="border-b border-stone-100/80 px-4 py-2.5">
-              <h3 className="text-sm font-semibold text-stone-900">Map layers</h3>
-              <p className="mt-0.5 text-[11px] text-stone-500">
-                Current: {LAYER_LABELS[activeLayer]}
-              </p>
-            </div>
-
-            <ul className="flex max-h-[min(26rem,62vh)] flex-col gap-0.5 overflow-y-auto p-1.5">
+          <div className="overflow-hidden rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-white/20 dark:border-slate-800/30 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-md p-2.5 flex items-center gap-3 w-[min(32rem,calc(100vw-2rem))] select-none">
+            
+            {/* Left section: Main Layers */}
+            <div className="flex items-center gap-2 shrink-0">
               {LIVE_MAP_LAYER_OPTIONS.map((option) => {
                 const selected = activeLayer === option.id;
+                const labelText = option.label.replace(" Map", "");
                 return (
-                  <li key={option.id}>
-                    <button
-                      type="button"
-                      onClick={() => selectLayer(option.id)}
-                      className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors ${
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => selectLayer(option.id)}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
+                    aria-pressed={selected}
+                  >
+                    {/* Frame container */}
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         selected
-                          ? "border border-[#007F73] bg-[#E6F7F4]"
-                          : "border border-transparent hover:bg-stone-50"
+                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
-                      aria-pressed={selected}
                     >
                       <LayerPreview option={option} />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`text-sm font-semibold ${selected ? "text-[#007F73]" : "text-stone-800"}`}
-                          >
-                            {option.label}
-                          </span>
-                          <LayerOptionIcon icon={option.icon} />
-                        </div>
-                        <p className="mt-0.5 text-[11px] leading-snug text-stone-500">
-                          {option.description}
-                        </p>
-                      </div>
-                      {selected ? (
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#007F73] text-white">
-                          <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+                      {selected && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
                         </span>
-                      ) : (
-                        <span className="h-6 w-6 shrink-0" aria-hidden />
                       )}
-                    </button>
-                  </li>
+                    </div>
+                    {/* Downside: EXACT model/layer name */}
+                    <span
+                      className={`text-[9px] font-extrabold tracking-wide transition-colors ${
+                        selected ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"
+                      }`}
+                    >
+                      {labelText}
+                    </span>
+                  </button>
                 );
               })}
-            </ul>
+            </div>
 
-            {onTravelLayerChange ? (
-              <div className="border-t border-stone-100/80 p-2">
-                <button
-                  type="button"
-                  onClick={() => onTravelLayerChange(!travelLayerEnabled)}
-                  className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors ${
-                    travelLayerEnabled
-                      ? "border border-[#007F73] bg-[#E6F7F4]"
-                      : "border border-transparent hover:bg-stone-50"
-                  }`}
-                  aria-pressed={travelLayerEnabled}
-                >
-                  <div
-                    className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border shadow-inner ${
-                      travelLayerEnabled
-                        ? "border-[#007F73]/30 bg-gradient-to-br from-[#E6F7F4] via-white to-[#D1FAE5]"
-                        : "border-stone-200/80 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E2E8F0]"
-                    }`}
-                    aria-hidden
+            {/* Small Single Divider Line */}
+            <div className="h-10 w-px bg-stone-300/80 dark:bg-stone-700/80 shrink-0 self-center" />
+
+            {/* Right section: Horizontal Overlays Slider */}
+            <div className="flex-1 overflow-hidden relative">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 px-0.5 select-none scroll-smooth">
+                
+                {/* Overlay 1: Friend tracking */}
+                {onFriendTrackingChange && (
+                  <button
+                    type="button"
+                    onClick={() => onFriendTrackingChange(!friendTrackingEnabled)}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
                   >
-                    <Route className="h-4 w-4 text-[#007F73]" />
-                    <Train className="absolute bottom-1.5 right-1.5 h-3 w-3 text-stone-500" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`text-sm font-semibold ${travelLayerEnabled ? "text-[#007F73]" : "text-stone-800"}`}
-                      >
-                        Travel layer
-                      </span>
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        friendTrackingEnabled
+                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <Users className={`h-4.5 w-4.5 ${friendTrackingEnabled ? "text-[#007F73]" : "text-stone-500"}`} />
+                      {friendTrackingEnabled && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
+                        </span>
+                      )}
                     </div>
-                    <p className="mt-0.5 text-[11px] leading-snug text-stone-500">
-                      Highways, city routes, railways & transit — zoom for detail
-                    </p>
-                  </div>
-                  {travelLayerEnabled ? (
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#007F73] text-white">
-                      <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${friendTrackingEnabled ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                      Friends
                     </span>
-                  ) : (
-                    <span className="h-6 w-6 shrink-0" aria-hidden />
-                  )}
-                </button>
-              </div>
-            ) : null}
+                  </button>
+                )}
 
-            {onToggleViewMode ? (
-              <div className="border-t border-stone-100/80 p-2">
-                <button
-                  type="button"
-                  onClick={onToggleViewMode}
-                  className={`flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
-                    mapViewMode === "3d"
-                      ? "bg-[#E6F7F4] text-[#007F73]"
-                      : "bg-stone-50 text-stone-700 hover:bg-stone-100"
-                  }`}
-                >
-                  {mapViewMode === "3d" ? "Switch to 2D view" : "Switch to 3D view"}
-                </button>
+                {/* Overlay 2: Travel layer */}
+                {onTravelLayerChange && (
+                  <button
+                    type="button"
+                    onClick={() => onTravelLayerChange(!travelLayerEnabled)}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
+                  >
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        travelLayerEnabled
+                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <Route className={`h-4.5 w-4.5 ${travelLayerEnabled ? "text-[#007F73]" : "text-stone-500"}`} />
+                      {travelLayerEnabled && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${travelLayerEnabled ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                      Travel
+                    </span>
+                  </button>
+                )}
+
+                {/* Overlay 3: Sea routes */}
+                {onSeaRoutesChange && (
+                  <button
+                    type="button"
+                    onClick={() => onSeaRoutesChange(!seaRoutesEnabled)}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
+                  >
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        seaRoutesEnabled
+                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <Ship className={`h-4.5 w-4.5 ${seaRoutesEnabled ? "text-[#007F73]" : "text-stone-500"}`} />
+                      {seaRoutesEnabled && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${seaRoutesEnabled ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                      Sea
+                    </span>
+                  </button>
+                )}
+
+                {/* Overlay 4: Cruise routes */}
+                {onCruiseRoutesChange && (
+                  <button
+                    type="button"
+                    onClick={() => onCruiseRoutesChange(!cruiseRoutesEnabled)}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
+                  >
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        cruiseRoutesEnabled
+                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <Sailboat className={`h-4.5 w-4.5 ${cruiseRoutesEnabled ? "text-[#007F73]" : "text-stone-500"}`} />
+                      {cruiseRoutesEnabled && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${cruiseRoutesEnabled ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                      Cruise
+                    </span>
+                  </button>
+                )}
+
+                {/* Overlay 5: Foot routes */}
+                {onFootRoutesChange && (
+                  <button
+                    type="button"
+                    onClick={() => onFootRoutesChange(!footRoutesEnabled)}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
+                  >
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        footRoutesEnabled
+                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <Footprints className={`h-4.5 w-4.5 ${footRoutesEnabled ? "text-[#007F73]" : "text-stone-500"}`} />
+                      {footRoutesEnabled && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${footRoutesEnabled ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                      Foot
+                    </span>
+                  </button>
+                )}
+
+                {/* Optional: 3D perspective Toggle */}
+                {onToggleViewMode && (
+                  <button
+                    type="button"
+                    onClick={onToggleViewMode}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
+                  >
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        mapViewMode === "3d"
+                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <Mountain className={`h-4.5 w-4.5 ${mapViewMode === "3d" ? "text-[#007F73]" : "text-stone-500"}`} />
+                      {mapViewMode === "3d" && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${mapViewMode === "3d" ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                      3D View
+                    </span>
+                  </button>
+                )}
+
               </div>
-            ) : null}
+            </div>
+
           </div>
         </div>
       ) : null}

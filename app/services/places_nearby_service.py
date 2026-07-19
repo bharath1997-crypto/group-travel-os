@@ -105,6 +105,8 @@ def normalize_tags(tags: dict[str, Any]) -> str:
             "university": "University",
             "library": "Library",
             "toilets": "Restroom",
+            "ferry_terminal": "Ferry terminal",
+            "cinema": "Cinema",
         }
         return amenity_map.get(amenity, amenity.replace("_", " ").title())
 
@@ -131,6 +133,8 @@ def normalize_tags(tags: dict[str, Any]) -> str:
             "viewpoint": "Viewpoint",
             "artwork": "Artwork",
         }
+        if tourism == "attraction" and "beach" in str(tags.get("name") or "").lower():
+            return "Beach"
         return tourism_map.get(tourism, tourism.replace("_", " ").title())
 
     elif tags.get("historic"):
@@ -149,8 +153,25 @@ def normalize_tags(tags: dict[str, Any]) -> str:
             "park": "Park",
             "fitness_centre": "Fitness center",
             "sports_centre": "Sports center",
+            "marina": "Marina",
+            "beach_resort": "Beach",
         }
         return leisure_map.get(leisure, leisure.replace("_", " ").title())
+
+    elif tags.get("landuse") == "port":
+        return "Port"
+    elif tags.get("harbour") == "yes" or tags.get("harbor") == "yes":
+        return "Port"
+    elif tags.get("industrial") == "port":
+        return "Port"
+    elif tags.get("man_made") == "pier":
+        return "Port"
+    elif tags.get("waterway") == "dock":
+        return "Port"
+    elif tags.get("aeroway") in {"aerodrome", "terminal"}:
+        return "Airport"
+    elif tags.get("aeroway") == "helipad":
+        return "Helipad"
 
     elif healthcare:
         healthcare_map = {
@@ -166,6 +187,8 @@ def normalize_tags(tags: dict[str, Any]) -> str:
         return "Transit stop"
     elif tags.get("waterway"):
         return str(tags["waterway"]).replace("_", " ").title()
+    elif tags.get("natural") == "beach":
+        return "Beach"
     elif "natural" in tags:
         return tags["natural"].replace("_", " ").title()
 
@@ -239,7 +262,24 @@ def normalize_poi_result(raw: dict[str, Any], origin_lat: float, origin_lng: flo
 
     # Skip if place has no name, unless it has a useful category/address
     name = tags.get("name")
-    has_useful_tag = any(k in tags for k in ["amenity", "shop", "leisure", "tourism", "natural", "healthcare"])
+    has_useful_tag = any(
+        k in tags
+        for k in [
+            "amenity",
+            "shop",
+            "leisure",
+            "tourism",
+            "natural",
+            "healthcare",
+            "landuse",
+            "harbour",
+            "harbor",
+            "industrial",
+            "man_made",
+            "waterway",
+            "aeroway",
+        ]
+    )
     has_address = any(f"addr:{k}" in tags for k in ["street", "city", "postcode"])
 
     if not name and not (has_useful_tag or has_address):

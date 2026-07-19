@@ -13,6 +13,19 @@ export function loadLiveMapLayerPreference(): LiveMapLayer {
     if (raw && VALID_LAYERS.includes(raw as LiveMapLayer)) {
       return raw as LiveMapLayer;
     }
+
+    // Default to dark mode if system theme prefers dark
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      return "dark";
+    }
+
+    // Dynamic time-of-day auto theme:
+    // Nighttime (6 PM to 6 AM) uses dark mode
+    // Morning/Daytime (6 AM to 6 PM) uses light/clean mode
+    const hour = new Date().getHours();
+    if (hour >= 18 || hour < 6) {
+      return "dark";
+    }
   } catch {
     /* private mode */
   }

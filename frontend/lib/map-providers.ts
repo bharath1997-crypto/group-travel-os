@@ -321,8 +321,8 @@ export const OPENFREEMAP_STREET_STYLE_URL =
 
 export type LiveMapLayer = "street" | "clean" | "satellite" | "terrain" | "hybrid" | "dark";
 
-/** Live Tab zoom limits — hard cap per layer so users never see blank tiles. */
-export const LIVE_MAP_MIN_ZOOM = 2;
+/** Live Tab min zoom (z0 = full globe). Max caps per layer avoid blank tiles. */
+export const LIVE_MAP_MIN_ZOOM = 0;
 /** OpenFreeMap vector (Clean Map) — native tile data to z14; z16 with travel overlay overzoom. */
 export const LIVE_MAP_VECTOR_MAX_ZOOM = 14;
 /** Clean Map + Travel layer — extra headroom without housenumber clutter. */
@@ -340,8 +340,8 @@ export const LIVE_MAP_DARK_MAX_ZOOM = 17.5;
 export const LIVE_MAP_ESRI_VIEW_MAX_ZOOM = LIVE_MAP_SATELLITE_MAX_ZOOM;
 /** @deprecated Use LIVE_MAP_ESRI_VIEW_MAX_ZOOM */
 export const LIVE_MAP_ESRI_MAX_ZOOM = LIVE_MAP_ESRI_VIEW_MAX_ZOOM;
-/** CARTO + OSM raster (Detailed Map). */
-export const LIVE_MAP_CARTO_STREET_MAX_ZOOM = 18;
+/** CARTO + OSM raster (Detailed Map) — cap below z18 to avoid empty tile grids. */
+export const LIVE_MAP_CARTO_STREET_MAX_ZOOM = 17;
 
 /** Per-layer max zoom — last level with structural tile data for each basemap. */
 export const LIVE_MAP_LAYER_MAX_ZOOM: Record<LiveMapLayer, number> = {
@@ -371,11 +371,23 @@ function resolveHybridLabelTileUrl(): string | null {
   return override || DEV_TILE_DEFAULTS.hybridLabels.transport;
 }
 
-function buildRasterBackgroundLayer(): StyleSpecification["layers"][number] {
+const LIVE_MAP_RASTER_BG_LIGHT = "#d4dde4";
+export const LIVE_MAP_RASTER_BG_OCEAN = "#061325";
+
+function withGlobeProjection(style: StyleSpecification): StyleSpecification {
+  return {
+    ...style,
+    projection: { type: "globe" },
+  };
+}
+
+function buildRasterBackgroundLayer(
+  color: string = LIVE_MAP_RASTER_BG_LIGHT,
+): StyleSpecification["layers"][number] {
   return {
     id: "rovvy-raster-background",
     type: "background",
-    paint: { "background-color": "#d4dde4" },
+    paint: { "background-color": color },
   };
 }
 
@@ -412,7 +424,7 @@ function buildHybridStyle(streetFallback: LiveMapStyle): LiveMapStyle {
   };
 
   const layers: StyleSpecification["layers"] = [
-    buildRasterBackgroundLayer(),
+    buildRasterBackgroundLayer(LIVE_MAP_RASTER_BG_OCEAN),
     {
       id: "esri-imagery",
       type: "raster",
@@ -445,7 +457,7 @@ function buildHybridStyle(streetFallback: LiveMapStyle): LiveMapStyle {
     });
   }
 
-  return { version: 8, sources, layers };
+  return withGlobeProjection({ version: 8, sources, layers });
 }
 
 /** Detailed OSM raster style — default Live map (labels, POIs, buildings). */
@@ -457,7 +469,7 @@ function buildDetailedStreetStyle(): LiveMapStyle {
   }
 
   const streetAttribution = resolveStreetTileAttribution();
-  return {
+  return withGlobeProjection({
     version: 8,
     sources: {
       osm: {
@@ -471,7 +483,7 @@ function buildDetailedStreetStyle(): LiveMapStyle {
     layers: [
       { id: "osm-tiles", type: "raster", source: "osm", minzoom: 0, maxzoom: LIVE_MAP_CARTO_STREET_MAX_ZOOM },
     ],
-  };
+  });
 }
 
 /** MapLibre styles for Live Tab. Street = detailed OSM raster; clean = simplified vector style. */
@@ -481,7 +493,7 @@ export function getLiveMapLibreLayerStyles(): Record<LiveMapLayer, LiveMapStyle>
   return {
     street: detailedStreetStyle,
     clean: OPENFREEMAP_STREET_STYLE_URL,
-    satellite: {
+    satellite: withGlobeProjection({
       version: 8,
       sources: {
         esri: {
@@ -493,11 +505,11 @@ export function getLiveMapLibreLayerStyles(): Record<LiveMapLayer, LiveMapStyle>
         },
       },
       layers: [
-        buildRasterBackgroundLayer(),
+        buildRasterBackgroundLayer(LIVE_MAP_RASTER_BG_OCEAN),
         { id: "esri-tiles", type: "raster", source: "esri", minzoom: 0, maxzoom: LIVE_MAP_ESRI_MAX_ZOOM },
       ],
-    },
-    terrain: {
+    }),
+    terrain: withGlobeProjection({
       version: 8,
       sources: {
         esri: {
@@ -509,11 +521,11 @@ export function getLiveMapLibreLayerStyles(): Record<LiveMapLayer, LiveMapStyle>
         },
       },
       layers: [
-        buildRasterBackgroundLayer(),
+        buildRasterBackgroundLayer(LIVE_MAP_RASTER_BG_OCEAN),
         { id: "esri-topo-tiles", type: "raster", source: "esri", minzoom: 0, maxzoom: LIVE_MAP_ESRI_MAX_ZOOM },
       ],
-    },
-    dark: {
+    }),
+    dark: withGlobeProjection({
       version: 8,
       sources: {
         carto: {
@@ -527,7 +539,7 @@ export function getLiveMapLibreLayerStyles(): Record<LiveMapLayer, LiveMapStyle>
       layers: [
         { id: "carto-tiles", type: "raster", source: "carto", minzoom: 0, maxzoom: LIVE_MAP_DARK_MAX_ZOOM },
       ],
-    },
+    }),
     hybrid: buildHybridStyle(detailedStreetStyle),
   };
 }

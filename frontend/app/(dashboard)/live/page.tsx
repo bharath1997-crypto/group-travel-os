@@ -32,6 +32,7 @@ import type {
   TripStatus,
   UserLocationUpdate,
 } from "./live-types";
+import { type FriendLocation } from "./live-friend-layer-sync";
 import { fetchLiveRoute } from "./live-routing";
 import {
   buildGpsRouteOrigin,
@@ -117,12 +118,26 @@ import {
   loadLiveTravelLayerPreference,
   saveLiveTravelLayerPreference,
 } from "./live-travel-layer-preference";
+import {
+  loadLiveCruiseRoutesPreference,
+  loadLiveSeaRoutesPreference,
+  saveLiveCruiseRoutesPreference,
+  saveLiveSeaRoutesPreference,
+} from "./live-sea-routes-preference";
+import {
+  loadLiveFootRoutesPreference,
+  saveLiveFootRoutesPreference,
+} from "./live-foot-routes-preference";
+import {
+  loadLiveFriendTrackingPreference,
+  saveLiveFriendTrackingPreference,
+} from "./live-friend-preference";
 import { mergeAutocompleteResults } from "./live-search-merge";
 import {
   getPoiMarkerPresentation,
   resolvePoiMapIcon,
 } from "./live-poi-icons";
-import LiveMapToolsControl from "./LiveMapToolsControl";
+import LiveMapDock from "./LiveMapDock";
 import { getLiveMapMaxZoom, type LiveMapLayer } from "@/lib/map-providers";
 import { mapLabelFeatureToPlacePreview } from "./live-map-labels";
 import RoviRouteIntelligencePanel from "./RoviRouteIntelligencePanel";
@@ -381,6 +396,15 @@ export default function LivePage() {
   const [travelLayerEnabled, setTravelLayerEnabled] = useState(() =>
     loadLiveTravelLayerPreference(),
   );
+  const [seaRoutesEnabled, setSeaRoutesEnabled] = useState(() =>
+    loadLiveSeaRoutesPreference(),
+  );
+  const [cruiseRoutesEnabled, setCruiseRoutesEnabled] = useState(() =>
+    loadLiveCruiseRoutesPreference(),
+  );
+  const [footRoutesEnabled, setFootRoutesEnabled] = useState(() =>
+    loadLiveFootRoutesPreference(),
+  );
 
   const handleLayerChange = useCallback(
     (layer: LiveMapLayer) => {
@@ -400,7 +424,40 @@ export default function LivePage() {
     [activeLayer],
   );
 
+  const handleSeaRoutesChange = useCallback((enabled: boolean) => {
+    setSeaRoutesEnabled(enabled);
+    saveLiveSeaRoutesPreference(enabled);
+  }, []);
+
+  const handleCruiseRoutesChange = useCallback((enabled: boolean) => {
+    setCruiseRoutesEnabled(enabled);
+    saveLiveCruiseRoutesPreference(enabled);
+  }, []);
+
+  const handleFootRoutesChange = useCallback((enabled: boolean) => {
+    setFootRoutesEnabled(enabled);
+    saveLiveFootRoutesPreference(enabled);
+  }, []);
+
+  const handleFriendTrackingChange = useCallback((enabled: boolean) => {
+    setFriendTrackingEnabled(enabled);
+    saveLiveFriendTrackingPreference(enabled);
+  }, []);
+
   const [layersPanelOpen, setLayersPanelOpen] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
   const [liveStage, setLiveStage] = useState<LiveStage>("static_landing");
   const [workflowType, setWorkflowType] =
     useState<(typeof WORKFLOW_TYPES)[number]>("Solo");
@@ -438,6 +495,63 @@ export default function LivePage() {
       : null,
     [gpsState.lat, gpsState.lng]
   );
+
+  const DEV_SHOW_MOCK_FRIENDS = false;
+  const [friendTrackingEnabled, setFriendTrackingEnabled] = useState(() =>
+    loadLiveFriendTrackingPreference(),
+  );
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
+  const friendsLocations = useMemo<FriendLocation[]>(() => {
+    if (!DEV_SHOW_MOCK_FRIENDS || workflowType !== "Group Travel") return [];
+    
+    // Base coordinates to offset from (use userLocation, routeOrigin, or Chicago baseline)
+    const baseLat = userLocation?.lat ?? routeOrigin?.latitude ?? 41.922;
+    const baseLng = userLocation?.lng ?? routeOrigin?.longitude ?? -87.726;
+
+    return [
+      {
+        userId: "friend-1",
+        name: "Aiden (Drive)",
+        lat: baseLat + 0.006,
+        lng: baseLng - 0.005,
+        lastSeenAt: new Date().toISOString(),
+        status: "active",
+        speedMps: 12.5,
+        heading: 45,
+      },
+      {
+        userId: "friend-2",
+        name: "Chloe (Bike)",
+        lat: baseLat - 0.004,
+        lng: baseLng + 0.006,
+        lastSeenAt: new Date().toISOString(),
+        status: "active",
+        speedMps: 5.2,
+        heading: 180,
+      },
+      {
+        userId: "friend-3",
+        name: "Marcus (Walk)",
+        lat: baseLat + 0.003,
+        lng: baseLng + 0.012,
+        lastSeenAt: new Date().toISOString(),
+        status: "active",
+        speedMps: 1.4,
+        heading: 90,
+      },
+      {
+        userId: "friend-4",
+        name: "Sophia (Idle)",
+        lat: baseLat + 0.008,
+        lng: baseLng - 0.004,
+        lastSeenAt: new Date().toISOString(),
+        status: "idle",
+        speedMps: 0,
+        heading: 0,
+      },
+    ];
+  }, [workflowType, userLocation, routeOrigin]);
   const speedMps = gpsState.speed;
   const gpsStatus = gpsState.status;
   const gpsStatusRef = useRef(gpsStatus);
@@ -976,7 +1090,7 @@ export default function LivePage() {
   }, [resolveAnchorCoordinate, currentUserId, refreshRecentSearches, gpsStatus]);
 
   const instantSuggestions = useMemo(
-    () => filterInstantSuggestions(searchQuery, recentSearches, 6),
+    () => filterInstantSuggestions(searchQuery, recentSearches, 8),
     [searchQuery, recentSearches],
   );
 
@@ -1090,6 +1204,7 @@ export default function LivePage() {
             categoryLabel: normalizePlaceCategory(details) || prev.categoryLabel,
             address: formatStreetAddress(details.address, details.display_name || prev.address),
             city: reverseGeo.city ?? prev.city,
+            state: details.address?.state ?? prev.state,
             country: reverseGeo.country ?? prev.country,
           };
         });
@@ -1261,6 +1376,7 @@ export default function LivePage() {
             osmType: nextOsmType,
             osmId: nextOsmId,
             city: nextCity,
+            state: details.address?.state ?? place.state,
             country: nextCountry,
             placeKey: nextKey,
           };
@@ -2075,7 +2191,7 @@ export default function LivePage() {
   }
 
   function handleLocateClick() {
-    if (gpsStatusNeedsHelper(gpsStatus)) {
+    if (gpsStatus === "denied") {
       const center = mapRef.current?.getMapCenter();
       if (center) {
         void openMapLocationSheet(center.lat, center.lng, { manual: true });
@@ -2196,7 +2312,8 @@ export default function LivePage() {
     !isLiveActive &&
     liveStage === "place_preview" &&
     Boolean(selectedPlace) &&
-    !showFarAwayPanel;
+    !showFarAwayPanel &&
+    !showPlaceDetailsPanel;
   const showPlacePreview =
     !isLiveActive &&
     Boolean(selectedPlace) &&
@@ -2289,11 +2406,19 @@ export default function LivePage() {
       (isLiveActive && liveStage === "solo_drive_command"));
 
   return (
-    <div className="h-full relative select-none">
+    <div
+      className="live-page-shell fixed inset-x-0 bottom-0 z-[1] overflow-hidden select-none"
+      style={{ top: "var(--rovvy-header-h, 56px)" }}
+    >
       <LiveImmersiveChrome activeLayer={activeLayer} />
       <LiveMapComponent
         activeLayer={activeLayer}
         travelLayerEnabled={travelLayerEnabled}
+        seaRoutesEnabled={seaRoutesEnabled}
+        cruiseRoutesEnabled={cruiseRoutesEnabled}
+        footRoutesEnabled={footRoutesEnabled}
+        friends={friendsLocations}
+        friendTrackingEnabled={friendTrackingEnabled}
         mapRef={mapRef}
         mapPin={mapPin ? { lat: mapPin.lat, lng: mapPin.lng } : null}
         pinMode={destination ? "meetup" : "selected"}
@@ -2339,6 +2464,12 @@ export default function LivePage() {
         onZoomIn={() => mapRef.current?.zoomIn()}
         onZoomOut={() => mapRef.current?.zoomOut()}
         onZoomChange={(zoom) => mapRef.current?.setZoom(zoom)}
+        gpsStatus={gpsStatus}
+        gpsErrorMessage={gpsState.errorMessage ?? null}
+        onLocate={handleLocateClick}
+        showGpsHelper={showGpsHelper}
+        onCloseGpsHelper={() => setShowGpsHelper(false)}
+        onUseMapArea={handleUseMapArea}
       />
 
       {toast ? (
@@ -2905,7 +3036,7 @@ export default function LivePage() {
           onMakeDestination={handleMakeDestination}
           onGetDirections={handleGetDirections}
           onStartLive={handleStartFromPlacePreview}
-          stackAboveRouteSummary
+          stackAboveRouteSummary={showRouteSummaryBar}
           routePreviewStatus={routePreviewStatus}
           routeLoading={routeLoading}
           routePreviewError={routePreviewError}
@@ -2973,6 +3104,7 @@ export default function LivePage() {
           travelMode={travelMode}
           routeLastMileNotice={activeRoute?.lastMileNotice ?? null}
           routeBorderNotice={activeRoute?.borderNotice ?? null}
+          routeLastMileMode={activeRoute?.lastMileMode ?? null}
           onOpenDetails={() => setShowPlaceDetailsPanel(true)}
           onGo={handleGetDirections}
           onClose={clearSelectedPlace}
@@ -3049,14 +3181,47 @@ export default function LivePage() {
         />
       ) : null}
 
-      {/* Rovvy Map Dock — compact bottom-left: layers, fullscreen, GPS */}
+      <LiveMapLocationSheet
+        open={mapLocationSheet != null}
+        point={mapLocationSheet}
+        loading={mapLocationSheetLoading}
+        manualMode={mapLocationSheetManual}
+        destinationName={destination?.name ?? null}
+        destinationLat={destination?.lat ?? null}
+        destinationLng={destination?.lng ?? null}
+        canAddStop={Boolean(destination && (isLiveActive || liveStage === "destination_set"))}
+        onClose={closeMapLocationSheet}
+        onSetStartingPoint={handleSheetSetStartingPoint}
+        onSetDestination={handleSheetSetDestination}
+        onAddStop={handleSheetAddStop}
+        onCopyCoordinates={(p) => void handleSheetCopyCoordinates(p)}
+        onSavePlace={handleSheetSavePlace}
+      />
+
+      {/* Option B Map Controls Dock — lower-left */}
       <div
-        className={`pointer-events-auto absolute z-40 transition-all duration-200 ${LIVE_MAP_CONTROLS_POSITION}`}
+        className="pointer-events-auto absolute z-40 transition-all duration-200 bottom-4 left-4"
       >
-        <div className="relative flex items-center gap-1">
-          <LiveMapToolsControl
-            layersPanelOpen={layersPanelOpen}
-            onOpenLayers={() => setLayersPanelOpen((prev) => !prev)}
+        <div className="relative flex flex-col items-start gap-2">
+          <LiveMapLayerControl
+            activeLayer={activeLayer}
+            onLayerChange={handleLayerChange}
+            travelLayerEnabled={travelLayerEnabled}
+            onTravelLayerChange={handleTravelLayerChange}
+            seaRoutesEnabled={seaRoutesEnabled}
+            onSeaRoutesChange={handleSeaRoutesChange}
+            cruiseRoutesEnabled={cruiseRoutesEnabled}
+            onCruiseRoutesChange={handleCruiseRoutesChange}
+            footRoutesEnabled={footRoutesEnabled}
+            onFootRoutesChange={handleFootRoutesChange}
+            friendTrackingEnabled={friendTrackingEnabled}
+            onFriendTrackingChange={handleFriendTrackingChange}
+            open={layersPanelOpen}
+            onOpenChange={setLayersPanelOpen}
+            showTrigger={false}
+            mapViewMode={mapViewMode}
+            onToggleViewMode={handleToggleViewMode}
+            isFullscreen={isFullscreen}
             onToggleFullscreen={() => {
               if (!document.fullscreenElement) {
                 void document.documentElement.requestFullscreen();
@@ -3064,156 +3229,32 @@ export default function LivePage() {
                 void document.exitFullscreen();
               }
             }}
+            soundEnabled={soundEnabled}
+            onToggleSound={() => setSoundEnabled((prev) => !prev)}
+            notificationsEnabled={notificationsEnabled}
+            onToggleNotifications={() => setNotificationsEnabled((prev) => !prev)}
+            bearing={mapBearing}
+            onResetNorth={() => mapRef.current?.resetNorth()}
           />
 
-          <div className="relative flex flex-col items-center gap-0.5">
-            <button
-              type="button"
-              className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.22)] transition-all duration-200 ${
-                gpsStatus === "active"
-                  ? "bg-[#007F73] text-white hover:bg-[#00665c]"
-                  : gpsStatus === "approximate"
-                  ? "bg-[#007F73]/90 text-white hover:bg-[#007F73]"
-                  : gpsStatus === "denied"
-                  ? "bg-stone-700 text-white hover:bg-stone-800"
-                  : gpsStatus === "timeout" || gpsStatus === "error" || gpsStatus === "outdated"
-                  ? "bg-amber-700 text-white hover:bg-amber-800"
-                  : gpsStatus === "requesting"
-                  ? "animate-pulse bg-[#007F73] text-white hover:bg-[#00665c]"
-                  : "bg-[#007F73] text-white hover:bg-[#00665c]"
-              }`}
-              onClick={handleLocateClick}
-              title={
-                gpsStatus === "denied" || gpsStatusNeedsHelper(gpsStatus)
-                  ? "Pick location on map"
-                  : gpsStatus === "requesting"
-                  ? "Finding location…"
-                  : "Locate me"
-              }
-              aria-pressed={liveGpsActive}
-              aria-label="Locate me"
-            >
-              {gpsStatus === "requesting" ? (
-                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ) : (
-                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden="true">
-                  <circle cx="12" cy="12" r="7" stroke="white" strokeWidth="1.8" fill="none" />
-                  <circle cx="12" cy="12" r="2.5" fill="white" />
-                  <line x1="12" y1="2" x2="12" y2="5.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
-                  <line x1="12" y1="18.5" x2="12" y2="22" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
-                  <line x1="2" y1="12" x2="5.5" y2="12" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
-                  <line x1="18.5" y1="12" x2="22" y2="12" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
-                </svg>
-              )}
-            </button>
-
-            {gpsStatusLabel(gpsStatus) &&
-            gpsStatus !== "active" &&
-            gpsStatus !== "approximate" ? (
-              <button
-                type="button"
-                onClick={handleGpsStatusBadgeClick}
-                className={`cursor-pointer whitespace-nowrap rounded px-1.5 py-px text-center text-[8px] font-semibold leading-tight shadow-sm ${
-                  gpsStatus === "requesting"
-                    ? "bg-blue-100 text-blue-700"
-                    : gpsStatus === "stale"
-                    ? "bg-stone-200 text-stone-600"
-                    : gpsStatus === "outdated"
-                    ? "bg-amber-100 text-amber-800"
-                    : gpsStatus === "denied"
-                    ? "bg-stone-200 text-stone-600"
-                    : gpsStatus === "timeout" || gpsStatus === "error"
-                    ? "bg-amber-100 text-amber-800"
-                    : "bg-stone-100 text-stone-500"
-                }`}
-                title="GPS status"
-              >
-                {gpsStatusLabel(gpsStatus)}
-              </button>
-            ) : null}
-            {!isFreshGpsStatus(gpsStatus) &&
-            gpsStatus !== "requesting" ? (
-              <div className="whitespace-nowrap rounded bg-[#E6F7F4] px-1.5 py-px text-center text-[8px] font-semibold leading-tight text-[#0F766E] shadow-sm">
-                Pick on map
-              </div>
-            ) : null}
-            <LiveMapLocationSheet
-              open={mapLocationSheet != null}
-              point={mapLocationSheet}
-              loading={mapLocationSheetLoading}
-              manualMode={mapLocationSheetManual}
-              destinationName={destination?.name ?? null}
-              destinationLat={destination?.lat ?? null}
-              destinationLng={destination?.lng ?? null}
-              canAddStop={Boolean(destination && (isLiveActive || liveStage === "destination_set"))}
-              onClose={closeMapLocationSheet}
-              onSetStartingPoint={handleSheetSetStartingPoint}
-              onSetDestination={handleSheetSetDestination}
-              onAddStop={handleSheetAddStop}
-              onCopyCoordinates={(p) => void handleSheetCopyCoordinates(p)}
-              onSavePlace={handleSheetSavePlace}
-            />
-            {showGpsHelper ? (
-              <div className="absolute bottom-full left-0 z-50 mb-2 w-56 rounded-xl border border-stone-200 bg-white/95 p-3 text-left shadow-xl backdrop-blur-md">
-                <p className="text-xs font-semibold text-stone-800">
-                  {gpsStatus === "denied" ? "Location off" : "Location unavailable"}
-                </p>
-                <p className="mt-1 text-[11px] leading-snug text-stone-600">
-                  {gpsState.errorMessage
-                    ? gpsState.errorMessage
-                    : gpsStatus === "denied"
-                    ? "Enable location permission in your browser to show your position."
-                    : "Rovvy couldn't get your exact location from this browser. You can try again or use the current map area."}
-                </p>
-                <div className="mt-3 flex flex-col gap-1.5">
-                  <button
-                    type="button"
-                    onClick={handleLocateClick}
-                    className="rounded-lg bg-[#007F73] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#00665c]"
-                  >
-                    Try again
-                  </button>
-                  {gpsStatus === "denied" ? (
-                    <a
-                      href="https://support.google.com/chrome/answer/142064?hl=en"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-lg border border-stone-200 px-3 py-1.5 text-center text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
-                    >
-                      Browser location help
-                    </a>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleUseMapArea}
-                      className="rounded-lg border border-stone-200 px-3 py-1.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
-                    >
-                      Use map area
-                    </button>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowGpsHelper(false)}
-                  className="absolute right-1.5 top-1.5 px-1 text-xs text-stone-400 hover:text-stone-600"
-                  aria-label="Close"
-                >
-                  ×
-                </button>
-              </div>
-            ) : null}
-          </div>
-
-          <LiveMapLayerControl
+          <LiveMapDock
             activeLayer={activeLayer}
-            onLayerChange={handleLayerChange}
-            travelLayerEnabled={travelLayerEnabled}
-            onTravelLayerChange={handleTravelLayerChange}
-            open={layersPanelOpen}
-            onOpenChange={setLayersPanelOpen}
-            showTrigger={false}
-            mapViewMode={mapViewMode}
-            onToggleViewMode={handleToggleViewMode}
+            layersPanelOpen={layersPanelOpen}
+            onOpenLayers={() => setLayersPanelOpen((prev) => !prev)}
+            bearing={mapBearing}
+            onResetNorth={() => mapRef.current?.resetNorth()}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={() => {
+              if (!document.fullscreenElement) {
+                void document.documentElement.requestFullscreen();
+              } else {
+                void document.exitFullscreen();
+              }
+            }}
+            soundEnabled={soundEnabled}
+            onToggleSound={() => setSoundEnabled((prev) => !prev)}
+            notificationsEnabled={notificationsEnabled}
+            onToggleNotifications={() => setNotificationsEnabled((prev) => !prev)}
           />
         </div>
       </div>

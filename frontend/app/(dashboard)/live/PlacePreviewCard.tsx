@@ -15,13 +15,20 @@ import PlacePreviewMedia from "./PlacePreviewMedia";
 import RoviPlaceExplanationBlock from "./RoviPlaceExplanationBlock";
 import type { RoviPlaceExplanation } from "./live-rovi";
 import { LIVE_PANEL_MAX_WIDTH, LIVE_PANEL_RIGHT_INSET, LIVE_RESPONSIVE_PANEL_LAYOUT } from "./live-layout";
-import { normalizePlaceCategory } from "./live-geocoding";
 import { logRovvyLiveWarn } from "./live-gps";
 import {
   formatDistanceMiles,
-  formatRouteDurationBracketed,
+  formatRouteDuration,
+  isFarFromUser,
   type RoutePreviewStatus,
 } from "./live-types";
+import LiveAiSuggestionsBlock from "./LiveAiSuggestionsBlock";
+import { buildRoutePreviewAiSuggestions } from "./live-ai-suggestions";
+import {
+  formatOpeningHoursLabel,
+  formatPlaceSubtitle,
+  getPlaceLocationFields,
+} from "./live-place-display";
 
 const TEAL = "#0F766E";
 
@@ -94,25 +101,6 @@ type Props = {
   previewContext?: { icon: string; searchLabel: string } | null;
 };
 
-function isOsmGeometryLabel(label: string): boolean {
-  return /^(node|way|relation)$/i.test(label.trim());
-}
-
-function resolveCategoryLabel(place: PlacePreviewData): string {
-  const fromTags = normalizePlaceCategory(place.tags);
-  if (fromTags) return fromTags;
-  if (place.categoryLabel && !isOsmGeometryLabel(place.categoryLabel)) {
-    return place.categoryLabel;
-  }
-  return "Place";
-}
-
-function formatHoursLabel(place: PlacePreviewData): string {
-  if (place.openStatus) return place.openStatus;
-  if (place.openingHours) return place.openingHours;
-  return "Hours not provided by source.";
-}
-
 function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(false);
 
@@ -180,9 +168,11 @@ export default function PlacePreviewCard({
     matchedOn?: string;
   } | null>(null);
   const [wikiLoading, setWikiLoading] = useState(false);
+  const [wikiExpanded, setWikiExpanded] = useState(false);
 
   useEffect(() => {
     setWikiSummary(null);
+    setWikiExpanded(false);
 
     const wikidataId = place.tags?.wikidata;
     const wikipediaTitle = place.tags?.wikipedia;
@@ -195,7 +185,8 @@ export default function PlacePreviewCard({
       !place.city &&
       ![
         "Landmark", "Attraction", "Museum", "Park", "Historic site",
-        "Airport", "University", "Church / Place of worship", "Stadium", "Monument",
+        "Airport", "Helipad", "Beach", "Port", "Marina", "Ferry terminal", "Cinema",
+        "University", "Church / Place of worship", "Stadium", "Monument",
         "Village", "Town", "City", "Hamlet", "Location",
       ].includes(place.categoryLabel)
     ) {
@@ -257,22 +248,21 @@ export default function PlacePreviewCard({
   const isDrivingMode =
     liveStage === "solo_drive_navigation" || liveStage === "solo_drive_command";
 
-  const hoursLabel = formatHoursLabel(place);
+  const hoursLabel = formatOpeningHoursLabel(place);
   const sourceLabel =
     dataSource === "osm"
       ? "Place data from OpenStreetMap / Rovvy Places"
       : "Place data source limited";
 
-  const displayCategory = place.name === "Dropped pin"
-    ? "Selected location"
-    : resolveCategoryLabel(place);
-
-  const subheaderText = displayCategory;
+  const subheaderText =
+    place.name === "Dropped pin" ? "Selected location" : formatPlaceSubtitle(place);
+  const locationFields = getPlaceLocationFields(place);
 
   const routeReady = routePreviewStatus === "ready" && routeDurationSeconds != null;
-  const timeBracket = routeReady
-    ? formatRouteDurationBracketed(routeDurationSeconds)
-    : "";
+  const routeDurationLabel =
+    routeReady && routeDurationSeconds != null
+      ? formatRouteDuration(routeDurationSeconds)
+      : "";
 
   const isDroppedPinOrAddress =
     place.source === "dropped_pin" ||
@@ -282,6 +272,20 @@ export default function PlacePreviewCard({
     locationContext && locationContext.classification !== "local_place"
       ? locationContext.template?.recommendation
       : null;
+
+  const aiSuggestions = buildRoutePreviewAiSuggestions({
+    destinationName: place.name,
+    farFromUser: isFarFromUser(place.distanceM),
+    contextNotice,
+    terrainHint: place.terrainHint,
+    lastMileNotice:
+      routeReady && routeLastMileMode === "walk" ? routeLastMileNotice : null,
+    borderNotice: routeReady ? routeBorderNotice : null,
+    routeError:
+      routePreviewStatus === "failed" && routePreviewError
+        ? routePreviewError
+        : null,
+  });
 
   const summaryStackClass = stackAboveRouteSummary
     ? "max-lg:!bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] max-lg:max-h-[min(55vh,calc(100dvh-8rem))]"
@@ -365,7 +369,7 @@ export default function PlacePreviewCard({
   const mediaMaxHeightClass = "max-h-[8rem]";
 
   return (
-    <div className={layoutClass} role="dialog" aria-label="Place details">
+    <div className={`${layoutClass} flex flex-col`} role="dialog" aria-label="Place details">
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-3 pb-2">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
@@ -375,13 +379,22 @@ export default function PlacePreviewCard({
                 {previewContext.searchLabel}
               </span>
             ) : null}
-            <h3 className="text-base font-bold leading-snug text-stone-900">
-              {place.name}
-              {routeReady && timeBracket ? (
-                <span className="font-semibold text-[#0F766E]"> {timeBracket}</span>
-              ) : null}
-            </h3>
-            <p className="mt-0.5 truncate text-xs text-stone-500">{subheaderText}</p>
+            <h3 className="text-base font-bold leading-snug text-stone-900">{place.name}</h3>
+            <p className="mt-0.5 text-xs text-stone-500">{subheaderText}</p>
+            {routeReady ? (
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex items-center rounded-full bg-[#E6F7F4] px-2 py-0.5 text-xs font-semibold text-[#0F766E]">
+                  {routeDurationLabel}
+                </span>
+                {routeDistanceMeters != null ? (
+                  <span className="text-xs text-stone-500">
+                    {formatDistanceMiles(routeDistanceMeters)} · {travelMode}
+                  </span>
+                ) : (
+                  <span className="text-xs text-stone-500">{travelMode}</span>
+                )}
+              </div>
+            ) : null}
           </div>
           <button
             type="button"
@@ -393,13 +406,15 @@ export default function PlacePreviewCard({
           </button>
         </div>
 
-        {contextNotice ? (
-          <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-xs leading-snug text-amber-900">
-            {contextNotice}
-          </p>
+        {aiSuggestions.length > 0 ? (
+          <LiveAiSuggestionsBlock
+            suggestions={aiSuggestions}
+            destinationName={place.name}
+            className="mt-2"
+          />
         ) : null}
 
-        {place.mapPresenceNote || place.terrainHint || place.continent || place.coordinatesLabel ? (
+        {place.mapPresenceNote || locationFields.length > 0 || place.coordinatesLabel ? (
           <div className="mt-2 rounded-lg border border-stone-100 bg-stone-50 px-2.5 py-2">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
               Location context
@@ -407,79 +422,28 @@ export default function PlacePreviewCard({
             {place.mapPresenceNote ? (
               <p className="mt-1 text-xs leading-snug text-stone-700">{place.mapPresenceNote}</p>
             ) : null}
-            {place.terrainHint ? (
-              <p className="mt-1 text-xs leading-snug text-amber-900">{place.terrainHint}</p>
-            ) : null}
             {place.coordinatesLabel ? (
               <p className="mt-1 font-mono text-[11px] text-stone-600">{place.coordinatesLabel}</p>
             ) : null}
             <dl className="mt-2 space-y-1 text-xs text-stone-600">
-              {place.city ? (
-                <div className="flex gap-2">
-                  <dt className="w-16 shrink-0 text-stone-400">City</dt>
-                  <dd className="min-w-0">{place.city}</dd>
+              {locationFields.map((field) => (
+                <div key={`${field.label}-${field.value}`} className="flex gap-2">
+                  <dt className="w-16 shrink-0 text-stone-400">{field.label}</dt>
+                  <dd className="min-w-0">{field.value}</dd>
                 </div>
-              ) : null}
-              {place.state ? (
-                <div className="flex gap-2">
-                  <dt className="w-16 shrink-0 text-stone-400">Region</dt>
-                  <dd className="min-w-0">{place.state}</dd>
-                </div>
-              ) : null}
-              {place.country ? (
-                <div className="flex gap-2">
-                  <dt className="w-16 shrink-0 text-stone-400">Country</dt>
-                  <dd className="min-w-0">{place.country}</dd>
-                </div>
-              ) : null}
-              {place.continent ? (
-                <div className="flex gap-2">
-                  <dt className="w-16 shrink-0 text-stone-400">Continent</dt>
-                  <dd className="min-w-0">{place.continent}</dd>
-                </div>
-              ) : null}
-              {place.postcode ? (
-                <div className="flex gap-2">
-                  <dt className="w-16 shrink-0 text-stone-400">Postcode</dt>
-                  <dd className="min-w-0">{place.postcode}</dd>
-                </div>
-              ) : null}
+              ))}
             </dl>
           </div>
         ) : null}
 
-        {routePreviewStatus !== "idle" || routeLoading ? (
+        {(routeLoading || routePreviewStatus === "loading") && routePreviewStatus !== "idle" ? (
           <div className="mt-2 rounded-lg border border-teal-100 bg-teal-50/80 px-2.5 py-2">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-800">
               {travelMode} route preview
             </p>
-            {routeLoading || routePreviewStatus === "loading" ? (
-              <p className="mt-1 text-xs text-stone-600">Calculating your {travelMode.toLowerCase()} route…</p>
-            ) : null}
-            {routePreviewStatus === "failed" && routePreviewError ? (
-              <p className="mt-1 text-xs text-amber-800">{routePreviewError}</p>
-            ) : null}
-            {routeReady ? (
-              <div className="mt-1 space-y-1 text-xs text-stone-700">
-                <p>
-                  <span className="font-semibold text-[#0F766E]">{timeBracket}</span>
-                  {routeDistanceMeters != null ? (
-                    <span className="text-stone-500">
-                      {" "}
-                      · {formatDistanceMiles(routeDistanceMeters)}
-                    </span>
-                  ) : null}
-                </p>
-                {routeLastMileMode === "walk" && routeLastMileNotice ? (
-                  <p className="rounded-md bg-amber-50 px-2 py-1 text-amber-900">{routeLastMileNotice}</p>
-                ) : null}
-                {routeBorderNotice ? (
-                  <p className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-amber-900">
-                    {routeBorderNotice}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
+            <p className="mt-1 text-xs text-stone-600">
+              Calculating your {travelMode.toLowerCase()} route…
+            </p>
           </div>
         ) : null}
 
@@ -498,7 +462,7 @@ export default function PlacePreviewCard({
               </div>
             ) : null}
 
-            {!isDroppedPinOrAddress ? (
+            {!isDroppedPinOrAddress && hoursLabel ? (
               <p className="text-xs text-stone-500">{hoursLabel}</p>
             ) : null}
 
@@ -513,19 +477,34 @@ export default function PlacePreviewCard({
                     ? `About ${wikiSummary.title || place.city || "this area"}`
                     : "About"}
                 </p>
-                <p className="mt-1 text-xs leading-relaxed text-stone-600 line-clamp-4">
+                <p
+                  className={`mt-1 text-xs leading-relaxed text-stone-600 ${
+                    wikiExpanded ? "" : "line-clamp-2"
+                  }`}
+                >
                   {wikiSummary.summary}
                 </p>
-                {wikiSummary.url ? (
-                  <a
-                    href={wikiSummary.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-1 inline-block text-[11px] font-medium text-[#0F766E] hover:underline"
-                  >
-                    Read on Wikipedia
-                  </a>
-                ) : null}
+                <div className="mt-1 flex flex-wrap items-center gap-3">
+                  {!wikiExpanded ? (
+                    <button
+                      type="button"
+                      onClick={() => setWikiExpanded(true)}
+                      className="text-[11px] font-medium text-[#0F766E] hover:underline"
+                    >
+                      Read more
+                    </button>
+                  ) : null}
+                  {wikiSummary.url ? (
+                    <a
+                      href={wikiSummary.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-medium text-[#0F766E] hover:underline"
+                    >
+                      Read on Wikipedia
+                    </a>
+                  ) : null}
+                </div>
               </div>
             ) : null}
 
@@ -569,14 +548,39 @@ export default function PlacePreviewCard({
               />
             ) : null}
 
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-3">
               {!isDroppedPinOrAddress ? (
-                <QuickAction icon={MapPin} label="Add stop" onClick={onAddStop} />
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                    Navigation
+                  </p>
+                  <div className="mt-1.5">
+                    <QuickAction icon={MapPin} label="Add stop" onClick={onAddStop} />
+                  </div>
+                </div>
               ) : null}
-              <QuickAction icon={Bookmark} label="Save" onClick={onSavePlace} />
-              <QuickAction icon={Users} label="Meet" onClick={onCreateMeetPoint} />
-              {onSearchNearMe ? (
-                <QuickAction icon={Search} label="Search nearby" onClick={onSearchNearMe} />
+
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                  Save &amp; meet
+                </p>
+                <div className="mt-1.5 flex flex-wrap gap-2">
+                  <QuickAction icon={Bookmark} label="Save" onClick={onSavePlace} />
+                  <QuickAction icon={Users} label="Meet" onClick={onCreateMeetPoint} />
+                </div>
+              </div>
+
+              {(onSearchNearMe || showAskRovi) ? (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                    Explore
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-2">
+                    {onSearchNearMe ? (
+                      <QuickAction icon={Search} label="Search nearby" onClick={onSearchNearMe} />
+                    ) : null}
+                  </div>
+                </div>
               ) : null}
             </div>
 
@@ -584,11 +588,12 @@ export default function PlacePreviewCard({
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-stone-100 px-3 py-2">
+      <div className="sticky bottom-0 z-10 shrink-0 border-t border-stone-100 bg-white px-3 py-2 shadow-[0_-6px_16px_rgba(0,0,0,0.06)]">
         <button
           type="button"
           onClick={onMakeDestination}
-          className="w-full rounded-lg border border-stone-200 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
+          className="w-full rounded-lg py-2.5 text-sm font-semibold text-white hover:opacity-90"
+          style={{ backgroundColor: TEAL }}
         >
           {isDroppedPinOrAddress ? "Use location" : "Set destination"}
         </button>

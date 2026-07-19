@@ -1,7 +1,7 @@
 "use client";
 
 import { Link as LinkIcon, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
 
@@ -30,32 +30,50 @@ export function ExplorerItemDetailDrawer({
   onClose,
   onToast,
 }: ExplorerItemDetailDrawerProps) {
+  const [displayItem, setDisplayItem] = useState<ExplorerDrawerItem | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [tripModalOpen, setTripModalOpen] = useState(false);
   const [tripId, setTripId] = useState("");
   const [pendingAction, setPendingAction] = useState<"save" | "vote" | null>(null);
   const [busy, setBusy] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const dragStartY = useRef<number | null>(null);
+  const dragOffsetY = useRef(0);
+  const [dragOffset, setDragOffset] = useState(0);
+
+  useEffect(() => {
+    if (item) {
+      setDisplayItem(item);
+      dragOffsetY.current = 0;
+      setDragOffset(0);
+      const frame = requestAnimationFrame(() => setSheetOpen(true));
+      return () => cancelAnimationFrame(frame);
+    }
+    setSheetOpen(false);
+    const timer = window.setTimeout(() => setDisplayItem(null), 280);
+    return () => window.clearTimeout(timer);
+  }, [item]);
 
   const handleAddToCart = async () => {
-    if (!item) return;
+    if (!displayItem) return;
     setAddingToCart(true);
     try {
       await apiFetch("/cart", {
         method: "POST",
         body: JSON.stringify({
           item_type: "activity",
-          item_id: item.id,
-          item_name: item.title,
-          item_image: item.imageUrl || null,
-          item_category: item.source,
-          place_name: item.venue || item.city,
-          full_address: item.venue || item.city,
-          lat: (item as any).latitude || 0.0,
-          lng: (item as any).longitude || 0.0,
-          price_range: item.priceLabel || null,
+          item_id: displayItem.id,
+          item_name: displayItem.title,
+          item_image: displayItem.imageUrl || null,
+          item_category: displayItem.source,
+          place_name: displayItem.venue || displayItem.city,
+          full_address: displayItem.venue || displayItem.city,
+          lat: (displayItem as any).latitude || 0.0,
+          lng: (displayItem as any).longitude || 0.0,
+          price_range: displayItem.priceLabel || null,
           rating: null,
-          source: item.source || "explore",
-          source_url: item.sourceUrl || null,
+          source: displayItem.source || "explore",
+          source_url: displayItem.sourceUrl || null,
         }),
       });
       onToast?.("Added to Travel Cart");
@@ -73,15 +91,26 @@ export function ExplorerItemDetailDrawer({
 
 
   useEffect(() => {
-    if (!item) return;
+    if (!displayItem) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [item, onClose]);
+  }, [displayItem, onClose]);
 
-  if (!item) return null;
+  const activeItem = displayItem;
+  if (!activeItem) return null;
+
+  const finishDrag = () => {
+    if (dragOffsetY.current > 72) {
+      onClose();
+    } else {
+      dragOffsetY.current = 0;
+      setDragOffset(0);
+    }
+    dragStartY.current = null;
+  };
 
   const openTripModal = (action: "save" | "vote") => {
     setPendingAction(action);
@@ -100,12 +129,12 @@ export function ExplorerItemDetailDrawer({
         const locationRes = await apiFetch<{ id: string }>("/locations", {
           method: "POST",
           body: JSON.stringify({
-            name: item.title,
-            address: item.venue || item.city,
-            latitude: (item as any).latitude || 0,
-            longitude: (item as any).longitude || 0,
-            category: item.source,
-            notes: item.description,
+            name: activeItem.title,
+            address: activeItem.venue || activeItem.city,
+            latitude: (activeItem as any).latitude || 0,
+            longitude: (activeItem as any).longitude || 0,
+            category: activeItem.source,
+            notes: activeItem.description,
           }),
         });
         
@@ -131,15 +160,41 @@ export function ExplorerItemDetailDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/55 px-0 sm:px-4">
+    <div className="fixed inset-0 z-[80] flex items-end justify-center px-0 sm:px-4">
       <button
         type="button"
         aria-label="Close details"
-        className="absolute inset-0 cursor-default"
+        className={`absolute inset-0 cursor-default bg-black/55 transition-opacity duration-300 ${
+          sheetOpen ? "opacity-100" : "opacity-0"
+        }`}
         onClick={onClose}
       />
-      <aside className="relative max-h-[88vh] w-full max-w-4xl overflow-y-auto rounded-t-[2rem] border border-white/10 bg-[#0F3460] p-5 text-white shadow-2xl sm:rounded-[2rem] sm:p-6">
-        <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-white/25" />
+      <aside
+        className={`relative max-h-[88vh] w-full max-w-4xl overflow-y-auto rounded-t-[2rem] border border-white/10 bg-[#0F3460] p-5 text-white shadow-2xl transition-transform duration-300 ease-out sm:rounded-[2rem] sm:p-6 ${
+          sheetOpen ? "translate-y-0" : "translate-y-full"
+        }`}
+        style={
+          dragOffset > 0
+            ? { transform: `translateY(${dragOffset}px)` }
+            : undefined
+        }
+      >
+        <div
+          className="mx-auto mb-4 h-1.5 w-14 cursor-grab rounded-full bg-white/25 active:cursor-grabbing"
+          onPointerDown={(event) => {
+            dragStartY.current = event.clientY;
+            dragOffsetY.current = 0;
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerMove={(event) => {
+            if (dragStartY.current == null) return;
+            const delta = Math.max(0, event.clientY - dragStartY.current);
+            dragOffsetY.current = delta;
+            setDragOffset(delta);
+          }}
+          onPointerUp={finishDrag}
+          onPointerCancel={finishDrag}
+        />
         <button
           type="button"
           onClick={onClose}
@@ -151,36 +206,36 @@ export function ExplorerItemDetailDrawer({
 
         <div className="grid gap-5 sm:grid-cols-[140px_1fr_auto] sm:items-start">
           <div className="h-32 overflow-hidden rounded-3xl bg-gradient-to-br from-[#16213E] to-[#E94560]/80 sm:h-36">
-            {item.imageUrl ? (
+            {activeItem.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
+              <img src={activeItem.imageUrl} alt="" className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full items-center justify-center text-6xl">
-                {item.emoji}
+                {activeItem.emoji}
               </div>
             )}
           </div>
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-wide text-[#E94560]">
-              {item.source}
+              {activeItem.source}
             </p>
             <h2 className="mt-2 text-2xl font-black leading-tight text-white">
-              {item.title}
+              {activeItem.title}
             </h2>
             <p className="mt-2 text-sm text-white/65">
-              {item.venue} · {item.city} · {item.dateLabel}
+              {activeItem.venue} · {activeItem.city} · {activeItem.dateLabel}
             </p>
           </div>
-          <p className="text-2xl font-black text-[#E94560]">{item.priceLabel}</p>
+          <p className="text-2xl font-black text-[#E94560]">{activeItem.priceLabel}</p>
         </div>
 
         <p className="mt-5 line-clamp-3 text-sm leading-6 text-white/70">
-          {item.description ||
+          {activeItem.description ||
             "A curated local experience selected for your trip. Details may vary by platform, so check the source before booking."}
         </p>
 
         <div className="mt-5 grid grid-cols-3 gap-3">
-          {[item.emoji, "📸", "🗺️"].map((emoji, index) => (
+          {[activeItem.emoji, "📸", "🗺️"].map((emoji, index) => (
             <div
               key={`${emoji}-${index}`}
               className="flex h-20 items-center justify-center rounded-2xl bg-white/10 text-3xl"
@@ -192,10 +247,10 @@ export function ExplorerItemDetailDrawer({
 
         {(() => {
           let tickets: { title: string; url: string }[] = [];
-          let fallbackUrl = item.sourceUrl;
-          if (item.sourceUrl) {
+          let fallbackUrl = activeItem.sourceUrl;
+          if (activeItem.sourceUrl) {
             try {
-              tickets = JSON.parse(item.sourceUrl);
+              tickets = JSON.parse(activeItem.sourceUrl);
               fallbackUrl = null;
             } catch {
               // Not JSON, just a normal URL

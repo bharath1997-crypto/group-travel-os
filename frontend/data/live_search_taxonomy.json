@@ -141,7 +141,10 @@
       "keywords": ["beach", "beaches", "shore", "coast", "coastal"],
       "osm_queries": [
         "node[\"natural\"=\"beach\"](around:{radius},{lat},{lng});",
-        "way[\"natural\"=\"beach\"](around:{radius},{lat},{lng});"
+        "way[\"natural\"=\"beach\"](around:{radius},{lat},{lng});",
+        "relation[\"natural\"=\"beach\"](around:{radius},{lat},{lng});",
+        "node[\"leisure\"=\"beach_resort\"](around:{radius},{lat},{lng});",
+        "way[\"leisure\"=\"beach_resort\"](around:{radius},{lat},{lng});"
       ]
     },
     {
@@ -150,14 +153,42 @@
       "label": "Ports & harbours nearby",
       "mapLabel": "Ports",
       "icon": "⚓",
-      "keywords": ["port", "ports", "harbour", "harbor", "harbours", "harbors", "marina", "marinas", "dock", "docks", "port location", "port locations", "seaport", "seaports"],
+      "keywords": ["port", "ports", "harbour", "harbor", "harbours", "harbors", "marina", "marinas", "dock", "docks", "port location", "port locations", "seaport", "seaports", "pier", "piers", "ferry terminal", "ferry terminals"],
       "osm_queries": [
         "node[\"landuse\"=\"port\"](around:{radius},{lat},{lng});",
         "way[\"landuse\"=\"port\"](around:{radius},{lat},{lng});",
+        "relation[\"landuse\"=\"port\"](around:{radius},{lat},{lng});",
         "node[\"harbour\"=\"yes\"](around:{radius},{lat},{lng});",
         "way[\"harbour\"=\"yes\"](around:{radius},{lat},{lng});",
+        "node[\"harbor\"=\"yes\"](around:{radius},{lat},{lng});",
+        "way[\"harbor\"=\"yes\"](around:{radius},{lat},{lng});",
+        "node[\"industrial\"=\"port\"](around:{radius},{lat},{lng});",
+        "way[\"industrial\"=\"port\"](around:{radius},{lat},{lng});",
+        "node[\"amenity\"=\"ferry_terminal\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"ferry_terminal\"](around:{radius},{lat},{lng});",
+        "node[\"man_made\"=\"pier\"](around:{radius},{lat},{lng});",
+        "way[\"man_made\"=\"pier\"](around:{radius},{lat},{lng});",
+        "node[\"waterway\"=\"dock\"](around:{radius},{lat},{lng});",
+        "way[\"waterway\"=\"dock\"](around:{radius},{lat},{lng});",
         "node[\"leisure\"=\"marina\"](around:{radius},{lat},{lng});",
         "way[\"leisure\"=\"marina\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "airports",
+      "group": "transport",
+      "label": "Airports nearby",
+      "mapLabel": "Airports",
+      "icon": "✈️",
+      "keywords": ["airport", "airports", "airfield", "airfields", "aerodrome", "helipad", "air terminal", "international airport"],
+      "osm_queries": [
+        "node[\"aeroway\"=\"aerodrome\"](around:{radius},{lat},{lng});",
+        "way[\"aeroway\"=\"aerodrome\"](around:{radius},{lat},{lng});",
+        "relation[\"aeroway\"=\"aerodrome\"](around:{radius},{lat},{lng});",
+        "node[\"aeroway\"=\"terminal\"](around:{radius},{lat},{lng});",
+        "way[\"aeroway\"=\"terminal\"](around:{radius},{lat},{lng});",
+        "node[\"aeroway\"=\"helipad\"](around:{radius},{lat},{lng});",
+        "way[\"aeroway\"=\"helipad\"](around:{radius},{lat},{lng});"
       ]
     },
     {
@@ -214,6 +245,20 @@
       "osm_queries": [
         "node[\"amenity\"=\"cafe\"](around:{radius},{lat},{lng});",
         "way[\"amenity\"=\"cafe\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "cinemas",
+      "group": "urban",
+      "label": "Movie theaters nearby",
+      "mapLabel": "Cinemas",
+      "icon": "🎬",
+      "keywords": ["cinema", "cinemas", "movie", "movies", "movie theater", "movie theatre", "movie theaters", "movie theatres", "film", "films", "multiplex"],
+      "osm_queries": [
+        "node[\"amenity\"=\"cinema\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"cinema\"](around:{radius},{lat},{lng});",
+        "node[\"amenity\"=\"theatre\"][\"theatre:type\"=\"cinema\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"theatre\"][\"theatre:type\"=\"cinema\"](around:{radius},{lat},{lng});"
       ]
     },
     {

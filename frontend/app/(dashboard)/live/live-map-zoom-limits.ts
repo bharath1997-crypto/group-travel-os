@@ -67,6 +67,47 @@ export function isAtLiveMapMaxZoom(
   return zoom >= resolveLiveMapMaxZoom(map, layer, context) - LIVE_MAP_ZOOM_CAP_EPSILON;
 }
 
+export function isAtLiveMapMinZoom(
+  zoom: number,
+  minZoom: number = LIVE_MAP_MIN_ZOOM,
+): boolean {
+  return zoom <= minZoom + LIVE_MAP_ZOOM_CAP_EPSILON;
+}
+
+export type LiveMapZoomInButtonLevel = "normal" | "approaching" | "max";
+export type LiveMapZoomOutButtonLevel = "normal" | "min";
+
+/** Yellow → red on + as the user nears the layer cap. */
+export function liveMapZoomInButtonLevel(
+  zoom: number,
+  maxZoom: number,
+  minZoom: number = LIVE_MAP_MIN_ZOOM,
+): LiveMapZoomInButtonLevel {
+  const z = Math.min(maxZoom, Math.max(minZoom, zoom));
+  if (z >= maxZoom - LIVE_MAP_ZOOM_CAP_EPSILON) return "max";
+  const span = Math.max(maxZoom - minZoom, 0.001);
+  const progress = (z - minZoom) / span;
+  if (progress >= 0.82 || z >= maxZoom - 1.25) return "approaching";
+  return "normal";
+}
+
+export function liveMapZoomOutButtonLevel(
+  zoom: number,
+  minZoom: number = LIVE_MAP_MIN_ZOOM,
+): LiveMapZoomOutButtonLevel {
+  const z = Math.max(minZoom, zoom);
+  if (z <= minZoom + LIVE_MAP_ZOOM_CAP_EPSILON) return "min";
+  return "normal";
+}
+
+export function clampLiveMapZoomValue(
+  zoom: number,
+  minZoom: number,
+  maxZoom: number,
+): number {
+  return Math.min(maxZoom, Math.max(minZoom, zoom));
+}
+
 /** Set min/max zoom on the map and snap back if the camera is past the cap. */
 export function applyLiveMapZoomLimits(
   map: MaplibreMap,
@@ -76,8 +117,9 @@ export function applyLiveMapZoomLimits(
   const maxZoom = resolveLiveMapMaxZoom(map, layer, context);
   map.setMinZoom(LIVE_MAP_MIN_ZOOM);
   map.setMaxZoom(maxZoom);
-  if (map.getZoom() > maxZoom + LIVE_MAP_ZOOM_CAP_EPSILON) {
-    map.setZoom(maxZoom);
+  const clamped = clampLiveMapZoomValue(map.getZoom(), LIVE_MAP_MIN_ZOOM, maxZoom);
+  if (Math.abs(map.getZoom() - clamped) > LIVE_MAP_ZOOM_CAP_EPSILON) {
+    map.setZoom(clamped);
   }
   return maxZoom;
 }
@@ -89,8 +131,12 @@ export function enforceLiveMapZoomCap(
   context: LiveMapZoomContext = {},
 ): void {
   const maxZoom = resolveLiveMapMaxZoom(map, layer, context);
-  if (map.getZoom() > maxZoom + LIVE_MAP_ZOOM_CAP_EPSILON) {
+  const minZoom = LIVE_MAP_MIN_ZOOM;
+  const z = map.getZoom();
+  if (z > maxZoom + LIVE_MAP_ZOOM_CAP_EPSILON) {
     map.setZoom(maxZoom);
+  } else if (z < minZoom - LIVE_MAP_ZOOM_CAP_EPSILON) {
+    map.setZoom(minZoom);
   }
 }
 
@@ -101,5 +147,25 @@ export function clampLiveMapZoom(
   context: LiveMapZoomContext = {},
 ): number {
   const maxZoom = resolveLiveMapMaxZoom(map, layer, context);
-  return Math.min(maxZoom, Math.max(LIVE_MAP_MIN_ZOOM, zoom));
+  return clampLiveMapZoomValue(zoom, LIVE_MAP_MIN_ZOOM, maxZoom);
+}
+
+const LIVE_MAP_FALLBACK_BG = "#d4dde4";
+
+/** Prevent blank canvas when raster/vector tiles end before the view zoom. */
+export function ensureLiveMapFallbackBackground(map: MaplibreMap): void {
+  try {
+    if (map.getLayer("rovvy-map-background")) return;
+    const beforeId = map.getStyle()?.layers?.[0]?.id;
+    map.addLayer(
+      {
+        id: "rovvy-map-background",
+        type: "background",
+        paint: { "background-color": LIVE_MAP_FALLBACK_BG },
+      },
+      beforeId,
+    );
+  } catch {
+    // Style still loading — caller retries on idle/style.load
+  }
 }

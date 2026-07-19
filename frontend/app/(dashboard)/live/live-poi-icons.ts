@@ -53,6 +53,10 @@ const CATEGORY_ICON_MAP: Record<string, string> = {
   River: "🌊",
   Port: "⚓",
   Marina: "⚓",
+  "Ferry terminal": "⛴️",
+  Airport: "✈️",
+  Helipad: "🚁",
+  Cinema: "🎬",
   Stadium: "🏟️",
   "Fitness center": "💪",
   "Sports center": "⚽",
@@ -77,6 +81,9 @@ const LANDMARK_CATEGORIES = new Set([
   "Artwork",
   "Historic",
   "Landmark",
+  "Beach",
+  "Port",
+  "Airport",
 ]);
 
 const LANDMARK_TAG_HINTS = new Set([

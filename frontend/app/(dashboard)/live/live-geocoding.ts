@@ -491,6 +491,22 @@ export function normalizePlaceCategory(item: any): string | null {
     return val.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
   }
 
+  if (p.place) {
+    const val = String(p.place);
+    if (val === "city") return "City";
+    if (val === "town") return "Town";
+    if (val === "village") return "Village";
+    if (val === "hamlet") return "Hamlet";
+    if (val === "borough") return "Borough";
+    if (val === "county") return "County";
+    if (val === "state") return "State";
+    if (val === "province") return "Province";
+    if (val === "country") return "Country";
+    if (val === "suburb") return "Suburb";
+    if (val === "neighbourhood" || val === "neighborhood") return "Neighbourhood";
+    return val.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+  }
+
   // 5. healthcare
   if (p.healthcare) {
     const val = p.healthcare;

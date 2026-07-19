@@ -1,8 +1,12 @@
 "use client";
 
-import { Car, Info, X } from "lucide-react";
+import { AlertTriangle, Car, Info, X } from "lucide-react";
 import { LIVE_ROUTE_SUMMARY_BOTTOM } from "./live-layout";
-import { formatRouteDurationBracketed, type RoutePreviewStatus } from "./live-types";
+import { compactRouteConditionLabel } from "./live-place-display";
+import {
+  formatRouteDuration,
+  type RoutePreviewStatus,
+} from "./live-types";
 
 const TEAL = "#0F766E";
 
@@ -15,6 +19,7 @@ type Props = {
   travelMode?: string;
   routeLastMileNotice?: string | null;
   routeBorderNotice?: string | null;
+  routeLastMileMode?: "walk" | null;
   onOpenDetails?: () => void;
   onGo?: () => void;
   onClose?: () => void;
@@ -29,16 +34,20 @@ export default function LiveRouteSummaryBar({
   travelMode = "Drive",
   routeLastMileNotice = null,
   routeBorderNotice = null,
+  routeLastMileMode = null,
   onOpenDetails,
   onGo,
   onClose,
 }: Props) {
   const routeReady = routePreviewStatus === "ready" && durationSeconds != null;
   const routePending = identifying || routeLoading || routePreviewStatus === "loading";
-  const timeBracket = routeReady ? formatRouteDurationBracketed(durationSeconds) : "";
-  const routeCondition =
-    routeLastMileNotice ??
-    (routeBorderNotice ? "Border checkpoint marked on route" : null);
+  const durationLabel =
+    routeReady && durationSeconds != null ? formatRouteDuration(durationSeconds) : "";
+  const routeCondition = compactRouteConditionLabel({
+    lastMileNotice: routeLastMileNotice,
+    lastMileMode: routeLastMileMode,
+    borderNotice: routeBorderNotice,
+  });
 
   return (
     <div
@@ -49,9 +58,6 @@ export default function LiveRouteSummaryBar({
       <div className="min-w-0 flex-1 px-1">
         <p className="truncate text-sm font-semibold leading-snug text-stone-900">
           {destinationName}
-          {routeReady && timeBracket ? (
-            <span className="font-semibold text-[#0F766E]"> {timeBracket}</span>
-          ) : null}
         </p>
         {routePending ? (
           <p className="text-xs text-stone-500">
@@ -60,10 +66,19 @@ export default function LiveRouteSummaryBar({
         ) : routePreviewStatus === "failed" ? (
           <p className="text-xs text-amber-700">Route unavailable for {travelMode.toLowerCase()}</p>
         ) : routeReady ? (
-          <p className="truncate text-xs text-stone-500">
-            {travelMode} route
-            {routeCondition ? ` · ${routeCondition}` : ""}
-          </p>
+          <div className="space-y-0.5">
+            <p className="text-xs font-medium text-[#0F766E]">
+              {durationLabel} · {travelMode}
+            </p>
+            {routeCondition ? (
+              <p className="flex items-center gap-1 text-xs font-medium text-amber-800">
+                <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden />
+                {routeCondition}
+              </p>
+            ) : (
+              <p className="text-xs text-stone-500">{travelMode} route ready</p>
+            )}
+          </div>
         ) : null}
       </div>
 

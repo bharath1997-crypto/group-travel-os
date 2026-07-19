@@ -416,13 +416,20 @@ After every feature change, update this section in .cursorrules:
 | Live map pick Wikipedia enrichment (live API, city fallback) | Complete | 2026-07 |
 | Live map right controls (Rovvy Map Dock: zoom rocker / locate / tools) | Modified | 2026-07 |
 | Live search instant suggestions + faster autocomplete | Modified | 2026-07 |
-| Live category search (waterfalls etc.) + map POI pins | Modified | 2026-07 |
+| Live category search (beaches, ports, airports, cinemas + map POI pins) | Modified | 2026-07 |
 | Live search taxonomy DB (data/live_search_taxonomy.json) + Google Maps paste | Complete | 2026-07 |
 | Live Place Media Resolver (lazy placeKey lookup) | Complete | 2026-06 |
 | Live map last-mile foot/hike route (drive + dashed walk on map) | Modified | 2026-07 |
+| Live map zoom cap + limit button colors (red max / green min) | Modified | 2026-07 |
+| Live preview card Wayra AI suggestions (route tips + Ask Wayra) | Modified | 2026-07 |
 | Live Travel layer (highways, main routes & railways overlay toggle) | Modified | 2026-07 |
+| Live sea routes overlay (shipping lanes + ferries, static GeoJSON) | Modified | 2026-07 |
+| Live cruise routes overlay (world cruise itineraries, static GeoJSON) | Modified | 2026-07 |
+| Live foot routes overlay (world trekking trails via OSM vector, transport layer) | Modified | 2026-07 |
+| Live map globe projection (Google-style earth ball at max zoom out + GPS dot) | Modified | 2026-07 |
 | Live immersive chrome (frosted header, centered search, meet-up pins) | Complete | 2026-07 |
 | Live Go → Waze-style 3D navigation (pitch, route bearing, GPS follow) | Complete | 2026-07 |
+| Trip bookings (Duffel offer link, admin confirm → expense) | Complete | 2026-07 |
 | Buses page | Pending | — |
 
 ---
@@ -444,8 +451,15 @@ After every pytest run, update this section in .cursorrules:
 | tests/test_explore.py | — | — |
 | tests/test_place_media.py | 8 | 2026-06 |
 | tests/test_place_wikipedia.py | 6 | 2026-07 |
-| tests/test_live_search_taxonomy.py | 11 | 2026-07 |
+| tests/test_live_search_taxonomy.py | 12 | 2026-07 |
 | tests/test_live_routing.py | 7 | 2026-07 |
 | tests/test_border_crossing.py | 3 | 2026-07 |
+| tests/test_bookings.py | 7 | 2026-07 |
 | frontend live-gps (vitest) | 13 | 2026-07 |
 | frontend live-route-origin (vitest) | 12 | 2026-07 |
+| frontend live-map-zoom-limits (vitest) | 6 | 2026-07 |
+| frontend live-map-globe (vitest) | 3 | 2026-07 |
+| frontend live-search-suggestions (vitest) | 2 | 2026-07 |
+| frontend live-foot-routes (vitest) | 4 | 2026-07 |
+| frontend live-ai-suggestions (vitest) | 3 | 2026-07 |
+| frontend live-place-display (vitest) | 5 | 2026-07 |
