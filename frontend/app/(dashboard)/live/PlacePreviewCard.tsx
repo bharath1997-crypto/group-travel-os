@@ -470,9 +470,7 @@ export default function PlacePreviewCard({
               </div>
             ) : null}
 
-            {place.address ? (
-              <p className="text-xs leading-snug text-stone-600 line-clamp-2">{place.address}</p>
-            ) : null}
+
 
             {!isDroppedPinOrAddress && hoursLabel ? (
               <p className="text-xs text-stone-500">{hoursLabel}</p>
