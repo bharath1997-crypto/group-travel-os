@@ -453,13 +453,11 @@ export default function PlacePreviewCard({
         {/* Tab Contents */}
         {activeTab === "guide" && (
           <div className="space-y-3">
-            {aiSuggestions.length > 0 ? (
-              <LiveAiSuggestionsBlock
-                suggestions={aiSuggestions}
-                destinationName={place.name}
-                className="mt-1"
-              />
-            ) : null}
+            <LiveAiSuggestionsBlock
+              suggestions={aiSuggestions}
+              destinationName={place.name}
+              className="mt-1"
+            />
 
             {(routeLoading || routePreviewStatus === "loading") && routePreviewStatus !== "idle" ? (
               <div className="rounded-lg border border-teal-100 bg-teal-50/80 px-2.5 py-2">
