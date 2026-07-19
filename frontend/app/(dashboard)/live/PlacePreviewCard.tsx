@@ -479,41 +479,15 @@ export default function PlacePreviewCard({
             {!isDroppedPinOrAddress && hoursLabel ? (
               <p className="text-xs text-stone-500">{hoursLabel}</p>
             ) : null}
-
-            <div className="space-y-3 border-t border-stone-100 pt-3">
-              {!isDroppedPinOrAddress ? (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
-                    Navigation
-                  </p>
-                  <div className="mt-1.5">
-                    <QuickAction icon={MapPin} label="Add stop" onClick={onAddStop} />
-                  </div>
-                </div>
-              ) : null}
-
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
-                  Save &amp; meet
-                </p>
-                <div className="mt-1.5 flex flex-wrap gap-2">
-                  <QuickAction icon={Bookmark} label="Save" onClick={onSavePlace} />
-                  <QuickAction icon={Users} label="Meet" onClick={onCreateMeetPoint} />
-                </div>
-              </div>
-
-              {(onSearchNearMe || showAskRovi) ? (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
-                    Explore
-                  </p>
-                  <div className="mt-1.5 flex flex-wrap gap-2">
-                    {onSearchNearMe ? (
-                      <QuickAction icon={Search} label="Search nearby" onClick={onSearchNearMe} />
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
+            <div className="flex flex-wrap gap-2 items-center border-t border-stone-100 pt-3">
+              {!isDroppedPinOrAddress && (
+                <QuickAction icon={MapPin} label="Add stop" onClick={onAddStop} />
+              )}
+              <QuickAction icon={Bookmark} label="Save" onClick={onSavePlace} />
+              <QuickAction icon={Users} label="Meet" onClick={onCreateMeetPoint} />
+              {onSearchNearMe && (
+                <QuickAction icon={Search} label="Search nearby" onClick={onSearchNearMe} />
+              )}
             </div>
           </div>
         )}
