@@ -377,7 +377,7 @@ export default function PlacePreviewCard({
       {/* Mobile drag handle for bottom sheet */}
       <div className="w-12 h-1 bg-stone-300 rounded-full mx-auto my-2.5 shrink-0 lg:hidden" aria-hidden />
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-2 pb-2">
+      <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar px-3 pt-2 pb-2">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
             {previewContext ? (
