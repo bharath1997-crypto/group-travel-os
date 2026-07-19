@@ -1974,6 +1974,10 @@ export default function LivePage() {
     logRovvyLiveDebug("[Rovvy Debug] gpsState after update:", newState);
     setGpsState(newState);
 
+    if (newState.status === "stale" && gpsState.status !== "stale") {
+      showToast("GPS signal stale, re-acquiring…");
+    }
+
     if (newState.lat !== null && newState.lng !== null) {
       const loc = { lat: newState.lat, lng: newState.lng };
       setSelectedPlace((prev) => (prev ? updatePlaceDistance(prev, loc) : prev));
