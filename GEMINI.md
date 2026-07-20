@@ -263,6 +263,7 @@ After every feature change, update this section in GEMINI.md:
 | Buses page | Pending | — |
 | Rovi Travel Route Intelligence | Complete | 2026-07-04 (Backend deterministic resolver + Rovi AI explanation endpoint. Frontend RoviRouteIntelligencePanel with route option cards + segment breakdown. Wired into long_distance_preview stage in Live page.) |
 | Wayra AI Assistant Integration in Live Map | Complete | 2026-07-20 (Integrated Wayra sidecar toggle button into Live Map Dock, maintaining clean state synchronization across components using custom event-driven design pattern.) |
+| Platform-Specific Place Preview UI | Complete | 2026-07-20 (Designed four tailored variations of Place Preview Card for CarPlay, iOS, Android, and Web with native-inspired geometries, typography, and controls) |
 
 ---
 
