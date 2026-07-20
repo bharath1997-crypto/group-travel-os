@@ -262,6 +262,7 @@ After every feature change, update this section in GEMINI.md:
 | Live Search Autocomplete | Complete | 2026-07-02 (Implemented robust Google Maps-style autocomplete with local place registry and OSM Nominatim fallback, optimized distance ranking, category keyword detection, and debounced AbortController-managed fetching.) |
 | Buses page | Pending | — |
 | Rovi Travel Route Intelligence | Complete | 2026-07-04 (Backend deterministic resolver + Rovi AI explanation endpoint. Frontend RoviRouteIntelligencePanel with route option cards + segment breakdown. Wired into long_distance_preview stage in Live page.) |
+| Wayra AI Assistant Integration in Live Map | Complete | 2026-07-20 (Integrated Wayra sidecar toggle button into Live Map Dock, maintaining clean state synchronization across components using custom event-driven design pattern.) |
 
 ---
 

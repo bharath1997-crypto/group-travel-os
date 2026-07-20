@@ -10,6 +10,7 @@ import {
   VolumeX,
   Bell,
   BellOff,
+  Sparkles,
 } from "lucide-react";
 import type { LiveMapLayer } from "@/lib/map-providers";
 
@@ -25,6 +26,8 @@ type Props = {
   onToggleSound: () => void;
   notificationsEnabled: boolean;
   onToggleNotifications: () => void;
+  wayraOpen?: boolean;
+  onToggleWayra?: () => void;
 };
 
 export default function LiveMapDock({
@@ -39,6 +42,8 @@ export default function LiveMapDock({
   onToggleSound,
   notificationsEnabled,
   onToggleNotifications,
+  wayraOpen = false,
+  onToggleWayra,
 }: Props) {
   const isDark = activeLayer === "dark";
   const normalizedBearing = ((bearing % 360) + 360) % 360;
@@ -141,6 +146,17 @@ export default function LiveMapDock({
           ) : (
             <BellOff className="h-4.5 w-4.5 text-stone-400" />
           )}
+        </button>
+
+        {/* Box 6: Wayra AI Assistant Toggle */}
+        <button
+          type="button"
+          onClick={onToggleWayra}
+          className={btnClass(wayraOpen)}
+          title={wayraOpen ? "Close Wayra assistant" : "Open Wayra assistant"}
+          aria-label="Toggle Wayra AI Assistant"
+        >
+          <Sparkles className="h-4.5 w-4.5" />
         </button>
       </div>
     </div>

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 
 import WayraIcon from "@/components/ui/WayraIcon";
 import { apiFetchWithStatus } from "@/lib/api";
-import { OPEN_WAYRA_EVENT, type OpenWayraDetail } from "@/lib/open-wayra";
+import { OPEN_WAYRA_EVENT, TOGGLE_WAYRA_EVENT, type OpenWayraDetail } from "@/lib/open-wayra";
 import {
   classifyMode,
   detectBirdState,
@@ -253,10 +253,24 @@ export function AIAssistantSidecar({
       const p = ce.detail?.prompt?.trim();
       if (p) setInput(p);
     };
+    const onToggle = () => {
+      setIsOpen((prev) => !prev);
+    };
     window.addEventListener(OPEN_WAYRA_EVENT, onOpen as EventListener);
-    return () =>
+    window.addEventListener(TOGGLE_WAYRA_EVENT, onToggle);
+    return () => {
       window.removeEventListener(OPEN_WAYRA_EVENT, onOpen as EventListener);
+      window.removeEventListener(TOGGLE_WAYRA_EVENT, onToggle);
+    };
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("rovvy:wayra-state", { detail: { isOpen } })
+      );
+    }
+  }, [isOpen]);
 
   const showActionHint = useCallback((msg: string) => {
     setActionHint(msg);
