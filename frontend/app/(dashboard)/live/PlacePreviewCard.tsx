@@ -298,10 +298,10 @@ export default function PlacePreviewCard({
   if (isDrivingMode) {
     if (isMobile) {
       layoutClass =
-        "fixed inset-x-0 bottom-0 z-30 max-h-[min(45vh,16rem)] rounded-t-2xl border border-stone-200 bg-white shadow-2xl flex flex-col justify-between p-4 pb-6";
+        "fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border border-stone-200 bg-white shadow-2xl flex flex-col justify-between p-4 pb-6";
     } else {
       layoutClass =
-        `absolute bottom-4 ${LIVE_PANEL_RIGHT_INSET} z-30 ${LIVE_PANEL_MAX_WIDTH} max-h-[min(45vh,16rem)] rounded-xl border border-stone-200 bg-white shadow-2xl flex flex-col justify-between p-4`;
+        `absolute bottom-4 ${LIVE_PANEL_RIGHT_INSET} z-30 ${LIVE_PANEL_MAX_WIDTH} rounded-xl border border-stone-200 bg-white shadow-2xl flex flex-col justify-between p-4`;
     }
   } else {
     // Normal mode: mobile is full-width bottom sheet, desktop is absolute/fixed right panel
@@ -318,50 +318,95 @@ export default function PlacePreviewCard({
       >
         <div className="flex-1 flex flex-col justify-between gap-3">
           <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 pr-2">
-              <h3 className="text-lg font-black text-stone-900 leading-tight truncate">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base font-bold text-stone-900 leading-tight truncate">
                 {place.name}
               </h3>
-              <p className="text-sm font-semibold text-stone-500 truncate mt-0.5">
+              <p className="text-xs font-semibold text-stone-500 truncate mt-0.5">
                 {subheaderText}
               </p>
+              {routeReady ? (
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex items-center rounded-full bg-[#E6F7F4] px-2 py-0.5 text-[10px] font-semibold text-[#0F766E]">
+                    {routeDurationLabel}
+                  </span>
+                  {routeDistanceMeters != null ? (
+                    <span className="text-[11px] text-stone-500">
+                      {formatDistanceMiles(routeDistanceMeters)} · {travelMode}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-stone-500">{travelMode}</span>
+                  )}
+                </div>
+              ) : null}
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-800 transition-colors"
-              aria-label="Close preview"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
 
-          <div className="flex gap-3 mt-1 shrink-0">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 h-12 rounded-xl border border-stone-300 bg-white px-4 text-sm font-bold text-stone-700 hover:bg-stone-50 active:scale-95 transition-all flex items-center justify-center gap-2"
-            >
-              Cancel
-            </button>
-            {!isDroppedPinOrAddress && (
+            {/* Small Quick Action Boxes on the right */}
+            <div className="flex items-center gap-1 shrink-0">
+              {!isDroppedPinOrAddress && (
+                <button
+                  type="button"
+                  onClick={onAddStop}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 active:scale-90 transition-all"
+                  title="Add Stop"
+                >
+                  <MapPin className="h-4 w-4" />
+                </button>
+              )}
               <button
                 type="button"
-                onClick={onAddStop}
-                className="flex-1 h-12 rounded-xl border border-stone-300 bg-white px-4 text-sm font-bold text-stone-700 hover:bg-stone-50 active:scale-95 transition-all flex items-center justify-center gap-2"
+                onClick={onSavePlace}
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 active:scale-90 transition-all"
+                title="Save Place"
               >
-                <MapPin className="h-4 w-4 text-stone-500" />
-                Add Stop
+                <Bookmark className="h-4 w-4" />
               </button>
-            )}
+              <button
+                type="button"
+                onClick={onCreateMeetPoint}
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 active:scale-90 transition-all"
+                title="Create Meet Point"
+              >
+                <Users className="h-4 w-4" />
+              </button>
+              {onSearchNearMe && (
+                <button
+                  type="button"
+                  onClick={onSearchNearMe}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 active:scale-90 transition-all"
+                  title="Search Nearby"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-800 transition-colors ml-1"
+                aria-label="Close preview"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Bottom actions: Ask Wayra and Set Destination side by side */}
+          <div className="flex gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={onAskRovi}
+              className="flex-1 h-10 rounded-lg border border-[#0F766E]/30 bg-teal-50/50 px-3 text-xs font-bold text-[#0F766E] hover:bg-teal-50 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+            >
+              Ask Wayra
+            </button>
             <button
               type="button"
               onClick={onMakeDestination}
-              className="flex-[2] h-12 rounded-xl text-sm font-black text-white active:scale-95 transition-all flex items-center justify-center gap-2"
+              className="flex-1 h-10 rounded-lg text-xs font-bold text-white hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-1.5"
               style={{ backgroundColor: TEAL }}
             >
-              <Navigation className="h-4 w-4" />
-              {isDroppedPinOrAddress ? "Go" : "Start Route"}
+              <Navigation className="h-3.5 w-3.5" />
+              {isDroppedPinOrAddress ? "Use location" : "Set destination"}
             </button>
           </div>
         </div>
