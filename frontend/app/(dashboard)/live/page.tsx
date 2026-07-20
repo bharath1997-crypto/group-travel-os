@@ -2429,7 +2429,7 @@ export default function LivePage() {
 
   return (
     <div
-      className="live-page-shell fixed inset-x-0 bottom-0 z-[1] overflow-hidden select-none"
+      className="live-page-shell fixed inset-x-0 bottom-0 z-[1] overflow-hidden select-none transition-all duration-300 ease-in-out"
       style={{ top: "var(--rovvy-header-h, 56px)" }}
     >
       <LiveImmersiveChrome activeLayer={activeLayer} />
