@@ -130,6 +130,8 @@ export default function LiveMapRightControls({
           } ${
             gpsStatus === "active" || gpsStatus === "approximate"
               ? "ring-1 ring-[#007F73]/50 text-[#007F73]"
+              : gpsStatus === "stale"
+              ? "ring-2 ring-amber-500/70 text-amber-600 animate-pulse"
               : ""
           }`}
           onClick={onLocate}
@@ -138,12 +140,16 @@ export default function LiveMapRightControls({
               ? "Location permission denied"
               : gpsStatus === "requesting"
               ? "Finding location…"
+              : gpsStatus === "stale"
+              ? "GPS signal stale, re-acquiring…"
               : "Locate me"
           }
           aria-label="Locate me"
         >
-          {gpsStatus === "requesting" ? (
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#007F73] border-t-transparent" />
+          {gpsStatus === "requesting" || gpsStatus === "stale" ? (
+            <div className={`h-4 w-4 animate-spin rounded-full border-2 border-t-transparent ${
+              gpsStatus === "stale" ? "border-amber-500" : "border-[#007F73]"
+            }`} />
           ) : (
             <svg 
               viewBox="0 0 24 24" 

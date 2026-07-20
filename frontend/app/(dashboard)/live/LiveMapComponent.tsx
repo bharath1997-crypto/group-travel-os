@@ -138,7 +138,46 @@ const LIVE_MAP_CSS = `
     opacity: 0;
   }
 }
+@keyframes rovvy-star-twinkle {
+  0%, 100% {
+    opacity: 0.15;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+@keyframes rovvy-orbit-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 `;
+
+// Space background configurations
+const STARS = Array.from({ length: 80 }).map((_, i) => ({
+  id: i,
+  top: `${Math.random() * 100}%`,
+  left: `${Math.random() * 100}%`,
+  size: Math.random() * 2 + 1, // 1px to 3px
+  delay: `${Math.random() * 4}s`,
+  duration: `${Math.random() * 3 + 2}s`,
+}));
+
+const ORBITS = [
+  { radius: 150, duration: "25s", color: "#9ca3af", size: 6, name: "Mercury" },
+  { radius: 190, duration: "35s", color: "#fed7aa", size: 8, name: "Venus" },
+  { radius: 230, duration: "48s", color: "#f87171", size: 7, name: "Mars" },
+  { radius: 280, duration: "65s", color: "#fbbf24", size: 12, name: "Jupiter" },
+  { radius: 340, duration: "85s", color: "#fef08a", size: 10, name: "Saturn", hasRing: true },
+  { radius: 410, duration: "110s", color: "#67e8f9", size: 9, name: "Uranus" },
+  { radius: 480, duration: "140s", color: "#3b82f6", size: 8, name: "Neptune" },
+  { radius: 550, duration: "180s", color: "#0f766e", size: 7, name: "Rovi Core" },
+];
 
 let liveCssInjected = false;
 function injectLiveMapCursorStyle() {
@@ -270,6 +309,9 @@ function applyUserMarkerContent(
 
 function ensureMarkerOnMap(marker: maplibregl.Marker, map: maplibregl.Map): void {
   const el = marker.getElement();
+  if (el) {
+    el.style.display = "";
+  }
   if (!el.isConnected) {
     reattachHtmlMarker(marker, map);
   }
@@ -995,6 +1037,7 @@ export default function LiveMapComponent({
 }: Props) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapShellRef = useRef<HTMLDivElement>(null);
+  const spaceBackgroundRef = useRef<HTMLDivElement>(null);
   const [mapContainerReady, setMapContainerReady] = useState(false);
   const instanceRef = useRef<maplibregl.Map | null>(null);
   const [debugInfo, setDebugInfo] = useState<{
@@ -1026,6 +1069,7 @@ export default function LiveMapComponent({
     lng: number | null;
     timestamp: number | null;
   } | null>(null);
+  const lastSuccessTimestampRef = useRef<number>(Date.now());
   const liveGpsActiveRef = useRef(false);
   const hasCenteredOnUserRef = useRef(false);
   const bestAccuracyCenteredRef = useRef<number | null>(null);
@@ -1267,9 +1311,49 @@ export default function LiveMapComponent({
       maxPitch: LIVE_MAP_3D_PITCH,
       attributionControl: false,
       doubleClickZoom: false,
-    });
+      alpha: true,
+    } as any);
 
     instanceRef.current = map;
+
+    function logProductionGps(level: "info" | "warn" | "error", event: string, data?: any) {
+      const prefix = `[Rovvy GPS]`;
+      if (level === "error") {
+        console.error(prefix, event, data ?? "");
+      } else if (level === "warn") {
+        console.warn(prefix, event, data ?? "");
+      } else {
+        console.log(prefix, event, data ?? "");
+      }
+    }
+
+    // Proactive heartbeat timer: restarts GPS watch if no updates received for > 45s while active
+    const heartbeatTimer = window.setInterval(() => {
+      if (!liveGpsActiveRef.current || watchIdsRef.current.length === 0) return;
+      
+      const timeSinceLastUpdate = Date.now() - lastSuccessTimestampRef.current;
+      const STALL_THRESHOLD_MS = 45000; // 45 seconds
+      
+      if (timeSinceLastUpdate > STALL_THRESHOLD_MS) {
+        logProductionGps("warn", `GPS watch detected as stalled (no updates for ${Math.round(timeSinceLastUpdate / 1000)}s). Re-initializing watchers...`);
+        
+        // Notify of state update to stale
+        callbacksRef.current.onGpsStateChange?.({
+          status: "stale",
+          lat: userLocationRef.current?.lat || null,
+          lng: userLocationRef.current?.lng || null,
+          accuracyMeters: userLocationRef.current?.accuracy || null,
+          heading: null,
+          speed: null,
+          timestamp: userLocationRef.current?.timestamp || null,
+          source: "browser_geolocation",
+          errorMessage: "GPS connection stalled, re-acquiring...",
+        });
+        
+        // Force refresh watch stream, but do not force map camera jump
+        startLiveGps(false);
+      }
+    }, 15000);
 
     const unbindGlobeMode = bindLiveGlobeMode(map, () => activeLayerRef.current);
 
@@ -1415,6 +1499,15 @@ export default function LiveMapComponent({
       enforceZoomCap();
       updateUserMarkerGlobeScale(map, userMarkerRef.current);
       syncLiveGlobeBackground(map);
+
+      // Update space background opacity and visibility
+      const z = map.getZoom();
+      if (spaceBackgroundRef.current) {
+        const opacity = Math.max(0, Math.min(1, (3.2 - z) / 2.2));
+        spaceBackgroundRef.current.style.opacity = String(opacity);
+        spaceBackgroundRef.current.style.visibility = opacity > 0 ? "visible" : "hidden";
+      }
+
       callbacksRef.current.onZoomChange?.(
         clampLiveMapZoom(map.getZoom(), map, activeLayerRef.current, zoomContext()),
       );
@@ -1503,6 +1596,7 @@ export default function LiveMapComponent({
       timestamp: number | null,
       errorMsg?: string,
     ) {
+      lastSuccessTimestampRef.current = Date.now();
       logRovvyLiveDebug("[Rovvy Debug] applyUserLocation called", { lat, lng, centerMap, accuracyMeters, timestamp });
       if (isUnmountedRef.current) {
         logRovvyLiveDebug("[Rovvy Debug] applyUserLocation skipped because unmounted");
@@ -1674,7 +1768,7 @@ export default function LiveMapComponent({
 
     function handleGeolocationError(err: GeolocationPositionError, source: string) {
       const errMsg = geolocationErrorMessage(err);
-      logRovvyLiveDebug("[Rovvy Debug] geolocation failure", { code: err.code, message: errMsg, source });
+      logProductionGps("error", `geolocation failure in ${source}`, { code: err.code, message: errMsg });
       if (isUnmountedRef.current) return;
       const status = gpsStatusFromGeolocationError(err.code);
       logRovvyGps(`${source} error`, {
@@ -1708,7 +1802,7 @@ export default function LiveMapComponent({
       if (userLocationRef.current && userLocationRef.current.timestamp) {
         const ageMs = Date.now() - userLocationRef.current.timestamp;
         if (ageMs < 45000) {
-          logRovvyGps(`ignoring geolocation error/timeout in ${source} because we have a fresh coordinate (${Math.round(ageMs / 1000)}s old)`);
+          logProductionGps("info", `ignoring geolocation error/timeout in ${source} because we have a fresh coordinate (${Math.round(ageMs / 1000)}s old)`);
           return;
         }
       }
@@ -1757,10 +1851,10 @@ export default function LiveMapComponent({
       });
     }
 
-    function startLiveGps() {
+        function startLiveGps(forceCenter = false) {
       const blocked = geolocationUnavailableMessage();
       if (blocked) {
-        logRovvyGps("unavailable", { reason: blocked });
+        logProductionGps("warn", "unavailable on startLiveGps", { reason: blocked });
         callbacksRef.current.onGpsStateChange?.({
           status: "error",
           lat: null,
@@ -1787,25 +1881,29 @@ export default function LiveMapComponent({
         timestamp: userLocationRef.current?.timestamp || null,
         source: null,
       });
-      hasCenteredOnUserRef.current = false;
+      hasCenteredOnUserRef.current = !forceCenter;
       bestAccuracyCenteredRef.current = null;
 
-      logRovvyGps("requesting location");
-      logRovvyLiveDebug("[Rovvy Debug] geolocation requested via startLiveGps");
+      logProductionGps("info", `requesting location. forceCenter: ${forceCenter}`);
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude, accuracy, speed, heading } = pos.coords;
-          applyUserLocation(latitude, longitude, true, speed, heading, accuracy, pos.timestamp);
+          logProductionGps("info", "getCurrentPosition success", { latitude, longitude, accuracy });
+          applyUserLocation(latitude, longitude, forceCenter, speed, heading, accuracy, pos.timestamp);
         },
         (err) => {
-          logRovvyLiveWarn("[Rovvy GPS] startLiveGps high accuracy getCurrentPosition failed, falling back to low accuracy", err);
+          logProductionGps("warn", "getCurrentPosition high accuracy failed, falling back to low accuracy", { code: err.code, message: err.message });
           navigator.geolocation.getCurrentPosition(
             (pos) => {
               const { latitude, longitude, accuracy, speed, heading } = pos.coords;
-              applyUserLocation(latitude, longitude, true, speed, heading, accuracy, pos.timestamp);
+              logProductionGps("info", "getCurrentPosition fallback success", { latitude, longitude, accuracy });
+              applyUserLocation(latitude, longitude, forceCenter, speed, heading, accuracy, pos.timestamp);
             },
-            (err2) => handleGeolocationError(err2, "getCurrentPosition"),
+            (err2) => {
+              logProductionGps("error", "getCurrentPosition fallback failed", { code: err2.code, message: err2.message });
+              handleGeolocationError(err2, "getCurrentPosition");
+            },
             { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
           );
         },
@@ -1818,14 +1916,17 @@ export default function LiveMapComponent({
           applyUserLocation(latitude, longitude, false, speed, heading, accuracy, pos.timestamp);
         },
         (err) => {
-          logRovvyLiveWarn("[Rovvy GPS] startLiveGps watchPosition high accuracy failed, falling back to low accuracy", err);
+          logProductionGps("warn", "watchPosition high accuracy failed, falling back to low accuracy", { code: err.code, message: err.message });
           navigator.geolocation.clearWatch(wId);
           const lowWId = navigator.geolocation.watchPosition(
             (pos) => {
               const { latitude, longitude, accuracy, speed, heading } = pos.coords;
               applyUserLocation(latitude, longitude, false, speed, heading, accuracy, pos.timestamp);
             },
-            (err2) => handleGeolocationError(err2, "watchPosition"),
+            (err2) => {
+              logProductionGps("error", "watchPosition fallback failed", { code: err2.code, message: err2.message });
+              handleGeolocationError(err2, "watchPosition");
+            },
             { enableHighAccuracy: false, timeout: 20000, maximumAge: 10000 }
           );
           const idx = watchIdsRef.current.indexOf(wId);
@@ -1951,10 +2052,10 @@ export default function LiveMapComponent({
         restoreOverlaysRef.current(map);
       },
       locateUser: (forceFresh?: boolean) => {
-        logRovvyLiveDebug("[Rovvy Debug] locateUser called", { forceFresh });
+        logProductionGps("info", `locateUser called (forceFresh: ${forceFresh})`);
         const blocked = geolocationUnavailableMessage();
         if (blocked) {
-          logRovvyGps("unavailable", { reason: blocked });
+          logProductionGps("warn", "unavailable on locateUser", { reason: blocked });
           callbacksRef.current.onGpsStateChange?.({
             status: "error",
             lat: null,
@@ -1969,54 +2070,36 @@ export default function LiveMapComponent({
           return;
         }
 
-        if (forceFresh) {
-          logRovvyGps("forcing fresh location request");
-          logRovvyLiveDebug("[Rovvy Debug] geolocation requested via locateUser (forceFresh)");
-          const ageMs = userLocationRef.current?.timestamp ? Date.now() - userLocationRef.current.timestamp : Infinity;
-          const isFresh = userLocationRef.current && ageMs < 15000;
-          if (!isFresh) {
-            callbacksRef.current.onGpsStateChange?.({
-              status: "requesting",
-              lat: userLocationRef.current?.lat || null,
-              lng: userLocationRef.current?.lng || null,
-              accuracyMeters: userLocationRef.current?.accuracy || null,
-              heading: null,
-              speed: null,
-              timestamp: userLocationRef.current?.timestamp || null,
-              source: null,
-            });
-          }
+        // Check if the current status is zombie/stale/error
+        const isZombieState = 
+          lastStateReportedRef.current?.status === "stale" ||
+          lastStateReportedRef.current?.status === "error" ||
+          lastStateReportedRef.current?.status === "timeout" ||
+          lastStateReportedRef.current?.status === "outdated";
+
+        if (forceFresh || isZombieState) {
+          logProductionGps("info", `resetting watchers on locateUser due to forceFresh or zombie/stale state`, {
+            forceFresh,
+            status: lastStateReportedRef.current?.status
+          });
+          
+          stopLiveGps();
+          
+          callbacksRef.current.onGpsStateChange?.({
+            status: "requesting",
+            lat: userLocationRef.current?.lat || null,
+            lng: userLocationRef.current?.lng || null,
+            accuracyMeters: userLocationRef.current?.accuracy || null,
+            heading: null,
+            speed: null,
+            timestamp: userLocationRef.current?.timestamp || null,
+            source: null,
+          });
+
           navigationFollowUserRef.current = true;
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              const { latitude, longitude, accuracy, speed, heading } = pos.coords;
-              applyUserLocation(latitude, longitude, true, speed, heading, accuracy, pos.timestamp);
-              userMarkerRef.current?.togglePopup();
-              if (!liveGpsActiveRef.current) {
-                startLiveGps();
-              }
-            },
-            (err) => {
-              logRovvyLiveWarn("[Rovvy GPS] locateUser high accuracy getCurrentPosition failed, falling back to low accuracy", err);
-              navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                  const { latitude, longitude, accuracy, speed, heading } = pos.coords;
-                  applyUserLocation(latitude, longitude, true, speed, heading, accuracy, pos.timestamp);
-                  userMarkerRef.current?.togglePopup();
-                  if (!liveGpsActiveRef.current) {
-                    startLiveGps();
-                  }
-                },
-                (err2) => handleGeolocationError(err2, "locateUser"),
-                { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
-              );
-            },
-            {
-              enableHighAccuracy: true,
-              timeout: 15000,
-              maximumAge: 0,
-            },
-          );
+          
+          // Start with forceCenter = true since user clicked to locate themselves
+          startLiveGps(true);
           return;
         }
 
@@ -2024,6 +2107,7 @@ export default function LiveMapComponent({
           navigationFollowUserRef.current = true;
           const loc = userLocationRef.current;
           if (loc) {
+            logProductionGps("info", "flying to active user location", { loc });
             markProgrammaticCameraMove();
             map.flyTo({
               center: [loc.lng, loc.lat],
@@ -2038,16 +2122,17 @@ export default function LiveMapComponent({
             updateUserMarkerGlobeScale(map, userMarkerRef.current);
             userMarkerRef.current?.togglePopup();
           } else {
-            startLiveGps();
+            startLiveGps(true);
           }
           return;
         }
-        startLiveGps();
+        startLiveGps(true);
       },
     };
 
     return () => {
       isUnmountedRef.current = true;
+      window.clearInterval(heartbeatTimer);
       unbindGlobeMode();
       window.removeEventListener("resize", onWindowResize);
       resizeObserver?.disconnect();
@@ -2502,9 +2587,117 @@ export default function LiveMapComponent({
       className="absolute inset-0 rovvy-live-map-container"
       style={{ width: "100%", height: "100%" }}
     >
+      {/* Space background behind the transparent canvas */}
+      <div
+        ref={spaceBackgroundRef}
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "radial-gradient(circle at 50% 50%, #061325 0%, #020617 100%)",
+          overflow: "hidden",
+          pointerEvents: "none",
+          zIndex: 0,
+          opacity: 0,
+          visibility: "hidden",
+          transition: "opacity 0.2s ease, visibility 0.2s ease",
+        }}
+      >
+        {/* Sun in the upper right background */}
+        <div
+          style={{
+            position: "absolute",
+            top: "12%",
+            right: "12%",
+            width: "90px",
+            height: "90px",
+            borderRadius: "50%",
+            background: "radial-gradient(circle, #ffffff 20%, #fef08a 50%, #f59e0b 80%, transparent 100%)",
+            boxShadow: "0 0 50px 15px rgba(245, 158, 11, 0.45), 0 0 100px 35px rgba(245, 158, 11, 0.25)",
+          }}
+        />
+
+        {/* Twinkling stars */}
+        {STARS.map((star) => (
+          <div
+            key={star.id}
+            style={{
+              position: "absolute",
+              top: star.top,
+              left: star.left,
+              width: `${star.size}px`,
+              height: `${star.size}px`,
+              borderRadius: "50%",
+              backgroundColor: "#ffffff",
+              opacity: 0.8,
+              animation: `rovvy-star-twinkle ${star.duration} infinite ease-in-out`,
+              animationDelay: star.delay,
+            }}
+          />
+        ))}
+
+        {/* Orbital paths & planets centered */}
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {ORBITS.map((orbit, index) => (
+            <div
+              key={index}
+              style={{
+                position: "absolute",
+                width: `${orbit.radius * 2}px`,
+                height: `${orbit.radius * 2}px`,
+                borderRadius: "50%",
+                border: "1px dashed rgba(26, 115, 232, 0.12)",
+                animation: `rovvy-orbit-rotate ${orbit.duration} infinite linear`,
+              }}
+            >
+              {/* Planet sphere */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: `${orbit.size}px`,
+                  height: `${orbit.size}px`,
+                  borderRadius: "50%",
+                  background: orbit.color,
+                  boxShadow: `0 0 8px ${orbit.color}`,
+                }}
+              >
+                {orbit.hasRing && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      transform: "translate(-50%, -50%) rotate(15deg)",
+                      width: `${orbit.size * 1.8}px`,
+                      height: `${orbit.size * 0.4}px`,
+                      borderRadius: "50%",
+                      border: `1.5px solid rgba(254, 240, 138, 0.6)`,
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div
         ref={mapContainer}
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 1 }}
       />
       {crossBorderAlert ? (
         <div className="pointer-events-none absolute left-1/2 top-3 z-[90] w-[min(92%,22rem)] -translate-x-1/2 rounded-xl border border-amber-300/80 bg-amber-50/95 px-3 py-2 text-center text-xs font-semibold leading-snug text-amber-900 shadow-[0_0_18px_rgba(245,158,11,0.35)] backdrop-blur-sm">

@@ -729,7 +729,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           {/* Logo — image taller than the bar for a zoomed-in wordmark */}
           <Link
             href="/explore"
-            className="flex shrink-0 items-center overflow-visible focus-visible:outline-none"
+            className="flex h-full shrink-0 items-center overflow-hidden focus-visible:outline-none"
           >
             <RovvyLogo
               variant={liveDarkHeader ? "white" : "primary"}
@@ -745,7 +745,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
 
           {/* Search — centered in remaining space on desktop */}
           <div className="hidden min-w-0 flex-1 items-center justify-center px-3 md:flex lg:px-6">
-            {pathname !== "/live" && !pathname.startsWith("/live/") && <HeaderSearchBar />}
+            <HeaderSearchBar />
           </div>
 
           {/* Nav tabs + profile menu — right aligned */}
@@ -940,7 +940,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         </nav>
       </div>
 
-      {user && !hideAssistantSidecar ? (
+      {!hideAssistantSidecar ? (
         <AIAssistantSidecar
           page={
             pathname
