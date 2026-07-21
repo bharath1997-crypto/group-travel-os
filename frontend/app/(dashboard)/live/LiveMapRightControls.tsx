@@ -112,7 +112,7 @@ export default function LiveMapRightControls({
 
         <button
           type="button"
-          className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg shadow-sm border backdrop-blur-md transition-all duration-200 cursor-pointer ${
+          className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-md border backdrop-blur-md transition-all duration-200 cursor-pointer ${
             isDark
               ? "bg-slate-900/90 text-white border-white/10 hover:bg-slate-800/90"
               : "bg-white/95 text-stone-700 border-stone-200/60 hover:bg-white"
@@ -136,14 +136,14 @@ export default function LiveMapRightControls({
           aria-label="Locate me"
         >
           {gpsStatus === "requesting" || gpsStatus === "stale" ? (
-            <div className={`h-4 w-4 animate-spin rounded-full border-2 border-t-transparent ${
+            <div className={`h-4.5 w-4.5 animate-spin rounded-full border-2 border-t-transparent ${
               gpsStatus === "stale" ? "border-amber-500" : "border-[#007F73]"
             }`} />
           ) : (
             <svg 
               viewBox="0 0 24 24" 
               fill="none" 
-              className="h-4 w-4" 
+              className="h-4.5 w-4.5" 
               stroke="currentColor" 
               strokeWidth="2.5" 
               strokeLinecap="round" 
