@@ -257,12 +257,12 @@ After every feature change, update this section in GEMINI.md:
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
 | Explore page (destinations + events) | Complete | 2026-06-30 (Aligned nav bar to match Dashboard Layout header) |
-| Live Trip Mode (MapLibre Navigation) | Complete | 2026-07-19 (Unified navigation header styling; refined controls layout. Implemented cosmic background globe zoom. Stabilized Live Map GPS persistence with heartbeat monitor watchdog and clean re-subscription.) |
+| Live Trip Mode (MapLibre Navigation) | Complete | 2026-07-21 (Unified navigation header styling; refined controls layout. Implemented cosmic background globe zoom. Stabilized Live Map GPS persistence with heartbeat watchdog and clean re-subscription. Added user-adjustable dynamic zoom persistence during active navigation and a wider initial navigation zoom of 15.5.) |
 | Place Preview Wikipedia Enrichment | Complete | 2026-07-02 (Added backend integration via /api/v1/places/wiki-summary and frontend UI for eligible place types) |
 | Live Search Autocomplete | Complete | 2026-07-02 (Implemented robust Google Maps-style autocomplete with local place registry and OSM Nominatim fallback, optimized distance ranking, category keyword detection, and debounced AbortController-managed fetching.) |
 | Buses page | Pending | — |
 | Rovi Travel Route Intelligence | Complete | 2026-07-04 (Backend deterministic resolver + Rovi AI explanation endpoint. Frontend RoviRouteIntelligencePanel with route option cards + segment breakdown. Wired into long_distance_preview stage in Live page.) |
-| Wayra AI Assistant Integration in Live Map | Complete | 2026-07-20 (Integrated Wayra sidecar toggle button into Live Map Dock, maintaining clean state synchronization across components using custom event-driven design pattern.) |
+| Wayra AI Assistant Integration in Live Map | Complete | 2026-07-20 (Integrated Wayra sidecar toggle button into Live Map Dock, maintaining clean state synchronization. Refined assistant sidecar layout with compact typography, reduced paddings, larger expanded views, and smooth slide-off-screen animation.) |
 | Platform-Specific Place Preview UI | Complete | 2026-07-20 (Designed four tailored variations of Place Preview Card for CarPlay, iOS, Android, and Web with native-inspired geometries, typography, and controls) |
 | Live Map Interface Polish (Google Maps style compact controls and interactive header hiding) | Complete | 2026-07-20 (Resized zoom, compass, locate, and dock buttons to match compact Google Maps pattern. Added interactive sliding header bar active only during activity, hover, or typing.) |
 

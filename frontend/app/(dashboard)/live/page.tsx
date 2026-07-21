@@ -3246,9 +3246,13 @@ export default function LivePage() {
             isFullscreen={isFullscreen}
             onToggleFullscreen={() => {
               if (!document.fullscreenElement) {
-                void document.documentElement.requestFullscreen();
+                document.documentElement.requestFullscreen().catch((err) => {
+                  console.error("Failed to enter fullscreen:", err);
+                });
               } else {
-                void document.exitFullscreen();
+                document.exitFullscreen().catch((err) => {
+                  console.error("Failed to exit fullscreen:", err);
+                });
               }
             }}
             soundEnabled={soundEnabled}
@@ -3268,9 +3272,13 @@ export default function LivePage() {
             isFullscreen={isFullscreen}
             onToggleFullscreen={() => {
               if (!document.fullscreenElement) {
-                void document.documentElement.requestFullscreen();
+                document.documentElement.requestFullscreen().catch((err) => {
+                  console.error("Failed to enter fullscreen:", err);
+                });
               } else {
-                void document.exitFullscreen();
+                document.exitFullscreen().catch((err) => {
+                  console.error("Failed to exit fullscreen:", err);
+                });
               }
             }}
             soundEnabled={soundEnabled}
