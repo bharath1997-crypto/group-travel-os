@@ -5,7 +5,8 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 
 import WayraIcon from "@/components/ui/WayraIcon";
 import { apiFetchWithStatus } from "@/lib/api";
-import { OPEN_WAYRA_EVENT, type OpenWayraDetail } from "@/lib/open-wayra";
+import { OPEN_WAYRA_EVENT, TOGGLE_WAYRA_EVENT, type OpenWayraDetail } from "@/lib/open-wayra";
+import { Maximize2, Minimize2, Minus, Square } from "lucide-react";
 import {
   classifyMode,
   detectBirdState,
@@ -102,6 +103,20 @@ export function AIAssistantSidecar({
   const [actionHint, setActionHint] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const [size, setSize] = useState<"normal" | "expanded" | "fullscreen">("normal");
+
+  const sizeClasses = useMemo(() => {
+    switch (size) {
+      case "expanded":
+        return "bottom-[96px] right-6 h-[min(720px,90vh)] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-[560px] sm:max-w-[560px]";
+      case "fullscreen":
+        return "inset-4 sm:inset-6 h-[calc(100vh-2rem)] sm:h-[calc(100vh-3rem)] w-[calc(100vw-2rem)] sm:w-[calc(100vw-3rem)] max-w-full";
+      case "normal":
+      default:
+        return "bottom-[96px] right-6 h-[min(520px,85vh)] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-[380px] sm:max-w-[380px]";
+    }
+  }, [size]);
 
   // DRAGGABLE POSITION FOR THE FLOATING LOGO (remembered in localStorage)
   const [position, setPosition] = useState<{ x: number; y: number }>(() => {
@@ -253,10 +268,24 @@ export function AIAssistantSidecar({
       const p = ce.detail?.prompt?.trim();
       if (p) setInput(p);
     };
+    const onToggle = () => {
+      setIsOpen((prev) => !prev);
+    };
     window.addEventListener(OPEN_WAYRA_EVENT, onOpen as EventListener);
-    return () =>
+    window.addEventListener(TOGGLE_WAYRA_EVENT, onToggle);
+    return () => {
       window.removeEventListener(OPEN_WAYRA_EVENT, onOpen as EventListener);
+      window.removeEventListener(TOGGLE_WAYRA_EVENT, onToggle);
+    };
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("rovvy:wayra-state", { detail: { isOpen } })
+      );
+    }
+  }, [isOpen]);
 
   const showActionHint = useCallback((msg: string) => {
     setActionHint(msg);
@@ -487,7 +516,7 @@ export function AIAssistantSidecar({
       {isOpen ? (
         <div
           id={panelId}
-          className="pointer-events-auto fixed bottom-[96px] right-6 z-[2999] flex h-[min(520px,85vh)] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-[#E9ECEF] bg-[#F8F9FA] shadow-2xl sm:w-[380px] sm:max-w-[380px]"
+          className={`pointer-events-auto fixed z-[2999] flex flex-col overflow-hidden rounded-2xl border border-[#E9ECEF] bg-[#F8F9FA] shadow-2xl transition-all duration-300 ease-in-out ${sizeClasses}`}
           role="dialog"
           aria-modal="true"
           aria-labelledby={`${panelId}-title`}
@@ -518,16 +547,60 @@ export function AIAssistantSidecar({
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="shrink-0 rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
-              aria-label="Close Wayra"
-            >
-              <span className="text-lg leading-none" aria-hidden>
-                ×
-              </span>
-            </button>
+            <div className="flex items-center gap-1 shrink-0 ml-auto">
+              {/* Minimize/Off-screen Button */}
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none"
+                title="Minimize assistant (off-screen)"
+                aria-label="Minimize Wayra"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+
+              {/* Expand / Restore Button */}
+              <button
+                type="button"
+                onClick={() => setSize(size === "expanded" ? "normal" : "expanded")}
+                className="hidden sm:inline-flex rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none"
+                title={size === "expanded" ? "Restore normal width" : "Expand width"}
+                aria-label={size === "expanded" ? "Restore normal width" : "Expand width"}
+              >
+                {size === "expanded" ? (
+                  <Minimize2 className="h-3.5 w-3.5" />
+                ) : (
+                  <Maximize2 className="h-3.5 w-3.5" />
+                )}
+              </button>
+
+              {/* Fullscreen Button */}
+              <button
+                type="button"
+                onClick={() => setSize(size === "fullscreen" ? "normal" : "fullscreen")}
+                className="rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none"
+                title={size === "fullscreen" ? "Exit fullscreen" : "Make fullscreen"}
+                aria-label={size === "fullscreen" ? "Exit fullscreen" : "Make fullscreen"}
+              >
+                {size === "fullscreen" ? (
+                  <Minimize2 className="h-3.5 w-3.5" />
+                ) : (
+                  <Square className="h-3 w-3" />
+                )}
+              </button>
+
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="shrink-0 rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
+                aria-label="Close Wayra"
+              >
+                <span className="text-lg leading-none" aria-hidden>
+                  ×
+                </span>
+              </button>
+            </div>
           </div>
 
           <div className="shrink-0 space-y-2 border-b border-[#E9ECEF] bg-white px-3 py-2">
@@ -554,7 +627,7 @@ export function AIAssistantSidecar({
             role="log"
           >
             {messages.length === 0 ? (
-              <p className="rounded-xl border border-[#E9ECEF] bg-white p-3 text-sm leading-relaxed text-[#2C3E50]">
+              <p className="rounded-xl border border-[#E9ECEF] bg-white p-3 text-[13px] leading-relaxed text-[#2C3E50]">
                 Hi — I&apos;m <strong>Wayra</strong>. Ask how{" "}
                 <strong>{pageLabel}</strong> works, or get destination ideas. App
                 how-tos work offline; travel tips need the assistant when it&apos;s up.
@@ -576,13 +649,13 @@ export function AIAssistantSidecar({
                 <div key={m.id} className="flex w-full">
                   {m.role === "user" ? (
                     <div className="ml-auto max-w-[90%]">
-                      <div className="rounded-2xl rounded-br-md bg-[#E94560]/12 px-3 py-2 text-sm text-[#2C3E50]">
+                      <div className="rounded-2xl rounded-br-md bg-[#E94560]/12 px-3.5 py-2 text-[13px] leading-relaxed text-[#2C3E50]">
                         {m.text}
                       </div>
                     </div>
                   ) : (
                     <div className="mr-auto max-w-[90%]">
-                      <div className="rounded-2xl rounded-bl-md border border-[#E9ECEF] bg-white px-3 py-2 text-sm whitespace-pre-wrap text-[#2C3E50]">
+                      <div className="rounded-2xl rounded-bl-md border border-[#E9ECEF] bg-white px-3.5 py-2 text-[13px] leading-relaxed whitespace-pre-wrap text-[#2C3E50]">
                         {m.text}
                       </div>
                       {m.suggestedActions && m.suggestedActions.length > 0 ? (

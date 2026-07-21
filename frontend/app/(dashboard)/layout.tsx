@@ -498,6 +498,81 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     darkMap: false,
   });
 
+  // Toggle top header bar on activity/typing/hover
+  const [headerVisible, setHeaderVisible] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isLivePage) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (e.clientY < 70) {
+        setHeaderVisible(true);
+      } else if (!isSearchFocused) {
+        const activeEl = document.activeElement;
+        const isTyping = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA");
+        if (!isTyping) {
+          setHeaderVisible(false);
+        }
+      }
+    };
+
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) {
+        setIsSearchFocused(true);
+        setHeaderVisible(true);
+      }
+    };
+
+    const handleFocusOut = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) {
+        setIsSearchFocused(false);
+        setTimeout(() => {
+          const activeEl = document.activeElement;
+          const stillTyping = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA");
+          if (!stillTyping) {
+            setHeaderVisible(false);
+          }
+        }, 150);
+      }
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (touch && touch.clientY < 50) {
+        setHeaderVisible(true);
+      }
+    };
+
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement;
+      const headerEl = document.querySelector(".dashboard-header");
+      if (headerEl && !headerEl.contains(target) && !isSearchFocused) {
+        const activeEl = document.activeElement;
+        const isTyping = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA");
+        if (!isTyping) {
+          setHeaderVisible(false);
+        }
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("focusout", handleFocusOut);
+    window.addEventListener("touchstart", handleTouchStart);
+    window.addEventListener("mousedown", handleOutsideClick);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("focusin", handleFocusIn);
+      document.removeEventListener("focusout", handleFocusOut);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [isLivePage, isSearchFocused]);
+
   useEffect(() => {
     if (!isLivePage) {
       document.documentElement.style.removeProperty("--rovvy-header-h");
@@ -505,7 +580,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
       document.body.classList.remove("live-mode");
       return;
     }
-    document.documentElement.style.setProperty("--rovvy-header-h", `${liveHeaderPx}px`);
+    const currentH = headerVisible ? liveHeaderPx : 0;
+    document.documentElement.style.setProperty("--rovvy-header-h", `${currentH}px`);
     document.documentElement.classList.add("live-mode");
     document.body.classList.add("live-mode");
     return () => {
@@ -513,7 +589,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
       document.documentElement.classList.remove("live-mode");
       document.body.classList.remove("live-mode");
     };
-  }, [isLivePage, liveHeaderPx]);
+  }, [isLivePage, liveHeaderPx, headerVisible]);
 
   useEffect(() => {
     if (!isLivePage) {
@@ -717,7 +793,11 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           FIXED TOP HEADER — never hides on scroll
       ═══════════════════════════════════════════════════ */}
       <header
-        className={`dashboard-header fixed top-0 left-0 right-0 z-40 overflow-visible select-none transition-colors duration-300 ${
+        className={`dashboard-header fixed top-0 left-0 right-0 z-40 overflow-visible select-none transition-all duration-300 ${
+          isLivePage && !headerVisible
+            ? "-translate-y-full opacity-0 pointer-events-none"
+            : "translate-y-0 opacity-100"
+        } ${
           liveDarkHeader
             ? "border-b border-white/10 bg-slate-950/55 shadow-none backdrop-blur-xl"
             : liveImmersiveHeader
@@ -851,7 +931,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           MAIN CONTENT — padded to clear the fixed header
       ═══════════════════════════════════════════════════ */}
       <div
-        className={`dashboard-content-shell main-content flex min-h-0 w-full max-w-[100vw] flex-col md:pb-0 ${
+        className={`dashboard-content-shell main-content flex min-h-0 w-full max-w-[100vw] flex-col transition-all duration-300 ease-in-out md:pb-0 ${
           isLivePage
             ? "flex-1 overflow-hidden pb-0"
             : `h-[100dvh] ${
@@ -860,7 +940,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   : "overflow-y-auto pb-[calc(56px+env(safe-area-inset-bottom,0px))]"
               }`
         }`}
-        style={{ paddingTop: `${headerPx}px` }}
+        style={{ paddingTop: isLivePage && !headerVisible ? "0px" : `${headerPx}px` }}
       >
         <main
           className={

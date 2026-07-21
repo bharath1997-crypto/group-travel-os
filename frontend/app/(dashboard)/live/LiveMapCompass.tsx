@@ -50,13 +50,13 @@ export default function LiveMapCompass({ bearing, onResetNorth, activeLayer, emb
       onClick={() => {
         if (offNorth) onResetNorth();
       }}
-      className={`rounded-lg p-1.5 transition-all duration-200 ${liveMapRightShell(isDark)} ${
+      className={`h-8 w-8 flex items-center justify-center rounded-lg transition-all duration-200 ${liveMapRightShell(isDark)} ${
         offNorth ? "cursor-pointer" : "cursor-default"
       }`}
       title={offNorth ? "Reset map to north" : "Map facing north"}
       aria-label={offNorth ? "Reset map to north" : "Compass — facing north"}
     >
-      <NorthArrow bearing={bearing} size={22} isDark={isDark} />
+      <NorthArrow bearing={bearing} size={16} isDark={isDark} />
     </button>
   );
 

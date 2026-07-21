@@ -287,6 +287,7 @@ function formatStreetAddress(
 }
 
 import { apiFetch } from "@/lib/api";
+import { emitToggleWayra } from "@/lib/open-wayra";
 
 type BackendNearbyPlace = {
   id: string;
@@ -617,6 +618,23 @@ export default function LivePage() {
   const [roviExplanationError, setRoviExplanationError] = useState<string | null>(null);
   const roviExplanationCacheRef = useRef<Map<string, RoviPlaceExplanation>>(new Map());
   const userRegionLoadedRef = useRef(false);
+
+  const [wayraOpen, setWayraOpen] = useState(false);
+
+  useEffect(() => {
+    const handleWayraState = (e: Event) => {
+      const ce = e as CustomEvent<{ isOpen: boolean }>;
+      setWayraOpen(ce.detail.isOpen);
+    };
+    window.addEventListener("rovvy:wayra-state", handleWayraState as EventListener);
+    return () => {
+      window.removeEventListener("rovvy:wayra-state", handleWayraState as EventListener);
+    };
+  }, []);
+
+  const handleToggleWayra = useCallback(() => {
+    emitToggleWayra();
+  }, []);
 
   // ─── Route Intelligence (long-distance / global destinations) ─────────────
   const [routeIntelligenceLoading, setRouteIntelligenceLoading] = useState(false);
@@ -2411,7 +2429,7 @@ export default function LivePage() {
 
   return (
     <div
-      className="live-page-shell fixed inset-x-0 bottom-0 z-[1] overflow-hidden select-none"
+      className="live-page-shell fixed inset-x-0 bottom-0 z-[1] overflow-hidden select-none transition-all duration-300 ease-in-out"
       style={{ top: "var(--rovvy-header-h, 56px)" }}
     >
       <LiveImmersiveChrome activeLayer={activeLayer} />
@@ -3259,6 +3277,8 @@ export default function LivePage() {
             onToggleSound={() => setSoundEnabled((prev) => !prev)}
             notificationsEnabled={notificationsEnabled}
             onToggleNotifications={() => setNotificationsEnabled((prev) => !prev)}
+            wayraOpen={wayraOpen}
+            onToggleWayra={handleToggleWayra}
           />
         </div>
       </div>

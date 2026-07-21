@@ -283,11 +283,7 @@ body.live-mode .dashboard-sidebar {
   display: none !important;
 }
 
-body.live-mode main,
-body.live-mode [class*="ml-"],
-body.live-mode [class*="pl-"],
-body.live-mode [class*="lg:ml-"],
-body.live-mode [class*="lg:pl-"] {
+body.live-mode main {
   margin-left: 0 !important;
   padding-left: 0 !important;
   width: 100% !important;

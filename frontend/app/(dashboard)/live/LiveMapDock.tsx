@@ -10,6 +10,7 @@ import {
   VolumeX,
   Bell,
   BellOff,
+  Sparkles,
 } from "lucide-react";
 import type { LiveMapLayer } from "@/lib/map-providers";
 
@@ -25,6 +26,8 @@ type Props = {
   onToggleSound: () => void;
   notificationsEnabled: boolean;
   onToggleNotifications: () => void;
+  wayraOpen?: boolean;
+  onToggleWayra?: () => void;
 };
 
 export default function LiveMapDock({
@@ -39,6 +42,8 @@ export default function LiveMapDock({
   onToggleSound,
   notificationsEnabled,
   onToggleNotifications,
+  wayraOpen = false,
+  onToggleWayra,
 }: Props) {
   const isDark = activeLayer === "dark";
   const normalizedBearing = ((bearing % 360) + 360) % 360;
@@ -47,7 +52,7 @@ export default function LiveMapDock({
   // Visual button styling: Each box is a separate glassmorphic cube/tile
   const btnClass = (isActive: boolean) => {
     const base =
-      "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-md border backdrop-blur-md transition-all duration-200 focus:outline-none cursor-pointer";
+      "relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg shadow-sm border backdrop-blur-md transition-all duration-200 focus:outline-none cursor-pointer";
     if (isActive) {
       return `${base} ${
         isDark
@@ -77,9 +82,9 @@ export default function LiveMapDock({
           aria-label="Map layers"
           aria-expanded={layersPanelOpen}
         >
-          <Layers className="h-4.5 w-4.5" />
+          <Layers className="h-4 w-4" />
           {layersPanelOpen && (
-            <span className="absolute bottom-1.5 h-1 w-1 rounded-full bg-[#0f766e]" />
+            <span className="absolute bottom-1 h-1 w-1 rounded-full bg-[#0f766e]" />
           )}
         </button>
 
@@ -94,11 +99,11 @@ export default function LiveMapDock({
           aria-label={offNorth ? "Reset map to North" : "Facing North"}
         >
           <Compass
-            className="h-4.5 w-4.5 transition-transform duration-200 ease-out"
+            className="h-4 w-4 transition-transform duration-200 ease-out"
             style={{ transform: `rotate(${-normalizedBearing}deg)` }}
           />
           {offNorth && (
-            <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-red-500" />
+            <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-red-500" />
           )}
         </button>
 
@@ -110,7 +115,7 @@ export default function LiveMapDock({
           title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
           aria-label="Toggle Fullscreen"
         >
-          {isFullscreen ? <Minimize2 className="h-4.5 w-4.5" /> : <Maximize2 className="h-4.5 w-4.5" />}
+          {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
         </button>
 
         {/* Box 4: Sound Toggle */}
@@ -122,9 +127,9 @@ export default function LiveMapDock({
           aria-label="Toggle Sound"
         >
           {soundEnabled ? (
-            <Volume2 className="h-4.5 w-4.5 text-teal-600 dark:text-teal-400" />
+            <Volume2 className="h-4 w-4 text-teal-600 dark:text-teal-400" />
           ) : (
-            <VolumeX className="h-4.5 w-4.5 text-stone-400" />
+            <VolumeX className="h-4 w-4 text-stone-400" />
           )}
         </button>
 
@@ -137,10 +142,21 @@ export default function LiveMapDock({
           aria-label="Toggle Notifications"
         >
           {notificationsEnabled ? (
-            <Bell className="h-4.5 w-4.5 text-teal-600 dark:text-teal-400" />
+            <Bell className="h-4 w-4 text-teal-600 dark:text-teal-400" />
           ) : (
-            <BellOff className="h-4.5 w-4.5 text-stone-400" />
+            <BellOff className="h-4 w-4 text-stone-400" />
           )}
+        </button>
+
+        {/* Box 6: Wayra AI Assistant Toggle */}
+        <button
+          type="button"
+          onClick={onToggleWayra}
+          className={btnClass(wayraOpen)}
+          title={wayraOpen ? "Close Wayra assistant" : "Open Wayra assistant"}
+          aria-label="Toggle Wayra AI Assistant"
+        >
+          <Sparkles className="h-4 w-4" />
         </button>
       </div>
     </div>
