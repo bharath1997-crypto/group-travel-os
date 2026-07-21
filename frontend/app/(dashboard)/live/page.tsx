@@ -2435,6 +2435,7 @@ export default function LivePage() {
       <LiveImmersiveChrome activeLayer={activeLayer} />
       <LiveMapComponent
         activeLayer={activeLayer}
+        onLayerChange={handleLayerChange}
         travelLayerEnabled={travelLayerEnabled}
         seaRoutesEnabled={seaRoutesEnabled}
         cruiseRoutesEnabled={cruiseRoutesEnabled}
@@ -3220,11 +3221,11 @@ export default function LivePage() {
         onSavePlace={handleSheetSavePlace}
       />
 
-      {/* Option B Map Controls Dock — lower-left */}
+      {/* Option B Map Controls Dock — lower-right */}
       <div
-        className="pointer-events-auto absolute z-40 transition-all duration-200 bottom-4 left-4"
+        className="pointer-events-auto absolute z-40 transition-all duration-200 bottom-4 right-4 md:bottom-5 md:right-5"
       >
-        <div className="relative flex flex-col items-start gap-2">
+        <div className="relative flex flex-col items-end gap-2">
           <LiveMapLayerControl
             activeLayer={activeLayer}
             onLayerChange={handleLayerChange}
@@ -3237,7 +3238,7 @@ export default function LivePage() {
             footRoutesEnabled={footRoutesEnabled}
             onFootRoutesChange={handleFootRoutesChange}
             friendTrackingEnabled={friendTrackingEnabled}
-            onFriendTrackingChange={handleFriendTrackingChange}
+            onFriendTrackingChange={DEV_SHOW_MOCK_FRIENDS ? handleFriendTrackingChange : undefined}
             open={layersPanelOpen}
             onOpenChange={setLayersPanelOpen}
             showTrigger={false}

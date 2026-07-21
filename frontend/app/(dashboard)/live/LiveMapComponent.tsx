@@ -266,6 +266,7 @@ type Props = {
   onBearingChange?: (bearing: number) => void;
   onZoomChange?: (zoom: number) => void;
   onMaxZoomCapChange?: (maxZoom: number) => void;
+  onLayerChange?: (layer: LiveMapLayer) => void;
   crossBorderAlert?: {
     fromCountry?: string | null;
     toCountry?: string | null;
@@ -1032,6 +1033,7 @@ export default function LiveMapComponent({
   onBearingChange,
   onZoomChange,
   onMaxZoomCapChange,
+  onLayerChange,
   crossBorderAlert = null,
   autoFitRoute = true,
 }: Props) {
@@ -1080,8 +1082,8 @@ export default function LiveMapComponent({
     programmaticCameraMoveRef.current = true;
   }, []);
 
-  const callbacksRef = useRef({ onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange, onZoomChange, onMaxZoomCapChange });
-  callbacksRef.current = { onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange, onZoomChange, onMaxZoomCapChange };
+  const callbacksRef = useRef({ onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange, onZoomChange, onMaxZoomCapChange, onLayerChange });
+  callbacksRef.current = { onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange, onZoomChange, onMaxZoomCapChange, onLayerChange };
   const isLiveActiveRef = useRef(isLiveActive);
   isLiveActiveRef.current = isLiveActive;
   const navigationModeRef = useRef(navigationMode);
@@ -1321,6 +1323,29 @@ export default function LiveMapComponent({
     } as any);
 
     instanceRef.current = map;
+
+    let hasFallback = false;
+    map.on("error", (e: any) => {
+      const errMessage = e.error?.message || e.message || "";
+      if (activeLayerRef.current === "street" && !hasFallback) {
+        const isTileOrStyleFailure =
+          errMessage.includes("style") ||
+          errMessage.includes("failed to fetch") ||
+          errMessage.includes("403") ||
+          errMessage.includes("404") ||
+          errMessage.includes("50") ||
+          errMessage.includes("Tile");
+        if (isTileOrStyleFailure) {
+          hasFallback = true;
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              `[Rovvy Map/live] Detailed map tile source failed. Falling back to Clean Map. Error: ${errMessage}`
+            );
+          }
+          callbacksRef.current.onLayerChange?.("clean");
+        }
+      }
+    });
 
     function logProductionGps(level: "info" | "warn" | "error", event: string, data?: any) {
       const prefix = `[Rovvy GPS]`;

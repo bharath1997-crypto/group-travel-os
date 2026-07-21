@@ -1,7 +1,6 @@
 "use client";
 
 import type { LiveMapLayer } from "@/lib/map-providers";
-import LiveMapCompass from "./LiveMapCompass";
 import LiveMapZoomControl from "./LiveMapZoomControl";
 import { LIVE_MAP_COMPASS_POSITION } from "./live-layout";
 
@@ -22,7 +21,7 @@ type Props = {
   onUseMapArea: () => void;
 };
 
-/** Top-right map controls stack: compass + reactive zoom + separate Locate Me control. */
+/** Top-right map controls stack: reactive zoom + separate Locate Me control. */
 export default function LiveMapRightControls({
   bearing,
   zoom,
@@ -45,16 +44,6 @@ export default function LiveMapRightControls({
     <div
       className={`pointer-events-none fixed z-[40] flex flex-col items-end gap-1.5 ${LIVE_MAP_COMPASS_POSITION}`}
     >
-      {/* Compass */}
-      <div className="pointer-events-auto">
-        <LiveMapCompass
-          bearing={bearing}
-          activeLayer={activeLayer}
-          onResetNorth={onResetNorth}
-          embedded
-        />
-      </div>
-
       {/* Zoom Control */}
       <div className="pointer-events-auto">
         <LiveMapZoomControl
