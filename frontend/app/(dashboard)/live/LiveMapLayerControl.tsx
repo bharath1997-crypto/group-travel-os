@@ -303,7 +303,7 @@ export default function LiveMapLayerControl({
         <div
           role="dialog"
           aria-label="Map layers"
-          className={`pointer-events-auto absolute bottom-full right-0 z-[60] ${LIVE_MAP_LAYERS_PANEL_OFFSET}`}
+          className={`pointer-events-auto absolute bottom-full left-0 z-[60] ${LIVE_MAP_LAYERS_PANEL_OFFSET}`}
         >
           <div className="overflow-hidden rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-white/20 dark:border-slate-800/30 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-md p-2.5 flex items-center gap-3 w-[min(32rem,calc(100vw-2rem))] select-none">
             
