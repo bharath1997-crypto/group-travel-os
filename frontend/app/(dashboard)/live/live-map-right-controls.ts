@@ -15,7 +15,7 @@ export function liveMapRightBtn(isDark: boolean, disabled = false): string {
   const base = isDark
     ? "text-slate-100 hover:bg-white/10 active:bg-white/15"
     : "text-stone-700 hover:bg-stone-100/90 active:bg-stone-200/70";
-  return `flex h-8 w-8 items-center justify-center transition-colors duration-200 ${base} ${
+  return `flex h-9 w-9 items-center justify-center transition-colors duration-200 ${base} ${
     disabled ? "cursor-not-allowed opacity-35" : ""
   }`;
 }
@@ -26,7 +26,7 @@ export function liveMapZoomInBtn(
   level: "normal" | "approaching" | "max",
 ): string {
   const base =
-    "flex h-8 w-8 items-center justify-center transition-colors duration-200 font-semibold";
+    "flex h-9 w-9 items-center justify-center transition-colors duration-200 font-semibold";
   if (level === "max") {
     return `${base} cursor-default bg-red-500 text-white shadow-inner ring-1 ring-red-600/40`;
   }
@@ -44,7 +44,7 @@ export function liveMapZoomOutBtn(
   level: "normal" | "min",
 ): string {
   const base =
-    "flex h-8 w-8 items-center justify-center transition-colors duration-200 font-semibold";
+    "flex h-9 w-9 items-center justify-center transition-colors duration-200 font-semibold";
   if (level === "min") {
     return `${base} cursor-default bg-emerald-500 text-white shadow-inner ring-1 ring-emerald-600/40`;
   }

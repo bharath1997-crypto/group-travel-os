@@ -266,6 +266,7 @@ type Props = {
   onBearingChange?: (bearing: number) => void;
   onZoomChange?: (zoom: number) => void;
   onMaxZoomCapChange?: (maxZoom: number) => void;
+  onLayerChange?: (layer: LiveMapLayer) => void;
   crossBorderAlert?: {
     fromCountry?: string | null;
     toCountry?: string | null;
@@ -1032,6 +1033,7 @@ export default function LiveMapComponent({
   onBearingChange,
   onZoomChange,
   onMaxZoomCapChange,
+  onLayerChange,
   crossBorderAlert = null,
   autoFitRoute = true,
 }: Props) {
@@ -1074,13 +1076,14 @@ export default function LiveMapComponent({
   const hasCenteredOnUserRef = useRef(false);
   const bestAccuracyCenteredRef = useRef<number | null>(null);
   const programmaticCameraMoveRef = useRef(false);
+  const navigationZoomRef = useRef<number>(15.5);
 
   const markProgrammaticCameraMove = useCallback(() => {
     programmaticCameraMoveRef.current = true;
   }, []);
 
-  const callbacksRef = useRef({ onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange, onZoomChange, onMaxZoomCapChange });
-  callbacksRef.current = { onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange, onZoomChange, onMaxZoomCapChange };
+  const callbacksRef = useRef({ onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange, onZoomChange, onMaxZoomCapChange, onLayerChange });
+  callbacksRef.current = { onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange, onZoomChange, onMaxZoomCapChange, onLayerChange };
   const isLiveActiveRef = useRef(isLiveActive);
   isLiveActiveRef.current = isLiveActive;
   const navigationModeRef = useRef(navigationMode);
@@ -1247,6 +1250,11 @@ export default function LiveMapComponent({
   const restoreOverlaysRef = useRef(restoreOverlaysAfterStyleChange);
   restoreOverlaysRef.current = restoreOverlaysAfterStyleChange;
 
+  useEffect(() => {
+    if (navigationMode) {
+      navigationZoomRef.current = 15.5;
+    }
+  }, [navigationMode]);
 
   useEffect(() => {
     injectLiveMapCursorStyle();
@@ -1315,6 +1323,29 @@ export default function LiveMapComponent({
     } as any);
 
     instanceRef.current = map;
+
+    let hasFallback = false;
+    map.on("error", (e: any) => {
+      const errMessage = e.error?.message || e.message || "";
+      if (activeLayerRef.current === "street" && !hasFallback) {
+        const isTileOrStyleFailure =
+          errMessage.includes("style") ||
+          errMessage.includes("failed to fetch") ||
+          errMessage.includes("403") ||
+          errMessage.includes("404") ||
+          errMessage.includes("50") ||
+          errMessage.includes("Tile");
+        if (isTileOrStyleFailure) {
+          hasFallback = true;
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              `[Rovvy Map/live] Detailed map tile source failed. Falling back to Clean Map. Error: ${errMessage}`
+            );
+          }
+          callbacksRef.current.onLayerChange?.("clean");
+        }
+      }
+    });
 
     function logProductionGps(level: "info" | "warn" | "error", event: string, data?: any) {
       const prefix = `[Rovvy GPS]`;
@@ -1508,6 +1539,10 @@ export default function LiveMapComponent({
         spaceBackgroundRef.current.style.visibility = opacity > 0 ? "visible" : "hidden";
       }
 
+      if (navigationModeRef.current && !programmaticCameraMoveRef.current) {
+        navigationZoomRef.current = z;
+      }
+
       callbacksRef.current.onZoomChange?.(
         clampLiveMapZoom(map.getZoom(), map, activeLayerRef.current, zoomContext()),
       );
@@ -1694,7 +1729,7 @@ export default function LiveMapComponent({
         map.easeTo({
           center: [lng, lat],
           bearing,
-          zoom: clampLiveMapZoom(17.5, map, activeLayerRef.current, zoomContext()),
+          zoom: clampLiveMapZoom(navigationZoomRef.current, map, activeLayerRef.current, zoomContext()),
           pitch: LIVE_MAP_3D_PITCH,
           padding: { top: 72, bottom: 260, left: 40, right: 40 },
           duration: 900,
@@ -1950,6 +1985,9 @@ export default function LiveMapComponent({
           return;
         }
         const next = Math.min(maxZoom, current + 1);
+        if (navigationModeRef.current) {
+          navigationZoomRef.current = next;
+        }
         map.easeTo({ zoom: next, duration: 180, essential: true });
       },
       zoomOut: () => {
@@ -1959,12 +1997,18 @@ export default function LiveMapComponent({
           return;
         }
         const next = Math.max(LIVE_MAP_MIN_ZOOM, current - 1);
+        if (navigationModeRef.current) {
+          navigationZoomRef.current = next;
+        }
         map.easeTo({ zoom: next, duration: 180, essential: true });
       },
       getZoom: () => map.getZoom(),
       getMaxZoom: () => resolveLiveMapMaxZoom(map, activeLayerRef.current, zoomContext()),
       setZoom: (zoom: number) => {
         const next = clampLiveMapZoom(zoom, map, activeLayerRef.current, zoomContext());
+        if (navigationModeRef.current) {
+          navigationZoomRef.current = next;
+        }
         map.easeTo({ zoom: next, duration: 180, essential: true });
       },
       getUserLocation: () => userLocationRef.current,
@@ -2032,7 +2076,7 @@ export default function LiveMapComponent({
           center,
           bearing,
           zoom: clampLiveMapZoom(
-            17.5,
+            navigationZoomRef.current,
             map,
             activeLayerRef.current,
             zoomContext(),
@@ -2109,14 +2153,17 @@ export default function LiveMapComponent({
           if (loc) {
             logProductionGps("info", "flying to active user location", { loc });
             markProgrammaticCameraMove();
+            const targetZoom = navigationModeRef.current
+              ? navigationZoomRef.current
+              : clampLiveMapZoom(
+                  resolveLiveLocateZoom(map.getZoom(), loc.accuracy),
+                  map,
+                  activeLayerRef.current,
+                  zoomContext(),
+                );
             map.flyTo({
               center: [loc.lng, loc.lat],
-              zoom: clampLiveMapZoom(
-                resolveLiveLocateZoom(map.getZoom(), loc.accuracy),
-                map,
-                activeLayerRef.current,
-                zoomContext(),
-              ),
+              zoom: targetZoom,
               essential: true,
             });
             updateUserMarkerGlobeScale(map, userMarkerRef.current);

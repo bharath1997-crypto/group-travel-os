@@ -2435,6 +2435,7 @@ export default function LivePage() {
       <LiveImmersiveChrome activeLayer={activeLayer} />
       <LiveMapComponent
         activeLayer={activeLayer}
+        onLayerChange={handleLayerChange}
         travelLayerEnabled={travelLayerEnabled}
         seaRoutesEnabled={seaRoutesEnabled}
         cruiseRoutesEnabled={cruiseRoutesEnabled}
@@ -3222,7 +3223,7 @@ export default function LivePage() {
 
       {/* Option B Map Controls Dock — lower-left */}
       <div
-        className="pointer-events-auto absolute z-40 transition-all duration-200 bottom-4 left-4"
+        className="pointer-events-auto absolute z-40 transition-all duration-200 bottom-4 left-4 md:bottom-5 md:left-5"
       >
         <div className="relative flex flex-col items-start gap-2">
           <LiveMapLayerControl
@@ -3237,7 +3238,7 @@ export default function LivePage() {
             footRoutesEnabled={footRoutesEnabled}
             onFootRoutesChange={handleFootRoutesChange}
             friendTrackingEnabled={friendTrackingEnabled}
-            onFriendTrackingChange={handleFriendTrackingChange}
+            onFriendTrackingChange={DEV_SHOW_MOCK_FRIENDS ? handleFriendTrackingChange : undefined}
             open={layersPanelOpen}
             onOpenChange={setLayersPanelOpen}
             showTrigger={false}
@@ -3246,9 +3247,13 @@ export default function LivePage() {
             isFullscreen={isFullscreen}
             onToggleFullscreen={() => {
               if (!document.fullscreenElement) {
-                void document.documentElement.requestFullscreen();
+                document.documentElement.requestFullscreen().catch((err) => {
+                  console.error("Failed to enter fullscreen:", err);
+                });
               } else {
-                void document.exitFullscreen();
+                document.exitFullscreen().catch((err) => {
+                  console.error("Failed to exit fullscreen:", err);
+                });
               }
             }}
             soundEnabled={soundEnabled}
@@ -3268,9 +3273,13 @@ export default function LivePage() {
             isFullscreen={isFullscreen}
             onToggleFullscreen={() => {
               if (!document.fullscreenElement) {
-                void document.documentElement.requestFullscreen();
+                document.documentElement.requestFullscreen().catch((err) => {
+                  console.error("Failed to enter fullscreen:", err);
+                });
               } else {
-                void document.exitFullscreen();
+                document.exitFullscreen().catch((err) => {
+                  console.error("Failed to exit fullscreen:", err);
+                });
               }
             }}
             soundEnabled={soundEnabled}

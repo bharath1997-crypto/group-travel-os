@@ -101,7 +101,7 @@ export default function LiveMapZoomControl({
 
   const panel = (
     <div
-      className={`flex w-8 flex-col items-stretch overflow-hidden rounded-lg transition-all duration-200 ${liveMapRightShell(isDark)}`}
+      className={`flex w-9 flex-col items-stretch overflow-hidden rounded-xl transition-all duration-200 ${liveMapRightShell(isDark)}`}
       role="group"
       aria-label="Map zoom"
     >
@@ -119,7 +119,7 @@ export default function LiveMapZoomControl({
         aria-label={atMaxZoom ? "Maximum zoom reached" : "Zoom in"}
         aria-disabled={atMaxZoom}
       >
-        <Plus className="h-4 w-4 stroke-[2.5]" aria-hidden />
+        <Plus className="h-[18px] w-[18px] stroke-[2.5]" aria-hidden />
       </button>
 
       <div
@@ -181,7 +181,7 @@ export default function LiveMapZoomControl({
         aria-label={atMinZoom ? "Minimum zoom reached" : "Zoom out"}
         aria-disabled={atMinZoom}
       >
-        <Minus className="h-4 w-4 stroke-[2.5]" aria-hidden />
+        <Minus className="h-[18px] w-[18px] stroke-[2.5]" aria-hidden />
       </button>
     </div>
   );

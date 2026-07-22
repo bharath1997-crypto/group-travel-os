@@ -52,7 +52,7 @@ export default function LiveMapDock({
   // Visual button styling: Each box is a separate glassmorphic cube/tile
   const btnClass = (isActive: boolean) => {
     const base =
-      "relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg shadow-sm border backdrop-blur-md transition-all duration-200 focus:outline-none cursor-pointer";
+      "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-md border backdrop-blur-md transition-all duration-200 focus:outline-none cursor-pointer";
     if (isActive) {
       return `${base} ${
         isDark
@@ -68,10 +68,19 @@ export default function LiveMapDock({
   };
 
   return (
-    <div className="relative select-none pointer-events-none">
+    <div className="relative select-none pointer-events-auto flex flex-col items-center">
+      {/* 3D Monkey Mascot sitting on top */}
+      <div 
+        className="mb-1 text-lg leading-none select-none animate-bounce" 
+        style={{ animationDuration: "3s" }}
+        title="Rovi Personal Assistant"
+        aria-label="Rovi Personal Assistant mascot"
+      >
+        🐒
+      </div>
 
       {/* Option B: Five distinct tile boxes placed side-by-side */}
-      <div className="flex items-center gap-1.5 pointer-events-auto" role="group" aria-label="Map Controls Dock">
+      <div className="flex items-center gap-1.5" role="group" aria-label="Map Controls Dock">
         {/* Box 1: Layers Launcher */}
         <button
           type="button"
@@ -82,9 +91,9 @@ export default function LiveMapDock({
           aria-label="Map layers"
           aria-expanded={layersPanelOpen}
         >
-          <Layers className="h-4 w-4" />
+          <Layers className="h-4.5 w-4.5" />
           {layersPanelOpen && (
-            <span className="absolute bottom-1 h-1 w-1 rounded-full bg-[#0f766e]" />
+            <span className="absolute bottom-1.5 h-1.5 w-1.5 rounded-full bg-[#0f766e]" />
           )}
         </button>
 
@@ -99,11 +108,11 @@ export default function LiveMapDock({
           aria-label={offNorth ? "Reset map to North" : "Facing North"}
         >
           <Compass
-            className="h-4 w-4 transition-transform duration-200 ease-out"
+            className="h-4.5 w-4.5 transition-transform duration-200 ease-out"
             style={{ transform: `rotate(${-normalizedBearing}deg)` }}
           />
           {offNorth && (
-            <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-red-500" />
+            <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-red-500" />
           )}
         </button>
 
@@ -115,7 +124,7 @@ export default function LiveMapDock({
           title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
           aria-label="Toggle Fullscreen"
         >
-          {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          {isFullscreen ? <Minimize2 className="h-4.5 w-4.5" /> : <Maximize2 className="h-4.5 w-4.5" />}
         </button>
 
         {/* Box 4: Sound Toggle */}
@@ -127,9 +136,9 @@ export default function LiveMapDock({
           aria-label="Toggle Sound"
         >
           {soundEnabled ? (
-            <Volume2 className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+            <Volume2 className="h-4.5 w-4.5 text-teal-600 dark:text-teal-400" />
           ) : (
-            <VolumeX className="h-4 w-4 text-stone-400" />
+            <VolumeX className="h-4.5 w-4.5 text-stone-400" />
           )}
         </button>
 
@@ -142,21 +151,10 @@ export default function LiveMapDock({
           aria-label="Toggle Notifications"
         >
           {notificationsEnabled ? (
-            <Bell className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+            <Bell className="h-4.5 w-4.5 text-teal-600 dark:text-teal-400" />
           ) : (
-            <BellOff className="h-4 w-4 text-stone-400" />
+            <BellOff className="h-4.5 w-4.5 text-stone-400" />
           )}
-        </button>
-
-        {/* Box 6: Wayra AI Assistant Toggle */}
-        <button
-          type="button"
-          onClick={onToggleWayra}
-          className={btnClass(wayraOpen)}
-          title={wayraOpen ? "Close Wayra assistant" : "Open Wayra assistant"}
-          aria-label="Toggle Wayra AI Assistant"
-        >
-          <Sparkles className="h-4 w-4" />
         </button>
       </div>
     </div>
