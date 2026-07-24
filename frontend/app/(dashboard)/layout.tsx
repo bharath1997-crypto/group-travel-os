@@ -7,11 +7,11 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Calendar,
   Users as LucideUsers,
-  DollarSign,
-  Compass,
-  Map,
+  Wallet,
+  Briefcase,
   Activity,
   CloudSun,
+  Map,
   Plane,
   Building2,
   Route,
@@ -20,8 +20,11 @@ import {
   Radio,
   Bell,
   ChevronDown,
+  Navigation2,
+  User,
   type LucideIcon,
 } from "lucide-react";
+import { ExploreTabIcon } from "@/components/map/MapControlIcons";
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -68,7 +71,7 @@ const NAV_SECTIONS: NavSectionDef[] = [
     id: "explore",
     href: "/explore",
     label: "Explore",
-    Icon: Compass,
+    Icon: ExploreTabIcon,
     subs: [
       { href: "/explore/activities", label: "Activities", Icon: Activity },
       { href: "/explore/events",     label: "Events",     Icon: Calendar },
@@ -80,16 +83,16 @@ const NAV_SECTIONS: NavSectionDef[] = [
     id: "live",
     href: "/live",
     label: "Live",
-    Icon: Radio,
+    Icon: Navigation2,
     subs: [],
   },
   {
     id: "trips",
     href: "/trips",
     label: "Trips",
-    Icon: Map,
+    Icon: Briefcase,
     subs: [
-      { href: "/trip-space",  label: "Trip Space",  Icon: Map },
+      { href: "/trip-space",  label: "Trip Space",  Icon: Briefcase },
       { href: "/flights",     label: "Flights",     Icon: Plane },
       { href: "/hotels",      label: "Hotels",      Icon: Building2 },
       { href: "/routes",      label: "Routes",      Icon: Route },
@@ -103,7 +106,7 @@ const NAV_SECTIONS: NavSectionDef[] = [
     href: "/split-activities",
     label: "Split Activities",
     mobileLabel: "Split",
-    Icon: DollarSign,
+    Icon: Wallet,
     subs: [],
   },
 ];
@@ -460,7 +463,6 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const { user, loading } = useDashboardUser();
   const hideAssistantSidecar =
     pathname.startsWith("/travel-hub");
-  const hideBottomNav = false;
 
   const isLivePage = pathname === "/live" || pathname.startsWith("/live/");
   const isMapPage =
@@ -497,6 +499,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     active: false,
     darkMap: false,
   });
+  const hideBottomNav = isLivePage && liveChrome.active;
 
   // Toggle top header bar on activity/typing/hover
   const [headerVisible, setHeaderVisible] = useState(false);
@@ -762,12 +765,20 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     return <BrandedLoading fullScreen={true} />;
   }
 
-  const MOBILE_TABS = NAV_SECTIONS.map((s) => ({
-    href: s.href,
-    label: s.mobileLabel ?? s.label,
-    Icon: s.Icon,
-    id: s.id,
-  }));
+  const MOBILE_TABS = [
+    ...NAV_SECTIONS.map((s) => ({
+      href: s.href,
+      label: s.mobileLabel ?? s.label,
+      Icon: s.Icon,
+      id: s.id,
+    })),
+    {
+      href: "/profile",
+      label: "Profile",
+      Icon: User,
+      id: "profile",
+    },
+  ];
 
   // Compute sub-nav for current section
   const activeSection = NAV_SECTIONS.find((s) => sectionActive(pathname, s));
@@ -793,7 +804,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           FIXED TOP HEADER — never hides on scroll
       ═══════════════════════════════════════════════════ */}
       <header
-        className={`dashboard-header fixed top-0 left-0 right-0 z-40 overflow-visible select-none transition-all duration-300 ${
+        className={`dashboard-header fixed top-0 left-0 right-0 z-40 hidden overflow-visible select-none transition-all duration-300 md:block ${
           isLivePage && !headerVisible
             ? "-translate-y-full opacity-0 pointer-events-none"
             : "translate-y-0 opacity-100"
@@ -940,7 +951,13 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   : "overflow-y-auto pb-[calc(56px+env(safe-area-inset-bottom,0px))]"
               }`
         }`}
-        style={{ paddingTop: isLivePage && !headerVisible ? "0px" : `${headerPx}px` }}
+        style={{
+          paddingTop: !isMdUp
+            ? "0px"
+            : isLivePage && !headerVisible
+              ? "0px"
+              : `${headerPx}px`,
+        }}
       >
         <main
           className={
@@ -982,15 +999,20 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             MOBILE BOTTOM NAV — fixed, dark bar
         ═══════════════════════════════════════════════════ */}
         <nav
-          className={`bottom-tab-bar fixed bottom-0 left-0 right-0 z-30 flex items-end border-t border-[#1E293B] bg-[#0F172A] pb-[env(safe-area-inset-bottom,0px)] md:hidden ${
+          className={`bottom-tab-bar fixed bottom-0 left-0 right-0 z-30 flex items-end border-t border-stone-200/90 bg-white/95 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-8px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl md:hidden ${
             hideBottomNav ? "hidden" : ""
           }`}
           aria-label="Primary"
         >
-          <div className="mx-auto flex h-14 w-full max-w-lg items-stretch justify-between px-1">
+          <div className="mx-auto flex h-14 w-full max-w-lg items-stretch justify-between px-0.5">
             {MOBILE_TABS.map(({ href, label, Icon, id }) => {
-              const def = NAV_SECTIONS.find((s) => s.id === id)!;
-              const active = sectionActive(pathname, def);
+              const def = NAV_SECTIONS.find((s) => s.id === id);
+              const active =
+                id === "profile"
+                  ? pathname === "/profile" || pathname.startsWith("/profile/")
+                  : def
+                    ? sectionActive(pathname, def)
+                    : false;
 
               return (
                 <Link
@@ -1002,13 +1024,13 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                     <Icon
                       size={20}
                       strokeWidth={2}
-                      className={active ? "text-[#0F766E]" : "text-[#94A3B8]"}
+                      className={active ? "text-[#0F766E]" : "text-stone-400"}
                       aria-hidden
                     />
                   )}
                   <span
                     className={`max-w-full truncate text-[10px] font-semibold ${
-                      active ? "text-[#0F766E]" : "text-[#64748B]"
+                      active ? "text-[#0F766E]" : "text-stone-500"
                     }`}
                   >
                     {label}

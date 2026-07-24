@@ -37,8 +37,8 @@ import {
 import {
   DemoContactsSection,
   SwipeChatRow,
-  UpdatesStatusPanel,
 } from "@/components/lounge";
+import { HubSpacePanel } from "@/components/lounge/hub/HubSpacePanel";
 import WayraIcon from "@/components/ui/WayraIcon";
 import { InitialsAvatar } from "@/components/lounge/hub/InitialsAvatar";
 import {
@@ -2462,78 +2462,8 @@ function HubCallsTab({
   );
 }
 
-const DEMO_UPDATES_CHATS = [DEMO_CHAT_ROVVY_HELP, DEMO_CHAT_COMMUNITY];
-
-function HubUpdatesTab({
-  currentUser,
-  activeChatId,
-  chatPrefs,
-  onSelectChat,
-}: {
-  currentUser: UserMe | null;
-  activeChatId?: string;
-  chatPrefs: Record<string, ChatPrefs>;
-  onSelectChat: (c: ChatInfo) => void;
-}) {
-  const renderUpdateAvatar = (c: ChatInfo) => {
-    if (c.isBot) {
-      return (
-        <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[#E9ECEF] bg-[#F8F9FA]">
-          <WayraIcon state="flying" size={0.5} variant="navy" animate={false} />
-        </span>
-      );
-    }
-    return (
-      <div className="relative">
-        <InitialsAvatar name={chatRowDisplayName(c)} size={40} />
-        <span
-          className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-white/10"
-          style={{ background: BG, color: TEXT_MUTED }}
-          aria-hidden
-        >
-          <Users className="h-2 w-2" strokeWidth={2.5} />
-        </span>
-      </div>
-    );
-  };
-
-  return (
-    <div className="flex min-h-0 flex-1 flex-col bg-white">
-      <ul className="m-0 shrink-0 list-none border-b border-stone-100 p-0">
-        {DEMO_UPDATES_CHATS.map((c) => {
-          const pref = chatPrefs[c.id];
-          const unread = getUnreadCount(c, pref);
-          const preview =
-            c.displayPreview ??
-            (c.last_message?.trim()
-              ? c.last_message
-              : "No messages yet — say hello!");
-          const timeStr =
-            c.displayTime ??
-            formatListTimestamp(c.last_message_time ?? c.created_at ?? Date.now());
-
-          return (
-            <li key={c.id}>
-              <ChatListRow72
-                active={activeChatId === c.id}
-                onClick={() => onSelectChat(c)}
-                avatar={renderUpdateAvatar(c)}
-                name={chatRowDisplayName(c)}
-                preview={preview}
-                time={timeStr}
-                unread={unread}
-                muted={pref?.muted}
-              />
-            </li>
-          );
-        })}
-      </ul>
-      <UpdatesStatusPanel
-        userId={currentUser?.id ?? null}
-        userName={currentUser?.full_name ?? null}
-      />
-    </div>
-  );
+function HubUpdatesTab() {
+  return <HubSpacePanel />;
 }
 export {
   CallsConnectRightPanel,

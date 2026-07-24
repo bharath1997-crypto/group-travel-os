@@ -35,6 +35,7 @@ import {
 } from "./live-map-labels";
 import { ensureCleanMapHouseNumberLabels } from "./live-clean-map-housenumbers";
 import { syncTravelLayerOverlay } from "./live-travel-layer-sync";
+import { syncHybridRoadOverlay } from "./live-hybrid-roads-sync";
 import { syncSeaRoutesOverlay } from "./live-sea-routes-sync";
 import { syncFootRoutesOverlay } from "./live-foot-routes-sync";
 import { syncDarkMapStreetLabels } from "./live-dark-map-labels";
@@ -61,6 +62,7 @@ import { bearingAlongRoute, blendBearing } from "./live-route-bearing";
 import {
   applyLiveGlobeMode,
   bindLiveGlobeMode,
+  bindGlobeSunLight,
   isLiveGlobeViewZoom,
   resolveLiveLocateZoom,
   syncLiveGlobeBackground,
@@ -263,6 +265,7 @@ type Props = {
   onMapDoubleClick?: (payload: Omit<MapClickPayload, "features">) => void;
   onLiveGpsChange?: (active: boolean) => void;
   onMapInteraction?: (interacting: boolean) => void;
+  onMapCenterChange?: (center: { lat: number; lng: number }) => void;
   onBearingChange?: (bearing: number) => void;
   onZoomChange?: (zoom: number) => void;
   onMaxZoomCapChange?: (maxZoom: number) => void;
@@ -1030,6 +1033,7 @@ export default function LiveMapComponent({
   onMapDoubleClick,
   onLiveGpsChange,
   onMapInteraction,
+  onMapCenterChange,
   onBearingChange,
   onZoomChange,
   onMaxZoomCapChange,
@@ -1082,8 +1086,8 @@ export default function LiveMapComponent({
     programmaticCameraMoveRef.current = true;
   }, []);
 
-  const callbacksRef = useRef({ onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange, onZoomChange, onMaxZoomCapChange, onLayerChange });
-  callbacksRef.current = { onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onBearingChange, onZoomChange, onMaxZoomCapChange, onLayerChange };
+  const callbacksRef = useRef({ onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onMapCenterChange, onBearingChange, onZoomChange, onMaxZoomCapChange, onLayerChange });
+  callbacksRef.current = { onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onMapCenterChange, onBearingChange, onZoomChange, onMaxZoomCapChange, onLayerChange };
   const isLiveActiveRef = useRef(isLiveActive);
   isLiveActiveRef.current = isLiveActive;
   const navigationModeRef = useRef(navigationMode);
@@ -1137,6 +1141,7 @@ export default function LiveMapComponent({
     logRovvyLiveDebug("[Rovvy Debug] marker restore after style.load, userLocation:", userLocationRef.current);
     applyLiveGlobeMode(map, activeLayerRef.current);
     syncTravelLayerOverlay(map, travelLayerEnabledRef.current, activeLayerRef.current);
+    syncHybridRoadOverlay(map, activeLayerRef.current);
     syncSeaRoutesOverlay(map, {
       seaRoutesEnabled: seaRoutesEnabledRef.current,
       cruiseRoutesEnabled: cruiseRoutesEnabledRef.current,
@@ -1387,6 +1392,7 @@ export default function LiveMapComponent({
     }, 15000);
 
     const unbindGlobeMode = bindLiveGlobeMode(map, () => activeLayerRef.current);
+    const unbindGlobeSunLight = bindGlobeSunLight(map);
 
     map.on("styleimagemissing", (e) => {
       const id = e.id;
@@ -1505,12 +1511,20 @@ export default function LiveMapComponent({
       callbacksRef.current.onMapInteraction?.(true);
     });
 
+    const emitMapCenter = () => {
+      const center = map.getCenter();
+      callbacksRef.current.onMapCenterChange?.({ lat: center.lat, lng: center.lng });
+    };
+
+    map.on("move", emitMapCenter);
+
     map.on("moveend", () => {
       if (programmaticCameraMoveRef.current) {
         programmaticCameraMoveRef.current = false;
         return;
       }
       enforceZoomCap();
+      emitMapCenter();
       callbacksRef.current.onMapInteraction?.(false);
     });
 
@@ -2181,6 +2195,7 @@ export default function LiveMapComponent({
       isUnmountedRef.current = true;
       window.clearInterval(heartbeatTimer);
       unbindGlobeMode();
+      unbindGlobeSunLight();
       window.removeEventListener("resize", onWindowResize);
       resizeObserver?.disconnect();
       ensureUserMarkerRef.current = null;
@@ -2316,6 +2331,7 @@ export default function LiveMapComponent({
     const map = instanceRef.current;
     if (!map) return;
     syncTravelLayerOverlay(map, travelLayerEnabled, activeLayer);
+    syncHybridRoadOverlay(map, activeLayer);
     syncSeaRoutesOverlay(map, { seaRoutesEnabled, cruiseRoutesEnabled }, activeLayer);
     syncFootRoutesOverlay(map, footRoutesEnabled, activeLayer);
     if (activeLayer === "clean" && isMapStyleReady(map)) {
@@ -2649,19 +2665,8 @@ export default function LiveMapComponent({
           transition: "opacity 0.2s ease, visibility 0.2s ease",
         }}
       >
-        {/* Sun in the upper right background */}
-        <div
-          style={{
-            position: "absolute",
-            top: "12%",
-            right: "12%",
-            width: "90px",
-            height: "90px",
-            borderRadius: "50%",
-            background: "radial-gradient(circle, #ffffff 20%, #fef08a 50%, #f59e0b 80%, transparent 100%)",
-            boxShadow: "0 0 50px 15px rgba(245, 158, 11, 0.45), 0 0 100px 35px rgba(245, 158, 11, 0.25)",
-          }}
-        />
+        {/* Decorative sun — hidden; MapLibre atmosphere renders real-time day/night. */}
+        <div aria-hidden style={{ display: "none" }} />
 
         {/* Twinkling stars */}
         {STARS.map((star) => (

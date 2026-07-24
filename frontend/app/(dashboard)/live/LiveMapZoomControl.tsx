@@ -14,6 +14,9 @@ import { LIVE_MAP_ZOOM_CONTROL_POSITION } from "./live-layout";
 import {
   isLiveMapDarkLayer,
   LIVE_MAP_ZOOM_SCALE_VISIBLE_MS,
+  liveMapGoogleControlShell,
+  liveMapGoogleZoomInBtn,
+  liveMapGoogleZoomOutBtn,
   liveMapRightShell,
   liveMapZoomInBtn,
   liveMapZoomOutBtn,
@@ -28,10 +31,14 @@ type Props = {
   activeLayer: LiveMapLayer;
   /** When true, parent handles positioning (T-zone stack). */
   embedded?: boolean;
+  /** Dark Google Maps–style control stack. */
+  googleStyle?: boolean;
 };
 
-function ZoomScaleTicks({ isDark }: { isDark: boolean }) {
-  const line = isDark ? "rgba(255,255,255,0.55)" : "rgba(15,23,42,0.35)";
+function ZoomScaleTicks({ googleStyle }: { googleStyle?: boolean; isDark?: boolean }) {
+  const line = googleStyle
+    ? "rgba(255,255,255,0.55)"
+    : "rgba(15,23,42,0.35)";
   const widths = [10, 14, 18, 14, 10];
 
   return (
@@ -55,6 +62,7 @@ export default function LiveMapZoomControl({
   onZoomChange,
   activeLayer,
   embedded = false,
+  googleStyle = false,
 }: Props) {
   const isDark = isLiveMapDarkLayer(activeLayer);
   const [scaleVisible, setScaleVisible] = useState(false);
@@ -99,16 +107,24 @@ export default function LiveMapZoomControl({
     if (!atMinZoom) onZoomOut();
   };
 
+  const shellClass = googleStyle ? liveMapGoogleControlShell() : liveMapRightShell(isDark);
+  const zoomInClass = googleStyle
+    ? liveMapGoogleZoomInBtn(zoomInLevel)
+    : liveMapZoomInBtn(isDark, zoomInLevel);
+  const zoomOutClass = googleStyle
+    ? liveMapGoogleZoomOutBtn(zoomOutLevel)
+    : liveMapZoomOutBtn(isDark, zoomOutLevel);
+
   const panel = (
     <div
-      className={`flex w-9 flex-col items-stretch overflow-hidden rounded-xl transition-all duration-200 ${liveMapRightShell(isDark)}`}
+      className={`flex w-9 flex-col items-stretch overflow-hidden rounded-xl transition-all duration-200 ${shellClass}`}
       role="group"
       aria-label="Map zoom"
     >
       <button
         type="button"
         onClick={handleZoomIn}
-        className={liveMapZoomInBtn(isDark, zoomInLevel)}
+        className={zoomInClass}
         title={
           atMaxZoom
             ? "Maximum zoom for this map layer"
@@ -123,60 +139,58 @@ export default function LiveMapZoomControl({
       </button>
 
       <div
-        className={`grid transition-all duration-300 ease-out ${
-          scaleVisible
-            ? "grid-rows-[1fr] opacity-100"
-            : "grid-rows-[0fr] opacity-0"
+        className={`flex h-11 shrink-0 flex-col items-center justify-center overflow-hidden border-y px-1 ${
+          googleStyle ? "border-white/15" : isDark ? "border-white/12" : "border-stone-200/55"
         }`}
       >
-        <div className="overflow-hidden">
-          <div
-            className={`flex flex-col items-center gap-1 border-y px-1 py-1.5 ${
-              isDark ? "border-white/12" : "border-stone-200/55"
-            }`}
-          >
-            <span
-              className={`text-[10px] font-semibold tabular-nums leading-none ${
-                atMaxZoom
-                  ? "text-red-500"
-                  : zoomInLevel === "approaching"
-                    ? "text-amber-600"
+        <div
+          className={`flex flex-col items-center gap-1 transition-opacity duration-200 ${
+            scaleVisible ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
+        >
+          <span
+            className={`text-[10px] font-semibold tabular-nums leading-none ${
+              atMaxZoom
+                ? "text-red-400"
+                : zoomInLevel === "approaching"
+                  ? "text-amber-300"
+                  : googleStyle
+                    ? "text-white/95"
                     : isDark
                       ? "text-white/95"
                       : "text-stone-800"
-              }`}
-            >
-              {clampedZoom.toFixed(1)}
-            </span>
-            <ZoomScaleTicks isDark={isDark} />
-            <input
-              type="range"
-              min={LIVE_MAP_MIN_ZOOM}
-              max={maxZoom}
-              step={0.5}
-              value={clampedZoom}
-              onPointerDown={revealScale}
-              onChange={(event) => {
-                revealScale();
-                const next = clampLiveMapZoomValue(
-                  Number(event.target.value),
-                  LIVE_MAP_MIN_ZOOM,
-                  maxZoom,
-                );
-                onZoomChange(next);
-              }}
-              className="sr-only"
-              aria-label="Zoom level"
-              tabIndex={scaleVisible ? 0 : -1}
-            />
-          </div>
+            }`}
+          >
+            {clampedZoom.toFixed(1)}
+          </span>
+          <ZoomScaleTicks googleStyle={googleStyle} isDark={isDark} />
+          <input
+            type="range"
+            min={LIVE_MAP_MIN_ZOOM}
+            max={maxZoom}
+            step={0.5}
+            value={clampedZoom}
+            onPointerDown={revealScale}
+            onChange={(event) => {
+              revealScale();
+              const next = clampLiveMapZoomValue(
+                Number(event.target.value),
+                LIVE_MAP_MIN_ZOOM,
+                maxZoom,
+              );
+              onZoomChange(next);
+            }}
+            className="sr-only"
+            aria-label="Zoom level"
+            tabIndex={scaleVisible ? 0 : -1}
+          />
         </div>
       </div>
 
       <button
         type="button"
         onClick={handleZoomOut}
-        className={liveMapZoomOutBtn(isDark, zoomOutLevel)}
+        className={zoomOutClass}
         title={atMinZoom ? "Minimum zoom reached" : "Zoom out"}
         aria-label={atMinZoom ? "Minimum zoom reached" : "Zoom out"}
         aria-disabled={atMinZoom}

@@ -319,6 +319,10 @@ export function tileUrlNeedsCommercialReview(url: string): boolean {
 export const OPENFREEMAP_STREET_STYLE_URL =
   "https://tiles.openfreemap.org/styles/liberty";
 
+/** OpenFreeMap vector tiles — hybrid thin-road overlay + label search. */
+export const OPENFREEMAP_VECTOR_TILES =
+  "https://tiles.openfreemap.org/planet/{z}/{x}/{y}.pbf";
+
 export type LiveMapLayer = "street" | "clean" | "satellite" | "terrain" | "hybrid" | "dark";
 
 /** Live Tab min zoom (z0 = full globe). Max caps per layer avoid blank tiles. */
@@ -365,10 +369,10 @@ export function getLiveMapMaxZoom(
 
 export type LiveMapStyle = StyleSpecification | string;
 
-function resolveHybridLabelTileUrl(): string | null {
+function resolveHybridPlacesLabelTileUrl(): string | null {
   const override = process.env.NEXT_PUBLIC_MAP_HYBRID_LABEL_URL?.trim();
   if (override === "none") return null;
-  return override || DEV_TILE_DEFAULTS.hybridLabels.transport;
+  return override || DEV_TILE_DEFAULTS.hybridLabels.places;
 }
 
 const LIVE_MAP_RASTER_BG_LIGHT = "#d4dde4";
@@ -392,8 +396,8 @@ function buildRasterBackgroundLayer(
 }
 
 function buildHybridStyle(streetFallback: LiveMapStyle): LiveMapStyle {
-  const labelUrl = resolveHybridLabelTileUrl();
-  if (!labelUrl) {
+  const placesUrl = resolveHybridPlacesLabelTileUrl();
+  if (!placesUrl) {
     if (process.env.NODE_ENV === "development") {
       console.warn(
         "[Rovvy Map/live] Hybrid label overlay URL missing — falling back to street style.",
@@ -401,11 +405,6 @@ function buildHybridStyle(streetFallback: LiveMapStyle): LiveMapStyle {
     }
     return streetFallback;
   }
-
-  const useSingleOverlay = !!process.env.NEXT_PUBLIC_MAP_HYBRID_LABEL_URL?.trim();
-  const placesUrl = useSingleOverlay
-    ? labelUrl
-    : DEV_TILE_DEFAULTS.hybridLabels.places;
 
   const sources: StyleSpecification["sources"] = {
     esri: {
@@ -415,9 +414,14 @@ function buildHybridStyle(streetFallback: LiveMapStyle): LiveMapStyle {
       attribution: `${DEV_TILE_DEFAULTS.satellite.attribution} ${DEV_TILE_DEFAULTS.hybridLabels.attribution}`,
       maxzoom: LIVE_MAP_ESRI_NATIVE_TILE_MAX_ZOOM,
     },
-    "esri-labels-transport": {
+    openmaptiles: {
+      type: "vector",
+      tiles: [OPENFREEMAP_VECTOR_TILES],
+      maxzoom: LIVE_MAP_VECTOR_MAX_ZOOM,
+    },
+    "esri-labels-places": {
       type: "raster",
-      tiles: [labelUrl],
+      tiles: [placesUrl],
       tileSize: 256,
       maxzoom: LIVE_MAP_ESRI_NATIVE_TILE_MAX_ZOOM,
     },
@@ -433,29 +437,14 @@ function buildHybridStyle(streetFallback: LiveMapStyle): LiveMapStyle {
       maxzoom: LIVE_MAP_ESRI_NATIVE_TILE_MAX_ZOOM,
     },
     {
-      id: "esri-labels-transport",
-      type: "raster",
-      source: "esri-labels-transport",
-      minzoom: 0,
-      maxzoom: LIVE_MAP_ESRI_NATIVE_TILE_MAX_ZOOM,
-    },
-  ];
-
-  if (!useSingleOverlay) {
-    sources["esri-labels-places"] = {
-      type: "raster",
-      tiles: [placesUrl],
-      tileSize: 256,
-      maxzoom: LIVE_MAP_ESRI_NATIVE_TILE_MAX_ZOOM,
-    };
-    layers.push({
       id: "esri-labels-places",
       type: "raster",
       source: "esri-labels-places",
       minzoom: 0,
       maxzoom: LIVE_MAP_ESRI_NATIVE_TILE_MAX_ZOOM,
-    });
-  }
+      paint: { "raster-opacity": 0.92 },
+    },
+  ];
 
   return withGlobeProjection({ version: 8, sources, layers });
 }

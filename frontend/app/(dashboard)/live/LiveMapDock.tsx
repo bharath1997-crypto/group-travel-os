@@ -69,16 +69,6 @@ export default function LiveMapDock({
 
   return (
     <div className="relative select-none pointer-events-auto flex flex-col items-center">
-      {/* 3D Monkey Mascot sitting on top */}
-      <div 
-        className="mb-1 text-lg leading-none select-none animate-bounce" 
-        style={{ animationDuration: "3s" }}
-        title="Rovi Personal Assistant"
-        aria-label="Rovi Personal Assistant mascot"
-      >
-        🐒
-      </div>
-
       {/* Option B: Five distinct tile boxes placed side-by-side */}
       <div className="flex items-center gap-1.5" role="group" aria-label="Map Controls Dock">
         {/* Box 1: Layers Launcher */}

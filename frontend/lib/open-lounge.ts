@@ -16,6 +16,11 @@ export type OpenLoungeDetail = {
   createGroup?: boolean;
   openDmUserId?: string;
   openProfile?: UserSearchResultRow;
+  /** Open Connect / settings overlay inside the dock. */
+  openConnectMenu?: boolean;
+  connectScreen?: "menu" | "settings" | "profile" | "connect" | "starred";
+  /** Which hub tab to show when opening (e.g. space / updates). */
+  openTab?: "chats" | "calls" | "groups" | "updates";
 };
 
 export function emitOpenLounge(detail?: OpenLoungeDetail): void {

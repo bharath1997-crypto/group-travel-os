@@ -1,161 +1,197 @@
 "use client";
 
+import { Compass } from "lucide-react";
+import { MyLocationIcon } from "@/components/map/MapControlIcons";
 import type { LiveMapLayer } from "@/lib/map-providers";
-import LiveMapZoomControl from "./LiveMapZoomControl";
-import { LIVE_MAP_COMPASS_POSITION } from "./live-layout";
+import LiveMapLayerControl from "./LiveMapLayerControl";
+import { LIVE_MAP_CONTROLS_RAIL_POSITION } from "./live-layout";
+import {
+  isLiveMapDarkLayer,
+  liveMapFloatBtnDark,
+  liveMapFloatBtnLight,
+} from "./live-map-right-controls";
+import type { LiveMapViewMode } from "./live-layout";
 
 type Props = {
   bearing: number;
-  zoom: number;
-  maxZoom: number;
   activeLayer: LiveMapLayer;
   onResetNorth: () => void;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onZoomChange: (zoom: number) => void;
   gpsStatus: string;
   gpsErrorMessage: string | null;
   onLocate: () => void;
   showGpsHelper: boolean;
   onCloseGpsHelper: () => void;
   onUseMapArea: () => void;
+  layersPanelOpen: boolean;
+  onLayersPanelOpenChange: (open: boolean) => void;
+  onLayerChange: (layer: LiveMapLayer) => void;
+  travelLayerEnabled?: boolean;
+  onTravelLayerChange?: (enabled: boolean) => void;
+  seaRoutesEnabled?: boolean;
+  onSeaRoutesChange?: (enabled: boolean) => void;
+  cruiseRoutesEnabled?: boolean;
+  onCruiseRoutesChange?: (enabled: boolean) => void;
+  footRoutesEnabled?: boolean;
+  onFootRoutesChange?: (enabled: boolean) => void;
+  friendTrackingEnabled?: boolean;
+  onFriendTrackingChange?: (enabled: boolean) => void;
+  mapViewMode?: LiveMapViewMode;
+  onToggleViewMode?: () => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  soundEnabled?: boolean;
+  onToggleSound?: () => void;
+  notificationsEnabled?: boolean;
+  onToggleNotifications?: () => void;
 };
 
-/** Top-right map controls stack: reactive zoom + separate Locate Me control. */
+/** Right-side map controls — layers, compass (north reset), GPS. */
 export default function LiveMapRightControls({
   bearing,
-  zoom,
-  maxZoom,
   activeLayer,
   onResetNorth,
-  onZoomIn,
-  onZoomOut,
-  onZoomChange,
   gpsStatus,
   gpsErrorMessage,
   onLocate,
   showGpsHelper,
   onCloseGpsHelper,
   onUseMapArea,
+  layersPanelOpen,
+  onLayersPanelOpenChange,
+  onLayerChange,
+  travelLayerEnabled,
+  onTravelLayerChange,
+  seaRoutesEnabled,
+  onSeaRoutesChange,
+  cruiseRoutesEnabled,
+  onCruiseRoutesChange,
+  footRoutesEnabled,
+  onFootRoutesChange,
+  friendTrackingEnabled,
+  onFriendTrackingChange,
+  mapViewMode,
+  onToggleViewMode,
+  isFullscreen,
+  onToggleFullscreen,
+  soundEnabled,
+  onToggleSound,
+  notificationsEnabled,
+  onToggleNotifications,
 }: Props) {
-  const isDark = activeLayer === "dark";
+  const isDark = isLiveMapDarkLayer(activeLayer);
+  const normalizedBearing = ((bearing % 360) + 360) % 360;
+  const offNorth = normalizedBearing > 0.5 && normalizedBearing < 359.5;
 
   return (
     <div
-      className={`pointer-events-none fixed z-[40] flex flex-col items-end gap-1.5 ${LIVE_MAP_COMPASS_POSITION}`}
+      className={`pointer-events-none flex flex-col items-end gap-1 ${LIVE_MAP_CONTROLS_RAIL_POSITION}`}
     >
-      {/* Zoom Control */}
       <div className="pointer-events-auto">
-        <LiveMapZoomControl
-          zoom={zoom}
-          maxZoom={maxZoom}
+        <LiveMapLayerControl
           activeLayer={activeLayer}
-          onZoomIn={onZoomIn}
-          onZoomOut={onZoomOut}
-          onZoomChange={onZoomChange}
-          embedded
+          onLayerChange={onLayerChange}
+          travelLayerEnabled={travelLayerEnabled}
+          onTravelLayerChange={onTravelLayerChange}
+          seaRoutesEnabled={seaRoutesEnabled}
+          onSeaRoutesChange={onSeaRoutesChange}
+          cruiseRoutesEnabled={cruiseRoutesEnabled}
+          onCruiseRoutesChange={onCruiseRoutesChange}
+          footRoutesEnabled={footRoutesEnabled}
+          onFootRoutesChange={onFootRoutesChange}
+          friendTrackingEnabled={friendTrackingEnabled}
+          onFriendTrackingChange={onFriendTrackingChange}
+          open={layersPanelOpen}
+          onOpenChange={onLayersPanelOpenChange}
+          showTrigger={false}
+          panelAnchor="right-rail"
+          mapViewMode={mapViewMode}
+          onToggleViewMode={onToggleViewMode}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={onToggleFullscreen}
+          soundEnabled={soundEnabled}
+          onToggleSound={onToggleSound}
+          notificationsEnabled={notificationsEnabled}
+          onToggleNotifications={onToggleNotifications}
+          bearing={bearing}
+          onResetNorth={onResetNorth}
         />
       </div>
 
-      {/* Locate Me / GPS Button (separate from dock, aligned with zoom stack) */}
+      <div className="pointer-events-auto">
+        <button
+          type="button"
+          onClick={() => {
+            if (offNorth) onResetNorth();
+          }}
+          className={`relative ${liveMapFloatBtnLight(offNorth, isDark)}`}
+          title={offNorth ? "Reset map to North" : "Facing North"}
+          aria-label={offNorth ? "Reset map to North" : "Facing North"}
+        >
+          <Compass
+            className="h-[18px] w-[18px] transition-transform duration-200 ease-out"
+            style={{ transform: `rotate(${-normalizedBearing}deg)` }}
+          />
+          {offNorth ? (
+            <span className="absolute top-1 right-1 h-1 w-1 rounded-full bg-red-500" />
+          ) : null}
+        </button>
+      </div>
+
       <div className="pointer-events-auto relative flex flex-col items-end">
-        {/* GPS Helper Tooltip — opens to the left of the button */}
-        {showGpsHelper && (
-          <div className="absolute right-full bottom-0 mr-3 z-50 w-56 rounded-xl border border-stone-200 bg-white/95 p-3 text-left shadow-xl backdrop-blur-md">
+        {showGpsHelper ? (
+          <div className="absolute right-full bottom-0 mr-2 z-50 w-52 rounded-lg border border-stone-200 bg-white/95 p-2.5 text-left shadow-xl backdrop-blur-md">
             <p className="text-xs font-semibold text-stone-800">
               {gpsStatus === "denied" ? "Location off" : "Location unavailable"}
             </p>
-            <p className="mt-1 text-[11px] leading-snug text-stone-600">
+            <p className="mt-1 text-[10px] leading-snug text-stone-600">
               {gpsErrorMessage
                 ? gpsErrorMessage
                 : gpsStatus === "denied"
-                ? "Enable location permission in your browser to show your position."
-                : "Rovvy couldn't get your exact location from this browser. You can try again or use the current map area."}
+                  ? "Enable location permission in your browser."
+                  : "Try again or use the current map area."}
             </p>
-            <div className="mt-3 flex flex-col gap-1.5">
+            <div className="mt-2 flex flex-col gap-1">
               <button
                 type="button"
                 onClick={onLocate}
-                className="rounded-lg bg-[#007F73] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#00665c] cursor-pointer"
+                className="rounded-md bg-[#007F73] px-2.5 py-1 text-[10px] font-semibold text-white"
               >
                 Try again
               </button>
-              {gpsStatus === "denied" ? (
-                <a
-                  href="https://support.google.com/chrome/answer/142064?hl=en"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-lg border border-stone-200 px-3 py-1.5 text-center text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
-                >
-                  Browser location help
-                </a>
-              ) : (
+              {gpsStatus !== "denied" ? (
                 <button
                   type="button"
                   onClick={onUseMapArea}
-                  className="rounded-lg border border-stone-200 px-3 py-1.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer"
+                  className="rounded-md border border-stone-200 px-2.5 py-1 text-[10px] font-semibold text-stone-700"
                 >
                   Use map area
                 </button>
-              )}
+              ) : null}
             </div>
             <button
               type="button"
               onClick={onCloseGpsHelper}
-              className="absolute right-1.5 top-1.5 px-1 text-xs text-stone-400 hover:text-stone-600 cursor-pointer"
+              className="absolute right-1 top-1 px-1 text-xs text-stone-400"
               aria-label="Close"
             >
               ×
             </button>
           </div>
-        )}
+        ) : null}
 
         <button
           type="button"
-          className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-md border backdrop-blur-md transition-all duration-200 cursor-pointer ${
-            isDark
-              ? "bg-slate-900/90 text-white border-white/10 hover:bg-slate-800/90"
-              : "bg-white/95 text-stone-700 border-stone-200/60 hover:bg-white"
-          } ${
-            gpsStatus === "active" || gpsStatus === "approximate"
-              ? "ring-1 ring-[#007F73]/50 text-[#007F73]"
-              : gpsStatus === "stale"
-              ? "ring-2 ring-amber-500/70 text-amber-600 animate-pulse"
-              : ""
-          }`}
+          className={`relative ${liveMapFloatBtnDark(
+            gpsStatus === "active" || gpsStatus === "approximate",
+          )}`}
           onClick={onLocate}
-          title={
-            gpsStatus === "denied"
-              ? "Location permission denied"
-              : gpsStatus === "requesting"
-              ? "Finding location…"
-              : gpsStatus === "stale"
-              ? "GPS signal stale, re-acquiring…"
-              : "Locate me"
-          }
+          title="Locate me"
           aria-label="Locate me"
         >
           {gpsStatus === "requesting" || gpsStatus === "stale" ? (
-            <div className={`h-4.5 w-4.5 animate-spin rounded-full border-2 border-t-transparent ${
-              gpsStatus === "stale" ? "border-amber-500" : "border-[#007F73]"
-            }`} />
+            <div className="h-[18px] w-[18px] animate-spin rounded-full border-2 border-current border-t-transparent" />
           ) : (
-            <svg 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              className="h-4.5 w-4.5" 
-              stroke="currentColor" 
-              strokeWidth="2.5" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="7" />
-              <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-              <line x1="12" y1="2" x2="12" y2="4" />
-              <line x1="12" y1="20" x2="12" y2="22" />
-              <line x1="2" y1="12" x2="4" y2="12" />
-              <line x1="20" y1="12" x2="22" y2="12" />
-            </svg>
+            <MyLocationIcon size={18} />
           )}
         </button>
       </div>
