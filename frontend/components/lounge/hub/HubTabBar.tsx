@@ -15,7 +15,7 @@ const TAB_LABELS: Record<HubTabId, string> = {
   chats: "Chats",
   calls: "Calls",
   groups: "Groups",
-  updates: "Updates",
+  updates: "Space",
 };
 
 const HUB_BG = "#0f3460";

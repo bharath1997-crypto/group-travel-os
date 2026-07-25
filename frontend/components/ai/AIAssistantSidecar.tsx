@@ -109,7 +109,7 @@ export function AIAssistantSidecar({
   const sizeClasses = useMemo(() => {
     switch (size) {
       case "expanded":
-        return "bottom-[96px] right-6 h-[min(720px,90vh)] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-[560px] sm:max-w-[560px]";
+        return "bottom-[96px] right-6 h-[min(780px,92vh)] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-[600px] sm:max-w-[600px]";
       case "fullscreen":
         return "inset-4 sm:inset-6 h-[calc(100vh-2rem)] sm:h-[calc(100vh-3rem)] w-[calc(100vw-2rem)] sm:w-[calc(100vw-3rem)] max-w-full";
       case "normal":
@@ -476,7 +476,7 @@ export function AIAssistantSidecar({
 
   return (
     <>
-      {/* ALWAYS VISIBLE DRAGGABLE LOGO BUTTON — hidden on Live (opened via map More menu) */}
+      {/* Wayra launcher hidden on Live — opened via LiveWayraLaunchButton */}
       {!isLiveRoute ? (
       <div
         style={
@@ -513,222 +513,224 @@ export function AIAssistantSidecar({
       ) : null}
 
       {/* FLOATABLE ASSISTANT PANEL */}
-      {isOpen ? (
-        <div
-          id={panelId}
-          className={`pointer-events-auto fixed z-[2999] flex flex-col overflow-hidden rounded-2xl border border-[#E9ECEF] bg-[#F8F9FA] shadow-2xl transition-all duration-300 ease-in-out ${sizeClasses}`}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={`${panelId}-title`}
-        >
-          <div className="flex items-start justify-between gap-2 border-b border-[#E9ECEF] bg-white px-4 py-3">
-            <div className="flex min-w-0 shrink-0 items-center gap-2">
-              <WayraIcon
-                state={birdState}
-                size={0.42}
-                variant={birdState === "flying" ? "fog" : "navy"}
-                animate={true}
-              />
-              <div className="min-w-0">
-                <h2
-                  id={`${panelId}-title`}
-                  className="text-sm font-bold text-[#0F3460] sm:text-base"
-                >
-                  Wayra
-                </h2>
-                <p
-                  className={
-                    birdState === "flying"
-                      ? "text-[10px] text-[#E94560]"
-                      : "text-[10px] text-[#0F3460]"
-                  }
-                >
-                  {headerStatus}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 shrink-0 ml-auto">
-              {/* Minimize/Off-screen Button */}
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none"
-                title="Minimize assistant (off-screen)"
-                aria-label="Minimize Wayra"
+      <div
+        id={panelId}
+        className={`pointer-events-auto fixed z-[2999] flex flex-col overflow-hidden rounded-2xl border border-[#E9ECEF] bg-[#F8F9FA] shadow-2xl transition-all duration-300 ease-in-out ${sizeClasses} ${
+          isOpen
+            ? "translate-x-0 opacity-100"
+            : "translate-x-[calc(100%+2rem)] opacity-0 pointer-events-none"
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${panelId}-title`}
+      >
+        <div className="flex items-start justify-between gap-2 border-b border-[#E9ECEF] bg-white px-3.5 py-2">
+          <div className="flex min-w-0 shrink-0 items-center gap-2">
+            <WayraIcon
+              state={birdState}
+              size={0.42}
+              variant={birdState === "flying" ? "fog" : "navy"}
+              animate={true}
+            />
+            <div className="min-w-0">
+              <h2
+                id={`${panelId}-title`}
+                className="text-xs font-bold text-[#0F3460] sm:text-sm"
               >
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-
-              {/* Expand / Restore Button */}
-              <button
-                type="button"
-                onClick={() => setSize(size === "expanded" ? "normal" : "expanded")}
-                className="hidden sm:inline-flex rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none"
-                title={size === "expanded" ? "Restore normal width" : "Expand width"}
-                aria-label={size === "expanded" ? "Restore normal width" : "Expand width"}
+                Wayra
+              </h2>
+              <p
+                className={
+                  birdState === "flying"
+                    ? "text-[9px] text-[#E94560]"
+                    : "text-[9px] text-[#0F3460]"
+                }
               >
-                {size === "expanded" ? (
-                  <Minimize2 className="h-3.5 w-3.5" />
-                ) : (
-                  <Maximize2 className="h-3.5 w-3.5" />
-                )}
-              </button>
-
-              {/* Fullscreen Button */}
-              <button
-                type="button"
-                onClick={() => setSize(size === "fullscreen" ? "normal" : "fullscreen")}
-                className="rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none"
-                title={size === "fullscreen" ? "Exit fullscreen" : "Make fullscreen"}
-                aria-label={size === "fullscreen" ? "Exit fullscreen" : "Make fullscreen"}
-              >
-                {size === "fullscreen" ? (
-                  <Minimize2 className="h-3.5 w-3.5" />
-                ) : (
-                  <Square className="h-3 w-3" />
-                )}
-              </button>
-
-              {/* Close Button */}
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="shrink-0 rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
-                aria-label="Close Wayra"
-              >
-                <span className="text-lg leading-none" aria-hidden>
-                  ×
-                </span>
-              </button>
-            </div>
-          </div>
-
-          <div className="shrink-0 space-y-2 border-b border-[#E9ECEF] bg-white px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6C757D]">
-              Quick prompts
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {quickPrompts.map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  onClick={() => void sendMessage(q)}
-                  disabled={loading}
-                  className="max-w-full rounded-full border border-[#E9ECEF] bg-[#F8F9FA] px-2.5 py-1 text-left text-[11px] text-[#2C3E50] hover:border-[#E94560]/40 focus:outline-none focus:ring-2 focus:ring-[#E94560]/30 disabled:opacity-50"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div
-            className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-[#F8F9FA] px-3 py-3"
-            role="log"
-          >
-            {messages.length === 0 ? (
-              <p className="rounded-xl border border-[#E9ECEF] bg-white p-3 text-[13px] leading-relaxed text-[#2C3E50]">
-                Hi — I&apos;m <strong>Wayra</strong>. Ask how{" "}
-                <strong>{pageLabel}</strong> works, or get destination ideas. App
-                how-tos work offline; travel tips need the assistant when it&apos;s up.
+                {headerStatus}
               </p>
-            ) : null}
-
-            {messages.map((m) => {
-              if (m.role === "system") {
-                return (
-                  <p
-                    key={m.id}
-                    className="py-1 text-center text-[10px] text-[#6C757D]"
-                  >
-                    {m.text}
-                  </p>
-                );
-              }
-              return (
-                <div key={m.id} className="flex w-full">
-                  {m.role === "user" ? (
-                    <div className="ml-auto max-w-[90%]">
-                      <div className="rounded-2xl rounded-br-md bg-[#E94560]/12 px-3.5 py-2 text-[13px] leading-relaxed text-[#2C3E50]">
-                        {m.text}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mr-auto max-w-[90%]">
-                      <div className="rounded-2xl rounded-bl-md border border-[#E9ECEF] bg-white px-3.5 py-2 text-[13px] leading-relaxed whitespace-pre-wrap text-[#2C3E50]">
-                        {m.text}
-                      </div>
-                      {m.suggestedActions && m.suggestedActions.length > 0 ? (
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {m.suggestedActions.map((a, i) => (
-                            <button
-                              key={`${a.type}-${a.label}-${i}`}
-                              type="button"
-                              onClick={() =>
-                                onActionPill(a.type, a.label, a.target)
-                              }
-                              className="rounded-full border border-[#0F3460]/20 bg-white px-2.5 py-1 text-[11px] text-[#0F3460] hover:bg-[#0F3460] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
-                            >
-                              {a.label}
-                            </button>
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {loading ? (
-              <div
-                className="flex items-center gap-2 text-xs text-[#6C757D]"
-                aria-live="polite"
-              >
-                <span
-                  className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
-                  aria-hidden
-                />
-                Wayra is thinking…
-              </div>
-            ) : null}
-            <div ref={endRef} />
+            </div>
           </div>
+          <div className="flex items-center gap-1 shrink-0 ml-auto">
+            {/* Minimize/Off-screen Button */}
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none"
+              title="Minimize assistant (off-screen)"
+              aria-label="Minimize Wayra"
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </button>
 
-          {actionHint ? (
-            <div className="shrink-0 border-t border-[#E9ECEF] bg-[#F0F4F8] px-3 py-2 text-center text-xs text-[#2C3E50]">
-              {actionHint}
-            </div>
-          ) : null}
+            {/* Expand / Restore Button */}
+            <button
+              type="button"
+              onClick={() => setSize(size === "expanded" ? "normal" : "expanded")}
+              className="hidden sm:inline-flex rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none"
+              title={size === "expanded" ? "Restore normal width" : "Expand width"}
+              aria-label={size === "expanded" ? "Restore normal width" : "Expand width"}
+            >
+              {size === "expanded" ? (
+                <Minimize2 className="h-3.5 w-3.5" />
+              ) : (
+                <Maximize2 className="h-3.5 w-3.5" />
+              )}
+            </button>
 
-          <div className="shrink-0 border-t border-[#E9ECEF] bg-white p-3">
-            <div className="flex gap-2">
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    void sendMessage();
-                  }
-                }}
-                rows={2}
-                placeholder="Ask Wayra…"
-                className="min-h-[40px] flex-1 resize-y rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] px-3 py-2 text-sm text-[#2C3E50] placeholder:text-[#6C757D] focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={() => void sendMessage()}
-                disabled={loading || !input.trim()}
-                className="h-fit shrink-0 self-end rounded-xl bg-[#E94560] px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[#E94560]/50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Send
-              </button>
-            </div>
+            {/* Fullscreen Button */}
+            <button
+              type="button"
+              onClick={() => setSize(size === "fullscreen" ? "normal" : "fullscreen")}
+              className="rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none"
+              title={size === "fullscreen" ? "Exit fullscreen" : "Make fullscreen"}
+              aria-label={size === "fullscreen" ? "Exit fullscreen" : "Make fullscreen"}
+            >
+              {size === "fullscreen" ? (
+                <Minimize2 className="h-3.5 w-3.5" />
+              ) : (
+                <Square className="h-3 w-3" />
+              )}
+            </button>
+
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="shrink-0 rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
+              aria-label="Close Wayra"
+            >
+              <span className="text-lg leading-none" aria-hidden>
+                ×
+              </span>
+            </button>
           </div>
         </div>
-      ) : null}
+
+        <div className="shrink-0 space-y-1.5 border-b border-[#E9ECEF] bg-white px-3 py-1.5">
+          <p className="text-[9px] font-semibold uppercase tracking-wide text-[#6C757D]">
+            Quick prompts
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {quickPrompts.map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => void sendMessage(q)}
+                disabled={loading}
+                className="max-w-full rounded-full border border-[#E9ECEF] bg-[#F8F9FA] px-2 py-0.5 text-left text-[10px] text-[#2C3E50] hover:border-[#E94560]/40 focus:outline-none focus:ring-2 focus:ring-[#E94560]/30 disabled:opacity-50"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div
+          className="min-h-0 flex-1 space-y-2.5 overflow-y-auto bg-[#F8F9FA] px-3 py-2"
+          role="log"
+        >
+          {messages.length === 0 ? (
+            <p className="rounded-xl border border-[#E9ECEF] bg-white p-2.5 text-[11px] leading-normal text-[#2C3E50]">
+              Hi — I&apos;m <strong>Wayra</strong>. Ask how{" "}
+              <strong>{pageLabel}</strong> works, or get destination ideas. App
+              how-tos work offline; travel tips need the assistant when it&apos;s up.
+            </p>
+          ) : null}
+
+          {messages.map((m) => {
+            if (m.role === "system") {
+              return (
+                <p
+                  key={m.id}
+                  className="py-0.5 text-center text-[9px] text-[#6C757D]"
+                >
+                  {m.text}
+                </p>
+              );
+            }
+            return (
+              <div key={m.id} className="flex w-full">
+                {m.role === "user" ? (
+                  <div className="ml-auto max-w-[90%]">
+                    <div className="rounded-2xl rounded-br-md bg-[#E94560]/12 px-2.5 py-1.5 text-[11.5px] leading-normal text-[#2C3E50]">
+                      {m.text}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mr-auto max-w-[90%]">
+                    <div className="rounded-2xl rounded-bl-md border border-[#E9ECEF] bg-white px-2.5 py-1.5 text-[11.5px] leading-normal whitespace-pre-wrap text-[#2C3E50]">
+                      {m.text}
+                    </div>
+                    {m.suggestedActions && m.suggestedActions.length > 0 ? (
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {m.suggestedActions.map((a, i) => (
+                          <button
+                            key={`${a.type}-${a.label}-${i}`}
+                            type="button"
+                            onClick={() =>
+                              onActionPill(a.type, a.label, a.target)
+                            }
+                            className="rounded-full border border-[#0F3460]/20 bg-white px-2 py-0.5 text-[10px] text-[#0F3460] hover:bg-[#0F3460] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
+                          >
+                            {a.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {loading ? (
+            <div
+              className="flex items-center gap-2 text-[11px] text-[#6C757D]"
+              aria-live="polite"
+            >
+              <span
+                className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
+                aria-hidden
+              />
+              Wayra is thinking…
+            </div>
+          ) : null}
+          <div ref={endRef} />
+        </div>
+
+        {actionHint ? (
+          <div className="shrink-0 border-t border-[#E9ECEF] bg-[#F0F4F8] px-3 py-1 text-center text-[10px] text-[#2C3E50]">
+            {actionHint}
+          </div>
+        ) : null}
+
+        <div className="shrink-0 border-t border-[#E9ECEF] bg-white p-2.5">
+          <div className="flex gap-2">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void sendMessage();
+                }
+              }}
+              rows={1}
+              placeholder="Ask Wayra…"
+              className="min-h-[34px] flex-1 resize-y rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] px-2.5 py-1.5 text-xs text-[#2C3E50] placeholder:text-[#6C757D] focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
+              disabled={loading}
+            />
+            <button
+              type="button"
+              onClick={() => void sendMessage()}
+              disabled={loading || !input.trim()}
+              className="h-fit shrink-0 self-end rounded-xl bg-[#E94560] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[#E94560]/50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      </div>
     </>
   );
 

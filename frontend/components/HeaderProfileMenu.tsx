@@ -2,29 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Bot,
-  Calendar,
-  ChevronDown,
-  LayoutDashboard,
-  LogOut,
-  MessageSquare,
-  MoreVertical,
-  ShoppingCart,
-  User,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { IconBell } from "@/components/icons";
-import { emitOpenLounge } from "@/lib/open-lounge";
-
-type MenuItem = {
-  label: string;
-  icon: LucideIcon;
-  onClick: () => void;
-  tone?: "default" | "danger";
-};
+import { ProfileAccountMenuPanel } from "@/components/ProfileAccountMenuPanel";
 
 interface HeaderProfileMenuProps {
   displayName?: string | null;
@@ -50,7 +31,6 @@ export function HeaderProfileMenu({
   onLogout,
   showOverflowItems = false,
 }: HeaderProfileMenuProps) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -66,52 +46,6 @@ export function HeaderProfileMenu({
   }, [open]);
 
   const close = () => setOpen(false);
-
-  const overflowItems: MenuItem[] = showOverflowItems
-    ? [
-        {
-          label: "Plan a Trip",
-          icon: Calendar,
-          onClick: () => {
-            router.push("/trips/plan");
-            close();
-          },
-        },
-        {
-          label: "Rovvy Lounge",
-          icon: MessageSquare,
-          onClick: () => {
-            emitOpenLounge();
-            close();
-          },
-        },
-        {
-          label: "My Stats",
-          icon: MoreVertical,
-          onClick: () => {
-            router.push("/stats");
-            close();
-          },
-        },
-        {
-          label: "Settings",
-          icon: MoreVertical,
-          onClick: () => {
-            router.push("/settings");
-            close();
-          },
-        },
-        {
-          label: "Ask AI Assistant",
-          icon: Bot,
-          onClick: () => {
-            window.dispatchEvent(new CustomEvent("open-ai-sidecar"));
-            close();
-          },
-        },
-      ]
-    : [];
-
   const badgeTotal = cartCount + notifCount;
 
   return (
@@ -148,91 +82,16 @@ export function HeaderProfileMenu({
       </button>
 
       {open ? (
-        <div
-          role="menu"
-          className="absolute right-0 z-50 mt-2 w-52 overflow-hidden rounded-xl border border-stone-200 bg-white py-1.5 text-[13px] font-medium text-stone-700 shadow-xl"
-        >
-          <Link
-            href="/profile"
-            role="menuitem"
-            onClick={close}
-            className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-stone-50"
-          >
-            <User size={15} className="text-[#0F766E]" />
-            <span>My Profile</span>
-          </Link>
-          <Link
-            href="/notifications"
-            role="menuitem"
-            onClick={close}
-            className="flex items-center justify-between gap-2 px-3.5 py-2.5 hover:bg-stone-50"
-          >
-            <span className="flex items-center gap-2.5">
-              <IconBell size={15} className="text-[#0F766E]" />
-              Notifications
-            </span>
-            {notifCount > 0 ? (
-              <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                {notifCount > 99 ? "99" : notifCount}
-              </span>
-            ) : null}
-          </Link>
-          <Link
-            href="/cart"
-            role="menuitem"
-            onClick={close}
-            className="flex items-center justify-between gap-2 px-3.5 py-2.5 hover:bg-stone-50"
-          >
-            <span className="flex items-center gap-2.5">
-              <ShoppingCart size={15} className="text-[#0F766E]" />
-              Travel Cart
-            </span>
-            {cartCount > 0 ? (
-              <span className="rounded-full bg-teal-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                {cartCount > 99 ? "99" : cartCount}
-              </span>
-            ) : null}
-          </Link>
-
-          <div className="mx-3 my-1 border-t border-stone-100" />
-
-          <Link
-            href="/dashboard"
-            role="menuitem"
-            onClick={close}
-            className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-stone-50"
-          >
-            <LayoutDashboard size={15} className="text-[#0F766E]" />
-            Dashboard
-          </Link>
-
-          {overflowItems.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              role="menuitem"
-              onClick={item.onClick}
-              className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-stone-50"
-            >
-              <item.icon size={15} className="text-[#0F766E]" />
-              {item.label}
-            </button>
-          ))}
-
-          <div className="mx-3 my-1 border-t border-stone-100" />
-
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              close();
-              onLogout();
-            }}
-            className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-red-600 hover:bg-red-50"
-          >
-            <LogOut size={15} />
-            Sign out
-          </button>
+        <div className="absolute right-0 z-50 mt-2 w-52">
+          <ProfileAccountMenuPanel
+            displayName={displayName}
+            cartCount={cartCount}
+            notifCount={notifCount}
+            onLogout={onLogout}
+            onNavigate={close}
+            showOverflowItems={showOverflowItems}
+            className="shadow-xl"
+          />
         </div>
       ) : null}
     </div>

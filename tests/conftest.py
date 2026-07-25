@@ -78,6 +78,32 @@ def sqlite_create_explorer_events_table() -> None:
         UserIntegration.__table__,
     ]
     Base.metadata.create_all(bind=engine, tables=tables_to_create, checkfirst=True)
+    _sqlite_sync_missing_columns(engine, tables_to_create)
+
+
+def _sqlite_sync_missing_columns(engine, tables: list) -> None:
+    """Add model columns missing from an older committed ``test.db`` (CI has no Alembic)."""
+    import sqlalchemy as sa
+
+    with engine.begin() as conn:
+        for table in tables:
+            existing = {
+                row[1]
+                for row in conn.execute(sa.text(f'PRAGMA table_info("{table.name}")'))
+            }
+            if not existing:
+                continue
+            for col in table.columns:
+                if col.name in existing:
+                    continue
+                col_type = col.type.compile(dialect=engine.dialect)
+                nullable = "" if col.nullable else " NOT NULL"
+                conn.execute(
+                    sa.text(
+                        f'ALTER TABLE "{table.name}" ADD COLUMN "{col.name}" '
+                        f"{col_type}{nullable}"
+                    )
+                )
 
 
 def exec_result(

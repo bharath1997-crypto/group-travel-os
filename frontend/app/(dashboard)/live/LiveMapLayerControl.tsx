@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import {
   Check,
   Footprints,
-  Layers,
   Map,
   Moon,
   Mountain,
@@ -16,8 +15,10 @@ import {
   Train,
   Users,
 } from "lucide-react";
+import { MapLayersIcon } from "@/components/map/MapControlIcons";
 import type { LiveMapLayer } from "@/lib/map-providers";
 import { LIVE_MAP_LAYERS_PANEL_OFFSET } from "./live-layout";
+import { liveMapFloatBtnLight } from "./live-map-right-controls";
 
 const LIVE_MAP_LAYER_OPTIONS = [
   {
@@ -195,6 +196,8 @@ type Props = {
   onOpenChange?: (open: boolean) => void;
   /** Hide the floating layers orb (panel only). Default true. */
   showTrigger?: boolean;
+  /** Panel opens above trigger (default) or to the left for right-side rail. */
+  panelAnchor?: "above" | "right-rail";
   mapViewMode?: "2d" | "3d";
   onToggleViewMode?: () => void;
   isFullscreen?: boolean;
@@ -223,6 +226,7 @@ export default function LiveMapLayerControl({
   open: openProp,
   onOpenChange,
   showTrigger = true,
+  panelAnchor = "above",
   mapViewMode,
   onToggleViewMode,
   isFullscreen,
@@ -281,21 +285,38 @@ export default function LiveMapLayerControl({
 
   return (
     <div ref={rootRef} className="relative flex flex-col items-center">
-      {showTrigger ? (
+      {(showTrigger || panelAnchor === "right-rail") ? (
         <button
           type="button"
-          className={`flex h-11 w-11 items-center justify-center rounded-full bg-white/95 shadow-[0_8px_24px_rgba(15,23,42,0.10)] backdrop-blur-md transition-all hover:bg-white ${
-            open ? "ring-2 ring-[#007F73]/25" : ""
-          }`}
+          className={
+            panelAnchor === "right-rail"
+              ? `relative ${liveMapFloatBtnLight(open, false)}`
+              : `flex h-11 w-11 items-center justify-center rounded-full bg-white/95 shadow-[0_8px_24px_rgba(15,23,42,0.10)] backdrop-blur-md transition-all hover:bg-white ${
+                  open ? "ring-2 ring-[#007F73]/25" : ""
+                }`
+          }
+          data-live-layers-trigger
           onClick={() => setOpen((prev) => !prev)}
           title="Map layers"
           aria-label="Map layers"
           aria-expanded={open}
           aria-haspopup="dialog"
         >
-          <Layers
-            className={`h-5 w-5 transition-colors ${open ? "text-[#007F73]" : "text-stone-500"}`}
+          <MapLayersIcon
+            size={panelAnchor === "right-rail" ? 18 : 20}
+            className={
+              panelAnchor === "right-rail"
+                ? open
+                  ? "text-[#0F766E]"
+                  : "text-[#3C4043]"
+                : open
+                  ? "text-[#007F73]"
+                  : "text-stone-500"
+            }
           />
+          {open && panelAnchor === "right-rail" ? (
+            <span className="absolute top-1 right-1 h-1 w-1 rounded-full bg-[#0f766e]" />
+          ) : null}
         </button>
       ) : null}
 
@@ -303,7 +324,11 @@ export default function LiveMapLayerControl({
         <div
           role="dialog"
           aria-label="Map layers"
-          className={`pointer-events-auto absolute bottom-full left-0 z-[60] ${LIVE_MAP_LAYERS_PANEL_OFFSET}`}
+          className={`pointer-events-auto absolute z-[60] ${
+            panelAnchor === "right-rail"
+              ? `right-full top-0 ${LIVE_MAP_LAYERS_PANEL_OFFSET}`
+              : `bottom-full left-0 ${LIVE_MAP_LAYERS_PANEL_OFFSET}`
+          }`}
         >
           <div className="overflow-hidden rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-white/20 dark:border-slate-800/30 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-md p-2.5 flex items-center gap-3 w-[min(32rem,calc(100vw-2rem))] select-none">
             

@@ -56,6 +56,8 @@ export function syncTravelVectorLayersNow(
     return true;
   }
 
+  const skipRoadLayers = activeBaseLayer === "hybrid";
+
   const palette = getTravelRoutePalette(activeBaseLayer);
   const beforeId = travelLayerBeforeId(map.getStyle()?.layers);
   const isDark = activeBaseLayer === "dark";
@@ -99,6 +101,7 @@ export function syncTravelVectorLayersNow(
     beforeId,
   );
 
+  if (!skipRoadLayers) {
   addTravelLayer(
     map,
     {
@@ -289,6 +292,7 @@ export function syncTravelVectorLayersNow(
     },
     beforeId,
   );
+  }
 
   addTravelLayer(
     map,

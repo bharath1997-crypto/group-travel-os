@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   X,
   ChevronUp,
   ChevronDown,
   ChevronLeft,
+  ChevronRight,
   Send,
   Search,
   Plus,
@@ -32,6 +33,8 @@ import {
   Contact as ContactIcon,
   CalendarDays,
 } from "lucide-react";
+import { LIVE_MAP_FLOAT_BTN } from "@/app/(dashboard)/live/live-layout";
+import { SpaceIcon } from "@/components/map/SpaceIcon";
 import { apiFetch } from "@/lib/api";
 import { initFirebase } from "@/lib/firebase-client";
 import { ref, onValue, push, set, off, remove, get, update, type Database } from "firebase/database";
@@ -51,6 +54,7 @@ import {
 } from "@/lib/lounge/chat-prefs";
 import { readJsonLs, writeJsonLs } from "@/lib/lounge/storage";
 import WayraIcon from "@/components/ui/WayraIcon";
+import { ProfileAccountMenuPanel } from "@/components/ProfileAccountMenuPanel";
 import { SplitExpenseModal } from "@/components/lounge/SplitExpenseModal";
 import { CallOverlay } from "@/components/lounge/CallOverlay";
 import { useLoungeCalls } from "@/components/lounge/useLoungeCalls";
@@ -157,6 +161,7 @@ type Message = {
 
 export function LoungeDock() {
   const pathname = usePathname();
+  const router = useRouter();
   const isLiveMapPage = pathname === "/live" || pathname.startsWith("/live/");
   const [isOpen, setIsOpen] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
@@ -175,6 +180,9 @@ export function LoungeDock() {
     id: string;
     full_name: string;
     username?: string | null;
+    avatar_url?: string | null;
+    google_picture?: string | null;
+    facebook_picture?: string | null;
   } | null>(null);
   const [firebaseDb, setFirebaseDb] = useState<Database | null>(null);
 
@@ -187,7 +195,7 @@ export function LoungeDock() {
   const [showNewChatOverlay, setShowNewChatOverlay] = useState(false);
   const [showSettingsOverlay, setShowSettingsOverlay] = useState(false);
   const [settingsScreen, setSettingsScreen] = useState<
-    "menu" | "settings" | "starred" | "connect"
+    "menu" | "settings" | "starred" | "connect" | "profile"
   >("menu");
   const [loungeIntent, setLoungeIntent] = useState<OpenLoungeDetail | null>(
     null,
@@ -230,6 +238,7 @@ export function LoungeDock() {
   const [scheduledCalls, setScheduledCalls] = useState<ScheduledCallData[]>([]);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [dockToast, setDockToast] = useState<string | null>(null);
+  const [liveImmersive, setLiveImmersive] = useState(false);
 
   // Firebase Ref
   const firebaseInstance = useRef<ReturnType<typeof initFirebase> | null>(null);
@@ -249,9 +258,14 @@ export function LoungeDock() {
   // Fetch initial data
   useEffect(() => {
     // 1. Fetch current user
-    apiFetch<{ id: string; full_name: string; username?: string | null }>(
-      "/auth/me",
-    )
+    apiFetch<{
+      id: string;
+      full_name: string;
+      username?: string | null;
+      avatar_url?: string | null;
+      google_picture?: string | null;
+      facebook_picture?: string | null;
+    }>("/auth/me")
       .then((user) => setCurrentUser(user))
       .catch(() => {});
 
@@ -305,6 +319,14 @@ export function LoungeDock() {
       const detail = (e as CustomEvent<OpenLoungeDetail | undefined>).detail;
       if (detail && Object.keys(detail).length > 0) {
         setLoungeIntent(detail);
+        if (detail.openTab) {
+          setActiveTab(detail.openTab);
+        }
+        if (detail.openConnectMenu) {
+          setShowSettingsOverlay(true);
+          setSettingsScreen(detail.connectScreen ?? "menu");
+          setShowNewChatOverlay(false);
+        }
       }
     };
 
@@ -344,6 +366,19 @@ export function LoungeDock() {
       Object.values(firebaseListeners.current).forEach((unsubscribe) => unsubscribe());
     };
   }, []);
+
+  useEffect(() => {
+    if (!isLiveMapPage) {
+      setLiveImmersive(false);
+      return;
+    }
+    const sync = () => {
+      setLiveImmersive(document.body.dataset.liveImmersive === "true");
+    };
+    sync();
+    window.addEventListener("rovvy-live-chrome", sync);
+    return () => window.removeEventListener("rovvy-live-chrome", sync);
+  }, [isLiveMapPage]);
 
   const fetchChats = async () => {
     try {
@@ -907,6 +942,12 @@ export function LoungeDock() {
         avatar_url: null,
       });
     }
+
+    if (intent.openConnectMenu) {
+      setShowSettingsOverlay(true);
+      setSettingsScreen(intent.connectScreen ?? "menu");
+      setShowNewChatOverlay(false);
+    }
   }, [
     currentUser?.id,
     loungeIntent,
@@ -1308,30 +1349,74 @@ export function LoungeDock() {
   const dockSettingsOpen =
     showSettingsOverlay && settingsScreen === "settings";
   const showDockWidget = true;
+  /** Live map keeps Lounge pinned bottom-right (not the full-width mobile top strip). */
+  const loungeBottomDock = isLiveMapPage;
+  const loungeAvatarUrl =
+    currentUser?.avatar_url?.trim() ||
+    currentUser?.google_picture?.trim() ||
+    currentUser?.facebook_picture?.trim() ||
+    null;
+  const loungeUserInitials = (() => {
+    const parts = (currentUser?.full_name ?? "").trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "U";
+    if (parts.length === 1) return parts[0]!.charAt(0).toUpperCase();
+    return `${parts[0]!.charAt(0)}${parts[parts.length - 1]!.charAt(0)}`.toUpperCase();
+  })();
 
   return (
     <div
-      className={`fixed bottom-0 right-2 sm:right-[40px] pointer-events-none select-none max-md:inset-x-0 max-md:top-0 max-md:bottom-auto max-md:right-0 max-md:left-0 ${
+      className={`fixed pointer-events-none select-none ${
         isLiveMapPage ? "z-[160]" : "z-[80]"
+      } ${
+        loungeBottomDock
+          ? liveImmersive
+            ? "bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-3 right-auto md:bottom-5 md:left-auto md:right-5"
+            : "bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] left-3 right-auto md:bottom-5 md:left-auto md:right-5"
+          : "bottom-0 right-2 sm:right-[40px] max-md:inset-x-0 max-md:top-0 max-md:bottom-auto max-md:right-0 max-md:left-0"
       }`}
     >
-      <div className="flex flex-row-reverse items-end gap-3 max-md:flex-col max-md:items-stretch">
-      {/* MAIN DOCK WIDGET — hidden on Live map until opened from the rail */}
-      {showDockWidget ? (
       <div
-        className={`bg-slate-900 text-white shadow-2xl rounded-t-xl flex flex-col border border-slate-700/50 pointer-events-auto select-text overflow-hidden transition-all duration-300 ease-in-out max-md:fixed max-md:top-0 max-md:left-0 max-md:right-0 max-md:w-full max-md:rounded-none max-md:rounded-b-2xl max-md:border-x-0 max-md:border-t-0 max-md:transition-transform max-md:duration-300 max-md:ease-out ${
-          isOpen
-            ? `w-[340px] md:w-[360px] max-md:translate-y-0 ${
-                dockSettingsOpen
-                  ? "h-[min(90vh,720px)]"
-                  : "h-[480px] md:h-[500px] max-md:h-[min(88vh,640px)]"
+        className={`flex flex-row-reverse items-end gap-3 ${
+          loungeBottomDock ? "" : "max-md:flex-col max-md:items-stretch"
+        }`}
+      >
+      {/* MAIN DOCK WIDGET — Live map uses a compact Space button when closed */}
+      {showDockWidget && !isOpen && loungeBottomDock ? (
+        <button
+          type="button"
+          onClick={() => {
+            setIsOpen(true);
+            setActiveTab("updates");
+          }}
+          className={`pointer-events-auto relative ${LIVE_MAP_FLOAT_BTN} bg-white text-[#0F766E] hover:bg-[#F8FAFC]`}
+          aria-label="Open Rovvy Lounge"
+          title="Rovvy Lounge"
+        >
+          <SpaceIcon size={20} />
+        </button>
+      ) : showDockWidget ? (
+      <div
+        className={`bg-slate-900 text-white shadow-2xl rounded-t-xl flex flex-col border border-slate-700/50 pointer-events-auto select-text overflow-hidden transition-all duration-300 ease-in-out ${
+          loungeBottomDock
+            ? isOpen
+              ? "w-[min(340px,calc(100vw-1.5rem))] h-[min(70vh,520px)]"
+              : "w-[min(290px,calc(100vw-1.5rem))] h-11"
+            : `max-md:fixed max-md:top-0 max-md:left-0 max-md:right-0 max-md:w-full max-md:rounded-none max-md:rounded-b-2xl max-md:border-x-0 max-md:border-t-0 max-md:transition-transform max-md:duration-300 max-md:ease-out ${
+                isOpen
+                  ? `w-[340px] md:w-[360px] max-md:translate-y-0 ${
+                      dockSettingsOpen
+                        ? "h-[min(90vh,720px)]"
+                        : "h-[480px] md:h-[500px] max-md:h-[min(88vh,640px)]"
+                    }`
+                  : "w-[290px] h-11 max-md:-translate-y-[calc(100%-2.75rem)]"
               }`
-            : "w-[290px] h-11 max-md:-translate-y-[calc(100%-2.75rem)]"
         }`}
       >
         {!isOpen ? (
           <div
-            className="h-11 shrink-0 px-4 bg-slate-900 text-white flex items-center justify-between cursor-pointer border-b border-slate-800/80 hover:bg-slate-800 w-full max-md:border-b-0"
+            className={`h-11 shrink-0 px-4 bg-slate-900 text-white flex items-center justify-between cursor-pointer border-b border-slate-800/80 hover:bg-slate-800 w-full ${
+              loungeBottomDock ? "" : "max-md:border-b-0"
+            }`}
             onClick={() => setIsOpen(true)}
           >
             <div className="flex items-center gap-2">
@@ -1343,8 +1428,11 @@ export function LoungeDock() {
                 Rovvy Lounge
               </span>
             </div>
-            <ChevronUp size={16} className="max-md:hidden" />
-            <ChevronDown size={16} className="hidden max-md:block" />
+            <ChevronUp size={16} className={loungeBottomDock ? "" : "max-md:hidden"} />
+            <ChevronDown
+              size={16}
+              className={loungeBottomDock ? "hidden" : "hidden max-md:block"}
+            />
           </div>
         ) : (
           <div className="h-14 shrink-0 px-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800/80">
@@ -1352,8 +1440,8 @@ export function LoungeDock() {
               <p className="text-[14px] font-bold tracking-tight text-white leading-tight">
                 Rovvy Lounge
               </p>
-              <p className="text-[10px] font-medium text-white/60 leading-none mt-0.5">
-                Messages, calls, and updates
+              <p className="text-[10px] font-medium text-white/60 leading-none mt-0.5 truncate max-w-[12rem]">
+                Chat &amp; calls
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -1393,8 +1481,11 @@ export function LoungeDock() {
                 onClick={() => setIsOpen(false)}
                 className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
               >
-                <ChevronDown size={16} className="max-md:hidden" />
-                <ChevronUp size={16} className="hidden max-md:block" />
+                <ChevronDown size={16} className={loungeBottomDock ? "" : "max-md:hidden"} />
+                <ChevronUp
+                  size={16}
+                  className={loungeBottomDock ? "hidden" : "hidden max-md:block"}
+                />
               </button>
             </div>
           </div>
@@ -1427,9 +1518,9 @@ export function LoungeDock() {
                 {/* List Content */}
                 <div
                   ref={pullRefresh.scrollRef}
-                  className={`flex-1 bg-white ${
-                    dockSettingsOpen
-                      ? "flex min-h-0 flex-col overflow-hidden"
+                  className={`flex-1 min-h-0 bg-white ${
+                    dockSettingsOpen || activeTab === "updates"
+                      ? "flex flex-col overflow-hidden"
                       : "overflow-y-auto p-2 divide-y divide-stone-100"
                   }`}
                   style={{
@@ -1520,13 +1611,10 @@ export function LoungeDock() {
                     <div className="p-3 text-slate-900 space-y-4">
                       {settingsScreen === "menu" ? (
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between pb-2 border-b border-stone-100">
-                            <div>
-                              <p className="text-xs font-bold text-[#0F766E]">Connect</p>
-                              <p className="text-[10px] text-stone-500 font-medium">
-                                {currentUser?.full_name?.trim() || "Travel Hub User"}
-                              </p>
-                            </div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold uppercase tracking-wide text-[#0F766E]">
+                              Connect
+                            </p>
                             <button
                               onClick={() => setShowSettingsOverlay(false)}
                               className="text-stone-400 hover:text-stone-600 p-1"
@@ -1534,6 +1622,36 @@ export function LoungeDock() {
                               <X size={14} />
                             </button>
                           </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setSettingsScreen("profile")}
+                            className="flex w-full items-center gap-3 rounded-xl border border-stone-200 bg-stone-50/90 p-2.5 text-left transition-colors hover:border-[#0F766E]/25 hover:bg-teal-50/50"
+                          >
+                            {loungeAvatarUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={loungeAvatarUrl}
+                                alt=""
+                                className="h-11 w-11 rounded-full object-cover ring-2 ring-[#0F766E]/15"
+                              />
+                            ) : (
+                              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0F766E] text-sm font-bold text-white ring-2 ring-[#0F766E]/15">
+                                {loungeUserInitials}
+                              </span>
+                            )}
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-bold text-slate-900">
+                                {currentUser?.full_name?.trim() || "Your profile"}
+                              </span>
+                              <span className="block text-[10px] font-medium text-stone-500">
+                                {currentUser?.username
+                                  ? `@${currentUser.username}`
+                                  : "Profile & account"}
+                              </span>
+                            </span>
+                            <ChevronRight size={16} className="shrink-0 text-stone-400" />
+                          </button>
 
                           <nav className="flex flex-col text-xs font-semibold space-y-1">
                             <button
@@ -1623,6 +1741,32 @@ export function LoungeDock() {
                               </div>
                             ))
                           )}
+                        </div>
+                      ) : settingsScreen === "profile" ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => setSettingsScreen("menu")}
+                                className="p-0.5 text-stone-400"
+                              >
+                                <ChevronLeft size={16} className="text-[#0F766E]" />
+                              </button>
+                              <span className="text-xs font-bold text-[#0F766E]">Profile</span>
+                            </div>
+                            <button
+                              onClick={() => setShowSettingsOverlay(false)}
+                              className="text-stone-400 p-1"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                          <ProfileAccountMenuPanel
+                            displayName={currentUser?.full_name}
+                            onLogout={() => router.push("/logout")}
+                            onNavigate={() => setSettingsScreen("menu")}
+                            showOverflowItems
+                          />
                         </div>
                       ) : (
                         <div className="space-y-4">
@@ -1841,12 +1985,7 @@ export function LoungeDock() {
                   ) : null}
 
                   {!searchActive && !showSettingsOverlay && activeTab === "updates" ? (
-                    <HubUpdatesTab
-                      currentUser={hubUser}
-                      activeChatId={focusedChatId ?? undefined}
-                      chatPrefs={chatPrefs}
-                      onSelectChat={onSelectHubChat}
-                    />
+                    <HubUpdatesTab />
                   ) : null}
                 </div>
               </>

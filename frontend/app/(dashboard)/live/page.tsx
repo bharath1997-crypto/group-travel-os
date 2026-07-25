@@ -102,12 +102,12 @@ import {
   type GpsState,
 } from "./live-gps";
 import { LIVE_MAP_CONTROLS_POSITION, type LiveMapViewMode } from "./live-layout";
-import LiveMapLayerControl from "./LiveMapLayerControl";
 import LiveImmersiveChrome from "./LiveImmersiveChrome";
-import { isImmersiveDarkMapLayer } from "./live-immersive-chrome";
+import { isImmersiveDarkMapLayer, setLiveImmersiveChrome, clearLiveImmersiveChrome } from "./live-immersive-chrome";
 import LiveMapRightControls from "./LiveMapRightControls";
-import LiveMapClickPopup from "./LiveMapClickPopup";
-import { buildPlaceFromMapPick, formatMapCoordinates } from "./live-map-pick-context";
+import LiveMapAttributionStrip from "./LiveMapAttributionStrip";
+import type { LiveMapAttributionFocus } from "./live-map-attribution";
+import { formatMapCoordinates } from "./live-map-pick-context";
 import type { MapClickPayload } from "./LiveMapComponent";
 import {
   DEFAULT_LIVE_MAP_LAYER,
@@ -137,7 +137,6 @@ import {
   getPoiMarkerPresentation,
   resolvePoiMapIcon,
 } from "./live-poi-icons";
-import LiveMapDock from "./LiveMapDock";
 import { getLiveMapMaxZoom, type LiveMapLayer } from "@/lib/map-providers";
 import { mapLabelFeatureToPlacePreview } from "./live-map-labels";
 import RoviRouteIntelligencePanel from "./RoviRouteIntelligencePanel";
@@ -287,8 +286,6 @@ function formatStreetAddress(
 }
 
 import { apiFetch } from "@/lib/api";
-import { emitToggleWayra } from "@/lib/open-wayra";
-
 type BackendNearbyPlace = {
   id: string;
   placeKey: string;
@@ -412,6 +409,7 @@ export default function LivePage() {
       setActiveLayer(layer);
       setMapMaxZoom(getLiveMapMaxZoom(layer, { travelLayerEnabled }));
       saveLiveMapLayerPreference(layer);
+      setAttributionRefreshedAt(new Date());
     },
     [travelLayerEnabled],
   );
@@ -447,17 +445,32 @@ export default function LivePage() {
 
   const [layersPanelOpen, setLayersPanelOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [liveImmersive, setLiveImmersive] = useState(false);
+
+  const toggleLiveImmersive = useCallback(() => {
+    setLiveImmersive((prev) => {
+      const next = !prev;
+      setLiveImmersiveChrome({
+        active: next,
+        darkMap: isImmersiveDarkMapLayer(activeLayer),
+      });
+      return next;
+    });
+  }, [activeLayer]);
 
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      clearLiveImmersiveChrome();
     };
   }, []);
+
+  useEffect(() => {
+    if (!liveImmersive) return;
+    setLiveImmersiveChrome({
+      active: true,
+      darkMap: isImmersiveDarkMapLayer(activeLayer),
+    });
+  }, [activeLayer, liveImmersive]);
 
   const [liveStage, setLiveStage] = useState<LiveStage>("static_landing");
   const [workflowType, setWorkflowType] =
@@ -465,6 +478,8 @@ export default function LivePage() {
   const [travelMode, setTravelMode] =
     useState<(typeof TRAVEL_MODES)[number]>("Drive");
   const [isMapInteracting, setIsMapInteracting] = useState(false);
+  const [attributionFocus, setAttributionFocus] = useState<LiveMapAttributionFocus | null>(null);
+  const [attributionRefreshedAt, setAttributionRefreshedAt] = useState(() => new Date());
 
   const [selectedPlace, setSelectedPlace] = useState<PlacePreviewData | null>(null);
   const [destination, setDestination] = useState<PlacePreviewData | null>(null);
@@ -619,23 +634,6 @@ export default function LivePage() {
   const roviExplanationCacheRef = useRef<Map<string, RoviPlaceExplanation>>(new Map());
   const userRegionLoadedRef = useRef(false);
 
-  const [wayraOpen, setWayraOpen] = useState(false);
-
-  useEffect(() => {
-    const handleWayraState = (e: Event) => {
-      const ce = e as CustomEvent<{ isOpen: boolean }>;
-      setWayraOpen(ce.detail.isOpen);
-    };
-    window.addEventListener("rovvy:wayra-state", handleWayraState as EventListener);
-    return () => {
-      window.removeEventListener("rovvy:wayra-state", handleWayraState as EventListener);
-    };
-  }, []);
-
-  const handleToggleWayra = useCallback(() => {
-    emitToggleWayra();
-  }, []);
-
   // ─── Route Intelligence (long-distance / global destinations) ─────────────
   const [routeIntelligenceLoading, setRouteIntelligenceLoading] = useState(false);
   const [routeIntelligenceResponse, setRouteIntelligenceResponse] =
@@ -653,15 +651,8 @@ export default function LivePage() {
   const [viewingDetailsFromNearby, setViewingDetailsFromNearby] = useState(false);
   const [addStopMode, setAddStopMode] = useState(false);
   const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [mapClickResolving, setMapClickResolving] = useState(false);
-  const [nearbyPlacesAtClick, setNearbyPlacesAtClick] = useState<PlacePreviewData[] | null>(null);
-  const [mapClickMenu, setMapClickMenu] = useState<{
-    lat: number;
-    lng: number;
-    screenX: number;
-    screenY: number;
-  } | null>(null);
   const [mapClickPin, setMapClickPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [nearbyPlacesAtClick, setNearbyPlacesAtClick] = useState<PlacePreviewData[] | null>(null);
   const [coordinateOverlay, setCoordinateOverlay] = useState<{ lat: number; lng: number } | null>(null);
   const coordinateOverlayRef = useRef(coordinateOverlay);
   coordinateOverlayRef.current = coordinateOverlay;
@@ -693,8 +684,10 @@ export default function LivePage() {
         setShowSetupPanel(false);
         setShowSuggestionsCard(false);
         setShowSearchPopup(false);
-        setMapClickMenu(null);
-        if (!coordinateOverlayRef.current) setMapClickPin(null);
+        if (!coordinateOverlayRef.current) {
+          setMapClickPin(null);
+          setAttributionFocus(null);
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -1410,65 +1403,26 @@ export default function LivePage() {
 
   const selectDestinationFromPlace = selectDestination;
 
-  const closeMapClickMenu = useCallback(() => {
-    setMapClickMenu(null);
-  }, []);
-
-  const openMapClickMenu = useCallback((payload: MapClickPayload) => {
-    setViewingDetailsFromNearby(false);
-    setShowSearchPopup(false);
-    setShowSuggestionsCard(false);
-    setNearbyResults(null);
-    setNearbyCategory(null);
-    setNearbyError(null);
-    setExpandedResultIndex(null);
-    resetRoviExplanation();
-    setNearbyPlacesAtClick(null);
-    setCoordinateOverlay(null);
-    setMapClickMenu({
-      lat: payload.lat,
-      lng: payload.lng,
-      screenX: payload.screenX,
-      screenY: payload.screenY,
-    });
-    setMapClickPin({ lat: payload.lat, lng: payload.lng });
-  }, []);
-
-  const handlePickMapLocation = useCallback(async () => {
-    if (!mapClickMenu) return;
-    const { lat, lng } = mapClickMenu;
-    setMapClickResolving(true);
-    setMapClickMenu(null);
-    try {
-      const details = await liveGeocodingReverse(lat, lng);
-      const place = buildPlaceFromMapPick(lat, lng, details, userLocation);
-      await selectDestination(place, {
-        origin: "map_click",
-        clickLat: lat,
-        clickLng: lng,
-        openDetailsPanel: true,
-      });
-    } catch {
-      const place = buildPlaceFromMapPick(lat, lng, null, userLocation);
-      await selectDestination(place, {
-        origin: "map_click",
-        clickLat: lat,
-        clickLng: lng,
-        openDetailsPanel: true,
-      });
-    } finally {
-      setMapClickResolving(false);
-    }
-  }, [mapClickMenu, userLocation, selectDestination]);
-
-  const handleFindMapCoordinates = useCallback(() => {
-    if (!mapClickMenu) return;
-    const { lat, lng } = mapClickMenu;
-    setMapClickMenu(null);
-    setCoordinateOverlay({ lat, lng });
-    setMapClickPin({ lat, lng });
-    showToast(formatMapCoordinates(lat, lng));
-  }, [mapClickMenu]);
+  const zoomToMapTap = useCallback(
+    (payload: Pick<MapClickPayload, "lat" | "lng">) => {
+      setViewingDetailsFromNearby(false);
+      setShowSearchPopup(false);
+      setShowSuggestionsCard(false);
+      setNearbyResults(null);
+      setNearbyCategory(null);
+      setNearbyError(null);
+      setExpandedResultIndex(null);
+      resetRoviExplanation();
+      setNearbyPlacesAtClick(null);
+      setCoordinateOverlay(null);
+      setMapClickPin({ lat: payload.lat, lng: payload.lng });
+      setAttributionFocus({ lat: payload.lat, lng: payload.lng, pinned: true });
+      setAttributionRefreshedAt(new Date());
+      const maxZoom = getLiveMapMaxZoom(activeLayer, { travelLayerEnabled });
+      mapRef.current?.flyToPlace(payload.lat, payload.lng, maxZoom);
+    },
+    [activeLayer, travelLayerEnabled],
+  );
 
   const handleMapDoubleClick = useCallback(
     (payload: Omit<MapClickPayload, "features">) => {
@@ -1488,7 +1442,7 @@ export default function LivePage() {
         void handleOriginMapPick(payload.lat, payload.lng);
         return;
       }
-      openMapClickMenu({ ...payload, features: [] });
+      zoomToMapTap({ lat: payload.lat, lng: payload.lng });
     },
     [
       isLiveActive,
@@ -1497,7 +1451,7 @@ export default function LivePage() {
       handleOriginMapPick,
       mapPointToPlace,
       addPlaceAsRouteStop,
-      openMapClickMenu,
+      zoomToMapTap,
     ],
   );
 
@@ -1521,7 +1475,7 @@ export default function LivePage() {
         return;
       }
 
-      openMapClickMenu(payload);
+      zoomToMapTap({ lat: payload.lat, lng: payload.lng });
     },
     [
       isLiveActive,
@@ -1530,7 +1484,7 @@ export default function LivePage() {
       handleOriginMapPick,
       mapPointToPlace,
       addPlaceAsRouteStop,
-      openMapClickMenu,
+      zoomToMapTap,
     ],
   );
 
@@ -1825,6 +1779,7 @@ export default function LivePage() {
 
   const handleZoomChange = useCallback((zoom: number) => {
     setMapZoom(zoom);
+    setAttributionRefreshedAt(new Date());
   }, []);
 
   const handleMaxZoomCapChange = useCallback((maxZoom: number) => {
@@ -1833,6 +1788,14 @@ export default function LivePage() {
 
   const handleMapInteraction = useCallback((interacting: boolean) => {
     setIsMapInteracting((prev) => (prev === interacting ? prev : interacting));
+  }, []);
+
+  const handleMapCenterChange = useCallback((center: { lat: number; lng: number }) => {
+    setAttributionRefreshedAt(new Date());
+    setAttributionFocus((prev) => {
+      if (prev?.pinned) return prev;
+      return { lat: center.lat, lng: center.lng };
+    });
   }, []);
 
   const handleToggleViewMode = useCallback(() => {
@@ -2460,6 +2423,7 @@ export default function LivePage() {
         onMapClick={handleMapClick}
         onMapDoubleClick={handleMapDoubleClick}
         onMapInteraction={handleMapInteraction}
+        onMapCenterChange={handleMapCenterChange}
         onBearingChange={handleBearingChange}
         onZoomChange={handleZoomChange}
         onMaxZoomCapChange={handleMaxZoomCapChange}
@@ -2467,32 +2431,49 @@ export default function LivePage() {
         autoFitRoute={autoFitRouteOnMap}
       />
 
-      {mapClickMenu ? (
-        <LiveMapClickPopup
-          screenX={mapClickMenu.screenX}
-          screenY={mapClickMenu.screenY}
-          onPickLocation={() => void handlePickMapLocation()}
-          onFindCoordinates={handleFindMapCoordinates}
-          onClose={closeMapClickMenu}
-          loading={mapClickResolving}
-        />
-      ) : null}
+      <LiveMapAttributionStrip
+        activeLayer={activeLayer}
+        focus={attributionFocus}
+        isPanning={isMapInteracting}
+        refreshedAt={attributionRefreshedAt}
+        zoom={mapZoom}
+        maxZoom={mapMaxZoom}
+        onZoomIn={() => mapRef.current?.zoomIn()}
+        onZoomOut={() => mapRef.current?.zoomOut()}
+        immersive={liveImmersive}
+        isImmersiveFullscreen={liveImmersive}
+        onToggleImmersiveFullscreen={toggleLiveImmersive}
+      />
 
       <LiveMapRightControls
         bearing={mapBearing}
-        zoom={mapZoom}
-        maxZoom={mapMaxZoom}
         activeLayer={activeLayer}
         onResetNorth={() => mapRef.current?.resetNorth()}
-        onZoomIn={() => mapRef.current?.zoomIn()}
-        onZoomOut={() => mapRef.current?.zoomOut()}
-        onZoomChange={(zoom) => mapRef.current?.setZoom(zoom)}
         gpsStatus={gpsStatus}
         gpsErrorMessage={gpsState.errorMessage ?? null}
         onLocate={handleLocateClick}
         showGpsHelper={showGpsHelper}
         onCloseGpsHelper={() => setShowGpsHelper(false)}
         onUseMapArea={handleUseMapArea}
+        layersPanelOpen={layersPanelOpen}
+        onLayersPanelOpenChange={setLayersPanelOpen}
+        onLayerChange={handleLayerChange}
+        travelLayerEnabled={travelLayerEnabled}
+        onTravelLayerChange={handleTravelLayerChange}
+        seaRoutesEnabled={seaRoutesEnabled}
+        onSeaRoutesChange={handleSeaRoutesChange}
+        cruiseRoutesEnabled={cruiseRoutesEnabled}
+        onCruiseRoutesChange={handleCruiseRoutesChange}
+        footRoutesEnabled={footRoutesEnabled}
+        onFootRoutesChange={handleFootRoutesChange}
+        friendTrackingEnabled={friendTrackingEnabled}
+        onFriendTrackingChange={DEV_SHOW_MOCK_FRIENDS ? handleFriendTrackingChange : undefined}
+        mapViewMode={mapViewMode}
+        onToggleViewMode={handleToggleViewMode}
+        soundEnabled={soundEnabled}
+        onToggleSound={() => setSoundEnabled((prev) => !prev)}
+        notificationsEnabled={notificationsEnabled}
+        onToggleNotifications={() => setNotificationsEnabled((prev) => !prev)}
       />
 
       {toast ? (
@@ -3033,7 +3014,7 @@ export default function LivePage() {
       {showPlacePreview && selectedPlace && locationContext ? (
         <PlacePreviewCard
           place={selectedPlace}
-          loadingDetails={mapClickResolving || loadingPlaceDetails}
+          loadingDetails={loadingPlaceDetails}
           placeMedia={placeMedia}
           placeMediaLoading={placeMediaLoading}
           placeTags={placeTags}
@@ -3083,13 +3064,6 @@ export default function LivePage() {
         />
       ) : null}
 
-      {mapClickResolving && (
-        <div className="absolute bottom-6 right-6 z-35 w-80 rounded-2xl bg-white/75 backdrop-blur-xl border border-white/30 p-4 shadow-xl text-stone-800 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <div className="w-5 h-5 border-2 border-teal-600 border-t-transparent rounded-full animate-spin shrink-0" />
-          <span className="text-xs font-semibold text-stone-700">Checking this location...</span>
-        </div>
-      )}
-
       {/* Route Preview — local/regional destination */}
       {originPickMode ? (
         <div className="pointer-events-none absolute left-1/2 top-24 z-35 max-w-sm -translate-x-1/2 rounded-xl bg-stone-900/90 px-4 py-2 text-center text-sm text-white shadow-lg">
@@ -3123,7 +3097,7 @@ export default function LivePage() {
           durationSeconds={activeRoute?.durationSeconds ?? null}
           routePreviewStatus={routePreviewStatus}
           routeLoading={routeLoading}
-          identifying={mapClickResolving || loadingPlaceDetails}
+          identifying={loadingPlaceDetails}
           travelMode={travelMode}
           routeLastMileNotice={activeRoute?.lastMileNotice ?? null}
           routeBorderNotice={activeRoute?.borderNotice ?? null}
@@ -3220,77 +3194,6 @@ export default function LivePage() {
         onCopyCoordinates={(p) => void handleSheetCopyCoordinates(p)}
         onSavePlace={handleSheetSavePlace}
       />
-
-      {/* Option B Map Controls Dock — lower-left */}
-      <div
-        className="pointer-events-auto absolute z-40 transition-all duration-200 bottom-4 left-4 md:bottom-5 md:left-5"
-      >
-        <div className="relative flex flex-col items-start gap-2">
-          <LiveMapLayerControl
-            activeLayer={activeLayer}
-            onLayerChange={handleLayerChange}
-            travelLayerEnabled={travelLayerEnabled}
-            onTravelLayerChange={handleTravelLayerChange}
-            seaRoutesEnabled={seaRoutesEnabled}
-            onSeaRoutesChange={handleSeaRoutesChange}
-            cruiseRoutesEnabled={cruiseRoutesEnabled}
-            onCruiseRoutesChange={handleCruiseRoutesChange}
-            footRoutesEnabled={footRoutesEnabled}
-            onFootRoutesChange={handleFootRoutesChange}
-            friendTrackingEnabled={friendTrackingEnabled}
-            onFriendTrackingChange={DEV_SHOW_MOCK_FRIENDS ? handleFriendTrackingChange : undefined}
-            open={layersPanelOpen}
-            onOpenChange={setLayersPanelOpen}
-            showTrigger={false}
-            mapViewMode={mapViewMode}
-            onToggleViewMode={handleToggleViewMode}
-            isFullscreen={isFullscreen}
-            onToggleFullscreen={() => {
-              if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch((err) => {
-                  console.error("Failed to enter fullscreen:", err);
-                });
-              } else {
-                document.exitFullscreen().catch((err) => {
-                  console.error("Failed to exit fullscreen:", err);
-                });
-              }
-            }}
-            soundEnabled={soundEnabled}
-            onToggleSound={() => setSoundEnabled((prev) => !prev)}
-            notificationsEnabled={notificationsEnabled}
-            onToggleNotifications={() => setNotificationsEnabled((prev) => !prev)}
-            bearing={mapBearing}
-            onResetNorth={() => mapRef.current?.resetNorth()}
-          />
-
-          <LiveMapDock
-            activeLayer={activeLayer}
-            layersPanelOpen={layersPanelOpen}
-            onOpenLayers={() => setLayersPanelOpen((prev) => !prev)}
-            bearing={mapBearing}
-            onResetNorth={() => mapRef.current?.resetNorth()}
-            isFullscreen={isFullscreen}
-            onToggleFullscreen={() => {
-              if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch((err) => {
-                  console.error("Failed to enter fullscreen:", err);
-                });
-              } else {
-                document.exitFullscreen().catch((err) => {
-                  console.error("Failed to exit fullscreen:", err);
-                });
-              }
-            }}
-            soundEnabled={soundEnabled}
-            onToggleSound={() => setSoundEnabled((prev) => !prev)}
-            notificationsEnabled={notificationsEnabled}
-            onToggleNotifications={() => setNotificationsEnabled((prev) => !prev)}
-            wayraOpen={wayraOpen}
-            onToggleWayra={handleToggleWayra}
-          />
-        </div>
-      </div>
 
       {/* Live Mini HUD */}
       {isLiveActive && (

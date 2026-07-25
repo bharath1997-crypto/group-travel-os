@@ -1,10 +1,14 @@
 "use client";
 
 import { Crosshair, MapPin, X } from "lucide-react";
+import { formatMapCoordinates } from "./live-map-pick-context";
 
 type Props = {
   screenX: number;
   screenY: number;
+  lat: number;
+  lng: number;
+  localTimeLabel?: string;
   onPickLocation: () => void;
   onFindCoordinates: () => void;
   onClose: () => void;
@@ -14,6 +18,9 @@ type Props = {
 export default function LiveMapClickPopup({
   screenX,
   screenY,
+  lat,
+  lng,
+  localTimeLabel,
   onPickLocation,
   onFindCoordinates,
   onClose,
@@ -37,9 +44,15 @@ export default function LiveMapClickPopup({
         aria-label="Map location actions"
       >
         <div className="flex items-center justify-between px-2 py-1.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
-            Map point
-          </p>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+              Map point
+            </p>
+            <p className="truncate font-mono text-[10px] text-stone-600">
+              {formatMapCoordinates(lat, lng)}
+              {localTimeLabel ? ` · ${localTimeLabel}` : null}
+            </p>
+          </div>
           <button
             type="button"
             onClick={onClose}
