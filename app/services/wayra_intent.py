@@ -10,6 +10,12 @@ import re
 from enum import StrEnum
 from typing import Any
 
+from app.services.wayra_discovery import (
+    classify_discovery_expects,
+    is_discovery_identity_question,
+    is_discovery_llm_question,
+)
+
 
 class WayraMode(StrEnum):
     APP_GUIDE = "app_guide"
@@ -105,11 +111,300 @@ def normalize_query(message: str) -> str:
     return re.sub(r"\s+", " ", q).strip()
 
 
+def is_live_place_deep_question(message: str) -> bool:
+    if is_discovery_identity_question(message):
+        return False
+    if is_discovery_llm_question(message):
+        return True
+
+    q = normalize_query(message)
+    if not q:
+        return False
+
+    bullet_lines = sum(
+        1
+        for line in message.split("\n")
+        if line.strip().startswith(("-", "*", "•")) or re.match(r"^\d+\.", line.strip())
+    )
+    question_marks = message.count("?")
+    if bullet_lines >= 2 or question_marks >= 2:
+        return True
+
+    return _has_any(
+        q,
+        r"\bproperly\b",
+        r"\bculture\b",
+        r"\blanguage\b",
+        r"\blanguages\b",
+        r"\bwhat do people\b",
+        r"\bpeople (do|use to|used to)\b",
+        r"\bthings to do\b",
+        r"\bactivities\b",
+        r"\bhistory\b",
+        r"\bfood\b",
+        r"\bcustoms\b",
+        r"\btell me about\b",
+        r"\bdescribe (this|the|that)\b",
+        r"\bwhat is it like\b",
+        r"\bwhat s it like\b",
+        r"\bwhat s here\b",
+        r"\bwhat is here\b",
+        r"\bwhat s at\b",
+        r"\bwhat is this (location|place|spot)\b",
+        r"\babout this location\b",
+        r"\bnearby\b",
+        r"\binteresting\b",
+        r"\bworth visiting\b",
+        r"\bwhat s special\b",
+        r"\bwhat is special\b",
+        r"\bwhat is the special\b",
+        r"\bout there\b",
+        r"\bwhat s out there\b",
+    )
+
+
+def is_live_map_identity_question(message: str) -> bool:
+    if is_discovery_identity_question(message):
+        return True
+
+    q = normalize_query(message)
+    if not q or is_live_place_deep_question(message):
+        return False
+    return _has_any(
+        q,
+        r"\bwhat location did i\b",
+        r"\bwhich location did i\b",
+        r"\bwhere did i (pick|pin|drop|select|pitch)\b",
+        r"\bwhat did i pick\b",
+        r"\bwhat (place|pin|location|spot) did i\b",
+        r"\bwhat are the coordinates\b",
+        r"\bshow (me )?the coordinates\b",
+        r"\bwhere is my pin\b",
+        r"\bwhere s my pin\b",
+    )
+
+
+def is_live_map_context_question(message: str) -> bool:
+    if is_live_map_identity_question(message) or is_live_place_deep_question(message):
+        return True
+    q = normalize_query(message)
+    if not q:
+        return False
+    return _has_any(
+        q,
+        r"\bwhat am i looking at\b",
+        r"\babout (the|this|my) (pick|picked|pin|location|place|spot)\b",
+        r"\b(pick|picked|pin) location\b",
+        r"\bthis pin\b",
+        r"\bthis location\b",
+        r"\bthis place\b",
+        r"\bmy picked\b",
+        r"\bdropped pin\b",
+        r"\bselected (place|location|pin|spot)\b",
+        r"\bcoordinates\b",
+        r"\bwhere is (this|my|the) (pin|place|location|spot)\b",
+        r"\bwhat s on the map\b",
+        r"\bon the map\b.{0,30}\b(pick|pin|place|location)\b",
+    )
+
+
+def _is_live_page(page: str, context: dict[str, Any] | None) -> bool:
+    p = (page or "").lstrip("/").replace("_", "/")
+    if p == "live" or p.startswith("live/"):
+        return True
+    if context:
+        pathname = context.get("pathname")
+        if isinstance(pathname, str) and (
+            pathname == "/live" or pathname.startswith("/live/")
+        ):
+            return True
+    return False
+
+
+def _extract_live_selected_place(context: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not context:
+        return None
+    raw = context.get("selectedPlace")
+    if not isinstance(raw, dict):
+        return None
+    lat = raw.get("lat")
+    lng = raw.get("lng")
+    if not isinstance(lat, (int, float)) or not isinstance(lng, (int, float)):
+        return None
+    return raw
+
+
+def _format_coord(value: float, pos: str, neg: str) -> str:
+    return f"{abs(value):.5f}° {pos if value >= 0 else neg}"
+
+
+def _build_live_selected_place_reply(place: dict[str, Any], live_stage: str | None) -> str:
+    name = place.get("name")
+    label = name.strip() if isinstance(name, str) and name.strip() else "Dropped pin"
+    lat = float(place["lat"])
+    lng = float(place["lng"])
+    lat_str = _format_coord(lat, "N", "S")
+    lng_str = _format_coord(lng, "E", "W")
+    category = place.get("category")
+    address = place.get("address")
+
+    parts = [f"You picked {label} on the Live map at {lat_str}, {lng_str}."]
+    if isinstance(category, str) and category.strip():
+        parts.append(f"Category: {category.strip()}.")
+    if isinstance(address, str) and address.strip() and not address.startswith("Coordinates:"):
+        parts.append(f"Address: {address.strip()}.")
+
+    if live_stage == "destination_set":
+        parts.append("This spot is set as your destination.")
+    elif live_stage == "place_preview":
+        parts.append(
+            "You're previewing this spot — tap Set destination or Start Solo Live when you're ready."
+        )
+    else:
+        parts.append("Ask me about the drive, warnings, or what to do here.")
+
+    return " ".join(parts)
+
+
+def resolve_live_map_context_message(
+    message: str,
+    page: str,
+    context: dict[str, Any] | None,
+) -> str | None:
+    if not is_live_map_identity_question(message):
+        return None
+    if not _is_live_page(page, context):
+        return None
+
+    place = _extract_live_selected_place(context)
+    if not place:
+        return (
+            "I don't see a picked place on the map yet. Tap the map or search for a destination, "
+            "then ask me again about that pin."
+        )
+
+    live_stage = context.get("liveStage") if context else None
+    stage = live_stage if isinstance(live_stage, str) else None
+    return _build_live_selected_place_reply(place, stage)
+
+
+def is_live_travel_prep_question(message: str) -> bool:
+    q = normalize_query(message)
+    if not q:
+        return False
+    return _has_any(
+        q,
+        r"\bplanning a trip to\b",
+        r"\bwhat should i know\b",
+        r"\bhow should i prepare\b",
+        r"\btips and warnings\b",
+        r"\bhere are the tips\b",
+        r"\bbefore i go\b",
+        r"\bprepare for\b",
+        r"\bwhat should i plan\b",
+        r"\binternational border\b",
+        r"\bborder crossing\b",
+        r"\bfar from (my|your|the)\b",
+        r"\bdriving ends at\b",
+        r"\blast mile\b",
+        r"\bstart solo live\b",
+    )
+
+
+def is_app_how_to_question(message: str) -> bool:
+    q = normalize_query(message)
+    if not q:
+        return False
+    return _has_any(
+        q,
+        r"\bhow do i\b",
+        r"\bhow to\b",
+        r"\bhow can i\b",
+        r"\bwhere do i (find|open|see|get)\b",
+        r"\bwhat is the plan page\b",
+        r"\bcreate (a )?group\b",
+        r"\bcreate (a )?trip\b",
+        r"\bnotification settings\b",
+        r"\bshow me how\b",
+        r"\bexplain (the|this) page\b",
+    )
+
+
+def resolve_live_travel_prep_message(
+    message: str,
+    page: str,
+    context: dict[str, Any] | None,
+) -> str | None:
+    if not is_live_travel_prep_question(message):
+        return None
+    if not _is_live_page(page, context):
+        return None
+
+    place = _extract_live_selected_place(context)
+    dest = "this destination"
+    if place:
+        name = place.get("name")
+        if isinstance(name, str) and name.strip():
+            dest = name.strip()
+
+    lines = [f"Here's how I'd prepare for {dest}:"]
+
+    suggestions = context.get("aiSuggestions") if context else None
+    if isinstance(suggestions, list):
+        for row in suggestions:
+            if isinstance(row, dict):
+                msg = row.get("message")
+                if isinstance(msg, str) and msg.strip():
+                    lines.append(f"• {msg.strip()}")
+
+    route = context.get("routePreview") if context else None
+    if isinstance(route, dict):
+        duration = route.get("durationSeconds")
+        if isinstance(duration, (int, float)) and duration > 0:
+            hours = max(1, round(duration / 3600))
+            lines.append(
+                f"• The drive is about {hours} hr — plan fuel, rest stops, and overnight stays if needed."
+            )
+        distance = route.get("distanceMeters")
+        if isinstance(distance, (int, float)) and distance > 0:
+            miles = round(distance / 1609.344, 1)
+            lines.append(f"• Total distance is roughly {miles} mi.")
+        border = route.get("borderNotice")
+        if isinstance(border, str) and border.strip():
+            lines.append(f"• Border: {border.strip()} Carry passport/ID.")
+        last_mile = route.get("lastMileNotice")
+        if isinstance(last_mile, str) and last_mile.strip():
+            lines.append(f"• Last mile: {last_mile.strip()}")
+
+    if context:
+        notice = context.get("contextNotice")
+        if isinstance(notice, str) and notice.strip():
+            lines.append(f"• {notice.strip()}")
+
+    if len(lines) == 1:
+        lines.append("• Check the route card warnings on Live before you start.")
+
+    lines.append("Tap Start Solo Live when you're ready to navigate.")
+    return "\n".join(lines)
+
+
 def classify_mode(message: str) -> WayraMode:
     """App-help vs travel inspiration. Noun-specific travel cues override generic app words."""
     q = normalize_query(message)
     if not q:
         return WayraMode.APP_GUIDE
+
+    discovery = classify_discovery_expects(message)
+    if discovery == "app_guide":
+        return WayraMode.APP_GUIDE
+    if discovery in ("local", "llm"):
+        return WayraMode.TRAVEL
+
+    if is_live_map_context_question(message):
+        return WayraMode.TRAVEL
+
+    if is_live_travel_prep_question(message):
+        return WayraMode.TRAVEL
 
     travel_strong = _has_any(
         q,
@@ -233,13 +528,23 @@ def resolve_app_intent(message: str) -> AppIntent | None:
 
     if _has_any(
         q,
-        r"\blive\b",
+        r"\bhow does live work\b",
+        r"\bhow does solo live work\b",
+        r"\bwhat does the pencil icon do\b",
         r"\bmeet point\b",
         r"\bmeeting point\b",
         r"\blocation shar",
         r"\bshare (my )?location\b",
         r"\bcountdown\b",
         r"\btimer\b",
+        r"\bhow\b.{0,30}\blive tab\b",
+        r"\bhow\b.{0,30}\blive map\b",
+        r"\bopen live\b",
+        r"\buse live\b",
+    ) or (
+        re.search(r"\blive\b", q)
+        and _has_any(q, r"\bhow do i\b", r"\bhow to\b", r"\bhow can i\b", r"\bwhere do i\b", r"\bhow does\b")
+        and not re.search(r"\brovvy live\b", q)
     ):
         return AppIntent.LIVE_MAP
 
@@ -289,10 +594,15 @@ def contextual_app_fallback(page: str, active_tab: str | None = None) -> str:
             "Explore is for discovery—filter by vibe, save places you love, and send ideas to a trip poll. "
             "Buddy Trips and Events are under Explore and Group when you're ready to coordinate."
         )
-    if p.startswith("group") or p.startswith("travel-hub") or p.startswith("buddy") or p.startswith("live"):
+    if p.startswith("group") or p.startswith("travel-hub") or p.startswith("buddy"):
         return (
             "This area is for people moving together—Travel Hub for chat and invites, Buddy Trips to find companions, "
             "Live for maps and meet points. What should we set up first?"
+        )
+    if p.startswith("live"):
+        return (
+            "You're on Rovvy Live — pick a place on the map, then ask me about that pin, the route, or warnings. "
+            "Try: \"What location did I pick?\" after you drop a pin."
         )
     if p.startswith("profile") or p.startswith("settings"):
         return (
@@ -406,6 +716,14 @@ def degraded_message(
     *,
     prefer_travel: bool,
 ) -> str:
+    live_map = resolve_live_map_context_message(message, page, context)
+    if live_map:
+        return live_map
+
+    live_prep = resolve_live_travel_prep_message(message, page, context)
+    if live_prep:
+        return live_prep
+
     if prefer_travel:
         travel = travel_fallback_message(message, context)
         if travel:

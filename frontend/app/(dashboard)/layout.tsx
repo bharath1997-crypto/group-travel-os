@@ -55,13 +55,15 @@ const MUTED = "#94A3B8";
 
 const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
 
+type NavIcon = LucideIcon | typeof ExploreTabIcon;
+
 type SubNavItem = { href: string; label: string; Icon?: LucideIcon };
 
 type NavSectionDef = {
   id: "explore" | "live" | "trips" | "split-activities";
   href: string;
   label: string;
-  Icon: LucideIcon | null;
+  Icon: NavIcon | null;
   subs: SubNavItem[];
   mobileLabel?: string;
 };

@@ -5,12 +5,10 @@
 """
 app/routes/ai_assistant.py — Thin API for the Rovvy sidecar AI helper.
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from app.models.user import User
 from app.schemas.ai_assistant import AIAssistantRequest, AIAssistantResponse
 from app.services.ai_assistant_service import AIAssistantService
-from app.utils.auth import get_current_user
 
 router = APIRouter(tags=["AI Assistant"])
 
@@ -20,11 +18,6 @@ router = APIRouter(tags=["AI Assistant"])
     response_model=AIAssistantResponse,
     summary="Sidecar page assistant (OpenAI, read-only help)",
 )
-def post_ai_assistant(
-    body: AIAssistantRequest,
-    _user: User = Depends(get_current_user),
-) -> AIAssistantResponse:
-    """
-    Auth required; the handler does not use the user row — presence of `Depends` validates the token.
-    """
-    return AIAssistantService.respond(body)
+async def post_ai_assistant(body: AIAssistantRequest) -> AIAssistantResponse:
+    """Browse-first: no login required; optional auth may be added later for personalization."""
+    return await AIAssistantService.respond(body)
