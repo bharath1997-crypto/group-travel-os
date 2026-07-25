@@ -540,26 +540,60 @@ function routeArrowLayout(): maplibregl.SymbolLayerSpecification["layout"] {
   };
 }
 
+function createRedMapPinElement(size: "md" | "lg" = "lg"): HTMLDivElement {
+  const el = document.createElement("div");
+  el.style.cssText = "pointer-events:none;";
+  const pinSize = size === "lg" ? 28 : 24;
+  const wrapH = size === "lg" ? 40 : 36;
+  el.innerHTML = `
+    <div style="
+      position: relative;
+      width: ${pinSize + 4}px;
+      height: ${wrapH}px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    ">
+      <div style="
+        width: ${pinSize}px;
+        height: ${pinSize}px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        background: #DC2626;
+        border: 3px solid #ffffff;
+        box-shadow: 0 3px 10px rgba(220,38,38,0.45);
+      "></div>
+      <div style="
+        position: absolute;
+        top: ${size === "lg" ? 8 : 7}px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: ${size === "lg" ? 9 : 8}px;
+        height: ${size === "lg" ? 9 : 8}px;
+        border-radius: 50%;
+        background: #ffffff;
+      "></div>
+    </div>
+  `;
+  return el;
+}
+
 function createExactSelectedPlaceMarkerElement(lat: number, lng: number): HTMLDivElement {
   const el = document.createElement("div");
   el.style.cssText = "pointer-events:none;z-index:8;";
   const latDir = lat >= 0 ? "N" : "S";
   const lngDir = lng >= 0 ? "E" : "W";
-  el.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;gap:6px;transform:translateY(-4px);">
-      <div style="position:relative;width:42px;height:42px;">
-        <div style="position:absolute;inset:0;border-radius:50%;background:rgba(245,158,11,0.22);border:2px solid rgba(245,158,11,0.75);animation:rovvy-gps-pulse 2s infinite cubic-bezier(0.25,0,0,1);"></div>
-        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#F59E0B;border:3px solid #ffffff;box-shadow:0 0 16px rgba(245,158,11,0.85);"></div>
-        <div style="position:absolute;left:50%;top:4px;bottom:4px;width:2px;transform:translateX(-50%);background:rgba(255,255,255,0.9);"></div>
-        <div style="position:absolute;top:50%;left:4px;right:4px;height:2px;transform:translateY(-50%);background:rgba(255,255,255,0.9);"></div>
-      </div>
-      <div style="max-width:220px;padding:5px 9px;border-radius:9px;background:rgba(15,23,42,0.94);border:1px solid rgba(255,255,255,0.18);color:#fff;font-size:10px;font-weight:700;font-family:ui-monospace,monospace;text-align:center;line-height:1.35;box-shadow:0 4px 16px rgba(0,0,0,0.38);">
-        Selected place<br/>
-        ${Math.abs(lat).toFixed(5)}° ${latDir}<br/>
-        ${Math.abs(lng).toFixed(5)}° ${lngDir}
-      </div>
-    </div>
-  `;
+  const pin = createRedMapPinElement("lg");
+  const wrap = document.createElement("div");
+  wrap.style.cssText =
+    "display:flex;flex-direction:column;align-items:center;gap:6px;transform:translateY(-4px);";
+  wrap.appendChild(pin);
+  const label = document.createElement("div");
+  label.style.cssText =
+    "max-width:220px;padding:5px 9px;border-radius:9px;background:rgba(15,23,42,0.94);border:1px solid rgba(255,255,255,0.18);color:#fff;font-size:10px;font-weight:700;font-family:ui-monospace,monospace;text-align:center;line-height:1.35;box-shadow:0 4px 16px rgba(0,0,0,0.38);";
+  label.innerHTML = `Selected place<br/>${Math.abs(lat).toFixed(5)}° ${latDir}<br/>${Math.abs(lng).toFixed(5)}° ${lngDir}`;
+  wrap.appendChild(label);
+  el.appendChild(wrap);
   return el;
 }
 

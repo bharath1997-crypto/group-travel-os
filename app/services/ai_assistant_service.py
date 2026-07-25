@@ -25,10 +25,14 @@ from app.schemas.ai_assistant import (
 )
 from app.services.wayra_intent import (
     WayraMode,
+    _is_live_page,
     classify_mode,
     contextual_app_fallback,
     degraded_message,
+    is_app_how_to_question,
     resolve_app_guide_message,
+    resolve_live_map_context_message,
+    resolve_live_travel_prep_message,
     travel_fallback_message,
 )
 
@@ -38,11 +42,128 @@ _GEMINI_MODEL = "gemini-2.5-flash"  # updated for 2026 model compatibility
 _OPENAI_MODEL = "gpt-4o-mini"
 _MAX_OUTPUT_TOKENS = 2048
 
+_GENERIC_PLACE_NAMES = frozenset(
+    {"dropped pin", "selected location", "address", "place", "map pin"}
+)
+
+
+def _is_generic_place_name(name: str | None) -> bool:
+    if not name or not name.strip():
+        return True
+    return name.strip().lower() in _GENERIC_PLACE_NAMES
+
+
+def _region_label_from_address(addr: dict[str, Any]) -> str | None:
+    city = (
+        addr.get("city")
+        or addr.get("town")
+        or addr.get("village")
+        or addr.get("municipality")
+        or addr.get("county")
+    )
+    state = addr.get("state")
+    country = addr.get("country")
+    parts = [p.strip() for p in (city, state, country) if isinstance(p, str) and p.strip()]
+    if not parts:
+        return None
+    deduped: list[str] = []
+    for part in parts:
+        if part not in deduped:
+            deduped.append(part)
+    return ", ".join(deduped)
+
+
+def _region_from_nominatim(
+    data: dict[str, Any],
+    *,
+    original_name: str | None = None,
+) -> dict[str, Any]:
+    addr = data.get("address") if isinstance(data.get("address"), dict) else {}
+    city = (
+        addr.get("city")
+        or addr.get("town")
+        or addr.get("village")
+        or addr.get("municipality")
+        or addr.get("county")
+    )
+    state = addr.get("state")
+    country = addr.get("country")
+    display = data.get("display_name") if isinstance(data.get("display_name"), str) else ""
+    raw_name = data.get("name") if isinstance(data.get("name"), str) else None
+    if not raw_name and display:
+        raw_name = display.split(",")[0].strip() or None
+    region_label = _region_label_from_address(addr)
+    resolved_name = raw_name
+    if _is_generic_place_name(original_name) or _is_generic_place_name(resolved_name):
+        resolved_name = region_label or raw_name or "Dropped pin"
+    return {
+        "name": resolved_name,
+        "city": city,
+        "state": state,
+        "country": country,
+        "address": display or None,
+        "region_label": region_label,
+    }
+
+
+async def _enrich_live_context(ctx: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Reverse-geocode generic dropped pins so Wayra can answer culture/language questions."""
+    if not ctx or not _is_live_page("", ctx):
+        return ctx
+
+    selected = ctx.get("selectedPlace")
+    if not isinstance(selected, dict):
+        return ctx
+
+    lat = selected.get("lat")
+    lng = selected.get("lng")
+    if not isinstance(lat, (int, float)) or not isinstance(lng, (int, float)):
+        return ctx
+
+    name = selected.get("name") if isinstance(selected.get("name"), str) else None
+    city = selected.get("city") if isinstance(selected.get("city"), str) else None
+    country = selected.get("country") if isinstance(selected.get("country"), str) else None
+    if not _is_generic_place_name(name) and (city or country):
+        return ctx
+
+    from app.services.geocoding_service import GeocodingService
+
+    data = await GeocodingService.reverse_geocode(float(lat), float(lng))
+    if not data:
+        return ctx
+
+    region = _region_from_nominatim(data, original_name=name)
+    enriched = {**selected}
+    for key in ("name", "city", "state", "country", "address"):
+        value = region.get(key)
+        if value:
+            enriched[key] = value
+
+    updated = {**ctx, "selectedPlace": enriched}
+    if region.get("region_label"):
+        updated["resolvedMapRegion"] = region["region_label"]
+    return updated
+
 
 # ── Prompt construction ────────────────────────────────────────────────────────
 
 def _build_system_prompt(page: str, active_tab: str | None) -> str:
     tab = active_tab or "(not specified)"
+    live_rules = ""
+    p = (page or "").lstrip("/").replace("_", "/")
+    if p == "live" or p.startswith("live/"):
+        live_rules = """
+LIVE MAP CONTEXT (critical on /live):
+- The JSON payload may include context.selectedPlace (name, lat, lng, category, address, city, state, country), liveStage, aiSuggestions, routePreview, and resolvedMapRegion.
+- When the user asks about their picked pin, dropped pin, or selected location, answer from context.selectedPlace FIRST.
+- When live_context_block is present, treat it as the active map pin — all answers refer to it unless the user clearly asks about the app UI.
+- When selectedPlace.name is generic ("Dropped pin", "Map pin") or missing, use coordinates plus city/state/country/address/resolvedMapRegion to identify the real-world region.
+- For culture, language, local activities, and "what is this location" questions: answer directly about the inferred region. Use geographic knowledge from lat/lng when needed. Do NOT tell users to pick a landmark or send them to Explore/Plan unless they explicitly ask about those pages.
+- When the user asks how to prepare for a trip, what to know, or references tips/warnings, use aiSuggestions and routePreview from context — do NOT give generic "how to open Live" instructions.
+- State the place name and coordinates clearly. Do NOT explain how to create groups or trips unless they ask.
+- If selectedPlace is missing, tell them to pick a spot on the map first.
+"""
+
     return f"""You are Wayra, the built-in AI assistant for Rovvy — a group travel planning app.
 You are a native feature of Rovvy, not a third-party service.
 
@@ -135,7 +256,7 @@ Output format — single JSON object only:
     }}
   ],
   "summary": {{}} or null
-}}"""
+}}""" + live_rules
 
 
 def _extract_city_from_context(ctx: dict[str, Any] | None) -> str | None:
@@ -177,6 +298,19 @@ def _build_input_payload(request: AIAssistantRequest) -> str:
         "context": request.context,
         "user_message": request.user_message,
     }
+    selected = ctx.get("selectedPlace")
+    if isinstance(selected, dict):
+        payload["selected_place_on_map"] = selected
+    if ctx.get("aiSuggestions") is not None:
+        payload["live_ai_suggestions"] = ctx.get("aiSuggestions")
+    if ctx.get("routePreview") is not None:
+        payload["live_route_preview"] = ctx.get("routePreview")
+    if ctx.get("liveContextBlock") is not None:
+        payload["live_context_block"] = ctx.get("liveContextBlock")
+    if ctx.get("resolvedMapRegion") is not None:
+        payload["resolved_map_region"] = ctx.get("resolvedMapRegion")
+    if ctx.get("implicitLocation") is True:
+        payload["implicit_location"] = True
     destination_intel = _enrich_destination_intel(ctx)
     if destination_intel:
         payload["destination_intel"] = destination_intel
@@ -379,19 +513,36 @@ def _fallback_response(
 
 class AIAssistantService:
     @staticmethod
-    def respond(request: AIAssistantRequest) -> AIAssistantResponse:
+    async def respond(request: AIAssistantRequest) -> AIAssistantResponse:
         mode = classify_mode(request.user_message)
         ctx = request.context if isinstance(request.context, dict) else None
+        ctx = await _enrich_live_context(ctx)
+        request = request.model_copy(update={"context": ctx})
+
+        live_map = resolve_live_map_context_message(
+            request.user_message,
+            request.page,
+            ctx,
+        )
+        if live_map:
+            return AIAssistantResponse(
+                message=live_map[:1200],
+                suggested_actions=[],
+                summary={"intent": "live_map_context", "local": True},
+            )
 
         # Reliable App Guide: answer locally for known product intents (no LLM latency).
         if mode == WayraMode.APP_GUIDE:
-            local_app = resolve_app_guide_message(request.user_message, request.page)
-            if local_app:
-                return AIAssistantResponse(
-                    message=local_app,
-                    suggested_actions=[],
-                    summary={"intent": "app_guide", "local": True},
-                )
+            on_live = _is_live_page(request.page, ctx)
+            allow_app_local = not on_live or is_app_how_to_question(request.user_message)
+            if allow_app_local:
+                local_app = resolve_app_guide_message(request.user_message, request.page)
+                if local_app:
+                    return AIAssistantResponse(
+                        message=local_app,
+                        suggested_actions=[],
+                        summary={"intent": "app_guide", "local": True},
+                    )
 
         system_prompt = _build_system_prompt(request.page, request.active_tab)
         user_block = _build_input_payload(request)

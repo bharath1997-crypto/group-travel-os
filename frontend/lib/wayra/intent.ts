@@ -3,6 +3,13 @@
  * Used by AIAssistantSidecar for fast App Guide answers and graceful travel degradation.
  */
 
+import {
+  classifyDiscoveryExpects,
+  isDiscoveryIdentityQuestion,
+  isDiscoveryLlmQuestion,
+} from "@/lib/wayra/discovery";
+import { resolvePlaceDisplayName } from "@/lib/wayra/place-region";
+
 export type WayraMode = "app_guide" | "travel";
 
 export type AppIntent =
@@ -64,9 +71,314 @@ export function normalizeQuery(message: string): string {
     .replace(/\s+/g, " ");
 }
 
+export type LiveSelectedPlaceContext = {
+  name?: string | null;
+  lat: number;
+  lng: number;
+  category?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+};
+
+/** Rich place questions (culture, language, activities) need the LLM — not a coordinate stub. */
+export function isLivePlaceDeepQuestion(message: string): boolean {
+  if (isDiscoveryIdentityQuestion(message)) return false;
+  if (isDiscoveryLlmQuestion(message)) return true;
+
+  const q = normalizeQuery(message);
+  if (!q) return false;
+
+  const bulletLines = message
+    .split("\n")
+    .filter((line) => /^[\s\-*•]/.test(line.trim()) || /^\d+\./.test(line.trim())).length;
+  const questionMarks = message.match(/\?/g)?.length ?? 0;
+
+  if (bulletLines >= 2 || questionMarks >= 2) return true;
+
+  return hasAny(
+    q,
+    /\bproperly\b/,
+    /\bculture\b/,
+    /\blanguage\b/,
+    /\blanguages\b/,
+    /\bwhat do people\b/,
+    /\bpeople (do|use to|used to)\b/,
+    /\bthings to do\b/,
+    /\bactivities\b/,
+    /\bhistory\b/,
+    /\bfood\b/,
+    /\bcustoms\b/,
+    /\btell me about\b/,
+    /\bdescribe (this|the|that)\b/,
+    /\bwhat is it like\b/,
+    /\bwhat s it like\b/,
+    /\bwhat s here\b/,
+    /\bwhat is here\b/,
+    /\bwhat s at\b/,
+    /\bwhat is this (location|place|spot)\b/,
+    /\babout this location\b/,
+    /\bnearby\b/,
+    /\binteresting\b/,
+    /\bworth visiting\b/,
+    /\bwhat s special\b/,
+    /\bwhat is special\b/,
+    /\bwhat is the special\b/,
+    /\bout there\b/,
+    /\bwhat s out there\b/,
+  );
+}
+
+/** Narrow instant reply: only "which pin did I drop?" / coordinate lookups. */
+export function isLiveMapIdentityQuestion(message: string): boolean {
+  if (isDiscoveryIdentityQuestion(message)) return true;
+
+  const q = normalizeQuery(message);
+  if (!q || isLivePlaceDeepQuestion(message)) return false;
+
+  return hasAny(
+    q,
+    /\bwhat location did i\b/,
+    /\bwhich location did i\b/,
+    /\bwhere did i (pick|pin|drop|select|pitch)\b/,
+    /\bwhat did i pick\b/,
+    /\bwhat (place|pin|location|spot) did i\b/,
+    /\bwhat are the coordinates\b/,
+    /\bshow (me )?the coordinates\b/,
+    /\bwhere is my pin\b/,
+    /\bwhere s my pin\b/,
+  );
+}
+
+/** User is asking about the pin / place currently on the Live map. */
+export function isLiveMapContextQuestion(message: string): boolean {
+  if (isLiveMapIdentityQuestion(message) || isLivePlaceDeepQuestion(message)) {
+    return true;
+  }
+
+  const q = normalizeQuery(message);
+  if (!q) return false;
+
+  return hasAny(
+    q,
+    /\bwhat am i looking at\b/,
+    /\babout (the|this|my) (pick|picked|pin|location|place|spot)\b/,
+    /\b(pick|picked|pin) location\b/,
+    /\bthis pin\b/,
+    /\bthis location\b/,
+    /\bthis place\b/,
+    /\bmy picked\b/,
+    /\bdropped pin\b/,
+    /\bselected (place|location|pin|spot)\b/,
+    /\bcoordinates\b/,
+    /\bwhere is (this|my|the) (pin|place|location|spot)\b/,
+    /\bwhat s on the map\b/,
+    /\bon the map\b.{0,30}\b(pick|pin|place|location)\b/,
+  );
+}
+
+/** Trip prep / warnings on Live — should go to LLM with map context, not App Guide. */
+export function isLiveTravelPrepQuestion(message: string): boolean {
+  const q = normalizeQuery(message);
+  if (!q) return false;
+
+  return hasAny(
+    q,
+    /\bplanning a trip to\b/,
+    /\bwhat should i know\b/,
+    /\bhow should i prepare\b/,
+    /\btips and warnings\b/,
+    /\bhere are the tips\b/,
+    /\bbefore i go\b/,
+    /\bprepare for\b/,
+    /\bwhat should i plan\b/,
+    /\bask wayra about this trip\b/,
+    /\binternational border\b/,
+    /\bborder crossing\b/,
+    /\bfar from (my|your|the)\b/,
+    /\bdriving ends at\b/,
+    /\blast mile\b/,
+    /\bstart solo live\b/,
+  );
+}
+
+/** True when the user is asking how Rovvy works — safe for instant App Guide replies. */
+export function isAppHowToQuestion(message: string): boolean {
+  const q = normalizeQuery(message);
+  if (!q) return false;
+
+  return hasAny(
+    q,
+    /\bhow do i\b/,
+    /\bhow to\b/,
+    /\bhow can i\b/,
+    /\bwhere do i (find|open|see|get)\b/,
+    /\bwhat is the plan page\b/,
+    /\bcreate (a )?group\b/,
+    /\bcreate (a )?trip\b/,
+    /\bnotification settings\b/,
+    /\bshow me how\b/,
+    /\bexplain (the|this) page\b/,
+  );
+}
+
+export function isLivePage(page: string, context?: Record<string, unknown>): boolean {
+  const p = (page || "").replace(/^\//, "").replace(/_/g, "/");
+  if (p === "live" || p.startsWith("live/")) return true;
+  const pathname = context?.pathname;
+  return typeof pathname === "string" && (pathname === "/live" || pathname.startsWith("/live/"));
+}
+
+export function extractLiveSelectedPlace(
+  context?: Record<string, unknown>,
+): LiveSelectedPlaceContext | null {
+  if (!context) return null;
+  const raw = context.selectedPlace;
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+  const lat = row.lat;
+  const lng = row.lng;
+  if (typeof lat !== "number" || typeof lng !== "number") return null;
+  return {
+    name: typeof row.name === "string" ? row.name : null,
+    lat,
+    lng,
+    category: typeof row.category === "string" ? row.category : null,
+    address: typeof row.address === "string" ? row.address : null,
+    city: typeof row.city === "string" ? row.city : null,
+    state: typeof row.state === "string" ? row.state : null,
+    country: typeof row.country === "string" ? row.country : null,
+  };
+}
+
+function formatCoord(value: number, pos: string, neg: string): string {
+  return `${Math.abs(value).toFixed(5)}° ${value >= 0 ? pos : neg}`;
+}
+
+export function buildLiveSelectedPlaceReply(
+  place: LiveSelectedPlaceContext,
+  liveStage?: string | null,
+): string {
+  const label = resolvePlaceDisplayName(place.name, place);
+  const latStr = formatCoord(place.lat, "N", "S");
+  const lngStr = formatCoord(place.lng, "E", "W");
+  const category = place.category?.trim();
+  const address = place.address?.trim();
+
+  const parts = [
+    `You picked ${label} on the Live map at ${latStr}, ${lngStr}.`,
+  ];
+  if (category) parts.push(`Category: ${category}.`);
+  if (address && !address.startsWith("Coordinates:")) {
+    parts.push(`Address: ${address}.`);
+  }
+
+  if (liveStage === "destination_set") {
+    parts.push("This spot is set as your destination.");
+  } else if (liveStage === "place_preview") {
+    parts.push(
+      "You're previewing this spot — tap Set destination or Start Solo Live when you're ready.",
+    );
+  } else {
+    parts.push("Ask me about the drive, warnings, or what to do here.");
+  }
+
+  return parts.join(" ");
+}
+
+/** Answer using Live map pin context when the user asks about their picked location. */
+export function resolveLiveMapContextReply(
+  message: string,
+  page: string,
+  context?: Record<string, unknown>,
+): string | null {
+  if (!isLiveMapIdentityQuestion(message)) return null;
+  if (!isLivePage(page, context)) return null;
+
+  const place = extractLiveSelectedPlace(context);
+  if (!place) {
+    return (
+      "I don't see a picked place on the map yet. Tap the map or search for a destination, " +
+      "then ask me again about that pin."
+    );
+  }
+
+  const liveStage =
+    typeof context?.liveStage === "string" ? context.liveStage : null;
+  return buildLiveSelectedPlaceReply(place, liveStage);
+}
+
+/** Offline / API-fallback prep answer using Live route warnings in context. */
+export function resolveLiveTravelPrepReply(
+  message: string,
+  page: string,
+  context?: Record<string, unknown>,
+): string | null {
+  if (!isLiveTravelPrepQuestion(message)) return null;
+  if (!isLivePage(page, context)) return null;
+
+  const place = extractLiveSelectedPlace(context);
+  const dest = place?.name?.trim() || "this destination";
+  const lines: string[] = [`Here's how I'd prepare for ${dest}:`];
+
+  const suggestions = context?.aiSuggestions;
+  if (Array.isArray(suggestions)) {
+    for (const row of suggestions) {
+      if (
+        row &&
+        typeof row === "object" &&
+        typeof (row as { message?: unknown }).message === "string"
+      ) {
+        lines.push(`• ${(row as { message: string }).message}`);
+      }
+    }
+  }
+
+  const route = context?.routePreview;
+  if (route && typeof route === "object") {
+    const r = route as Record<string, unknown>;
+    if (typeof r.durationSeconds === "number" && r.durationSeconds > 0) {
+      const hours = Math.max(1, Math.round(r.durationSeconds / 3600));
+      lines.push(
+        `• The drive is about ${hours} hr — plan fuel, rest stops, and overnight stays if needed.`,
+      );
+    }
+    if (typeof r.distanceMeters === "number" && r.distanceMeters > 0) {
+      const miles = (r.distanceMeters / 1609.344).toFixed(1);
+      lines.push(`• Total distance is roughly ${miles} mi.`);
+    }
+    if (typeof r.borderNotice === "string" && r.borderNotice.trim()) {
+      lines.push(`• Border: ${r.borderNotice.trim()} Carry passport/ID.`);
+    }
+    if (typeof r.lastMileNotice === "string" && r.lastMileNotice.trim()) {
+      lines.push(`• Last mile: ${r.lastMileNotice.trim()}`);
+    }
+  }
+
+  if (typeof context?.contextNotice === "string" && context.contextNotice.trim()) {
+    lines.push(`• ${context.contextNotice.trim()}`);
+  }
+
+  if (lines.length === 1) {
+    lines.push("• Check the route card warnings on Live before you start.");
+  }
+
+  lines.push("Tap Start Solo Live when you're ready to navigate.");
+  return lines.join("\n");
+}
+
 export function classifyMode(message: string): WayraMode {
   const q = normalizeQuery(message);
   if (!q) return "app_guide";
+
+  const discovery = classifyDiscoveryExpects(message);
+  if (discovery === "app_guide") return "app_guide";
+  if (discovery === "local" || discovery === "llm") return "travel";
+
+  if (isLiveMapContextQuestion(message)) return "travel";
+
+  if (isLiveTravelPrepQuestion(message)) return "travel";
 
   const travelStrong = hasAny(
     q,
@@ -200,14 +512,23 @@ export function resolveAppIntent(message: string): AppIntent | null {
   if (
     hasAny(
       q,
-      /\blive\b/,
+      /\bhow does live work\b/,
+      /\bhow does solo live work\b/,
+      /\bwhat does the pencil icon do\b/,
       /\bmeet point\b/,
       /\bmeeting point\b/,
       /\blocation shar/,
       /\bshare (my )?location\b/,
       /\bcountdown\b/,
       /\btimer\b/,
-    )
+      /\bhow\b.{0,30}\blive tab\b/,
+      /\bhow\b.{0,30}\blive map\b/,
+      /\bopen live\b/,
+      /\buse live\b/,
+    ) ||
+    (/\blive\b/.test(q) &&
+      hasAny(q, /\bhow do i\b/, /\bhow to\b/, /\bhow can i\b/, /\bwhere do i\b/, /\bhow does\b/) &&
+      !/\brovvy live\b/.test(q))
   ) {
     return "live_map";
   }
@@ -260,12 +581,17 @@ export function contextualAppFallback(page: string, activeTab?: string | null): 
   if (
     p.startsWith("group") ||
     p.startsWith("travel-hub") ||
-    p.startsWith("buddy") ||
-    p.startsWith("live")
+    p.startsWith("buddy")
   ) {
     return (
       "This area is for people moving together—Travel Hub for chat and invites, Buddy Trips to find companions, " +
       "Live for maps and meet points. What should we set up first?"
+    );
+  }
+  if (p.startsWith("live")) {
+    return (
+      "You're on Rovvy Live — pick a place on the map, then ask me about that pin, the route, or warnings. " +
+      "Try: \"What location did I pick?\" after you drop a pin."
     );
   }
   if (p.startsWith("profile") || p.startsWith("settings")) {
@@ -392,6 +718,12 @@ export function localAssistantReply(
   activeTab?: string | null,
   context?: Record<string, unknown>,
 ): string | null {
+  const liveMap = resolveLiveMapContextReply(message, page, context);
+  if (liveMap) return liveMap;
+
+  const livePrep = resolveLiveTravelPrepReply(message, page, context);
+  if (livePrep) return livePrep;
+
   const mode = classifyMode(message);
   if (mode === "app_guide") {
     const app = resolveAppGuideReply(message);

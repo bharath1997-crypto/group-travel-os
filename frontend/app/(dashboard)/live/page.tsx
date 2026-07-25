@@ -14,6 +14,8 @@ import TravelModeChip from "./TravelModeChip";
 import LiveMiniHud from "./LiveMiniHud";
 import InlineSignInModal from "./InlineSignInModal";
 import { haversineM } from "@/lib/geo";
+import { emitOpenWayra, WAYRA_CONTEXT_EVENT } from "@/lib/open-wayra";
+import { emitWayraPlacePicked } from "@/lib/wayra/live-map-context";
 import PlacePreviewCard, { type PlacePreviewData } from "./PlacePreviewCard";
 import FarAwayPlacePanel from "./FarAwayPlacePanel";
 import SoloRoutePreviewPanel from "./SoloRoutePreviewPanel";
@@ -32,6 +34,8 @@ import type {
   TripStatus,
   UserLocationUpdate,
 } from "./live-types";
+import { isFarFromUser } from "./live-types";
+import { buildRoutePreviewAiSuggestions } from "./live-ai-suggestions";
 import { type FriendLocation } from "./live-friend-layer-sync";
 import { fetchLiveRoute } from "./live-routing";
 import {
@@ -62,6 +66,7 @@ import {
   type RoviPlaceExplanation,
 } from "./live-rovi";
 import { buildPlaceKey, extractCityCountry } from "./live-place-key";
+import { resolvePlaceDisplayName } from "@/lib/wayra/place-region";
 import {
   resolvePlaceMedia,
   type PlaceMediaItem,
@@ -1298,7 +1303,6 @@ export default function LivePage() {
     setOriginPickMode(false);
     setShowOriginSetup(false);
     setShowPlaceDetailsPanel(Boolean(options?.openDetailsPanel));
-    setMapClickMenu(null);
     setCoordinateOverlay(null);
     setMapClickPin(null);
     setViewingDetailsFromNearby(false);
@@ -1374,7 +1378,12 @@ export default function LivePage() {
           });
           resolvedPlace = {
             ...place,
-            name: details.name || place.name,
+            name: resolvePlaceDisplayName(details.name || place.name, {
+              city: nextCity,
+              state: details.address?.state ?? place.state,
+              country: nextCountry,
+              address: formatStreetAddress(details.address, details.display_name || place.address),
+            }),
             categoryLabel:
               normalizePlaceCategory(details) ||
               (details.extratags ? normalizePlaceCategory(details.extratags) : null) ||
@@ -1422,6 +1431,63 @@ export default function LivePage() {
       mapRef.current?.flyToPlace(payload.lat, payload.lng, maxZoom);
     },
     [activeLayer, travelLayerEnabled],
+  );
+
+  const resolveMapClickPlace = useCallback(
+    (payload: MapClickPayload): PlacePreviewData => {
+      const top = payload.features
+        .map((feature) => ({ feature, score: scoreFeature(feature) }))
+        .sort((a, b) => b.score - a.score)[0];
+      if (top && top.score >= 40) {
+        return mapLabelFeatureToPlacePreview(
+          top.feature,
+          payload.lat,
+          payload.lng,
+          userLocation,
+        );
+      }
+      return buildDroppedPinPlace(payload.lat, payload.lng, userLocation);
+    },
+    [userLocation],
+  );
+
+  const openMapTapPreview = useCallback(
+    (payload: MapClickPayload) => {
+      closeMapLocationSheet();
+      setAttributionFocus({ lat: payload.lat, lng: payload.lng, pinned: true });
+      setAttributionRefreshedAt(new Date());
+
+      if (
+        selectedPlace &&
+        !showPlaceDetailsPanel &&
+        haversineM(selectedPlace.lat, selectedPlace.lng, payload.lat, payload.lng) < 25
+      ) {
+        setShowPlaceDetailsPanel(true);
+        setLiveStage("place_preview");
+        mapRef.current?.flyToPlace(selectedPlace.lat, selectedPlace.lng, 14);
+        return;
+      }
+
+      const place = resolveMapClickPlace(payload);
+      emitWayraPlacePicked({
+        lat: payload.lat,
+        lng: payload.lng,
+        name: place.name ?? null,
+      });
+      void selectDestination(place, {
+        origin: "map_click",
+        clickLat: payload.lat,
+        clickLng: payload.lng,
+        openDetailsPanel: true,
+      });
+    },
+    [
+      closeMapLocationSheet,
+      resolveMapClickPlace,
+      selectDestination,
+      selectedPlace,
+      showPlaceDetailsPanel,
+    ],
   );
 
   const handleMapDoubleClick = useCallback(
@@ -1475,7 +1541,7 @@ export default function LivePage() {
         return;
       }
 
-      zoomToMapTap({ lat: payload.lat, lng: payload.lng });
+      openMapTapPreview(payload);
     },
     [
       isLiveActive,
@@ -1484,7 +1550,7 @@ export default function LivePage() {
       handleOriginMapPick,
       mapPointToPlace,
       addPlaceAsRouteStop,
-      zoomToMapTap,
+      openMapTapPreview,
     ],
   );
 
@@ -1993,7 +2059,6 @@ export default function LivePage() {
     resetRoviExplanation();
     setViewingDetailsFromNearby(false);
     setShowPlaceDetailsPanel(false);
-    setMapClickMenu(null);
     setMapClickPin(null);
     setCoordinateOverlay(null);
     setActiveRoute(null);
@@ -2291,6 +2356,83 @@ export default function LivePage() {
       setRoviExplanationLoading(false);
     }
   }
+
+  function handleAskWayraFromPreview() {
+    const target = selectedPlace ?? destination;
+    if (!target) return;
+    const name =
+      target.name?.trim() ||
+      target.categoryLabel?.trim() ||
+      formatMapCoordinates(target.lat, target.lng);
+    const prompt = `I'm looking at ${name} on Rovvy Live (${target.lat.toFixed(4)}, ${target.lng.toFixed(4)}). What should I know about this place, and what are interesting things to see or do nearby?`;
+    emitOpenWayra({ prompt, autoSend: true });
+  }
+
+  useEffect(() => {
+    const target = selectedPlace ?? destination;
+    if (!target) return;
+
+    const routeReady = routePreviewStatus === "ready" && activeRoute;
+    const contextNotice =
+      locationContext && locationContext.classification !== "local_place"
+        ? locationContext.template?.recommendation ?? null
+        : null;
+    const aiSuggestions = buildRoutePreviewAiSuggestions({
+      destinationName: target.name ?? target.categoryLabel ?? "this place",
+      farFromUser: isFarFromUser(target.distanceM ?? null),
+      contextNotice,
+      lastMileNotice:
+        routeReady && activeRoute.lastMileMode === "walk"
+          ? activeRoute.lastMileNotice ?? null
+          : null,
+      borderNotice: routeReady ? activeRoute.borderNotice ?? null : null,
+      routeError:
+        routePreviewStatus === "failed" && routePreviewError
+          ? routePreviewError
+          : null,
+    });
+
+    window.dispatchEvent(
+      new CustomEvent(WAYRA_CONTEXT_EVENT, {
+        detail: {
+          pathname: "/live",
+          selectedPlace: {
+            name: target.name ?? null,
+            lat: target.lat,
+            lng: target.lng,
+            category: target.categoryLabel ?? null,
+            address: target.address ?? null,
+            city: target.city ?? null,
+            state: target.state ?? null,
+            country: target.country ?? null,
+          },
+          liveStage,
+          contextNotice,
+          aiSuggestions: aiSuggestions.map((item) => ({
+            message: item.message,
+            kind: item.kind,
+          })),
+          routePreview: routeReady
+            ? {
+                durationSeconds: activeRoute.durationSeconds,
+                distanceMeters: activeRoute.distanceMeters,
+                lastMileNotice: activeRoute.lastMileNotice ?? null,
+                borderNotice: activeRoute.borderNotice ?? null,
+                lastMileMode: activeRoute.lastMileMode ?? null,
+              }
+            : null,
+        },
+      }),
+    );
+  }, [
+    selectedPlace,
+    destination,
+    liveStage,
+    activeRoute,
+    routePreviewStatus,
+    routePreviewError,
+    locationContext,
+  ]);
 
   const showFarAwayPanel = false;
   const showRouteSummaryBar =
@@ -3001,7 +3143,7 @@ export default function LivePage() {
           roviLoading={roviExplanationLoading}
           roviExplanation={roviExplanation}
           roviError={roviExplanationError}
-          onAskRovi={() => void handleAskRovi()}
+          onAskRovi={handleAskWayraFromPreview}
           onSearchNearMe={handleSearchNearMe}
           onChangeDestination={clearSelectedPlace}
           onPlanTrip={handlePlanTrip}
@@ -3024,7 +3166,7 @@ export default function LivePage() {
           roviLoading={roviExplanationLoading}
           roviExplanation={roviExplanation}
           roviError={roviExplanationError}
-          onAskRovi={() => void handleAskRovi()}
+          onAskRovi={handleAskWayraFromPreview}
           onSearchNearMe={handleSearchNearMe}
           onChangeDestination={clearSelectedPlace}
           onPlanTrip={handlePlanTrip}

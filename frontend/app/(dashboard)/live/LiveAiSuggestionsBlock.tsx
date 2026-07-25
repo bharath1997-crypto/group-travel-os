@@ -67,7 +67,7 @@ export default function LiveAiSuggestionsBlock({
   const combinedPrompt = buildCombinedWayraPrompt(destinationName, suggestions);
 
   const handleAskWayra = () => {
-    emitOpenWayra({ prompt: combinedPrompt });
+    emitOpenWayra({ prompt: combinedPrompt, autoSend: true });
   };
 
   return (

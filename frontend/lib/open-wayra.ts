@@ -8,7 +8,12 @@ export const TOGGLE_WAYRA_EVENT = "rovvy:toggle-wayra";
 export type OpenWayraDetail = {
   /** Optional seed text for the chat input (user can edit before send). */
   prompt?: string;
+  /** When true, send the prompt immediately after opening the panel. */
+  autoSend?: boolean;
 };
+
+/** Live map / preview cards push selected-place context for smarter replies. */
+export const WAYRA_CONTEXT_EVENT = "rovvy:wayra-context";
 
 export function emitOpenWayra(detail?: OpenWayraDetail): void {
   if (typeof window === "undefined") return;
