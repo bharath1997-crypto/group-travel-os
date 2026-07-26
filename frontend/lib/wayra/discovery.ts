@@ -5,12 +5,19 @@
 
 export type DiscoveryExpects = "local" | "llm" | "app_guide";
 
-function normalizeQuery(message: string): string {
+/** Shared normalization for Wayra intent + discovery routing. */
+export function normalizeWayraQuery(message: string): string {
   return message
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s'-]/g, " ")
-    .replace(/\s+/g, " ");
+    .replace(/[''']/g, " ")
+    .replace(/[^\w\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeQuery(message: string): string {
+  return normalizeWayraQuery(message);
 }
 
 const LEAD_INS = [
@@ -210,6 +217,33 @@ const LLM_PATTERNS: RegExp[] = [
   /^start navigation to {here}$/,
 ];
 
+/**
+ * Live UI chips and place-name phrasing — LLM without deictic "here".
+ * e.g. "What's at Kitikmeot Region?" from liveQuickPromptsForPlace().
+ */
+const PLACE_NAME_LLM_PATTERNS: RegExp[] = [
+  /^what s at .+$/,
+  /^what is at .+$/,
+  /^what s in .+$/,
+  /^what is in .+$/,
+  /^how far is this from me$/,
+  /^how far is .+ from me$/,
+  /^how long is the drive to .+$/,
+  /^what should i prepare for this trip$/,
+  /^what should i know about this trip$/,
+  /^is this family friendly$/,
+  /^is .+ family friendly$/,
+  /^is this worth the trip$/,
+  /^is .+ worth the trip$/,
+];
+
+function isPlaceNameLlmSkeleton(q: string): boolean {
+  if (!q) return false;
+  if (/\b(rovvy|wayra|the app|this app|plan page|plan tab)\b/.test(q)) return false;
+  if (/\b(how do i|create a group|notification|poll|split expense)\b/.test(q)) return false;
+  return matchesAny(q, PLACE_NAME_LLM_PATTERNS);
+}
+
 function skeletonForMatch(message: string): string {
   let q = normalizeDiscoveryQuery(message);
   q = q.replace(/['’]/g, " ");
@@ -239,6 +273,10 @@ export function classifyDiscoveryExpects(message: string): DiscoveryExpects | nu
     return "local";
   }
 
+  if (isPlaceNameLlmSkeleton(skeleton)) {
+    return "llm";
+  }
+
   if (!hasLiveDeicticReference(message)) {
     return null;
   }
@@ -265,4 +303,8 @@ export function isDiscoveryLlmQuestion(message: string): boolean {
 
 export function isDiscoveryAppGuideQuestion(message: string): boolean {
   return classifyDiscoveryExpects(message) === "app_guide";
+}
+
+export function isPlaceNameLlmQuestion(message: string): boolean {
+  return isPlaceNameLlmSkeleton(skeletonForMatch(message));
 }

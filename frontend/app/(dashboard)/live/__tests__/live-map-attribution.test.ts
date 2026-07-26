@@ -26,7 +26,7 @@ describe("live-map-attribution", () => {
     expect(resolveAttributionMode({ lat: 0, lng: 0 }, false)).toBe("idle");
   });
 
-  it("shows coordinates and feet scale at street zoom", () => {
+  it("shows coordinates without duplicating scale in the text line", () => {
     const line = buildLiveMapAttributionLine({
       layer: "hybrid",
       focus: { lat: 41.8781, lng: -87.6298, pinned: true },
@@ -35,7 +35,7 @@ describe("live-map-attribution", () => {
       zoom: 16,
     });
     expect(line).toMatch(/41\.87810° N/);
-    expect(line).toMatch(/ft|mi/);
+    expect(line).not.toMatch(/ft|mi/);
     expect(line).not.toContain("Refreshed");
   });
 

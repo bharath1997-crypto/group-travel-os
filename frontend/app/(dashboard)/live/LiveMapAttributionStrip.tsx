@@ -22,6 +22,7 @@ import {
   liveMapZoomInButtonLevel,
   liveMapZoomOutButtonLevel,
 } from "./live-map-zoom-limits";
+import LiveStripZoomScale from "./LiveStripZoomScale";
 
 type Props = {
   activeLayer: LiveMapLayer;
@@ -32,6 +33,7 @@ type Props = {
   maxZoom: number;
   onZoomIn: () => void;
   onZoomOut: () => void;
+  onZoomChange: (zoom: number) => void;
   immersive?: boolean;
   isImmersiveFullscreen?: boolean;
   onToggleImmersiveFullscreen?: () => void;
@@ -66,6 +68,7 @@ export default function LiveMapAttributionStrip({
   maxZoom,
   onZoomIn,
   onZoomOut,
+  onZoomChange,
   immersive = false,
   isImmersiveFullscreen = false,
   onToggleImmersiveFullscreen,
@@ -118,7 +121,7 @@ export default function LiveMapAttributionStrip({
       aria-label="Map location and scale"
     >
       <div
-        className="pointer-events-auto flex w-full items-stretch overflow-hidden rounded-[2px] bg-[rgba(32,33,36,0.82)] shadow-[0_1px_2px_rgba(0,0,0,0.3)]"
+        className="pointer-events-auto flex w-full items-stretch overflow-hidden rounded-none bg-[rgba(32,33,36,0.88)]"
         style={{ height: LIVE_STRIP_HEIGHT_PX }}
       >
         <div className="flex shrink-0 items-stretch border-r border-white/10">
@@ -175,8 +178,14 @@ export default function LiveMapAttributionStrip({
             </button>
           ) : null}
         </div>
+        <LiveStripZoomScale
+          zoom={clampedZoom}
+          maxZoom={maxZoom}
+          lat={focus?.lat ?? null}
+          onZoomChange={onZoomChange}
+        />
         <p
-          className="flex min-w-0 flex-1 items-center truncate px-1.5 text-[9px] font-medium leading-none tracking-tight text-white/88"
+          className="flex min-w-0 max-w-[42%] shrink-0 items-center truncate px-1.5 text-[9px] font-medium leading-none tracking-tight text-white/88 sm:max-w-[38%] md:max-w-[34%] lg:max-w-none lg:flex-1"
           title={credits}
         >
           {line}

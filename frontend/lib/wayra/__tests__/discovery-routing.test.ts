@@ -8,6 +8,7 @@ import {
 } from "@/lib/wayra/discovery";
 import {
   classifyMode,
+  detectBirdState,
   isLiveMapIdentityQuestion,
   isLivePlaceDeepQuestion,
   resolveAppGuideReply,
@@ -68,6 +69,19 @@ describe("discovery routing", () => {
     expect(classifyDiscoveryExpects("Anything fun around here?")).toBe("llm");
     expect(isLivePlaceDeepQuestion("Best attractions where I dropped the pin?")).toBe(true);
     expect(classifyMode("Best attractions where I dropped the pin?")).toBe("travel");
+  });
+
+  it("routes Live UI chip prompts with place names to travel/LLM", () => {
+    expect(classifyDiscoveryExpects("What's at Kitikmeot Region?")).toBe("llm");
+    expect(classifyDiscoveryExpects("What's at Paris?")).toBe("llm");
+    expect(classifyDiscoveryExpects("How far is this from me?")).toBe("llm");
+    expect(classifyDiscoveryExpects("Is this family friendly?")).toBe("llm");
+    expect(classifyDiscoveryExpects("Is Chicago family friendly?")).toBe("llm");
+    expect(classifyMode("What's at Kitikmeot Region?")).toBe("travel");
+    expect(classifyMode("How far is this from me?")).toBe("travel");
+    expect(classifyMode("Is this family friendly?")).toBe("travel");
+    expect(detectBirdState("Is this family friendly?")).toBe("flying");
+    expect(isLivePlaceDeepQuestion("What's at Kitikmeot Region?")).toBe(true);
   });
 
   it("routes app guide discovery locally", () => {

@@ -15,7 +15,7 @@ import type { PlaceMediaItem } from "./live-place-media";
 import PlacePreviewMedia from "./PlacePreviewMedia";
 import RoviPlaceExplanationBlock from "./RoviPlaceExplanationBlock";
 import type { RoviPlaceExplanation } from "./live-rovi";
-import { LIVE_PANEL_MAX_WIDTH, LIVE_PANEL_RIGHT_INSET, LIVE_RESPONSIVE_PANEL_LAYOUT } from "./live-layout";
+import { LIVE_PANEL_MAX_WIDTH, LIVE_PANEL_RIGHT_INSET, LIVE_RESPONSIVE_PANEL_LAYOUT, LIVE_SHEET_BOTTOM_ABOVE_ROUTE, LIVE_SHEET_BOTTOM_DEFAULT, LIVE_SHEET_BOTTOM_DESKTOP, LIVE_SHEET_BOTTOM_IMMERSIVE } from "./live-layout";
 import { logRovvyLiveWarn } from "./live-gps";
 import {
   formatDistanceMiles,
@@ -98,6 +98,8 @@ type Props = {
   liveStage?: string;
   /** When true, lift the sheet above the route summary bar on small screens. */
   stackAboveRouteSummary?: boolean;
+  /** Live immersive map — tab bar hidden, sheet sits on lower attribution strip. */
+  immersive?: boolean;
   /** When opened from a category nearby search (e.g. waterfalls). */
   previewContext?: { icon: string; searchLabel: string } | null;
 };
@@ -225,6 +227,7 @@ export default function PlacePreviewCard({
   placeTags = [],
   liveStage = "static_landing",
   stackAboveRouteSummary = true,
+  immersive = false,
   previewContext = null,
 }: Props) {
   const [wikiSummary, setWikiSummary] = useState<{
@@ -358,9 +361,15 @@ export default function PlacePreviewCard({
         : null,
   });
 
-  const summaryStackClass = stackAboveRouteSummary
-    ? "max-lg:!bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] max-lg:max-h-[min(55vh,calc(100dvh-8rem))]"
-    : "";
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  const sheetBottomVar = isDesktop
+    ? LIVE_SHEET_BOTTOM_DESKTOP
+    : stackAboveRouteSummary
+      ? LIVE_SHEET_BOTTOM_ABOVE_ROUTE
+      : immersive
+        ? LIVE_SHEET_BOTTOM_IMMERSIVE
+        : LIVE_SHEET_BOTTOM_DEFAULT;
 
   // Height overrides and layout class resolution based on platform
   let layoutClass = "";
@@ -380,8 +389,8 @@ export default function PlacePreviewCard({
     layoutClass =
       "fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-none bg-stone-50/95 shadow-xl flex flex-col max-lg:inset-x-0 max-lg:bottom-0 max-lg:max-w-none lg:absolute lg:bottom-4 lg:right-6 lg:w-[380px] lg:rounded-2xl transition-all duration-300";
   } else {
-    // Web Mode (default)
-    layoutClass = `${LIVE_RESPONSIVE_PANEL_LAYOUT} w-full max-lg:max-w-none max-lg:inset-x-0 max-lg:bottom-0 bg-white border border-stone-200 shadow-2xl ${LIVE_PANEL_MAX_WIDTH} ${summaryStackClass}`;
+    // Web Mode (default) — right-bottom rail, flush on attribution strip
+    layoutClass = `${LIVE_RESPONSIVE_PANEL_LAYOUT} w-full max-lg:max-w-none bg-white ${LIVE_PANEL_MAX_WIDTH}`;
   }
 
   const hasNoPhotos = !placeMediaLoading && (!placeMedia || placeMedia.length === 0);
@@ -977,11 +986,13 @@ export default function PlacePreviewCard({
 
   // --- 4. Web Mode Layout (Default) ---
   return (
-    <div className={`${layoutClass} flex flex-col`} role="dialog" aria-label="Place details">
-      {/* Mobile drag handle for bottom sheet */}
-      <div className="w-12 h-1 bg-stone-300 rounded-full mx-auto my-2.5 shrink-0 lg:hidden" aria-hidden />
-
-      <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar px-3 pt-2 pb-2">
+    <div
+      className={`${layoutClass} flex flex-col`}
+      style={{ ["--live-sheet-bottom" as string]: sheetBottomVar }}
+      role="dialog"
+      aria-label="Place details"
+    >
+      <div className="max-h-[min(55vh,calc(100dvh-8rem))] overflow-y-auto no-scrollbar px-3 pt-2.5 pb-2">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
             {previewContext ? (

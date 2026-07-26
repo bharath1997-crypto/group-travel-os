@@ -158,11 +158,33 @@ LLM_PATTERNS = [
     r"^start navigation to \{here\}$",
 ]
 
+# Live UI chips + place-name phrasing — LLM without deictic "here".
+PLACE_NAME_LLM_PATTERNS = [
+    r"^what s at .+$",
+    r"^what is at .+$",
+    r"^what s in .+$",
+    r"^what is in .+$",
+    r"^how far is this from me$",
+    r"^how far is .+ from me$",
+    r"^how long is the drive to .+$",
+    r"^what should i prepare for this trip$",
+    r"^what should i know about this trip$",
+    r"^is this family friendly$",
+    r"^is .+ family friendly$",
+    r"^is this worth the trip$",
+    r"^is .+ worth the trip$",
+]
+
+
+def normalize_wayra_query(message: str) -> str:
+    q = message.lower().strip()
+    q = q.replace("'", " ").replace("’", " ")
+    q = re.sub(r"[^\w\s-]", " ", q)
+    return re.sub(r"\s+", " ", q).strip()
+
 
 def _normalize_query(message: str) -> str:
-    q = message.lower().strip()
-    q = re.sub(r"[^\w\s'-]", " ", q)
-    return re.sub(r"\s+", " ", q).strip()
+    return normalize_wayra_query(message)
 
 
 def strip_discovery_lead_in(message: str) -> str:
@@ -208,6 +230,16 @@ def _is_identity_skeleton(q: str) -> bool:
     return _matches_any(q, IDENTITY_PATTERNS)
 
 
+def _is_place_name_llm_skeleton(q: str) -> bool:
+    if not q:
+        return False
+    if re.search(r"\b(rovvy|wayra|the app|this app|plan page|plan tab)\b", q):
+        return False
+    if re.search(r"\b(how do i|create a group|notification|poll|split expense)\b", q):
+        return False
+    return _matches_any(q, PLACE_NAME_LLM_PATTERNS)
+
+
 def classify_discovery_expects(message: str) -> str | None:
     skeleton = _skeleton_for_match(message)
 
@@ -216,6 +248,9 @@ def classify_discovery_expects(message: str) -> str | None:
 
     if _is_identity_skeleton(skeleton):
         return "local"
+
+    if _is_place_name_llm_skeleton(skeleton):
+        return "llm"
 
     if not has_live_deictic_reference(message):
         return None
@@ -239,3 +274,7 @@ def is_discovery_llm_question(message: str) -> bool:
 
 def is_discovery_app_guide_question(message: str) -> bool:
     return classify_discovery_expects(message) == "app_guide"
+
+
+def is_place_name_llm_question(message: str) -> bool:
+    return _is_place_name_llm_skeleton(_skeleton_for_match(message))

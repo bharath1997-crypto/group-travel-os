@@ -7,6 +7,7 @@ import {
   classifyDiscoveryExpects,
   isDiscoveryIdentityQuestion,
   isDiscoveryLlmQuestion,
+  normalizeWayraQuery,
 } from "@/lib/wayra/discovery";
 import { resolvePlaceDisplayName } from "@/lib/wayra/place-region";
 
@@ -64,11 +65,7 @@ function hasAny(q: string, ...patterns: RegExp[]): boolean {
 }
 
 export function normalizeQuery(message: string): string {
-  return message
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s'-]/g, " ")
-    .replace(/\s+/g, " ");
+  return normalizeWayraQuery(message);
 }
 
 export type LiveSelectedPlaceContext = {
@@ -434,6 +431,8 @@ export function classifyMode(message: string): WayraMode {
       /\b(japan|tokyo|kyoto|europe|beach|mountain|abroad)\b/,
       /\bdestination\b/,
       /\bgetaway\b/,
+      /\bfamily friendly\b/,
+      /\bworth the trip\b/,
     ) &&
     !hasAny(q, /\b(create|delete|invite|notification|poll|split|setting|profile)\b/)
   ) {

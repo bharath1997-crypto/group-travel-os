@@ -29,9 +29,19 @@ class AISuggestedAction(BaseModel):
     payload: dict[str, Any] | None = None
 
 
+class WayraSource(BaseModel):
+    model_config = ConfigDict()
+
+    label: str
+    url: str
+    source_type: str
+    snippet: str | None = None
+
+
 class AIAssistantResponse(BaseModel):
     model_config = ConfigDict()
 
     message: str
     suggested_actions: list[AISuggestedAction] = Field(default_factory=list)
+    sources: list[WayraSource] = Field(default_factory=list)
     summary: dict[str, Any] | None = None

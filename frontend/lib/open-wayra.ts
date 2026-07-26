@@ -15,6 +15,9 @@ export type OpenWayraDetail = {
 /** Live map / preview cards push selected-place context for smarter replies. */
 export const WAYRA_CONTEXT_EVENT = "rovvy:wayra-context";
 
+/** Clear preview-scoped Live pin context (e.g. when the place preview card closes). */
+export const WAYRA_CLEAR_CONTEXT_EVENT = "rovvy:wayra-clear-context";
+
 export function emitOpenWayra(detail?: OpenWayraDetail): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(OPEN_WAYRA_EVENT, { detail }));
@@ -23,4 +26,9 @@ export function emitOpenWayra(detail?: OpenWayraDetail): void {
 export function emitToggleWayra(): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(TOGGLE_WAYRA_EVENT));
+}
+
+export function emitClearWayraContext(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(WAYRA_CLEAR_CONTEXT_EVENT));
 }

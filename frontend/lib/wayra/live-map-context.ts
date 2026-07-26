@@ -158,12 +158,24 @@ export async function prepareLiveWayraContext(
   page: string,
   context: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
-  if (!isLivePage(page, context) && !isLivePage("", context)) {
-    return context;
+  let next = { ...context };
+
+  if (isLivePage(page, context) || isLivePage("", context)) {
+    next = await enrichSelectedPlaceInContext(next);
+    next = withLiveImplicitContext(page, next);
   }
 
-  const enriched = await enrichSelectedPlaceInContext(context);
-  return withLiveImplicitContext(page, enriched);
+  if (context.chatAttachedLocation) {
+    next.chatAttachedLocation = context.chatAttachedLocation;
+  }
+  if (context.messengerProfile) {
+    next.messengerProfile = context.messengerProfile;
+  }
+  if (context.userLocation) {
+    next.userLocation = context.userLocation;
+  }
+
+  return next;
 }
 
 /** Merge implicit pin context into the payload sent to /ai/assistant. */

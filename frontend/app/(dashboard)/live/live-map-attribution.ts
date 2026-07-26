@@ -101,21 +101,12 @@ export function buildLiveMapAttributionLine(input: {
   refreshedAt: Date;
   zoom?: number;
 }): string {
-  const { layer, focus, zoom } = input;
+  const { layer, focus } = input;
   const credits = getLiveMapDataCredits(layer);
-  const scale =
-    focus && typeof zoom === "number"
-      ? formatMapGroundScaleFeet(zoom, focus.lat)
-      : null;
 
   if (focus) {
     const coords = formatMapCoordinates(focus.lat, focus.lng);
-    if (scale) return `${coords} · ${scale} · ${credits}`;
     return `${coords} · ${credits}`;
-  }
-
-  if (scale) {
-    return `${scale} · ${credits}`;
   }
 
   return credits;

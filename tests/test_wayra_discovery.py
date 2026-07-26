@@ -44,6 +44,17 @@ class TestDiscoveryRoutingSamples:
         assert classify_mode(q) == WayraMode.APP_GUIDE
         assert resolve_app_intent(q) is not None
 
+    def test_place_name_ui_chips_route_to_llm(self) -> None:
+        assert classify_discovery_expects("What's at Kitikmeot Region?") == "llm"
+        assert classify_discovery_expects("What's at Paris?") == "llm"
+        assert classify_discovery_expects("How far is this from me?") == "llm"
+        assert classify_discovery_expects("Is this family friendly?") == "llm"
+        assert classify_discovery_expects("Is Chicago family friendly?") == "llm"
+        assert classify_mode("What's at Kitikmeot Region?") == WayraMode.TRAVEL
+        assert classify_mode("How far is this from me?") == WayraMode.TRAVEL
+        assert classify_mode("Is this family friendly?") == WayraMode.TRAVEL
+        assert is_live_place_deep_question("What's at Kitikmeot Region?") is True
+
 
 def test_jsonl_expects_all_rows() -> None:
     rows = _load_rows()

@@ -1063,7 +1063,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             return undefined;
           })()}
           context={{ pathname }}
-          className="!z-[40] max-md:!bottom-[72px] max-md:!left-0 max-md:!p-0 [&>div]:max-md:!pb-0 [&>div]:max-md:!pl-4"
+          className={isLivePage ? "!z-[140]" : undefined}
         />
       ) : null}
       {user ? <LoungeDock /> : null}

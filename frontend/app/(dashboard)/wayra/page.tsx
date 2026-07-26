@@ -12,8 +12,20 @@ import {
   Info,
   RefreshCw,
   User,
+  Plus,
+  X,
 } from "lucide-react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchWithStatus } from "@/lib/api";
+import {
+  buildWayraSessionGreeting,
+  formatWayraMessageTime,
+  type WayraChatLocation,
+  type WayraTripHint,
+} from "@/lib/wayra/messenger";
+import {
+  geolocationErrorMessage,
+  geolocationUnavailableMessage,
+} from "@/lib/geo";
 
 type TripContext = {
   id: string;
@@ -61,23 +73,59 @@ type Message = {
 };
 
 export default function WayraPersonalPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      sender: "wayra",
-      text: "Hello! I am Wayra, your personal travel intelligence assistant. I can help you plan trips, organize your budget, view flights/hotels, and scan travel deals. How can I assist you today?",
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
   const [context, setContext] = useState<WayraContext | null>(null);
   const [refreshingContext, setRefreshingContext] = useState(false);
+  const [attachedLocation, setAttachedLocation] = useState<WayraChatLocation | null>(
+    null,
+  );
+  const [greetingReady, setGreetingReady] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchContext();
+    void (async () => {
+      await fetchContext();
+      let fullName: string | null = null;
+      let trips: WayraTripHint[] = [];
+      try {
+        const meRes = await apiFetchWithStatus<{ full_name?: string | null }>(
+          "/auth/me",
+          {},
+          8000,
+        );
+        if (meRes.status >= 200 && meRes.status < 300) {
+          fullName = meRes.data?.full_name ?? null;
+        }
+      } catch {
+        /* guest */
+      }
+      try {
+        const ctx = await apiFetch<WayraContext>("/wayra/context");
+        fullName = ctx.full_name ?? fullName;
+        trips = (ctx.trips ?? []).map((trip) => ({
+          title: trip.title,
+          destination: trip.destination,
+          start_date: trip.start_date,
+          end_date: trip.end_date,
+          status: trip.status,
+        }));
+      } catch {
+        /* optional */
+      }
+
+      setMessages([
+        {
+          id: "welcome",
+          sender: "wayra",
+          text: buildWayraSessionGreeting({ fullName, trips }),
+          timestamp: new Date(),
+        },
+      ]);
+      setGreetingReady(true);
+    })();
   }, []);
 
   useEffect(() => {
@@ -216,7 +264,7 @@ export default function WayraPersonalPage() {
                           {m.text}
                         </div>
                         <p className={`text-[9px] text-slate-400 font-semibold px-1 ${isUser ? "text-right" : "text-left"}`}>
-                          {m.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          {formatWayraMessageTime(m.timestamp.getTime())}
                         </p>
                       </div>
                     </div>
@@ -242,7 +290,49 @@ export default function WayraPersonalPage() {
             </div>
 
             {/* Input Form */}
-            <form onSubmit={handleSend} className="p-4 border-t border-slate-100 bg-white flex items-center gap-2 shrink-0">
+            <form onSubmit={handleSend} className="p-4 border-t border-slate-100 bg-white flex flex-col gap-2 shrink-0">
+              {attachedLocation ? (
+                <div className="flex items-center gap-2 rounded-xl border border-teal-100 bg-teal-50/60 px-3 py-1.5">
+                  <MapPin className="h-3.5 w-3.5 text-[#0F766E]" />
+                  <span className="flex-1 truncate text-[11px] font-medium text-slate-700">
+                    {attachedLocation.label}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setAttachedLocation(null)}
+                    className="text-slate-400 hover:text-slate-600"
+                    aria-label="Remove location"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : null}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const blocked = geolocationUnavailableMessage();
+                    if (blocked) return;
+                    navigator.geolocation.getCurrentPosition(
+                      (pos) =>
+                        setAttachedLocation({
+                          label: "My location",
+                          lat: pos.coords.latitude,
+                          lng: pos.coords.longitude,
+                          source: "gps",
+                        }),
+                      (err) => {
+                        console.error(geolocationErrorMessage(err));
+                      },
+                      { enableHighAccuracy: true, timeout: 12000 },
+                    );
+                  }}
+                  className="shrink-0 rounded-xl border border-slate-200 p-3 text-slate-600 hover:border-[#0F766E]/30 hover:text-[#0F766E]"
+                  title="Attach my location"
+                  aria-label="Attach my location"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
               <input
                 type="text"
                 value={inputText}
@@ -252,11 +342,12 @@ export default function WayraPersonalPage() {
               />
               <button
                 type="submit"
-                disabled={!inputText.trim() || loading}
+                disabled={!inputText.trim() || loading || !greetingReady}
                 className="bg-[#0F766E] text-white p-3 rounded-xl hover:bg-teal-700 disabled:opacity-40 transition-all flex items-center justify-center shrink-0 active:scale-95 shadow-md shadow-teal-700/10"
               >
                 <Send className="h-4 w-4" />
               </button>
+              </div>
             </form>
           </div>
 

@@ -422,6 +422,9 @@ After every feature change, update this section in .cursorrules:
 | Live map last-mile foot/hike route (drive + dashed walk on map) | Modified | 2026-07 |
 | Live map zoom cap + limit button colors (red max / green min) | Modified | 2026-07 |
 | Live preview card Wayra AI suggestions (route tips + Ask Wayra) | Modified | 2026-07 |
+| Wayra Perplexity-style answers (OSM/Wikipedia sources + hybrid LLM routing) | Complete | 2026-07 |
+| Wayra messenger (session greeting, timestamps, + attach location) | Modified | 2026-07 |
+| Wayra preview-card scope (location binds to preview card, clears on close) | Complete | 2026-07 |
 | Wayra Live discovery routing (JSONL intents: local / LLM / app guide) | Complete | 2026-07 |
 | Live Travel layer (highways, main routes & railways overlay toggle) | Modified | 2026-07 |
 | Live sea routes overlay (shipping lanes + ferries, static GeoJSON) | Modified | 2026-07 |
@@ -464,5 +467,7 @@ After every pytest run, update this section in .cursorrules:
 | frontend live-foot-routes (vitest) | 4 | 2026-07 |
 | frontend live-ai-suggestions (vitest) | 3 | 2026-07 |
 | frontend live-place-display (vitest) | 5 | 2026-07 |
+| tests/test_wayra_answer.py | 10 | 2026-07 |
+| frontend wayra-messenger (vitest) | 4 | 2026-07 |
 | frontend discovery-routing (vitest) | 5 | 2026-07 |
 | tests/test_wayra_discovery.py | 4 | 2026-07 |

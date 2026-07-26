@@ -63,6 +63,12 @@ class Settings(BaseSettings):
         validation_alias="GEMINI_API_KEY",
     )
 
+    # ── DeepSeek (Wayra discovery summaries — OpenAI-compatible) ───────────────
+    deepseek_api_key: str | None = Field(
+        default=None,
+        validation_alias="DEEPSEEK_API_KEY",
+    )
+
     # ── OpenWeatherMap (Phase 3 / travel intel) ────────────────────────────────
     openweather_api_key: str | None = Field(
         default=None,

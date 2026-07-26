@@ -7,9 +7,9 @@
 export const LIVE_MAP_CONTROLS_POSITION =
   "bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-3 md:bottom-5 md:left-4 lg:left-5";
 
-/** Right-side control rail — compact stack above mobile tab bar. */
+/** Right-side control rail — sits above the bottom strip. */
 export const LIVE_MAP_CONTROLS_RAIL_POSITION =
-  "fixed z-[40] right-2 bottom-[calc(4.15rem+env(safe-area-inset-bottom,0px))] md:right-4 md:bottom-5";
+  "fixed z-[40] right-2 bottom-[calc(3.5rem+26px+env(safe-area-inset-bottom,0px))] md:right-4 md:bottom-[calc(26px+0.75rem)]";
 
 /** Unified floating map control — Google Maps ~40dp rounded square. */
 export const LIVE_MAP_FLOAT_BTN =
@@ -17,22 +17,46 @@ export const LIVE_MAP_FLOAT_BTN =
 
 /** Chat FAB — sits just left of the coordinate strip. */
 export const LIVE_MAP_CHAT_FAB_POSITION =
-  "fixed z-[36] bottom-[calc(3.32rem+env(safe-area-inset-bottom,0px))] left-2 md:bottom-2.5 md:left-3";
+  "fixed z-[36] bottom-[calc(3.5rem+26px+env(safe-area-inset-bottom,0px))] left-2 md:bottom-[calc(26px+0.5rem)] md:left-3";
 
 export const LIVE_MAP_CHAT_FAB_IMMERSIVE_POSITION =
-  "fixed z-[36] bottom-[calc(0.35rem+env(safe-area-inset-bottom,0px))] left-2 md:bottom-2.5 md:left-3";
+  "fixed z-[36] bottom-[calc(26px+0.5rem)] left-2 md:left-3";
 
-/** Compact coordinate strip — spans between chat FAB and right rail. */
+/** Mobile bottom tab bar (matches layout h-14). */
+export const LIVE_MOBILE_TAB_BAR_HEIGHT = "3.5rem";
+
+/** Map bottom baseline — attribution strip sits flush here (cornerstone of the map). */
+export const LIVE_MAP_BOTTOM_BASE =
+  "env(safe-area-inset-bottom, 0px)";
+
+export const LIVE_MAP_BOTTOM_ABOVE_TAB =
+  "calc(3.5rem + env(safe-area-inset-bottom, 0px))";
+
+/** Compact coordinate strip — full-width baseline of the map viewport. */
 export const LIVE_MAP_ATTRIBUTION_STRIP_POSITION =
-  "fixed z-[35] bottom-[calc(3.32rem+env(safe-area-inset-bottom,0px))] left-[2.75rem] right-[3.25rem] md:bottom-2.5 md:left-4 md:right-[4.5rem]";
+  "fixed z-[35] bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] inset-x-0 md:bottom-0";
 
 export const LIVE_MAP_ATTRIBUTION_STRIP_IMMERSIVE_POSITION =
-  "fixed z-[35] bottom-[calc(0.35rem+env(safe-area-inset-bottom,0px))] left-[2.75rem] right-[3.25rem] md:bottom-2.5 md:left-4 md:right-[4.5rem]";
+  "fixed z-[35] bottom-0 inset-x-0";
 
-/** In-strip zoom/fullscreen micro controls — height drives strip thickness. */
-export const LIVE_STRIP_HEIGHT_PX = 14;
-export const LIVE_STRIP_ZOOM_ICON_PX = 7;
-export const LIVE_STRIP_ZOOM_HIT_PX = 14;
+/** Top edge of the attribution strip — panels stack flush above the strip. */
+export const LIVE_SHEET_BOTTOM_DEFAULT =
+  "calc(3.5rem + 26px + env(safe-area-inset-bottom, 0px))";
+
+export const LIVE_SHEET_BOTTOM_IMMERSIVE =
+  "calc(26px + env(safe-area-inset-bottom, 0px))";
+
+export const LIVE_SHEET_BOTTOM_ABOVE_ROUTE =
+  "calc(5.25rem + 3rem + env(safe-area-inset-bottom, 0px))";
+
+/** Desktop: strip is flush at bottom-0. */
+export const LIVE_SHEET_BOTTOM_DESKTOP = "26px";
+
+/** Bottom attribution strip — height drives layout offsets and in-strip controls. */
+export const LIVE_STRIP_HEIGHT_PX = 26;
+export const LIVE_STRIP_HEIGHT_CSS = `${LIVE_STRIP_HEIGHT_PX}px`;
+export const LIVE_STRIP_ZOOM_ICON_PX = 9;
+export const LIVE_STRIP_ZOOM_HIT_PX = 26;
 
 /**
  * Right inset for desktop side panels so they never overlap the control rail.
@@ -52,13 +76,15 @@ export const LIVE_PANEL_MAX_WIDTH =
 export const LIVE_FIXED_PANEL =
   "pointer-events-auto fixed z-[140] flex flex-col overflow-hidden bg-white text-sm shadow-[0_8px_30px_rgba(0,0,0,0.12)]";
 
-/** Mobile bottom sheet; desktop compact right rail — height grows with content up to max. */
+/** Right-bottom sheet — flush on attribution strip, height follows content. */
 export const LIVE_RESPONSIVE_PANEL_LAYOUT = [
   LIVE_FIXED_PANEL,
-  "inset-x-0 bottom-0 max-h-[min(70vh,calc(100dvh-4.5rem))] rounded-t-xl border-t border-stone-200/80",
-  "lg:inset-x-auto lg:bottom-4 lg:top-auto lg:max-h-[min(85vh,calc(100dvh-5.5rem))]",
+  "right-2 w-[min(17.5rem,calc(100vw-1rem))]",
+  "h-auto max-h-[min(75vh,calc(100dvh-6rem))]",
+  "rounded-xl rounded-b-none border border-stone-200/80 border-b-0 shadow-2xl",
+  "bottom-[var(--live-sheet-bottom)]",
   LIVE_PANEL_RIGHT_INSET,
-  "lg:w-[min(17.5rem,calc(100vw-5.5rem))] lg:rounded-xl lg:border lg:border-stone-200/80",
+  "lg:w-[min(17.5rem,calc(100vw-5.5rem))]",
 ].join(" ");
 
 /** Compact route summary above the bottom-left map dock. */

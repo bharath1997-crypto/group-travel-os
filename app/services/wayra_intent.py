@@ -14,6 +14,7 @@ from app.services.wayra_discovery import (
     classify_discovery_expects,
     is_discovery_identity_question,
     is_discovery_llm_question,
+    normalize_wayra_query,
 )
 
 
@@ -106,9 +107,7 @@ def _has_any(q: str, *patterns: str) -> bool:
 
 
 def normalize_query(message: str) -> str:
-    q = message.lower().strip()
-    q = re.sub(r"[^\w\s'-]", " ", q)
-    return re.sub(r"\s+", " ", q).strip()
+    return normalize_wayra_query(message)
 
 
 def is_live_place_deep_question(message: str) -> bool:
@@ -461,6 +460,8 @@ def classify_mode(message: str) -> WayraMode:
         r"\b(japan|tokyo|kyoto|europe|beach|mountain|abroad)\b",
         r"\bdestination\b",
         r"\bgetaway\b",
+        r"\bfamily friendly\b",
+        r"\bworth the trip\b",
     ) and not _has_any(q, r"\b(create|delete|invite|notification|poll|split|setting|profile)\b"):
         return WayraMode.TRAVEL
 
@@ -642,6 +643,38 @@ def travel_fallback_message(message: str, context: dict[str, Any] | None = None)
     prefix = (
         "Live travel AI is taking longer than usual, but here are a few ideas to get you started:\n\n"
     )
+
+    place = _extract_live_selected_place(context)
+    if place and _is_live_page("", context):
+        name = (
+            place.get("name")
+            if isinstance(place.get("name"), str) and str(place.get("name")).strip()
+            else None
+        )
+        region = context.get("resolvedMapRegion") if context else None
+        label = name or (region if isinstance(region, str) else None) or "this pin"
+        lat = place.get("lat")
+        lng = place.get("lng")
+        coords = (
+            f" ({lat:.4f}, {lng:.4f})"
+            if isinstance(lat, (int, float)) and isinstance(lng, (int, float))
+            else ""
+        )
+        if _has_any(
+            q,
+            r"\bwhat s at\b",
+            r"\bwhat is at\b",
+            r"\bwhat s here\b",
+            r"\bwhat is here\b",
+            r"\bwhat s special\b",
+            r"\bthings to do\b",
+            r"\bactivities\b",
+        ):
+            return (
+                f"{label}{coords} is the place on your map right now. "
+                "Wayra is reconnecting — ask again in a moment for highlights, local culture, "
+                "and practical tips about this spot."
+            )
 
     if _has_any(q, r"\bjapan\b", r"\btokyo\b", r"\bkyoto\b"):
         body = (

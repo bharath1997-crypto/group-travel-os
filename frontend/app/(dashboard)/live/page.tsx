@@ -14,7 +14,7 @@ import TravelModeChip from "./TravelModeChip";
 import LiveMiniHud from "./LiveMiniHud";
 import InlineSignInModal from "./InlineSignInModal";
 import { haversineM } from "@/lib/geo";
-import { emitOpenWayra, WAYRA_CONTEXT_EVENT } from "@/lib/open-wayra";
+import { emitClearWayraContext, emitOpenWayra, WAYRA_CONTEXT_EVENT } from "@/lib/open-wayra";
 import { emitWayraPlacePicked } from "@/lib/wayra/live-map-context";
 import PlacePreviewCard, { type PlacePreviewData } from "./PlacePreviewCard";
 import FarAwayPlacePanel from "./FarAwayPlacePanel";
@@ -2360,6 +2360,12 @@ export default function LivePage() {
   function handleAskWayraFromPreview() {
     const target = selectedPlace ?? destination;
     if (!target) return;
+    emitWayraPlacePicked({
+      lat: target.lat,
+      lng: target.lng,
+      name: target.name ?? target.categoryLabel ?? null,
+      autoOpen: true,
+    });
     const name =
       target.name?.trim() ||
       target.categoryLabel?.trim() ||
@@ -2367,72 +2373,6 @@ export default function LivePage() {
     const prompt = `I'm looking at ${name} on Rovvy Live (${target.lat.toFixed(4)}, ${target.lng.toFixed(4)}). What should I know about this place, and what are interesting things to see or do nearby?`;
     emitOpenWayra({ prompt, autoSend: true });
   }
-
-  useEffect(() => {
-    const target = selectedPlace ?? destination;
-    if (!target) return;
-
-    const routeReady = routePreviewStatus === "ready" && activeRoute;
-    const contextNotice =
-      locationContext && locationContext.classification !== "local_place"
-        ? locationContext.template?.recommendation ?? null
-        : null;
-    const aiSuggestions = buildRoutePreviewAiSuggestions({
-      destinationName: target.name ?? target.categoryLabel ?? "this place",
-      farFromUser: isFarFromUser(target.distanceM ?? null),
-      contextNotice,
-      lastMileNotice:
-        routeReady && activeRoute.lastMileMode === "walk"
-          ? activeRoute.lastMileNotice ?? null
-          : null,
-      borderNotice: routeReady ? activeRoute.borderNotice ?? null : null,
-      routeError:
-        routePreviewStatus === "failed" && routePreviewError
-          ? routePreviewError
-          : null,
-    });
-
-    window.dispatchEvent(
-      new CustomEvent(WAYRA_CONTEXT_EVENT, {
-        detail: {
-          pathname: "/live",
-          selectedPlace: {
-            name: target.name ?? null,
-            lat: target.lat,
-            lng: target.lng,
-            category: target.categoryLabel ?? null,
-            address: target.address ?? null,
-            city: target.city ?? null,
-            state: target.state ?? null,
-            country: target.country ?? null,
-          },
-          liveStage,
-          contextNotice,
-          aiSuggestions: aiSuggestions.map((item) => ({
-            message: item.message,
-            kind: item.kind,
-          })),
-          routePreview: routeReady
-            ? {
-                durationSeconds: activeRoute.durationSeconds,
-                distanceMeters: activeRoute.distanceMeters,
-                lastMileNotice: activeRoute.lastMileNotice ?? null,
-                borderNotice: activeRoute.borderNotice ?? null,
-                lastMileMode: activeRoute.lastMileMode ?? null,
-              }
-            : null,
-        },
-      }),
-    );
-  }, [
-    selectedPlace,
-    destination,
-    liveStage,
-    activeRoute,
-    routePreviewStatus,
-    routePreviewError,
-    locationContext,
-  ]);
 
   const showFarAwayPanel = false;
   const showRouteSummaryBar =
@@ -2446,6 +2386,122 @@ export default function LivePage() {
     Boolean(selectedPlace) &&
     showPlaceDetailsPanel &&
     !showFarAwayPanel;
+
+  /** Preview-card Wayra: bound to the light place card only — clears when the card closes. */
+  useEffect(() => {
+    const buildUserLocationPayload = () => {
+      if (!userLocation || !isFreshGpsStatus(gpsStatus)) return null;
+      return {
+        lat: userLocation.lat,
+        lng: userLocation.lng,
+        city: userRegion?.city ?? null,
+        state: userRegion?.state ?? null,
+        country: userRegion?.country ?? null,
+      };
+    };
+
+    const buildWayraDetail = (target: PlacePreviewData, wayraScope: "place_preview" | "destination") => {
+      const routeReady = routePreviewStatus === "ready" && activeRoute;
+      const contextNotice =
+        locationContext && locationContext.classification !== "local_place"
+          ? locationContext.template?.recommendation ?? null
+          : null;
+      const aiSuggestions = buildRoutePreviewAiSuggestions({
+        destinationName: target.name ?? target.categoryLabel ?? "this place",
+        farFromUser: isFarFromUser(target.distanceM ?? null),
+        contextNotice,
+        lastMileNotice:
+          routeReady && activeRoute.lastMileMode === "walk"
+            ? activeRoute.lastMileNotice ?? null
+            : null,
+        borderNotice: routeReady ? activeRoute.borderNotice ?? null : null,
+        routeError:
+          routePreviewStatus === "failed" && routePreviewError
+            ? routePreviewError
+            : null,
+      });
+
+      return {
+        pathname: "/live",
+        wayraScope,
+        selectedPlace: {
+          name: target.name ?? null,
+          lat: target.lat,
+          lng: target.lng,
+          category: target.categoryLabel ?? null,
+          address: target.address ?? null,
+          city: target.city ?? null,
+          state: target.state ?? null,
+          country: target.country ?? null,
+        },
+        userLocation: buildUserLocationPayload(),
+        liveStage,
+        contextNotice,
+        aiSuggestions: aiSuggestions.map((item) => ({
+          message: item.message,
+          kind: item.kind,
+        })),
+        routePreview: routeReady
+          ? {
+              durationSeconds: activeRoute.durationSeconds,
+              distanceMeters: activeRoute.distanceMeters,
+              lastMileNotice: activeRoute.lastMileNotice ?? null,
+              borderNotice: activeRoute.borderNotice ?? null,
+              lastMileMode: activeRoute.lastMileMode ?? null,
+            }
+          : null,
+      };
+    };
+
+    if (showPlacePreview && selectedPlace && locationContext) {
+      window.dispatchEvent(
+        new CustomEvent(WAYRA_CONTEXT_EVENT, {
+          detail: buildWayraDetail(selectedPlace, "place_preview"),
+        }),
+      );
+      return;
+    }
+
+    if ((isLiveActive || liveStage === "destination_set") && destination) {
+      window.dispatchEvent(
+        new CustomEvent(WAYRA_CONTEXT_EVENT, {
+          detail: buildWayraDetail(destination, "destination"),
+        }),
+      );
+      return;
+    }
+
+    const gpsOnly = buildUserLocationPayload();
+    if (gpsOnly) {
+      window.dispatchEvent(
+        new CustomEvent(WAYRA_CONTEXT_EVENT, {
+          detail: {
+            pathname: "/live",
+            wayraScope: "gps_only",
+            userLocation: gpsOnly,
+            liveStage,
+          },
+        }),
+      );
+      return;
+    }
+
+    emitClearWayraContext();
+  }, [
+    showPlacePreview,
+    selectedPlace,
+    destination,
+    isLiveActive,
+    liveStage,
+    activeRoute,
+    routePreviewStatus,
+    routePreviewError,
+    locationContext,
+    userLocation,
+    gpsStatus,
+    userRegion,
+  ]);
+
   const showRoutePreview =
     (liveStage === "destination_set" || isLongDistancePreview) &&
     destination &&
@@ -2582,6 +2638,7 @@ export default function LivePage() {
         maxZoom={mapMaxZoom}
         onZoomIn={() => mapRef.current?.zoomIn()}
         onZoomOut={() => mapRef.current?.zoomOut()}
+        onZoomChange={(zoom) => mapRef.current?.setZoom(zoom)}
         immersive={liveImmersive}
         isImmersiveFullscreen={liveImmersive}
         onToggleImmersiveFullscreen={toggleLiveImmersive}
@@ -3182,6 +3239,7 @@ export default function LivePage() {
           onMakeDestination={handleMakeDestination}
           onGetDirections={handleGetDirections}
           onStartLive={handleStartFromPlacePreview}
+          immersive={liveImmersive}
           stackAboveRouteSummary={showRouteSummaryBar}
           routePreviewStatus={routePreviewStatus}
           routeLoading={routeLoading}
