@@ -68,6 +68,10 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="DEEPSEEK_API_KEY",
     )
+    deepseek_model: str = Field(
+        default="deepseek-v4-flash",
+        validation_alias="DEEPSEEK_MODEL",
+    )
 
     # ── OpenWeatherMap (Phase 3 / travel intel) ────────────────────────────────
     openweather_api_key: str | None = Field(

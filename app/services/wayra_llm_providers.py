@@ -14,7 +14,7 @@ from app.services.gemini_usage import parse_sdk_usage_metadata, record_gemini_us
 
 logger = logging.getLogger(__name__)
 
-_DEEPSEEK_MODEL = "deepseek-chat"
+_DEEPSEEK_MODEL_DEFAULT = "deepseek-v4-flash"
 _GEMINI_MODEL = "gemini-2.5-flash"
 _SUMMARY_MAX_TOKENS = 220
 
@@ -32,6 +32,13 @@ def _deepseek_key() -> str:
         or os.environ.get("DEEPSEEK_API_KEY")
         or ""
     ).strip()
+
+
+def _deepseek_model() -> str:
+    raw = getattr(settings, "deepseek_model", None) or os.environ.get("DEEPSEEK_MODEL")
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    return _DEEPSEEK_MODEL_DEFAULT
 
 
 def _gemini_key() -> str:
@@ -84,7 +91,7 @@ async def summarize_from_sources(
     if _deepseek_key():
         try:
             text, usage = await _call_deepseek(user_block)
-            record_gemini_usage(feature="wayra_discovery", model=_DEEPSEEK_MODEL, usage=usage)
+            record_gemini_usage(feature="wayra_discovery", model=_deepseek_model(), usage=usage)
             return _parse_summary_json(text), "deepseek", usage
         except Exception as exc:  # noqa: BLE001
             logger.warning("Wayra DeepSeek failed: %s", exc)
@@ -106,8 +113,9 @@ async def summarize_from_sources(
 
 async def _call_deepseek(user_block: str) -> tuple[str, dict[str, int] | None]:
     key = _deepseek_key()
+    model = _deepseek_model()
     body = {
-        "model": _DEEPSEEK_MODEL,
+        "model": model,
         "messages": [
             {"role": "system", "content": _WAYRA_SUMMARY_SYSTEM},
             {"role": "user", "content": user_block},
@@ -115,6 +123,7 @@ async def _call_deepseek(user_block: str) -> tuple[str, dict[str, int] | None]:
         "max_tokens": _SUMMARY_MAX_TOKENS,
         "temperature": 0.35,
         "response_format": {"type": "json_object"},
+        "thinking": {"type": "disabled"},
     }
     async with httpx.AsyncClient(timeout=45.0) as client:
         r = await client.post(
