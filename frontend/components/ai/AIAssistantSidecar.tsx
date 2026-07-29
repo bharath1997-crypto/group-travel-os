@@ -19,10 +19,16 @@ import {
 } from "@/lib/wayra/intent";
 import {
   buildLiveMapTapBrief,
+  emitWayraMapFocus,
   WAYRA_PLACE_PICKED_EVENT,
   prepareLiveWayraContext,
   type WayraPlacePickedDetail,
 } from "@/lib/wayra/live-map-context";
+import {
+  resolveWayraSourceMapFocus,
+  shouldOpenWayraSourceOnLiveMap,
+  type WayraSourceLink,
+} from "@/lib/wayra/wayra-source-links";
 import { buildFollowUpPrompts } from "@/lib/wayra/follow-up-prompts";
 import {
   geolocationErrorMessage,
@@ -48,6 +54,7 @@ import {
   LIVE_SHEET_BOTTOM_DESKTOP,
   LIVE_SHEET_BOTTOM_IMMERSIVE,
   LIVE_STRIP_HEIGHT_PX,
+  LIVE_WAYRA_PANEL_WIDTH_CLAMP,
 } from "@/app/(dashboard)/live/live-layout";
 
 type ChatMessage =
@@ -68,8 +75,11 @@ type ChatMessage =
         url: string;
         source_type: string;
         snippet?: string | null;
+        lat?: number | null;
+        lng?: number | null;
       }[];
       followUpPrompts?: string[];
+      pending?: boolean;
     }
   | { id: string; role: "system"; text: string; createdAt: number };
 
@@ -86,6 +96,8 @@ type AIAssistantResponseBody = {
     url: string;
     source_type: string;
     snippet?: string | null;
+    lat?: number | null;
+    lng?: number | null;
   }[];
   summary?: Record<string, unknown> | null;
 };
@@ -292,6 +304,10 @@ export function AIAssistantSidecar({
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesScrollRef = useRef<HTMLDivElement>(null);
+  const savedScrollTopRef = useRef(0);
+  const prevLivePlacePinRef = useRef<string | null>(null);
+  const pendingAssistantIdRef = useRef<string | null>(null);
+  const prevMessageCountRef = useRef(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const pendingAutoSendRef = useRef<string | null>(null);
   const pendingTapBriefRef = useRef<string | null>(null);
@@ -595,7 +611,26 @@ export function AIAssistantSidecar({
   }, []);
 
   useEffect(() => {
-    scrollToEnd();
+    if (!isOpen) {
+      if (messagesScrollRef.current) {
+        savedScrollTopRef.current = messagesScrollRef.current.scrollTop;
+      }
+      prevMessageCountRef.current = messages.length;
+      return;
+    }
+    requestAnimationFrame(() => {
+      if (messagesScrollRef.current) {
+        messagesScrollRef.current.scrollTop = savedScrollTopRef.current;
+      }
+    });
+  }, [isOpen, messages.length]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (messages.length > prevMessageCountRef.current) {
+      scrollToEnd();
+    }
+    prevMessageCountRef.current = messages.length;
   }, [messages, isOpen, scrollToEnd]);
 
   useEffect(() => {
@@ -612,6 +647,45 @@ export function AIAssistantSidecar({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen]);
+
+  useEffect(() => {
+    const onLive = pathname === "/live" || pathname.startsWith("/live/");
+    if (!onLive) return;
+    const place = extractLiveSelectedPlace(liveContext as Record<string, unknown>);
+    if (!place) {
+      prevLivePlacePinRef.current = null;
+      return;
+    }
+    const pinKey = `${place.lat.toFixed(5)},${place.lng.toFixed(5)}`;
+    if (prevLivePlacePinRef.current && prevLivePlacePinRef.current !== pinKey) {
+      const label =
+        place.name && !isGenericPlaceName(place.name)
+          ? place.name.trim()
+          : "this location";
+      lastTapBriefPinRef.current = null;
+      tapBriefShownPinRef.current = null;
+      pendingTapBriefRef.current = null;
+      setMessages((current) => [
+        ...current.map((row) =>
+          row.role === "assistant"
+            ? {
+                ...row,
+                followUpPrompts: undefined,
+                sources: undefined,
+                suggestedActions: undefined,
+              }
+            : row,
+        ),
+        {
+          id: newId(),
+          role: "system",
+          text: `Switched to ${label}`,
+          createdAt: Date.now(),
+        },
+      ]);
+    }
+    prevLivePlacePinRef.current = pinKey;
+  }, [pathname, liveContext]);
 
   useEffect(() => {
     const onOpen = (e: Event) => {
@@ -694,6 +768,28 @@ export function AIAssistantSidecar({
     window.setTimeout(() => setActionHint(null), 4000);
   }, []);
 
+  const handleWayraSourceClick = useCallback(
+    (source: WayraSourceLink, event: React.MouseEvent<HTMLAnchorElement>) => {
+      const ctx = { ...(mergedContext as Record<string, unknown>), pathname };
+      const onLive = isLivePage(page, ctx);
+      if (!shouldOpenWayraSourceOnLiveMap(source, onLive)) return;
+
+      const focus = resolveWayraSourceMapFocus(source);
+      if (!focus) return;
+
+      event.preventDefault();
+      emitWayraMapFocus({
+        lat: focus.lat,
+        lng: focus.lng,
+        name: focus.name,
+        zoom: 16,
+        showPreview: true,
+      });
+      showActionHint("Showing on Live map");
+    },
+    [mergedContext, page, pathname, showActionHint],
+  );
+
   const pushTapBrief = useCallback((brief: string, pinKey: string) => {
     pendingTapBriefRef.current = null;
     tapBriefShownPinRef.current = pinKey;
@@ -773,6 +869,20 @@ export function AIAssistantSidecar({
     [mergedContext, page],
   );
 
+  const commitAssistantRow = useCallback(
+    (row: Extract<ChatMessage, { role: "assistant" }>) => {
+      const pendingId = pendingAssistantIdRef.current;
+      pendingAssistantIdRef.current = null;
+      setMessages((m) => {
+        if (pendingId && m.some((r) => r.id === pendingId)) {
+          return m.map((r) => (r.id === pendingId ? row : r));
+        }
+        return [...m, row];
+      });
+    },
+    [],
+  );
+
   const sendMessage = useCallback(
     async (override?: string) => {
       const userMessage = (override ?? input).trim();
@@ -829,6 +939,18 @@ export function AIAssistantSidecar({
       }
 
       setLoading(true);
+      const pendingId = newId();
+      pendingAssistantIdRef.current = pendingId;
+      setMessages((m) => [
+        ...m,
+        {
+          id: pendingId,
+          role: "assistant",
+          text: "",
+          createdAt: Date.now(),
+          pending: true,
+        },
+      ]);
 
       const messengerCtx: Record<string, unknown> = { ...ctx };
       if (attachedLocation) {
@@ -864,13 +986,12 @@ export function AIAssistantSidecar({
             activeTab,
             ctx,
           );
-          setMessages((m) => [
-            ...m,
+          commitAssistantRow(
             buildAssistantRow(
               `${fallback}\n\n— Sign in for personalized AI responses from Wayra.`,
               { userMessage },
             ),
-          ]);
+          );
           return;
         }
 
@@ -881,13 +1002,12 @@ export function AIAssistantSidecar({
             activeTab,
             ctx,
           );
-          setMessages((m) => [
-            ...m,
+          commitAssistantRow(
             buildAssistantRow(
               `${fallback}\n\n— The assistant took too long; this is an offline summary.`,
               { userMessage },
             ),
-          ]);
+          );
           return;
         }
 
@@ -898,7 +1018,7 @@ export function AIAssistantSidecar({
             activeTab,
             ctx,
           );
-          setMessages((m) => [...m, buildAssistantRow(fallback, { userMessage })]);
+          commitAssistantRow(buildAssistantRow(fallback, { userMessage }));
           return;
         }
 
@@ -909,12 +1029,11 @@ export function AIAssistantSidecar({
             activeTab,
             ctx,
           );
-          setMessages((m) => [...m, buildAssistantRow(fallback, { userMessage })]);
+          commitAssistantRow(buildAssistantRow(fallback, { userMessage }));
           return;
         }
 
-        setMessages((m) => [
-          ...m,
+        commitAssistantRow(
           buildAssistantRow(data.message, {
             userMessage,
             suggestedActions: data.suggested_actions?.map((a) => ({
@@ -928,9 +1047,11 @@ export function AIAssistantSidecar({
               url: s.url,
               source_type: s.source_type,
               snippet: s.snippet,
+              lat: s.lat,
+              lng: s.lng,
             })),
           }),
-        ]);
+        );
       } catch {
         const fallback = appendAssistantFallback(
           userMessage,
@@ -938,8 +1059,9 @@ export function AIAssistantSidecar({
           activeTab,
           ctx,
         );
-        setMessages((m) => [...m, buildAssistantRow(fallback, { userMessage })]);
+        commitAssistantRow(buildAssistantRow(fallback, { userMessage }));
       } finally {
+        pendingAssistantIdRef.current = null;
         setLoading(false);
       }
     },
@@ -947,6 +1069,7 @@ export function AIAssistantSidecar({
       activeTab,
       attachedLocation,
       buildAssistantRow,
+      commitAssistantRow,
       mergedContext,
       messengerProfile,
       groupId,
@@ -1033,6 +1156,8 @@ export function AIAssistantSidecar({
 
   const isLiveRoute = pathname === "/live" || pathname.startsWith("/live/");
   const isLiveFloating = isLiveRoute && livePanelExpanded;
+  const isLiveDocked =
+    isLiveRoute && isOpen && !isLiveFloating && isDesktopLive;
   const liveBoundsMode: "default" | "live" = isLiveFloating ? "live" : "default";
 
   useEffect(() => {
@@ -1278,13 +1403,27 @@ export function AIAssistantSidecar({
                 width: liveFloatBounds.width,
                 height: liveFloatBounds.height,
               }
+            : isLiveDocked
+              ? {
+                  right: 0,
+                  left: "auto",
+                  top: "var(--rovvy-header-h, 56px)",
+                  bottom: `${LIVE_STRIP_HEIGHT_PX}px`,
+                  width: LIVE_WAYRA_PANEL_WIDTH_CLAMP,
+                  minWidth: "18rem",
+                  maxWidth: "min(32rem, 38vw)",
+                  height: "auto",
+                  maxHeight: "none",
+                }
             : isLiveRoute
               ? {
                   right: 8,
                   bottom: livePanelBottom,
                   left: "auto",
                   top: "auto",
-                  width: "min(380px, calc(100vw - 16px))",
+                  width: `min(${LIVE_WAYRA_PANEL_WIDTH_CLAMP}, calc(100vw - 16px))`,
+                  minWidth: "18rem",
+                  maxWidth: "min(32rem, 38vw)",
                   height: "auto",
                   maxHeight: `calc(100dvh - ${livePanelBottom} - 3rem)`,
                 }
@@ -1295,13 +1434,15 @@ export function AIAssistantSidecar({
                   height: panelBounds.height,
                 }
         }
-        className={`pointer-events-auto fixed z-[2999] flex flex-col overflow-hidden rounded-2xl border border-[#E9ECEF] bg-[#F8F9FA] shadow-2xl ${
+        className={`pointer-events-auto fixed z-[2999] flex flex-col overflow-hidden border border-[#E9ECEF] bg-[#F8F9FA] shadow-2xl ${
+          isLiveDocked ? "rounded-none rounded-l-2xl border-r-0" : "rounded-2xl"
+        } ${
           isPanelInteracting ? "" : "transition-all duration-300 ease-in-out"
         } ${className} ${
           isOpen
             ? "opacity-100 scale-100"
             : "pointer-events-none scale-[0.98] opacity-0"
-        } ${isLiveRoute && !isLiveFloating ? "rounded-b-none border-b-0" : ""}`}
+        } ${isLiveRoute && !isLiveFloating && !isLiveDocked ? "rounded-b-none border-b-0" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${panelId}-title`}
@@ -1310,9 +1451,8 @@ export function AIAssistantSidecar({
           (handle) =>
             !isLiveRoute ||
             isLiveFloating ||
-            handle.id === "n" ||
-            handle.id === "ne" ||
-            handle.id === "nw",
+            (isLiveDocked && (handle.id === "n" || handle.id === "w" || handle.id === "nw")) ||
+            (!isLiveDocked && (handle.id === "n" || handle.id === "ne" || handle.id === "nw")),
         ).map((handle) => (
               <div
                 key={handle.id}
@@ -1332,21 +1472,29 @@ export function AIAssistantSidecar({
 
         <div
           className={`flex items-start justify-between gap-2 border-b border-[#E9ECEF] bg-white px-3.5 py-2 ${
-            isLiveRoute && !isLiveFloating
+            isLiveRoute && !isLiveFloating && !isLiveDocked
               ? "cursor-default"
               : "cursor-grab active:cursor-grabbing"
           }`}
           onPointerDown={
-            isLiveRoute && !isLiveFloating
+            isLiveRoute && !isLiveFloating && !isLiveDocked
               ? undefined
               : (e) => onPanelHeaderPointerDown(e, liveBoundsMode)
           }
           onPointerMove={
-            isLiveRoute && !isLiveFloating ? undefined : onPanelHeaderPointerMove
+            isLiveRoute && !isLiveFloating && !isLiveDocked
+              ? undefined
+              : onPanelHeaderPointerMove
           }
-          onPointerUp={isLiveRoute && !isLiveFloating ? undefined : finishPanelInteraction}
+          onPointerUp={
+            isLiveRoute && !isLiveFloating && !isLiveDocked
+              ? undefined
+              : finishPanelInteraction
+          }
           onPointerCancel={
-            isLiveRoute && !isLiveFloating ? undefined : finishPanelInteraction
+            isLiveRoute && !isLiveFloating && !isLiveDocked
+              ? undefined
+              : finishPanelInteraction
           }
         >
           <div className="flex min-w-0 shrink-0 items-center gap-2">
@@ -1445,7 +1593,7 @@ export function AIAssistantSidecar({
         <div
           ref={messagesScrollRef}
           className={`space-y-2.5 overflow-y-auto bg-[#F8F9FA] px-3 py-2 ${
-            isLiveRoute && !isLiveFloating
+            isLiveRoute && !isLiveFloating && !isLiveDocked
               ? "max-h-[min(50vh,420px)] shrink-0"
               : "min-h-0 flex-1"
           }`}
@@ -1483,85 +1631,95 @@ export function AIAssistantSidecar({
                   </div>
                 ) : (
                   <div className="mr-auto max-w-[90%]">
-                    <div className="rounded-2xl rounded-bl-md border border-[#E9ECEF] bg-white px-2.5 py-1.5 text-[11.5px] leading-normal whitespace-pre-wrap text-[#2C3E50]">
-                      {m.text}
-                    </div>
-                    <p className="mt-0.5 text-[9px] text-[#6C757D]">
-                      {formatWayraMessageTime(m.createdAt)}
-                    </p>
-                    {m.suggestedActions && m.suggestedActions.length > 0 ? (
-                      <div className="mt-1.5 flex flex-wrap gap-1.5">
-                        {m.suggestedActions.map((a, i) => (
-                          <button
-                            key={`${a.type}-${a.label}-${i}`}
-                            type="button"
-                            onClick={() =>
-                              onActionPill(a.type, a.label, a.target)
-                            }
-                            className="rounded-full border border-[#0F3460]/20 bg-white px-2 py-0.5 text-[10px] text-[#0F3460] hover:bg-[#0F3460] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
-                          >
-                            {a.label}
-                          </button>
-                        ))}
+                    {"pending" in m && m.pending ? (
+                      <div
+                        className="rounded-2xl rounded-bl-md border border-[#E9ECEF] bg-white px-2.5 py-2 text-[11.5px] text-[#6C757D]"
+                        aria-live="polite"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <span
+                            className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
+                            aria-hidden
+                          />
+                          Wayra is thinking…
+                        </span>
                       </div>
-                    ) : null}
-                    {m.sources && m.sources.length > 0 ? (
-                      <div className="mt-2">
-                        <p className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-[#6C757D]">
-                          Sources
-                        </p>
-                        <div className="flex flex-col gap-1">
-                          {m.sources.map((s) => (
-                            <a
-                              key={`${s.url}-${s.label}`}
-                              href={s.url}
-                              target={s.url.startsWith("/") ? undefined : "_blank"}
-                              rel={s.url.startsWith("/") ? undefined : "noopener noreferrer"}
-                              className="text-[10px] text-[#0F3460] underline decoration-[#0F3460]/30 hover:decoration-[#0F3460]"
-                            >
-                              {s.label}
-                            </a>
-                          ))}
+                    ) : (
+                      <>
+                        <div className="rounded-2xl rounded-bl-md border border-[#E9ECEF] bg-white px-2.5 py-1.5 text-[11.5px] leading-normal whitespace-pre-wrap text-[#2C3E50]">
+                          {m.text}
                         </div>
-                      </div>
-                    ) : null}
-                    {m.followUpPrompts && m.followUpPrompts.length > 0 ? (
-                      <div className="mt-2">
-                        <p className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-[#6C757D]">
-                          Ask next
+                        <p className="mt-0.5 text-[9px] text-[#6C757D]">
+                          {formatWayraMessageTime(m.createdAt)}
                         </p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {m.followUpPrompts.map((q) => (
-                            <button
-                              key={q}
-                              type="button"
-                              onClick={() => void sendMessage(q)}
-                              disabled={loading}
-                              className="max-w-full rounded-full border border-[#E9ECEF] bg-[#F8F9FA] px-2 py-0.5 text-left text-[10px] text-[#2C3E50] hover:border-[#E94560]/40 focus:outline-none focus:ring-2 focus:ring-[#E94560]/30 disabled:opacity-50"
-                            >
-                              {q}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
+                        {m.suggestedActions && m.suggestedActions.length > 0 ? (
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            {m.suggestedActions.map((a, i) => (
+                              <button
+                                key={`${a.type}-${a.label}-${i}`}
+                                type="button"
+                                onClick={() =>
+                                  onActionPill(a.type, a.label, a.target)
+                                }
+                                className="rounded-full border border-[#0F3460]/20 bg-white px-2 py-0.5 text-[10px] text-[#0F3460] hover:bg-[#0F3460] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#E94560]/30"
+                              >
+                                {a.label}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                        {m.sources && m.sources.length > 0 ? (
+                          <div className="mt-2">
+                            <p className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-[#6C757D]">
+                              Sources
+                            </p>
+                            <div className="flex flex-col gap-1">
+                              {m.sources.map((s) => (
+                                <a
+                                  key={`${s.url}-${s.label}`}
+                                  href={s.url}
+                                  target={s.url.startsWith("/") ? undefined : "_blank"}
+                                  rel={
+                                    s.url.startsWith("/")
+                                      ? undefined
+                                      : "noopener noreferrer"
+                                  }
+                                  onClick={(event) => handleWayraSourceClick(s, event)}
+                                  className="text-[10px] text-[#0F3460] underline decoration-[#0F3460]/30 hover:decoration-[#0F3460]"
+                                >
+                                  {s.label}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                        {m.followUpPrompts && m.followUpPrompts.length > 0 ? (
+                          <div className="mt-2">
+                            <p className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-[#6C757D]">
+                              Ask next
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {m.followUpPrompts.map((q) => (
+                                <button
+                                  key={q}
+                                  type="button"
+                                  onClick={() => void sendMessage(q)}
+                                  disabled={loading}
+                                  className="max-w-full rounded-full border border-[#E9ECEF] bg-[#F8F9FA] px-2 py-0.5 text-left text-[10px] text-[#2C3E50] hover:border-[#E94560]/40 focus:outline-none focus:ring-2 focus:ring-[#E94560]/30 disabled:opacity-50"
+                                >
+                                  {q}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                      </>
+                    )}
                   </div>
                 )}
               </div>
             );
           })}
-          {loading ? (
-            <div
-              className="flex items-center gap-2 text-[11px] text-[#6C757D]"
-              aria-live="polite"
-            >
-              <span
-                className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
-                aria-hidden
-              />
-              Wayra is thinking…
-            </div>
-          ) : null}
           <div ref={endRef} />
         </div>
 

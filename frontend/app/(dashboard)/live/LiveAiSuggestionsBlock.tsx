@@ -15,47 +15,6 @@ type Props = {
   className?: string;
 };
 
-function SuggestionList({
-  items,
-  variant,
-}: {
-  items: LiveAiSuggestionItem[];
-  variant: "warning" | "tip";
-}) {
-  const isWarning = variant === "warning";
-
-  return (
-    <ul className="space-y-1.5">
-      {items.map((item) => (
-        <li
-          key={item.id}
-          className={
-            isWarning
-              ? "flex gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2"
-              : "rounded-lg border border-teal-100/90 bg-white/90 px-2.5 py-2"
-          }
-        >
-          {isWarning ? (
-            <AlertTriangle
-              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-700"
-              aria-hidden
-            />
-          ) : null}
-          <p
-            className={
-              isWarning
-                ? "text-xs leading-snug text-amber-950"
-                : "text-xs leading-snug text-stone-800"
-            }
-          >
-            {item.message}
-          </p>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 export default function LiveAiSuggestionsBlock({
   suggestions,
   destinationName = "this place",
@@ -66,9 +25,17 @@ export default function LiveAiSuggestionsBlock({
   const tips = suggestions.filter((item) => item.kind === "tip");
   const combinedPrompt = buildCombinedWayraPrompt(destinationName, suggestions);
 
+  if (warnings.length === 0 && tips.length === 0) return null;
+
   const handleAskWayra = () => {
     emitOpenWayra({ prompt: combinedPrompt, autoSend: true });
   };
+
+  const primaryWarning = warnings[0];
+  const headline = primaryWarning
+    ? "Wayra · important for this trip"
+    : "Wayra · suggestions";
+  const isWarning = Boolean(primaryWarning);
 
   return (
     <div
@@ -76,35 +43,59 @@ export default function LiveAiSuggestionsBlock({
       role="region"
       aria-label="Wayra AI suggestions"
     >
-      {warnings.length > 0 ? (
-        <div className="rounded-xl border border-amber-200/90 bg-gradient-to-br from-amber-50 via-white to-amber-50/40 p-2.5 shadow-[0_1px_8px_rgba(245,158,11,0.12)]">
-          <div className="mb-1.5 flex items-center gap-1.5">
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-100 text-amber-800">
+      <div
+        className={`rounded-xl border shadow-[0_1px_8px_rgba(15,118,110,0.08)] ${
+          isWarning
+            ? "border-amber-200/90 bg-gradient-to-br from-amber-50 via-white to-[#F0FDFA]"
+            : "border-[#99F6E4]/80 bg-gradient-to-br from-[#F0FDFA] via-white to-[#ECFDF5]"
+        } ${compact ? "p-2" : "p-2.5"}`}
+      >
+        <div className="mb-1.5 flex items-center gap-1.5">
+          <span
+            className={`flex h-6 w-6 items-center justify-center rounded-lg ${
+              isWarning
+                ? "bg-amber-100 text-amber-800"
+                : "bg-[#0F766E]/10 text-[#0F766E]"
+            }`}
+          >
+            {isWarning ? (
               <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
-            </span>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-amber-900">
-              Important · Wayra flagged
-            </p>
-          </div>
-          <SuggestionList items={warnings} variant="warning" />
-        </div>
-      ) : null}
-
-      {tips.length > 0 ? (
-        <div
-          className={`rounded-xl border border-[#99F6E4]/80 bg-gradient-to-br from-[#F0FDFA] via-white to-[#ECFDF5] shadow-[0_1px_8px_rgba(15,118,110,0.08)] ${compact ? "p-2" : "p-2.5"}`}
-        >
-          <div className="mb-1.5 flex items-center gap-1.5">
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#0F766E]/10 text-[#0F766E]">
+            ) : (
               <Sparkles className="h-3.5 w-3.5" aria-hidden />
-            </span>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[#0F766E]">
-              Wayra · AI suggested
-            </p>
-          </div>
-          <SuggestionList items={tips} variant="tip" />
+            )}
+          </span>
+          <p
+            className={`text-[10px] font-bold uppercase tracking-wide ${
+              isWarning ? "text-amber-900" : "text-[#0F766E]"
+            }`}
+          >
+            {headline}
+          </p>
         </div>
-      ) : null}
+
+        <ul className="space-y-1.5">
+          {warnings.map((item) => (
+            <li
+              key={item.id}
+              className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50/80 px-2.5 py-2"
+            >
+              <AlertTriangle
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-700"
+                aria-hidden
+              />
+              <p className="text-xs leading-snug text-amber-950">{item.message}</p>
+            </li>
+          ))}
+          {tips.map((item) => (
+            <li
+              key={item.id}
+              className="rounded-lg border border-teal-100/90 bg-white/90 px-2.5 py-2"
+            >
+              <p className="text-xs leading-snug text-stone-800">{item.message}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <button
         type="button"

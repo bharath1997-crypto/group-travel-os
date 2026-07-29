@@ -16,6 +16,7 @@ import {
 } from "@/lib/wayra/intent";
 
 export const WAYRA_PLACE_PICKED_EVENT = "rovvy:wayra-place-picked";
+export const WAYRA_MAP_FOCUS_EVENT = "rovvy:wayra-map-focus";
 
 export type WayraPlacePickedDetail = {
   lat: number;
@@ -25,9 +26,23 @@ export type WayraPlacePickedDetail = {
   autoOpen?: boolean;
 };
 
+export type WayraMapFocusDetail = {
+  lat: number;
+  lng: number;
+  name?: string | null;
+  zoom?: number;
+  /** When true, open the place preview panel on Live. */
+  showPreview?: boolean;
+};
+
 export function emitWayraPlacePicked(detail: WayraPlacePickedDetail): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(WAYRA_PLACE_PICKED_EVENT, { detail }));
+}
+
+export function emitWayraMapFocus(detail: WayraMapFocusDetail): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(WAYRA_MAP_FOCUS_EVENT, { detail }));
 }
 
 /** Short local brief after map tap — no LLM call (zero API cost). */

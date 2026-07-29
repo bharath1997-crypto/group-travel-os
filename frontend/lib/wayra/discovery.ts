@@ -66,12 +66,24 @@ export function stripDiscoveryLeadIn(message: string): string {
 export function normalizeDiscoveryQuery(message: string): string {
   let q = normalizeQuery(stripDiscoveryLeadIn(message));
   q = q.replace(new RegExp(DEICTIC_PATTERN, "gi"), "{here}");
+  if (!APP_CONTEXT_RE.test(q)) {
+    q = q.replace(/\b(this|it)\b/gi, "{here}");
+  }
   return q.replace(/\s+/g, " ").trim();
 }
 
+/** True when the user points at the map pin with this/it (not the Rovvy app). */
+const APP_CONTEXT_RE =
+  /\b(this app|the app|on rovvy|in rovvy|wayra|plan page|plan tab)\b/i;
+
+const PIN_PRONOUN_RE =
+  /\b(what is (this|it)|what s (this|it)|is (this|it) a)\b/i;
+
 export function hasLiveDeicticReference(message: string): boolean {
   const q = normalizeQuery(stripDiscoveryLeadIn(message));
-  return DEICTIC_RE.test(q);
+  if (APP_CONTEXT_RE.test(q)) return false;
+  if (DEICTIC_RE.test(q)) return true;
+  return PIN_PRONOUN_RE.test(q);
 }
 
 function matchesAny(q: string, patterns: RegExp[]): boolean {
@@ -219,13 +231,23 @@ const LLM_PATTERNS: RegExp[] = [
 
 /**
  * Live UI chips and place-name phrasing — LLM without deictic "here".
- * e.g. "What's at Kitikmeot Region?" from liveQuickPromptsForPlace().
+ * Mirrors follow-up chips from follow-up-prompts.ts ({place} → .+).
  */
 const PLACE_NAME_LLM_PATTERNS: RegExp[] = [
   /^what s at .+$/,
   /^what is at .+$/,
   /^what s in .+$/,
   /^what is in .+$/,
+  /^what s special about .+$/,
+  /^what can i do .+$/,
+  /^what s the local culture like .+$/,
+  /^any must try food .+$/,
+  /^best time of year to visit .+$/,
+  /^how long should i spend .+$/,
+  /^what should i pack for .+$/,
+  /^what does it cost to visit .+$/,
+  /^anything fun .+$/,
+  /^where exactly is .+$/,
   /^how far is this from me$/,
   /^how far is .+ from me$/,
   /^how long is the drive to .+$/,
@@ -255,7 +277,11 @@ function skeletonForMatch(message: string): string {
 }
 
 function isIdentitySkeleton(q: string): boolean {
-  if (/\b(special|unique|story|famous|hidden gem|worth visiting|worth stopping)\b/.test(q)) {
+  if (
+    /\b(special|unique|story|famous|hidden gem|worth visiting|worth stopping|fertile|soil|farmland|terrain|geography|wetland|desert|forest|grassland|tundra|taiga|steppe)\b/.test(
+      q,
+    )
+  ) {
     return false;
   }
   return matchesAny(q, IDENTITY_PATTERNS);

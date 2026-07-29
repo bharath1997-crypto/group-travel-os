@@ -7,6 +7,7 @@ import {
   classifyDiscoveryExpects,
   isDiscoveryIdentityQuestion,
   isDiscoveryLlmQuestion,
+  isPlaceNameLlmQuestion,
   normalizeWayraQuery,
 } from "@/lib/wayra/discovery";
 import { resolvePlaceDisplayName } from "@/lib/wayra/place-region";
@@ -373,9 +374,26 @@ export function classifyMode(message: string): WayraMode {
   if (discovery === "app_guide") return "app_guide";
   if (discovery === "local" || discovery === "llm") return "travel";
 
+  if (isPlaceNameLlmQuestion(message)) return "travel";
+
   if (isLiveMapContextQuestion(message)) return "travel";
 
   if (isLiveTravelPrepQuestion(message)) return "travel";
+
+  if (
+    hasAny(
+      q,
+      /\bwhat is this\b/,
+      /\bwhat is it\b/,
+      /\bwhat s this\b/,
+      /\bwhat s it\b/,
+      /\bis it a\b/,
+      /\bis this a\b/,
+    ) &&
+    !hasAny(q, /\bthis app\b/, /\bthe app\b/, /\bwayra\b/, /\bplan page\b/)
+  ) {
+    return "travel";
+  }
 
   const travelStrong = hasAny(
     q,

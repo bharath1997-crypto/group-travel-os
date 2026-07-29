@@ -15,7 +15,7 @@ import LiveMiniHud from "./LiveMiniHud";
 import InlineSignInModal from "./InlineSignInModal";
 import { haversineM } from "@/lib/geo";
 import { emitClearWayraContext, emitOpenWayra, WAYRA_CONTEXT_EVENT } from "@/lib/open-wayra";
-import { emitWayraPlacePicked } from "@/lib/wayra/live-map-context";
+import { emitWayraPlacePicked, WAYRA_MAP_FOCUS_EVENT, type WayraMapFocusDetail } from "@/lib/wayra/live-map-context";
 import PlacePreviewCard, { type PlacePreviewData } from "./PlacePreviewCard";
 import FarAwayPlacePanel from "./FarAwayPlacePanel";
 import SoloRoutePreviewPanel from "./SoloRoutePreviewPanel";
@@ -107,6 +107,7 @@ import {
   type GpsState,
 } from "./live-gps";
 import { LIVE_MAP_CONTROLS_POSITION, type LiveMapViewMode } from "./live-layout";
+import { useWayraPanelOpen } from "@/lib/wayra/use-wayra-panel-open";
 import LiveImmersiveChrome from "./LiveImmersiveChrome";
 import { isImmersiveDarkMapLayer, setLiveImmersiveChrome, clearLiveImmersiveChrome } from "./live-immersive-chrome";
 import LiveMapRightControls from "./LiveMapRightControls";
@@ -451,17 +452,16 @@ export default function LivePage() {
   const [layersPanelOpen, setLayersPanelOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [liveImmersive, setLiveImmersive] = useState(false);
+  const wayraChatOpen = useWayraPanelOpen();
+  const [placeCardExpanded, setPlaceCardExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!wayraChatOpen) setPlaceCardExpanded(false);
+  }, [wayraChatOpen]);
 
   const toggleLiveImmersive = useCallback(() => {
-    setLiveImmersive((prev) => {
-      const next = !prev;
-      setLiveImmersiveChrome({
-        active: next,
-        darkMap: isImmersiveDarkMapLayer(activeLayer),
-      });
-      return next;
-    });
-  }, [activeLayer]);
+    setLiveImmersive((prev) => !prev);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -1409,6 +1409,41 @@ export default function LivePage() {
 
     kickRoutePreview(place, { fitMap: true });
   }, [currentUserId, refreshRecentSearches, addStopMode, isLiveActive, destination, addPlaceAsRouteStop, kickRoutePreview]);
+
+  useEffect(() => {
+    const onWayraMapFocus = (event: Event) => {
+      const detail = (event as CustomEvent<WayraMapFocusDetail | undefined>).detail;
+      if (!detail || !Number.isFinite(detail.lat) || !Number.isFinite(detail.lng)) {
+        return;
+      }
+
+      mapRef.current?.flyToPlace(detail.lat, detail.lng, detail.zoom ?? 16);
+      setAttributionFocus({ lat: detail.lat, lng: detail.lng, pinned: true });
+      setAttributionRefreshedAt(new Date());
+
+      if (detail.showPreview === false) return;
+
+      const place: PlacePreviewData = {
+        name: detail.name?.trim() || "Place",
+        categoryLabel: "Place",
+        address: "",
+        phone: null,
+        lat: detail.lat,
+        lng: detail.lng,
+        distanceM: userLocation
+          ? haversineM(userLocation.lat, userLocation.lng, detail.lat, detail.lng)
+          : null,
+        openingHours: null,
+        openStatus: null,
+        source: "wayra",
+        tags: {},
+      };
+      void selectDestination(place, { origin: "search", openDetailsPanel: true });
+    };
+
+    window.addEventListener(WAYRA_MAP_FOCUS_EVENT, onWayraMapFocus);
+    return () => window.removeEventListener(WAYRA_MAP_FOCUS_EVENT, onWayraMapFocus);
+  }, [selectDestination, userLocation]);
 
   const selectDestinationFromPlace = selectDestination;
 
@@ -2781,7 +2816,7 @@ export default function LivePage() {
 
               {/* Unified search dropdown — instant picks + API results */}
               {showSearchPopup ? (
-                <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-72 overflow-auto rounded-2xl bg-white/95 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-md">
+                <div className="absolute left-0 right-0 top-full z-40 mt-2 max-h-72 overflow-auto rounded-2xl bg-white/95 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-md">
                   {detectedSearchCategory ? (
                     <div className="border-b border-stone-100/80 p-1.5">
                       <button
@@ -3073,15 +3108,15 @@ export default function LivePage() {
               )}
             </div>
 
-            {/* Status Pill Chip */}
-            {liveStage !== "static_landing" && (
+            {/* Status Pill Chip — hide while search dropdown is open to avoid overlap */}
+            {liveStage !== "static_landing" && !showSearchPopup ? (
               <div
                 className={`mx-auto flex h-9 shrink-0 select-none items-center gap-1.5 self-center rounded-full border border-current/10 px-3.5 text-xs font-semibold shadow-[0_4px_18px_rgba(15,23,42,0.05)] transition-all duration-200 ${statusPillClass()}`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${statusDotClass()}`} />
                 {statusPillLabel()}
               </div>
-            )}
+            ) : null}
 
           {/* Nearby Suggestions Results Panel */}
           {nearbyCategory && !selectedPlace && (
@@ -3261,6 +3296,9 @@ export default function LivePage() {
                 }
               : null
           }
+          wayraChatOpen={wayraChatOpen}
+          compact={wayraChatOpen && !placeCardExpanded}
+          onToggleCompact={() => setPlaceCardExpanded((prev) => !prev)}
         />
       ) : null}
 

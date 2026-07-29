@@ -65,9 +65,25 @@ export const LIVE_STRIP_ZOOM_HIT_PX = 26;
 export const LIVE_PANEL_RIGHT_INSET =
   "right-4 sm:right-[5rem] md:right-[5.25rem] lg:right-[5.5rem] xl:right-[5.75rem]";
 
-/** Max width for compact side panels (rem-based — scales with user font size). */
+/** Wayra chat column — viewport ratio (overridable via CSS var). */
+export const LIVE_WAYRA_PANEL_WIDTH_CLAMP = "clamp(18rem, var(--live-wayra-width, 24vw), min(32rem, 38vw))";
+
+/** Legacy px constant — prefer LIVE_WAYRA_PANEL_WIDTH_CLAMP in new layout code. */
+export const LIVE_WAYRA_PANEL_WIDTH_PX = 380;
+
+/** Place preview card right offset when Wayra chat column is open. */
+export const LIVE_PANEL_RIGHT_WHEN_WAYRA_OPEN =
+  "right-[calc(clamp(18rem,var(--live-wayra-width,24vw),min(32rem,38vw))+0.75rem)]";
+
+export const LIVE_PANEL_MAX_WIDTH_WHEN_WAYRA_OPEN =
+  "max-w-[min(clamp(14rem,var(--live-preview-width,22vw),min(36rem,42vw)),calc(100vw-clamp(18rem,var(--live-wayra-width,24vw),min(32rem,38vw))-2.5rem))]";
+
+/** Max width for compact side panels — scales with viewport + rem. */
 export const LIVE_PANEL_MAX_WIDTH =
-  "max-w-[min(17.5rem,calc(100%-5rem))]";
+  "max-w-[min(clamp(14rem,var(--live-preview-width,22vw),min(36rem,42vw)),calc(100vw-5rem))]";
+
+/** @deprecated use LIVE_WAYRA_PANEL_WIDTH_CLAMP */
+export const LIVE_WAYRA_PANEL_WIDTH_CSS = "clamp(18rem, 24vw, 32rem)";
 
 /**
  * Viewport-anchored side/bottom sheet — use instead of absolute inside the map shell
@@ -76,16 +92,46 @@ export const LIVE_PANEL_MAX_WIDTH =
 export const LIVE_FIXED_PANEL =
   "pointer-events-auto fixed z-[140] flex flex-col overflow-hidden bg-white text-sm shadow-[0_8px_30px_rgba(0,0,0,0.12)]";
 
-/** Right-bottom sheet — flush on attribution strip, height follows content. */
-export const LIVE_RESPONSIVE_PANEL_LAYOUT = [
+/** Phone: full-width bottom sheet anchored to viewport. */
+export const LIVE_PHONE_SHEET_LAYOUT = [
   LIVE_FIXED_PANEL,
-  "right-2 w-[min(17.5rem,calc(100vw-1rem))]",
-  "h-auto max-h-[min(75vh,calc(100dvh-6rem))]",
+  "inset-x-0 left-0 right-0",
+  "w-full max-w-none",
+  "rounded-t-2xl rounded-b-none border border-stone-200/80 border-b-0",
+  "bottom-[var(--live-sheet-bottom)]",
+  "max-h-[min(85dvh,calc(100dvh-var(--live-sheet-bottom)-3rem))]",
+  "bg-white shadow-2xl",
+].join(" ");
+
+/** Tablet/desktop: fixed to viewport bottom-right — never `absolute` or `left:0`. */
+export const LIVE_DESKTOP_SIDE_LAYOUT = [
+  LIVE_FIXED_PANEL,
+  "left-auto",
+  LIVE_PANEL_RIGHT_INSET,
+  LIVE_PANEL_MAX_WIDTH,
+  "w-[min(clamp(14rem,var(--live-preview-width,22vw),min(36rem,42vw)),calc(100vw-5rem))]",
+  "min-w-[14rem]",
+  "h-auto max-h-[min(var(--live-preview-max-height,75dvh),calc(100dvh-var(--live-sheet-bottom)-2rem))]",
   "rounded-xl rounded-b-none border border-stone-200/80 border-b-0 shadow-2xl",
   "bottom-[var(--live-sheet-bottom)]",
-  LIVE_PANEL_RIGHT_INSET,
-  "lg:w-[min(17.5rem,calc(100vw-5.5rem))]",
+  "bg-white",
 ].join(" ");
+
+/** Desktop side panel when Wayra chat column is open. */
+export const LIVE_DESKTOP_SIDE_WAYRA_LAYOUT = [
+  LIVE_FIXED_PANEL,
+  "left-auto",
+  LIVE_PANEL_RIGHT_WHEN_WAYRA_OPEN,
+  LIVE_PANEL_MAX_WIDTH_WHEN_WAYRA_OPEN,
+  "min-w-[14rem]",
+  "h-auto max-h-[min(var(--live-preview-max-height,75dvh),calc(100dvh-var(--live-sheet-bottom)-2rem))]",
+  "rounded-xl rounded-b-none border border-stone-200/80 border-b-0 shadow-2xl",
+  "bottom-[var(--live-sheet-bottom)]",
+  "bg-white",
+].join(" ");
+
+/** Right-bottom sheet — flush on attribution strip, height follows content. */
+export const LIVE_RESPONSIVE_PANEL_LAYOUT = LIVE_DESKTOP_SIDE_LAYOUT;
 
 /** Compact route summary above the bottom-left map dock. */
 export const LIVE_ROUTE_SUMMARY_BOTTOM =

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   classifyDiscoveryExpects,
+  hasLiveDeicticReference,
   isDiscoveryIdentityQuestion,
 } from "@/lib/wayra/discovery";
 import {
@@ -82,6 +83,25 @@ describe("discovery routing", () => {
     expect(classifyMode("Is this family friendly?")).toBe("travel");
     expect(detectBirdState("Is this family friendly?")).toBe("flying");
     expect(isLivePlaceDeepQuestion("What's at Kitikmeot Region?")).toBe(true);
+  });
+
+  it("routes place-name follow-up chips to travel/LLM", () => {
+    const place = "Evenkiysky Rayon";
+    expect(classifyDiscoveryExpects(`What should I pack for ${place}?`)).toBe("llm");
+    expect(classifyDiscoveryExpects(`What can I do ${place}?`)).toBe("llm");
+    expect(classifyDiscoveryExpects(`Best time of year to visit ${place}?`)).toBe("llm");
+    expect(classifyDiscoveryExpects(`Any must-try food ${place}?`)).toBe("llm");
+    expect(classifyMode(`What should I pack for ${place}?`)).toBe("travel");
+    expect(classifyMode(`What can I do ${place}?`)).toBe("travel");
+    expect(detectBirdState(`What should I pack for ${place}?`)).toBe("flying");
+  });
+
+  it("routes pin pronoun and land-type questions to travel/LLM", () => {
+    const q = "Is it a soil fertile land or what is this?";
+    expect(hasLiveDeicticReference(q)).toBe(true);
+    expect(classifyDiscoveryExpects(q)).toBe("llm");
+    expect(classifyMode(q)).toBe("travel");
+    expect(detectBirdState(q)).toBe("flying");
   });
 
   it("routes app guide discovery locally", () => {

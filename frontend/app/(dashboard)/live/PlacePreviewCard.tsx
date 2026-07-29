@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type CSSProperties } from "react";
 import {
   Bookmark,
   MapPin,
   Search,
   Users,
   X,
+  ChevronUp,
+  ChevronDown,
   Navigation,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
@@ -15,7 +17,9 @@ import type { PlaceMediaItem } from "./live-place-media";
 import PlacePreviewMedia from "./PlacePreviewMedia";
 import RoviPlaceExplanationBlock from "./RoviPlaceExplanationBlock";
 import type { RoviPlaceExplanation } from "./live-rovi";
-import { LIVE_PANEL_MAX_WIDTH, LIVE_PANEL_RIGHT_INSET, LIVE_RESPONSIVE_PANEL_LAYOUT, LIVE_SHEET_BOTTOM_ABOVE_ROUTE, LIVE_SHEET_BOTTOM_DEFAULT, LIVE_SHEET_BOTTOM_DESKTOP, LIVE_SHEET_BOTTOM_IMMERSIVE } from "./live-layout";
+import { LIVE_PANEL_RIGHT_INSET, LIVE_SHEET_BOTTOM_ABOVE_ROUTE, LIVE_SHEET_BOTTOM_DEFAULT, LIVE_SHEET_BOTTOM_DESKTOP, LIVE_SHEET_BOTTOM_IMMERSIVE, LIVE_PANEL_MAX_WIDTH } from "./live-layout";
+import { buildLivePreviewPanelFrameStyle } from "./live-panel-size";
+import { useLivePreviewPanelResize } from "./use-live-preview-panel-resize";
 import { logRovvyLiveWarn } from "./live-gps";
 import {
   formatDistanceMiles,
@@ -102,21 +106,27 @@ type Props = {
   immersive?: boolean;
   /** When opened from a category nearby search (e.g. waterfalls). */
   previewContext?: { icon: string; searchLabel: string } | null;
+  /** Wayra chat column is open — shift card left on desktop. */
+  wayraChatOpen?: boolean;
+  /** Compact header-only mode while chat is open. */
+  compact?: boolean;
+  onToggleCompact?: () => void;
 };
 
 function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
+  const [matches, setMatches] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia(query).matches;
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const media = window.matchMedia(query);
-    if (media.matches !== matches) {
-      setMatches(media.matches);
-    }
     const listener = () => setMatches(media.matches);
+    listener();
     media.addEventListener("change", listener);
     return () => media.removeEventListener("change", listener);
-  }, [matches, query]);
+  }, [query]);
 
   return matches;
 }
@@ -229,6 +239,9 @@ export default function PlacePreviewCard({
   stackAboveRouteSummary = true,
   immersive = false,
   previewContext = null,
+  wayraChatOpen = false,
+  compact = false,
+  onToggleCompact,
 }: Props) {
   const [wikiSummary, setWikiSummary] = useState<{
     available: boolean;
@@ -241,6 +254,11 @@ export default function PlacePreviewCard({
   const [wikiLoading, setWikiLoading] = useState(false);
   const [wikiExpanded, setWikiExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<"guide" | "about" | "info">("guide");
+
+  useEffect(() => {
+    setActiveTab("guide");
+    setWikiExpanded(false);
+  }, [place.lat, place.lng, place.name]);
 
   useEffect(() => {
     setWikiSummary(null);
@@ -316,6 +334,7 @@ export default function PlacePreviewCard({
   ]);
 
   const isMobile = useMediaQuery("(max-width: 599px)");
+  const isPhoneLayout = useMediaQuery("(max-width: 767px)");
 
   const isDrivingMode =
     liveStage === "solo_drive_navigation" || liveStage === "solo_drive_command";
@@ -362,6 +381,8 @@ export default function PlacePreviewCard({
   });
 
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const canResizePanel = isDesktop && !compact && platform !== "carplay";
+  const { size: panelSize, onResizePointerDown } = useLivePreviewPanelResize(canResizePanel);
 
   const sheetBottomVar = isDesktop
     ? LIVE_SHEET_BOTTOM_DESKTOP
@@ -371,26 +392,69 @@ export default function PlacePreviewCard({
         ? LIVE_SHEET_BOTTOM_IMMERSIVE
         : LIVE_SHEET_BOTTOM_DEFAULT;
 
-  // Height overrides and layout class resolution based on platform
-  let layoutClass = "";
+  const useViewportFrame = platform !== "carplay";
+  const panelChromeStyle: CSSProperties = useViewportFrame
+    ? buildLivePreviewPanelFrameStyle({
+        sheetBottom: sheetBottomVar,
+        isPhoneLayout,
+        wayraChatOpen: Boolean(wayraChatOpen),
+        isDesktop,
+        size: panelSize,
+      })
+    : {};
 
+  const surfaceClass = isPhoneLayout
+    ? "rounded-t-2xl rounded-b-none border border-stone-200/80 bg-white shadow-2xl"
+    : platform === "ios"
+      ? "rounded-xl rounded-b-none border border-white/20 bg-white/90 shadow-2xl backdrop-blur-xl"
+      : platform === "android"
+        ? "rounded-xl rounded-b-none border-none bg-stone-50/95 shadow-xl"
+        : "rounded-xl rounded-b-none border border-stone-200/80 bg-white shadow-2xl";
+
+  // CarPlay keeps legacy class-based layout
+  let layoutClass = "";
   if (platform === "carplay") {
     if (isMobile) {
       layoutClass =
         "fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border border-stone-200 bg-white shadow-2xl flex flex-col justify-between p-4 pb-6";
     } else {
       layoutClass =
-        `absolute bottom-4 ${LIVE_PANEL_RIGHT_INSET} z-30 ${LIVE_PANEL_MAX_WIDTH} rounded-xl border border-stone-200 bg-white shadow-2xl flex flex-col justify-between p-4`;
+        `fixed bottom-4 left-auto ${LIVE_PANEL_RIGHT_INSET} z-30 ${LIVE_PANEL_MAX_WIDTH} rounded-xl border border-stone-200 bg-white shadow-2xl flex flex-col justify-between p-4`;
     }
-  } else if (platform === "ios") {
-    layoutClass =
-      "fixed inset-x-0 bottom-0 z-30 rounded-t-3xl border border-white/20 bg-white/90 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] flex flex-col max-lg:inset-x-0 max-lg:bottom-0 max-lg:max-w-none lg:absolute lg:bottom-4 lg:right-6 lg:w-[380px] lg:rounded-2xl transition-all duration-300";
-  } else if (platform === "android") {
-    layoutClass =
-      "fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-none bg-stone-50/95 shadow-xl flex flex-col max-lg:inset-x-0 max-lg:bottom-0 max-lg:max-w-none lg:absolute lg:bottom-4 lg:right-6 lg:w-[380px] lg:rounded-2xl transition-all duration-300";
-  } else {
-    // Web Mode (default) — right-bottom rail, flush on attribution strip
-    layoutClass = `${LIVE_RESPONSIVE_PANEL_LAYOUT} w-full max-lg:max-w-none bg-white ${LIVE_PANEL_MAX_WIDTH}`;
+  }
+
+  function PanelResizeHandles() {
+    if (!canResizePanel) return null;
+    return (
+      <>
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize panel width"
+          title="Drag to resize width"
+          className="absolute left-0 top-3 bottom-3 z-20 w-1.5 cursor-ew-resize rounded-full bg-stone-200/80 hover:bg-[#0F766E]/40"
+          onPointerDown={onResizePointerDown("width")}
+        />
+        <div
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize panel height"
+          title="Drag to resize height"
+          className="absolute left-3 right-3 top-0 z-20 h-1.5 cursor-ns-resize rounded-full bg-stone-200/80 hover:bg-[#0F766E]/40"
+          onPointerDown={onResizePointerDown("height")}
+        />
+      </>
+    );
+  }
+
+  function PhoneSheetHandle() {
+    if (!isPhoneLayout) return null;
+    return (
+      <div
+        className="mx-auto my-2 h-1 w-10 shrink-0 rounded-full bg-stone-300/90"
+        aria-hidden
+      />
+    );
   }
 
   const hasNoPhotos = !placeMediaLoading && (!placeMedia || placeMedia.length === 0);
@@ -505,7 +569,14 @@ export default function PlacePreviewCard({
   // --- 2. iOS Layout ---
   if (platform === "ios") {
     return (
-      <div className={`${layoutClass} flex flex-col font-sans`} role="dialog" aria-label="Place details (iOS)">
+      <div
+        className={`${surfaceClass} relative flex flex-col overflow-hidden font-sans`}
+        style={panelChromeStyle}
+        role="dialog"
+        aria-label="Place details (iOS)"
+      >
+        <PanelResizeHandles />
+        <PhoneSheetHandle />
         {/* iOS pill drag handle */}
         <div className="w-9 h-1 bg-stone-300/80 rounded-full mx-auto my-2.5 shrink-0" aria-hidden />
 
@@ -745,7 +816,14 @@ export default function PlacePreviewCard({
   // --- 3. Android Layout ---
   if (platform === "android") {
     return (
-      <div className={`${layoutClass} flex flex-col font-sans`} role="dialog" aria-label="Place details (Android)">
+      <div
+        className={`${surfaceClass} relative flex flex-col overflow-hidden font-sans`}
+        style={panelChromeStyle}
+        role="dialog"
+        aria-label="Place details (Android)"
+      >
+        <PanelResizeHandles />
+        <PhoneSheetHandle />
         {/* Material drag handle */}
         <div className="w-12 h-1 bg-stone-300 rounded-full mx-auto my-3 shrink-0" aria-hidden />
 
@@ -985,14 +1063,73 @@ export default function PlacePreviewCard({
   }
 
   // --- 4. Web Mode Layout (Default) ---
+  if (compact) {
+    return (
+      <div
+        className={`${surfaceClass} relative flex flex-col overflow-hidden`}
+        style={panelChromeStyle}
+        role="dialog"
+        aria-label="Place details (compact)"
+      >
+        <PanelResizeHandles />
+        <div className="flex items-start gap-2 px-3 py-2.5">
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-sm font-bold text-stone-900">{place.name}</h3>
+            <p className="truncate text-xs text-stone-500">{subheaderText}</p>
+          </div>
+          {onToggleCompact ? (
+            <button
+              type="button"
+              onClick={onToggleCompact}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100"
+              aria-label="Expand place details"
+              title="Expand place details"
+            >
+              <ChevronUp className="h-4 w-4" />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+            aria-label="Close details"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <div className="flex gap-2 border-t border-stone-100 px-3 py-2">
+          {onAskRovi ? (
+            <button
+              type="button"
+              onClick={onAskRovi}
+              className="flex-1 rounded-xl border border-[#0F766E]/30 bg-teal-50/50 py-2 text-xs font-semibold text-[#0F766E] hover:bg-teal-50"
+            >
+              Ask Wayra
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onMakeDestination}
+            className="flex-1 rounded-xl py-2 text-xs font-semibold text-white hover:opacity-95"
+            style={{ backgroundColor: TEAL }}
+          >
+            {isDroppedPinOrAddress ? "Use location" : "Set destination"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`${layoutClass} flex flex-col`}
-      style={{ ["--live-sheet-bottom" as string]: sheetBottomVar }}
+      className={`${surfaceClass} relative flex flex-col overflow-hidden`}
+      style={panelChromeStyle}
       role="dialog"
       aria-label="Place details"
     >
-      <div className="max-h-[min(55vh,calc(100dvh-8rem))] overflow-y-auto no-scrollbar px-3 pt-2.5 pb-2">
+      <PanelResizeHandles />
+      <PhoneSheetHandle />
+      <div className="max-h-[min(var(--live-preview-max-height,55dvh),calc(100dvh-8rem))] overflow-y-auto no-scrollbar px-3 pt-2.5 pb-2">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
             {previewContext ? (
@@ -1026,14 +1163,25 @@ export default function PlacePreviewCard({
           >
             <X className="h-3.5 w-3.5" />
           </button>
+          {wayraChatOpen && onToggleCompact ? (
+            <button
+              type="button"
+              onClick={onToggleCompact}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100"
+              aria-label="Collapse place details"
+              title="Collapse for chat"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </button>
+          ) : null}
         </div>
 
         {/* Tab Selection */}
-        <div className="flex border-b border-stone-100 mt-3 mb-2.5 text-xs font-semibold text-stone-500">
+        <div className="mt-3 mb-2.5 flex shrink-0 overflow-x-auto border-b border-stone-100 text-xs font-semibold text-stone-500 no-scrollbar">
           <button
             type="button"
             onClick={() => setActiveTab("guide")}
-            className={`flex-1 py-1.5 text-center border-b-2 transition-all ${
+            className={`min-w-[4.5rem] shrink-0 flex-1 py-1.5 text-center border-b-2 transition-all ${
               activeTab === "guide"
                 ? "border-[#0F766E] text-[#0F766E]"
                 : "border-transparent hover:text-stone-800"
@@ -1044,7 +1192,7 @@ export default function PlacePreviewCard({
           <button
             type="button"
             onClick={() => setActiveTab("about")}
-            className={`flex-1 py-1.5 text-center border-b-2 transition-all ${
+            className={`min-w-[4.5rem] shrink-0 flex-1 py-1.5 text-center border-b-2 transition-all ${
               activeTab === "about"
                 ? "border-[#0F766E] text-[#0F766E]"
                 : "border-transparent hover:text-stone-800"
@@ -1055,7 +1203,7 @@ export default function PlacePreviewCard({
           <button
             type="button"
             onClick={() => setActiveTab("info")}
-            className={`flex-1 py-1.5 text-center border-b-2 transition-all ${
+            className={`min-w-[4.5rem] shrink-0 flex-1 py-1.5 text-center border-b-2 transition-all ${
               activeTab === "info"
                 ? "border-[#0F766E] text-[#0F766E]"
                 : "border-transparent hover:text-stone-800"
