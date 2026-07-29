@@ -36,6 +36,8 @@ class WayraSource(BaseModel):
     url: str
     source_type: str
     snippet: str | None = None
+    lat: float | None = None
+    lng: float | None = None
 
 
 class AIAssistantResponse(BaseModel):

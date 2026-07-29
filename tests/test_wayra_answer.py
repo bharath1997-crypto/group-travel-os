@@ -12,6 +12,7 @@ from app.services.wayra_intent import WayraMode
 from app.services.wayra_source_intent import (
     classify_wayra_answer_tier,
     extract_place_from_context,
+    is_distance_from_me_question,
     nearby_category_from_message,
 )
 
@@ -30,10 +31,24 @@ def test_classify_location_hard_tier():
     assert tier == "location_hard"
 
 
+def test_distance_from_me_question_detected():
+    assert is_distance_from_me_question("How far is it from me?") is True
+    assert is_distance_from_me_question("How far is this?") is True
+    assert is_distance_from_me_question("How is the food?") is False
+
+
 def test_classify_discovery_on_live_with_pin():
     ctx = {"pathname": "/live", "selectedPlace": {"name": "Millennium Park", "lat": 41.88, "lng": -87.62}}
     tier = classify_wayra_answer_tier("What's special here?", ctx)
     assert tier == "discovery"
+
+
+def test_classify_discovery_for_place_culture_and_food_talk():
+    ctx = {"pathname": "/live", "selectedPlace": {"name": "Red Square", "lat": 55.75, "lng": 37.62}}
+    assert classify_wayra_answer_tier("What kind of clothes should I wear?", ctx) == "discovery"
+    assert classify_wayra_answer_tier("What cultural event is going to happen?", ctx) == "discovery"
+    assert classify_wayra_answer_tier("How many vegetarian options are available?", ctx) == "discovery"
+    assert classify_wayra_answer_tier("Any restrictions?", ctx) == "discovery"
 
 
 def test_extract_place_from_selected_and_attached():
@@ -135,6 +150,37 @@ def test_extract_place_from_user_location():
     assert place is not None
     assert place["name"] == "Your location"
     assert place["city"] == "Chicago"
+
+
+@pytest.mark.asyncio
+async def test_location_hard_how_far_uses_local_distance_without_llm():
+    req = AIAssistantRequest(
+        page="live",
+        user_message="How far is it from me?",
+        context={
+            "pathname": "/live",
+            "selectedPlace": {
+                "name": "Red Square",
+                "lat": 55.7539,
+                "lng": 37.6208,
+                "city": "Moscow",
+                "country": "Russia",
+            },
+            "userLocation": {
+                "lat": 40.7128,
+                "lng": -74.0060,
+                "city": "New York",
+                "country": "United States",
+            },
+        },
+    )
+    out = await WayraAnswerService.try_answer(req, WayraMode.TRAVEL)
+
+    assert out is not None
+    assert out.summary and out.summary.get("provider") == "local"
+    assert "mi" in out.message.lower()
+    assert "Red Square" in out.message
+    assert "New York" in out.message
 
 
 @pytest.mark.asyncio

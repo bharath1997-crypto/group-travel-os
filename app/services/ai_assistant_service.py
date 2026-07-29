@@ -30,6 +30,7 @@ from app.schemas.ai_assistant import (
 from app.services.wayra_answer_service import WayraAnswerService
 from app.services.wayra_intent import (
     WayraMode,
+    _extract_live_selected_place,
     _is_live_page,
     classify_mode,
     contextual_app_fallback,
@@ -40,6 +41,11 @@ from app.services.wayra_intent import (
     resolve_live_travel_prep_message,
     travel_fallback_message,
 )
+from app.services.wayra_discovery import (
+    is_discovery_app_guide_question,
+    is_place_name_llm_question,
+)
+from app.services.wayra_local_replies import try_local_reply
 
 logger = logging.getLogger(__name__)
 
@@ -147,6 +153,13 @@ async def _enrich_live_context(ctx: dict[str, Any] | None) -> dict[str, Any] | N
     updated = {**ctx, "selectedPlace": enriched}
     if region.get("region_label"):
         updated["resolvedMapRegion"] = region["region_label"]
+
+    from app.services.wayra_place_context import build_live_context_block
+
+    live_block = build_live_context_block(updated)
+    if live_block:
+        updated["liveContextBlock"] = live_block
+        updated["implicitLocation"] = True
     return updated
 
 
@@ -602,6 +615,19 @@ class AIAssistantService:
         ctx = await _enrich_live_context(ctx)
         request = request.model_copy(update={"context": ctx})
 
+        if _is_live_page(request.page, ctx) and is_place_name_llm_question(request.user_message):
+            mode = WayraMode.TRAVEL
+
+        # Live pin bound: keep place talk on travel hybrid, not app-guide Gemini.
+        if (
+            mode == WayraMode.APP_GUIDE
+            and _is_live_page(request.page, ctx)
+            and _extract_live_selected_place(ctx)
+            and not is_discovery_app_guide_question(request.user_message)
+            and not is_app_how_to_question(request.user_message)
+        ):
+            mode = WayraMode.TRAVEL
+
         live_map = resolve_live_map_context_message(
             request.user_message,
             request.page,
@@ -614,10 +640,18 @@ class AIAssistantService:
                 summary={"intent": "live_map_context", "local": True},
             )
 
+        local = try_local_reply(request.user_message, request.page, ctx)
+        if local is not None:
+            return local
+
         # Reliable App Guide: answer locally for known product intents (no LLM latency).
         if mode == WayraMode.APP_GUIDE:
             on_live = _is_live_page(request.page, ctx)
-            allow_app_local = not on_live or is_app_how_to_question(request.user_message)
+            allow_app_local = (
+                not on_live
+                or is_app_how_to_question(request.user_message)
+                or is_discovery_app_guide_question(request.user_message)
+            )
             if allow_app_local:
                 local_app = resolve_app_guide_message(request.user_message, request.page)
                 if local_app:

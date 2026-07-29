@@ -1,43 +1,89 @@
-"""Tests for Wayra compact LLM provider settings."""
+"""Cost-quality tier routing for Wayra compact summaries."""
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from app.services import wayra_llm_providers as providers
 
 
-def test_deepseek_model_defaults_to_v4_flash(monkeypatch):
-    monkeypatch.delenv("DEEPSEEK_MODEL", raising=False)
-    monkeypatch.setattr(providers.settings, "deepseek_model", "deepseek-v4-flash")
-    assert providers._deepseek_model() == "deepseek-v4-flash"
+@pytest.mark.asyncio
+async def test_discovery_prefers_deepseek():
+    with (
+        patch.object(providers, "_deepseek_key", return_value="ds-key"),
+        patch.object(providers, "_gemini_key", return_value="gem-key"),
+        patch.object(
+            providers,
+            "_call_deepseek",
+            new=AsyncMock(return_value=('{"message": "Local food culture."}', {"total_tokens": 40})),
+        ) as deepseek,
+        patch.object(providers, "_call_gemini_compact", new=AsyncMock()) as gemini,
+    ):
+        message, provider, usage = await providers.summarize_from_sources(
+            user_message="How is the food?",
+            place_label="Red Square",
+            source_block="Wikipedia snippet.",
+            tier="discovery",
+        )
+
+    assert provider == "deepseek"
+    assert "food" in message.lower()
+    deepseek.assert_awaited_once()
+    gemini.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_call_deepseek_uses_v4_flash_non_thinking(monkeypatch):
-    monkeypatch.setattr(providers, "_deepseek_key", lambda: "test-key")
-    monkeypatch.setattr(providers, "_deepseek_model", lambda: "deepseek-v4-flash")
+async def test_location_hard_prefers_gemini_for_quality():
+    with (
+        patch.object(providers, "_deepseek_key", return_value="ds-key"),
+        patch.object(providers, "_gemini_key", return_value="gem-key"),
+        patch.object(providers, "_call_deepseek", new=AsyncMock()) as deepseek,
+        patch.object(
+            providers,
+            "_call_gemini_compact",
+            new=AsyncMock(return_value=('{"message": "Route has border crossing."}', {"total_tokens": 80})),
+        ) as gemini,
+        patch.object(providers, "record_gemini_usage"),
+    ):
+        message, provider, _usage = await providers.summarize_from_sources(
+            user_message="Any route warnings?",
+            place_label="Red Square",
+            source_block="Border notice ahead.",
+            tier="location_hard",
+        )
 
-    mock_response = MagicMock()
-    mock_response.raise_for_status = MagicMock()
-    mock_response.json.return_value = {
-        "choices": [{"message": {"content": '{"message":"Hello"}'}}],
-        "usage": {"prompt_tokens": 10, "completion_tokens": 5},
-    }
+    assert provider == "gemini"
+    assert "border" in message.lower()
+    gemini.assert_awaited_once()
+    deepseek.assert_not_awaited()
 
-    mock_client = MagicMock()
-    mock_client.post = AsyncMock(return_value=mock_response)
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
 
-    with patch("app.services.wayra_llm_providers.httpx.AsyncClient", return_value=mock_client):
-        text, usage = await providers._call_deepseek("summarize this")
+@pytest.mark.asyncio
+async def test_location_hard_falls_back_to_deepseek_when_gemini_fails():
+    with (
+        patch.object(providers, "_deepseek_key", return_value="ds-key"),
+        patch.object(providers, "_gemini_key", return_value="gem-key"),
+        patch.object(
+            providers,
+            "_call_gemini_compact",
+            new=AsyncMock(side_effect=RuntimeError("upstream down")),
+        ),
+        patch.object(
+            providers,
+            "_call_deepseek",
+            new=AsyncMock(return_value=('{"message": "DeepSeek route answer."}', {"total_tokens": 40})),
+        ) as deepseek,
+        patch.object(providers, "record_gemini_usage"),
+    ):
+        message, provider, _usage = await providers.summarize_from_sources(
+            user_message="Any route warnings?",
+            place_label="Red Square",
+            source_block="Border notice ahead.",
+            tier="location_hard",
+        )
 
-    assert text == '{"message":"Hello"}'
-    assert usage == {"prompt_tokens": 10, "output_tokens": 5, "total_tokens": 15}
-    call_kwargs = mock_client.post.call_args.kwargs
-    body = call_kwargs["json"]
-    assert body["model"] == "deepseek-v4-flash"
-    assert body["thinking"] == {"type": "disabled"}
+    assert provider == "deepseek"
+    assert "DeepSeek route answer" in message
+    deepseek.assert_awaited_once()

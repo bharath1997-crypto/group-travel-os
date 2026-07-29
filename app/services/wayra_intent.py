@@ -14,6 +14,7 @@ from app.services.wayra_discovery import (
     classify_discovery_expects,
     is_discovery_identity_question,
     is_discovery_llm_question,
+    is_place_name_llm_question,
     normalize_wayra_query,
 )
 
@@ -399,10 +400,24 @@ def classify_mode(message: str) -> WayraMode:
     if discovery in ("local", "llm"):
         return WayraMode.TRAVEL
 
+    if is_place_name_llm_question(message):
+        return WayraMode.TRAVEL
+
     if is_live_map_context_question(message):
         return WayraMode.TRAVEL
 
     if is_live_travel_prep_question(message):
+        return WayraMode.TRAVEL
+
+    if _has_any(
+        q,
+        r"\bwhat is this\b",
+        r"\bwhat is it\b",
+        r"\bwhat s this\b",
+        r"\bwhat s it\b",
+        r"\bis it a\b",
+        r"\bis this a\b",
+    ) and not _has_any(q, r"\bthis app\b", r"\bthe app\b", r"\bwayra\b", r"\bplan page\b"):
         return WayraMode.TRAVEL
 
     travel_strong = _has_any(

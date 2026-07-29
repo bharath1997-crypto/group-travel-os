@@ -33,6 +33,16 @@ DEICTIC_PATTERN = (
     r"this pin on the map|\bhear\b|\bhere\b)"
 )
 
+APP_CONTEXT_RE = re.compile(
+    r"\b(this app|the app|on rovvy|in rovvy|wayra|plan page|plan tab)\b",
+    re.IGNORECASE,
+)
+
+PIN_PRONOUN_RE = re.compile(
+    r"\b(what is (this|it)|what s (this|it)|is (this|it) a)\b",
+    re.IGNORECASE,
+)
+
 APP_GUIDE_PATTERNS = [
     r"^how does live work$",
     r"^how does solo live work$",
@@ -164,6 +174,16 @@ PLACE_NAME_LLM_PATTERNS = [
     r"^what is at .+$",
     r"^what s in .+$",
     r"^what is in .+$",
+    r"^what s special about .+$",
+    r"^what can i do .+$",
+    r"^what s the local culture like .+$",
+    r"^any must try food .+$",
+    r"^best time of year to visit .+$",
+    r"^how long should i spend .+$",
+    r"^what should i pack for .+$",
+    r"^what does it cost to visit .+$",
+    r"^anything fun .+$",
+    r"^where exactly is .+$",
     r"^how far is this from me$",
     r"^how far is .+ from me$",
     r"^how long is the drive to .+$",
@@ -202,12 +222,19 @@ def strip_discovery_lead_in(message: str) -> str:
 
 def normalize_discovery_query(message: str) -> str:
     q = _normalize_query(strip_discovery_lead_in(message))
-    return re.sub(DEICTIC_PATTERN, "{here}", q, flags=re.IGNORECASE)
+    q = re.sub(DEICTIC_PATTERN, "{here}", q, flags=re.IGNORECASE)
+    if not APP_CONTEXT_RE.search(q):
+        q = re.sub(r"\b(this|it)\b", "{here}", q, flags=re.IGNORECASE)
+    return q
 
 
 def has_live_deictic_reference(message: str) -> bool:
     q = _normalize_query(strip_discovery_lead_in(message))
-    return bool(re.search(DEICTIC_PATTERN, q, flags=re.IGNORECASE))
+    if APP_CONTEXT_RE.search(q):
+        return False
+    if re.search(DEICTIC_PATTERN, q, flags=re.IGNORECASE):
+        return True
+    return bool(PIN_PRONOUN_RE.search(q))
 
 
 def _skeleton_for_match(message: str) -> str:
@@ -225,7 +252,11 @@ def _matches_any(q: str, patterns: list[str]) -> bool:
 
 
 def _is_identity_skeleton(q: str) -> bool:
-    if re.search(r"\b(special|unique|story|famous|hidden gem|worth visiting|worth stopping)\b", q):
+    if re.search(
+        r"\b(special|unique|story|famous|hidden gem|worth visiting|worth stopping|"
+        r"fertile|soil|farmland|terrain|geography|wetland|desert|forest|grassland|tundra|taiga|steppe)\b",
+        q,
+    ):
         return False
     return _matches_any(q, IDENTITY_PATTERNS)
 

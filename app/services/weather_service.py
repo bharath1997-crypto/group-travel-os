@@ -206,6 +206,7 @@ class WeatherService:
                 "description": description,
                 "humidity": humidity,
                 "wind_kph": wind_kph,
+                "weather_code": int(current.get("weather_code") or 0),
             }
         else:
             daily = payload.get("daily") or {}

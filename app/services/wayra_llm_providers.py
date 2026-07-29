@@ -1,10 +1,11 @@
-"""Compact LLM calls for Perplexity-style Wayra (cheap default, Gemini for hard location)."""
+"""Compact LLM calls for Perplexity-style Wayra (cost-aware tiers, quality where it matters)."""
 
 from __future__ import annotations
 
 import json
 import logging
 import os
+import re
 from typing import Any
 
 import httpx
@@ -22,8 +23,33 @@ _WAYRA_SUMMARY_SYSTEM = """You are Wayra, Rovvy's built-in travel assistant.
 Summarize ONLY from the provided source snippets. Plain text, no markdown.
 Write 2 to 4 short sentences (max 120 words). Do not invent business names, prices, or hours.
 Never mention Google, Gemini, DeepSeek, OpenAI, or any AI vendor.
-If sources are thin, say what is known and invite the user to open the source links.
+For culture or must-try food questions: use Wikipedia and Live map context (region, country, coordinates).
+Describe regional traditions, landscape, and typical cuisine categories — not specific restaurant names unless listed in NEARBY OSM data.
+If OpenStreetMap has no nearby POIs, explain the area may be remote and still answer from regional context.
+Never say only "Dropped pin" — use the resolved region name from context when the label is generic.
+If sources are thin, share what the region is known for and invite the user to open the source links.
+Do not open every answer with "UNESCO World Heritage Site" — lead with what the user asked.
+Vary your opening sentence; avoid repeating the same template across questions.
 Reply with JSON: {"message": "..."}"""
+
+
+def _discovery_style_hint(user_message: str) -> str:
+    q = user_message.lower()
+    hints: list[str] = []
+    if any(k in q for k in ("activities", "what can i do", "things to do", "not miss", "hidden gems")):
+        hints.append(
+            "Structure the answer with short group labels when helpful: "
+            "Must-see, Food nearby, Museums, Walking/time tips."
+        )
+    if any(k in q for k in ("food", "eat", "bite", "restaurant", "cuisine", "coffee")):
+        hints.append(
+            "When NEARBY OSM listings exist, mention name, walking distance, and cuisine type from the snippet."
+        )
+    if any(k in q for k in ("culture", "famous", "worth visiting", "customs", "etiquette")):
+        hints.append("Lead with what makes this specific place distinct for visitors.")
+    if hints:
+        return "Style: " + " ".join(hints)
+    return "Style: Answer the exact question first; keep it conversational and specific to the pinned place."
 
 
 def _deepseek_key() -> str:
@@ -51,6 +77,21 @@ def _openai_key() -> str:
 
 def _parse_summary_json(raw: str) -> str:
     text = raw.strip()
+    if "```" in text:
+        fence = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL | re.IGNORECASE)
+        if fence:
+            text = fence.group(1).strip()
+    if not text.startswith("{"):
+        inline = re.search(r'\{[^{}]*"message"\s*:\s*"[^"]*"[^{}]*\}', text, re.DOTALL)
+        if inline:
+            text = inline.group(0)
+        else:
+            loose = re.search(r'"message"\s*:\s*"((?:\\.|[^"\\])*)"', text, re.DOTALL)
+            if loose:
+                try:
+                    return json.loads(f'"{loose.group(1)}"')[:600]
+                except json.JSONDecodeError:
+                    return loose.group(1).replace('\\"', '"')[:600]
     if text.startswith("{"):
         try:
             data = json.loads(text)
@@ -59,6 +100,11 @@ def _parse_summary_json(raw: str) -> str:
                 return msg.strip()[:600]
         except json.JSONDecodeError:
             pass
+    cleaned = re.sub(r"^here is the json requested:?\s*", "", text, flags=re.I).strip()
+    if cleaned != text:
+        return _parse_summary_json(cleaned)
+    if text.startswith("{"):
+        return text[:600]
     return text[:600]
 
 
@@ -72,30 +118,86 @@ async def summarize_from_sources(
     """
     Returns (message, provider_used, usage_dict).
     provider_used: deepseek | gemini | openai | template
+
+    Cost-quality tiers:
+    - nearby / discovery: DeepSeek first (cheap summaries from open sources).
+    - location_hard: Gemini first (route / distance / border quality), DeepSeek fallback.
     """
     user_block = (
         f"Place context: {place_label}\n"
-        f"User question: {user_message}\n\n"
+        f"User question: {user_message}\n"
+        f"{_discovery_style_hint(user_message)}\n\n"
         f"SOURCE SNIPPETS:\n{source_block}\n\n"
         "Reply with JSON only: {\"message\": \"...\"}"
     )
 
-    if tier == "location_hard" and _gemini_key():
-        try:
-            text, usage = await _call_gemini_compact(user_block)
-            record_gemini_usage(feature="wayra_location_hard", model=_GEMINI_MODEL, usage=usage)
-            return _parse_summary_json(text), "gemini", usage
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("Wayra compact Gemini failed: %s", exc)
+    if tier == "location_hard":
+        return await _summarize_quality_first(user_block, tier)
+    return await _summarize_cost_first(user_block, tier)
 
+
+async def _summarize_cost_first(
+    user_block: str,
+    tier: str,
+) -> tuple[str, str, dict[str, int] | None]:
+    """Cheap path: DeepSeek → Gemini → OpenAI → template."""
     if _deepseek_key():
         try:
             text, usage = await _call_deepseek(user_block)
             record_gemini_usage(feature="wayra_discovery", model=_deepseek_model(), usage=usage)
             return _parse_summary_json(text), "deepseek", usage
         except Exception as exc:  # noqa: BLE001
-            logger.warning("Wayra DeepSeek failed: %s", exc)
+            logger.warning("Wayra DeepSeek failed (tier=%s): %s", tier, exc)
 
+    if _gemini_key():
+        try:
+            text, usage = await _call_gemini_compact(user_block)
+            record_gemini_usage(feature="wayra_discovery_fallback", model=_GEMINI_MODEL, usage=usage)
+            return _parse_summary_json(text), "gemini", usage
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Wayra compact Gemini failed (tier=%s): %s", tier, exc)
+
+    return await _summarize_openai_or_template(user_block, source_block_from_user(user_block))
+
+
+async def _summarize_quality_first(
+    user_block: str,
+    tier: str,
+) -> tuple[str, str, dict[str, int] | None]:
+    """Quality path for route/navigation: Gemini → DeepSeek → OpenAI → template."""
+    if _gemini_key():
+        try:
+            text, usage = await _call_gemini_compact(user_block)
+            record_gemini_usage(feature="wayra_location_hard", model=_GEMINI_MODEL, usage=usage)
+            return _parse_summary_json(text), "gemini", usage
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Wayra compact Gemini failed (tier=%s): %s", tier, exc)
+
+    if _deepseek_key():
+        try:
+            text, usage = await _call_deepseek(user_block)
+            record_gemini_usage(feature="wayra_location_hard_fallback", model=_deepseek_model(), usage=usage)
+            return _parse_summary_json(text), "deepseek", usage
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Wayra DeepSeek failed (tier=%s): %s", tier, exc)
+
+    return await _summarize_openai_or_template(user_block, source_block_from_user(user_block))
+
+
+def source_block_from_user(user_block: str) -> str:
+    marker = "SOURCE SNIPPETS:\n"
+    if marker in user_block:
+        tail = user_block.split(marker, 1)[1]
+        if "\n\nReply with JSON" in tail:
+            return tail.split("\n\nReply with JSON", 1)[0].strip()
+        return tail.strip()
+    return ""
+
+
+async def _summarize_openai_or_template(
+    user_block: str,
+    source_block: str,
+) -> tuple[str, str, dict[str, int] | None]:
     if _openai_key():
         try:
             text = await _call_openai_compact(user_block)
@@ -104,8 +206,9 @@ async def summarize_from_sources(
             logger.warning("Wayra OpenAI compact failed: %s", exc)
 
     first_line = source_block.split("\n")[0].strip() if source_block else ""
+    place_ctx = user_block.split("\n", 1)[0].replace("Place context: ", "").strip()
     fallback = (
-        f"Here's what I found for {place_label}. "
+        f"Here's what I found for {place_ctx or 'this place'}. "
         f"{first_line} Open the source links below to read more."
     )
     return fallback[:600], "template", None
