@@ -37,7 +37,7 @@ export function GroupInfoDrawer({
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
         <div className="text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#0F766E] text-lg font-bold text-white">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary text-lg font-bold text-white">
             {groupName.charAt(0)}
           </div>
           <p className="mt-2 text-sm font-bold text-slate-900">{groupName}</p>
@@ -51,13 +51,13 @@ export function GroupInfoDrawer({
           <div className="space-y-1">
             {members.map((m) => (
               <div key={m.user_id} className="flex items-center gap-2 rounded-lg bg-stone-50 px-2.5 py-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-100 text-[10px] font-bold text-[#0F766E]">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-100 text-[10px] font-bold text-primary">
                   {m.full_name.charAt(0)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-semibold text-slate-900">{m.full_name}</p>
                   {m.is_admin ? (
-                    <p className="text-[9px] font-bold text-[#0F766E]">Admin</p>
+                    <p className="text-[9px] font-bold text-primary">Admin</p>
                   ) : null}
                 </div>
               </div>

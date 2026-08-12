@@ -111,10 +111,36 @@ def normalize_query(message: str) -> str:
     return normalize_wayra_query(message)
 
 
+_ACTIVITIES_RE = re.compile(
+    r"\b("
+    r"what can i do|what should i do|what could i do|what can we do|what should we do|"
+    r"what we do|what to do|what do we do|things to do|activities|anything to do|"
+    r"what s there to do|what is there to do|fun things|stuff to do|"
+    r"what should we not miss|not miss here|worth doing|what do you recommend here|"
+    r"what would you do here|suggestions for here"
+    r")\b",
+    re.I,
+)
+
+
+def is_activities_question(message: str) -> bool:
+    q = normalize_query(message)
+    if not q:
+        return False
+    if _ACTIVITIES_RE.search(q):
+        return True
+    return bool(
+        _has_any(q, r"\bwhat should we\b", r"\bwhat can we\b")
+        and _has_any(q, r"\bdo\b", r"\bhere\b", r"\bthere\b", r"\bthis\b")
+    )
+
+
 def is_live_place_deep_question(message: str) -> bool:
     if is_discovery_identity_question(message):
         return False
     if is_discovery_llm_question(message):
+        return True
+    if is_activities_question(message):
         return True
 
     q = normalize_query(message)
@@ -288,20 +314,39 @@ def resolve_live_map_context_message(
     return _build_live_selected_place_reply(place, stage)
 
 
+_DISCOVERY_PREP_EXCLUDE_RE = re.compile(
+    r"\b("
+    r"interesting|things to (see|do)|see or do|what can i do|what s special|what is special|"
+    r"nearby|markets?|famous food|local food|food over|what is the famous|any .* food|"
+    r"culture|museums?|activities|worth (?:seeing|visiting|doing)|what should i know about this place|"
+    r"\$\d|\d+\s*(?:k|000)\s*(?:dollars|usd)|budget|on my hand|what flight|which flight|how many days"
+    r")\b",
+    re.I,
+)
+
+
 def is_live_travel_prep_question(message: str) -> bool:
     q = normalize_query(message)
     if not q:
         return False
+    if _DISCOVERY_PREP_EXCLUDE_RE.search(q):
+        return False
+    if re.search(
+        r"\bwhat should i know about (?:this )?(?:place|spot|area|location|destination|town|city)\b",
+        q,
+    ):
+        return False
     return _has_any(
         q,
         r"\bplanning a trip to\b",
-        r"\bwhat should i know\b",
+        r"\bwhat should i know before\b",
+        r"\bwhat should i know about (?:the )?(?:trip|drive|route|border|warnings)\b",
         r"\bhow should i prepare\b",
         r"\btips and warnings\b",
         r"\bhere are the tips\b",
         r"\bbefore i go\b",
         r"\bprepare for\b",
-        r"\bwhat should i plan\b",
+        r"\bwhat should i prepare\b",
         r"\binternational border\b",
         r"\bborder crossing\b",
         r"\bfar from (my|your|the)\b",
@@ -400,6 +445,9 @@ def classify_mode(message: str) -> WayraMode:
     if discovery in ("local", "llm"):
         return WayraMode.TRAVEL
 
+    if is_activities_question(message):
+        return WayraMode.TRAVEL
+
     if is_place_name_llm_question(message):
         return WayraMode.TRAVEL
 
@@ -430,6 +478,10 @@ def classify_mode(message: str) -> WayraMode:
         r"\bweekend (trip|getaway|escape)\b",
         r"\bwhere should i (go|travel)\b",
         r"\bthings to do in\b",
+        r"\bthings to do\b",
+        r"\bwhat to do\b",
+        r"\bwhat we do\b",
+        r"\bwhat should we do\b",
         r"\bitinerary\b",
         r"\btravel guide\b",
         r"\bcity break\b",

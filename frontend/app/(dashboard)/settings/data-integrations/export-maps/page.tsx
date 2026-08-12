@@ -62,7 +62,7 @@ function StatusChip({ status }: { status: ExportRequest["status"] }) {
   const map: Record<string, { label: string; cls: string }> = {
     pending:    { label: "Pending",    cls: "bg-amber-50 text-amber-700" },
     processing: { label: "Processing", cls: "bg-blue-50 text-blue-700" },
-    ready:      { label: "Ready",      cls: "bg-teal-50 text-[#0F766E]" },
+    ready:      { label: "Ready",      cls: "bg-teal-50 text-primary" },
     failed:     { label: "Failed",     cls: "bg-red-50 text-red-600" },
     expired:    { label: "Expired",    cls: "bg-stone-100 text-stone-500" },
   };
@@ -108,7 +108,7 @@ function ConfirmModal({
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0F766E] py-3.5 text-[15px] font-semibold text-white transition-opacity disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-[15px] font-semibold text-white transition-opacity disabled:opacity-50"
           >
             {loading ? (
               <>
@@ -152,7 +152,7 @@ function IncludedRow({
         <p className="text-[14px] leading-snug text-neutral-900">{label}</p>
         <p className="mt-0.5 text-xs leading-snug text-stone-400">{sublabel}</p>
       </div>
-      <CheckCircle2 size={16} className="shrink-0 text-[#0F766E]" />
+      <CheckCircle2 size={16} className="shrink-0 text-primary" />
     </div>
   );
 }
@@ -188,7 +188,7 @@ function ExportHistoryRow({ req }: { req: ExportRequest }) {
         <a
           href={req.file_url}
           download
-          className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl border border-[#0F766E] py-2.5 text-[13px] font-semibold text-[#0F766E] transition-colors hover:bg-teal-50 active:bg-teal-100"
+          className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl border border-primary py-2.5 text-[13px] font-semibold text-primary transition-colors hover:bg-teal-50 active:bg-teal-100"
         >
           <Download size={14} />
           Download GeoJSON
@@ -386,7 +386,7 @@ export default function ExportMapsPage() {
           Questions?{" "}
           <a
             href="mailto:privacy@rovvy.app"
-            className="text-[#0F766E] underline-offset-2 hover:underline"
+            className="text-primary underline-offset-2 hover:underline"
           >
             privacy@rovvy.app
           </a>

@@ -3,7 +3,9 @@ app/routes/geocoding.py — Nominatim geocoding proxy (no auth)
 """
 from fastapi import APIRouter, Query
 
+from app.schemas.place_name_display import PlaceNameDisplayResponse
 from app.services.geocoding_service import GeocodingService
+from app.services.place_name_translation_service import PlaceNameTranslationService
 
 router = APIRouter(tags=["Geocoding"])
 
@@ -58,3 +60,23 @@ async def reverse_geocode(
         # Legacy compatibility for test assertions
         "extratags": result.get("extratags", {}),
     }
+
+
+@router.get("/geocoding/display-name", response_model=PlaceNameDisplayResponse)
+async def resolve_place_display_name(
+    name: str = Query(..., min_length=1, max_length=500),
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+    osm_type: str | None = Query(None, max_length=32),
+    osm_id: int | None = Query(None),
+    country: str | None = Query(None, max_length=120),
+):
+    result = await PlaceNameTranslationService.resolve_display_name(
+        name=name,
+        lat=lat,
+        lng=lng,
+        osm_type=osm_type,
+        osm_id=osm_id,
+        country=country,
+    )
+    return PlaceNameDisplayResponse.model_validate(result)

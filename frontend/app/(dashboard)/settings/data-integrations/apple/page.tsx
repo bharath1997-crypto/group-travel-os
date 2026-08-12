@@ -238,7 +238,7 @@ export default function AppleIntegrationPage() {
           Questions?{" "}
           <a
             href="mailto:privacy@rovvy.app"
-            className="text-[#0F766E] underline-offset-2 hover:underline"
+            className="text-primary underline-offset-2 hover:underline"
           >
             privacy@rovvy.app
           </a>

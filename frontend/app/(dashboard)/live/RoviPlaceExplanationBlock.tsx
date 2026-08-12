@@ -55,7 +55,7 @@ export default function RoviPlaceExplanationBlock({
         <button
           type="button"
           onClick={onAskRovi}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0F766E] hover:underline"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
         >
           <Sparkles className="h-3.5 w-3.5" />
           Ask Rovi
@@ -64,7 +64,7 @@ export default function RoviPlaceExplanationBlock({
 
       {showAiPanel ? (
         <div className="rounded-lg bg-stone-50 px-3 py-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#0F766E]">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
             Rovi
           </p>
           {loading ? (
@@ -85,7 +85,7 @@ export default function RoviPlaceExplanationBlock({
       {showSafetyActions ? (
         compact ? (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold">
-            <button type="button" onClick={onSearchNearMe} className="text-[#0F766E] hover:underline">
+            <button type="button" onClick={onSearchNearMe} className="text-primary hover:underline">
               Search near me
             </button>
             <button type="button" onClick={onChangeDestination} className="text-stone-600 hover:text-stone-900">
@@ -95,7 +95,7 @@ export default function RoviPlaceExplanationBlock({
               Plan trip
             </button>
             {showContinueAnyway ? (
-              <button type="button" onClick={onContinueAnyway} className="text-stone-500 hover:text-[#0F766E]">
+              <button type="button" onClick={onContinueAnyway} className="text-stone-500 hover:text-primary">
                 Continue anyway
               </button>
             ) : null}
@@ -145,7 +145,7 @@ function ActionButton({
       onClick={onClick}
       className={`rounded-lg border px-2 py-2 text-xs font-semibold hover:bg-stone-50 ${
         subtle
-          ? "col-span-2 border-transparent text-stone-500 hover:text-[#0F766E]"
+          ? "col-span-2 border-transparent text-stone-500 hover:text-primary"
           : "border-stone-200 text-stone-700"
       }`}
     >

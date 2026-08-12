@@ -1,6 +1,6 @@
 "use client";
 
-const BG = "#0f3460";
+const BG = "#0F172A";
 const BORDER_SUB = "rgba(255,255,255,0.08)";
 const TEXT_MUTED = "#8892a4";
 

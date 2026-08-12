@@ -142,7 +142,7 @@ export function ChatEmojiGifPicker({
               isDark
                 ? "shrink-0 rounded-t-lg px-3 py-2 text-[13px] font-semibold"
                 : `shrink-0 rounded-t-lg px-2.5 py-1.5 text-[11px] font-semibold ${
-                    tab === k ? "bg-teal-50 text-[#0F766E]" : "text-stone-500"
+                    tab === k ? "bg-teal-50 text-primary" : "text-stone-500"
                   }`
             }
             style={
@@ -196,7 +196,7 @@ export function ChatEmojiGifPicker({
               className={
                 isDark
                   ? "w-full rounded-lg border-0 px-3 py-2 text-sm text-white outline-none placeholder:text-[#5c6a7d]"
-                  : "w-full rounded-lg border border-stone-200 px-2 py-1 text-xs outline-none focus:border-[#0F766E]"
+                  : "w-full rounded-lg border border-stone-200 px-2 py-1 text-xs outline-none focus:border-primary"
               }
               style={isDark ? { background: "rgba(0,0,0,0.25)" } : undefined}
             />
@@ -211,7 +211,7 @@ export function ChatEmojiGifPicker({
                   isDark
                     ? "h-9 shrink-0 rounded-lg px-2.5 text-[11px] font-semibold whitespace-nowrap"
                     : `shrink-0 rounded px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${
-                        emojiCat === k ? "bg-[#0F766E] text-white" : "text-stone-500"
+                        emojiCat === k ? "bg-primary text-white" : "text-stone-500"
                       }`
                 }
                 style={
@@ -263,7 +263,7 @@ export function ChatEmojiGifPicker({
               className={
                 isDark
                   ? "w-full rounded-lg border-0 px-3 py-2 text-sm text-white outline-none placeholder:text-[#5c6a7d]"
-                  : "w-full rounded-lg border border-stone-200 px-2 py-1 text-xs outline-none focus:border-[#0F766E]"
+                  : "w-full rounded-lg border border-stone-200 px-2 py-1 text-xs outline-none focus:border-primary"
               }
               style={isDark ? { background: "rgba(0,0,0,0.25)" } : undefined}
             />

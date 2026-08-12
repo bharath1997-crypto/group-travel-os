@@ -66,8 +66,8 @@ export default function TravelModeChip({
           status === "live_active"
             ? "border-emerald-500/30 bg-emerald-50/50"
             : isOpen
-              ? "border-[#007F73] bg-[#E6F7F4]/30 ring-1 ring-[#007F73]/20"
-              : "border-stone-200 hover:border-[#007F73]/40 hover:bg-stone-50"
+              ? "border-primary bg-primary-soft/30 ring-1 ring-[#0F766E]/20"
+              : "border-stone-200 hover:border-primary/40 hover:bg-stone-50"
         }`}
       >
         {/* Left half: Mode Icon */}

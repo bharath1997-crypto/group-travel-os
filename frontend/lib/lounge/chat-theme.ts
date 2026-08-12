@@ -12,7 +12,7 @@ export const TH_MUTED = "#9ca3af";
 export const TH_LABEL = "#6b7280";
 
 /** Shell colors used in chat header chrome */
-export const BG = "#0f3460";
+export const BG = "#0F172A";
 export const SURFACE = "#2d4060";
 export const BORDER_SUB = "rgba(255,255,255,0.08)";
 export const ONLINE = "#22C55E";

@@ -248,7 +248,7 @@ After every feature change, update this section in GEMINI.md:
 | Page / Feature | Status | Last Updated |
 |---|---|---|
 | Auth (JWT + OTP + Google OAuth) | Complete | 2025-06 |
-| Flights page (Travelpayouts widget) | Complete | 2025-06 |
+| Flights page (Production Skyscanner Experience) | Complete | 2026-08-10 (Implemented public guest flight searching without sign-in, Skyscanner search engine with Multi-city, Everywhere, Nearby airports, Date-Price Matrix, Price Insights Banner, Skyscanner sort modes, live min-price badges, and in-feed/on-select sign-in conversion flow.) |
 | Hotels page (Agoda) | Complete | 2025-06 |
 | Routes search | Complete | 2025-06 |
 | Activities (GetYourGuide) | Complete | 2025-06 |
@@ -278,7 +278,9 @@ After every pytest run, update this section in GEMINI.md:
 |---|---|---|
 | tests/test_auth.py | — | — |
 | tests/test_auth_service.py | 17 | 2026-07-20 |
-| tests/test_flights.py | 3 | 2026-07-20 |
+| tests/test_flights.py | 8 | 2026-08-10 |
+| tests/test_flight_service_unit.py | 6 | 2026-08-10 |
+| tests/test_flight_offer_service_unit.py | 1 | 2026-08-10 |
 | tests/test_hotels.py | 3 | 2026-07-20 |
 | tests/test_routes.py | — | — |
 | tests/test_activities.py | — | — |
@@ -289,5 +291,6 @@ After every pytest run, update this section in GEMINI.md:
 | tests/test_places_nearby.py | 7 | 2026-07-20 |
 | tests/test_route_intelligence.py | 12 | 2026-07-20 |
 | tests/test_live_routing.py | 3 | 2026-07-20 |
+
 
 

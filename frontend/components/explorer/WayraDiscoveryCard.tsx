@@ -39,7 +39,7 @@ export function WayraDiscoveryCard({ onAskWayra }: WayraDiscoveryCardProps) {
           </p>
           <button
             onClick={() => onAskWayra?.()}
-            className="inline-flex items-center gap-2 bg-white text-[#0F766E] font-bold px-7 py-3.5 rounded-xl hover:bg-teal-50 transition-colors shadow-lg text-sm"
+            className="inline-flex items-center gap-2 bg-white text-primary font-bold px-7 py-3.5 rounded-xl hover:bg-teal-50 transition-colors shadow-lg text-sm"
           >
             <Sparkles size={16} />
             Ask Wayra

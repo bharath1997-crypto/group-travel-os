@@ -102,7 +102,7 @@ export default function SoloLiveNavigationOverlay({
         >
           • Solo Live On
         </div>
-        <div className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide shadow-md text-[#0F766E]">
+        <div className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide shadow-md text-primary">
           <Car className="h-3.5 w-3.5" />
           {travelMode}
         </div>
@@ -129,7 +129,7 @@ export default function SoloLiveNavigationOverlay({
             <div
               key={i}
               className={`flex h-9 flex-1 items-center justify-center rounded-xl text-sm transition-colors ${
-                lane.active ? "bg-teal-50 font-bold text-[#0F766E] border border-teal-600/10" : "bg-stone-50 text-stone-450 border border-stone-200/40"
+                lane.active ? "bg-teal-50 font-bold text-primary border border-teal-600/10" : "bg-stone-50 text-stone-450 border border-stone-200/40"
               }`}
             >
               {lane.arrow}
@@ -146,7 +146,7 @@ export default function SoloLiveNavigationOverlay({
           {[0, 1, 2, 3].map((i) => (
             <span
               key={i}
-              className={`h-1.5 w-4 rounded-full ${speedMph > i * 8 ? "bg-[#0F766E]" : "bg-stone-200"}`}
+              className={`h-1.5 w-4 rounded-full ${speedMph > i * 8 ? "bg-primary" : "bg-stone-200"}`}
             />
           ))}
         </div>

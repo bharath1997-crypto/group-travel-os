@@ -44,6 +44,11 @@ def sqlite_create_explorer_events_table() -> None:
     from app.models.expense import Expense, ExpenseSplit
     from app.models.lounge import LoungeChat, LoungeMember
     from app.models.wayra import WayraPersonalMemory
+    from app.models.wayra import (
+        WayraKnowledgeIntent,
+        WayraKnowledgeUtterance,
+        WayraUnmatchedQuestion,
+    )
     from app.models.data_export import DataExportRequest
     from app.models.data_import import DataImportRequest
     from app.models.user_integration import UserIntegration
@@ -72,6 +77,9 @@ def sqlite_create_explorer_events_table() -> None:
         LoungeChat.__table__,
         LoungeMember.__table__,
         WayraPersonalMemory.__table__,
+        WayraKnowledgeIntent.__table__,
+        WayraKnowledgeUtterance.__table__,
+        WayraUnmatchedQuestion.__table__,
         TripRoster.__table__,
         DataExportRequest.__table__,
         DataImportRequest.__table__,

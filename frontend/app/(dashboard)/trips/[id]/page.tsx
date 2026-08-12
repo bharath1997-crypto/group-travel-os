@@ -6,6 +6,17 @@ import Link from "next/link";
 import { OpenLoungeButton } from "@/components/lounge/OpenLoungeButton";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
+  CalendarRange,
+  Compass,
+  LayoutDashboard,
+  MapPin,
+  MessageCircle,
+  Navigation,
+  Plane,
+  Users,
+  Wallet,
+} from "lucide-react";
+import {
   useCallback,
   useEffect,
   useMemo,
@@ -80,8 +91,8 @@ const MapClick = dynamic(
   { ssr: false },
 );
 
-const NAVY = "#0F3460";
-const CORAL = "#E94560";
+const NAVY = "#0F172A";
+const CORAL = "#0F766E";
 const BORDER = "#E9ECEF";
 
 type TripOut = {
@@ -678,7 +689,7 @@ export default function TripDetailPage() {
         <button
           type="button"
           onClick={() => router.push("/trips")}
-          className="rounded-xl bg-[#E94560] px-5 py-2.5 text-sm font-semibold text-white"
+          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white"
         >
           Back to trips
         </button>
@@ -705,7 +716,7 @@ export default function TripDetailPage() {
       {toast ? (
         <div
           className={`fixed right-4 top-4 z-[200] rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg ${
-            toast.k === "success" ? "bg-green-600" : "bg-[#E94560]"
+            toast.k === "success" ? "bg-green-600" : "bg-primary"
           }`}
         >
           {toast.m}
@@ -715,19 +726,19 @@ export default function TripDetailPage() {
       <button
         type="button"
         onClick={() => router.push("/trips")}
-        className="mb-4 flex items-center gap-2 text-sm font-semibold text-[#6C757D] hover:text-[#0F3460]"
+        className="mb-4 flex items-center gap-2 text-sm font-semibold text-[#6C757D] hover:text-navy"
       >
         ← All Trips
       </button>
 
       <header
-        className="relative overflow-hidden rounded-2xl px-5 py-6 text-white"
+        className="relative overflow-hidden rounded-[28px] border border-white/10 px-5 py-7 text-white shadow-[0_24px_70px_-36px_rgba(16,37,33,0.8)] md:px-8 md:py-9"
         style={{
           background:
             isBiz
-              ? "linear-gradient(135deg, #0F3460 0%, #06182d 100%)"
-              : "linear-gradient(135deg, #E94560 0%, #ff9f43 100%)",
-          minHeight: 140,
+              ? "linear-gradient(135deg, #102521 0%, #183F38 100%)"
+              : "linear-gradient(135deg, #102521 0%, #0B6B61 68%, #16856F 100%)",
+          minHeight: 176,
         }}
       >
         <div
@@ -777,7 +788,7 @@ export default function TripDetailPage() {
       {editOpen ? (
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <p className="font-bold text-[#0F3460]">Edit trip name</p>
+            <p className="font-bold text-navy">Edit trip name</p>
             <input
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
@@ -794,7 +805,7 @@ export default function TripDetailPage() {
               </button>
               <button
                 type="button"
-                className="rounded-lg bg-[#E94560] px-4 py-2 text-sm font-bold text-white"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white"
                 onClick={() => void saveTripTitle()}
               >
                 Save
@@ -804,7 +815,55 @@ export default function TripDetailPage() {
         </div>
       ) : null}
 
-      <div className="mt-4 bg-white">
+      <div className="mt-5 overflow-x-auto rounded-2xl border border-[#DCE7E3] bg-white p-2 shadow-[0_16px_42px_-34px_rgba(16,37,33,0.4)] no-scrollbar">
+        <div className="flex min-w-max items-center gap-1" aria-label="Trip workspace">
+          {([
+            ["overview", "Overview", LayoutDashboard],
+            ["itinerary", "Plan", CalendarRange],
+            ["members", "People", Users],
+            ["map", "Places", MapPin],
+            ["expenses", "Money", Wallet],
+            ["polls", "Decisions", Compass],
+          ] as const).map(([value, label, Icon]) => {
+            const active = tab === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setTab(value)}
+                className={`flex min-h-11 items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold transition ${
+                  active
+                    ? "bg-[#E8F5F1] text-[#0B6B61] shadow-sm"
+                    : "text-slate-500 hover:bg-[#F4F7F5] hover:text-[#102521]"
+                }`}
+              >
+                <Icon size={16} aria-hidden /> {label}
+              </button>
+            );
+          })}
+          <span className="mx-1 h-7 w-px bg-[#DCE7E3]" aria-hidden />
+          <Link
+            href="/flights"
+            className="flex min-h-11 items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-slate-500 transition hover:bg-[#F4F7F5] hover:text-[#102521]"
+          >
+            <Plane size={16} aria-hidden /> Bookings
+          </Link>
+          <Link
+            href={`/travel-hub?group_id=${encodeURIComponent(trip.group_id)}`}
+            className="flex min-h-11 items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-slate-500 transition hover:bg-[#F4F7F5] hover:text-[#102521]"
+          >
+            <MessageCircle size={16} aria-hidden /> Chat
+          </Link>
+          <Link
+            href={`/live?trip_id=${encodeURIComponent(id)}`}
+            className="flex min-h-11 items-center gap-2 rounded-xl bg-[#102521] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-[#183F38]"
+          >
+            <Navigation size={16} aria-hidden /> Live
+          </Link>
+        </div>
+      </div>
+
+      <div className="hidden">
         <TabSwitcher<TabId>
           tabs={[
             { id: "overview", label: "🏠 Overview" },
@@ -990,7 +1049,7 @@ function OverviewTab({
           {weather ? (
             <p className="mt-2 text-2xl">
               {weather.code}{" "}
-              <span className="text-lg font-bold text-[#0F3460]">
+              <span className="text-lg font-bold text-navy">
                 {Math.round(weather.temp)}°C
               </span>
             </p>
@@ -1009,11 +1068,11 @@ function OverviewTab({
           {!countdown ? (
             <p className="mt-2 text-sm text-[#6C757D]">—</p>
           ) : countdown.kind === "up" ? (
-            <p className="mt-2 font-bold text-[#E94560]">
+            <p className="mt-2 font-bold text-primary">
               Starts in {countdown.days} days 🎉
             </p>
           ) : countdown.kind === "active" ? (
-            <p className="mt-2 text-sm text-[#0F3460]">
+            <p className="mt-2 text-sm text-navy">
               Day {countdown.day} of {countdown.tot} · {countdown.left} days left
             </p>
           ) : (
@@ -1026,7 +1085,7 @@ function OverviewTab({
         className="rounded-2xl border bg-white p-4"
         style={{ borderColor: BORDER }}
       >
-        <p className="text-sm font-bold text-[#0F3460]">Budget</p>
+        <p className="text-sm font-bold text-navy">Budget</p>
         {budget > 0 ? (
           <>
             <p className="mt-2 text-sm text-[#6C757D]">
@@ -1057,14 +1116,14 @@ function OverviewTab({
             className="rounded-xl border bg-white p-3 text-center"
             style={{ borderColor: BORDER }}
           >
-            <p className="text-xl font-bold text-[#0F3460]">{n as number}</p>
+            <p className="text-xl font-bold text-navy">{n as number}</p>
             <p className="text-[11px] uppercase text-[#ADB5BD]">{l as string}</p>
           </div>
         ))}
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-bold text-[#0F3460]">Recent activity</p>
+        <p className="mb-2 text-sm font-bold text-navy">Recent activity</p>
         <ul className="space-y-2">
           {recent.length === 0 ? (
             <li className="text-sm text-[#6C757D]">No recent items.</li>
@@ -1135,7 +1194,7 @@ function ItineraryTab({
           className="border-l-[3px] pl-3"
           style={{ borderColor: CORAL }}
         >
-          <p className="text-sm font-semibold text-[#0F3460]">
+          <p className="text-sm font-semibold text-navy">
             {leg.f} → {leg.t} · {leg.d} km · {leg.tr}
             {leg.br ? ` · ${leg.br}` : ""}
           </p>
@@ -1172,7 +1231,7 @@ function ItineraryTab({
               type="button"
               disabled={saving}
               onClick={() => void onSaveDay(d.key)}
-              className="mt-2 text-xs font-bold text-[#E94560] disabled:opacity-50"
+              className="mt-2 text-xs font-bold text-primary disabled:opacity-50"
             >
               Save note
             </button>
@@ -1265,7 +1324,7 @@ function ExpensesTab({
         className="rounded-2xl border bg-white p-4"
         style={{ borderColor: BORDER }}
       >
-        <p className="text-sm text-[#0F3460]">
+        <p className="text-sm text-navy">
           Total spent:{" "}
           <span className="font-bold">₹{spent.toLocaleString("en-IN")}</span>
         </p>
@@ -1290,7 +1349,7 @@ function ExpensesTab({
         <button
           type="button"
           onClick={onAdd}
-          className="rounded-xl bg-[#E94560] px-4 py-2.5 text-sm font-bold text-white"
+          className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white"
         >
           + Add Expense
         </button>
@@ -1376,7 +1435,7 @@ function ExpensesTab({
               type="button"
               disabled={expSaving}
               onClick={() => void onSubmit()}
-              className="rounded-lg bg-[#E94560] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
             >
               Save
             </button>
@@ -1393,7 +1452,7 @@ function ExpensesTab({
 
       {[...byCat.entries()].map(([cat, arr]) => (
         <div key={cat}>
-          <p className="mb-2 text-sm font-bold text-[#0F3460]">{cat}</p>
+          <p className="mb-2 text-sm font-bold text-navy">{cat}</p>
           <ul className="space-y-2">
             {arr.map((e) => (
               <li
@@ -1457,7 +1516,7 @@ function PollsTab({
       <button
         type="button"
         onClick={() => setPollOpen(true)}
-        className="rounded-xl bg-[#E94560] px-4 py-2.5 text-sm font-bold text-white"
+        className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white"
       >
         + Create Poll
       </button>
@@ -1489,7 +1548,7 @@ function PollsTab({
             <button
               type="button"
               disabled={pollSaving}
-              className="rounded-lg bg-[#E94560] px-4 py-2 text-sm font-bold text-white"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white"
               onClick={() => void createPoll()}
             >
               Create
@@ -1512,7 +1571,7 @@ function PollsTab({
           style={{ borderColor: BORDER }}
         >
           <div className="flex flex-wrap items-start justify-between gap-2">
-            <p className="font-bold text-[#0F3460]">{p.question}</p>
+            <p className="font-bold text-navy">{p.question}</p>
             <span className="rounded-full bg-[#F8F9FA] px-2 py-0.5 text-[11px] font-bold uppercase text-[#6C757D]">
               {p.status}
             </span>
@@ -1526,7 +1585,7 @@ function PollsTab({
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-[#E9ECEF]">
                   <div
-                    className="h-full rounded-full bg-[#E94560]"
+                    className="h-full rounded-full bg-primary"
                     style={{
                       width: `${(o.vote_count / maxVotes) * 100}%`,
                     }}
@@ -1599,7 +1658,7 @@ function MembersTab({
               alt=""
             />
             <div className="min-w-0 flex-1">
-              <p className="font-bold text-[#0F3460]">{m.full_name}</p>
+              <p className="font-bold text-navy">{m.full_name}</p>
               <p className="text-xs text-[#ADB5BD]">{m.role}</p>
               <p className="text-xs text-[#6C757D]">
                 Spent (paid): ₹
@@ -1662,7 +1721,7 @@ function TripMapTab({
           type="button"
           onClick={() => setPinMode(!pinMode)}
           className={`rounded-xl px-4 py-2 text-sm font-bold ${
-            pinMode ? "bg-[#E94560] text-white" : "border border-[#E9ECEF] bg-white"
+            pinMode ? "bg-primary text-white" : "border border-[#E9ECEF] bg-white"
           }`}
         >
           + Add Pin
@@ -1731,7 +1790,7 @@ function TripMapTab({
           />
           <button
             type="button"
-            className="mt-2 rounded-lg bg-[#E94560] px-4 py-2 text-sm font-bold text-white"
+            className="mt-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white"
             onClick={() => void onSavePin()}
           >
             Save pin

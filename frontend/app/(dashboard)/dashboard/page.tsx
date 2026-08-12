@@ -41,7 +41,7 @@ import { emitOpenWayra } from "@/lib/open-wayra";
 import WayraIcon from "@/components/ui/WayraIcon";
 
 /** Dashboard color roles — navy structure, teal primary, neutrals surfaces. */
-const NAVY = "#0F3460";
+const NAVY = "#0F172A";
 const BRAND = "#0F766E";
 const BRAND_DARK = "#0D5C56";
 const BRAND_SUBTLE = "#F0FDFA";
@@ -52,7 +52,7 @@ const SURFACE_ALT = "#FAFBFC";
 const BORDER = "#E9ECEF";
 const MUTED = "#6C757D";
 /** Text links — navy, quieter than filled primary buttons */
-const LINK = "#0F3460";
+const LINK = "#0F172A";
 const SUCCESS = "#22C55E";
 const SUCCESS_SUBTLE = "#F0FDF4";
 const SUCCESS_BORDER = "#BBF7D0";
@@ -436,7 +436,7 @@ function BuddyTripsCard({ compact = false }: { compact?: boolean }) {
           </p>
           <Link
             href={DASHBOARD_ROUTES.buddy}
-            className="mt-3 inline-flex items-center justify-center rounded-xl bg-[#0F766E] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:opacity-95"
+            className="mt-3 inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:opacity-95"
           >
             Create Buddy Trip →
           </Link>
@@ -450,7 +450,7 @@ function BuddyTripsCard({ compact = false }: { compact?: boolean }) {
                 <li key={t.id}>
                   <Link
                     href={DASHBOARD_ROUTES.buddy}
-                    className={`block rounded-lg border transition hover:border-[#0F766E]/25 hover:bg-[#F0FDFA] ${itemPad}`}
+                    className={`block rounded-lg border transition hover:border-primary/25 hover:bg-[#F0FDFA] ${itemPad}`}
                     style={{ borderColor: BORDER }}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -522,7 +522,7 @@ function DashboardWayraHelper() {
               key={label}
               type="button"
               onClick={() => emitOpenWayra({ prompt })}
-              className="rounded-full border bg-white px-2.5 py-1 text-[10px] font-medium transition hover:border-[#0F766E]/20 hover:bg-[#F0FDFA]"
+              className="rounded-full border bg-white px-2.5 py-1 text-[10px] font-medium transition hover:border-primary/20 hover:bg-[#F0FDFA]"
               style={{ borderColor: BORDER, color: NAVY }}
             >
               {label}
@@ -1728,7 +1728,7 @@ export default function DashboardPage() {
                 className={
                   a.primary
                     ? "group rounded-xl px-3 py-4 text-center text-[11px] font-bold text-white shadow-sm transition hover:opacity-95"
-                    : "group rounded-xl border bg-white px-3 py-4 text-center text-[11px] font-bold transition hover:border-[#0F3460]/25 hover:bg-[#F8F9FA]"
+                    : "group rounded-xl border bg-white px-3 py-4 text-center text-[11px] font-bold transition hover:border-[#0F172A]/25 hover:bg-[#F8F9FA]"
                 }
                 style={
                   a.primary
@@ -2025,7 +2025,7 @@ export default function DashboardPage() {
                           className="flex gap-2 border-b border-[#E9ECEF] pb-3 last:border-0 last:pb-0"
                         >
                           <span
-                            className="inline-flex text-lg leading-none text-[#0F3460]"
+                            className="inline-flex text-lg leading-none text-navy"
                             aria-hidden
                           >
                             <DestinationGlyph title={t.title} />

@@ -55,11 +55,12 @@ import {
   LS_AVATAR,
 } from "@/lib/userSessionStorage";
 
-/* ─── design tokens ───────────────────────────────────────── */
-const RED = "#e53e3e";
-const NAVY = "#1e2a3a";
-const GREEN = "#1d9e75";
-const CARD_BORDER_COLOR = "#E9ECEF";
+import { BRAND } from "@/lib/brand";
+
+const RED = BRAND.colors.error;
+const NAVY = BRAND.colors.navy;
+const GREEN = BRAND.colors.success;
+const CARD_BORDER_COLOR = BRAND.colors.border;
 const CARD_BORDER = `1px solid ${CARD_BORDER_COLOR}`;
 
 const LS_INSTAGRAM = "gt_social_instagram";
@@ -98,7 +99,7 @@ const OUTFIT_COLORS = [
   "#38a169",
   "#d69e2e",
   "#805ad5",
-  "#1e2a3a",
+  "#1E293B",
 ];
 const BG_CIRCLE = [
   "#e1f5ee",
@@ -106,7 +107,7 @@ const BG_CIRCLE = [
   "#faeeda",
   "#fbeaf0",
   "#f1efe8",
-  "#1e2a3a",
+  "#1E293B",
 ];
 
 const GLOBE_LEVELS = [
@@ -545,7 +546,7 @@ function PlaceholderAppLogo({ className = "" }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
     >
-      <rect width="32" height="32" rx="8" fill="#1e2a3a" />
+      <rect width="32" height="32" rx="8" fill="#1E293B" />
       <path
         d="M16 8l-4.5 7.5c-.6 1-.6 2.2 0 3.2L16 26l4.5-7.3c.6-1 .6-2.2 0-3.2L16 8z"
         fill="#e53e3e"
@@ -1377,7 +1378,7 @@ export default function ProfilePage() {
           }}
         >
           <div
-            className="flex h-[55vh] max-w-lg flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-[#2a3f5f] to-[#1e2a3a] p-6 text-center"
+            className="flex h-[55vh] max-w-lg flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-[#2a3f5f] to-[#1E293B] p-6 text-center"
           >
             <AvatarFaceSvg o={avatarOpts} className="mb-4 h-32 w-32" />
             <p className="text-lg font-semibold">
@@ -1405,7 +1406,7 @@ export default function ProfilePage() {
     createPortal(
       <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4">
         <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-          <h3 className="text-lg font-semibold text-[#1e2a3a]">
+          <h3 className="text-lg font-semibold text-[#1E293B]">
             Connect Instagram
           </h3>
           <p className="mt-1 text-sm text-stone-600">
@@ -1414,7 +1415,7 @@ export default function ProfilePage() {
           <input
             value={igDraft}
             onChange={(e) => setIgDraft(e.target.value)}
-            className="mt-3 w-full rounded-xl border border-stone-200 px-3 py-2 text-[#1e2a3a]"
+            className="mt-3 w-full rounded-xl border border-stone-200 px-3 py-2 text-[#1E293B]"
             placeholder="@username"
           />
           <div className="mt-4 flex justify-end gap-2">
@@ -1445,7 +1446,7 @@ export default function ProfilePage() {
     createPortal(
       <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4">
         <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-          <h3 className="text-lg font-semibold text-[#1e2a3a]">
+          <h3 className="text-lg font-semibold text-[#1E293B]">
             Connect Snapchat
           </h3>
           <p className="mt-1 text-sm text-stone-600">
@@ -1454,7 +1455,7 @@ export default function ProfilePage() {
           <input
             value={snapDraft}
             onChange={(e) => setSnapDraft(e.target.value)}
-            className="mt-3 w-full rounded-xl border border-stone-200 px-3 py-2 text-[#1e2a3a]"
+            className="mt-3 w-full rounded-xl border border-stone-200 px-3 py-2 text-[#1E293B]"
             placeholder="snap_user"
           />
           <div className="mt-4 flex justify-end gap-2">
@@ -1497,7 +1498,7 @@ export default function ProfilePage() {
             alt=""
             className="max-h-[60vh] w-full rounded-xl object-cover"
           />
-          <p className="mt-3 text-[#1e2a3a]">{postModal.caption}</p>
+          <p className="mt-3 text-[#1E293B]">{postModal.caption}</p>
           <p className="mt-2 text-sm text-stone-500">
             ♥ {postModal.likes} likes
           </p>
@@ -1520,7 +1521,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-16">
+    <div className="min-h-screen bg-app pb-16">
       {storyViewer}
       {igPortal}
       {snapPortal}
@@ -1776,7 +1777,7 @@ export default function ProfilePage() {
               Full Map →
             </Link>
           </div>
-          <div className="overflow-hidden rounded-b-xl border-t border-[#E9ECEF] bg-[#F8FAFC] p-2">
+          <div className="overflow-hidden rounded-b-xl border-t border-[#E9ECEF] bg-app p-2">
             <div className="relative h-64 overflow-hidden rounded-lg border border-[#E9ECEF] bg-white shadow-sm">
               <iframe
                 title="Group map"

@@ -55,7 +55,7 @@ export default function SettingsAppMediaPage() {
       <>
         <SettingsScreenHeader title="App & media" backHref="/settings" />
         <div className="flex justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-[#E94560]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-primary" />
         </div>
       </>
     );
@@ -113,7 +113,7 @@ export default function SettingsAppMediaPage() {
               disabled={busy}
               className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
                 lang === code
-                  ? "bg-[#E94560] text-white"
+                  ? "bg-primary text-white"
                   : "bg-stone-100 text-stone-700"
               }`}
               onClick={() => void merge({ app_media: { language: code } })}
@@ -150,7 +150,7 @@ export default function SettingsAppMediaPage() {
                 disabled={busy}
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
                   mq === v
-                    ? "bg-[#E94560] text-white"
+                    ? "bg-primary text-white"
                     : "bg-stone-100 text-stone-700"
                 }`}
                 onClick={() => void merge({ app_media: { media_quality: v } })}

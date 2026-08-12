@@ -6,7 +6,7 @@ import { RovvyLogo } from "@/components/RovvyLogo";
 
 export default function GroupsPage() {
   return (
-    <div className="flex min-h-[calc(100vh-80px)] flex-col items-center justify-center bg-[#F8FAFC] px-6 py-12 text-slate-800">
+    <div className="flex min-h-[calc(100vh-80px)] flex-col items-center justify-center bg-app px-6 py-12 text-slate-800">
       <div className="w-full max-w-md text-center">
         {/* Rovvy Logo */}
         <div className="mb-8 flex justify-center">
@@ -47,7 +47,7 @@ export default function GroupsPage() {
 
         {/* Quick Help/Feature Info cards */}
         <div className="mt-12 text-left border-t border-slate-200 pt-8">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[#0F766E]">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-primary">
             With Rovvy Groups you can:
           </h3>
           <div className="mt-4 space-y-4">

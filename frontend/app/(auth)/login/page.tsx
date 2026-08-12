@@ -27,15 +27,16 @@ import { syncLocalProfileCache } from "@/lib/profileCache";
 import { checkSession } from "@/lib/sessionValidation";
 import { oauthErrorToAlert, type OauthLoginAlert } from "@/lib/oauthLoginErrors";
 import BrandedLoading from "@/components/BrandedLoading";
+import { authHref, authReturnPathFromParams, rememberAuthReturnPath } from "@/lib/auth-return";
 
 /** Fixed sizing for auth pages only — does not scale with viewport */
 const FIELD_SHELL =
-  "flex h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 shadow-sm transition focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]/15";
+  "flex h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 shadow-sm transition focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/15";
 const FIELD_INPUT =
   "min-w-0 flex-1 bg-transparent text-[13px] font-normal leading-none text-stone-800 outline-none placeholder:text-[12px] placeholder:text-stone-400";
 const FIELD_LABEL = "mb-1 block text-[12px] font-medium leading-none text-stone-600";
 const PRIMARY_BTN =
-  "flex h-10 w-full shrink-0 items-center justify-center rounded-lg bg-[#0F766E] text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[#0D635C] disabled:cursor-not-allowed disabled:opacity-60";
+  "flex h-10 w-full shrink-0 items-center justify-center rounded-lg bg-primary text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60";
 
 type LoginResponse = {
   user: {
@@ -47,11 +48,6 @@ type LoginResponse = {
   };
   token: { access_token: string; token_type: string; expires_in: number };
 };
-
-function safeNextPath(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/explore";
-  return raw;
-}
 
 function useAuthPageLockScroll() {
   useEffect(() => {
@@ -142,7 +138,7 @@ function LoginPageInner() {
         const result = await checkSession();
         if (cancelled) return;
 
-        const next = safeNextPath(searchParams.get("next"));
+        const next = authReturnPathFromParams(searchParams);
 
         if (result.status === "valid") {
           syncLocalProfileCache(result.user);
@@ -158,7 +154,7 @@ function LoginPageInner() {
         router.replace(next);
       } catch {
         if (!cancelled) {
-          router.replace(safeNextPath(searchParams.get("next")));
+          router.replace(authReturnPathFromParams(searchParams));
         }
       } finally {
         if (!cancelled) setCheckingSession(false);
@@ -244,7 +240,7 @@ function LoginPageInner() {
         syncLocalProfileCache(data.user);
       }
       const params = new URLSearchParams(window.location.search);
-      const next = safeNextPath(params.get("next"));
+      const next = authReturnPathFromParams(params);
       const verified =
         data.user.email_verified !== false && data.user.is_verified !== false;
       if (!verified) {
@@ -265,6 +261,7 @@ function LoginPageInner() {
     setOauthAlert(null);
     setError(null);
     try {
+      rememberAuthReturnPath(authReturnPathFromParams(searchParams));
       await startGoogleOAuth("login");
     } catch (err) {
       setOauthBusy(false);
@@ -281,6 +278,7 @@ function LoginPageInner() {
     setOauthAlert(null);
     setError(null);
     try {
+      rememberAuthReturnPath(authReturnPathFromParams(searchParams));
       await startFacebookOAuth("login");
     } catch (err) {
       setOauthBusy(false);
@@ -307,7 +305,7 @@ function LoginPageInner() {
       footer={
         <>
           Don&apos;t have an account?{" "}
-          <Link href="/register" className={authLinkClass}>
+          <Link href={authHref("/register", authReturnPathFromParams(searchParams))} className={authLinkClass}>
             Create account
           </Link>
         </>
@@ -332,8 +330,8 @@ function LoginPageInner() {
             {oauthAlert.showCreateAccount ? (
               <div className="mt-1.5">
                 <Link
-                  href="/register"
-                  className="inline-flex h-7 items-center justify-center rounded-md bg-[#0F766E] px-2.5 text-[11px] font-semibold text-white hover:bg-[#0D635C]"
+                  href={authHref("/register", authReturnPathFromParams(searchParams))}
+                  className="inline-flex h-7 items-center justify-center rounded-md bg-primary px-2.5 text-[11px] font-semibold text-white hover:bg-primary-hover"
                 >
                   Create account
                 </Link>

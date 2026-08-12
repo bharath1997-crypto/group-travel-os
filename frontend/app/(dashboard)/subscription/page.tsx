@@ -22,8 +22,8 @@ import {
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
 
-const NAVY = "#0F3460";
-const CORAL = "#E94560";
+const NAVY = "#0F172A";
+const CORAL = "#0F766E";
 const BG = "#F8F9FA";
 const BORDER = "#E9ECEF";
 
@@ -232,7 +232,7 @@ export default function SubscriptionPage() {
         style={{ backgroundColor: BG }}
       >
         <div
-          className="h-10 w-10 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
+          className="h-10 w-10 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-primary"
           aria-hidden
         />
       </div>
@@ -337,7 +337,7 @@ export default function SubscriptionPage() {
           Group
         </label>
         <select
-          className="mt-1 w-full max-w-lg rounded-lg border border-[#E9ECEF] bg-white px-3 py-2.5 text-sm font-medium outline-none focus:border-[#E94560] focus:ring-2 focus:ring-[#E94560]/20"
+          className="mt-1 w-full max-w-lg rounded-lg border border-[#E9ECEF] bg-white px-3 py-2.5 text-sm font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           value={selectedGroupId}
           onChange={(e) => setSelectedGroupId(e.target.value)}
         >
@@ -354,7 +354,7 @@ export default function SubscriptionPage() {
         {selectedGroup ? (
           <div className="mt-3 text-sm">
             <p>
-              <span className="font-semibold text-[#0F3460]">{memberCount}</span>{" "}
+              <span className="font-semibold text-navy">{memberCount}</span>{" "}
               members in this group
             </p>
             <p className="mt-1 text-[#6C757D]">
@@ -541,7 +541,7 @@ export default function SubscriptionPage() {
             >
               {buying === "pro" ? (
                 <span className="inline-flex items-center gap-2">
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#E94560] border-t-transparent" />
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                   Processing…
                 </span>
               ) : (

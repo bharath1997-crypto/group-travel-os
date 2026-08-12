@@ -163,7 +163,7 @@ export function HeaderSearchBar() {
         <button
           type="button"
           onClick={submitSearch}
-          className="shrink-0 rounded-full p-1.5 text-stone-500 transition-colors hover:bg-stone-100 hover:text-[#0F766E]"
+          className="shrink-0 rounded-full p-1.5 text-stone-500 transition-colors hover:bg-stone-100 hover:text-primary"
           aria-label="Search"
           title="Search"
         >

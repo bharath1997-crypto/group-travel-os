@@ -230,18 +230,18 @@ function DmInfoPanel({
               ).map((row) => {
                 const iconNode =
                   row.key === "search" ? (
-                    <ThIconSearch size={18} className="text-[#1e2a3a]" />
+                    <ThIconSearch size={18} className="text-[#1E293B]" />
                   ) : row.key === "voice" ? (
-                    <ThIconPhoneHandset size={18} className="text-[#1e2a3a]" />
+                    <ThIconPhoneHandset size={18} className="text-[#1E293B]" />
                   ) : row.key === "video" ? (
-                    <ThIconVideoCam size={18} className="text-[#1e2a3a]" />
+                    <ThIconVideoCam size={18} className="text-[#1E293B]" />
                   ) : row.key === "schedule" ? (
                     <Calendar
-                      className="h-[18px] w-[18px] text-[#1e2a3a]"
+                      className="h-[18px] w-[18px] text-[#1E293B]"
                       strokeWidth={2}
                     />
                   ) : (
-                    <ThIconMoreDots size={18} className="text-[#1e2a3a]" />
+                    <ThIconMoreDots size={18} className="text-[#1E293B]" />
                   );
                 return (
                   <div

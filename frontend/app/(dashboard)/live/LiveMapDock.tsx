@@ -57,7 +57,7 @@ export default function LiveMapDock({
       return `${base} ${
         isDark
           ? "bg-teal-500/25 border-teal-400/40 text-teal-300 ring-1 ring-teal-400/30"
-          : "bg-teal-50 border-[#0f766e]/30 text-[#0f766e] ring-1 ring-teal-100/80"
+          : "bg-teal-50 border-primary/30 text-primary ring-1 ring-teal-100/80"
       }`;
     }
     return `${base} ${
@@ -83,7 +83,7 @@ export default function LiveMapDock({
         >
           <Layers className="h-4.5 w-4.5" />
           {layersPanelOpen && (
-            <span className="absolute bottom-1.5 h-1.5 w-1.5 rounded-full bg-[#0f766e]" />
+            <span className="absolute bottom-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
           )}
         </button>
 

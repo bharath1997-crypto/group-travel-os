@@ -67,7 +67,7 @@ export default function LiveRouteSummaryBar({
           <p className="text-xs text-amber-700">Route unavailable for {travelMode.toLowerCase()}</p>
         ) : routeReady ? (
           <div className="space-y-0.5">
-            <p className="text-xs font-medium text-[#0F766E]">
+            <p className="text-xs font-medium text-primary">
               {durationLabel} · {travelMode}
             </p>
             {routeCondition ? (

@@ -1,7 +1,7 @@
 "use client";
 
 const BORDER = "#E9ECEF";
-const CORAL = "#E94560";
+const CORAL = "#0F766E";
 
 export type TabItem<T extends string = string> = {
   id: T;
@@ -36,7 +36,7 @@ export function TabSwitcher<T extends string>({
             onClick={() => onChange(t.id)}
             className={`shrink-0 border-b-2 px-3 py-3 text-sm font-semibold transition ${
               active
-                ? "border-[#E94560] text-[#E94560]"
+                ? "border-primary text-primary"
                 : "border-transparent text-[#6C757D] hover:text-[#2C3E50]"
             }`}
             style={active ? { borderColor: CORAL, color: CORAL } : undefined}

@@ -15,7 +15,62 @@ export type LiveStage =
   | "destination_set"
   | "long_distance_preview"
   | "solo_drive_command"
-  | "solo_drive_navigation";
+  | "solo_drive_navigation"
+  | "split_phase_active";
+
+export type SplitPhaseEntry = "solo" | "private" | "launch";
+
+export type SplitPhaseActivity = {
+  sessionId: string | null;
+  entry: SplitPhaseEntry;
+  workflowType: "Solo" | "Group Travel" | "Seat Share";
+  memberCount: number;
+  activeLegModality: string;
+  isActive: boolean;
+};
+
+export type GroundTravelMode = "Drive" | "Bike" | "Trek" | "Walk";
+export type ExtendedTravelMode = GroundTravelMode | "Train" | "Bus" | "Air" | "Ship";
+
+/** Whether the traveler uses their own vehicle or public transport. */
+export type VehiclePreference = "private" | "public";
+
+export const VEHICLE_PREFERENCE_OPTIONS: {
+  id: VehiclePreference;
+  label: string;
+  description: string;
+}[] = [
+  {
+    id: "private",
+    label: "Private vehicle",
+    description: "Your car, SUV, or rideshare for Solo Live",
+  },
+  {
+    id: "public",
+    label: "Public transport",
+    description: "Flights, trains, and buses via Travel tab",
+  },
+];
+
+export const EXTENDED_TRAVEL_MODES: {
+  id: ExtendedTravelMode;
+  label: string;
+  icon: string;
+  comingSoon?: boolean;
+}[] = [
+  { id: "Drive", label: "Drive", icon: "🚗" },
+  { id: "Bike", label: "Bike", icon: "🚲" },
+  { id: "Trek", label: "Trek", icon: "🥾" },
+  { id: "Walk", label: "Walk", icon: "🚶" },
+  { id: "Train", label: "Train", icon: "🚆", comingSoon: true },
+  { id: "Bus", label: "Bus", icon: "🚌", comingSoon: true },
+  { id: "Air", label: "Air", icon: "✈️", comingSoon: true },
+  { id: "Ship", label: "Ship", icon: "🚢", comingSoon: true },
+];
+
+export function isActiveNavigationStage(stage: LiveStage): boolean {
+  return stage === "solo_drive_navigation" || stage === "split_phase_active";
+}
 
 export type TripStatus = "on_the_way" | "stopping" | "reached" | "running_late";
 
@@ -83,6 +138,18 @@ export type RouteLine = {
   lastMileApproximate?: boolean | null;
   borderCrossings?: BorderCrossing[];
   borderNotice?: string | null;
+};
+
+/** Toll / no-toll (or OSRM alternate) option for Live route preview. */
+export type RouteAlternative = {
+  id: string;
+  label: string;
+  tollLabel: string | null;
+  hasTolls: boolean | null;
+  distanceMeters: number;
+  durationSeconds: number;
+  geometry: [number, number][];
+  provider: string;
 };
 
 export type DistanceTier = "local" | "far";

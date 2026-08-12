@@ -103,7 +103,7 @@ export function ProfileAccountMenuPanel({
         onClick={close}
         className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-stone-50"
       >
-        <User size={15} className="text-[#0F766E]" />
+        <User size={15} className="text-primary" />
         <span>My Profile</span>
       </Link>
       <Link
@@ -112,7 +112,7 @@ export function ProfileAccountMenuPanel({
         className="flex items-center justify-between gap-2 px-3.5 py-2.5 hover:bg-stone-50"
       >
         <span className="flex items-center gap-2.5">
-          <IconBell size={15} className="text-[#0F766E]" />
+          <IconBell size={15} className="text-primary" />
           Notifications
         </span>
         {notifCount > 0 ? (
@@ -127,7 +127,7 @@ export function ProfileAccountMenuPanel({
         className="flex items-center justify-between gap-2 px-3.5 py-2.5 hover:bg-stone-50"
       >
         <span className="flex items-center gap-2.5">
-          <ShoppingCart size={15} className="text-[#0F766E]" />
+          <ShoppingCart size={15} className="text-primary" />
           Travel Cart
         </span>
         {cartCount > 0 ? (
@@ -144,7 +144,7 @@ export function ProfileAccountMenuPanel({
         onClick={close}
         className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-stone-50"
       >
-        <LayoutDashboard size={15} className="text-[#0F766E]" />
+        <LayoutDashboard size={15} className="text-primary" />
         Dashboard
       </Link>
 
@@ -156,9 +156,9 @@ export function ProfileAccountMenuPanel({
           className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-stone-50"
         >
           {item.spaceIcon ? (
-            <SpaceIcon size={15} className="text-[#0F766E]" />
+            <SpaceIcon size={15} className="text-primary" />
           ) : item.icon ? (
-            <item.icon size={15} className="text-[#0F766E]" />
+            <item.icon size={15} className="text-primary" />
           ) : null}
           {item.label}
         </button>

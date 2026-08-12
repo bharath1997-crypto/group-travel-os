@@ -18,7 +18,7 @@ export function mapSupportsLabelSearch(map: MaplibreMap | null | undefined): boo
 }
 
 export function getFeatureLabelName(props: Record<string, unknown>): string | null {
-  const candidates = [props.name, props.name_en, props["name:latin"], props["name:en"]];
+  const candidates = [props["name:latin"], props.name, props.name_en, props["name:en"]];
   for (const value of candidates) {
     if (typeof value === "string" && value.trim()) return value.trim();
   }

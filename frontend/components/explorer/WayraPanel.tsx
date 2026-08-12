@@ -253,8 +253,8 @@ export function WayraPanel({ open, city, onClose, onOpen, seedMessage, onSeedCon
               <p
                 className={
                   birdState === "flying"
-                    ? "text-[10px] text-[#E94560]"
-                    : "text-[10px] text-[#0F3460]"
+                    ? "text-[10px] text-primary"
+                    : "text-[10px] text-navy"
                 }
               >
                 {headerStatus}
@@ -263,7 +263,7 @@ export function WayraPanel({ open, city, onClose, onOpen, seedMessage, onSeedCon
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-[#E9ECEF] p-1.5 text-[#6C757D] hover:border-[#E94560] hover:text-[#E94560]"
+              className="rounded-full border border-[#E9ECEF] p-1.5 text-[#6C757D] hover:border-primary hover:text-primary"
               aria-label="Close Wayra"
             >
               <X size={16} />
@@ -288,7 +288,7 @@ export function WayraPanel({ open, city, onClose, onOpen, seedMessage, onSeedCon
                   className={[
                     "rounded-2xl border px-3 py-2 text-sm leading-5",
                     row.role === "user"
-                      ? "ml-8 border-[#E94560] bg-[#E94560] text-white"
+                      ? "ml-8 border-primary bg-primary text-white"
                       : "mr-8 border-[#E9ECEF] bg-white text-[#2C3E50]",
                   ].join(" ")}
                 >
@@ -305,7 +305,7 @@ export function WayraPanel({ open, city, onClose, onOpen, seedMessage, onSeedCon
                   key={chip}
                   type="button"
                   onClick={() => void send(chip)}
-                  className="shrink-0 rounded-full border border-[#E9ECEF] bg-white px-3 py-1.5 text-xs font-medium text-[#6C757D] hover:border-[#E94560] hover:text-[#E94560]"
+                  className="shrink-0 rounded-full border border-[#E9ECEF] bg-white px-3 py-1.5 text-xs font-medium text-[#6C757D] hover:border-primary hover:text-primary"
                 >
                   {chip}
                 </button>
@@ -322,12 +322,12 @@ export function WayraPanel({ open, city, onClose, onOpen, seedMessage, onSeedCon
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 placeholder="Ask Wayra..."
-                className="min-w-0 flex-1 rounded-full border border-[#E9ECEF] bg-[#F8F9FA] px-3 py-2 text-sm text-[#2C3E50] outline-none placeholder:text-[#6C757D] focus:border-[#E94560]"
+                className="min-w-0 flex-1 rounded-full border border-[#E9ECEF] bg-[#F8F9FA] px-3 py-2 text-sm text-[#2C3E50] outline-none placeholder:text-[#6C757D] focus:border-primary"
               />
               <button
                 type="submit"
                 disabled={busy}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E94560] text-white disabled:opacity-60"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-white disabled:opacity-60"
                 aria-label="Send"
               >
                 <Send size={16} />

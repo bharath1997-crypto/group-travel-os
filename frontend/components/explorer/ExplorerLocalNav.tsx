@@ -28,7 +28,7 @@ export function ExplorerLocalNav({ city }: ExplorerLocalNavProps) {
   return (
     <aside className="sticky top-0 z-20 hidden h-[calc(100dvh-0px)] w-[200px] shrink-0 flex-col border-r border-[#142a45] bg-[#071221] py-6 lg:flex">
       <div className="px-4 pb-4">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#E94560]/90">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary/90">
           Explorer
         </p>
       </div>
@@ -37,8 +37,8 @@ export function ExplorerLocalNav({ city }: ExplorerLocalNavProps) {
           <LayoutDashboard className="h-4 w-4 shrink-0 opacity-80" />
           Dashboard
         </Link>
-        <Link href="/explore/events" className={`${wrap} border-[#E94560] bg-white/5 text-white`}>
-          <Compass className="h-4 w-4 shrink-0 text-[#E94560]" />
+        <Link href="/explore/events" className={`${wrap} border-primary bg-white/5 text-white`}>
+          <Compass className="h-4 w-4 shrink-0 text-primary" />
           Cities
         </Link>
         <Link href={`/explore/${cityEnc}/events`} className={wrap}>

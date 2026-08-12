@@ -61,7 +61,7 @@ function formatDate(iso: string | null): string {
 
 function statusColor(status: string): string {
   switch (status) {
-    case "ready":      return "bg-teal-50 text-[#0F766E]";
+    case "ready":      return "bg-teal-50 text-primary";
     case "processing": return "bg-amber-50 text-amber-700";
     case "pending":    return "bg-stone-100 text-stone-500";
     case "failed":     return "bg-red-50 text-red-600";
@@ -207,7 +207,7 @@ export default function GoogleDrivePage() {
           <>
             <div className="flex items-center gap-3.5 border-b border-stone-100 px-4 py-3.5">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50">
-                <CheckCircle2 size={16} className="text-[#0F766E]" strokeWidth={1.8} />
+                <CheckCircle2 size={16} className="text-primary" strokeWidth={1.8} />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[14px] text-neutral-900">Connected</p>
@@ -282,7 +282,7 @@ export default function GoogleDrivePage() {
                       type="button"
                       disabled={isBacking}
                       onClick={() => handleBackup(exp.id)}
-                      className="flex shrink-0 items-center gap-1.5 rounded-full border border-[#0F766E] px-3 py-1.5 text-[12px] font-semibold text-[#0F766E] transition-colors hover:bg-teal-50 disabled:opacity-40"
+                      className="flex shrink-0 items-center gap-1.5 rounded-full border border-primary px-3 py-1.5 text-[12px] font-semibold text-primary transition-colors hover:bg-teal-50 disabled:opacity-40"
                     >
                       {isBacking ? (
                         <><RefreshCw size={12} className="animate-spin" /> Uploading…</>
@@ -299,13 +299,13 @@ export default function GoogleDrivePage() {
                   )}
                   {result && (
                     <div className="mt-1.5 flex items-center gap-1.5">
-                      <p className="text-[12px] text-[#0F766E]">Saved to Google Drive</p>
+                      <p className="text-[12px] text-primary">Saved to Google Drive</p>
                       {result.google_drive_web_view_link && (
                         <a
                           href={result.google_drive_web_view_link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-0.5 text-[12px] text-[#0F766E] underline underline-offset-2"
+                          className="flex items-center gap-0.5 text-[12px] text-primary underline underline-offset-2"
                         >
                           Open <ExternalLink size={11} />
                         </a>

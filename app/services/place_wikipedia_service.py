@@ -84,12 +84,20 @@ def _should_prefer_geo_lookup(
 ) -> bool:
     if category in _ADDRESS_CATEGORIES:
         return True
-    if source in {"map_pick", "map_click", "nominatim", "search"}:
+    if _is_street_like_name(name):
         return True
-    return _is_street_like_name(name)
+    if source in {"map_pick", "map_click"} and category in {
+        "Address",
+        "Coordinates",
+        "Place",
+        "Location",
+    }:
+        return True
+    return False
 
 
 def _build_summary_result(data: dict[str, Any], matched_on: str) -> dict[str, Any]:
+    approximate = matched_on in {"nearby", "city", "region"}
     return {
         "available": True,
         "title": data.get("title"),
@@ -99,6 +107,7 @@ def _build_summary_result(data: dict[str, Any], matched_on: str) -> dict[str, An
         "thumbnailUrl": (data.get("thumbnail") or {}).get("source"),
         "attribution": "Wikipedia",
         "matchedOn": matched_on,
+        "approximate": approximate,
     }
 
 
@@ -249,6 +258,7 @@ class PlaceWikipediaService:
         "Cinema",
         "University",
         "Church / Place of worship",
+        "Hotel",
         "Stadium",
         "Monument",
         "Village",
@@ -299,6 +309,8 @@ class PlaceWikipediaService:
         if name and name.lower() not in {"dropped pin", "selected coordinates", "selected location"}:
             if not _is_street_like_name(name):
                 candidates.append(("place", name))
+                if city:
+                    candidates.append(("place", f"{name}, {city}"))
 
         if city:
             candidates.append(("city", city))
@@ -387,20 +399,6 @@ class PlaceWikipediaService:
                         nearby_titles = await _geosearch_nearby_titles(client, lat, lng)
                     return nearby_titles
 
-                if prefer_geo:
-                    geo_title = await _geosearch_title(
-                        client,
-                        lat,
-                        lng,
-                        name_hint=city or state,
-                    )
-                    if geo_title:
-                        summary = await _fetch_summary(client, geo_title)
-                        if summary:
-                            result = _build_summary_result(summary, "nearby")
-                            _set_to_cache(cache_key, result)
-                            return result
-
                 for matched_on, query in cls._lookup_candidates(
                     name=name,
                     city=city,
@@ -421,19 +419,18 @@ class PlaceWikipediaService:
                         _set_to_cache(cache_key, result)
                         return result
 
-                if not prefer_geo:
-                    geo_title = await _geosearch_title(
-                        client,
-                        lat,
-                        lng,
-                        name_hint=city or name,
-                    )
-                    if geo_title:
-                        summary = await _fetch_summary(client, geo_title)
-                        if summary:
-                            result = _build_summary_result(summary, "nearby")
-                            _set_to_cache(cache_key, result)
-                            return result
+                geo_title = await _geosearch_title(
+                    client,
+                    lat,
+                    lng,
+                    name_hint=city or name,
+                )
+                if geo_title:
+                    summary = await _fetch_summary(client, geo_title)
+                    if summary:
+                        result = _build_summary_result(summary, "nearby")
+                        _set_to_cache(cache_key, result)
+                        return result
         except Exception as exc:
             logger.warning("Wikipedia lookup failed for %s: %s", name, exc)
 

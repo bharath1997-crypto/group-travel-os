@@ -42,7 +42,7 @@ export default function ForgotPasswordPage() {
   );
 
   return (
-    <div className="flex min-h-svh flex-col bg-[#0F172A]">
+    <div className="flex min-h-svh flex-col bg-navy">
       <GradientHeader
         gradient="linear-gradient(135deg, #0F766E, #0D9488, #14B8A6)"
         title=""
@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
             <div className="flex justify-center mb-2">
               <RovvyLogo variant="white" size="md" />
             </div>
-            <p className="text-sm leading-relaxed text-[#94A3B8] text-center">
+            <p className="text-sm leading-relaxed text-muted text-center">
               Enter the email for your Rovvy account and we&apos;ll send you a reset link.
             </p>
             <AuthInput
@@ -78,14 +78,14 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={busy}
-              className="mt-2 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-[#0F766E] py-3 text-sm font-bold text-white shadow-lg transition hover:bg-[#0D9488] disabled:opacity-60"
+              className="mt-2 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-primary py-3 text-sm font-bold text-white shadow-lg transition hover:bg-[#0D9488] disabled:opacity-60"
             >
               {busy ? "Sending…" : "Send Reset Link"}
             </button>
             <div className="mt-4 text-center">
               <Link
                 href="/login"
-                className="text-sm font-semibold text-[#0F766E] hover:underline"
+                className="text-sm font-semibold text-primary hover:underline"
               >
                 Back to login
               </Link>
@@ -111,7 +111,7 @@ export default function ForgotPasswordPage() {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="none"
-                className="h-20 w-20 text-[#0F766E]"
+                className="h-20 w-20 text-primary"
                 aria-hidden
               >
                 <path
@@ -130,13 +130,13 @@ export default function ForgotPasswordPage() {
               type="button"
               onClick={() => void submitEmail()}
               disabled={busy}
-              className="mt-6 text-sm font-semibold text-[#0F766E] underline-offset-4 hover:underline disabled:opacity-60"
+              className="mt-6 text-sm font-semibold text-primary underline-offset-4 hover:underline disabled:opacity-60"
             >
               Resend email
             </button>
             <Link
               href="/login"
-              className="mt-4 text-sm font-semibold text-[#0F766E] hover:underline"
+              className="mt-4 text-sm font-semibold text-primary hover:underline"
             >
               Back to login
             </Link>

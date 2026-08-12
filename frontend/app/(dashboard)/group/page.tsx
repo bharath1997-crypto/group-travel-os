@@ -30,17 +30,17 @@ export default function GroupHubPage() {
         <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((c) => {
             const cardClass =
-              "group flex h-full w-full flex-col rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-[#0F766E]/50 hover:bg-slate-50";
+              "group flex h-full w-full flex-col rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-primary/50 hover:bg-slate-50";
             const inner = (
               <>
                 <span className="text-3xl" aria-hidden>
                   {c.emoji}
                 </span>
-                <span className="mt-3 text-lg font-semibold text-slate-900 group-hover:text-[#0F766E]">
+                <span className="mt-3 text-lg font-semibold text-slate-900 group-hover:text-primary">
                   {c.title}
                 </span>
                 <span className="mt-1 text-sm text-slate-500">{c.desc}</span>
-                <span className="mt-4 text-xs font-semibold uppercase tracking-wide text-[#0F766E]">
+                <span className="mt-4 text-xs font-semibold uppercase tracking-wide text-primary">
                   Open →
                 </span>
               </>

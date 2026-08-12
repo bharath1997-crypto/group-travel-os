@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import type { PlacePreviewData } from "./PlacePreviewCard";
 import type { RouteLine, RouteOrigin, RoutePreviewStatus } from "./live-types";
 import {
@@ -8,8 +9,13 @@ import {
   isFarFromUser,
 } from "./live-types";
 import { isLowGpsAccuracy } from "./live-route-origin";
-import { LIVE_PANEL_MAX_WIDTH, LIVE_RESPONSIVE_PANEL_LAYOUT } from "./live-layout";
+import {
+  LIVE_PANEL_MAX_WIDTH,
+  LIVE_RESPONSIVE_PANEL_LAYOUT,
+  LIVE_SHEET_BOTTOM_DEFAULT,
+} from "./live-layout";
 import LiveAiSuggestionsBlock from "./LiveAiSuggestionsBlock";
+import { LiveDataTrustBadge, LiveDataTrustFooter } from "./LiveDataTrustBadge";
 import { buildRoutePreviewAiSuggestions } from "./live-ai-suggestions";
 import { formatPlaceSubtitle } from "./live-place-display";
 
@@ -83,7 +89,8 @@ export default function SoloRoutePreviewPanel({
 
   return (
     <div
-      className={`${LIVE_RESPONSIVE_PANEL_LAYOUT} w-full ${LIVE_PANEL_MAX_WIDTH}`}
+      className={`${LIVE_RESPONSIVE_PANEL_LAYOUT} w-full ${LIVE_PANEL_MAX_WIDTH} md:[--live-sheet-bottom:26px]`}
+      style={{ ["--live-sheet-bottom" as string]: LIVE_SHEET_BOTTOM_DEFAULT } as CSSProperties}
       role="dialog"
       aria-label={planningMode ? "Long-distance route preview" : "Solo route preview"}
     >
@@ -103,7 +110,7 @@ export default function SoloRoutePreviewPanel({
         <p className="mt-0.5 text-xs text-stone-500">{formatPlaceSubtitle(destination)}</p>
         {routeDurationLabel ? (
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <span className="inline-flex items-center rounded-full bg-[#E6F7F4] px-2 py-0.5 text-xs font-semibold text-[#0F766E]">
+            <span className="inline-flex items-center rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary">
               {routeDurationLabel}
             </span>
             <span className="text-xs text-stone-500">{travelMode}</span>
@@ -111,11 +118,13 @@ export default function SoloRoutePreviewPanel({
         ) : null}
 
         {aiSuggestions.length > 0 ? (
-          <LiveAiSuggestionsBlock
-            suggestions={aiSuggestions}
-            destinationName={destination.name}
-            className="mt-2"
-          />
+          <div className="mt-2 space-y-2">
+            <LiveDataTrustBadge variant="ai" />
+            <LiveAiSuggestionsBlock
+              suggestions={aiSuggestions}
+              destinationName={destination.name}
+            />
+          </div>
         ) : null}
 
         <div className="mt-3 space-y-2 border-t border-stone-100 pt-3 text-xs text-stone-600">
@@ -127,7 +136,7 @@ export default function SoloRoutePreviewPanel({
             <button
               type="button"
               onClick={onEditOrigin}
-              className="font-semibold text-[#0F766E] hover:underline"
+              className="font-semibold text-primary hover:underline"
             >
               Change start
             </button>
@@ -144,6 +153,7 @@ export default function SoloRoutePreviewPanel({
       </div>
 
       <div className="shrink-0 space-y-1.5 border-t border-stone-100 px-3 py-2">
+        <LiveDataTrustFooter showWayraNote className="border-0 pb-1 pt-0" />
         <button
           type="button"
           onClick={onStartSoloLive}

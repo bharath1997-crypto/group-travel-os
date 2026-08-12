@@ -22,7 +22,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { apiFetch, apiFetchWithStatus, fetchWithTimeout } from "@/lib/api";
+import { apiFetch, apiFetchWithStatus, fetchWithTimeout } from "@/lib/safe-fetch";
 import {
   DEMO_CHAT_COMMUNITY_ID,
   DEMO_CHAT_ROVVY_HELP_ID,
@@ -2017,7 +2017,7 @@ function CallsConnectRightPanel({
                   background: "#ffffff",
                   border: "1px solid #d1c4b0",
                   borderRadius: 24,
-                  color: "#1e2a3a",
+                  color: "#1E293B",
                 }}
               >
                 <CallsSvgVideo32 />
@@ -2033,7 +2033,7 @@ function CallsConnectRightPanel({
                   background: "#ffffff",
                   border: "1px solid #d1c4b0",
                   borderRadius: 24,
-                  color: "#1e2a3a",
+                  color: "#1E293B",
                 }}
               >
                 <CallsSvgLink32 />
@@ -2049,7 +2049,7 @@ function CallsConnectRightPanel({
                   background: "#ffffff",
                   border: "1px solid #d1c4b0",
                   borderRadius: 24,
-                  color: "#1e2a3a",
+                  color: "#1E293B",
                 }}
               >
                 <CallsSvgCalendar32 />
@@ -2069,7 +2069,7 @@ function CallsConnectRightPanel({
                       <CallsSvgCalendarSmall />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="truncate font-medium" style={{ color: "#1e2a3a" }}>{call.title}</p>
+                      <p className="truncate font-medium" style={{ color: "#1E293B" }}>{call.title}</p>
                       <p className="text-xs" style={{ color: "#8896a0" }}>
                         {new Date(call.scheduledAt).toLocaleString(undefined, { 
                           month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" 

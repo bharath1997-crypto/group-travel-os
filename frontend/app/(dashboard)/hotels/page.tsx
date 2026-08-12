@@ -140,7 +140,7 @@ export default function HotelsPage() {
   }, [rows, sort, priceLo, priceHi, starsMin, amenPick]);
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
+    <div className="min-h-[calc(100dvh-80px)] bg-app rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
       {/* Search Header */}
       <div className="max-w-6xl mx-auto mb-6">
         <div className="flex items-center gap-3 mb-3">

@@ -93,7 +93,7 @@ export function CallParticipantSelector({
       <div
         className="relative z-10 flex w-full max-w-lg flex-col overflow-hidden"
         style={{
-          background: "#1e2a3a",
+          background: "#1E293B",
           borderRadius: 16,
           maxHeight: "85vh",
         }}
@@ -282,7 +282,7 @@ export function CallParticipantSelector({
 
       <style>{`
         .travello-dark-scrollbar {
-          scrollbar-color: rgba(148, 163, 184, 0.75) #1e2a3a;
+          scrollbar-color: rgba(148, 163, 184, 0.75) #1E293B;
           scrollbar-width: thin;
         }
 
@@ -291,12 +291,12 @@ export function CallParticipantSelector({
         }
 
         .travello-dark-scrollbar::-webkit-scrollbar-track {
-          background: #1e2a3a;
+          background: #1E293B;
         }
 
         .travello-dark-scrollbar::-webkit-scrollbar-thumb {
           background: rgba(148, 163, 184, 0.75);
-          border: 2px solid #1e2a3a;
+          border: 2px solid #1E293B;
           border-radius: 9999px;
         }
 

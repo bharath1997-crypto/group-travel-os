@@ -72,7 +72,7 @@ export function ShortsImportModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-2xl border border-[#1e4976] bg-[#1E3A5F] p-6 shadow-xl shadow-black/40">
+      <div className="relative w-full max-w-md rounded-2xl border border-[#1E293B] bg-[#1E3A5F] p-6 shadow-xl shadow-black/40">
         <button
           type="button"
           onClick={onClose}
@@ -82,7 +82,7 @@ export function ShortsImportModal({
         </button>
 
         <div className="mb-6 flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-[#E94560]" />
+          <Sparkles className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-bold text-white">Import Travel Short</h2>
         </div>
 
@@ -99,7 +99,7 @@ export function ShortsImportModal({
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://www.youtube.com/shorts/..."
-                className="w-full rounded-lg border border-[#1e4976] bg-[#162d4a] pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-[#E94560]/50 focus:outline-none"
+                className="w-full rounded-lg border border-[#1E293B] bg-[#1E293B] pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-primary/50 focus:outline-none"
               />
             </div>
             <p className="mt-1 text-xs text-zinc-400">
@@ -116,7 +116,7 @@ export function ShortsImportModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter a title for this short"
-              className="w-full rounded-lg border border-[#1e4976] bg-[#162d4a] px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-[#E94560]/50 focus:outline-none"
+              className="w-full rounded-lg border border-[#1E293B] bg-[#1E293B] px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-primary/50 focus:outline-none"
             />
           </div>
 
@@ -129,7 +129,7 @@ export function ShortsImportModal({
               value={hashtags}
               onChange={(e) => setHashtags(e.target.value)}
               placeholder="travel, chicago, food"
-              className="w-full rounded-lg border border-[#1e4976] bg-[#162d4a] px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-[#E94560]/50 focus:outline-none"
+              className="w-full rounded-lg border border-[#1E293B] bg-[#1E293B] px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-primary/50 focus:outline-none"
             />
           </div>
 
@@ -147,14 +147,14 @@ export function ShortsImportModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-[#1e4976] bg-[#162d4a] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1a3554]"
+              className="rounded-lg border border-[#1E293B] bg-[#1E293B] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1E293B]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="rounded-lg bg-[#E94560] px-4 py-2 text-sm font-semibold text-white hover:bg-[#d83a54] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-[#d83a54] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Importing..." : "Import"}
             </button>

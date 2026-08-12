@@ -200,7 +200,7 @@ export default function OutlookCalendarPage() {
           <>
             <div className="flex items-center gap-3.5 border-b border-stone-100 px-4 py-3.5">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50">
-                <CheckCircle2 size={16} className="text-[#0F766E]" strokeWidth={1.8} />
+                <CheckCircle2 size={16} className="text-primary" strokeWidth={1.8} />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[14px] text-neutral-900">Connected to Outlook</p>
@@ -273,7 +273,7 @@ export default function OutlookCalendarPage() {
                       type="button"
                       disabled={isSyncing}
                       onClick={() => handleSyncTrip(trip.id)}
-                      className="flex shrink-0 items-center gap-1.5 rounded-full border border-[#0F766E] px-3 py-1.5 text-[12px] font-semibold text-[#0F766E] transition-colors hover:bg-teal-50 disabled:opacity-40"
+                      className="flex shrink-0 items-center gap-1.5 rounded-full border border-primary px-3 py-1.5 text-[12px] font-semibold text-primary transition-colors hover:bg-teal-50 disabled:opacity-40"
                     >
                       {isSyncing ? (
                         <><RefreshCw size={12} className="animate-spin" /> Syncing…</>
@@ -288,7 +288,7 @@ export default function OutlookCalendarPage() {
                     <p className="mt-1.5 text-[12px] text-red-500">{syncErr}</p>
                   )}
                   {result && (
-                    <p className="mt-1 text-[12px] text-[#0F766E]">
+                    <p className="mt-1 text-[12px] text-primary">
                       {result.action === "created" ? "Added to" : "Updated in"} Outlook Calendar
                     </p>
                   )}

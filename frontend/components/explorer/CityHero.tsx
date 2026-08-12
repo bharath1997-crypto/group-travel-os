@@ -44,11 +44,11 @@ export function CityHero({
   const showGradient = !photoLoading && !url;
 
   return (
-    <section className="relative w-full overflow-hidden border-b border-[#1e4976]">
+    <section className="relative w-full overflow-hidden border-b border-[#1E293B]">
       <div className="relative aspect-[21/9] min-h-[200px] w-full max-h-[420px] sm:min-h-[240px] md:aspect-[2.4/1]">
         {showSkeleton ? (
           <div
-            className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#0F3460] via-[#162d4a] to-[#1e4976]"
+            className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#1E293B]"
             aria-hidden
           />
         ) : null}
@@ -65,7 +65,7 @@ export function CityHero({
 
         {showGradient ? (
           <div
-            className="absolute inset-0 bg-gradient-to-br from-[#0F3460] via-[#16213E] to-[#E94560]/40"
+            className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-primary/40"
             aria-hidden
           />
         ) : null}
@@ -99,14 +99,14 @@ export function CityHero({
       (photo.photographer_name ||
         photo.photographer_username ||
         photo.unsplash_photo_link) ? (
-        <p className="bg-[#162d4a] px-5 py-2 text-center text-[11px] text-gray-400 sm:px-8">
+        <p className="bg-[#1E293B] px-5 py-2 text-center text-[11px] text-gray-400 sm:px-8">
           Photo by{" "}
           {photo.photographer_link ? (
             <a
               href={photo.photographer_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#E94560] underline-offset-2 hover:underline"
+              className="text-primary underline-offset-2 hover:underline"
             >
               {photo.photographer_name || `@${photo.photographer_username}`}
             </a>
@@ -121,7 +121,7 @@ export function CityHero({
               href={photo.unsplash_photo_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#E94560] underline-offset-2 hover:underline"
+              className="text-primary underline-offset-2 hover:underline"
             >
               Unsplash
             </a>

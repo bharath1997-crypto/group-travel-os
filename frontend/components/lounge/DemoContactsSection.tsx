@@ -68,7 +68,7 @@ export function DemoContactsSection({
           <button
             type="button"
             onClick={() => onOpenDemo(d)}
-            className="shrink-0 rounded-full border border-stone-200 px-2.5 py-1 text-[10px] font-bold text-[#0F766E] hover:bg-teal-50"
+            className="shrink-0 rounded-full border border-stone-200 px-2.5 py-1 text-[10px] font-bold text-primary hover:bg-teal-50"
           >
             Message
           </button>
@@ -109,7 +109,7 @@ export function DemoContactsSection({
                 sub: "Your account · demo self-chat",
               })
             }
-            className="shrink-0 rounded-full border border-stone-200 px-2.5 py-1 text-[10px] font-bold text-[#0F766E] hover:bg-teal-50"
+            className="shrink-0 rounded-full border border-stone-200 px-2.5 py-1 text-[10px] font-bold text-primary hover:bg-teal-50"
           >
             Message
           </button>

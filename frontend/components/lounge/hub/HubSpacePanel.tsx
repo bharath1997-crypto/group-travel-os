@@ -131,7 +131,7 @@ function SpaceAppPopup({
   }, [showPlayer, embed]);
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col bg-[#F8FAFC]">
+    <div className="flex h-full min-h-0 flex-1 flex-col bg-app">
       <div className="flex shrink-0 items-center gap-2 bg-slate-900 px-3 py-2.5">
         <span
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold text-white"
@@ -172,7 +172,7 @@ function SpaceAppPopup({
                 updateSpaceApp(app.id, { listenUrl: null });
                 onAppUpdated();
               }}
-              className="text-[10px] font-semibold text-[#0F766E]"
+              className="text-[10px] font-semibold text-primary"
             >
               Change link
             </button>
@@ -232,10 +232,10 @@ function SpaceAppPopup({
                 setLinkNotice(null);
               }}
               placeholder="Song, playlist, or podcast link"
-              className="w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-xs outline-none focus:border-[#0F766E]"
+              className="w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-xs outline-none focus:border-primary"
             />
             {linkNotice ? (
-              <p className="mt-2 text-[10px] leading-snug text-[#0F766E]">{linkNotice}</p>
+              <p className="mt-2 text-[10px] leading-snug text-primary">{linkNotice}</p>
             ) : null}
             {linkError ? (
               <p className="mt-2 text-[10px] leading-snug text-amber-700">{linkError}</p>
@@ -244,7 +244,7 @@ function SpaceAppPopup({
               type="button"
               onClick={activateLink}
               disabled={!draftListen.trim()}
-              className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#0F766E] py-2.5 text-xs font-bold text-white disabled:opacity-40"
+              className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2.5 text-xs font-bold text-white disabled:opacity-40"
             >
               <Headphones size={14} />
               Start
@@ -290,7 +290,7 @@ function RovvyLocalPlayer({
   return (
     <div className="shrink-0 border-t border-stone-200 bg-white px-3 py-2">
       <div className="mb-1 flex items-center gap-2">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#0F766E] text-[9px] font-bold text-white">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-[9px] font-bold text-white">
           R
         </span>
         <p className="min-w-0 flex-1 truncate text-[11px] font-semibold text-slate-800">
@@ -406,7 +406,7 @@ export function HubSpacePanel() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col bg-[#F8FAFC]">
+    <div className="flex h-full min-h-0 flex-1 flex-col bg-app">
       <input
         ref={folderInputRef}
         type="file"
@@ -440,7 +440,7 @@ export function HubSpacePanel() {
             <button
               type="button"
               onClick={() => folderInputRef.current?.click()}
-              className={`relative flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0F766E] text-white shadow-md transition active:scale-95 ${
+              className={`relative flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white shadow-md transition active:scale-95 ${
                 localActive ? "ring-2 ring-[#0F766E] ring-offset-2" : ""
               }`}
               title="Rovvy Music — your files"
@@ -565,7 +565,7 @@ export function HubSpacePanel() {
               type="button"
               onClick={addCustom}
               disabled={!draftName.trim() || !draftUrl.trim()}
-              className="w-full rounded-xl bg-[#0F766E] py-2.5 text-xs font-semibold text-white disabled:opacity-40"
+              className="w-full rounded-xl bg-primary py-2.5 text-xs font-semibold text-white disabled:opacity-40"
             >
               Add
             </button>

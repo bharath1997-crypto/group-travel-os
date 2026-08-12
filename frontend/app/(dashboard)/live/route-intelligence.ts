@@ -7,7 +7,7 @@
  * Never sends raw OSM data. Only compact location summaries.
  */
 
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/lib/safe-fetch";
 import type {
   LocationSummary,
   RouteIntelligenceRequest,

@@ -1,8 +1,11 @@
 "use client";
 
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { API_BASE, apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import { useCallback, useMemo, useState } from "react";
+import TravelHandoffBanner from "@/components/travel/TravelHandoffBanner";
+import { parseTravelHandoff, travelHandoffSearchLabel } from "@/lib/travel-handoff";
 
 type TransportMode = "flight" | "transit" | "bus" | "train" | "drive";
 type TransportOptionRow = {
@@ -82,6 +85,23 @@ function SkeletonCard() {
 }
 
 export default function RoutesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[calc(100dvh-80px)] bg-app rounded-3xl p-8 flex items-center justify-center text-slate-500">
+          Loading routes…
+        </div>
+      }
+    >
+      <RoutesPageContent />
+    </Suspense>
+  );
+}
+
+function RoutesPageContent() {
+  const searchParams = useSearchParams();
+  const handoff = useMemo(() => parseTravelHandoff(searchParams), [searchParams]);
+
   const [from, setFrom] = useState("ORD");
   const [to, setTo] = useState("JFK");
   const [travelDate, setTravelDate] = useState(todayPlus(7));
@@ -143,8 +163,21 @@ export default function RoutesPage() {
     }
   }, [from, to, travelDate, adults]);
 
+  useEffect(() => {
+    if (!handoff) return;
+    const originLabel = travelHandoffSearchLabel(handoff.origin);
+    const destLabel = travelHandoffSearchLabel(handoff.destination);
+    setFrom(originLabel);
+    setTo(destLabel);
+  }, [handoff]);
+
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
+    <div className="min-h-[calc(100dvh-80px)] bg-app rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
+      {handoff ? (
+        <div className="max-w-6xl mx-auto mb-6">
+          <TravelHandoffBanner handoff={handoff} showSkyscanner={false} />
+        </div>
+      ) : null}
       {/* Search Header */}
       <div className="max-w-6xl mx-auto mb-6">
         <div className="flex items-center gap-3 mb-3">

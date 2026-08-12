@@ -580,7 +580,7 @@ const ShortsYoutubeIframe = forwardRef<
           >
             <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-gray-600">
               <div
-                className="h-full rounded-full bg-[#E94560]"
+                className="h-full rounded-full bg-primary"
                 style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
               />
             </div>
@@ -597,7 +597,7 @@ const ShortsYoutubeIframe = forwardRef<
             href={shortsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-full bg-[#E94560] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#ff5a75]"
+            className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-white transition hover:bg-[#ff5a75]"
           >
             Watch on YouTube
           </a>
@@ -627,7 +627,7 @@ function RailButton({
   activeColor?: string;
 }) {
   const className = `flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-full bg-black/50 backdrop-blur-sm transition hover:bg-black/65 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40 ${
-    active ? (activeColor || "text-[#E94560]") : "text-white"
+    active ? (activeColor || "text-primary") : "text-white"
   }`;
 
   if (href) {
@@ -1157,14 +1157,14 @@ export function ShortsImmersivePlayer({
                   if (e.key === "Enter") void runExploreSearch();
                 }}
                 placeholder="e.g. food, skyline"
-                className="w-full rounded-xl border border-white/15 bg-black/50 py-2 pl-9 pr-3 text-sm text-white placeholder:text-zinc-500 focus:border-[#E94560] focus:outline-none"
+                className="w-full rounded-xl border border-white/15 bg-black/50 py-2 pl-9 pr-3 text-sm text-white placeholder:text-zinc-500 focus:border-primary focus:outline-none"
               />
             </div>
             <button
               type="button"
               disabled={searchLoading || !searchQuery.trim()}
               onClick={() => void runExploreSearch()}
-              className="shrink-0 rounded-xl bg-[#E94560] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#ff5a75] disabled:opacity-50"
+              className="shrink-0 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white transition hover:bg-[#ff5a75] disabled:opacity-50"
             >
               {searchLoading ? "…" : "Go"}
             </button>
@@ -1218,7 +1218,7 @@ export function ShortsImmersivePlayer({
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex flex-wrap items-center gap-2">
                   {source === "travello" ? (
-                    <span className="rounded-full bg-[#E94560] px-2 py-0.5 text-[10px] font-bold tracking-wide text-white shadow-sm">
+                    <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold tracking-wide text-white shadow-sm">
                       travello
                     </span>
                   ) : null}
@@ -1278,7 +1278,7 @@ export function ShortsImmersivePlayer({
             />
             <div className="relative">
               {reactionsOpen ? (
-                <div className="absolute bottom-0 right-14 w-[min(240px,calc(100vw-120px))] rounded-2xl border border-[#1e4976] bg-[#1a3554]/95 p-3 shadow-xl backdrop-blur-sm"
+                <div className="absolute bottom-0 right-14 w-[min(240px,calc(100vw-120px))] rounded-2xl border border-[#1E293B] bg-[#1E293B]/95 p-3 shadow-xl backdrop-blur-sm"
                   data-shorts-comment-area
                 >
                   <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-white/60">
@@ -1287,7 +1287,7 @@ export function ShortsImmersivePlayer({
                   <div className="flex flex-col gap-1.5">
                     <button
                       type="button"
-                      className="rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-white transition hover:bg-white/10 hover:text-[#E94560]"
+                      className="rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-white transition hover:bg-white/10 hover:text-primary"
                       onClick={() => {
                         handleReaction("love");
                       }}
@@ -1296,7 +1296,7 @@ export function ShortsImmersivePlayer({
                     </button>
                     <button
                       type="button"
-                      className="rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-white transition hover:bg-white/10 hover:text-[#E94560]"
+                      className="rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-white transition hover:bg-white/10 hover:text-primary"
                       onClick={() => {
                         handleReaction("helpful");
                       }}
@@ -1305,7 +1305,7 @@ export function ShortsImmersivePlayer({
                     </button>
                     <button
                       type="button"
-                      className="rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-white transition hover:bg-white/10 hover:text-[#E94560]"
+                      className="rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-white transition hover:bg-white/10 hover:text-primary"
                       onClick={() => {
                         handleReaction("list");
                       }}
@@ -1331,7 +1331,7 @@ export function ShortsImmersivePlayer({
                       onChange={(e) =>
                         setCommentDraft(e.target.value.slice(0, 280))
                       }
-                      className="w-full resize-none rounded-xl border border-white/15 bg-black/40 px-2.5 py-2 text-xs text-white placeholder:text-white/40 focus:border-[#E94560] focus:outline-none disabled:opacity-50"
+                      className="w-full resize-none rounded-xl border border-white/15 bg-black/40 px-2.5 py-2 text-xs text-white placeholder:text-white/40 focus:border-primary focus:outline-none disabled:opacity-50"
                     />
                     <div className="mt-1.5 flex items-center justify-between gap-2">
                       <span className="text-[10px] text-white/45">
@@ -1341,7 +1341,7 @@ export function ShortsImmersivePlayer({
                         type="button"
                         disabled={!commentDraft.trim() || !current.id}
                         onClick={() => void submitComment()}
-                        className="rounded-lg bg-[#E94560] px-3 py-1 text-[11px] font-bold text-white transition hover:bg-[#ff5a75] disabled:opacity-40"
+                        className="rounded-lg bg-primary px-3 py-1 text-[11px] font-bold text-white transition hover:bg-[#ff5a75] disabled:opacity-40"
                       >
                         Send
                       </button>

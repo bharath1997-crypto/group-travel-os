@@ -170,9 +170,9 @@ export function LocationPicker({ currentCity, onCityChange }: LocationPickerProp
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
-          className="group flex cursor-pointer items-center gap-1.5 rounded-full border border-[#1e4976] bg-[#162d4a] px-4 py-2 transition-all hover:border-[#E94560] hover:shadow-lg hover:shadow-[#E94560]/10"
+          className="group flex cursor-pointer items-center gap-1.5 rounded-full border border-[#1E293B] bg-[#1E293B] px-4 py-2 transition-all hover:border-primary hover:shadow-lg hover:shadow-[#E94560]/10"
         >
-          <MapPin size={12} className="fill-[#E94560] text-[#E94560] transition-transform group-hover:scale-110" />
+          <MapPin size={12} className="fill-[#E94560] text-primary transition-transform group-hover:scale-110" />
           <span className="text-sm font-bold text-white uppercase tracking-tight">{currentCity}</span>
           <ChevronDown size={14} className={`text-gray-400 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
         </button>
@@ -190,13 +190,13 @@ export function LocationPicker({ currentCity, onCityChange }: LocationPickerProp
       </div>
 
       {open ? (
-        <div className="absolute right-0 top-[calc(100%+12px)] z-[100] w-[320px] rounded-2xl border border-[#1e4976] bg-[#162d4a] p-4 shadow-2xl shadow-black/60 animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute right-0 top-[calc(100%+12px)] z-[100] w-[320px] rounded-2xl border border-[#1E293B] bg-[#1E293B] p-4 shadow-2xl shadow-black/60 animate-in fade-in zoom-in-95 duration-200">
           <div className="mb-4">
-             <h4 className="text-xs font-black uppercase tracking-[0.2em] text-[#E94560] mb-1">Change Location</h4>
+             <h4 className="text-xs font-black uppercase tracking-[0.2em] text-primary mb-1">Change Location</h4>
              <p className="text-[10px] text-gray-400 font-medium italic">Your dashboard will refresh to match this city.</p>
           </div>
           
-          <div className="flex items-center gap-2 rounded-xl border border-[#1e4976] bg-[#1E3A5F] px-4 py-2.5 focus-within:border-[#E94560] transition-colors">
+          <div className="flex items-center gap-2 rounded-xl border border-[#1E293B] bg-[#1E3A5F] px-4 py-2.5 focus-within:border-primary transition-colors">
             <Search size={16} className="shrink-0 text-gray-400" />
             <input
               value={search}
@@ -216,7 +216,7 @@ export function LocationPicker({ currentCity, onCityChange }: LocationPickerProp
             {filteredGroups.length > 0 ? (
               filteredGroups.map((group, groupIndex) => (
                 <div key={group.label}>
-                  {groupIndex > 0 ? <div className="my-2 border-t border-[#1e4976]" /> : null}
+                  {groupIndex > 0 ? <div className="my-2 border-t border-[#1E293B]" /> : null}
                   <p className="px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-gray-400">
                     {group.label}
                   </p>
@@ -232,9 +232,9 @@ export function LocationPicker({ currentCity, onCityChange }: LocationPickerProp
                           active ? "bg-[#1E3A5F] font-medium text-white" : "text-gray-300",
                         ].join(" ")}
                       >
-                        <MapPin size={12} className="shrink-0 text-[#E94560]" />
+                        <MapPin size={12} className="shrink-0 text-primary" />
                         <span className="min-w-0 flex-1 text-sm">{city}</span>
-                        {active ? <Check size={12} className="text-[#E94560]" /> : null}
+                        {active ? <Check size={12} className="text-primary" /> : null}
                       </button>
                     );
                   })}
@@ -247,7 +247,7 @@ export function LocationPicker({ currentCity, onCityChange }: LocationPickerProp
                   onClick={() => selectCity(search.trim())}
                   className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-3 text-left text-gray-200 hover:bg-[#1E3A5F]"
                 >
-                  <Search size={14} className="shrink-0 text-[#E94560]" />
+                  <Search size={14} className="shrink-0 text-primary" />
                   <span className="min-w-0 flex-1 text-sm font-medium">
                     Search for &ldquo;{search.trim()}&rdquo;
                   </span>
@@ -260,7 +260,7 @@ export function LocationPicker({ currentCity, onCityChange }: LocationPickerProp
             type="button"
             onClick={detectLocation}
             disabled={detecting}
-            className="mt-2 flex w-full cursor-pointer items-center gap-2 border-t border-[#1e4976] pt-2 text-sm text-[#E94560] disabled:cursor-wait disabled:opacity-70"
+            className="mt-2 flex w-full cursor-pointer items-center gap-2 border-t border-[#1E293B] pt-2 text-sm text-primary disabled:cursor-wait disabled:opacity-70"
           >
             <Navigation size={14} />
             <span>{detecting ? "Detecting location..." : "Use my current location"}</span>
@@ -269,7 +269,7 @@ export function LocationPicker({ currentCity, onCityChange }: LocationPickerProp
       ) : null}
 
       {toast ? (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-[60] rounded-full border border-[#1e4976] bg-[#162d4a] px-3 py-2 text-xs font-medium text-white shadow-lg shadow-black/30">
+        <div className="absolute left-0 top-[calc(100%+8px)] z-[60] rounded-full border border-[#1E293B] bg-[#1E293B] px-3 py-2 text-xs font-medium text-white shadow-lg shadow-black/30">
           {toast}
         </div>
       ) : null}

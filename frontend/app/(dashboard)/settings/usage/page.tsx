@@ -55,7 +55,7 @@ export default function SettingsUsagePage() {
       <>
         <SettingsScreenHeader title="How you use Group Travel" backHref="/settings" />
         <div className="flex justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-[#E94560]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-primary" />
         </div>
       </>
     );

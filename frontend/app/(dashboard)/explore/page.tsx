@@ -305,7 +305,7 @@ export default function ExplorePage() {
                 </p>
                 <Link
                   href="/explore/events"
-                  className="mt-1 text-[#0F766E] font-bold text-xs hover:text-[#0D635C] underline underline-offset-2"
+                  className="mt-1 text-primary font-bold text-xs hover:text-primary-hover underline underline-offset-2"
                 >
                   Browse all events →
                 </Link>
@@ -348,7 +348,7 @@ export default function ExplorePage() {
                 </p>
                 <Link
                   href="/explore/activities"
-                  className="mt-1 text-[#0F766E] font-bold text-xs hover:text-[#0D635C] underline underline-offset-2"
+                  className="mt-1 text-primary font-bold text-xs hover:text-primary-hover underline underline-offset-2"
                 >
                   Browse activities →
                 </Link>
@@ -414,7 +414,7 @@ export default function ExplorePage() {
             <ul className="space-y-2 font-medium">
               {["Chicago", "New York", "Los Angeles", "Miami"].map((city) => (
                 <li key={city}>
-                  <button onClick={() => setSelectedCity(city)} className="hover:text-[#0F766E] transition-colors">
+                  <button onClick={() => setSelectedCity(city)} className="hover:text-primary transition-colors">
                     {city}
                   </button>
                 </li>
@@ -424,19 +424,19 @@ export default function ExplorePage() {
           <div>
             <h4 className="font-bold text-slate-900 mb-3 text-sm">Products</h4>
             <ul className="space-y-2 font-medium">
-              <li><Link href="/trips" className="hover:text-[#0F766E] transition-colors">Trip Planner</Link></li>
-              <li><Link href="/map" className="hover:text-[#0F766E] transition-colors">Shared Map</Link></li>
-              <li><Link href="/splits" className="hover:text-[#0F766E] transition-colors">Cost Splitter</Link></li>
-              <li><Link href="/explore" className="hover:text-[#0F766E] transition-colors">Explorer Hub</Link></li>
+              <li><Link href="/trips" className="hover:text-primary transition-colors">Trip Planner</Link></li>
+              <li><Link href="/map" className="hover:text-primary transition-colors">Shared Map</Link></li>
+              <li><Link href="/splits" className="hover:text-primary transition-colors">Cost Splitter</Link></li>
+              <li><Link href="/explore" className="hover:text-primary transition-colors">Explorer Hub</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="font-bold text-slate-900 mb-3 text-sm">Company</h4>
             <ul className="space-y-2 font-medium">
-              <li><span className="hover:text-[#0F766E] cursor-pointer">About Us</span></li>
-              <li><span className="hover:text-[#0F766E] cursor-pointer">Careers</span></li>
-              <li><span className="hover:text-[#0F766E] cursor-pointer">Privacy Policy</span></li>
-              <li><span className="hover:text-[#0F766E] cursor-pointer">Terms of Service</span></li>
+              <li><span className="hover:text-primary cursor-pointer">About Us</span></li>
+              <li><span className="hover:text-primary cursor-pointer">Careers</span></li>
+              <li><span className="hover:text-primary cursor-pointer">Privacy Policy</span></li>
+              <li><span className="hover:text-primary cursor-pointer">Terms of Service</span></li>
             </ul>
           </div>
         </div>

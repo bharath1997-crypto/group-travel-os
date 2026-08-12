@@ -330,7 +330,7 @@ export default function CityEventsPage() {
           <div>
             <Link
               href={`/explore/${cityEncoded}`}
-              className="text-sm font-medium text-[#E94560] hover:text-white"
+              className="text-sm font-medium text-primary hover:text-white"
             >
               ← {displayCity} Travel Guide
             </Link>
@@ -357,12 +357,12 @@ export default function CityEventsPage() {
             {Array.from({ length: 18 }).map((_, i) => (
               <div
                 key={i}
-                className="h-64 animate-pulse rounded-3xl border border-[#1e4976] bg-[#162d4a]"
+                className="h-64 animate-pulse rounded-3xl border border-[#1E293B] bg-[#1E293B]"
               />
             ))}
           </div>
         ) : events.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-[#1e4976] bg-[#162d4a] px-4 py-12 text-center text-sm">
+          <p className="rounded-2xl border border-dashed border-[#1E293B] bg-[#1E293B] px-4 py-12 text-center text-sm">
             No events found for the selected dates.
           </p>
         ) : (

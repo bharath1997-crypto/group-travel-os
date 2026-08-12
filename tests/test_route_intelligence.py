@@ -72,6 +72,30 @@ class TestRouteIntelligenceService:
                 seg_types = [s.type for s in opt.segments]
                 assert "flight" in seg_types, f"Option {opt.id} missing flight segment"
 
+    def test_international_ap_village_chicago_to_rajupala(self):
+        """Chicago → Rajupala village — flight + public ground chain."""
+        origin = LocationSummary(name="Chicago", country="United States", lat=41.8781, lng=-87.6298)
+        dest = LocationSummary(
+            name="Rajupala, Guntur district, Andhra Pradesh",
+            country="India",
+            lat=16.07,
+            lng=80.25,
+        )
+        resp = RouteIntelligenceService.resolve(origin, dest, user_preference="public")
+
+        assert resp.is_international
+        public = next((o for o in resp.route_options if o.id == "ap_public_transport"), None)
+        private = next((o for o in resp.route_options if o.id == "ap_private_vehicle"), None)
+        assert public is not None
+        assert private is not None
+        assert public.recommended is True
+        seg_titles = " ".join(s.title for s in public.segments)
+        assert "Hyderabad" in seg_titles
+        assert "Guntur" in seg_titles
+        assert "Pennandipadu" in seg_titles
+        assert any(s.type == "train" for s in public.segments)
+        assert any(s.type == "bus" for s in public.segments)
+
     def test_recommended_option_first_for_international(self):
         """First option should be recommended for international routes."""
         origin = LocationSummary(name="London", country="United Kingdom", lat=51.5074, lng=-0.1278)

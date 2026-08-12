@@ -46,8 +46,8 @@ const SOURCE_BADGE: Record<string, string> = {
   ticketmaster: "bg-blue-600",
   eventbrite: "bg-orange-500",
   yelp: "bg-red-600",
-  osm: "bg-[#0F766E]",
-  rovvy: "bg-[#0F766E]",
+  osm: "bg-primary",
+  rovvy: "bg-primary",
   ai: "bg-violet-600",
   default: "bg-slate-600",
 };
@@ -172,7 +172,7 @@ export function ExplorerExperienceCard({
           onClick={() => onOpen?.(item)}
           className="text-left focus:outline-none group"
         >
-          <h3 className="font-bold text-slate-900 text-[13px] leading-snug line-clamp-2 group-hover:text-[#0F766E] transition-colors">
+          <h3 className="font-bold text-slate-900 text-[13px] leading-snug line-clamp-2 group-hover:text-primary transition-colors">
             {item.title}
           </h3>
         </button>
@@ -211,7 +211,7 @@ export function ExplorerExperienceCard({
             type="button"
             title="Add to trip"
             onClick={(e) => { e.stopPropagation(); onAddToTrip?.(); }}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-[#0F766E] hover:bg-teal-50 transition-colors"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-primary hover:bg-teal-50 transition-colors"
           >
             <Plus size={13} />
           </button>
@@ -227,7 +227,7 @@ export function ExplorerExperienceCard({
         <button
           type="button"
           onClick={() => onOpen?.(item)}
-          className="text-[10px] font-bold text-[#0F766E] hover:text-[#0D635C] transition-colors"
+          className="text-[10px] font-bold text-primary hover:text-primary-hover transition-colors"
         >
           View →
         </button>

@@ -47,7 +47,7 @@ export function UpdatesStatusPanel({ userId, userName }: UpdatesStatusPanelProps
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="border-b border-stone-100 p-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0F766E] text-sm font-bold text-white">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
             {userName?.charAt(0) || "U"}
           </div>
           <div className="min-w-0 flex-1">
@@ -61,7 +61,7 @@ export function UpdatesStatusPanel({ userId, userName }: UpdatesStatusPanelProps
           <button
             type="button"
             onClick={() => setComposing((c) => !c)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-50 text-[#0F766E]"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-50 text-primary"
           >
             {composing ? <X size={14} /> : <Plus size={14} />}
           </button>
@@ -73,7 +73,7 @@ export function UpdatesStatusPanel({ userId, userName }: UpdatesStatusPanelProps
               onChange={(e) => setDraft(e.target.value)}
               placeholder="What's happening on your trip?"
               rows={2}
-              className="w-full resize-none rounded-lg border border-stone-200 px-3 py-2 text-xs outline-none focus:border-[#0F766E]"
+              className="w-full resize-none rounded-lg border border-stone-200 px-3 py-2 text-xs outline-none focus:border-primary"
             />
             <div className="flex justify-end gap-2">
               {myStatus ? (
@@ -85,7 +85,7 @@ export function UpdatesStatusPanel({ userId, userName }: UpdatesStatusPanelProps
                 type="button"
                 onClick={postStatus}
                 disabled={!draft.trim()}
-                className="rounded-lg bg-[#0F766E] px-3 py-1.5 text-[10px] font-bold text-white disabled:opacity-40"
+                className="rounded-lg bg-primary px-3 py-1.5 text-[10px] font-bold text-white disabled:opacity-40"
               >
                 Post status
               </button>
@@ -101,7 +101,7 @@ export function UpdatesStatusPanel({ userId, userName }: UpdatesStatusPanelProps
           statuses.map((s) => (
             <div key={`${s.userId}-${s.updatedAt}`} className="rounded-xl border border-stone-100 bg-stone-50 p-3">
               <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0F766E]/15 text-[10px] font-bold text-[#0F766E]">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
                   {s.userName.charAt(0)}
                 </div>
                 <div className="min-w-0 flex-1">

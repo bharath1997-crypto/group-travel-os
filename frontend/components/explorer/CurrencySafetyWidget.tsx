@@ -56,7 +56,7 @@ export function CurrencySafetyWidget({
   };
 
   return (
-    <div className="border-b border-[#1e4976]/50 bg-gradient-to-r from-[#0d1f33] to-[#071221] px-4 py-2 sm:px-8">
+    <div className="border-b border-[#1E293B]/50 bg-gradient-to-r from-[#0d1f33] to-[#071221] px-4 py-2 sm:px-8">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           {!minimal && safety && (
@@ -73,7 +73,7 @@ export function CurrencySafetyWidget({
               <span>{safety.level}</span>
               
               {/* Tooltip */}
-              <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-[#0F3460] border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+              <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-navy border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                 <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Travel Advisory</p>
                 <p className="text-white font-medium mb-2">{safety.description}</p>
                 <p className="text-[9px] text-gray-500 italic">Updated: {safety.updated_at}</p>
@@ -90,9 +90,9 @@ export function CurrencySafetyWidget({
               <span>{info.city} Safety</span>
               
               {/* Tooltip */}
-              <div className="absolute bottom-full left-0 mb-2 w-72 p-4 bg-[#0F3460] border border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+              <div className="absolute bottom-full left-0 mb-2 w-72 p-4 bg-navy border border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#E94560]">City Safety Report</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-primary">City Safety Report</span>
                   <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-[9px] border border-purple-500/30 uppercase">{info.city_crime.rating} Risk</span>
                 </div>
                 <p className="text-white text-xs leading-relaxed max-h-48 overflow-y-auto pr-1 scrollbar-thin">
@@ -127,7 +127,7 @@ export function CurrencySafetyWidget({
       {/* Google-Style Currency Converter Overlay */}
       {showConverter && currency && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-[#0F3460] border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="w-full max-w-md bg-navy border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-white/5 flex justify-between items-center">
               <div>
                 <h3 className="text-white font-bold text-lg">Currency Converter</h3>
@@ -141,7 +141,7 @@ export function CurrencySafetyWidget({
             <div className="p-8 space-y-6">
               {/* User Side */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-[#E94560] ml-1">{currency.user_currency} (Preferred)</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">{currency.user_currency} (Preferred)</label>
                 <div className="flex items-center gap-4 bg-black/30 rounded-2xl p-4 border border-white/5 focus-within:border-blue-500/50 transition-colors">
                   <span className="text-2xl text-blue-400 font-bold">{currency.symbol}</span>
                   <input 
@@ -155,7 +155,7 @@ export function CurrencySafetyWidget({
               </div>
 
               <div className="flex justify-center -my-3 relative z-10">
-                <div className="bg-[#E94560] p-2 rounded-full shadow-lg border-4 border-[#0F3460]">
+                <div className="bg-primary p-2 rounded-full shadow-lg border-4 border-[#0F172A]">
                   <ArrowLeftRight className="h-5 w-5 text-white" />
                 </div>
               </div>

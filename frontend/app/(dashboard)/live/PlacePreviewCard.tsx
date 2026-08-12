@@ -11,7 +11,7 @@ import {
   ChevronDown,
   Navigation,
 } from "lucide-react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/lib/safe-fetch";
 import type { LiveLocationContext } from "./live-location-context";
 import type { PlaceMediaItem } from "./live-place-media";
 import PlacePreviewMedia from "./PlacePreviewMedia";
@@ -20,13 +20,27 @@ import type { RoviPlaceExplanation } from "./live-rovi";
 import { LIVE_PANEL_RIGHT_INSET, LIVE_SHEET_BOTTOM_ABOVE_ROUTE, LIVE_SHEET_BOTTOM_DEFAULT, LIVE_SHEET_BOTTOM_DESKTOP, LIVE_SHEET_BOTTOM_IMMERSIVE, LIVE_PANEL_MAX_WIDTH } from "./live-layout";
 import { buildLivePreviewPanelFrameStyle } from "./live-panel-size";
 import { useLivePreviewPanelResize } from "./use-live-preview-panel-resize";
+import {
+  LIVE_GLASS_SHEET,
+  LIVE_GLASS_SIDE_PANEL,
+  LIVE_PANEL_MOTION,
+  LIVE_PLACE_TITLE,
+} from "./live-design-tokens";
 import { logRovvyLiveWarn } from "./live-gps";
 import {
   formatDistanceMiles,
   formatRouteDuration,
+  isActiveNavigationStage,
   isFarFromUser,
+  type LiveStage,
+  type RouteAlternative,
   type RoutePreviewStatus,
+  type VehiclePreference,
+  VEHICLE_PREFERENCE_OPTIONS,
 } from "./live-types";
+import PlaceWikiAboutSection from "./PlaceWikiAboutSection";
+import { LiveDataTrustBadge, LiveDataTrustFooter } from "./LiveDataTrustBadge";
+import { LIVE_DATA_DISCLAIMER } from "./wiki-about-display";
 import LiveAiSuggestionsBlock from "./LiveAiSuggestionsBlock";
 import { buildRoutePreviewAiSuggestions } from "./live-ai-suggestions";
 import {
@@ -34,8 +48,52 @@ import {
   formatPlaceSubtitle,
   getPlaceLocationFields,
 } from "./live-place-display";
+import { useLivePlaceDisplayName } from "./live-place-name-i18n";
+import { isGenericPlaceName } from "@/lib/wayra/place-region";
 
 const TEAL = "#0F766E";
+
+function PlacePreviewTitle({
+  name,
+  nameSourceLanguage,
+  className,
+}: {
+  name: string;
+  nameSourceLanguage?: string | null;
+  className?: string;
+}) {
+  return (
+    <div className="flex min-w-0 max-w-full flex-wrap items-center gap-1.5">
+      <h3 className={`min-w-0 max-w-full truncate ${className ?? ""}`}>{name}</h3>
+      {nameSourceLanguage ? (
+        <span
+          className="inline-flex shrink-0 items-center rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-500"
+          title={`Latin spelling of ${nameSourceLanguage} name`}
+        >
+          {nameSourceLanguage}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function PlaceHoursNote({ hoursLabel }: { hoursLabel: string }) {
+  return (
+    <div>
+      <p className="text-xs font-medium text-stone-500">{hoursLabel}</p>
+      <p className="mt-0.5 text-[10px] text-stone-400">Hours from map data — not live-verified</p>
+    </div>
+  );
+}
+
+function NearbyHereHeader() {
+  return (
+    <div className="mb-2 space-y-1">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-stone-400">Nearby here</p>
+      <LiveDataTrustBadge variant="verified" />
+    </div>
+  );
+}
 
 export type PlacePreviewData = {
   name: string;
@@ -60,6 +118,11 @@ export type PlacePreviewData = {
   coordinatesLabel?: string | null;
   source?: string;
   tags?: any;
+  /** Original non-Latin label when name was transliterated for display. */
+  nameOriginal?: string | null;
+  /** Human-readable source language, e.g. "Russian". */
+  nameSourceLanguage?: string | null;
+  nameTranslated?: boolean;
 };
 
 type Props = {
@@ -99,7 +162,7 @@ type Props = {
   travelMode?: string;
   nearbyPlacesAtClick?: PlacePreviewData[] | null;
   onSelectNearbyPlaceAtClick?: (place: PlacePreviewData) => void;
-  liveStage?: string;
+  liveStage?: LiveStage;
   /** When true, lift the sheet above the route summary bar on small screens. */
   stackAboveRouteSummary?: boolean;
   /** Live immersive map — tab bar hidden, sheet sits on lower attribution strip. */
@@ -111,6 +174,19 @@ type Props = {
   /** Compact header-only mode while chat is open. */
   compact?: boolean;
   onToggleCompact?: () => void;
+  /** True when this stop is already on the user's local saved map. */
+  placeSaved?: boolean;
+  /** Add location + start direction actions from Live preview card. */
+  onAddLocation?: () => void;
+  onStartDirection?: () => void;
+  directionReady?: boolean;
+  directionLoading?: boolean;
+  routeAlternatives?: RouteAlternative[];
+  selectedRouteAlternativeId?: string | null;
+  onSelectRouteAlternative?: (id: string) => void;
+  vehiclePreference?: VehiclePreference;
+  onVehiclePreferenceChange?: (value: VehiclePreference) => void;
+  onOpenTravelTab?: () => void;
 };
 
 function useMediaQuery(query: string): boolean {
@@ -160,18 +236,24 @@ function QuickActionIOS({
   icon: Icon,
   label,
   onClick,
+  active = false,
 }: {
   icon: typeof MapPin;
   label: string;
   onClick: () => void;
+  active?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-xl bg-stone-100/60 hover:bg-stone-200/60 px-3 py-1.5 text-xs font-semibold text-stone-850 transition-colors"
+      className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+        active
+          ? "bg-teal-50 text-primary"
+          : "bg-stone-100/60 text-stone-850 hover:bg-stone-200/60"
+      }`}
     >
-      <Icon className="h-3.5 w-3.5 text-[#0F766E]" />
+      <Icon className={`h-3.5 w-3.5 ${active ? "fill-current text-primary" : "text-primary"}`} />
       {label}
     </button>
   );
@@ -181,18 +263,24 @@ function QuickActionAndroid({
   icon: Icon,
   label,
   onClick,
+  active = false,
 }: {
   icon: typeof MapPin;
   label: string;
   onClick: () => void;
+  active?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 px-3 py-1.5 text-xs font-semibold text-stone-700 transition-all"
+      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all ${
+        active
+          ? "border-primary/35 bg-teal-50 text-primary"
+          : "border-stone-200 bg-white text-stone-700 hover:bg-stone-50"
+      }`}
     >
-      <Icon className="h-3.5 w-3.5 text-stone-500" />
+      <Icon className={`h-3.5 w-3.5 ${active ? "fill-current" : "text-stone-500"}`} />
       {label}
     </button>
   );
@@ -242,6 +330,17 @@ export default function PlacePreviewCard({
   wayraChatOpen = false,
   compact = false,
   onToggleCompact,
+  placeSaved = false,
+  onAddLocation,
+  onStartDirection,
+  directionReady = false,
+  directionLoading = false,
+  routeAlternatives = [],
+  selectedRouteAlternativeId = null,
+  onSelectRouteAlternative,
+  vehiclePreference = "private",
+  onVehiclePreferenceChange,
+  onOpenTravelTab,
 }: Props) {
   const [wikiSummary, setWikiSummary] = useState<{
     available: boolean;
@@ -250,10 +349,16 @@ export default function PlacePreviewCard({
     title?: string;
     attribution?: string;
     matchedOn?: string;
+    approximate?: boolean;
   } | null>(null);
   const [wikiLoading, setWikiLoading] = useState(false);
   const [wikiExpanded, setWikiExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<"guide" | "about" | "info">("guide");
+  const displayPlace = useLivePlaceDisplayName(place);
+  const previewTitleName =
+    loadingDetails && isGenericPlaceName(displayPlace.name)
+      ? "Finding this place…"
+      : displayPlace.name;
 
   useEffect(() => {
     setActiveTab("guide");
@@ -274,7 +379,7 @@ export default function PlacePreviewCard({
       !wikipediaTitle &&
       !place.city &&
       ![
-        "Landmark", "Attraction", "Museum", "Park", "Historic site",
+        "Landmark", "Attraction", "Museum", "Park", "Historic site", "Hotel",
         "Airport", "Helipad", "Beach", "Port", "Marina", "Ferry terminal", "Cinema",
         "University", "Church / Place of worship", "Stadium", "Monument",
         "Village", "Town", "City", "Hamlet", "Location",
@@ -310,6 +415,7 @@ export default function PlacePreviewCard({
           title?: string;
           attribution?: string;
           matchedOn?: string;
+          approximate?: boolean;
         }>(`/places/wiki-summary?${query.toString()}`);
         setWikiSummary(res);
       } catch (err) {
@@ -337,7 +443,7 @@ export default function PlacePreviewCard({
   const isPhoneLayout = useMediaQuery("(max-width: 767px)");
 
   const isDrivingMode =
-    liveStage === "solo_drive_navigation" || liveStage === "solo_drive_command";
+    isActiveNavigationStage(liveStage) || liveStage === "solo_drive_command";
 
   const platform = usePlatform(isDrivingMode);
 
@@ -348,7 +454,11 @@ export default function PlacePreviewCard({
       : "Place data source limited";
 
   const subheaderText =
-    place.name === "Dropped pin" ? "Selected location" : formatPlaceSubtitle(place);
+    loadingDetails && isGenericPlaceName(displayPlace.name)
+      ? "Looking up address…"
+      : displayPlace.name === "Dropped pin"
+        ? "Selected location"
+        : formatPlaceSubtitle(displayPlace);
   const locationFields = getPlaceLocationFields(place);
 
   const routeReady = routePreviewStatus === "ready" && routeDurationSeconds != null;
@@ -367,7 +477,7 @@ export default function PlacePreviewCard({
       : null;
 
   const aiSuggestions = buildRoutePreviewAiSuggestions({
-    destinationName: place.name,
+    destinationName: displayPlace.name,
     farFromUser: isFarFromUser(place.distanceM),
     contextNotice,
     terrainHint: place.terrainHint,
@@ -404,12 +514,8 @@ export default function PlacePreviewCard({
     : {};
 
   const surfaceClass = isPhoneLayout
-    ? "rounded-t-2xl rounded-b-none border border-stone-200/80 bg-white shadow-2xl"
-    : platform === "ios"
-      ? "rounded-xl rounded-b-none border border-white/20 bg-white/90 shadow-2xl backdrop-blur-xl"
-      : platform === "android"
-        ? "rounded-xl rounded-b-none border-none bg-stone-50/95 shadow-xl"
-        : "rounded-xl rounded-b-none border border-stone-200/80 bg-white shadow-2xl";
+    ? `${LIVE_GLASS_SHEET} ${LIVE_PANEL_MOTION}`
+    : `${LIVE_GLASS_SIDE_PANEL} ${LIVE_PANEL_MOTION}`;
 
   // CarPlay keeps legacy class-based layout
   let layoutClass = "";
@@ -432,7 +538,7 @@ export default function PlacePreviewCard({
           aria-orientation="vertical"
           aria-label="Resize panel width"
           title="Drag to resize width"
-          className="absolute left-0 top-3 bottom-3 z-20 w-1.5 cursor-ew-resize rounded-full bg-stone-200/80 hover:bg-[#0F766E]/40"
+          className="absolute left-0 top-3 bottom-3 z-20 w-1.5 cursor-ew-resize rounded-full bg-stone-200/80 hover:bg-primary/40"
           onPointerDown={onResizePointerDown("width")}
         />
         <div
@@ -440,7 +546,7 @@ export default function PlacePreviewCard({
           aria-orientation="horizontal"
           aria-label="Resize panel height"
           title="Drag to resize height"
-          className="absolute left-3 right-3 top-0 z-20 h-1.5 cursor-ns-resize rounded-full bg-stone-200/80 hover:bg-[#0F766E]/40"
+          className="absolute left-3 right-3 top-0 z-20 h-1.5 cursor-ns-resize rounded-full bg-stone-200/80 hover:bg-primary/40"
           onPointerDown={onResizePointerDown("height")}
         />
       </>
@@ -460,6 +566,26 @@ export default function PlacePreviewCard({
   const hasNoPhotos = !placeMediaLoading && (!placeMedia || placeMedia.length === 0);
   const mediaMaxHeightClass = "max-h-[8rem]";
 
+  function handlePreviewCardActivate() {
+    onMakeDestination();
+  }
+
+  const previewPlaceActions = (
+    <PreviewPlaceActionRow
+      onAddLocation={onAddLocation ?? onSavePlace}
+      onStartDirection={onStartDirection ?? onGetDirections}
+      directionReady={directionReady}
+      directionLoading={directionLoading}
+      routeAlternatives={routeAlternatives}
+      selectedRouteAlternativeId={selectedRouteAlternativeId}
+      onSelectRouteAlternative={onSelectRouteAlternative}
+      vehiclePreference={vehiclePreference}
+      onVehiclePreferenceChange={onVehiclePreferenceChange}
+      onOpenTravelTab={onOpenTravelTab}
+      showPublicTransportHint={vehiclePreference === "public"}
+    />
+  );
+
   // --- 1. CarPlay / Tab Mode Layout ---
   if (platform === "carplay") {
     return (
@@ -471,15 +597,17 @@ export default function PlacePreviewCard({
         <div className="flex-1 flex flex-col justify-between gap-3">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <h3 className="text-base font-bold text-stone-900 leading-tight truncate">
-                {place.name}
-              </h3>
+              <PlacePreviewTitle
+                name={previewTitleName}
+                nameSourceLanguage={displayPlace.nameSourceLanguage}
+                className="text-base font-bold text-stone-900 leading-tight truncate"
+              />
               <p className="text-xs font-semibold text-stone-500 truncate mt-0.5">
                 {subheaderText}
               </p>
               {routeReady ? (
                 <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center rounded-full bg-[#E6F7F4] px-2 py-0.5 text-[10px] font-semibold text-[#0F766E]">
+                  <span className="inline-flex items-center rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary">
                     {routeDurationLabel}
                   </span>
                   {routeDistanceMeters != null ? (
@@ -542,24 +670,18 @@ export default function PlacePreviewCard({
             </div>
           </div>
 
-          {/* Bottom actions: Ask Wayra and Set Destination side by side */}
-          <div className="flex gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={onAskRovi}
-              className="flex-1 h-10 rounded-lg border border-[#0F766E]/30 bg-teal-50/50 px-3 text-xs font-bold text-[#0F766E] hover:bg-teal-50 active:scale-95 transition-all flex items-center justify-center gap-1.5"
-            >
-              Ask Wayra
-            </button>
-            <button
-              type="button"
-              onClick={onMakeDestination}
-              className="flex-1 h-10 rounded-lg text-xs font-bold text-white hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-1.5"
-              style={{ backgroundColor: TEAL }}
-            >
-              <Navigation className="h-3.5 w-3.5" />
-              {isDroppedPinOrAddress ? "Use location" : "Set destination"}
-            </button>
+          {/* Bottom actions */}
+          <div className="flex shrink-0 flex-col gap-2">
+            {onAskRovi ? (
+              <button
+                type="button"
+                onClick={onAskRovi}
+                className="h-10 rounded-lg border border-primary/30 bg-teal-50/50 px-3 text-xs font-bold text-primary hover:bg-teal-50 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+              >
+                Ask Wayra
+              </button>
+            ) : null}
+            {previewPlaceActions}
           </div>
         </div>
       </div>
@@ -585,16 +707,20 @@ export default function PlacePreviewCard({
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               {previewContext ? (
-                <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-[#E6F7F4] px-2 py-0.5 text-[10px] font-bold text-[#0F766E]">
+                <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold text-primary">
                   <span aria-hidden>{previewContext.icon}</span>
                   {previewContext.searchLabel}
                 </span>
               ) : null}
-              <h3 className="text-lg font-bold tracking-tight text-stone-900 leading-tight">{place.name}</h3>
+              <PlacePreviewTitle
+                name={previewTitleName}
+                nameSourceLanguage={displayPlace.nameSourceLanguage}
+                className="text-lg font-bold tracking-tight text-stone-900 leading-tight"
+              />
               <p className="mt-0.5 text-xs text-stone-500 font-medium">{subheaderText}</p>
               {routeReady ? (
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center rounded-full bg-[#E6F7F4] px-2 py-0.5 text-xs font-semibold text-[#0F766E]">
+                  <span className="inline-flex items-center rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary">
                     {routeDurationLabel}
                   </span>
                   {routeDistanceMeters != null ? (
@@ -639,9 +765,16 @@ export default function PlacePreviewCard({
           {/* Tab Contents */}
           {activeTab === "guide" && (
             <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-800">
+                  AI estimate
+                </span>
+                <span className="text-[10px] text-stone-500">Route tips from map context</span>
+              </div>
               <LiveAiSuggestionsBlock
                 suggestions={aiSuggestions}
-                destinationName={place.name}
+                destinationName={displayPlace.name}
+                showEmptyState
                 className="mt-1"
               />
 
@@ -657,20 +790,8 @@ export default function PlacePreviewCard({
               ) : null}
 
               {!isDroppedPinOrAddress && hoursLabel ? (
-                <p className="text-xs text-stone-500 font-medium">{hoursLabel}</p>
+                <PlaceHoursNote hoursLabel={hoursLabel} />
               ) : null}
-
-              {/* iOS Quick Actions */}
-              <div className="flex flex-wrap gap-2 items-center border-t border-stone-100/50 pt-3">
-                {!isDroppedPinOrAddress && (
-                  <QuickActionIOS icon={MapPin} label="Add stop" onClick={onAddStop} />
-                )}
-                <QuickActionIOS icon={Bookmark} label="Save" onClick={onSavePlace} />
-                <QuickActionIOS icon={Users} label="Meet" onClick={onCreateMeetPoint} />
-                {onSearchNearMe && (
-                  <QuickActionIOS icon={Search} label="Search nearby" onClick={onSearchNearMe} />
-                )}
-              </div>
             </div>
           )}
 
@@ -686,50 +807,19 @@ export default function PlacePreviewCard({
                 </div>
               ) : null}
 
-              {wikiLoading ? (
-                <p className="text-xs text-stone-400 font-medium">Loading area information…</p>
-              ) : null}
-
-              {wikiSummary?.available && wikiSummary.summary ? (
-                <div className="bg-white/40 p-3 rounded-xl border border-stone-100/40">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-stone-400">
-                    {wikiSummary.matchedOn === "city" || wikiSummary.matchedOn === "region"
-                      ? `About ${wikiSummary.title || place.city || "this area"}`
-                      : "About"}
-                  </p>
-                  <p
-                    className={`mt-1 text-xs leading-relaxed text-stone-600 ${
-                      wikiExpanded ? "" : "line-clamp-2"
-                    }`}
-                  >
-                    {wikiSummary.summary}
-                  </p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-3">
-                    {!wikiExpanded ? (
-                      <button
-                        type="button"
-                        onClick={() => setWikiExpanded(true)}
-                        className="text-[11px] font-semibold text-[#0F766E] hover:underline"
-                      >
-                        Read more
-                      </button>
-                    ) : null}
-                    {wikiSummary.url ? (
-                      <a
-                        href={wikiSummary.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[11px] font-semibold text-[#0F766E] hover:underline"
-                      >
-                        Read on Wikipedia
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
+              <PlaceWikiAboutSection
+                wikiLoading={wikiLoading}
+                wikiSummary={wikiSummary}
+                placeName={previewTitleName}
+                city={place.city}
+                wikiExpanded={wikiExpanded}
+                onExpand={() => setWikiExpanded(true)}
+              />
 
               {locationContext && locationContext.classification !== "local_place" ? (
-                <RoviPlaceExplanationBlock
+                <div className="space-y-2">
+                  <LiveDataTrustBadge variant="ai" />
+                  <RoviPlaceExplanationBlock
                   compact
                   showAskButton={showAskRovi}
                   showSafetyActions={!locationContext.liveSafe}
@@ -744,6 +834,7 @@ export default function PlacePreviewCard({
                   onContinueAnyway={onContinueAnyway ?? onMakeDestination}
                   showContinueAnyway={Boolean(onContinueAnyway)}
                 />
+                </div>
               ) : null}
             </div>
           )}
@@ -774,8 +865,8 @@ export default function PlacePreviewCard({
 
               {nearbyPlacesAtClick && nearbyPlacesAtClick.length > 0 ? (
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-stone-400">Nearby here</p>
-                  <ul className="mt-2 space-y-1">
+                  <NearbyHereHeader />
+                  <ul className="space-y-1">
                     {nearbyPlacesAtClick.slice(0, 3).map((poi) => (
                       <li key={poi.placeKey || poi.name}>
                         <button
@@ -784,7 +875,7 @@ export default function PlacePreviewCard({
                           className="flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-left hover:bg-white/60"
                         >
                           <span className="truncate text-xs font-semibold text-stone-850">{poi.name}</span>
-                          <span className="ml-2 shrink-0 text-[10px] font-bold text-[#0F766E]">
+                          <span className="ml-2 shrink-0 text-[10px] font-bold text-primary">
                             {poi.distanceM != null ? formatDistanceMiles(poi.distanceM) : ""}
                           </span>
                         </button>
@@ -794,20 +885,21 @@ export default function PlacePreviewCard({
                 </div>
               ) : null}
 
-              <p className="text-[10px] text-stone-400 pt-2 border-t border-stone-100/50">{sourceLabel}</p>
+              <div className="space-y-1 border-t border-stone-100/50 pt-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
+                    Verified source
+                  </span>
+                  <span className="text-[10px] text-stone-400">{sourceLabel}</span>
+                </div>
+                <p className="text-[10px] leading-snug text-stone-500">{LIVE_DATA_DISCLAIMER}</p>
+              </div>
             </div>
           )}
         </div>
 
         <div className="sticky bottom-0 z-10 shrink-0 border-t border-stone-100/50 bg-white/90 backdrop-blur-md px-4 py-3 shadow-[0_-6px_16px_rgba(0,0,0,0.04)]">
-          <button
-            type="button"
-            onClick={onMakeDestination}
-            className="w-full rounded-2xl py-3 text-sm font-bold text-white hover:opacity-95 active:scale-[0.99] transition-all"
-            style={{ backgroundColor: TEAL }}
-          >
-            {isDroppedPinOrAddress ? "Use location" : "Set destination"}
-          </button>
+          {previewPlaceActions}
         </div>
       </div>
     );
@@ -832,16 +924,20 @@ export default function PlacePreviewCard({
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               {previewContext ? (
-                <span className="mb-1 inline-flex items-center gap-1 rounded-md bg-[#E6F7F4] px-2 py-0.5 text-[10px] font-bold text-[#0F766E]">
+                <span className="mb-1 inline-flex items-center gap-1 rounded-md bg-primary-soft px-2 py-0.5 text-[10px] font-bold text-primary">
                   <span aria-hidden>{previewContext.icon}</span>
                   {previewContext.searchLabel}
                 </span>
               ) : null}
-              <h3 className="text-lg font-bold text-stone-900 leading-tight">{place.name}</h3>
+              <PlacePreviewTitle
+                name={previewTitleName}
+                nameSourceLanguage={displayPlace.nameSourceLanguage}
+                className="text-lg font-bold text-stone-900 leading-tight"
+              />
               <p className="mt-0.5 text-xs text-stone-500">{subheaderText}</p>
               {routeReady ? (
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center rounded-md bg-[#E6F7F4] px-2.5 py-0.5 text-xs font-semibold text-[#0F766E]">
+                  <span className="inline-flex items-center rounded-md bg-primary-soft px-2.5 py-0.5 text-xs font-semibold text-primary">
                     {routeDurationLabel}
                   </span>
                   {routeDistanceMeters != null ? (
@@ -873,13 +969,13 @@ export default function PlacePreviewCard({
                 onClick={() => setActiveTab(tab)}
                 className={`flex-1 py-2 text-center relative transition-all ${
                   activeTab === tab
-                    ? "text-[#0F766E]"
+                    ? "text-primary"
                     : "text-stone-500 hover:text-stone-800"
                 }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 {activeTab === tab && (
-                  <div className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-[#0F766E] rounded-t-full" />
+                  <div className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-primary rounded-t-full" />
                 )}
               </button>
             ))}
@@ -888,9 +984,16 @@ export default function PlacePreviewCard({
           {/* Tab Contents */}
           {activeTab === "guide" && (
             <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-800">
+                  AI estimate
+                </span>
+                <span className="text-[10px] text-stone-500">Route tips from map context</span>
+              </div>
               <LiveAiSuggestionsBlock
                 suggestions={aiSuggestions}
-                destinationName={place.name}
+                destinationName={displayPlace.name}
+                showEmptyState
                 className="mt-1"
               />
 
@@ -906,20 +1009,8 @@ export default function PlacePreviewCard({
               ) : null}
 
               {!isDroppedPinOrAddress && hoursLabel ? (
-                <p className="text-xs text-stone-500">{hoursLabel}</p>
+                <PlaceHoursNote hoursLabel={hoursLabel} />
               ) : null}
-
-              {/* Android Quick Actions */}
-              <div className="flex flex-wrap gap-2 items-center border-t border-stone-150 pt-3">
-                {!isDroppedPinOrAddress && (
-                  <QuickActionAndroid icon={MapPin} label="Add stop" onClick={onAddStop} />
-                )}
-                <QuickActionAndroid icon={Bookmark} label="Save" onClick={onSavePlace} />
-                <QuickActionAndroid icon={Users} label="Meet" onClick={onCreateMeetPoint} />
-                {onSearchNearMe && (
-                  <QuickActionAndroid icon={Search} label="Search nearby" onClick={onSearchNearMe} />
-                )}
-              </div>
             </div>
           )}
 
@@ -935,50 +1026,19 @@ export default function PlacePreviewCard({
                 </div>
               ) : null}
 
-              {wikiLoading ? (
-                <p className="text-xs text-stone-400">Loading area information…</p>
-              ) : null}
-
-              {wikiSummary?.available && wikiSummary.summary ? (
-                <div className="bg-stone-50 p-3 rounded-lg border border-stone-100">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-stone-400">
-                    {wikiSummary.matchedOn === "city" || wikiSummary.matchedOn === "region"
-                      ? `About ${wikiSummary.title || place.city || "this area"}`
-                      : "About"}
-                  </p>
-                  <p
-                    className={`mt-1 text-xs leading-relaxed text-stone-600 ${
-                      wikiExpanded ? "" : "line-clamp-2"
-                    }`}
-                  >
-                    {wikiSummary.summary}
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-3">
-                    {!wikiExpanded ? (
-                      <button
-                        type="button"
-                        onClick={() => setWikiExpanded(true)}
-                        className="text-[11px] font-semibold text-[#0F766E] hover:underline"
-                      >
-                        Read more
-                      </button>
-                    ) : null}
-                    {wikiSummary.url ? (
-                      <a
-                        href={wikiSummary.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[11px] font-semibold text-[#0F766E] hover:underline"
-                      >
-                        Read on Wikipedia
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
+              <PlaceWikiAboutSection
+                wikiLoading={wikiLoading}
+                wikiSummary={wikiSummary}
+                placeName={previewTitleName}
+                city={place.city}
+                wikiExpanded={wikiExpanded}
+                onExpand={() => setWikiExpanded(true)}
+              />
 
               {locationContext && locationContext.classification !== "local_place" ? (
-                <RoviPlaceExplanationBlock
+                <div className="space-y-2">
+                  <LiveDataTrustBadge variant="ai" />
+                  <RoviPlaceExplanationBlock
                   compact
                   showAskButton={showAskRovi}
                   showSafetyActions={!locationContext.liveSafe}
@@ -993,6 +1053,7 @@ export default function PlacePreviewCard({
                   onContinueAnyway={onContinueAnyway ?? onMakeDestination}
                   showContinueAnyway={Boolean(onContinueAnyway)}
                 />
+                </div>
               ) : null}
             </div>
           )}
@@ -1023,8 +1084,8 @@ export default function PlacePreviewCard({
 
               {nearbyPlacesAtClick && nearbyPlacesAtClick.length > 0 ? (
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-stone-400">Nearby here</p>
-                  <ul className="mt-2 space-y-1">
+                  <NearbyHereHeader />
+                  <ul className="space-y-1">
                     {nearbyPlacesAtClick.slice(0, 3).map((poi) => (
                       <li key={poi.placeKey || poi.name}>
                         <button
@@ -1033,7 +1094,7 @@ export default function PlacePreviewCard({
                           className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left hover:bg-stone-50"
                         >
                           <span className="truncate text-xs font-medium text-stone-850">{poi.name}</span>
-                          <span className="ml-2 shrink-0 text-[10px] text-[#0F766E] font-semibold">
+                          <span className="ml-2 shrink-0 text-[10px] text-primary font-semibold">
                             {poi.distanceM != null ? formatDistanceMiles(poi.distanceM) : ""}
                           </span>
                         </button>
@@ -1043,20 +1104,21 @@ export default function PlacePreviewCard({
                 </div>
               ) : null}
 
-              <p className="text-[10px] text-stone-400 pt-2 border-t border-stone-100">{sourceLabel}</p>
+              <div className="space-y-1 border-t border-stone-100 pt-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
+                    Verified source
+                  </span>
+                  <span className="text-[10px] text-stone-400">{sourceLabel}</span>
+                </div>
+                <p className="text-[10px] leading-snug text-stone-500">{LIVE_DATA_DISCLAIMER}</p>
+              </div>
             </div>
           )}
         </div>
 
         <div className="sticky bottom-0 z-10 shrink-0 border-t border-stone-100 bg-white px-4 py-3 shadow-[0_-6px_16px_rgba(0,0,0,0.05)]">
-          <button
-            type="button"
-            onClick={onMakeDestination}
-            className="w-full rounded-2xl py-3 text-sm font-semibold text-white hover:opacity-95 active:scale-[0.98] transition-all"
-            style={{ backgroundColor: TEAL }}
-          >
-            {isDroppedPinOrAddress ? "Use location" : "Set destination"}
-          </button>
+          {previewPlaceActions}
         </div>
       </div>
     );
@@ -1064,6 +1126,7 @@ export default function PlacePreviewCard({
 
   // --- 4. Web Mode Layout (Default) ---
   if (compact) {
+    const thumbUrl = placeMedia?.[0]?.thumbnailUrl ?? placeMedia?.[0]?.storageUrl ?? null;
     return (
       <div
         className={`${surfaceClass} relative flex flex-col overflow-hidden`}
@@ -1072,9 +1135,22 @@ export default function PlacePreviewCard({
         aria-label="Place details (compact)"
       >
         <PanelResizeHandles />
-        <div className="flex items-start gap-2 px-3 py-2.5">
+        <div className="flex items-start gap-2.5 px-3 py-2.5">
+          {thumbUrl ? (
+            <div
+              className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-stone-200/60 bg-stone-100"
+              aria-hidden
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={thumbUrl} alt="" className="h-full w-full object-cover" />
+            </div>
+          ) : null}
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-sm font-bold text-stone-900">{place.name}</h3>
+            <PlacePreviewTitle
+              name={previewTitleName}
+              nameSourceLanguage={displayPlace.nameSourceLanguage}
+              className={`truncate ${LIVE_PLACE_TITLE} text-base`}
+            />
             <p className="truncate text-xs text-stone-500">{subheaderText}</p>
           </div>
           {onToggleCompact ? (
@@ -1097,24 +1173,21 @@ export default function PlacePreviewCard({
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
-        <div className="flex gap-2 border-t border-stone-100 px-3 py-2">
+        <p className="px-3 pb-0.5 text-[10px] leading-snug text-stone-500">
+          Wayra chat is open — tap ↑ for tabs, photos, and route details.
+        </p>
+        <LiveDataTrustFooter showWayraNote className="border-0 px-3 pb-1 pt-0" />
+        <div className="flex flex-col gap-2 border-t border-stone-100 px-3 py-2">
           {onAskRovi ? (
             <button
               type="button"
               onClick={onAskRovi}
-              className="flex-1 rounded-xl border border-[#0F766E]/30 bg-teal-50/50 py-2 text-xs font-semibold text-[#0F766E] hover:bg-teal-50"
+              className="w-full rounded-xl border border-primary/30 bg-teal-50/50 py-2 text-xs font-semibold text-primary hover:bg-teal-50"
             >
               Ask Wayra
             </button>
           ) : null}
-          <button
-            type="button"
-            onClick={onMakeDestination}
-            className="flex-1 rounded-xl py-2 text-xs font-semibold text-white hover:opacity-95"
-            style={{ backgroundColor: TEAL }}
-          >
-            {isDroppedPinOrAddress ? "Use location" : "Set destination"}
-          </button>
+          {previewPlaceActions}
         </div>
       </div>
     );
@@ -1122,7 +1195,7 @@ export default function PlacePreviewCard({
 
   return (
     <div
-      className={`${surfaceClass} relative flex flex-col overflow-hidden`}
+      className={`${surfaceClass} live-panel-enter relative flex flex-col overflow-hidden`}
       style={panelChromeStyle}
       role="dialog"
       aria-label="Place details"
@@ -1131,18 +1204,27 @@ export default function PlacePreviewCard({
       <PhoneSheetHandle />
       <div className="max-h-[min(var(--live-preview-max-height,55dvh),calc(100dvh-8rem))] overflow-y-auto no-scrollbar px-3 pt-2.5 pb-2">
         <div className="flex items-start gap-2">
-          <div className="min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={handlePreviewCardActivate}
+            className="min-w-0 flex-1 rounded-lg text-left transition-colors hover:bg-stone-50/80"
+            aria-label={isDroppedPinOrAddress ? "Use this location" : "Set as destination"}
+          >
             {previewContext ? (
-              <span className="mb-0.5 inline-flex items-center gap-1 rounded-full bg-[#E6F7F4] px-2 py-0.5 text-xs font-semibold text-[#0F766E]">
+              <span className="mb-0.5 inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary">
                 <span aria-hidden>{previewContext.icon}</span>
                 {previewContext.searchLabel}
               </span>
             ) : null}
-            <h3 className="text-base font-bold leading-snug text-stone-900">{place.name}</h3>
+            <PlacePreviewTitle
+              name={previewTitleName}
+              nameSourceLanguage={displayPlace.nameSourceLanguage}
+              className="text-base font-bold leading-snug text-stone-900"
+            />
             <p className="mt-0.5 text-xs text-stone-500">{subheaderText}</p>
             {routeReady ? (
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                <span className="inline-flex items-center rounded-full bg-[#E6F7F4] px-2 py-0.5 text-xs font-semibold text-[#0F766E]">
+                <span className="inline-flex items-center rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary">
                   {routeDurationLabel}
                 </span>
                 {routeDistanceMeters != null ? (
@@ -1154,7 +1236,7 @@ export default function PlacePreviewCard({
                 )}
               </div>
             ) : null}
-          </div>
+          </button>
           <button
             type="button"
             onClick={onClose}
@@ -1183,7 +1265,7 @@ export default function PlacePreviewCard({
             onClick={() => setActiveTab("guide")}
             className={`min-w-[4.5rem] shrink-0 flex-1 py-1.5 text-center border-b-2 transition-all ${
               activeTab === "guide"
-                ? "border-[#0F766E] text-[#0F766E]"
+                ? "border-primary text-primary"
                 : "border-transparent hover:text-stone-800"
             }`}
           >
@@ -1194,7 +1276,7 @@ export default function PlacePreviewCard({
             onClick={() => setActiveTab("about")}
             className={`min-w-[4.5rem] shrink-0 flex-1 py-1.5 text-center border-b-2 transition-all ${
               activeTab === "about"
-                ? "border-[#0F766E] text-[#0F766E]"
+                ? "border-primary text-primary"
                 : "border-transparent hover:text-stone-800"
             }`}
           >
@@ -1205,7 +1287,7 @@ export default function PlacePreviewCard({
             onClick={() => setActiveTab("info")}
             className={`min-w-[4.5rem] shrink-0 flex-1 py-1.5 text-center border-b-2 transition-all ${
               activeTab === "info"
-                ? "border-[#0F766E] text-[#0F766E]"
+                ? "border-primary text-primary"
                 : "border-transparent hover:text-stone-800"
             }`}
           >
@@ -1216,9 +1298,16 @@ export default function PlacePreviewCard({
         {/* Tab Contents */}
         {activeTab === "guide" && (
           <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-800">
+                AI estimate
+              </span>
+              <span className="text-[10px] text-stone-500">Route tips from map context</span>
+            </div>
             <LiveAiSuggestionsBlock
               suggestions={aiSuggestions}
-              destinationName={place.name}
+              destinationName={displayPlace.name}
+              showEmptyState
               className="mt-1"
             />
 
@@ -1234,18 +1323,8 @@ export default function PlacePreviewCard({
             ) : null}
 
             {!isDroppedPinOrAddress && hoursLabel ? (
-              <p className="text-xs text-stone-500">{hoursLabel}</p>
+              <PlaceHoursNote hoursLabel={hoursLabel} />
             ) : null}
-            <div className="flex flex-wrap gap-2 items-center border-t border-stone-100 pt-3">
-              {!isDroppedPinOrAddress && (
-                <QuickAction icon={MapPin} label="Add stop" onClick={onAddStop} />
-              )}
-              <QuickAction icon={Bookmark} label="Save" onClick={onSavePlace} />
-              <QuickAction icon={Users} label="Meet" onClick={onCreateMeetPoint} />
-              {onSearchNearMe && (
-                <QuickAction icon={Search} label="Search nearby" onClick={onSearchNearMe} />
-              )}
-            </div>
           </div>
         )}
 
@@ -1261,64 +1340,36 @@ export default function PlacePreviewCard({
               </div>
             ) : null}
 
-            {wikiLoading ? (
-              <p className="text-xs text-stone-400">Loading area information…</p>
-            ) : null}
-
-            {wikiSummary?.available && wikiSummary.summary ? (
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
-                  {wikiSummary.matchedOn === "city" || wikiSummary.matchedOn === "region"
-                    ? `About ${wikiSummary.title || place.city || "this area"}`
-                    : "About"}
-                </p>
-                <p
-                  className={`mt-1 text-xs leading-relaxed text-stone-600 ${
-                    wikiExpanded ? "" : "line-clamp-2"
-                  }`}
-                >
-                  {wikiSummary.summary}
-                </p>
-                <div className="mt-1 flex flex-wrap items-center gap-3">
-                  {!wikiExpanded ? (
-                    <button
-                      type="button"
-                      onClick={() => setWikiExpanded(true)}
-                      className="text-[11px] font-medium text-[#0F766E] hover:underline"
-                    >
-                      Read more
-                    </button>
-                  ) : null}
-                  {wikiSummary.url ? (
-                    <a
-                      href={wikiSummary.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[11px] font-medium text-[#0F766E] hover:underline"
-                    >
-                      Read on Wikipedia
-                    </a>
-                  ) : null}
-                </div>
-              </div>
+            {wikiLoading || wikiSummary ? (
+              <PlaceWikiAboutSection
+                wikiLoading={wikiLoading}
+                wikiSummary={wikiSummary}
+                placeName={previewTitleName}
+                city={place.city}
+                wikiExpanded={wikiExpanded}
+                onExpand={() => setWikiExpanded(true)}
+              />
             ) : null}
 
             {locationContext && locationContext.classification !== "local_place" ? (
-              <RoviPlaceExplanationBlock
-                compact
-                showAskButton={showAskRovi}
-                showSafetyActions={!locationContext.liveSafe}
-                template={null}
-                loading={roviLoading}
-                explanation={roviExplanation}
-                error={roviError}
-                onAskRovi={onAskRovi!}
-                onSearchNearMe={onSearchNearMe!}
-                onChangeDestination={onChangeDestination!}
-                onPlanTrip={onPlanTrip!}
-                onContinueAnyway={onContinueAnyway ?? onMakeDestination}
-                showContinueAnyway={Boolean(onContinueAnyway)}
-              />
+              <div className="space-y-2">
+                <LiveDataTrustBadge variant="ai" />
+                <RoviPlaceExplanationBlock
+                  compact
+                  showAskButton={showAskRovi}
+                  showSafetyActions={!locationContext.liveSafe}
+                  template={null}
+                  loading={roviLoading}
+                  explanation={roviExplanation}
+                  error={roviError}
+                  onAskRovi={onAskRovi!}
+                  onSearchNearMe={onSearchNearMe!}
+                  onChangeDestination={onChangeDestination!}
+                  onPlanTrip={onPlanTrip!}
+                  onContinueAnyway={onContinueAnyway ?? onMakeDestination}
+                  showContinueAnyway={Boolean(onContinueAnyway)}
+                />
+              </div>
             ) : null}
           </div>
         )}
@@ -1349,8 +1400,8 @@ export default function PlacePreviewCard({
 
             {nearbyPlacesAtClick && nearbyPlacesAtClick.length > 0 ? (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">Nearby here</p>
-                <ul className="mt-2 space-y-1">
+                <NearbyHereHeader />
+                <ul className="space-y-1">
                   {nearbyPlacesAtClick.slice(0, 3).map((poi) => (
                     <li key={poi.placeKey || poi.name}>
                       <button
@@ -1359,7 +1410,7 @@ export default function PlacePreviewCard({
                         className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left hover:bg-stone-50"
                       >
                         <span className="truncate text-xs font-medium text-stone-850">{poi.name}</span>
-                        <span className="ml-2 shrink-0 text-[10px] text-[#0F766E]">
+                        <span className="ml-2 shrink-0 text-[10px] text-primary">
                           {poi.distanceM != null ? formatDistanceMiles(poi.distanceM) : ""}
                         </span>
                       </button>
@@ -1369,20 +1420,165 @@ export default function PlacePreviewCard({
               </div>
             ) : null}
 
-            <p className="text-[10px] text-stone-400 pt-2 border-t border-stone-100">{sourceLabel}</p>
+            <div className="space-y-1 border-t border-stone-100 pt-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
+                  Verified source
+                </span>
+                <span className="text-[10px] text-stone-400">{sourceLabel}</span>
+              </div>
+              <p className="text-[10px] leading-snug text-stone-500">{LIVE_DATA_DISCLAIMER}</p>
+            </div>
           </div>
         )}
       </div>
 
       <div className="sticky bottom-0 z-10 shrink-0 border-t border-stone-100 bg-white px-3 py-2 shadow-[0_-6px_16px_rgba(0,0,0,0.06)]">
-        <button
-          type="button"
-          onClick={onMakeDestination}
-          className="w-full rounded-lg py-2.5 text-sm font-semibold text-white hover:opacity-90"
-          style={{ backgroundColor: TEAL }}
-        >
-          {isDroppedPinOrAddress ? "Use location" : "Set destination"}
-        </button>
+        {previewPlaceActions}
+      </div>
+    </div>
+  );
+}
+
+function PreviewPlaceActionRow({
+  onAddLocation,
+  onStartDirection,
+  directionReady = false,
+  directionLoading = false,
+  routeAlternatives = [],
+  selectedRouteAlternativeId = null,
+  onSelectRouteAlternative,
+  vehiclePreference = "private",
+  onVehiclePreferenceChange,
+  onOpenTravelTab,
+  showPublicTransportHint = false,
+}: {
+  onAddLocation: () => void;
+  onStartDirection: () => void;
+  directionReady?: boolean;
+  directionLoading?: boolean;
+  routeAlternatives?: RouteAlternative[];
+  selectedRouteAlternativeId?: string | null;
+  onSelectRouteAlternative?: (id: string) => void;
+  vehiclePreference?: VehiclePreference;
+  onVehiclePreferenceChange?: (value: VehiclePreference) => void;
+  onOpenTravelTab?: () => void;
+  showPublicTransportHint?: boolean;
+}) {
+  const startLabel = directionLoading ? "Calculating route…" : "Start a direction";
+  const showRouteOptions =
+    directionLoading || (directionReady && routeAlternatives.length > 1);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="rounded-lg border border-stone-200 bg-white px-2.5 py-2">
+        <p className="text-[11px] font-semibold text-stone-700">How are you traveling?</p>
+        <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+          {VEHICLE_PREFERENCE_OPTIONS.map((option) => {
+            const selected = vehiclePreference === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => onVehiclePreferenceChange?.(option.id)}
+                className={`rounded-md border px-2 py-2 text-left transition-all ${
+                  selected
+                    ? "border-primary bg-teal-50 shadow-sm"
+                    : "border-stone-200 bg-stone-50 hover:border-stone-300"
+                }`}
+              >
+                <span className="block text-[11px] font-semibold text-stone-900">{option.label}</span>
+                <span className="mt-0.5 block text-[10px] leading-snug text-stone-600">
+                  {option.description}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        {showPublicTransportHint ? (
+          <div className="mt-2 rounded-md border border-amber-100 bg-amber-50 px-2 py-2">
+            <p className="text-[10px] leading-snug text-amber-900">
+              Public transport legs open in the Travel tab. Wayra can suggest trains, buses, and flights for this destination.
+            </p>
+            {onOpenTravelTab ? (
+              <button
+                type="button"
+                onClick={onOpenTravelTab}
+                className="mt-1.5 text-[10px] font-semibold text-primary hover:underline"
+              >
+                Open Travel tab with this destination →
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+      {showRouteOptions ? (
+        <div className="rounded-lg border border-stone-200 bg-stone-50/80 px-2.5 py-2">
+          <p className="text-[11px] font-semibold text-stone-700">Show me the direction</p>
+          {directionLoading ? (
+            <p className="mt-1 text-[11px] text-stone-500">Finding routes with and without tolls…</p>
+          ) : (
+            <div className="mt-1.5 flex flex-col gap-1">
+              {routeAlternatives.map((alt) => {
+                const selected = alt.id === selectedRouteAlternativeId;
+                return (
+                  <button
+                    key={alt.id}
+                    type="button"
+                    onClick={() => onSelectRouteAlternative?.(alt.id)}
+                    className={`rounded-md border px-2.5 py-2 text-left transition-all ${
+                      selected
+                        ? "border-primary bg-teal-50 shadow-sm"
+                        : "border-stone-200 bg-white hover:border-stone-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-semibold text-stone-900">{alt.label}</span>
+                      <span className="text-[11px] font-semibold text-primary">
+                        {formatRouteDuration(alt.durationSeconds)}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex items-center justify-between gap-2 text-[10px] text-stone-600">
+                      <span>{alt.tollLabel || "Route option"}</span>
+                      <span>{formatDistanceMiles(alt.distanceMeters)}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : null}
+      <div className="flex gap-2">
+      <button
+        type="button"
+        onClick={onAddLocation}
+        className="flex-1 rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-xs font-semibold text-stone-800 shadow-sm hover:bg-stone-50 active:scale-[0.98] transition-all"
+      >
+        Add location
+      </button>
+      <button
+        type="button"
+        onClick={onStartDirection}
+        className={`flex-1 rounded-lg px-3 py-2.5 text-xs font-semibold shadow-sm active:scale-[0.98] transition-all ${
+          directionReady
+            ? "text-white hover:opacity-95"
+            : "border-2 border-primary bg-primary-soft text-primary hover:bg-teal-50"
+        }`}
+        style={directionReady ? { backgroundColor: TEAL } : undefined}
+        aria-label={
+          directionReady
+            ? "Start a direction"
+            : "Start a direction — ask Wayra for route options"
+        }
+        title={
+          directionReady
+            ? "Start Solo Live navigation"
+            : "Route not ready — tap to ask Wayra for alternatives"
+        }
+      >
+        {startLabel}
+      </button>
       </div>
     </div>
   );
@@ -1392,18 +1588,27 @@ function QuickAction({
   icon: Icon,
   label,
   onClick,
+  active = false,
+  disabled = false,
 }: {
   icon: typeof MapPin;
   label: string;
   onClick: () => void;
+  active?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1 rounded-full border border-stone-200 px-2.5 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
+      disabled={disabled}
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold disabled:cursor-not-allowed disabled:opacity-45 ${
+        active
+          ? "border-primary/35 bg-teal-50 text-primary"
+          : "border-stone-200 text-stone-700 hover:bg-stone-50"
+      }`}
     >
-      <Icon className="h-3 w-3 text-stone-500" />
+      <Icon className={`h-3 w-3 ${active ? "fill-current text-primary" : "text-stone-500"}`} />
       {label}
     </button>
   );

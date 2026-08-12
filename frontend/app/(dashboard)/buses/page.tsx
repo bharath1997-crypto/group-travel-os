@@ -1,8 +1,11 @@
 "use client";
 
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { API_BASE, apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import TravelHandoffBanner from "@/components/travel/TravelHandoffBanner";
+import { parseTravelHandoff, travelHandoffSearchLabel } from "@/lib/travel-handoff";
 
 type SortMode = "cheapest" | "fastest" | "earliest";
 type TimeFilter = "any" | "morning" | "afternoon" | "evening";
@@ -84,6 +87,23 @@ const POPULAR_ROUTES = [
 ];
 
 export default function BusesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[calc(100dvh-80px)] bg-app rounded-3xl p-8 flex items-center justify-center text-slate-500">
+          Loading buses…
+        </div>
+      }
+    >
+      <BusesPageContent />
+    </Suspense>
+  );
+}
+
+function BusesPageContent() {
+  const searchParams = useSearchParams();
+  const handoff = useMemo(() => parseTravelHandoff(searchParams), [searchParams]);
+
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [date, setDate] = useState(todayPlus(7));
@@ -223,6 +243,12 @@ export default function BusesPage() {
     }
   }, [from, to, date, passengers]);
 
+  useEffect(() => {
+    if (!handoff) return;
+    setFrom(travelHandoffSearchLabel(handoff.origin));
+    setTo(travelHandoffSearchLabel(handoff.destination));
+  }, [handoff]);
+
   const fillAndSearch = (f: string, t: string) => {
     setFrom(f);
     setTo(t);
@@ -230,7 +256,12 @@ export default function BusesPage() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
+    <div className="min-h-[calc(100dvh-80px)] bg-app rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
+      {handoff ? (
+        <div className="max-w-6xl mx-auto mb-6">
+          <TravelHandoffBanner handoff={handoff} showSkyscanner={false} />
+        </div>
+      ) : null}
       {/* Search Header */}
       <div className="max-w-6xl mx-auto mb-6">
         <div className="flex items-center gap-3 mb-3">
@@ -467,7 +498,7 @@ export default function BusesPage() {
             {/* Popular Routes (shown before search) */}
             {!searched && (
               <div className="space-y-4">
-                <h2 className="text-lg font-bold text-[#0F3460]">Popular Routes</h2>
+                <h2 className="text-lg font-bold text-navy">Popular Routes</h2>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {POPULAR_ROUTES.map((route) => (
                     <div
@@ -477,7 +508,7 @@ export default function BusesPage() {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-bold text-[#0F3460]">
+                          <p className="text-sm font-bold text-navy">
                             {route.from} → {route.to}
                           </p>
                           <p className="text-xs text-slate-500">from ${route.price}</p>
@@ -517,7 +548,7 @@ export default function BusesPage() {
                           🚌
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-bold text-[#0F3460]">
+                          <p className="truncate text-sm font-bold text-navy">
                             {b.operator}
                           </p>
                           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-700">

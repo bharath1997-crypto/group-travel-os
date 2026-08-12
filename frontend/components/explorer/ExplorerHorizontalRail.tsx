@@ -34,7 +34,7 @@ export function ExplorerHorizontalRail({
 
   return (
     <section id={id} className={`mb-12 scroll-mt-28 ${className}`.trim()}>
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-[#1e4976]/40 pb-4">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-[#1E293B]/40 pb-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-xl font-bold tracking-tight text-white">{title}</h2>
@@ -49,7 +49,7 @@ export function ExplorerHorizontalRail({
               type="button"
               aria-label="Scroll left"
               onClick={() => scroll(-1)}
-              className="rounded-lg border border-[#1e4976] bg-[#0d1f33] p-2 text-gray-400 transition hover:border-[#E94560]/45 hover:text-white"
+              className="rounded-lg border border-[#1E293B] bg-[#0d1f33] p-2 text-gray-400 transition hover:border-primary/45 hover:text-white"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -57,7 +57,7 @@ export function ExplorerHorizontalRail({
               type="button"
               aria-label="Scroll right"
               onClick={() => scroll(1)}
-              className="rounded-lg border border-[#1e4976] bg-[#0d1f33] p-2 text-gray-400 transition hover:border-[#E94560]/45 hover:text-white"
+              className="rounded-lg border border-[#1E293B] bg-[#0d1f33] p-2 text-gray-400 transition hover:border-primary/45 hover:text-white"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -65,7 +65,7 @@ export function ExplorerHorizontalRail({
         </div>
       </div>
       <div className="relative">
-        <span className="pointer-events-none absolute left-3 top-3 z-20 rounded-full bg-[#E94560]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#E94560]">
+        <span className="pointer-events-none absolute left-3 top-3 z-20 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary">
           Curated
         </span>
         <div
@@ -78,7 +78,7 @@ export function ExplorerHorizontalRail({
         />
         <div
           ref={ref}
-          className={`flex gap-4 overflow-x-auto pb-2 pl-0.5 pr-1 pt-9 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full ${scrollClassName || "[scrollbar-color:#1e4976_#0B192E] [&::-webkit-scrollbar-thumb]:bg-[#1e4976] [&::-webkit-scrollbar-track]:bg-[#0B192E]"}`}
+          className={`flex gap-4 overflow-x-auto pb-2 pl-0.5 pr-1 pt-9 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full ${scrollClassName || "[scrollbar-color:#1E293B_#0B192E] [&::-webkit-scrollbar-thumb]:bg-[#1E293B] [&::-webkit-scrollbar-track]:bg-[#0B192E]"}`}
         >
           {children}
         </div>

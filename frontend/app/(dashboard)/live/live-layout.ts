@@ -11,9 +11,16 @@ export const LIVE_MAP_CONTROLS_POSITION =
 export const LIVE_MAP_CONTROLS_RAIL_POSITION =
   "fixed z-[40] right-2 bottom-[calc(3.5rem+26px+env(safe-area-inset-bottom,0px))] md:right-4 md:bottom-[calc(26px+0.75rem)]";
 
+/** Map corner notices — stacked above the right control rail (never over the search bar). */
+export const LIVE_MAP_NOTICE_STACK_POSITION =
+  "fixed z-[38] right-2 bottom-[calc(3.5rem+26px+9rem+env(safe-area-inset-bottom,0px))] md:right-4 md:bottom-[calc(26px+9.5rem)] w-[min(17rem,calc(100vw-4.5rem))]";
+
+/** @deprecated use LIVE_MAP_NOTICE_STACK_POSITION */
+export const LIVE_MAP_NOTICE_POSITION = LIVE_MAP_NOTICE_STACK_POSITION;
+
 /** Unified floating map control — Google Maps ~40dp rounded square. */
 export const LIVE_MAP_FLOAT_BTN =
-  "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.32)] backdrop-blur-md transition-all duration-200 focus:outline-none cursor-pointer active:scale-[0.97]";
+  "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-stone-200/50 bg-white/95 text-stone-700 shadow-[0_2px_12px_rgba(15,23,42,0.10)] backdrop-blur-md transition-all duration-200 focus:outline-none cursor-pointer active:scale-[0.97] hover:bg-white";
 
 /** Chat FAB — sits just left of the coordinate strip. */
 export const LIVE_MAP_CHAT_FAB_POSITION =

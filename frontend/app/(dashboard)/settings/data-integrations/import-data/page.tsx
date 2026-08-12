@@ -80,7 +80,7 @@ function formatDate(iso: string | null): string {
 function StatusChip({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     preview:  { label: "Preview",  cls: "bg-amber-50 text-amber-700" },
-    imported: { label: "Imported", cls: "bg-teal-50 text-[#0F766E]" },
+    imported: { label: "Imported", cls: "bg-teal-50 text-primary" },
     failed:   { label: "Failed",   cls: "bg-red-50 text-red-600" },
   };
   const { label, cls } = map[status] ?? { label: status, cls: "bg-stone-100 text-stone-500" };
@@ -95,7 +95,7 @@ function StatusChip({ status }: { status: string }) {
 
 function RowStatusChip({ status }: { status: PreviewRow["status"] }) {
   const map = {
-    valid:     { label: "Valid",     cls: "bg-teal-50 text-[#0F766E]" },
+    valid:     { label: "Valid",     cls: "bg-teal-50 text-primary" },
     duplicate: { label: "Duplicate", cls: "bg-amber-50 text-amber-700" },
     error:     { label: "Error",     cls: "bg-red-50 text-red-600" },
   };
@@ -261,9 +261,9 @@ export default function ImportDataPage() {
       {/* Success banner */}
       {confirmed && (
         <div className="mx-4 mt-3 flex items-start gap-2.5 rounded-xl border border-teal-100 bg-teal-50 px-3.5 py-3">
-          <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[#0F766E]" />
+          <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" />
           <div>
-            <p className="text-[13px] font-semibold text-[#0F766E]">Import complete</p>
+            <p className="text-[13px] font-semibold text-primary">Import complete</p>
             <p className="text-[12px] text-teal-700">
               {confirmed.imported_count} item{confirmed.imported_count !== 1 ? "s" : ""} imported
               {confirmed.skipped_duplicates > 0
@@ -289,7 +289,7 @@ export default function ImportDataPage() {
                 onClick={() => { setImportType(t); setPreview(null); setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
                 className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
                   importType === t
-                    ? "border-[#0F766E] bg-teal-50 text-[#0F766E]"
+                    ? "border-primary bg-teal-50 text-primary"
                     : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
                 }`}
               >
@@ -331,7 +331,7 @@ export default function ImportDataPage() {
             type="button"
             onClick={handlePreview}
             disabled={!selectedFile || previewing}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0F766E] py-3 text-[14px] font-semibold text-white transition-opacity disabled:opacity-40"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-[14px] font-semibold text-white transition-opacity disabled:opacity-40"
           >
             {previewing ? (
               <>
@@ -352,7 +352,7 @@ export default function ImportDataPage() {
 
           {/* Stats row */}
           <div className="grid grid-cols-3 divide-x divide-stone-100 border-b border-stone-100">
-            <StatCell value={preview.valid_items} label="Valid" color="text-[#0F766E]" />
+            <StatCell value={preview.valid_items} label="Valid" color="text-primary" />
             <StatCell value={preview.duplicate_items} label="Duplicates" color="text-amber-600" />
             <StatCell value={preview.error_items} label="Errors" color="text-red-500" />
           </div>
@@ -409,7 +409,7 @@ export default function ImportDataPage() {
                   type="button"
                   onClick={handleConfirm}
                   disabled={confirming}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0F766E] py-3 text-[14px] font-semibold text-white transition-opacity disabled:opacity-40"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-[14px] font-semibold text-white transition-opacity disabled:opacity-40"
                 >
                   {confirming ? (
                     <>

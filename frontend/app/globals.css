@@ -5,32 +5,65 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-  --color-primary: #0f3460;
-  --color-accent: #e94560;
-  --color-accent-hover: #c73652;
-  --color-accent-light: #fff0f3;
-  --color-bg: #f8f9fa;
+  --foreground: #0f172a;
+  --color-primary: #0f766e;
+  --color-primary-hover: #0d635c;
+  --color-primary-soft: #ccfbf1;
+  --color-navy: #0f172a;
+  --color-surface: #1e293b;
+  --color-app: #f8fafc;
   --color-card: #ffffff;
-  --color-text: #2c3e50;
-  --color-text-muted: #6c757d;
-  --color-success: #2ecc71;
-  --color-border: #e9ecef;
-  --color-sidebar: #0f3460;
+  --color-elevated: #ffffff;
+  --color-text: #0f172a;
+  --color-text-on-dark: #f8fafc;
+  --color-muted: #94a3b8;
+  --color-border: #e2e8f0;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #0f766e;
+  --color-overlay: rgba(15, 23, 42, 0.45);
+  --color-sidebar: #0f172a;
+  --radius-control: 0.75rem;
+  --radius-card: 1.25rem;
+  --radius-modal: 1rem;
+  --radius-pill: 9999px;
+  --shadow-card: 0 18px 45px -30px rgba(15, 23, 42, 0.32);
+  --shadow-panel: 0 12px 32px rgba(15, 23, 42, 0.12);
+  --shadow-float: 0 8px 24px rgba(15, 23, 42, 0.1);
+  --header-height: 4rem;
+  --mobile-nav-height: 4rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-primary-soft: var(--color-primary-soft);
+  --color-navy: var(--color-navy);
+  --color-surface: var(--color-surface);
+  --color-app: var(--color-app);
+  --color-card: var(--color-card);
+  --color-elevated: var(--color-elevated);
+  --color-text: var(--color-text);
+  --color-text-on-dark: var(--color-text-on-dark);
+  --color-muted: var(--color-muted);
+  --color-border: var(--color-border);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-error: var(--color-error);
+  --color-info: var(--color-info);
+  --color-sidebar: var(--color-sidebar);
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+  --radius-modal: var(--radius-modal);
+  --radius-pill: var(--radius-pill);
+  --shadow-card: var(--shadow-card);
+  --shadow-panel: var(--shadow-panel);
+  --shadow-float: var(--shadow-float);
   --font-sans: var(--font-inter), ui-sans-serif, sans-serif;
   --font-display: var(--font-outfit), ui-sans-serif, sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 html,
@@ -42,6 +75,57 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+/* ─── Rovvy shared page patterns ─────────────────────────────────────────── */
+.rovvy-page-shell {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 72rem;
+  padding: 1.5rem 1rem;
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 640px) {
+  .rovvy-page-shell {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .rovvy-page-shell {
+    padding-inline: 2rem;
+  }
+}
+
+.rovvy-page-header {
+  margin-bottom: 1.5rem;
+}
+
+.rovvy-page-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 1.2rem + 1vw, 1.875rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.rovvy-page-description {
+  margin-top: 0.375rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @keyframes shimmer {
@@ -318,6 +402,32 @@ body.live-mode .live-page-shell {
 
 body.live-mode .live-page-shell > * {
   max-width: 100% !important;
+}
+
+body.live-mode {
+  --live-accent: #0f766e;
+  --live-surface: rgba(255, 255, 255, 0.92);
+  --live-surface-border: rgba(214, 211, 209, 0.7);
+  --live-shadow-panel: 0 8px 32px rgba(15, 23, 42, 0.1);
+  --live-shadow-search: 0 4px 20px rgba(15, 23, 42, 0.1);
+  --live-radius-panel: 1rem;
+  --live-radius-search: 9999px;
+  --live-motion-panel: 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes live-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.live-panel-enter {
+  animation: live-panel-enter var(--live-motion-panel) both;
 }
 
 /* Waze-style Driver/Navigation Mode overrides — hides global layout shells completely */

@@ -20,6 +20,15 @@ import {
   warnIfUnsafeProductionTiles,
   type LiveMapLayer,
 } from "@/lib/map-providers";
+import { patchMapLibreTileAbortRace } from "./live-maplibre-tile-abort-fix";
+import {
+  createBorderCheckpointMarkerElement,
+  createClickedPinMarkerElement,
+  createCoordinateOverlayElement,
+  createDestinationMarkerElement,
+  createExactSelectedPlaceMarkerElement,
+  createStartMarkerElement,
+} from "./live-marker-elements";
 import {
   applyLiveMapZoomLimits,
   clampLiveMapZoom,
@@ -39,7 +48,13 @@ import { syncHybridRoadOverlay } from "./live-hybrid-roads-sync";
 import { syncSeaRoutesOverlay } from "./live-sea-routes-sync";
 import { syncFootRoutesOverlay } from "./live-foot-routes-sync";
 import { syncDarkMapStreetLabels } from "./live-dark-map-labels";
+import { beginLiveMapStyleSwitch } from "./live-map-style-switch";
 import { syncFriendLocationsOverlay, type FriendLocation } from "./live-friend-layer-sync";
+import {
+  bindSavedPlacesLayerClick,
+  syncSavedPlacesOverlay,
+} from "./live-saved-places-layer-sync";
+import type { LiveSavedPlace } from "./live-saved-places-store";
 import { createMeetupMarkerElement } from "./live-meetup-marker";
 import { getPoiMarkerPresentation } from "./live-poi-icons";
 import type { AutocompleteResult } from "./live-geocoding";
@@ -66,7 +81,19 @@ import {
   isLiveGlobeViewZoom,
   resolveLiveLocateZoom,
   syncLiveGlobeBackground,
+  syncLiveMapProjection,
 } from "./live-map-globe";
+import { resolveMapTapLngLat } from "./live-map-tap-coords";
+import {
+  applyUserMarkerContent,
+  buildGpsMarkerCss,
+  buildUserLocationPopupHtml,
+  createUserMarkerElement,
+  normalizeGpsMarkerVisualState,
+  resolveGpsMarkerMode,
+  setUserMarkerGlobeScale,
+  type GpsMarkerVisualState,
+} from "./live-gps-marker";
 
 /** Extended arrow-cursor + custom Google Maps style pulse animations */
 const LIVE_MAP_CSS = `
@@ -79,66 +106,6 @@ const LIVE_MAP_CSS = `
 }
 .rovvy-live-map-container .maplibregl-canvas-container:active {
   cursor: default !important;
-}
-.rovvy-live-map-container .maplibregl-marker:has(.gt-user-location-marker) {
-  z-index: 6 !important;
-}
-.gt-user-location-marker {
-  position: relative;
-  z-index: 6;
-  width: 28px;
-  height: 28px;
-  pointer-events: none;
-}
-.gt-user-location-marker .gt-user-location-dot {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
-  z-index: 4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.gt-user-location-marker .gt-user-location-dot-core {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #1a73e8;
-}
-.gt-user-location-marker.gt-user-location-marker--globe {
-  width: 44px;
-  height: 44px;
-}
-.gt-user-location-marker.gt-user-location-marker--globe .gt-user-location-dot {
-  width: 30px;
-  height: 30px;
-  box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.35), 0 2px 10px rgba(0, 0, 0, 0.45);
-}
-.gt-user-location-marker.gt-user-location-marker--globe .gt-user-location-dot-core {
-  width: 20px;
-  height: 20px;
-}
-.user-location-popup.maplibregl-popup {
-  z-index: 5;
-}
-.user-location-popup.maplibregl-popup .maplibregl-popup-tip {
-  border-top-color: #ffffff;
-}
-@keyframes rovvy-gps-pulse {
-  0% {
-    transform: scale(0.6);
-    opacity: 0.85;
-  }
-  100% {
-    transform: scale(4.5);
-    opacity: 0;
-  }
 }
 @keyframes rovvy-star-twinkle {
   0%, 100% {
@@ -191,10 +158,17 @@ function injectLiveMapCursorStyle() {
     document.head.appendChild(style);
     liveCssInjected = true;
   }
-  style.textContent = LIVE_MAP_CSS;
+  style.textContent = LIVE_MAP_CSS + buildGpsMarkerCss();
 }
 
-export type UserLocation = { lat: number; lng: number; accuracy?: number; timestamp?: number };
+export type UserLocation = {
+  lat: number;
+  lng: number;
+  accuracy?: number;
+  timestamp?: number;
+  heading?: number | null;
+  speed?: number | null;
+};
 
 export type { GpsStatus, GpsState } from "./live-gps";
 
@@ -246,6 +220,9 @@ type Props = {
   footRoutesEnabled?: boolean;
   friends?: FriendLocation[];
   friendTrackingEnabled?: boolean;
+  savedPlaces?: LiveSavedPlace[];
+  savedPlacesLayerEnabled?: boolean;
+  onSavedPlaceSelect?: (placeId: string) => void;
   mapRef: React.MutableRefObject<LiveMapRef | null>;
   mapPin?: { lat: number; lng: number } | null;
   pinMode?: "meetup" | "selected";
@@ -270,6 +247,8 @@ type Props = {
   onZoomChange?: (zoom: number) => void;
   onMaxZoomCapChange?: (maxZoom: number) => void;
   onLayerChange?: (layer: LiveMapLayer) => void;
+  /** Fired once when the map ref is ready for locate/zoom commands. */
+  onMapReady?: () => void;
   crossBorderAlert?: {
     fromCountry?: string | null;
     toCountry?: string | null;
@@ -278,37 +257,29 @@ type Props = {
   autoFitRoute?: boolean;
 };
 
-function createUserMarkerElement(liveActive: boolean, navigating: boolean): HTMLDivElement {
-  const el = document.createElement("div");
-  el.className = "gt-user-location-marker";
-  el.style.cssText =
-    "position:relative;width:28px;height:28px;pointer-events:none;z-index:6;";
-
-  const dotColor = navigating || liveActive ? (liveActive ? "#0F766E" : "#2563EB") : "#1A73E8";
-  const pulseColor = navigating || liveActive ? "15, 118, 110" : "26, 115, 232";
-
-  // All dot styling is inline — never depend on injected CSS for visibility.
-  el.innerHTML = `
-    <div style="position:relative;width:28px;height:28px;display:flex;align-items:center;justify-content:center;">
-      <div style="position:absolute;width:28px;height:28px;border-radius:50%;background:rgba(${pulseColor},0.12);border:1px solid rgba(${pulseColor},0.28);animation:rovvy-gps-pulse 3.2s infinite cubic-bezier(0.25,0,0,1);pointer-events:none;z-index:1;"></div>
-      <div style="position:absolute;width:28px;height:28px;border-radius:50%;background:rgba(${pulseColor},0.06);border:1px dashed rgba(${pulseColor},0.22);animation:rovvy-gps-pulse 3.2s infinite cubic-bezier(0.25,0,0,1);animation-delay:1.6s;pointer-events:none;z-index:1;"></div>
-      <div data-gps-dot="true" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:#ffffff;box-shadow:0 1px 6px rgba(0,0,0,0.4);z-index:4;display:flex;align-items:center;justify-content:center;">
-        <div style="width:14px;height:14px;border-radius:50%;background:${dotColor};"></div>
-      </div>
-    </div>
-  `;
-  return el;
-}
-
-function applyUserMarkerContent(
-  target: HTMLElement,
+function buildGpsMarkerVisualState(
   liveActive: boolean,
   navigating: boolean,
+  motion: { heading: number | null; speed: number | null },
+  status: GpsStatus | null,
+): GpsMarkerVisualState {
+  return normalizeGpsMarkerVisualState({
+    mode: resolveGpsMarkerMode(liveActive, navigating),
+    heading: motion.heading,
+    speedMps: motion.speed,
+    acquiring: status === "requesting" || status === "stale",
+    approximate: status === "approximate",
+  });
+}
+
+function updateUserMarkerGlobeScale(
+  map: maplibregl.Map,
+  marker: maplibregl.Marker | null,
 ): void {
-  const fresh = createUserMarkerElement(liveActive, navigating);
-  target.className = fresh.className;
-  target.style.cssText = fresh.style.cssText;
-  target.innerHTML = fresh.innerHTML;
+  if (!marker) return;
+  const el = marker.getElement();
+  if (!el) return;
+  setUserMarkerGlobeScale(el, isLiveGlobeViewZoom(map.getZoom()));
 }
 
 function ensureMarkerOnMap(marker: maplibregl.Marker, map: maplibregl.Map): void {
@@ -319,112 +290,6 @@ function ensureMarkerOnMap(marker: maplibregl.Marker, map: maplibregl.Map): void
   if (!el.isConnected) {
     reattachHtmlMarker(marker, map);
   }
-}
-
-function createStartMarkerElement(): HTMLDivElement {
-  const el = document.createElement("div");
-  el.className = "rovvy-start-marker";
-  el.style.cssText = "display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; user-select: none;";
-  
-  el.innerHTML = `
-    <div style="
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #FFFFFF;
-      border: 2.5px solid #64748B;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    ">
-      <div style="width: 4px; height: 4px; border-radius: 50%; background: #0F766E;"></div>
-    </div>
-    <div style="
-      margin-top: 4px;
-      background: #0F172A;
-      color: #FFFFFF;
-      font-family: sans-serif;
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      padding: 2.5px 6.5px;
-      border-radius: 5px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      white-space: nowrap;
-    ">
-      Start
-    </div>
-  `;
-  return el;
-}
-
-function createRovvyTeardropPinElement(size: "md" | "lg" = "md"): HTMLDivElement {
-  const el = document.createElement("div");
-  el.style.cssText = "pointer-events:none;";
-  const pinSize = size === "lg" ? 28 : 24;
-  const wrapH = size === "lg" ? 40 : 36;
-  el.innerHTML = `
-    <div style="
-      position: relative;
-      width: ${pinSize + 4}px;
-      height: ${wrapH}px;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-    ">
-      <div style="
-        width: ${pinSize}px;
-        height: ${pinSize}px;
-        border-radius: 50% 50% 50% 0;
-        transform: rotate(-45deg);
-        background: #0F766E;
-        border: 3px solid #ffffff;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.35);
-      "></div>
-      <div style="
-        position: absolute;
-        top: ${size === "lg" ? 8 : 7}px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: ${size === "lg" ? 9 : 8}px;
-        height: ${size === "lg" ? 9 : 8}px;
-        border-radius: 50%;
-        background: #ffffff;
-      "></div>
-    </div>
-  `;
-  return el;
-}
-
-function createDestinationMarkerElement(navigating: boolean): HTMLDivElement {
-  if (navigating) {
-    const el = document.createElement("div");
-    el.innerHTML = `<div style="width:22px;height:22px;border-radius:50%;background:#FFFFFF;border:4px solid #0F766E;box-shadow:0 2px 8px rgba(0,0,0,0.25);"></div>`;
-    return el;
-  }
-  return createRovvyTeardropPinElement("lg");
-}
-
-function createClickedPinMarkerElement(): HTMLDivElement {
-  return createRovvyTeardropPinElement("md");
-}
-
-function createCoordinateOverlayElement(lat: number, lng: number): HTMLDivElement {
-  const el = document.createElement("div");
-  el.style.cssText = "pointer-events:none;z-index:8;";
-  const latDir = lat >= 0 ? "N" : "S";
-  const lngDir = lng >= 0 ? "E" : "W";
-  el.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;transform:translateY(-4px);">
-      <div style="width:12px;height:12px;border-radius:50%;background:#0F766E;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
-      <div style="max-width:220px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.96);border:1px solid #e7e5e4;font-size:11px;font-weight:600;color:#1c1917;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.12);font-family:ui-monospace,monospace;line-height:1.35;">
-        ${Math.abs(lat).toFixed(5)}° ${latDir}<br/>${Math.abs(lng).toFixed(5)}° ${lngDir}
-      </div>
-    </div>
-  `;
-  return el;
 }
 
 function showClickRipple(container: HTMLElement, x: number, y: number): void {
@@ -538,92 +403,6 @@ function routeArrowLayout(): maplibregl.SymbolLayerSpecification["layout"] {
     "text-pitch-alignment": "map",
     "text-offset": [0, 0],
   };
-}
-
-function createRedMapPinElement(size: "md" | "lg" = "lg"): HTMLDivElement {
-  const el = document.createElement("div");
-  el.style.cssText = "pointer-events:none;";
-  const pinSize = size === "lg" ? 28 : 24;
-  const wrapH = size === "lg" ? 40 : 36;
-  el.innerHTML = `
-    <div style="
-      position: relative;
-      width: ${pinSize + 4}px;
-      height: ${wrapH}px;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-    ">
-      <div style="
-        width: ${pinSize}px;
-        height: ${pinSize}px;
-        border-radius: 50% 50% 50% 0;
-        transform: rotate(-45deg);
-        background: #DC2626;
-        border: 3px solid #ffffff;
-        box-shadow: 0 3px 10px rgba(220,38,38,0.45);
-      "></div>
-      <div style="
-        position: absolute;
-        top: ${size === "lg" ? 8 : 7}px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: ${size === "lg" ? 9 : 8}px;
-        height: ${size === "lg" ? 9 : 8}px;
-        border-radius: 50%;
-        background: #ffffff;
-      "></div>
-    </div>
-  `;
-  return el;
-}
-
-function createExactSelectedPlaceMarkerElement(lat: number, lng: number): HTMLDivElement {
-  const el = document.createElement("div");
-  el.style.cssText = "pointer-events:none;z-index:8;";
-  const latDir = lat >= 0 ? "N" : "S";
-  const lngDir = lng >= 0 ? "E" : "W";
-  const pin = createRedMapPinElement("lg");
-  const wrap = document.createElement("div");
-  wrap.style.cssText =
-    "display:flex;flex-direction:column;align-items:center;gap:6px;transform:translateY(-4px);";
-  wrap.appendChild(pin);
-  const label = document.createElement("div");
-  label.style.cssText =
-    "max-width:220px;padding:5px 9px;border-radius:9px;background:rgba(15,23,42,0.94);border:1px solid rgba(255,255,255,0.18);color:#fff;font-size:10px;font-weight:700;font-family:ui-monospace,monospace;text-align:center;line-height:1.35;box-shadow:0 4px 16px rgba(0,0,0,0.38);";
-  label.innerHTML = `Selected place<br/>${Math.abs(lat).toFixed(5)}° ${latDir}<br/>${Math.abs(lng).toFixed(5)}° ${lngDir}`;
-  wrap.appendChild(label);
-  el.appendChild(wrap);
-  return el;
-}
-
-function createFarDestinationMarkerElement(): HTMLDivElement {
-  const el = document.createElement("div");
-  el.style.cssText = "pointer-events:none;z-index:7;";
-  el.innerHTML = `
-    <div style="position:relative;width:36px;height:48px;display:flex;align-items:flex-start;justify-content:center;">
-      <div style="position:absolute;width:36px;height:36px;border-radius:50%;background:rgba(15,118,110,0.18);border:2px solid rgba(15,118,110,0.45);animation:rovvy-gps-pulse 2.4s infinite cubic-bezier(0.25,0,0,1);"></div>
-      <div style="position:relative;width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#0F766E;border:3px solid #ffffff;box-shadow:0 0 18px rgba(15,118,110,0.65),0 4px 12px rgba(0,0,0,0.28);"></div>
-      <div style="position:absolute;top:9px;left:50%;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;background:#ffffff;"></div>
-    </div>
-  `;
-  return el;
-}
-
-function createBorderCheckpointMarkerElement(label: string): HTMLDivElement {
-  const el = document.createElement("div");
-  el.style.cssText = "pointer-events:none;z-index:9;";
-  el.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;transform:translateY(-6px);">
-      <div style="width:30px;height:30px;border-radius:10px;background:#F59E0B;border:2.5px solid #ffffff;box-shadow:0 0 16px rgba(245,158,11,0.55),0 4px 12px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;">
-        🛂
-      </div>
-      <div style="max-width:240px;padding:6px 10px;border-radius:10px;background:rgba(255,251,235,0.97);border:1.5px solid #F59E0B;font-size:11px;font-weight:700;color:#92400E;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,0.18);line-height:1.35;">
-        ${label}
-      </div>
-    </div>
-  `;
-  return el;
 }
 
 function syncBorderCrossingLayersNow(
@@ -1027,17 +806,25 @@ function syncNearbyMarkersNow(
   return next;
 }
 
-function updateUserMarkerGlobeScale(
+function isPinInMapViewport(
   map: maplibregl.Map,
-  marker: maplibregl.Marker | null,
-): void {
-  if (!marker) return;
-  const el = marker.getElement();
-  if (!el) return;
-  el.classList.toggle(
-    "gt-user-location-marker--globe",
-    isLiveGlobeViewZoom(map.getZoom()),
-  );
+  lat: number,
+  lng: number,
+  paddingPx = 56,
+): boolean {
+  try {
+    const point = map.project([lng, lat]);
+    const { clientWidth: w, clientHeight: h } = map.getContainer();
+    if (w <= 0 || h <= 0) return false;
+    return (
+      point.x >= paddingPx &&
+      point.x <= w - paddingPx &&
+      point.y >= paddingPx &&
+      point.y <= h - paddingPx
+    );
+  } catch {
+    return false;
+  }
 }
 
 export default function LiveMapComponent({
@@ -1048,6 +835,9 @@ export default function LiveMapComponent({
   footRoutesEnabled = false,
   friends = [],
   friendTrackingEnabled = false,
+  savedPlaces = [],
+  savedPlacesLayerEnabled = true,
+  onSavedPlaceSelect,
   mapRef,
   mapPin,
   pinMode = "selected",
@@ -1072,6 +862,7 @@ export default function LiveMapComponent({
   onZoomChange,
   onMaxZoomCapChange,
   onLayerChange,
+  onMapReady,
   crossBorderAlert = null,
   autoFitRoute = true,
 }: Props) {
@@ -1101,6 +892,10 @@ export default function LiveMapComponent({
   const originMarkerRef = useRef<maplibregl.Marker | null>(null);
   const startMarkerRef = useRef<maplibregl.Marker | null>(null);
   const userLocationRef = useRef<UserLocation | null>(null);
+  const userMotionRef = useRef<{ heading: number | null; speed: number | null }>({
+    heading: null,
+    speed: null,
+  });
   const watchIdsRef = useRef<number[]>([]);
   const isUnmountedRef = useRef(false);
   const lastStateReportedRef = useRef<{
@@ -1120,8 +915,8 @@ export default function LiveMapComponent({
     programmaticCameraMoveRef.current = true;
   }, []);
 
-  const callbacksRef = useRef({ onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onMapCenterChange, onBearingChange, onZoomChange, onMaxZoomCapChange, onLayerChange });
-  callbacksRef.current = { onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onMapCenterChange, onBearingChange, onZoomChange, onMaxZoomCapChange, onLayerChange };
+  const callbacksRef = useRef({ onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onMapCenterChange, onBearingChange, onZoomChange, onMaxZoomCapChange, onLayerChange, onMapReady });
+  callbacksRef.current = { onGpsStateChange, onMapClick, onMapDoubleClick, onLiveGpsChange, onMapInteraction, onMapCenterChange, onBearingChange, onZoomChange, onMaxZoomCapChange, onLayerChange, onMapReady };
   const isLiveActiveRef = useRef(isLiveActive);
   isLiveActiveRef.current = isLiveActive;
   const navigationModeRef = useRef(navigationMode);
@@ -1138,6 +933,7 @@ export default function LiveMapComponent({
   const borderCheckpointMarkersRef = useRef<maplibregl.Marker[]>([]);
   const skipInitialStyleSwitchRef = useRef(true);
   const styleTransitionRef = useRef(false);
+  const styleSwitchSessionRef = useRef<{ cancel: () => void } | null>(null);
   const viewModeRef = useRef<LiveMapViewMode>("2d");
   const mapPinRef = useRef(mapPin);
   mapPinRef.current = mapPin;
@@ -1165,6 +961,12 @@ export default function LiveMapComponent({
   friendsRef.current = friends;
   const friendTrackingEnabledRef = useRef(friendTrackingEnabled);
   friendTrackingEnabledRef.current = friendTrackingEnabled;
+  const savedPlacesRef = useRef(savedPlaces);
+  savedPlacesRef.current = savedPlaces;
+  const savedPlacesLayerEnabledRef = useRef(savedPlacesLayerEnabled);
+  savedPlacesLayerEnabledRef.current = savedPlacesLayerEnabled;
+  const onSavedPlaceSelectRef = useRef(onSavedPlaceSelect);
+  onSavedPlaceSelectRef.current = onSavedPlaceSelect;
 
   const zoomContext = useCallback(
     () => ({ travelLayerEnabled: travelLayerEnabledRef.current }),
@@ -1184,6 +986,11 @@ export default function LiveMapComponent({
     syncDarkMapStreetLabels(map, activeLayerRef.current === "dark");
     syncRouteLayerNow(map, routeLineRef.current, activeLayerRef.current);
     syncFriendLocationsOverlay(map, friendsRef.current || [], !!friendTrackingEnabledRef.current);
+    syncSavedPlacesOverlay(
+      map,
+      savedPlacesRef.current || [],
+      !!savedPlacesLayerEnabledRef.current,
+    );
 
     const loc = userLocationRef.current;
     if (loc) {
@@ -1343,13 +1150,14 @@ export default function LiveMapComponent({
     isUnmountedRef.current = false;
 
     const layerStyles = getLiveMapLibreLayerStyles();
-    const initialMaxZoom = resolveLiveMapMaxZoom(null, activeLayer, {
+    const initialLayer = activeLayerRef.current;
+    const initialMaxZoom = resolveLiveMapMaxZoom(null, initialLayer, {
       travelLayerEnabled,
     });
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: layerStyles[activeLayer] || layerStyles.street,
-      center: [-87.726, 41.922], // Pulaski Road, Chicago baseline coordinates
+      style: layerStyles[initialLayer] || layerStyles.street,
+      center: [-87.726, 41.922] as [number, number], // Pulaski Road, Chicago baseline coordinates
       zoom: 14,
       minZoom: LIVE_MAP_MIN_ZOOM,
       maxZoom: initialMaxZoom,
@@ -1358,10 +1166,12 @@ export default function LiveMapComponent({
       maxPitch: LIVE_MAP_3D_PITCH,
       attributionControl: false,
       doubleClickZoom: false,
-      alpha: true,
-    } as any);
+      // Transparent canvas so the globe's space backdrop shows through.
+      canvasContextAttributes: { alpha: true },
+    });
 
     instanceRef.current = map;
+    patchMapLibreTileAbortRace(map);
 
     let hasFallback = false;
     map.on("error", (e: any) => {
@@ -1453,6 +1263,10 @@ export default function LiveMapComponent({
       updateUserMarkerGlobeScale(map, userMarkerRef.current);
     });
 
+    bindSavedPlacesLayerClick(map, (placeId) => {
+      onSavedPlaceSelectRef.current?.(placeId);
+    });
+
     map.on("error", (event) => {
       const error = event?.error;
       if (isRoutineTileFetchError(error)) return;
@@ -1464,12 +1278,14 @@ export default function LiveMapComponent({
     map.on("dblclick", (e) => {
       e.preventDefault();
       suppressClickUntil = Date.now() + 450;
+      const tapLngLat = resolveMapTapLngLat(map, e.point, e.lngLat);
+      if (!tapLngLat) return;
       if (mapContainer.current) {
         showClickRipple(mapContainer.current, e.point.x, e.point.y);
       }
       callbacksRef.current.onMapDoubleClick?.({
-        lat: e.lngLat.lat,
-        lng: e.lngLat.lng,
+        lat: tapLngLat.lat,
+        lng: tapLngLat.lng,
         screenX: e.point.x,
         screenY: e.point.y,
       });
@@ -1477,6 +1293,9 @@ export default function LiveMapComponent({
 
     map.on("click", (e) => {
       if (Date.now() < suppressClickUntil) return;
+      const tapLngLat = resolveMapTapLngLat(map, e.point, e.lngLat);
+      if (!tapLngLat) return;
+
       const { x, y } = e.point;
       const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
         [x - 16, y - 16],
@@ -1510,8 +1329,8 @@ export default function LiveMapComponent({
       }
 
       setDebugInfo({
-        lat: e.lngLat.lat,
-        lng: e.lngLat.lng,
+        lat: tapLngLat.lat,
+        lng: tapLngLat.lng,
         count: targetedFeatures.length,
         layers: targetedFeatures.map((f: any) => f.layer?.id || "unknown"),
         topName,
@@ -1519,8 +1338,8 @@ export default function LiveMapComponent({
       });
 
       callbacksRef.current.onMapClick?.({
-        lat: e.lngLat.lat,
-        lng: e.lngLat.lng,
+        lat: tapLngLat.lat,
+        lng: tapLngLat.lng,
         screenX: x,
         screenY: y,
         features: targetedFeatures,
@@ -1576,11 +1395,12 @@ export default function LiveMapComponent({
 
     const emitZoom = () => {
       enforceZoomCap();
+      const z = map.getZoom();
+      syncLiveMapProjection(map, z);
       updateUserMarkerGlobeScale(map, userMarkerRef.current);
       syncLiveGlobeBackground(map);
 
       // Update space background opacity and visibility
-      const z = map.getZoom();
       if (spaceBackgroundRef.current) {
         const opacity = Math.max(0, Math.min(1, (3.2 - z) / 2.2));
         spaceBackgroundRef.current.style.opacity = String(opacity);
@@ -1622,53 +1442,71 @@ export default function LiveMapComponent({
         : null;
     resizeObserver?.observe(containerEl);
 
-    function ensureUserMarker(lat: number, lng: number, accuracy: number | null, timestamp: number | null) {
-      if (userMarkerRef.current) {
-        userMarkerRef.current.setLngLat([lng, lat]);
-        applyUserMarkerContent(
-          userMarkerRef.current.getElement(),
+    function refreshUserMarkerVisuals() {
+      const marker = userMarkerRef.current;
+      if (!marker) return;
+      try {
+        const visual = buildGpsMarkerVisualState(
           isLiveActiveRef.current,
           navigationModeRef.current,
+          userMotionRef.current,
+          lastStateReportedRef.current?.status ?? null,
         );
-        ensureMarkerOnMap(userMarkerRef.current, map);
-      } else {
-        userMarkerRef.current = new maplibregl.Marker({
-          element: createUserMarkerElement(isLiveActiveRef.current, navigationModeRef.current),
-          anchor: "center",
-        })
-          .setLngLat([lng, lat])
-          .addTo(map);
-
-        const popup = new maplibregl.Popup({
-          closeButton: false,
-          offset: 32,
-          anchor: "bottom",
-          className: "user-location-popup",
-        });
-        userMarkerRef.current.setPopup(popup);
+        applyUserMarkerContent(marker.getElement(), visual);
+        updateUserMarkerGlobeScale(map, marker);
+      } catch (err) {
+        logRovvyLiveWarn("[Rovvy GPS] refreshUserMarkerVisuals failed", err);
       }
+    }
 
-      const markerEl = userMarkerRef.current.getElement();
-      markerEl.style.display = "";
-      markerEl.style.zIndex = "6";
-      updateUserMarkerGlobeScale(map, userMarkerRef.current);
+    function ensureUserMarker(lat: number, lng: number, accuracy: number | null, timestamp: number | null) {
+      try {
+        injectLiveMapCursorStyle();
+        const visual = buildGpsMarkerVisualState(
+          isLiveActiveRef.current,
+          navigationModeRef.current,
+          userMotionRef.current,
+          lastStateReportedRef.current?.status ?? "active",
+        );
 
-      const popup = userMarkerRef.current.getPopup();
-      if (popup) {
-        const ageSec = timestamp ? Math.round((Date.now() - timestamp) / 1000) : 0;
-        const content = `
-          <div style="padding: 4px 8px; font-family: sans-serif; min-width: 140px;">
-            <div style="font-weight: bold; font-size: 13px; margin-bottom: 4px; color: #1c1917;">You are here</div>
-            <div style="font-size: 11px; color: #57534e;">Accuracy: ± ${accuracy ? Math.round(accuracy) : '?'} m</div>
-            <div style="font-size: 11px; color: #78716c; margin-top: 2px;">Updated ${ageSec} sec ago</div>
-          </div>
-        `;
-        popup.setHTML(content);
+        if (userMarkerRef.current) {
+          userMarkerRef.current.setLngLat([lng, lat]);
+          applyUserMarkerContent(userMarkerRef.current.getElement(), visual);
+          ensureMarkerOnMap(userMarkerRef.current, map);
+        } else {
+          userMarkerRef.current = new maplibregl.Marker({
+            element: createUserMarkerElement(visual),
+            anchor: "center",
+          })
+            .setLngLat([lng, lat])
+            .addTo(map);
+
+          const popup = new maplibregl.Popup({
+            closeButton: false,
+            offset: 36,
+            anchor: "bottom",
+            className: "user-location-popup",
+          });
+          userMarkerRef.current.setPopup(popup);
+        }
+
+        const markerEl = userMarkerRef.current.getElement();
+        markerEl.style.display = "";
+        markerEl.style.zIndex = "100";
+        updateUserMarkerGlobeScale(map, userMarkerRef.current);
+
+        const popup = userMarkerRef.current.getPopup();
+        if (popup) {
+          popup.setHTML(buildUserLocationPopupHtml(accuracy, timestamp));
+        }
+      } catch (err) {
+        logRovvyLiveWarn("[Rovvy GPS] ensureUserMarker failed", err);
       }
     }
     ensureUserMarkerRef.current = ensureUserMarker;
 
 
+    /** Single write path for GPS presence on the map — navigator.geolocation only. */
     function applyUserLocation(
       lat: number,
       lng: number,
@@ -1689,7 +1527,15 @@ export default function LiveMapComponent({
         liveGpsActiveRef.current = true;
         callbacksRef.current.onLiveGpsChange?.(true);
       }
-      userLocationRef.current = { lat, lng, accuracy: accuracyMeters || undefined, timestamp: timestamp || undefined };
+      userMotionRef.current = { heading, speed: speedMps };
+      userLocationRef.current = {
+        lat,
+        lng,
+        accuracy: accuracyMeters || undefined,
+        timestamp: timestamp || undefined,
+        heading,
+        speed: speedMps,
+      };
       logRovvyLiveDebug("[Rovvy Debug] LiveMapComponent set userLocationRef:", userLocationRef.current);
 
       ensureUserMarker(lat, lng, accuracyMeters, timestamp);
@@ -1744,6 +1590,7 @@ export default function LiveMapComponent({
           timestamp: now,
         };
         callbacksRef.current.onGpsStateChange?.(newState);
+        refreshUserMarkerVisuals();
       }
 
       if (process.env.NEXT_PUBLIC_ROVVY_MAP_DEBUG === "true") {
@@ -1964,6 +1811,13 @@ export default function LiveMapComponent({
         timestamp: userLocationRef.current?.timestamp || null,
         source: null,
       });
+      lastStateReportedRef.current = {
+        status: "requesting",
+        lat: userLocationRef.current?.lat ?? null,
+        lng: userLocationRef.current?.lng ?? null,
+        timestamp: Date.now(),
+      };
+      refreshUserMarkerVisuals();
       hasCenteredOnUserRef.current = !forceCenter;
       bestAccuracyCenteredRef.current = null;
 
@@ -2225,8 +2079,16 @@ export default function LiveMapComponent({
       },
     };
 
+    queueMicrotask(() => {
+      if (!isUnmountedRef.current) {
+        callbacksRef.current.onMapReady?.();
+      }
+    });
+
     return () => {
       isUnmountedRef.current = true;
+      styleSwitchSessionRef.current?.cancel();
+      styleSwitchSessionRef.current = null;
       window.clearInterval(heartbeatTimer);
       unbindGlobeMode();
       unbindGlobeSunLight();
@@ -2300,27 +2162,49 @@ export default function LiveMapComponent({
       return;
     }
 
+    styleSwitchSessionRef.current?.cancel();
+    styleSwitchSessionRef.current = null;
+
     const layerStyles = getLiveMapLibreLayerStyles();
-    styleTransitionRef.current = true;
-    map.setStyle(layerStyles[activeLayer] || layerStyles.street, { diff: false });
-    map.once("style.load", () => {
-      map.resize();
-      applyLiveGlobeMode(map, activeLayerRef.current);
-      ensureLiveMapFallbackBackground(map);
-      const maxZoom = applyLiveMapZoomLimits(map, activeLayer, zoomContext());
-      callbacksRef.current.onMaxZoomCapChange?.(maxZoom);
-      map.setMaxPitch(LIVE_MAP_3D_PITCH);
-      const targetPitch =
-        viewModeRef.current === "3d" ? LIVE_MAP_3D_PITCH : LIVE_MAP_2D_PITCH;
-      if (Math.abs(map.getPitch() - targetPitch) > 0.5) {
-        map.setPitch(targetPitch);
-      }
-      map.once("idle", () => {
+    const targetLayer = activeLayer;
+    const nextStyle = layerStyles[targetLayer] || layerStyles.street;
+
+    const session = beginLiveMapStyleSwitch(
+      map,
+      targetLayer,
+      nextStyle,
+      (readyMap) => {
+        if (activeLayerRef.current !== targetLayer) return;
+
+        readyMap.resize();
+        applyLiveGlobeMode(readyMap, targetLayer);
+        ensureLiveMapFallbackBackground(readyMap);
+        const maxZoom = applyLiveMapZoomLimits(readyMap, targetLayer, zoomContext());
+        callbacksRef.current.onMaxZoomCapChange?.(maxZoom);
+        readyMap.setMaxPitch(LIVE_MAP_3D_PITCH);
+        const targetPitch =
+          viewModeRef.current === "3d" ? LIVE_MAP_3D_PITCH : LIVE_MAP_2D_PITCH;
+        if (Math.abs(readyMap.getPitch() - targetPitch) > 0.5) {
+          readyMap.setPitch(targetPitch);
+        }
         styleTransitionRef.current = false;
-        restoreOverlaysAfterStyleChange(map);
-      });
-    });
-  }, [activeLayer, restoreOverlaysAfterStyleChange]);
+        restoreOverlaysAfterStyleChange(readyMap);
+      },
+      {
+        onTransitionStart: () => {
+          styleTransitionRef.current = true;
+        },
+      },
+    );
+    styleSwitchSessionRef.current = session;
+
+    return () => {
+      session.cancel();
+      if (styleSwitchSessionRef.current === session) {
+        styleSwitchSessionRef.current = null;
+      }
+    };
+  }, [activeLayer, restoreOverlaysAfterStyleChange, zoomContext]);
 
   useEffect(() => {
     const map = instanceRef.current;
@@ -2363,7 +2247,7 @@ export default function LiveMapComponent({
 
   useEffect(() => {
     const map = instanceRef.current;
-    if (!map) return;
+    if (!map || styleTransitionRef.current) return;
     syncTravelLayerOverlay(map, travelLayerEnabled, activeLayer);
     syncHybridRoadOverlay(map, activeLayer);
     syncSeaRoutesOverlay(map, { seaRoutesEnabled, cruiseRoutesEnabled }, activeLayer);
@@ -2382,6 +2266,12 @@ export default function LiveMapComponent({
     if (!map) return;
     syncFriendLocationsOverlay(map, friends || [], !!friendTrackingEnabled);
   }, [friends, friendTrackingEnabled]);
+
+  useEffect(() => {
+    const map = instanceRef.current;
+    if (!map) return;
+    syncSavedPlacesOverlay(map, savedPlaces || [], !!savedPlacesLayerEnabled);
+  }, [savedPlaces, savedPlacesLayerEnabled]);
 
   useEffect(() => {
     const map = instanceRef.current;
@@ -2433,15 +2323,22 @@ export default function LiveMapComponent({
 
   useEffect(() => {
     const marker = userMarkerRef.current;
-    if (!marker) return;
-    applyUserMarkerContent(marker.getElement(), isLiveActive, navigationMode);
     const map = instanceRef.current;
-    if (map) ensureMarkerOnMap(marker, map);
+    if (!marker || !map) return;
+    const visual = buildGpsMarkerVisualState(
+      isLiveActive,
+      navigationMode,
+      userMotionRef.current,
+      lastStateReportedRef.current?.status ?? null,
+    );
+    applyUserMarkerContent(marker.getElement(), visual);
+    ensureMarkerOnMap(marker, map);
+    updateUserMarkerGlobeScale(map, marker);
   }, [isLiveActive, navigationMode]);
 
   useEffect(() => {
     const map = instanceRef.current;
-    if (!map) return;
+    if (!map || styleTransitionRef.current) return;
     syncDarkMapStreetLabels(map, activeLayer === "dark");
   }, [activeLayer]);
 
@@ -2595,6 +2492,11 @@ export default function LiveMapComponent({
         : `pin:${mapPin.lat.toFixed(4)},${mapPin.lng.toFixed(4)}`;
     if (routeFitKeyRef.current === fitKey) return;
     routeFitKeyRef.current = fitKey;
+
+    // Tap-to-select: if the pin is already on screen, do not move the camera.
+    if (isPinInMapViewport(map, mapPin.lat, mapPin.lng)) {
+      return;
+    }
 
     if (!shouldFitRoute) {
       markProgrammaticCameraMove();
@@ -2785,20 +2687,6 @@ export default function LiveMapComponent({
         ref={mapContainer}
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 1 }}
       />
-      {crossBorderAlert ? (
-        <div className="pointer-events-none absolute left-1/2 top-3 z-[90] w-[min(92%,22rem)] -translate-x-1/2 rounded-xl border border-amber-300/80 bg-amber-50/95 px-3 py-2 text-center text-xs font-semibold leading-snug text-amber-900 shadow-[0_0_18px_rgba(245,158,11,0.35)] backdrop-blur-sm">
-          Cross-border travel
-          {crossBorderAlert.fromCountry && crossBorderAlert.toCountry
-            ? ` (${crossBorderAlert.fromCountry} → ${crossBorderAlert.toCountry})`
-            : ""}
-          . Expect passport checks and immigration inspection at the border.
-          {routeLine?.borderCrossings?.length
-            ? " Immigration check is marked on your driving route."
-            : routeLine
-              ? " Calculating immigration checkpoint on your route…"
-              : " Route preview will show the immigration checkpoint on the road."}
-        </div>
-      ) : null}
       {process.env.NEXT_PUBLIC_ROVVY_MAP_DEBUG === "true" && debugInfo && (
         <div className="absolute bottom-4 left-4 z-[100] bg-stone-900/90 text-stone-100 backdrop-blur-md border border-stone-800 p-4 rounded-xl shadow-lg max-w-xs text-xs font-mono flex flex-col gap-2 pointer-events-auto">
           <div className="font-bold text-stone-200 border-b border-stone-800 pb-1 flex justify-between items-center">
@@ -2930,53 +2818,131 @@ function syncAccuracyLayer(
   lng: number | null | undefined,
   accuracyMeters: number | null | undefined
 ) {
-  whenMapStyleReady(map, () => syncAccuracyLayerNow(map, lat, lng, accuracyMeters));
+  whenMapStyleReady(map, () => syncUserGpsPresenceLayers(map, lat, lng, accuracyMeters));
 }
 
-function syncAccuracyLayerNow(
+function syncUserGpsPresenceLayers(
   map: maplibregl.Map,
   lat: number | null | undefined,
   lng: number | null | undefined,
-  accuracyMeters: number | null | undefined
+  accuracyMeters: number | null | undefined,
 ) {
-  const sourceId = "user-gps-accuracy";
+  const pointSourceId = "user-gps-point";
+  const dotHaloLayerId = "user-gps-dot-halo";
+  const dotCoreLayerId = "user-gps-dot-core";
+  const accuracySourceId = "user-gps-accuracy";
   const fillLayerId = "user-gps-accuracy-fill";
   const strokeLayerId = "user-gps-accuracy-stroke";
 
-  const radius = displayAccuracyRadiusMeters(accuracyMeters);
+  const clearLayer = (layerId: string) => {
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
+  };
 
-  if (lat == null || lng == null || radius == null) {
-    logRovvyLiveDebug("[Rovvy Debug] accuracy circle cleared/removed");
+  if (lat == null || lng == null) {
+    logRovvyLiveDebug("[Rovvy Debug] GPS presence cleared");
     try {
-      if (map.getLayer(fillLayerId)) map.removeLayer(fillLayerId);
-      if (map.getLayer(strokeLayerId)) map.removeLayer(strokeLayerId);
-      if (map.getSource(sourceId)) map.removeSource(sourceId);
+      clearLayer(dotCoreLayerId);
+      clearLayer(dotHaloLayerId);
+      clearLayer(fillLayerId);
+      clearLayer(strokeLayerId);
+      if (map.getSource(accuracySourceId)) map.removeSource(accuracySourceId);
+      if (map.getSource(pointSourceId)) map.removeSource(pointSourceId);
     } catch (err) {
-      logRovvyLiveWarn("[Rovvy Map] Error cleaning up accuracy layer", err);
+      logRovvyLiveWarn("[Rovvy Map] Error cleaning up GPS presence layers", err);
     }
     return;
   }
 
-  const circleFeature = createGeoJsonCircle([lng, lat], radius / 1000);
-  logRovvyLiveDebug("[Rovvy Debug] accuracy circle created/updated at:", { lng, lat, radius });
+  const pointFeature: GeoJSON.Feature = {
+    type: "Feature",
+    properties: {},
+    geometry: { type: "Point", coordinates: [lng, lat] },
+  };
 
   try {
-    const existing = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;
-    if (existing) {
-      existing.setData(circleFeature);
+    const pointSource = map.getSource(pointSourceId) as maplibregl.GeoJSONSource | undefined;
+    if (pointSource) {
+      pointSource.setData(pointFeature);
+    } else {
+      map.addSource(pointSourceId, { type: "geojson", data: pointFeature });
+    }
+
+    let beforeId: string | undefined;
+    const layers = map.getStyle().layers;
+    if (layers) {
+      beforeId = layers.find((l) => l.type === "symbol")?.id;
+    }
+
+    if (!map.getLayer(dotHaloLayerId)) {
+      map.addLayer(
+        {
+          id: dotHaloLayerId,
+          type: "circle",
+          source: pointSourceId,
+          paint: {
+            "circle-radius": 10,
+            "circle-color": "#ffffff",
+            "circle-opacity": 1,
+            "circle-pitch-alignment": "map",
+          },
+        },
+        beforeId,
+      );
+    }
+
+    if (!map.getLayer(dotCoreLayerId)) {
+      map.addLayer(
+        {
+          id: dotCoreLayerId,
+          type: "circle",
+          source: pointSourceId,
+          paint: {
+            "circle-radius": 6.5,
+            "circle-color": "#1A73E8",
+            "circle-opacity": 1,
+            "circle-stroke-width": 1.5,
+            "circle-stroke-color": "#ffffff",
+            "circle-pitch-alignment": "map",
+          },
+        },
+        beforeId,
+      );
+    }
+
+    const radius = displayAccuracyRadiusMeters(accuracyMeters);
+    if (radius == null) {
+      clearLayer(fillLayerId);
+      clearLayer(strokeLayerId);
+      if (map.getSource(accuracySourceId)) map.removeSource(accuracySourceId);
+      return;
+    }
+
+    const circleFeature = createGeoJsonCircle([lng, lat], radius / 1000);
+    logRovvyLiveDebug("[Rovvy Debug] accuracy circle created/updated at:", { lng, lat, radius });
+
+    const accuracySource = map.getSource(accuracySourceId) as maplibregl.GeoJSONSource | undefined;
+    if (accuracySource) {
+      accuracySource.setData(circleFeature);
       if (!map.getLayer(fillLayerId)) {
-        addAccuracyLayers(map, sourceId, fillLayerId, strokeLayerId);
+        addAccuracyLayers(map, accuracySourceId, fillLayerId, strokeLayerId);
       }
     } else {
-      map.addSource(sourceId, {
-        type: "geojson",
-        data: circleFeature,
-      });
-      addAccuracyLayers(map, sourceId, fillLayerId, strokeLayerId);
+      map.addSource(accuracySourceId, { type: "geojson", data: circleFeature });
+      addAccuracyLayers(map, accuracySourceId, fillLayerId, strokeLayerId);
     }
   } catch (err) {
-    logRovvyLiveWarn("[Rovvy Map] Error syncing accuracy layer", err);
+    logRovvyLiveWarn("[Rovvy Map] Error syncing GPS presence layers", err);
   }
+}
+
+/** @deprecated use syncUserGpsPresenceLayers */
+function syncAccuracyLayerNow(
+  map: maplibregl.Map,
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+  accuracyMeters: number | null | undefined,
+) {
+  syncUserGpsPresenceLayers(map, lat, lng, accuracyMeters);
 }
 
 function addAccuracyLayers(
@@ -2998,8 +2964,8 @@ function addAccuracyLayers(
       type: "fill",
       source: sourceId,
       paint: {
-        "fill-color": "#1A73E8",
-        "fill-opacity": 0.12,
+        "fill-color": "#4285F4",
+        "fill-opacity": 0.16,
       },
     },
     beforeId
@@ -3012,9 +2978,8 @@ function addAccuracyLayers(
       source: sourceId,
       paint: {
         "line-color": "#1A73E8",
-        "line-width": 1.5,
-        "line-opacity": 0.5,
-        "line-dasharray": [5, 4],
+        "line-width": 1,
+        "line-opacity": 0.35,
       },
     },
     beforeId

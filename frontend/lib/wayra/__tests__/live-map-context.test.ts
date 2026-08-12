@@ -30,7 +30,23 @@ describe("live-map-context", () => {
     expect(block).toContain("Dehcho Region");
     expect(block).toContain("61.58256");
     expect(block).toContain("Far from your current area");
-    expect(block).toContain("culture, language");
+    expect(block).toContain("Route tips/warnings");
+  });
+
+  it("includes user physical location when GPS is present", () => {
+    const block = buildLiveImplicitContextBlock({
+      ...ctx,
+      userLocation: {
+        lat: 41.8781,
+        lng: -87.6298,
+        city: "Chicago",
+        state: "Illinois",
+        country: "United States",
+      },
+    });
+    expect(block).toContain("USER PHYSICAL LOCATION");
+    expect(block).toContain("Chicago");
+    expect(block).toContain("where they are NOW");
   });
 
   it("merges implicit flags into API context", () => {

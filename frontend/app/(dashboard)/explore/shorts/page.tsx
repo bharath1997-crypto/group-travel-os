@@ -211,7 +211,7 @@ function TrendingRowSkeleton() {
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
-          className="h-[240px] w-[135px] shrink-0 animate-pulse rounded-2xl border border-[#1e4976] bg-[#162d4a]"
+          className="h-[240px] w-[135px] shrink-0 animate-pulse rounded-2xl border border-[#1E293B] bg-[#1E293B]"
         />
       ))}
     </div>
@@ -224,7 +224,7 @@ function RecentGridSkeleton() {
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="aspect-[9/16] animate-pulse rounded-2xl border border-[#1e4976] bg-[#162d4a]"
+          className="aspect-[9/16] animate-pulse rounded-2xl border border-[#1E293B] bg-[#1E293B]"
         />
       ))}
     </div>
@@ -235,10 +235,10 @@ function PageFallback() {
   return (
     <div className="min-h-full bg-[#1E3A5F] px-4 py-6 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-6 h-8 w-48 animate-pulse rounded-lg bg-[#162d4a]" />
-        <div className="mb-2 h-5 w-32 animate-pulse rounded bg-[#162d4a]/80" />
+        <div className="mb-6 h-8 w-48 animate-pulse rounded-lg bg-[#1E293B]" />
+        <div className="mb-2 h-5 w-32 animate-pulse rounded bg-[#1E293B]/80" />
         <TrendingRowSkeleton />
-        <div className="mb-2 mt-8 h-5 w-40 animate-pulse rounded bg-[#162d4a]/80" />
+        <div className="mb-2 mt-8 h-5 w-40 animate-pulse rounded bg-[#1E293B]/80" />
         <RecentGridSkeleton />
       </div>
     </div>
@@ -273,8 +273,8 @@ function ShortsHashtagChip({
       }}
       className={
         active
-          ? "shrink-0 rounded-full border border-[#E94560] bg-[#1a3554] px-3 py-1 text-xs font-semibold text-white shadow-sm"
-          : "shrink-0 rounded-full border border-[#1e4976] bg-[#162d4a] px-3 py-1 text-xs font-medium text-[#E94560] transition hover:border-[#E94560]/80 hover:text-white"
+          ? "shrink-0 rounded-full border border-primary bg-[#1E293B] px-3 py-1 text-xs font-semibold text-white shadow-sm"
+          : "shrink-0 rounded-full border border-[#1E293B] bg-[#1E293B] px-3 py-1 text-xs font-medium text-primary transition hover:border-primary/80 hover:text-white"
       }
     >
       {label}
@@ -296,8 +296,8 @@ function ShortCardButton({ item, variant, onOpen }: CardProps) {
       onClick={onOpen}
       className={
         isTrending
-          ? "group relative h-[260px] w-[148px] shrink-0 snap-start overflow-hidden rounded-2xl border border-[#1e4976] bg-[#162d4a] text-left shadow-lg transition hover:-translate-y-0.5 hover:border-[#E94560]/50 sm:h-[280px] sm:w-[158px]"
-          : "group relative aspect-[9/16] w-full overflow-hidden rounded-2xl border border-[#1e4976] bg-[#162d4a] text-left shadow-lg transition hover:-translate-y-0.5 hover:border-[#E94560]/50"
+          ? "group relative h-[260px] w-[148px] shrink-0 snap-start overflow-hidden rounded-2xl border border-[#1E293B] bg-[#1E293B] text-left shadow-lg transition hover:-translate-y-0.5 hover:border-primary/50 sm:h-[280px] sm:w-[158px]"
+          : "group relative aspect-[9/16] w-full overflow-hidden rounded-2xl border border-[#1E293B] bg-[#1E293B] text-left shadow-lg transition hover:-translate-y-0.5 hover:border-primary/50"
       }
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -312,7 +312,7 @@ function ShortCardButton({ item, variant, onOpen }: CardProps) {
           {formatCompactViews(item.viewCount)}
         </span>
       ) : null}
-      <span className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-black shadow-lg ring-2 ring-[#E94560]/60 opacity-95 transition group-hover:scale-110">
+      <span className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-black shadow-lg ring-2 ring-primary/60 opacity-95 transition group-hover:scale-110">
         <Play className="ml-0.5 h-5 w-5 fill-current" />
       </span>
       <div className="absolute inset-x-0 bottom-0 p-3">
@@ -417,7 +417,7 @@ function ExploreShortsContent() {
               {tagSlug ? (
                 <span>
                   · Filter:{" "}
-                  <span className="font-semibold text-[#E94560]">
+                  <span className="font-semibold text-primary">
                     #{tagSlug}
                   </span>
                 </span>
@@ -430,7 +430,7 @@ function ExploreShortsContent() {
             <button
               type="button"
               onClick={() => void load()}
-              className="rounded-xl border border-[#1e4976] bg-[#162d4a] px-4 py-2 text-sm font-semibold text-white hover:border-[#E94560]/50"
+              className="rounded-xl border border-[#1E293B] bg-[#1E293B] px-4 py-2 text-sm font-semibold text-white hover:border-primary/50"
             >
               Try again
             </button>
@@ -438,7 +438,7 @@ function ExploreShortsContent() {
         </div>
 
         {!loading && hashtagLabels.length > 0 ? (
-          <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-[#1e4976]/80 pb-5">
+          <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-[#1E293B]/80 pb-5">
             <span className="w-full text-[11px] font-bold uppercase tracking-wide text-gray-400 sm:w-auto">
               Hashtags in feed
             </span>
@@ -477,13 +477,13 @@ function ExploreShortsContent() {
         ) : error ? (
           <div
             role="alert"
-            className="rounded-2xl border border-red-400 bg-[#162d4a] px-4 py-5 text-red-300"
+            className="rounded-2xl border border-red-400 bg-[#1E293B] px-4 py-5 text-red-300"
           >
             <p className="font-semibold">Something went wrong</p>
             <p className="mt-1 text-sm opacity-90">{error}</p>
           </div>
         ) : !hasAny ? (
-          <p className="rounded-2xl border border-dashed border-[#1e4976] bg-[#162d4a] px-4 py-12 text-center text-gray-300">
+          <p className="rounded-2xl border border-dashed border-[#1E293B] bg-[#1E293B] px-4 py-12 text-center text-gray-300">
             No shorts found for this city yet.
           </p>
         ) : (
@@ -493,7 +493,7 @@ function ExploreShortsContent() {
                 <h2 className="mb-3 text-sm font-bold tracking-wide text-white">
                   🔥 Trending
                 </h2>
-                <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-color:#1e4976_#1E3A5F] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#1e4976] [&::-webkit-scrollbar-track]:bg-[#1E3A5F]">
+                <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-color:#1E293B_#1E3A5F] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#1E293B] [&::-webkit-scrollbar-track]:bg-[#1E3A5F]">
                   {trending.map((s) => (
                     <ShortCardButton
                       key={s.key}

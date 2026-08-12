@@ -76,6 +76,21 @@ export function buildLiveImplicitContextBlock(
     `- Coordinates: ${place.lat.toFixed(5)}, ${place.lng.toFixed(5)}`,
   ];
 
+  const userLoc = context.userLocation;
+  if (userLoc && typeof userLoc === "object") {
+    const u = userLoc as Record<string, unknown>;
+    const homeParts = [u.city, u.state, u.country]
+      .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+      .map((v) => v.trim());
+    if (homeParts.length > 0) {
+      lines.splice(
+        1,
+        0,
+        `USER PHYSICAL LOCATION (GPS/home): ${homeParts.join(", ")} — where they are NOW, not the pin.`,
+      );
+    }
+  }
+
   if (regionLabel && regionLabel !== displayName) {
     lines.push(`- Region: ${regionLabel}`);
   }
@@ -125,7 +140,8 @@ export function buildLiveImplicitContextBlock(
 
   lines.push(
     "Use coordinates and region fields to identify the real-world location even when the pin label is generic.",
-    "Answer culture, language, local activities, and travel prep for this spot directly.",
+    "When USER PHYSICAL LOCATION is present, plan reach/flights/timing/budget FROM home TO the pin.",
+    "Answer on-site weather and activities about the destination pin.",
     "Treat the user's message as about this pin unless they clearly ask how Rovvy works.",
   );
   return lines.join("\n");

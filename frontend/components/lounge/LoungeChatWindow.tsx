@@ -266,7 +266,7 @@ export function LoungeChatWindow({
     if (!showProfilePanel || !chatInfo || !currentUser) return null;
     if (chatInfo.type === "group" && chatInfo.group_id) {
       return (
-        <aside className="absolute inset-0 z-[60] flex flex-col bg-[#1e2a3a]">
+        <aside className="absolute inset-0 z-[60] flex flex-col bg-[#1E293B]">
           <GroupInfoPanel
             key={chatInfo.group_id}
             group={
@@ -310,7 +310,7 @@ export function LoungeChatWindow({
       const peerId = chatInfo.members.find((m) => m !== currentUser.id);
       const peer = peerId ? contacts.find((c) => c.id === peerId) : null;
       return (
-        <aside className="absolute inset-0 z-[60] flex flex-col bg-[#1e2a3a]">
+        <aside className="absolute inset-0 z-[60] flex flex-col bg-[#1E293B]">
           <DmInfoPanel
             key={chatId}
             chatId={chatId}
@@ -342,7 +342,7 @@ export function LoungeChatWindow({
     }
     if (isSelfChat) {
       return (
-        <aside className="absolute inset-0 z-[60] flex flex-col items-center justify-center gap-3 bg-[#1e2a3a] p-6 text-center text-white">
+        <aside className="absolute inset-0 z-[60] flex flex-col items-center justify-center gap-3 bg-[#1E293B] p-6 text-center text-white">
           <InitialsAvatar name={chatName} size={80} />
           <p className="text-lg font-bold">{chatName}</p>
           <p className="text-sm text-white/60">
@@ -399,7 +399,7 @@ export function LoungeChatWindow({
 
         {replyTo ? (
           <div className="flex shrink-0 items-center gap-2 border-b border-teal-100 bg-teal-50 px-3 py-1.5 text-[10px]">
-            <Reply size={12} className="shrink-0 text-[#0F766E]" />
+            <Reply size={12} className="shrink-0 text-primary" />
             <span className="flex-1 truncate text-slate-700">
               Replying to <strong>{replyTo.sender_name}</strong>: {replyTo.text.slice(0, 40)}
             </span>
@@ -440,7 +440,7 @@ export function LoungeChatWindow({
                   <div
                     className={`max-w-[85%] rounded-2xl px-3 py-1.5 font-medium leading-relaxed shadow-sm ${
                       isUser
-                        ? "rounded-tr-none bg-[#0F766E] text-white"
+                        ? "rounded-tr-none bg-primary text-white"
                         : "rounded-tl-none border border-stone-200 bg-white text-slate-900"
                     }`}
                   >
@@ -565,7 +565,7 @@ export function LoungeChatWindow({
           <button
             type="button"
             onClick={() => setEmojiGifPickerOpen((o) => !o)}
-            className="shrink-0 p-1 text-stone-400 hover:text-[#0F766E]"
+            className="shrink-0 p-1 text-stone-400 hover:text-primary"
           >
             <Smile size={16} />
           </button>
@@ -580,7 +580,7 @@ export function LoungeChatWindow({
             onKeyDown={(e) => {
               if (e.key === "Enter") onSend(replyTo);
             }}
-            className="flex-1 rounded-full border border-stone-250 bg-stone-50 px-3 py-1.5 text-xs font-medium text-slate-900 outline-none focus:border-[#0F766E]"
+            className="flex-1 rounded-full border border-stone-250 bg-stone-50 px-3 py-1.5 text-xs font-medium text-slate-900 outline-none focus:border-primary"
           />
           {isRecording ? (
             <div className="flex shrink-0 items-center gap-1">
@@ -588,12 +588,12 @@ export function LoungeChatWindow({
               <button type="button" onClick={() => onStopRecording(true)} className="p-1 text-[10px] font-bold text-red-500">
                 ✕
               </button>
-              <button type="button" onClick={() => onStopRecording(false)} className="p-1 text-[#0F766E]">
+              <button type="button" onClick={() => onStopRecording(false)} className="p-1 text-primary">
                 <Send size={16} />
               </button>
             </div>
           ) : inputText.trim() ? (
-            <button type="button" onClick={() => onSend(replyTo)} className="shrink-0 p-1 text-[#0F766E]">
+            <button type="button" onClick={() => onSend(replyTo)} className="shrink-0 p-1 text-primary">
               <Send size={16} />
             </button>
           ) : (

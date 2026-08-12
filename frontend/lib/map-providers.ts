@@ -533,6 +533,41 @@ export function getLiveMapLibreLayerStyles(): Record<LiveMapLayer, LiveMapStyle>
   };
 }
 
+/** Flat basemap for modal pickers — same production tile URLs as Live, without globe projection. */
+export function getFlightPickerBasemapStyle(): LiveMapStyle {
+  const tileUrls = resolveStreetRasterTileUrls();
+  if (tileUrls.length === 0) {
+    return OPENFREEMAP_STREET_STYLE_URL;
+  }
+
+  return {
+    version: 8,
+    sources: {
+      osm: {
+        type: "raster",
+        tiles: tileUrls,
+        tileSize: 256,
+        attribution: resolveStreetTileAttribution(),
+        maxzoom: LIVE_MAP_CARTO_STREET_MAX_ZOOM,
+      },
+    },
+    layers: [
+      {
+        id: "rovvy-flight-picker-bg",
+        type: "background",
+        paint: { "background-color": LIVE_MAP_RASTER_BG_LIGHT },
+      },
+      {
+        id: "osm-tiles",
+        type: "raster",
+        source: "osm",
+        minzoom: 0,
+        maxzoom: LIVE_MAP_CARTO_STREET_MAX_ZOOM,
+      },
+    ],
+  };
+}
+
 /** Client/build warning when production uses dev-only tile URLs. */
 export function warnIfUnsafeProductionTiles(context = "map"): void {
   if (process.env.NODE_ENV !== "production") return;

@@ -7,10 +7,12 @@ import { Check, Mail, Lock, RefreshCw, AlertCircle, ArrowLeft } from "lucide-rea
 
 import { RovvyLogo } from "@/components/RovvyLogo";
 import { apiFetch } from "@/lib/api";
+import { authReturnPathFromParams, recalledAuthReturnPath } from "@/lib/auth-return";
 
 function VerifyInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const nextPath = authReturnPathFromParams(searchParams, recalledAuthReturnPath("/dashboard"));
 
   // Basic verification state
   const [success, setSuccess] = useState(false);
@@ -52,7 +54,7 @@ function VerifyInner() {
       await apiFetch(`/auth/verify-email?token=${token}`);
       setSuccess(true);
       setTimeout(() => {
-        router.push("/dashboard");
+        router.replace(recalledAuthReturnPath(nextPath, true));
       }, 2000);
     } catch (err) {
       setOtpError("This link has expired or is invalid. Please enter your OTP below.");
@@ -64,7 +66,7 @@ function VerifyInner() {
     } finally {
       setAutoVerifying(false);
     }
-  }, [router]);
+  }, [router, nextPath]);
 
   useEffect(() => {
     const token = searchParams.get("token");
@@ -180,7 +182,7 @@ function VerifyInner() {
       });
       setSuccess(true);
       setTimeout(() => {
-        router.push("/dashboard");
+        router.replace(recalledAuthReturnPath(nextPath, true));
       }, 2000);
     } catch (err) {
       const nextAttempts = attemptsRemaining - 1;
@@ -233,10 +235,10 @@ function VerifyInner() {
   // UI state blocks
   if (autoVerifying) {
     return (
-      <div className="flex min-h-svh flex-col items-center justify-center bg-[#0F172A] px-4 text-center">
+      <div className="flex min-h-svh flex-col items-center justify-center bg-navy px-4 text-center">
         <div className="flex flex-col items-center gap-6">
           <RovvyLogo variant="white" size="md" />
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#0F766E] border-t-transparent" />
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           <p className="text-base font-medium text-slate-300">Verifying your email...</p>
         </div>
       </div>
@@ -244,7 +246,7 @@ function VerifyInner() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center bg-[#0F172A] px-4 py-12 text-white">
+    <div className="flex min-h-svh flex-col items-center justify-center bg-navy px-4 py-12 text-white">
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -301,7 +303,7 @@ function VerifyInner() {
                   className={`h-12 w-full text-center text-lg font-bold rounded-lg bg-slate-900 border text-white transition focus:outline-none focus:ring-2 ${
                     otpError
                       ? "border-[#E8619A] focus:border-[#E8619A] focus:ring-[#E8619A]/20"
-                      : "border-slate-700 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                      : "border-slate-700 focus:border-primary focus:ring-[#0F766E]/20"
                   }`}
                 />
               ))}
@@ -372,7 +374,7 @@ function VerifyInner() {
 
                 <Link
                   href="/login"
-                  className="flex items-center gap-1 font-semibold text-[#0F766E] hover:underline"
+                  className="flex items-center gap-1 font-semibold text-primary hover:underline"
                 >
                   <ArrowLeft className="h-3 w-3" />
                   Back to login
@@ -390,10 +392,10 @@ export default function VerifyPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-svh flex-col items-center justify-center bg-[#0F172A] px-4 text-center">
+        <div className="flex min-h-svh flex-col items-center justify-center bg-navy px-4 text-center">
           <div className="flex flex-col items-center gap-4">
             <RovvyLogo variant="white" size="md" />
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#0F766E] border-t-transparent" />
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           </div>
         </div>
       }

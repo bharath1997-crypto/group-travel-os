@@ -96,7 +96,7 @@ export default function SettingsSecurityPage() {
       <>
         <SettingsScreenHeader title="Security" backHref="/settings/account" />
         <div className="flex justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-[#E94560]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-primary" />
         </div>
       </>
     );
@@ -138,7 +138,7 @@ export default function SettingsSecurityPage() {
           ) : null}
           <button
             type="submit"
-            className="w-full rounded-xl bg-[#E94560] py-2.5 text-sm font-semibold text-white"
+            className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-white"
           >
             Update password
           </button>
@@ -192,7 +192,7 @@ export default function SettingsSecurityPage() {
               disabled={busy}
               className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
                 theme === v
-                  ? "bg-[#E94560] text-white"
+                  ? "bg-primary text-white"
                   : "bg-stone-100 text-stone-700"
               }`}
               onClick={() => void merge({ appearance: { theme: v } })}

@@ -30,7 +30,8 @@ import {
   Video,
   X,
 } from "lucide-react";
-import { API_BASE, apiFetch, apiFetchWithStatus, fetchWithTimeout } from "@/lib/api";
+import { API_BASE } from "@/lib/api";
+import { apiFetch, apiFetchWithStatus, fetchWithTimeout } from "@/lib/safe-fetch";
 import { GT_SCHEDULED_CALLS } from "@/lib/lounge/chat-prefs";
 import { readJsonLs, writeJsonLs } from "@/lib/lounge/storage";
 import type {
@@ -73,7 +74,7 @@ const GI_CARD = "#ffffff";
 const GI_CORAL = "#ff6b6b";
 const GI_GREEN = "#1d9e75";
 const GI_MUTED = "#8896a0";
-const GI_TEXT = "#1e2a3a";
+const GI_TEXT = "#1E293B";
 const GI_ACTION_BG = "#f5ede0";
 const GI_SECTION_BORDER = "#e8d5b7";
 
@@ -1151,18 +1152,18 @@ function GroupInfoPanel({
               ).map((row) => {
                 const iconNode =
                   row.key === "search" ? (
-                    <ThIconSearch size={18} className="text-[#1e2a3a]" />
+                    <ThIconSearch size={18} className="text-[#1E293B]" />
                   ) : row.key === "voice" ? (
-                    <ThIconPhoneHandset size={18} className="text-[#1e2a3a]" />
+                    <ThIconPhoneHandset size={18} className="text-[#1E293B]" />
                   ) : row.key === "video" ? (
-                    <ThIconVideoCam size={18} className="text-[#1e2a3a]" />
+                    <ThIconVideoCam size={18} className="text-[#1E293B]" />
                   ) : row.key === "schedule" ? (
                     <Calendar
-                      className="h-[18px] w-[18px] text-[#1e2a3a]"
+                      className="h-[18px] w-[18px] text-[#1E293B]"
                       strokeWidth={2}
                     />
                   ) : (
-                    <ThIconMoreDots size={18} className="text-[#1e2a3a]" />
+                    <ThIconMoreDots size={18} className="text-[#1E293B]" />
                   );
                 return (
                 <div key={row.key} className="relative flex-1" ref={row.key === "more" ? actionMoreRef : undefined}>
@@ -1336,7 +1337,7 @@ function GroupInfoPanel({
               style={cardStyle}
             >
               <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium" style={{ color: GI_TEXT }}>
-                <ThIconPlane size={14} className="shrink-0 text-[#1e2a3a]" />
+                <ThIconPlane size={14} className="shrink-0 text-[#1E293B]" />
                 <span>
                   {formatTripBarDate(firstTrip.start_date)} &nbsp;&rarr;{" "}
                   {formatTripBarDate(firstTrip.end_date)}

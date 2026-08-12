@@ -268,8 +268,8 @@ export default function ActivitiesPage() {
   }, [rows, sort, priceLo, priceHi, ratingMin, catFilter]);
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] text-[#0F3460]">
-      <div className="sticky top-0 z-20 -mx-3 border-b border-slate-200/80 bg-[#0F3460] px-3 py-4 text-white shadow-md md:-mx-5 md:px-5">
+    <div className="min-h-[calc(100dvh-80px)] text-navy">
+      <div className="sticky top-0 z-20 -mx-3 border-b border-slate-200/80 bg-navy px-3 py-4 text-white shadow-md md:-mx-5 md:px-5">
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col justify-between gap-3 border-b border-white/10 pb-3 sm:flex-row sm:items-center">
             <div>
@@ -316,7 +316,7 @@ export default function ActivitiesPage() {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="e.g. NYC, Miami, Vancouver"
-                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm placeholder:text-slate-400 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300/60"
+                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-navy shadow-sm placeholder:text-slate-400 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300/60"
                 />
               </label>
               <label className="flex flex-col gap-2 lg:col-span-2">
@@ -327,7 +327,7 @@ export default function ActivitiesPage() {
                   type="date"
                   value={day}
                   onChange={(e) => setDay(e.target.value)}
-                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
+                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-navy shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
                 />
               </label>
               <label className="flex flex-col gap-2 lg:col-span-2">
@@ -337,7 +337,7 @@ export default function ActivitiesPage() {
                 <select
                   value={adults}
                   onChange={(e) => setAdults(Number(e.target.value))}
-                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
+                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-navy shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
                 >
                   {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
                     <option key={n} value={n}>
@@ -353,7 +353,7 @@ export default function ActivitiesPage() {
                 <select
                   value={categoryPick}
                   onChange={(e) => setCategoryPick(e.target.value)}
-                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
+                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-navy shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
                 >
                   <option value="">All categories</option>
                   {CATEGORIES.filter(Boolean).map((c) => (
@@ -393,11 +393,11 @@ export default function ActivitiesPage() {
                 Filters
               </p>
               <div className="mt-4">
-                <p className="text-sm font-semibold text-[#0F3460]">Category</p>
+                <p className="text-sm font-semibold text-navy">Category</p>
                 <select
                   value={catFilter}
                   onChange={(e) => setCatFilter(e.target.value)}
-                  className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-[#0F3460]"
+                  className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-navy"
                 >
                   <option value="">Any</option>
                   {CATEGORIES.filter(Boolean).map((c) => (
@@ -408,7 +408,7 @@ export default function ActivitiesPage() {
                 </select>
               </div>
               <div className="mt-5 space-y-2">
-                <p className="text-sm font-semibold text-[#0F3460]">Price</p>
+                <p className="text-sm font-semibold text-navy">Price</p>
                 <div className="flex justify-between text-xs text-slate-600">
                   <span>${pbounds.lo}</span>
                   <span>${pbounds.hi}</span>
@@ -431,7 +431,7 @@ export default function ActivitiesPage() {
                 />
               </div>
               <div className="mt-5">
-                <p className="text-sm font-semibold text-[#0F3460]">Min rating</p>
+                <p className="text-sm font-semibold text-navy">Min rating</p>
                 <input
                   type="range"
                   min={0}
@@ -595,7 +595,7 @@ export default function ActivitiesPage() {
                             {a.provider}
                           </span>
                         </div>
-                        <h2 className="mt-1 text-lg font-bold text-[#0F3460]">{a.title}</h2>
+                        <h2 className="mt-1 text-lg font-bold text-navy">{a.title}</h2>
                         <p className="mt-1 line-clamp-2 text-sm text-slate-600">
                           {a.description}
                         </p>
@@ -617,7 +617,7 @@ export default function ActivitiesPage() {
                           href={getCleanBookingUrl(a.booking_url)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex min-w-[112px] items-center justify-center rounded-xl bg-[#0F3460] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0c2d52]"
+                          className="inline-flex min-w-[112px] items-center justify-center rounded-xl bg-navy px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0c2d52]"
                         >
                           Book Now
                         </a>
@@ -628,7 +628,7 @@ export default function ActivitiesPage() {
               </ul>
 
               {/* Viator Affiliate Section */}
-              <div className="mt-8 rounded-2xl border border-teal-500/20 bg-gradient-to-r from-[#0F3460] to-slate-900 p-6 text-white shadow-lg">
+              <div className="mt-8 rounded-2xl border border-teal-500/20 bg-gradient-to-r from-[#0F172A] to-slate-900 p-6 text-white shadow-lg">
                 <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -736,7 +736,7 @@ export default function ActivitiesPage() {
 
             {/* 1. Revenue Generators */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h3 className="text-lg font-bold text-[#0F3460]">1. The "Revenue Generator" APIs (Affiliate & Metasearch)</h3>
+              <h3 className="text-lg font-bold text-navy">1. The "Revenue Generator" APIs (Affiliate & Metasearch)</h3>
               <p className="mt-1 text-sm text-slate-600">
                 These APIs are completely free to integrate. They carry no monthly platform or token charges, and pay Rovvy high commissions on every booking.
               </p>
@@ -777,7 +777,7 @@ export default function ActivitiesPage() {
             <div className="grid gap-6 md:grid-cols-2">
               {/* Free Search APIs */}
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h3 className="text-lg font-bold text-[#0F3460]">2. The "Free Search" APIs (Open Tiers)</h3>
+                <h3 className="text-lg font-bold text-navy">2. The "Free Search" APIs (Open Tiers)</h3>
                 <p className="mt-1 text-sm text-slate-600">
                   Open developer feeds to populate live schedules and coordinates with exactly $0.00 monthly cost.
                 </p>
@@ -806,7 +806,7 @@ export default function ActivitiesPage() {
               {/* Resale & Secondary Markets */}
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-[#0F3460]">3. Resale & Secondary Ticketing</h3>
+                  <h3 className="text-lg font-bold text-navy">3. Resale & Secondary Ticketing</h3>
                   <p className="mt-1 text-sm text-slate-600">
                     Secondary ticket marketplaces provide robust inventory for sold-out events and sports matches, paying high margins to Rovvy on resale tickets.
                   </p>

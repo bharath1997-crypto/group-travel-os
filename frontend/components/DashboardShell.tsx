@@ -179,7 +179,7 @@ function SubNavGroup({
             href={href}
             className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold transition ${
               active
-                ? "bg-[#0F766E]/20 text-[#CCFBF1]"
+                ? "bg-primary/20 text-primary-soft"
                 : "text-slate-400 hover:bg-slate-800 hover:text-white"
             }`}
           >
@@ -241,7 +241,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC]">
+    <div className="flex min-h-screen bg-app">
 
       {/* ─────────────────────── DESKTOP SIDEBAR ────────────────────────── */}
       <aside className="hidden md:flex w-60 shrink-0 flex-col bg-[#0A0F1E] border-r border-slate-800">
@@ -278,11 +278,11 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             href="/wayra"
             className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition ${
               pathname === "/wayra"
-                ? "bg-[#0F766E]/20 text-[#CCFBF1]"
+                ? "bg-primary/20 text-primary-soft"
                 : "text-slate-400 hover:bg-slate-800 hover:text-white"
             }`}
           >
-            <Sparkles className="h-4 w-4 text-[#0F766E]" /> Wayra Personal AI
+            <Sparkles className="h-4 w-4 text-primary" /> Wayra Personal AI
           </Link>
         </div>
 
@@ -296,7 +296,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                   href={href}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all ${
                     active
-                      ? "bg-[#0F766E]/20 text-[#CCFBF1]"
+                      ? "bg-primary/20 text-primary-soft"
                       : "text-slate-400 hover:bg-slate-800 hover:text-white"
                   }`}
                 >
@@ -356,7 +356,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                       href={href}
                       className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                         active
-                          ? "bg-[#0F766E] text-white"
+                          ? "bg-primary text-white"
                           : "text-slate-400 hover:bg-slate-800 hover:text-white"
                       }`}
                     >
@@ -377,7 +377,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                       href={href}
                       className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                         active
-                          ? "bg-[#0F766E] text-white"
+                          ? "bg-primary text-white"
                           : "text-slate-400 hover:bg-slate-800 hover:text-white"
                       }`}
                     >
@@ -395,11 +395,11 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               href="/wayra"
               className={`flex items-center gap-2 rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold transition ${
                 pathname === "/wayra"
-                  ? "bg-[#0F766E]/20 text-[#CCFBF1]"
+                  ? "bg-primary/20 text-primary-soft"
                   : "text-slate-300 hover:bg-slate-700 hover:text-white"
               }`}
             >
-              <Sparkles className="h-4 w-4 text-[#0F766E]" /> Wayra AI
+              <Sparkles className="h-4 w-4 text-primary" /> Wayra AI
             </Link>
             <Link
               href="/chat"
@@ -440,7 +440,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                     href={href}
                     className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                       active
-                        ? "bg-[#0F766E] text-white"
+                        ? "bg-primary text-white"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     }`}
                   >
@@ -462,7 +462,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         </main>
 
         {/* ─────────────────────── MOBILE BOTTOM NAV ──────────────────────── */}
-        <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-end bg-[#0F172A] border-t border-slate-800 md:hidden">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-end bg-navy border-t border-slate-800 md:hidden">
           {sidebarPrimary.map(({ id, href, label, Icon }) => {
             const active = activeTab === id;
 
@@ -471,7 +471,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                 key={id}
                 href={href}
                 className={`flex flex-1 flex-col items-center gap-1 py-3 transition ${
-                  active ? "text-[#0F766E]" : "text-slate-500 hover:text-slate-300"
+                  active ? "text-primary" : "text-slate-500 hover:text-slate-300"
                 }`}
               >
                 {Icon && <Icon className="h-5 w-5" />}

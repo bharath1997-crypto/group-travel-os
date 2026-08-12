@@ -70,8 +70,8 @@ function e164ToDialAndLocal(
   return { dial: "+1", local: d };
 }
 
-const NAVY = "#0F3460";
-const CORAL = "#E94560";
+const NAVY = "#0F172A";
+const CORAL = "#0F766E";
 const TEAL = "#0D9488";
 const PINK_RING = "#EC4899";
 const CRIMSON = "#DC2626";
@@ -588,7 +588,7 @@ export default function OnboardingWizardPage() {
         <div className="mx-auto flex max-w-6xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <Link
             href="/profile"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-[#0F3460]"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-navy"
           >
             <span aria-hidden>←</span> Back to profile
           </Link>
@@ -625,7 +625,7 @@ export default function OnboardingWizardPage() {
                 <input
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-[#E94560]/30 focus:ring-2"
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-primary/30 focus:ring-2"
                   placeholder="Your full name"
                   autoComplete="name"
                 />
@@ -635,7 +635,7 @@ export default function OnboardingWizardPage() {
                 <input
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-[#E94560]/30 focus:ring-2"
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-primary/30 focus:ring-2"
                   placeholder="@handle"
                   autoComplete="username"
                 />
@@ -646,7 +646,7 @@ export default function OnboardingWizardPage() {
                   <input
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-[#E94560]/30 focus:ring-2"
+                    className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-primary/30 focus:ring-2"
                     placeholder="e.g. India"
                     autoComplete="country-name"
                   />
@@ -659,7 +659,7 @@ export default function OnboardingWizardPage() {
                       setCurrency(e.target.value);
                       setCurrencyTouched(true);
                     }}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#E94560]/30 focus:ring-2"
+                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-primary/30 focus:ring-2"
                     aria-label="Currency"
                   >
                     {CURRENCY_OPTIONS.map((c) => (
@@ -676,7 +676,7 @@ export default function OnboardingWizardPage() {
                   type="email"
                   value={recoveryEmail}
                   onChange={(e) => setRecoveryEmail(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-[#E94560]/30 focus:ring-2"
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-primary/30 focus:ring-2"
                   placeholder="backup@email.com"
                   autoComplete="email"
                 />
@@ -988,7 +988,7 @@ export default function OnboardingWizardPage() {
                         <select
                           value={phoneDial}
                           onChange={(e) => setPhoneDial(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-sm outline-none ring-[#E94560]/30 focus:ring-2"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-sm outline-none ring-primary/30 focus:ring-2"
                         >
                           {COUNTRY_DIAL_OPTIONS.map((o) => (
                             <option key={`${o.label}-${o.value}`} value={o.value}>
@@ -1000,7 +1000,7 @@ export default function OnboardingWizardPage() {
                       <input
                         value={phoneLocal}
                         onChange={(e) => setPhoneLocal(e.target.value)}
-                        className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#E94560]/30 focus:ring-2"
+                        className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-primary/30 focus:ring-2"
                         placeholder="Phone number"
                         autoComplete="tel-national"
                       />
@@ -1012,7 +1012,7 @@ export default function OnboardingWizardPage() {
                           onChange={(e) =>
                             setPhoneOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
                           }
-                          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#E94560]/30 focus:ring-2"
+                          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-primary/30 focus:ring-2"
                           placeholder="Enter OTP"
                           inputMode="numeric"
                           autoComplete="one-time-code"
@@ -1111,7 +1111,7 @@ export default function OnboardingWizardPage() {
                         <select
                           value={waDial}
                           onChange={(e) => setWaDial(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-sm outline-none ring-[#E94560]/30 focus:ring-2"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-sm outline-none ring-primary/30 focus:ring-2"
                         >
                           {COUNTRY_DIAL_OPTIONS.map((o, idx) => (
                             <option key={`${o.label}-${idx}`} value={o.value}>
@@ -1123,7 +1123,7 @@ export default function OnboardingWizardPage() {
                       <input
                         value={waLocal}
                         onChange={(e) => setWaLocal(e.target.value)}
-                        className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#E94560]/30 focus:ring-2"
+                        className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-primary/30 focus:ring-2"
                         placeholder="Phone number"
                         autoComplete="tel-national"
                       />
@@ -1135,7 +1135,7 @@ export default function OnboardingWizardPage() {
                           onChange={(e) =>
                             setWaOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
                           }
-                          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#E94560]/30 focus:ring-2"
+                          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-primary/30 focus:ring-2"
                           placeholder="Enter OTP"
                           inputMode="numeric"
                         />
@@ -1180,7 +1180,7 @@ export default function OnboardingWizardPage() {
                           setInstagram(e.target.value);
                           setInstagramErr(null);
                         }}
-                        className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-[#E94560]/30 focus:ring-2"
+                        className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-primary/30 focus:ring-2"
                         placeholder="@yourhandle"
                         autoComplete="off"
                       />

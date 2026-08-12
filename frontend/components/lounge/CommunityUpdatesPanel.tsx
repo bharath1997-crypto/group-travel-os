@@ -77,7 +77,7 @@ export function CommunityUpdatesPanel({ variant = "popup" }: { variant?: "full" 
               style={isFull ? { background: LOUNGE_FULL.surface } : undefined}
             >
               <p
-                className={`text-[10px] font-bold ${isFull ? "" : "text-[#0F766E]"}`}
+                className={`text-[10px] font-bold ${isFull ? "" : "text-primary"}`}
                 style={isFull ? { color: LOUNGE_FULL.accent } : undefined}
               >
                 {a.title}

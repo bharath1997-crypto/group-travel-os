@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/lib/safe-fetch";
 import { buildPlaceKey, extractCityCountry, type PlaceKeyInput } from "./live-place-key";
 import type { PlacePreviewData } from "./PlacePreviewCard";
 

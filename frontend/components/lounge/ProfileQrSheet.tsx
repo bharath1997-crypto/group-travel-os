@@ -81,9 +81,9 @@ export function ProfileQrSheet({
           onClick={onClose}
           className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-black/5"
         >
-          <ChevronLeft size={18} className="text-[#1e2a3a]" />
+          <ChevronLeft size={18} className="text-[#1E293B]" />
         </button>
-        <h2 className="flex-1 text-sm font-bold text-[#1e2a3a]">Profile QR</h2>
+        <h2 className="flex-1 text-sm font-bold text-[#1E293B]">Profile QR</h2>
       </header>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-5 overflow-y-auto px-5 py-6">
@@ -94,7 +94,7 @@ export function ProfileQrSheet({
           {initials}
         </div>
         <div className="text-center">
-          <p className="text-base font-bold text-[#1e2a3a]">{displayName}</p>
+          <p className="text-base font-bold text-[#1E293B]">{displayName}</p>
           {handle ? (
             <p className="mt-0.5 text-xs text-[#6b7280]">{handle}</p>
           ) : null}
@@ -110,7 +110,7 @@ export function ProfileQrSheet({
             level="M"
             includeMargin
             bgColor="#ffffff"
-            fgColor="#1e2a3a"
+            fgColor="#1E293B"
           />
         </div>
 
@@ -122,7 +122,7 @@ export function ProfileQrSheet({
           <button
             type="button"
             onClick={() => void onCopy()}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#e5e7eb] py-2.5 text-xs font-semibold text-[#1e2a3a] hover:bg-[#f9fafb]"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#e5e7eb] py-2.5 text-xs font-semibold text-[#1E293B] hover:bg-[#f9fafb]"
           >
             <Copy size={14} />
             {copied ? "Copied" : "Copy link"}
@@ -130,7 +130,7 @@ export function ProfileQrSheet({
           <button
             type="button"
             onClick={() => void onShare()}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#0F766E] py-2.5 text-xs font-bold text-white"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary py-2.5 text-xs font-bold text-white"
           >
             <Share2 size={14} />
             Share

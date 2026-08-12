@@ -128,7 +128,7 @@ export default function CookiePolicyPage() {
                 },
                 {
                   name: "Functional Cookies",
-                  desc: "These cookies remember your choices and preferences so the Service behaves consistently across visits. Examples include language and region settings, display preferences, and feature configuration. Disabling these may mean you need to reconfigure preferences on each visit.",
+                  desc: "These cookies remember your choices and preferences so the Service behaves consistently across visits. Examples include language and region settings, display preferences, recent airport selections (when you accept preference storage), and feature configuration. If preference storage is declined, Rovvy may still use session-only storage for the current visit.",
                 },
                 {
                   name: "Analytics and Performance Cookies",
@@ -136,7 +136,7 @@ export default function CookiePolicyPage() {
                 },
                 {
                   name: "Local Storage",
-                  desc: "Rovvy uses browser localStorage to store your session token (gt_token), cached map data, device-side search results, and user preferences. This data is stored locally on your device and is not transmitted to third parties for advertising or profiling purposes.",
+                  desc: "Rovvy uses browser localStorage and sessionStorage for your session token (gt_token), cached map data, device-side search results, and optional preference data such as recent airport picks. Preference storage is controlled through the in-app storage banner or Customize settings. This data stays on your device and is not sent to advertising or profiling providers.",
                 },
               ].map(({ name, desc }) => (
                 <div key={name} className="rounded-lg p-4" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>

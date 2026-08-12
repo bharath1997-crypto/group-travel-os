@@ -55,7 +55,7 @@ export default function SettingsInteractionsPage() {
       <>
         <SettingsScreenHeader title="Interactions" backHref="/settings" />
         <div className="flex justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-[#E94560]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-primary" />
         </div>
       </>
     );
@@ -98,7 +98,7 @@ export default function SettingsInteractionsPage() {
                   disabled={busy}
                   className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                     String(i[key] ?? "everyone") === v
-                      ? "bg-[#E94560] text-white"
+                      ? "bg-primary text-white"
                       : "bg-stone-100 text-stone-700"
                   }`}
                   onClick={() =>
@@ -195,7 +195,7 @@ function ChoiceRow({
             disabled={busy}
             className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
               value === v
-                ? "bg-[#E94560] text-white"
+                ? "bg-primary text-white"
                 : "bg-stone-100 text-stone-700"
             }`}
             onClick={() => onChange(v)}

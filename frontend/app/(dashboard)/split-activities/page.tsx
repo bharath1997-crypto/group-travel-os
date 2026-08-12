@@ -38,12 +38,12 @@ import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
 import { getPreferredCurrency } from "@/lib/user-locale";
 
-const NAVY = "#0F3460";
-const CORAL = "#E94560";
-const GREEN = "#2ECC71";
-const BORDER = "#E9ECEF";
-const BG = "#F8F9FA";
-const GROUP_CIRCLE_COLORS = ["#E94560", "#0F3460", "#2ECC71", "#F39C12"];
+const NAVY = "#0F172A";
+const PRIMARY = "#0F766E";
+const GREEN = "#22C55E";
+const BORDER = "#E2E8F0";
+const BG = "#F8FAFC";
+const GROUP_CIRCLE_COLORS = ["#0F766E", "#0F172A", "#22C55E", "#F59E0B"];
 
 type UserOut = {
   id: string;
@@ -1118,7 +1118,7 @@ export default function SplitActivitiesPage() {
       rightTop = `${payerName} paid`;
       rightBottom = {
         text: "you borrowed",
-        color: CORAL,
+        color: PRIMARY,
       };
     } else {
       rightTop = `${payerName} paid`;
@@ -1189,7 +1189,7 @@ export default function SplitActivitiesPage() {
           }}
           disabled={groups.length === 0}
           className="w-full rounded-lg py-2.5 text-[13px] font-bold text-white disabled:opacity-50"
-          style={{ background: CORAL }}
+          style={{ background: PRIMARY }}
         >
           + Add Expense
         </button>
@@ -1214,11 +1214,11 @@ export default function SplitActivitiesPage() {
             }}
             className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-semibold ${
               view.type === "overview"
-                ? "border-l-[3px] text-[#E94560]"
+                ? "border-l-[3px] text-primary"
                 : "border-l-[3px] border-transparent text-[#6C757D]"
             }`}
             style={
-              view.type === "overview" ? { borderLeftColor: CORAL } : undefined
+              view.type === "overview" ? { borderLeftColor: PRIMARY } : undefined
             }
           >
             <span className="inline-flex items-center gap-2">
@@ -1234,11 +1234,11 @@ export default function SplitActivitiesPage() {
             }}
             className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-semibold ${
               view.type === "activity"
-                ? "border-l-[3px] text-[#E94560]"
+                ? "border-l-[3px] text-primary"
                 : "border-l-[3px] border-transparent text-[#6C757D]"
             }`}
             style={
-              view.type === "activity" ? { borderLeftColor: CORAL } : undefined
+              view.type === "activity" ? { borderLeftColor: PRIMARY } : undefined
             }
           >
             <span className="inline-flex items-center gap-2">
@@ -1255,7 +1255,7 @@ export default function SplitActivitiesPage() {
           <button
             type="button"
             className="text-[10px] font-bold"
-            style={{ color: CORAL }}
+            style={{ color: PRIMARY }}
             onClick={() => {
               setShowAddGroupModal(true);
               setShowMobileSidebar(false);
@@ -1277,7 +1277,7 @@ export default function SplitActivitiesPage() {
               );
             } else if (net < 0) {
               balLine = (
-                <span className="text-[11px] font-medium" style={{ color: CORAL }}>
+                <span className="text-[11px] font-medium" style={{ color: PRIMARY }}>
                   you owe {formatCurrency(Math.abs(net))}
                 </span>
               );
@@ -1327,7 +1327,7 @@ export default function SplitActivitiesPage() {
           <button
             type="button"
             className="text-[10px] font-bold"
-            style={{ color: CORAL }}
+            style={{ color: PRIMARY }}
             onClick={() => showToast("Join groups to add friends", "info")}
           >
             + add
@@ -1353,7 +1353,7 @@ export default function SplitActivitiesPage() {
               );
             } else {
               balText = (
-                <span className="text-[11px] font-medium" style={{ color: CORAL }}>
+                <span className="text-[11px] font-medium" style={{ color: PRIMARY }}>
                   you owe {formatCurrency(Math.abs(bal))}
                 </span>
               );
@@ -1497,7 +1497,7 @@ export default function SplitActivitiesPage() {
           type="button"
           onClick={() => void loadData()}
           className="mt-4 rounded-lg px-6 py-2.5 text-sm font-bold text-white"
-          style={{ background: CORAL }}
+          style={{ background: PRIMARY }}
         >
           Retry
         </button>
@@ -1508,7 +1508,7 @@ export default function SplitActivitiesPage() {
   if (groups.length === 0) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-6" style={{ background: BG }}>
-        <Plane className="h-16 w-16 text-[#0F3460]" strokeWidth={1.5} aria-hidden />
+        <Plane className="h-16 w-16 text-navy" strokeWidth={1.5} aria-hidden />
         <p className="mt-4 text-lg font-bold" style={{ color: NAVY }}>
           No groups yet
         </p>
@@ -1518,7 +1518,7 @@ export default function SplitActivitiesPage() {
         <Link
           href="/groups/new"
           className="mt-6 inline-flex rounded-lg px-6 py-3 text-sm font-bold text-white"
-          style={{ background: CORAL }}
+          style={{ background: PRIMARY }}
         >
           Create Group →
         </Link>
@@ -1528,7 +1528,7 @@ export default function SplitActivitiesPage() {
   }
 
   return (
-    <div className="min-h-screen pb-20 lg:pb-0" style={{ background: BG }}>
+    <div className="min-h-screen bg-app pb-20 lg:pb-0">
       <div className="mx-auto flex max-w-[1440px]">
         <aside
           className="sticky top-0 hidden h-screen w-[260px] shrink-0 overflow-y-auto border-r bg-white lg:block"
@@ -1550,9 +1550,7 @@ export default function SplitActivitiesPage() {
             >
               <Menu className="h-5 w-5" strokeWidth={1.5} />
             </button>
-            <span className="font-bold" style={{ color: NAVY }}>
-              Splitwise
-            </span>
+            <span className="font-bold text-navy">Money</span>
           </div>
 
           {view.type === "overview" ? (
@@ -1634,7 +1632,7 @@ export default function SplitActivitiesPage() {
             type="button"
             onClick={fn}
             className={`flex-1 py-3 text-[10px] font-bold ${
-              mobileTab === k ? "text-[#E94560]" : "text-[#6C757D]"
+              mobileTab === k ? "text-primary" : "text-[#6C757D]"
             }`}
           >
             {label}
@@ -1733,7 +1731,7 @@ export default function SplitActivitiesPage() {
           />
           <div className="fixed bottom-0 left-0 right-0 z-[130] rounded-t-3xl bg-white p-6 shadow-2xl lg:left-1/2 lg:max-w-md lg:-translate-x-1/2 lg:rounded-3xl lg:bottom-1/2 lg:translate-y-1/2">
             <div className="flex items-center justify-between border-b pb-3 mb-4">
-              <h3 className="text-base font-bold text-[#0F3460]">Create a Group</h3>
+              <h3 className="text-base font-bold text-navy">Create a Group</h3>
               <button type="button" onClick={() => setShowAddGroupModal(false)} className="text-xl text-[#6C757D]">✕</button>
             </div>
             
@@ -1744,7 +1742,7 @@ export default function SplitActivitiesPage() {
                 placeholder="e.g. Roommates, Casual Outings"
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
-                className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-[#E94560]"
+                className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-primary"
                 style={{ borderColor: BORDER }}
               />
             </label>
@@ -1776,7 +1774,7 @@ export default function SplitActivitiesPage() {
               <button
                 type="button"
                 className="flex-1 rounded-lg py-2.5 text-sm font-bold text-white"
-                style={{ background: CORAL }}
+                style={{ background: PRIMARY }}
                 onClick={handleCreateGroup}
               >
                 Save
@@ -1853,7 +1851,7 @@ function OverviewSection({
             type="button"
             onClick={onAddExpense}
             className="rounded-lg px-4 py-2 text-[13px] font-bold text-white"
-            style={{ background: CORAL }}
+            style={{ background: PRIMARY }}
           >
             Add an expense
           </button>
@@ -1891,7 +1889,7 @@ function OverviewSection({
                   ? "#6C757D"
                   : summary.totalBalance > 0
                     ? GREEN
-                    : CORAL,
+                    : PRIMARY,
             }}
           >
             {Math.abs(summary.totalBalance) < 0.01
@@ -1901,7 +1899,7 @@ function OverviewSection({
         </div>
         <div className="rounded-xl border bg-white p-4 shadow-sm" style={{ borderColor: BORDER }}>
           <p className="text-[10px] font-bold uppercase text-[#6C757D]">you owe</p>
-          <p className="mt-1 text-xl font-extrabold" style={{ color: CORAL }}>
+          <p className="mt-1 text-xl font-extrabold" style={{ color: PRIMARY }}>
             {formatCurrency(summary.youOwe)}
           </p>
         </div>
@@ -1948,14 +1946,14 @@ function OverviewSection({
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-sm font-extrabold text-[#E94560]">
+                        <p className="text-sm font-extrabold text-primary">
                           {formatCurrency(b.amount)}
                         </p>
                         <button
                           type="button"
                           onClick={() => onSettleRow(b)}
                           className="mt-1 rounded px-2.5 py-1 text-[10px] font-bold text-white transition hover:brightness-95"
-                          style={{ background: CORAL }}
+                          style={{ background: PRIMARY }}
                         >
                           Settle up
                         </button>
@@ -2024,16 +2022,16 @@ function OverviewSection({
       </h2>
       {noExpenses ? (
         <div className="flex flex-col items-center rounded-xl border bg-white py-12 text-center" style={{ borderColor: BORDER }}>
-          <span className="inline-flex justify-center text-[#0F3460]">
+          <span className="inline-flex justify-center text-navy">
             <Banknote className="h-12 w-12" strokeWidth={1.5} aria-hidden />
           </span>
-          <p className="mt-3 font-bold text-[#0F3460]">No expenses yet</p>
+          <p className="mt-3 font-bold text-navy">No expenses yet</p>
           <p className="mt-1 text-sm text-[#6C757D]">Add your first expense</p>
           <button
             type="button"
             onClick={onAddExpense}
             className="mt-4 rounded-lg px-5 py-2.5 text-sm font-bold text-white"
-            style={{ background: CORAL }}
+            style={{ background: PRIMARY }}
           >
             + Add Expense
           </button>
@@ -2158,7 +2156,7 @@ function GroupSection({
             type="button"
             onClick={onAddExpense}
             className="rounded-lg px-4 py-2 text-[13px] font-bold text-white"
-            style={{ background: CORAL }}
+            style={{ background: PRIMARY }}
           >
             Add expense
           </button>
@@ -2191,7 +2189,7 @@ function GroupSection({
                 className="flex flex-wrap items-center gap-2 border-b border-[#f5f5f5] px-4 py-3 last:border-b-0"
                 style={{
                   borderLeftWidth: 3,
-                  borderLeftColor: youOwe ? CORAL : GREEN,
+                  borderLeftColor: youOwe ? PRIMARY : GREEN,
                   borderLeftStyle: "solid",
                 }}
               >
@@ -2210,7 +2208,7 @@ function GroupSection({
                 </div>
                 <span
                   className="font-extrabold"
-                  style={{ color: youOwe ? CORAL : GREEN }}
+                  style={{ color: youOwe ? PRIMARY : GREEN }}
                 >
                   {formatCurrency(b.amount)}
                 </span>
@@ -2219,7 +2217,7 @@ function GroupSection({
                     type="button"
                     onClick={() => onSettleRow(b)}
                     className="rounded-lg px-2 py-1 text-[10px] font-bold text-white"
-                    style={{ background: CORAL }}
+                    style={{ background: PRIMARY }}
                   >
                     Settle up
                   </button>
@@ -2319,7 +2317,7 @@ function FriendSection({
             type="button"
             onClick={onAddExpense}
             className="rounded-lg px-4 py-2 text-[13px] font-bold text-white"
-            style={{ background: CORAL }}
+            style={{ background: PRIMARY }}
           >
             Add expense
           </button>
@@ -2345,10 +2343,10 @@ function FriendSection({
           </>
         ) : (
           <>
-            <p className="text-3xl font-extrabold" style={{ color: CORAL }}>
+            <p className="text-3xl font-extrabold" style={{ color: PRIMARY }}>
               {formatCurrency(Math.abs(net))}
             </p>
-            <p className="mt-1 text-sm font-semibold" style={{ color: CORAL }}>
+            <p className="mt-1 text-sm font-semibold" style={{ color: PRIMARY }}>
               You owe {member.full_name} {formatCurrency(Math.abs(net))}
             </p>
           </>
@@ -2420,7 +2418,7 @@ function SettleModal({
         onClick={onCancel}
       />
       <div className="fixed left-1/2 top-1/2 z-[130] w-[min(92vw,400px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-2xl" style={{ borderRadius: 16 }}>
-        <h3 className="text-lg font-bold text-[#0F3460]">Settle up</h3>
+        <h3 className="text-lg font-bold text-navy">Settle up</h3>
         <p className="mt-2 text-sm text-[#2C3E50]">{titleLine}</p>
         <p className="mt-4 text-xs font-bold uppercase text-[#6C757D]">
           Who paid
@@ -2461,7 +2459,7 @@ function SettleModal({
           disabled={settling}
           onClick={onSave}
           className="mt-5 w-full rounded-lg py-3 text-sm font-bold text-white disabled:opacity-50"
-          style={{ background: CORAL }}
+          style={{ background: PRIMARY }}
         >
           {settling ? "Saving…" : "Save"}
         </button>
@@ -2618,7 +2616,7 @@ function AddExpenseSheet(props: {
               {nameByUserId.get(id) ?? id.slice(0, 6)}
               <button
                 type="button"
-                className="text-[#E94560]"
+                className="text-primary"
                 onClick={() =>
                   setFormSplitUserIds((p) => p.filter((x) => x !== id))
                 }
@@ -2631,7 +2629,7 @@ function AddExpenseSheet(props: {
             type="button"
             onClick={() => setShowPeoplePicker(true)}
             className="rounded-full border border-dashed px-3 py-1 text-xs font-bold"
-            style={{ borderColor: CORAL, color: CORAL }}
+            style={{ borderColor: PRIMARY, color: PRIMARY }}
           >
             + add people
           </button>
@@ -2685,7 +2683,7 @@ function AddExpenseSheet(props: {
             <button
               type="button"
               onClick={() => setShowPeoplePicker(false)}
-              className="mt-2 w-full py-1 text-xs font-bold text-[#E94560]"
+              className="mt-2 w-full py-1 text-xs font-bold text-primary"
             >
               Done
             </button>
@@ -2753,7 +2751,7 @@ function AddExpenseSheet(props: {
             </label>
           ) : null}
           <div className="flex items-center justify-center gap-1">
-            <span className="text-[28px] font-bold" style={{ color: CORAL }}>
+            <span className="text-[28px] font-bold" style={{ color: PRIMARY }}>
               {amountSymbol}
             </span>
             <input
@@ -2775,7 +2773,7 @@ function AddExpenseSheet(props: {
           <select
             value={formPaidBy}
             onChange={(e) => setFormPaidBy(e.target.value)}
-            className="font-bold text-[#0F3460] underline"
+            className="font-bold text-navy underline"
             disabled
             title="API records expense as paid by you"
           >
@@ -2792,7 +2790,7 @@ function AddExpenseSheet(props: {
             onChange={(e) =>
               setFormSplitMode(e.target.value as typeof formSplitMode)
             }
-            className="font-bold text-[#0F3460] underline"
+            className="font-bold text-navy underline"
           >
             <option value="equal">equally</option>
             <option value="exact">by exact amounts</option>
@@ -2916,7 +2914,7 @@ function AddExpenseSheet(props: {
                   </div>
                   <button
                     type="button"
-                    className="rounded-lg p-1.5 text-[#6C757D] hover:bg-[#E9ECEF] hover:text-[#E94560] transition"
+                    className="rounded-lg p-1.5 text-[#6C757D] hover:bg-[#E9ECEF] hover:text-primary transition"
                     onClick={() => {
                       setFormReceiptPreview(null);
                       setSelectedFileName(null);
@@ -2938,7 +2936,7 @@ function AddExpenseSheet(props: {
           disabled={saving}
           onClick={onSave}
           className="mt-6 w-full rounded-lg py-3 text-[15px] font-bold text-white disabled:opacity-50"
-          style={{ background: CORAL }}
+          style={{ background: PRIMARY }}
         >
           {saving ? (
             <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />

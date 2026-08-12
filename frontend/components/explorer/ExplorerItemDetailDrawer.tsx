@@ -170,7 +170,7 @@ export function ExplorerItemDetailDrawer({
         onClick={onClose}
       />
       <aside
-        className={`relative max-h-[88vh] w-full max-w-4xl overflow-y-auto rounded-t-[2rem] border border-white/10 bg-[#0F3460] p-5 text-white shadow-2xl transition-transform duration-300 ease-out sm:rounded-[2rem] sm:p-6 ${
+        className={`relative max-h-[88vh] w-full max-w-4xl overflow-y-auto rounded-t-[2rem] border border-white/10 bg-navy p-5 text-white shadow-2xl transition-transform duration-300 ease-out sm:rounded-[2rem] sm:p-6 ${
           sheetOpen ? "translate-y-0" : "translate-y-full"
         }`}
         style={
@@ -205,7 +205,7 @@ export function ExplorerItemDetailDrawer({
         </button>
 
         <div className="grid gap-5 sm:grid-cols-[140px_1fr_auto] sm:items-start">
-          <div className="h-32 overflow-hidden rounded-3xl bg-gradient-to-br from-[#16213E] to-[#E94560]/80 sm:h-36">
+          <div className="h-32 overflow-hidden rounded-3xl bg-gradient-to-br from-[#1E293B] to-primary/80 sm:h-36">
             {activeItem.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={activeItem.imageUrl} alt="" className="h-full w-full object-cover" />
@@ -216,7 +216,7 @@ export function ExplorerItemDetailDrawer({
             )}
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wide text-[#E94560]">
+            <p className="text-xs font-bold uppercase tracking-wide text-primary">
               {activeItem.source}
             </p>
             <h2 className="mt-2 text-2xl font-black leading-tight text-white">
@@ -226,7 +226,7 @@ export function ExplorerItemDetailDrawer({
               {activeItem.venue} · {activeItem.city} · {activeItem.dateLabel}
             </p>
           </div>
-          <p className="text-2xl font-black text-[#E94560]">{activeItem.priceLabel}</p>
+          <p className="text-2xl font-black text-primary">{activeItem.priceLabel}</p>
         </div>
 
         <p className="mt-5 line-clamp-3 text-sm leading-6 text-white/70">
@@ -290,14 +290,14 @@ export function ExplorerItemDetailDrawer({
                 <button
                   type="button"
                   onClick={() => openTripModal("save")}
-                  className="rounded-2xl bg-[#E94560] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#ff5670]"
+                  className="rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-primary-hover"
                 >
                   Save to trip
                 </button>
                 <button
                   type="button"
                   onClick={() => openTripModal("vote")}
-                  className="rounded-2xl border border-[#E94560] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#E94560]/15"
+                  className="rounded-2xl border border-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-primary/15"
                 >
                   Vote with group
                 </button>
@@ -329,7 +329,7 @@ export function ExplorerItemDetailDrawer({
                 value={tripId}
                 onChange={(event) => setTripId(event.target.value)}
                 placeholder="Trip ID"
-                className="mt-4 w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#E94560]"
+                className="mt-4 w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-primary"
               />
               <div className="mt-4 flex gap-3">
                 <button
@@ -343,7 +343,7 @@ export function ExplorerItemDetailDrawer({
                   type="button"
                   disabled={busy}
                   onClick={runTripAction}
-                  className="flex-1 rounded-2xl bg-[#E94560] px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+                  className="flex-1 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
                 >
                   {busy ? "Saving..." : "Continue"}
                 </button>

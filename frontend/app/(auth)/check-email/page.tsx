@@ -37,26 +37,26 @@ export default function CheckEmailPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#0F172A] px-4 py-10">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-navy px-4 py-10">
       <div className="mb-8">
         <RovvyLogo variant="dark" size="lg" showTagline={false} />
       </div>
       
       <div className="flex w-full max-w-md flex-col items-center rounded-2xl bg-[#1E293B] p-8 shadow-xl">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#0F766E]/20">
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/20">
           <span className="text-4xl" aria-hidden>✉️</span>
         </div>
         
         <h1 className="text-center text-2xl font-bold text-white">
           Check your email
         </h1>
-        <p className="mt-3 text-center text-[15px] leading-relaxed text-[#94A3B8]">
+        <p className="mt-3 text-center text-[15px] leading-relaxed text-muted">
           We sent a verification link to your email address
           {email ? <><br /><span className="font-medium text-[#F8FAFC]">{email}</span></> : "."}
         </p>
 
         {message && (
-          <div className="mt-4 rounded-lg bg-[#0F766E]/20 px-4 py-3 text-sm text-[#2DD4BF]">
+          <div className="mt-4 rounded-lg bg-primary/20 px-4 py-3 text-sm text-[#2DD4BF]">
             {message}
           </div>
         )}
@@ -70,7 +70,7 @@ export default function CheckEmailPage() {
         <button
           onClick={handleResend}
           disabled={busy || !email}
-          className="mt-8 flex w-full items-center justify-center rounded-xl bg-[#0F766E] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[#0D6B63] disabled:opacity-50"
+          className="mt-8 flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[#0D6B63] disabled:opacity-50"
         >
           {busy ? "Sending..." : "Resend email"}
         </button>

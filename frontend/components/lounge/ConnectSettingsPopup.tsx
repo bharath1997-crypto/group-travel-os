@@ -86,10 +86,10 @@ export function ConnectSettingsPopup({ onClose, onToast }: ConnectSettingsPopupP
       <div className="flex items-center gap-1.5">
         {back ? (
           <button type="button" onClick={back} className="p-0.5 text-stone-400">
-            <ChevronLeft size={16} className="text-[#0F766E]" />
+            <ChevronLeft size={16} className="text-primary" />
           </button>
         ) : null}
-        <span className="text-xs font-bold text-[#0F766E]">{title}</span>
+        <span className="text-xs font-bold text-primary">{title}</span>
       </div>
       <button type="button" onClick={onClose} className="p-1 text-stone-400">
         <X size={14} />
@@ -108,7 +108,7 @@ export function ConnectSettingsPopup({ onClose, onToast }: ConnectSettingsPopupP
             checked={readReceipts}
             disabled={saving}
             onChange={(e) => void patchReadReceipts(e.target.checked)}
-            className="h-4 w-4 rounded text-[#0F766E]"
+            className="h-4 w-4 rounded text-primary"
           />
         </label>
         <p className="text-[10px] text-stone-500 leading-relaxed">
@@ -134,7 +134,7 @@ export function ConnectSettingsPopup({ onClose, onToast }: ConnectSettingsPopupP
                 <button
                   type="button"
                   onClick={() => void unblock(u.id)}
-                  className="text-[10px] font-bold text-[#0F766E]"
+                  className="text-[10px] font-bold text-primary"
                 >
                   Unblock
                 </button>
@@ -164,7 +164,7 @@ export function ConnectSettingsPopup({ onClose, onToast }: ConnectSettingsPopupP
                 onToast("Disable notifications in browser site settings");
               }
             }}
-            className="h-4 w-4 rounded text-[#0F766E]"
+            className="h-4 w-4 rounded text-primary"
           />
         </label>
         <p className="text-[10px] text-stone-500 leading-relaxed">
@@ -204,35 +204,35 @@ export function ConnectSettingsPopup({ onClose, onToast }: ConnectSettingsPopupP
         }}
         className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-teal-50"
       >
-        <Link2 size={14} className="text-[#0F766E]" /> Share invite link
+        <Link2 size={14} className="text-primary" /> Share invite link
       </button>
       <button
         type="button"
         onClick={() => setScreen("notifications")}
         className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-teal-50"
       >
-        <Bell size={14} className="text-[#0F766E]" /> Notifications
+        <Bell size={14} className="text-primary" /> Notifications
       </button>
       <button
         type="button"
         onClick={() => setScreen("privacy")}
         className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-teal-50"
       >
-        <Shield size={14} className="text-[#0F766E]" /> Privacy
+        <Shield size={14} className="text-primary" /> Privacy
       </button>
       <button
         type="button"
         onClick={() => setScreen("blocked")}
         className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-teal-50"
       >
-        <Ban size={14} className="text-[#0F766E]" /> Blocked users
+        <Ban size={14} className="text-primary" /> Blocked users
       </button>
       <button
         type="button"
         onClick={() => setScreen("devices")}
         className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-teal-50"
       >
-        <Smartphone size={14} className="text-[#0F766E]" /> Linked devices
+        <Smartphone size={14} className="text-primary" /> Linked devices
       </button>
     </div>
   );

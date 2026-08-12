@@ -67,7 +67,7 @@ export function HeaderProfileMenu({
               className="h-9 w-9 rounded-full object-cover ring-2 ring-[#0F766E]/15"
             />
           ) : (
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0F766E] text-sm font-bold text-white ring-2 ring-[#0F766E]/15">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-white ring-2 ring-[#0F766E]/15">
               {initialsFromName(displayName)}
             </span>
           )}

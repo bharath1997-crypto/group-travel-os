@@ -76,7 +76,7 @@ export default function SettingsSupportPage() {
         <SettingsSectionTitle>Travel streak help</SettingsSectionTitle>
         <p className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600">
           Lost a check-in streak? Email{" "}
-          <a href="mailto:support@rovvy.app" className="text-[#0F766E] underline underline-offset-2">
+          <a href="mailto:support@rovvy.app" className="text-primary underline underline-offset-2">
             support@rovvy.app
           </a>{" "}
           with your username — we will verify group activity logs.
@@ -95,7 +95,7 @@ export default function SettingsSupportPage() {
         <SettingsSectionTitle>Bugs &amp; suggestions</SettingsSectionTitle>
         <p className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600">
           Found a bug or have a feature idea? Email{" "}
-          <a href="mailto:support@rovvy.app" className="text-[#0F766E] underline underline-offset-2">
+          <a href="mailto:support@rovvy.app" className="text-primary underline underline-offset-2">
             support@rovvy.app
           </a>{" "}
           — include your browser, a description of what happened, and the approximate time.
@@ -125,7 +125,7 @@ export default function SettingsSupportPage() {
         <p className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600">
           We store trip coordination data you create, power real-time features
           with your explicit consent, and delete your data on account closure.{" "}
-          <Link href="/privacy" className="text-[#0F766E] underline underline-offset-2">
+          <Link href="/privacy" className="text-primary underline underline-offset-2">
             Read the full Privacy Policy →
           </Link>
         </p>
@@ -136,7 +136,7 @@ export default function SettingsSupportPage() {
         <p className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600">
           By using Rovvy you agree not to scrape the API, spam invitations, or
           upload illegal content.{" "}
-          <Link href="/terms" className="text-[#0F766E] underline underline-offset-2">
+          <Link href="/terms" className="text-primary underline underline-offset-2">
             Read the full Terms of Service →
           </Link>
         </p>

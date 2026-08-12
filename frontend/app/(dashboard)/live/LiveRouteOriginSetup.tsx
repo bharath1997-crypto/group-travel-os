@@ -113,7 +113,7 @@ export default function LiveRouteOriginSetup({
                 onClick={onUseCurrentLocation}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-stone-50 disabled:opacity-50"
               >
-                <Navigation className="h-4 w-4 text-[#0F766E]" />
+                <Navigation className="h-4 w-4 text-primary" />
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-stone-800">Use my current location</span>
                   <span className="block text-[11px] text-stone-500">
@@ -132,7 +132,7 @@ export default function LiveRouteOriginSetup({
                 onClick={() => setMode("search")}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-stone-50"
               >
-                <Search className="h-4 w-4 text-[#0F766E]" />
+                <Search className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold text-stone-800">Search address</span>
               </button>
             </li>
@@ -145,7 +145,7 @@ export default function LiveRouteOriginSetup({
                 }}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-stone-50"
               >
-                <MapPin className="h-4 w-4 text-[#0F766E]" />
+                <MapPin className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold text-stone-800">Pick on map</span>
               </button>
             </li>
@@ -156,7 +156,7 @@ export default function LiveRouteOriginSetup({
                 onClick={onUseMapCenter}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-stone-50 disabled:opacity-50"
               >
-                <Target className="h-4 w-4 text-[#0F766E]" />
+                <Target className="h-4 w-4 text-primary" />
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-stone-800">Use current map center</span>
                   <span className="block text-[11px] text-stone-500">

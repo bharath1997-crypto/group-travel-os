@@ -58,10 +58,10 @@ export function ExploreV2EventCard({ event }: ExploreV2EventCardProps) {
   return (
     <CardWrapper
       {...wrapperProps}
-      className="w-[280px] md:w-auto shrink-0 md:shrink flex items-center gap-3 bg-white border-[0.5px] border-slate-200 rounded-[12px] p-2 hover:border-[#0F766E] hover:shadow-md transition-all duration-200 cursor-pointer min-w-0"
+      className="w-[280px] md:w-auto shrink-0 md:shrink flex items-center gap-3 bg-white border-[0.5px] border-slate-200 rounded-[12px] p-2 hover:border-primary hover:shadow-md transition-all duration-200 cursor-pointer min-w-0"
     >
       {/* 76px Image Area Left */}
-      <div className="w-[76px] h-[76px] rounded-lg bg-teal-50 flex items-center justify-center shrink-0 text-[#0F766E]">
+      <div className="w-[76px] h-[76px] rounded-lg bg-teal-50 flex items-center justify-center shrink-0 text-primary">
         <Ticket className="h-6 w-6" />
       </div>
 
@@ -74,13 +74,13 @@ export function ExploreV2EventCard({ event }: ExploreV2EventCardProps) {
 
         <div className="space-y-0.5">
           {/* Date with Calendar Icon (teal) */}
-          <div className="flex items-center gap-1.5 text-[11px] text-[#0F766E]">
+          <div className="flex items-center gap-1.5 text-[11px] text-primary">
             <Calendar className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{formattedDate}</span>
           </div>
 
           {/* Price Range (teal) */}
-          <div className="text-[11px] font-bold text-[#0F766E]">
+          <div className="text-[11px] font-bold text-primary">
             {priceText}
           </div>
         </div>

@@ -89,18 +89,18 @@ function ExploreCard({
 
         <div className="mt-auto space-y-1">
           <div className="flex items-start gap-1">
-            <MapPin size={11} className="mt-0.5 shrink-0 text-[#94A3B8]" />
+            <MapPin size={11} className="mt-0.5 shrink-0 text-muted" />
             <div className="min-w-0">
               <p className="truncate text-[10px] font-medium text-[#475569]">
                 {location.primary}
               </p>
-              <p className="truncate text-[9px] text-[#94A3B8]">
+              <p className="truncate text-[9px] text-muted">
                 {location.secondary}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <Calendar size={11} className="shrink-0 text-[#94A3B8]" />
+            <Calendar size={11} className="shrink-0 text-muted" />
             <span className="truncate text-[9px] text-[#64748B]">
               {item.date ? formatDateTime(item as ExploreEvent) : "Open daily"}
             </span>

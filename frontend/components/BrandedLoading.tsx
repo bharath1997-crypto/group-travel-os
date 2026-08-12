@@ -56,7 +56,7 @@ export default function BrandedLoading({
   }, [isOnline, message]);
 
   const containerClasses = fullScreen
-    ? "fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#F8FAFC]"
+    ? "fixed inset-0 z-50 flex flex-col items-center justify-center bg-app"
     : "flex flex-col items-center justify-center p-8 w-full h-full min-h-[200px]";
 
   return (

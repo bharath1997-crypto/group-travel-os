@@ -318,6 +318,20 @@ raise AppException.unauthorized("message")
 - Dark navy bg-[#0F172A]: SIDEBAR ONLY — never on content pages
 - Teal accent: text-[#0F766E] bg-[#0F766E]
 
+## Live Frontend Layering (the frontend equivalent of Routes → Services → Models)
+`frontend/app/(dashboard)/live/` holds ~90 modules. Put new code in the right layer:
+- `*.tsx` — React components: presentation + local UI state only
+- `live-*-sync.ts` — MapLibre source/layer sync; takes (map, data) and returns void
+- `live-*.ts` (pure) — geometry, formatting, validation, tokens, marker DOM
+- `live-*.ts` (network) — apiFetch calls only
+- `use-live-*.ts` — hooks composing the layers above
+
+Hard rules:
+- Do NOT add new logic to LiveMapComponent.tsx — it is the map controller only.
+ Extract to a `live-*.ts` module and import it.
+- Pure modules and network modules must NOT import maplibre-gl.
+- Never call apiFetch from a `*-sync.ts` module.
+
 ## Testing Rules
 - Mock ALL external APIs in tests
 - Never make real HTTP calls in tests
@@ -395,7 +409,7 @@ After every feature change, update this section in .cursorrules:
 | Page / Feature | Status | Last Updated |
 |---|---|---|
 | Auth (JWT + OTP + Google OAuth) | Complete | 2025-06 |
-| Flights page (Travelpayouts widget) | Complete | 2025-06 |
+| Flights page (Duffel-only journey search + Phase 2 trust UI: advanced search, journey cards, mobile filters) | Modified | 2026-08 |
 | Hotels page (Agoda) | Complete | 2025-06 |
 | Routes search | Complete | 2025-06 |
 | Activities (GetYourGuide) | Complete | 2025-06 |
@@ -406,7 +420,8 @@ After every feature change, update this section in .cursorrules:
 | Explore page (destinations + events) | Complete | 2025-06 |
 | Browse-first auth (Phase 1 — explorer default, no login wall) | Modified | 2026-07 |
 | Live POI category icons (churches, libraries, schools, parks, landmarks) | Complete | 2026-07 |
-| Live map terrain layer (Esri World Topo) | Complete | 2026-07 |
+| Live map terrain layer (Esri World Topo) | Modified | 2026-08 |
+| Rovvy UI design system (semantic tokens + shared primitives) | Modified | 2026-08 |
 | Live map route persists across layer switches | Modified | 2026-07 |
 | Live map compass (top-right, transparent, expandable) | Complete | 2026-07 |
 | Live map zoom scale control (right edge slider) | Complete | 2026-07 |
@@ -419,7 +434,10 @@ After every feature change, update this section in .cursorrules:
 | Live category search (beaches, ports, airports, cinemas + map POI pins) | Modified | 2026-07 |
 | Live search taxonomy DB (data/live_search_taxonomy.json) + Google Maps paste | Complete | 2026-07 |
 | Live Place Media Resolver (lazy placeKey lookup) | Complete | 2026-06 |
-| Live map last-mile foot/hike route (drive + dashed walk on map) | Modified | 2026-07 |
+| Live map last-mile foot/hike route (drive + dashed walk on map) | Modified | 2026-08 |
+| Live route preview toll / no-toll alternatives (Google + OSRM fallback, preview card picker) | Complete | 2026-08 |
+| Travel tab Live handoff (pre-fill Flights/Routes/Buses/Plan + Skyscanner deep link) | Complete | 2026-08 |
+| Rovvy flight search (Duffel live; no mock fallback when API configured) | Modified | 2026-08 |
 | Live map zoom cap + limit button colors (red max / green min) | Modified | 2026-07 |
 | Live preview card Wayra AI suggestions (route tips + Ask Wayra) | Modified | 2026-07 |
 | Wayra Perplexity-style answers (cost-quality tiers + weather sub-intents + route feasibility + event feed + quality grading) | Modified | 2026-07 |
@@ -427,53 +445,42 @@ After every feature change, update this section in .cursorrules:
 | Wayra preview-card scope (location binds to preview card, clears on close) | Modified | 2026-07 |
 | Live place card + Wayra chat layout (dock column, compact card, place-switch reset) | Modified | 2026-07 |
 | Wayra Live discovery routing (JSONL intents: local / LLM / app guide) | Complete | 2026-07 |
+| Live preview card + Wayra trust labels (Verified / Area info / AI estimate) | Modified | 2026-08 |
+| Wayra nearby OSM hardening (no route fallback, multi-category, OSM error msg) | Modified | 2026-08 |
+| Live About tab Wikipedia entity-match disclosure | Modified | 2026-08 |
+| Live About empty state (no Wikipedia match for exact pin) | Modified | 2026-08 |
+| FarAway place panel trust labels | Modified | 2026-08 |
+| Live place name transliteration (Latin spelling + source language badge) | Modified | 2026-07 |
 | Live Travel layer (highways, main routes & railways overlay toggle) | Modified | 2026-07 |
 | Live sea routes overlay (shipping lanes + ferries, static GeoJSON) | Modified | 2026-07 |
 | Live cruise routes overlay (world cruise itineraries, static GeoJSON) | Modified | 2026-07 |
 | Live foot routes overlay (world trekking trails via OSM vector, transport layer) | Modified | 2026-07 |
 | Live map globe projection (Google-style earth ball at max zoom out + GPS dot) | Modified | 2026-07 |
-| Live immersive chrome (frosted header, centered search, meet-up pins) | Complete | 2026-07 |
+| Live map visual chrome (GMaps-style glass tokens, teal Wayra on Live, hero search) | Modified | 2026-07 |
 | Live Go → Waze-style 3D navigation (pitch, route bearing, GPS follow) | Complete | 2026-07 |
 | Trip bookings (Duffel offer link, admin confirm → expense) | Complete | 2026-07 |
+| Live map tile-abort race fix (MapLibre 5.x "reading 'signal'" crash on long jumps) | Complete | 2026-08 |
+| Live marker DOM factories extracted to live-marker-elements.ts | Complete | 2026-08 |
+| Wayra provider orchestration (DeepSeek normalizes + selects DeepSeek/Gemini; constructive fallback) | Modified | 2026-08 |
+| Wayra canonical knowledge (100 intents / 1000 variants, Postgres retrieval, page+GPS handlers) | Complete | 2026-08 |
+| Wayra weather comfort (body feel + home-city compare vs raw current card) | Complete | 2026-08 |
+| Wayra rejects LLM ellipsis placeholder answers (sources without real text) | Complete | 2026-08 |
+| Wayra output token budgets (compact 400 / standard 800 / plan 1200 / full 2048) | Complete | 2026-08 |
+| Wayra Live discovery vs travel-prep routing (know+interesting → LLM not Solo Live bullets) | Complete | 2026-08 |
 | Buses page | Pending | — |
 
 ---
 
 ## Test Registry (Auto-Updated by Cursor)
-After every pytest run, update this section in .cursorrules:
-- If module already listed → update timestamp + count only. NO duplicate.
-- If new module → append to list.
-- Never delete entries.
+Record verified TOTALS only — per-module counts drift and are not worth the tokens.
+Never hand-count; regenerate from the suites:
+ * Backend: `.venv\Scripts\python -m pytest -q`
+ * Backend per-module (on demand): `.venv\Scripts\python -m pytest --collect-only -q`
+ * Frontend: `cd frontend; npx vitest run`
+ * Frontend types: `cd frontend; npx tsc --noEmit`
 
-| Test Module | Test Count | Last Run |
-|---|---|---|
-| tests/test_auth.py | — | — |
-| tests/test_flights.py | — | — |
-| tests/test_hotels.py | — | — |
-| tests/test_routes.py | — | — |
-| tests/test_activities.py | — | — |
-| tests/test_buddy.py | — | — |
-| tests/test_explore.py | — | — |
-| tests/test_place_media.py | 8 | 2026-06 |
-| tests/test_place_wikipedia.py | 6 | 2026-07 |
-| tests/test_live_search_taxonomy.py | 12 | 2026-07 |
-| tests/test_live_routing.py | 7 | 2026-07 |
-| tests/test_border_crossing.py | 3 | 2026-07 |
-| tests/test_bookings.py | 7 | 2026-07 |
-| frontend live-gps (vitest) | 13 | 2026-07 |
-| frontend live-route-origin (vitest) | 12 | 2026-07 |
-| frontend live-map-zoom-limits (vitest) | 6 | 2026-07 |
-| frontend live-map-globe (vitest) | 3 | 2026-07 |
-| frontend live-search-suggestions (vitest) | 2 | 2026-07 |
-| frontend live-foot-routes (vitest) | 4 | 2026-07 |
-| frontend live-ai-suggestions (vitest) | 3 | 2026-07 |
-| frontend live-place-display (vitest) | 5 | 2026-07 |
-| tests/test_wayra_answer.py | 13 | 2026-07 |
-| tests/test_wayra_place_context.py | 4 | 2026-07 |
-| frontend wayra-messenger (vitest) | 4 | 2026-07 |
-| frontend discovery-routing (vitest) | 5 | 2026-07 |
-| tests/test_wayra_discovery.py | 4 | 2026-07 |
-| tests/test_wayra_llm_providers.py | 3 | 2026-07 |
-| tests/test_wayra_local_replies.py | 18 | 2026-07 |
-| tests/test_wayra_quality_refinements.py | 8 | 2026-07 |
-| tests/test_wayra_events_place.py | 2 | 2026-07 |
+| Suite | Modules | Tests | Result | Last Verified |
+|---|---|---|---|---|
+| Backend (pytest, tests/) | 79 | 677 | 673 passed, 4 skipped, 0 failed | 2026-08-05 |
+| Frontend (vitest) | 30 | 158 | 158 passed, 0 failed | 2026-08-05 |
+| Frontend types (`npx tsc --noEmit`) | — | — | 0 errors | 2026-08-04 |

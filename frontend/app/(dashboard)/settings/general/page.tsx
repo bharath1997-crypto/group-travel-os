@@ -62,7 +62,7 @@ export default function SettingsGeneralPage() {
       <>
         <SettingsScreenHeader title="General" backHref="/settings" />
         <div className="flex justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-[#E94560]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-primary" />
         </div>
       </>
     );
@@ -123,7 +123,7 @@ export default function SettingsGeneralPage() {
               disabled={busy}
               className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
                 loc === k
-                  ? "bg-[#E94560] text-white"
+                  ? "bg-primary text-white"
                   : "bg-stone-100 text-stone-700"
               }`}
               onClick={() =>

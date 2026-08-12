@@ -5,11 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plane } from "lucide-react";
 
 import { TripCard, type TripCardTrip } from "@/components/trips";
+import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import { Button } from "@/components/ui/button";
 import { apiFetchWithStatus } from "@/lib/api";
-
-const CORAL = "#E94560";
-const BORDER = "#E2E8F0";
-const BG = "#F8FAFC";
 
 const Skeleton = ({
   width = "100%",
@@ -239,34 +237,27 @@ export default function TripsPage() {
   ];
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-          Your Trips
-        </h1>
-        <button
-          type="button"
-          onClick={() => router.push("/trips/plan")}
-          className="rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95 shadow-md shadow-rose-600/10"
-          style={{ background: CORAL }}
-        >
-          + Plan New Trip
-        </button>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Your Trips"
+        description="Plan, manage, and revisit group adventures."
+        actions={
+          <Button type="button" onClick={() => router.push("/trips/plan")}>
+            + Plan New Trip
+          </Button>
+        }
+      />
 
-      <div
-        className="mt-6 flex flex-wrap gap-6 border-b"
-        style={{ borderColor: BORDER }}
-      >
+      <div className="mt-2 flex flex-wrap gap-6 border-b border-border">
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setFilter(t.id)}
-            className={`border-b-2 pb-3 text-sm font-semibold transition ${
+            className={`min-h-11 border-b-2 pb-3 text-sm font-semibold transition ${
               filter === t.id
-                ? "border-teal-600 text-teal-600"
-                : "border-transparent text-slate-500 hover:text-slate-800"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted hover:text-text"
             }`}
           >
             {t.label}
@@ -275,12 +266,12 @@ export default function TripsPage() {
       </div>
 
       {error && !loading ? (
-        <div className="mt-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="mt-8 rounded-control border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-text">
           <p>{error}</p>
           <button
             type="button"
             onClick={() => void load()}
-            className="mt-2 font-semibold text-teal-600 hover:text-teal-700 underline"
+            className="mt-2 font-semibold text-primary underline hover:text-primary-hover"
           >
             Retry
           </button>
@@ -294,7 +285,7 @@ export default function TripsPage() {
           <TripCardSkeleton />
         </ul>
       ) : !error && filtered.length === 0 ? (
-        <EmptyState
+        <TripsEmptyState
           filter={filter}
           onPlan={() => router.push("/trips/plan")}
         />
@@ -310,11 +301,11 @@ export default function TripsPage() {
           ))}
         </ul>
       ) : null}
-    </div>
+    </PageShell>
   );
 }
 
-function EmptyState({
+function TripsEmptyState({
   filter,
   onPlan,
 }: {
@@ -324,39 +315,26 @@ function EmptyState({
   if (filter === "upcoming") {
     return (
       <div className="mt-16 flex flex-col items-center text-center">
-        <p className="text-lg font-bold text-slate-900">
-          No upcoming trips
-        </p>
-        <button
-          type="button"
-          onClick={onPlan}
-          className="mt-6 rounded-xl px-6 py-3 text-sm font-bold text-white shadow-md shadow-rose-600/10"
-          style={{ background: CORAL }}
-        >
+        <p className="text-lg font-bold text-text">No upcoming trips</p>
+        <Button type="button" className="mt-6" onClick={onPlan}>
           Plan New Trip →
-        </button>
+        </Button>
       </div>
     );
   }
   if (filter === "active") {
     return (
       <div className="mt-16 flex flex-col items-center text-center">
-        <p className="text-lg font-bold text-slate-900">
-          No active trips
-        </p>
-        <p className="mt-2 max-w-sm text-sm text-slate-500">
-          Start a trip to see it here
-        </p>
+        <p className="text-lg font-bold text-text">No active trips</p>
+        <p className="mt-2 max-w-sm text-sm text-muted">Start a trip to see it here</p>
       </div>
     );
   }
   if (filter === "completed") {
     return (
       <div className="mt-16 flex flex-col items-center text-center">
-        <p className="text-lg font-bold text-slate-900">
-          No completed trips yet
-        </p>
-        <p className="mt-2 max-w-sm text-sm text-slate-500">
+        <p className="text-lg font-bold text-text">No completed trips yet</p>
+        <p className="mt-2 max-w-sm text-sm text-muted">
           Your finished trips will appear here
         </p>
       </div>
@@ -364,20 +342,16 @@ function EmptyState({
   }
   return (
     <div className="mt-16 flex flex-col items-center text-center">
-      <span className="inline-flex justify-center text-teal-600 bg-teal-50 p-4 rounded-full border border-teal-100/80 mb-4" aria-hidden>
+      <span
+        className="mb-4 inline-flex justify-center rounded-full border border-primary/15 bg-primary-soft p-4 text-primary"
+        aria-hidden
+      >
         <Plane className="h-10 w-10" strokeWidth={1.5} />
       </span>
-      <p className="text-lg font-bold text-slate-900">
-        No trips yet
-      </p>
-      <button
-        type="button"
-        onClick={onPlan}
-        className="mt-6 rounded-xl px-6 py-3 text-sm font-bold text-white shadow-md shadow-rose-600/10"
-        style={{ background: CORAL }}
-      >
+      <p className="text-lg font-bold text-text">No trips yet</p>
+      <Button type="button" className="mt-6" onClick={onPlan}>
         + Plan Your First Trip
-      </button>
+      </Button>
     </div>
   );
 }

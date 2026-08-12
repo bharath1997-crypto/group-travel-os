@@ -54,7 +54,7 @@ export type HubSearchResultsProps = {
 function useSearchTone(tone: "overlay" | "dock") {
   const isDock = tone === "dock";
   return {
-    section: isDock ? "text-[#0F766E]" : undefined,
+    section: isDock ? "text-primary" : undefined,
     sectionStyle: isDock ? undefined : { color: "#E94560" },
     row: isDock
       ? "mb-1 flex min-h-[56px] items-center gap-3 rounded-lg border border-stone-100 bg-stone-50 px-2 py-2"

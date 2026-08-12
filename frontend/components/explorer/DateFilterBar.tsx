@@ -33,12 +33,12 @@ export function DateFilterBar({ startDate, endDate, onDatesChange }: DateFilterP
   };
 
   const pill = "shrink-0 rounded-full border px-3.5 py-2 text-xs font-semibold transition";
-  const pillInactive = `${pill} border-[#1e4976] bg-[#0d1f33] text-gray-400 hover:border-[#E94560]/35 hover:text-gray-200`;
+  const pillInactive = `${pill} border-[#1E293B] bg-[#0d1f33] text-gray-400 hover:border-primary/35 hover:text-gray-200`;
 
   return (
-    <div className="mb-8 w-full overflow-hidden rounded-2xl border border-[#1e4976] bg-gradient-to-r from-[#0d1f33] to-[#071221] px-3 py-3 shadow-lg sm:px-4">
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 scrollbar-thin scrollbar-track-[#0B192E] scrollbar-thumb-[#1e4976] [-ms-overflow-style:none] [scrollbar-width:thin]">
-        <span className="flex shrink-0 items-center gap-1.5 pr-1 text-[#E94560]">
+    <div className="mb-8 w-full overflow-hidden rounded-2xl border border-[#1E293B] bg-gradient-to-r from-[#0d1f33] to-[#071221] px-3 py-3 shadow-lg sm:px-4">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 scrollbar-thin scrollbar-track-[#0B192E] scrollbar-thumb-[#1E293B] [-ms-overflow-style:none] [scrollbar-width:thin]">
+        <span className="flex shrink-0 items-center gap-1.5 pr-1 text-primary">
           <Calendar className="h-4 w-4" />
           <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Dates</span>
         </span>

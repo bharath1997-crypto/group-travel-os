@@ -18,9 +18,9 @@ function FlyingSVG() {
       
       {/* Compass pointer lines */}
       <line x1="50" y1="8" x2="50" y2="15" stroke="#E94560" strokeWidth="2" strokeLinecap="round" />
-      <line x1="50" y1="85" x2="50" y2="92" stroke="#0F3460" strokeWidth="2" strokeLinecap="round" />
-      <line x1="8" y1="50" x2="15" y2="50" stroke="#0F3460" strokeWidth="2" strokeLinecap="round" />
-      <line x1="85" y1="50" x2="92" y2="50" stroke="#0F3460" strokeWidth="2" strokeLinecap="round" />
+      <line x1="50" y1="85" x2="50" y2="92" stroke="#0F172A" strokeWidth="2" strokeLinecap="round" />
+      <line x1="8" y1="50" x2="15" y2="50" stroke="#0F172A" strokeWidth="2" strokeLinecap="round" />
+      <line x1="85" y1="50" x2="92" y2="50" stroke="#0F172A" strokeWidth="2" strokeLinecap="round" />
 
       {/* Soaring travel bird / paper plane fusion */}
       <g transform="translate(18, 22)">
@@ -46,10 +46,10 @@ function FlyingSVG() {
         </radialGradient>
         <linearGradient id="ring-gradient" x1="0" y1="0" x2="100" y2="100">
           <stop offset="0%" stopColor="#0F766E" />
-          <stop offset="100%" stopColor="#0F3460" />
+          <stop offset="100%" stopColor="#0F172A" />
         </linearGradient>
         <linearGradient id="body-grad" x1="8" y1="40" x2="50" y2="20">
-          <stop offset="0%" stopColor="#0F3460" />
+          <stop offset="0%" stopColor="#0F172A" />
           <stop offset="100%" stopColor="#E94560" />
         </linearGradient>
         <linearGradient id="wing-front-grad" x1="28" y1="32" x2="56" y2="5">
@@ -75,13 +75,13 @@ function PerchedSVG() {
       {/* Stylized geometric perched bird / travel guide */}
       <g transform="translate(25, 22)">
         {/* Folded wing */}
-        <path d="M12 35 Q22 15 36 24 Q24 28 12 35" fill="url(#wing-folded-grad)" stroke="#0F3460" strokeWidth="0.8" />
+        <path d="M12 35 Q22 15 36 24 Q24 28 12 35" fill="url(#wing-folded-grad)" stroke="#0F172A" strokeWidth="0.8" />
         {/* Compact body */}
-        <ellipse cx="22" cy="38" rx="14" ry="10" fill="url(#body-perched-grad)" stroke="#0F3460" strokeWidth="0.8" />
+        <ellipse cx="22" cy="38" rx="14" ry="10" fill="url(#body-perched-grad)" stroke="#0F172A" strokeWidth="0.8" />
         {/* Head */}
-        <circle cx="34" cy="26" r="9" fill="white" stroke="#0F3460" strokeWidth="1" />
+        <circle cx="34" cy="26" r="9" fill="white" stroke="#0F172A" strokeWidth="1" />
         {/* Smart crown cap */}
-        <path d="M26 21 Q34 14 42 19 C40 26 30 26 26 21" fill="#0F3460" />
+        <path d="M26 21 Q34 14 42 19 C40 26 30 26 26 21" fill="#0F172A" />
         {/* Eye (smart dot) */}
         <circle cx="37" cy="24" r="2.2" fill="#E94560" />
         <circle cx="38" cy="23.2" r="0.8" fill="white" />
@@ -98,7 +98,7 @@ function PerchedSVG() {
           <stop offset="100%" stopColor="#E94560" />
         </linearGradient>
         <linearGradient id="body-perched-grad" x1="8" y1="48" x2="36" y2="28">
-          <stop offset="0%" stopColor="#0F3460" />
+          <stop offset="0%" stopColor="#0F172A" />
           <stop offset="100%" stopColor="#E94560" />
         </linearGradient>
         <linearGradient id="wing-folded-grad" x1="12" y1="35" x2="36" y2="24">
@@ -127,7 +127,7 @@ export default function WayraIcon({
       borderRadius: '50%',
       padding: '10px',
     } : variant === 'navy' ? {
-      background: '#0F3460',
+      background: '#0F172A',
       borderRadius: '50%',
       padding: '8px',
       boxShadow: '0 3px 10px rgba(15,52,96,0.22)',

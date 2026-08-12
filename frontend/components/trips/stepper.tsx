@@ -2,7 +2,7 @@
 
 import { Check } from "lucide-react";
 
-const CORAL = "#E94560";
+const CORAL = "#0F766E";
 
 export function Stepper({
   steps,
@@ -39,9 +39,9 @@ export function Stepper({
                 onClick={() => onStepClick?.(n)}
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold transition ${
                   done
-                    ? "border-[#E94560] bg-[#E94560] text-white"
+                    ? "border-primary bg-primary text-white"
                     : active
-                      ? "border-[#E94560] bg-white text-[#E94560]"
+                      ? "border-primary bg-white text-primary"
                       : "border-gray-300 bg-white text-gray-400"
                 }`}
                 style={

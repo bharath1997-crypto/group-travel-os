@@ -81,12 +81,12 @@ export function SettingsScreenHeader({
     <header className="sticky top-0 z-20 grid grid-cols-[44px_1fr_44px] items-center border-b border-stone-200 bg-white/95 px-1 py-2.5 backdrop-blur-md">
       <Link
         href={backHref}
-        className="flex h-10 w-10 items-center justify-center rounded-full text-[#1e2a3a] transition-colors hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1"
+        className="flex h-10 w-10 items-center justify-center rounded-full text-[#1E293B] transition-colors hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1"
         aria-label="Back"
       >
         <IconArrowLeft size={20} />
       </Link>
-      <h1 className="truncate text-center text-[16px] font-bold text-[#1e2a3a]">
+      <h1 className="truncate text-center text-[16px] font-bold text-[#1E293B]">
         {title}
       </h1>
       <span aria-hidden className="inline-block w-10" />

@@ -390,7 +390,7 @@ export default function ExploreV2Page() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="flex-1 text-sm text-slate-800 bg-transparent outline-none placeholder:text-slate-400"
               />
-              <button className="bg-[#0F766E] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-teal-700 transition shrink-0">
+              <button className="bg-primary text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-teal-700 transition shrink-0">
                 Search
               </button>
             </div>
@@ -407,7 +407,7 @@ export default function ExploreV2Page() {
                   type="text"
                   value={locationInput}
                   onChange={(e) => setLocationInput(e.target.value)}
-                  className="px-3 py-2 text-xs border border-[#0F766E] rounded-full focus:outline-none focus:ring-1 focus:ring-[#0F766E] text-slate-800 w-36"
+                  className="px-3 py-2 text-xs border border-primary rounded-full focus:outline-none focus:ring-1 focus:ring-[#0F766E] text-slate-800 w-36"
                   placeholder="Type city name..."
                   autoFocus
                   onBlur={() => setTimeout(() => setIsEditingLocation(false), 200)}
@@ -419,7 +419,7 @@ export default function ExploreV2Page() {
                   setIsEditingLocation(true);
                   setLocationInput(city);
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#0F766E] hover:bg-teal-700 text-white rounded-full text-xs font-semibold shadow-sm transition shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-teal-700 text-white rounded-full text-xs font-semibold shadow-sm transition shrink-0"
               >
                 <Navigation className="h-3.5 w-3.5" />
                 <span>{city}</span>
@@ -444,15 +444,15 @@ export default function ExploreV2Page() {
               <div className="absolute left-0 mt-1.5 w-36 bg-white border border-slate-100 rounded-xl shadow-lg py-1 z-20">
                 <button
                   onClick={() => { setDateFilter("any"); setShowDateDropdown(false); }}
-                  className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition ${dateFilter === "any" ? "text-[#0F766E] font-semibold" : "text-slate-600"}`}
+                  className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition ${dateFilter === "any" ? "text-primary font-semibold" : "text-slate-600"}`}
                 >Any date</button>
                 <button
                   onClick={() => { setDateFilter("today"); setShowDateDropdown(false); }}
-                  className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition ${dateFilter === "today" ? "text-[#0F766E] font-semibold" : "text-slate-600"}`}
+                  className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition ${dateFilter === "today" ? "text-primary font-semibold" : "text-slate-600"}`}
                 >Today</button>
                 <button
                   onClick={() => { setDateFilter("weekend"); setShowDateDropdown(false); }}
-                  className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition ${dateFilter === "weekend" ? "text-[#0F766E] font-semibold" : "text-slate-600"}`}
+                  className={`w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition ${dateFilter === "weekend" ? "text-primary font-semibold" : "text-slate-600"}`}
                 >This weekend</button>
               </div>
             )}
@@ -461,7 +461,7 @@ export default function ExploreV2Page() {
           {/* Map View */}
           <Link
             href="/explore/map"
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200 hover:border-[#0F766E] text-slate-600 hover:text-[#0F766E] rounded-full font-medium text-xs bg-white shadow-sm transition shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200 hover:border-primary text-slate-600 hover:text-primary rounded-full font-medium text-xs bg-white shadow-sm transition shrink-0"
           >
             <Map className="h-3.5 w-3.5" />
             <span>Map view</span>
@@ -501,7 +501,7 @@ export default function ExploreV2Page() {
         <section className="space-y-3">
           <div className="flex justify-between items-center">
             <h2 className="text-[16px] font-bold text-slate-900">Where to next?</h2>
-            <span className="text-[13px] text-[#0F766E] font-medium cursor-pointer">See more →</span>
+            <span className="text-[13px] text-primary font-medium cursor-pointer">See more →</span>
           </div>
           <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
             {TOP_CITIES.map((topCity) => (
@@ -575,7 +575,7 @@ export default function ExploreV2Page() {
 
             {/* Section 3: Map Strip Banner */}
             {!loading && totalPlacesCount > 0 && (
-              <div className="bg-[#0F766E] rounded-2xl p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm hover:shadow-md transition">
+              <div className="bg-primary rounded-2xl p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm hover:shadow-md transition">
                 <div className="text-center md:text-left space-y-1">
                   <h3 className="text-base font-bold">
                     Explore {totalPlacesCount} places near you on the map
@@ -586,7 +586,7 @@ export default function ExploreV2Page() {
                 </div>
                 <Link
                   href={`/explore/map?lat=${lat}&lng=${lng}`}
-                  className="bg-white hover:bg-teal-50 text-[#0F766E] px-5 py-2.5 rounded-full font-bold text-xs shadow-sm transition"
+                  className="bg-white hover:bg-teal-50 text-primary px-5 py-2.5 rounded-full font-bold text-xs shadow-sm transition"
                 >
                   Open map
                 </Link>

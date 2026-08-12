@@ -1,6 +1,6 @@
 /** Full-page Rovvy Lounge (travel-hub) dark theme tokens */
 export const LOUNGE_FULL = {
-  bg: "#0f3460",
+  bg: "#0F172A",
   surface: "#2d4060",
   borderSub: "rgba(255,255,255,0.08)",
   textMuted: "#8892a4",
@@ -9,6 +9,6 @@ export const LOUNGE_FULL = {
   rightPanelBg: "#e8ddd0",
   msgBorder: "#e9edef",
   online: "#22C55E",
-  pickerBg: "#1e2a3a",
+  pickerBg: "#1E293B",
   pickerMuted: "#8896a0",
 } as const;

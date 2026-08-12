@@ -9,7 +9,7 @@ const TRUST_CARDS = [
     description:
       "Collaborative itineraries where everyone gets a vote on what to do next.",
     iconBg: "bg-teal-50",
-    iconColor: "text-[#0F766E]",
+    iconColor: "text-primary",
   },
   {
     icon: Compass,
@@ -39,7 +39,7 @@ const TRUST_CARDS = [
 
 export function WhyChooseRovvy() {
   return (
-    <div className="w-full bg-[#F8FAFC] py-16 border-t border-b border-slate-100">
+    <div className="w-full bg-app py-16 border-t border-b border-slate-100">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">

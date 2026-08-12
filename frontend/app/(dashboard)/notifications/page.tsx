@@ -15,7 +15,7 @@ const UNREAD_ROW = "#f1f5f9";
 const READ_ROW = "#ffffff";
 const MUTED = "#64748b";
 const TEXT = "#0f172a";
-const CORAL = "#e94560";
+const CORAL = "#0F766E";
 
 type NotificationRow = {
   id: string;

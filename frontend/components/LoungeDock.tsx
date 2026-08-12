@@ -1388,7 +1388,7 @@ export function LoungeDock() {
             setIsOpen(true);
             setActiveTab("updates");
           }}
-          className={`pointer-events-auto relative ${LIVE_MAP_FLOAT_BTN} bg-white text-[#0F766E] hover:bg-[#F8FAFC]`}
+          className={`pointer-events-auto relative ${LIVE_MAP_FLOAT_BTN} bg-white text-primary hover:bg-app`}
           aria-label="Open Rovvy Lounge"
           title="Rovvy Lounge"
         >
@@ -1456,7 +1456,7 @@ export function LoungeDock() {
                   setShowNewChatOverlay(false);
                 }}
                 className={`p-1.5 rounded transition-colors ${
-                  showSettingsOverlay ? "bg-[#0F766E] text-white" : "text-slate-400 hover:text-white hover:bg-slate-850"
+                  showSettingsOverlay ? "bg-primary text-white" : "text-slate-400 hover:text-white hover:bg-slate-850"
                 }`}
                 title="Lounge Connect"
               >
@@ -1470,7 +1470,7 @@ export function LoungeDock() {
                   setActiveTab("chats");
                 }}
                 className={`p-1.5 rounded transition-colors ${
-                  showNewChatOverlay ? "bg-[#0F766E] text-white" : "text-slate-400 hover:text-white hover:bg-slate-850"
+                  showNewChatOverlay ? "bg-primary text-white" : "text-slate-400 hover:text-white hover:bg-slate-850"
                 }`}
                 title="New Chat"
               >
@@ -1612,7 +1612,7 @@ export function LoungeDock() {
                       {settingsScreen === "menu" ? (
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <p className="text-xs font-bold uppercase tracking-wide text-[#0F766E]">
+                            <p className="text-xs font-bold uppercase tracking-wide text-primary">
                               Connect
                             </p>
                             <button
@@ -1626,7 +1626,7 @@ export function LoungeDock() {
                           <button
                             type="button"
                             onClick={() => setSettingsScreen("profile")}
-                            className="flex w-full items-center gap-3 rounded-xl border border-stone-200 bg-stone-50/90 p-2.5 text-left transition-colors hover:border-[#0F766E]/25 hover:bg-teal-50/50"
+                            className="flex w-full items-center gap-3 rounded-xl border border-stone-200 bg-stone-50/90 p-2.5 text-left transition-colors hover:border-primary/25 hover:bg-teal-50/50"
                           >
                             {loungeAvatarUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -1636,7 +1636,7 @@ export function LoungeDock() {
                                 className="h-11 w-11 rounded-full object-cover ring-2 ring-[#0F766E]/15"
                               />
                             ) : (
-                              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0F766E] text-sm font-bold text-white ring-2 ring-[#0F766E]/15">
+                              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-sm font-bold text-white ring-2 ring-[#0F766E]/15">
                                 {loungeUserInitials}
                               </span>
                             )}
@@ -1656,7 +1656,7 @@ export function LoungeDock() {
                           <nav className="flex flex-col text-xs font-semibold space-y-1">
                             <button
                               type="button"
-                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] transition-colors"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-primary transition-colors"
                               onClick={() => {
                                 setShowSettingsOverlay(false);
                                 setShowNewChatOverlay(true);
@@ -1666,7 +1666,7 @@ export function LoungeDock() {
                             </button>
                             <button
                               type="button"
-                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] transition-colors"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-primary transition-colors"
                               onClick={() => {
                                 setShowSettingsOverlay(false);
                                 setCreateGroupRequestId((n) => n + 1);
@@ -1676,7 +1676,7 @@ export function LoungeDock() {
                             </button>
                             <button
                               type="button"
-                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] transition-colors"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-primary transition-colors"
                               onClick={() => {
                                 setShowSettingsOverlay(false);
                                 setActiveTab("chats");
@@ -1686,19 +1686,19 @@ export function LoungeDock() {
                             </button>
                             <button
                               type="button"
-                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] transition-colors"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-primary transition-colors"
                               onClick={() => setSettingsScreen("connect")}
                             >
                               Privacy &amp; blocked
                             </button>
                             <button
                               type="button"
-                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] transition-colors flex items-center justify-between"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-primary transition-colors flex items-center justify-between"
                               onClick={() => setSettingsScreen("starred")}
                             >
                               <span>Starred</span>
                               {starredMessages.length > 0 ? (
-                                <span className="text-[9px] font-bold text-[#0F766E]">{starredMessages.length}</span>
+                                <span className="text-[9px] font-bold text-primary">{starredMessages.length}</span>
                               ) : null}
                             </button>
 
@@ -1706,7 +1706,7 @@ export function LoungeDock() {
 
                             <button
                               type="button"
-                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-[#0F766E] font-bold transition-colors"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-primary font-bold transition-colors"
                               onClick={() => setSettingsScreen("settings")}
                             >
                               Settings
@@ -1723,9 +1723,9 @@ export function LoungeDock() {
                           <div className="flex items-center justify-between pb-2 border-b border-stone-100">
                             <div className="flex items-center gap-1.5">
                               <button onClick={() => setSettingsScreen("menu")} className="p-0.5 text-stone-400">
-                                <ChevronLeft size={16} className="text-[#0F766E]" />
+                                <ChevronLeft size={16} className="text-primary" />
                               </button>
-                              <span className="text-xs font-bold text-[#0F766E]">Starred messages</span>
+                              <span className="text-xs font-bold text-primary">Starred messages</span>
                             </div>
                             <button onClick={() => setShowSettingsOverlay(false)} className="text-stone-400 p-1">
                               <X size={14} />
@@ -1736,7 +1736,7 @@ export function LoungeDock() {
                           ) : (
                             starredMessages.map((s) => (
                               <div key={s.messageId} className="rounded-lg border border-stone-100 bg-stone-50 p-2">
-                                <p className="text-[10px] font-bold text-[#0F766E]">{s.senderName}</p>
+                                <p className="text-[10px] font-bold text-primary">{s.senderName}</p>
                                 <p className="text-xs text-slate-800 mt-0.5 line-clamp-2">{s.text}</p>
                               </div>
                             ))
@@ -1750,9 +1750,9 @@ export function LoungeDock() {
                                 onClick={() => setSettingsScreen("menu")}
                                 className="p-0.5 text-stone-400"
                               >
-                                <ChevronLeft size={16} className="text-[#0F766E]" />
+                                <ChevronLeft size={16} className="text-primary" />
                               </button>
-                              <span className="text-xs font-bold text-[#0F766E]">Profile</span>
+                              <span className="text-xs font-bold text-primary">Profile</span>
                             </div>
                             <button
                               onClick={() => setShowSettingsOverlay(false)}
@@ -1777,9 +1777,9 @@ export function LoungeDock() {
                                 className="text-stone-400 hover:text-stone-600 p-0.5 rounded-full hover:bg-stone-50"
                                 title="Back to Connect Menu"
                               >
-                                <ChevronLeft size={16} className="text-[#0F766E]" />
+                                <ChevronLeft size={16} className="text-primary" />
                               </button>
-                              <span className="text-xs font-bold text-[#0F766E]">Lounge Settings</span>
+                              <span className="text-xs font-bold text-primary">Lounge Settings</span>
                             </div>
                             <button
                               onClick={() => setShowSettingsOverlay(false)}
@@ -1789,7 +1789,7 @@ export function LoungeDock() {
                             </button>
                           </div>
                           <div>
-                            <h4 className="text-xs font-bold uppercase tracking-wide text-[#0F766E] mb-2 flex items-center gap-1.5">
+                            <h4 className="text-xs font-bold uppercase tracking-wide text-primary mb-2 flex items-center gap-1.5">
                               <Cloud size={14} />
                               <span>Google Drive Backup</span>
                             </h4>
@@ -1803,7 +1803,7 @@ export function LoungeDock() {
                             <select
                               value={backupInterval}
                               onChange={(e) => updateSettings(e.target.value, wifiOnly)}
-                              className="w-full text-xs border border-stone-250 p-2 rounded-lg outline-none focus:border-[#0F766E] text-slate-900 font-semibold mb-3 bg-white"
+                              className="w-full text-xs border border-stone-250 p-2 rounded-lg outline-none focus:border-primary text-slate-900 font-semibold mb-3 bg-white"
                             >
                               <option value="6h">Every 6 Hours</option>
                               <option value="12h">Every 12 Hours</option>
@@ -1818,7 +1818,7 @@ export function LoungeDock() {
                                 type="checkbox"
                                 checked={wifiOnly}
                                 onChange={(e) => updateSettings(backupInterval, e.target.checked)}
-                                className="h-4 w-4 text-[#0F766E] focus:ring-[#0F766E] border-stone-300 rounded"
+                                className="h-4 w-4 text-primary focus:ring-[#0F766E] border-stone-300 rounded"
                               />
                             </div>
                           </div>
@@ -1830,7 +1830,7 @@ export function LoungeDock() {
                   {!searchActive && !showSettingsOverlay && activeTab === "chats" && showNewChatOverlay && (
                     <div className="space-y-1">
                       <div className="flex items-center justify-between p-2 mb-2 bg-slate-50 rounded-lg">
-                        <span className="text-xs font-bold text-[#0F766E]">Start New Chat</span>
+                        <span className="text-xs font-bold text-primary">Start New Chat</span>
                         <button
                           onClick={() => setShowNewChatOverlay(false)}
                           className="text-stone-400 hover:text-stone-600 p-1"
@@ -1842,7 +1842,7 @@ export function LoungeDock() {
                       {/* Create Group Button */}
                       <button
                         onClick={() => setCreateGroupRequestId((n) => n + 1)}
-                        className="w-full flex items-center gap-2 p-2 rounded-lg bg-teal-50 hover:bg-teal-100 text-[#0F766E] text-xs font-bold transition-all mb-2 border border-teal-100"
+                        className="w-full flex items-center gap-2 p-2 rounded-lg bg-teal-50 hover:bg-teal-100 text-primary text-xs font-bold transition-all mb-2 border border-teal-100"
                       >
                         <Plus size={16} />
                         <span>Create Group Chat</span>
@@ -1855,7 +1855,7 @@ export function LoungeDock() {
                           placeholder="Search contacts..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full bg-slate-50 text-xs text-slate-900 pl-8 pr-3 py-1.5 rounded-lg border border-stone-250 outline-none focus:border-[#0F766E] font-medium"
+                          className="w-full bg-slate-50 text-xs text-slate-900 pl-8 pr-3 py-1.5 rounded-lg border border-stone-250 outline-none focus:border-primary font-medium"
                         />
                       </div>
 
@@ -1880,7 +1880,7 @@ export function LoungeDock() {
                             className="flex items-center justify-between p-2.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className="h-8 w-8 rounded-full bg-[#0F766E] text-white flex items-center justify-center text-xs font-bold shadow-sm shrink-0">
+                              <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold shadow-sm shrink-0">
                                 {contact.full_name.charAt(0)}
                               </div>
                               <div className="min-w-0">

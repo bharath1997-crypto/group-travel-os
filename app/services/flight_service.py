@@ -1,19 +1,31 @@
 """
-app/services/flight_service.py — Flight search via Duffel API (Primary)
+app/services/flight_service.py — Rovvy flight meta-search (Skyscanner / Google Flights model).
 
-TTL in-memory cache (30 min); key includes outbound window, cabin, currency, pax, return leg.
+Live search (when configured):
+  - Kiwi Tequila: real itineraries + Kiwi deep links (KIWI_API_KEY)
+  - Travelpayouts Aviasales prices API (TRAVELPAYOUTS_API_TOKEN) — optional merge
+
+Fallback: route estimates when no live provider returns results.
 """
 from __future__ import annotations
 
 import logging
-import time
 import re
-from datetime import date
+import time
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
+from urllib.parse import quote
 
-from duffel_api import Duffel
+import httpx
+from fastapi import HTTPException
 
 from app.schemas.flight import FlightResult
+from app.services.duffel_client import create_offer_request
+from app.services.flight_meta_providers import (
+    merge_flight_results,
+    search_kiwi,
+    search_travelpayouts_prices,
+)
 from app.utils.exceptions import AppException
 from config import settings
 
@@ -22,12 +34,10 @@ logger = logging.getLogger(__name__)
 CACHE_TTL_SECONDS = 1_800  # 30 minutes
 
 _flight_cache: dict[
-    tuple[str, str, str, str, int, str, str, str],
+    tuple[str, str, str, str, int, int, int, str, str, str, int],
     tuple[float, list[FlightResult]],
 ] = {}
 
-
-# Common free-text → location ids (metro / multi-airport codes)
 _FLY_LOCATION_ALIASES: dict[str, str] = {
     "CHICAGO": "CHI",
     "NEWYORK": "NYC",
@@ -36,11 +46,46 @@ _FLY_LOCATION_ALIASES: dict[str, str] = {
     "MIAMI": "MIA",
     "LONDON": "LON",
     "PARIS": "PAR",
+    "HYDERABAD": "HYD",
+    "GUNTUR": "VGA",
+    "VIJAYAWADA": "VGA",
+    "DELHI": "DEL",
+    "NEWDELHI": "DEL",
+    "MUMBAI": "BOM",
+    "BENGALURU": "BLR",
+    "BANGALORE": "BLR",
+    "CHENNAI": "MAA",
+    "KOLKATA": "CCU",
+    "DUBAI": "DXB",
+    "SINGAPORE": "SIN",
+    "ATLANTA": "ATL",
+    "BOSTON": "BOS",
+    "SEATTLE": "SEA",
+    "LOSANGELES": "LAX",
+}
+
+_ROUTE_TEMPLATES: dict[tuple[str, str], list[dict[str, Any]]] = {
+    ("CHI", "HYD"): [
+        {"price": 899.0, "duration": 1080, "stops": 1, "airlines": ["Typical 1-stop via Middle East / Europe"]},
+        {"price": 1049.0, "duration": 960, "stops": 0, "airlines": ["Non-stop when available"]},
+    ],
+    ("CHI", "DEL"): [
+        {"price": 849.0, "duration": 960, "stops": 1, "airlines": ["Typical 1-stop via Europe / Middle East"]},
+    ],
+    ("NYC", "LON"): [
+        {"price": 520.0, "duration": 420, "stops": 0, "airlines": ["Transatlantic non-stop"]},
+        {"price": 399.0, "duration": 540, "stops": 1, "airlines": ["1-stop option"]},
+    ],
+    ("CHI", "LON"): [
+        {"price": 580.0, "duration": 480, "stops": 0, "airlines": ["Transatlantic"]},
+    ],
+    ("LAX", "SEA"): [
+        {"price": 89.0, "duration": 165, "stops": 0, "airlines": ["West coast shuttle"]},
+    ],
 }
 
 
 def _normalize_fly_term(term: str) -> str:
-    """Maps common city names to IATA codes; otherwise uppercases trimmed input."""
     raw = term.strip()
     if not raw:
         return raw
@@ -58,11 +103,14 @@ def _cache_key(
     outbound_start: date,
     outbound_end: date,
     adults: int,
+    children: int,
+    infants: int,
     currency: str,
     cabin_token: str,
     return_from: date | None,
     return_to: date | None,
-) -> tuple[str, str, str, str, int, str, str, str]:
+    maximum_connections: int = 1,
+) -> tuple[str, str, str, str, int, int, int, str, str, str, int]:
     ret_leg = ""
     if return_from is not None and return_to is not None:
         ret_leg = f"{return_from.isoformat()}_{return_to.isoformat()}"
@@ -72,14 +120,16 @@ def _cache_key(
         outbound_start.isoformat(),
         outbound_end.isoformat(),
         adults,
+        children,
+        infants,
         currency.strip().upper(),
         cabin_token.strip().upper(),
         ret_leg,
+        maximum_connections,
     )
 
 
 def _parse_iso_duration_to_minutes(duration_str: str | None) -> int:
-    """Parses an ISO 8601 duration string (e.g. PT2H30M) into total minutes."""
     if not duration_str:
         return 0
     match = re.match(r"PT(?:(\d+)H)?(?:(\d+)M)?", duration_str)
@@ -90,47 +140,232 @@ def _parse_iso_duration_to_minutes(duration_str: str | None) -> int:
     return hours * 60 + minutes
 
 
-def _parse_duffel_offer(offer: Any, currency_preference: str) -> FlightResult | None:
+def _skyscanner_booking_link(origin: str, destination: str, depart: date) -> str:
+    return (
+        f"https://www.skyscanner.net/transport/flights/"
+        f"{origin.lower()}/{destination.lower()}/{depart.isoformat()}/"
+    )
+
+
+def _aviasales_affiliate_link(origin: str, destination: str, depart: date) -> str:
+    marker = (settings.travelpayouts_marker or "").strip() or "727732"
+    # Aviasales search deep link — no API, affiliate via tp.media
+    inner = (
+        f"https://www.aviasales.com/search/"
+        f"{origin}{depart.strftime('%d%m')}{destination}1"
+    )
+    return f"https://tp.media/r?marker={marker}&p=4114&u={quote(inner, safe='')}"
+
+
+def _discovery_flight_results(
+    fly_from: str,
+    fly_to: str,
+    date_from: date,
+    currency: str,
+) -> list[FlightResult]:
+    """Rovvy-owned discovery — estimates + partner booking links, no flight API."""
+    pair = (fly_from.upper(), fly_to.upper())
+    templates = _ROUTE_TEMPLATES.get(pair)
+    if not templates:
+        templates = [
+            {
+                "price": 750.0,
+                "duration": 900,
+                "stops": 1,
+                "airlines": ["Typical connecting route"],
+            }
+        ]
+
+    depart = datetime(date_from.year, date_from.month, date_from.day, 8, 0, tzinfo=timezone.utc)
+    skyscanner = _skyscanner_booking_link(fly_from, fly_to, date_from)
+    aviasales = _aviasales_affiliate_link(fly_from, fly_to, date_from)
+
+    rows: list[FlightResult] = []
+    for idx, tpl in enumerate(templates, start=1):
+        duration = int(tpl["duration"])
+        arrive = depart + timedelta(minutes=duration)
+        rows.append(
+            FlightResult(
+                id=f"rovvy-route-{fly_from}-{fly_to}-{idx}",
+                price=float(tpl["price"]),
+                currency=currency,
+                airlines=list(tpl.get("airlines") or ["Route estimate"]),
+                departure_at=depart.isoformat().replace("+00:00", "Z"),
+                arrival_at=arrive.isoformat().replace("+00:00", "Z"),
+                origin=fly_from,
+                destination=fly_to,
+                duration_minutes=duration,
+                deep_link=skyscanner,
+                stops=int(tpl.get("stops") or 0),
+            )
+        )
+
+    min_price = min(float(t["price"]) for t in templates)
+    rows.append(
+        FlightResult(
+            id=f"rovvy-partner-skyscanner-{fly_from}-{fly_to}",
+            price=min_price,
+            currency=currency,
+            airlines=["Book live prices on Skyscanner"],
+            departure_at=depart.isoformat().replace("+00:00", "Z"),
+            arrival_at=(depart + timedelta(minutes=int(templates[0]["duration"])))
+            .isoformat()
+            .replace("+00:00", "Z"),
+            origin=fly_from,
+            destination=fly_to,
+            duration_minutes=int(templates[0]["duration"]),
+            deep_link=skyscanner,
+            stops=int(templates[0].get("stops") or 0),
+        )
+    )
+    rows.append(
+        FlightResult(
+            id=f"rovvy-partner-aviasales-{fly_from}-{fly_to}",
+            price=min_price,
+            currency=currency,
+            airlines=["Search on Aviasales (Travelpayouts)"],
+            departure_at=depart.isoformat().replace("+00:00", "Z"),
+            arrival_at=(depart + timedelta(minutes=int(templates[0]["duration"])))
+            .isoformat()
+            .replace("+00:00", "Z"),
+            origin=fly_from,
+            destination=fly_to,
+            duration_minutes=int(templates[0]["duration"]),
+            deep_link=aviasales,
+            stops=int(templates[0].get("stops") or 0),
+        )
+    )
+    return rows
+
+
+def _live_provider_mode() -> str:
+    explicit = (settings.flight_live_provider or "duffel").strip().lower()
+    if explicit and explicit not in {"auto", ""}:
+        return explicit
+    if (settings.duffel_api_key or "").strip():
+        return "duffel"
+    return "discovery"
+
+
+def _discovery_allowed() -> bool:
+    return bool(getattr(settings, "allow_estimated_flights", False))
+
+
+def _duffel_offer_booking_url(offer_id: str) -> str:
+    return f"https://app.duffel.com/search/offers/{offer_id}"
+
+
+def _live_provider_enabled() -> bool:
+    return bool((settings.duffel_api_key or "").strip())
+
+
+def _search_live_meta(
+    fly_from: str,
+    fly_to: str,
+    date_from: date,
+    date_to: date,
+    adults: int,
+    currency: str,
+    return_from: date | None,
+    return_to: date | None,
+) -> list[FlightResult]:
+    mode = _live_provider_mode()
+    kiwi_rows: list[FlightResult] = []
+    tp_rows: list[FlightResult] = []
+
+    if mode in {"kiwi", "meta", "auto"} and (settings.kiwi_api_key or "").strip():
+        kiwi_rows = search_kiwi(
+            fly_from=fly_from,
+            fly_to=fly_to,
+            date_from=date_from,
+            date_to=date_to,
+            adults=adults,
+            currency=currency,
+            return_from=return_from,
+            return_to=return_to,
+        )
+
+    if mode in {"meta", "travelpayouts"} and (settings.travelpayouts_api_token or "").strip():
+        tp_rows = search_travelpayouts_prices(
+            fly_from=fly_from,
+            fly_to=fly_to,
+            date_from=date_from,
+            currency=currency,
+        )
+
+    if kiwi_rows or tp_rows:
+        return merge_flight_results(kiwi_rows, tp_rows)
+
+    if mode == "kiwi" and not (settings.kiwi_api_key or "").strip():
+        logger.warning("FLIGHT_LIVE_PROVIDER=kiwi but KIWI_API_KEY is missing")
+    return []
+
+
+def _dedupe_flight_rows(rows: list[FlightResult], limit: int = 12) -> list[FlightResult]:
+    """Collapse near-duplicate offers (same route, times, price)."""
+    seen: set[tuple[str, ...]] = set()
+    unique: list[FlightResult] = []
+    for row in rows:
+        key = (
+            row.origin.upper(),
+            row.destination.upper(),
+            row.departure_at[:16],
+            row.arrival_at[:16],
+            str(row.stops),
+            str(int(row.price)),
+            ",".join(row.airlines),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(row)
+        if len(unique) >= limit:
+            break
+    return unique
+
+
+def _parse_duffel_offer(offer: dict[str, Any], currency_preference: str) -> FlightResult | None:
     try:
-        rid = offer.id
-        price_str = offer.total_amount
-        if not price_str:
+        rid = offer.get("id")
+        price_str = offer.get("total_amount")
+        if not rid or not price_str:
             return None
         price_f = float(price_str)
-        currency = offer.total_currency or currency_preference
+        currency = offer.get("total_currency") or currency_preference
 
-        slices = offer.slices or []
+        slices = offer.get("slices") or []
         if not slices:
             return None
 
-        # Collect unique carrier codes
         airlines: list[str] = []
-        for s in slices:
-            for seg in s.segments or []:
-                carrier = seg.marketing_carrier
-                if carrier and carrier.iata_code:
-                    if carrier.iata_code not in airlines:
-                        airlines.append(carrier.iata_code)
+        for sl in slices:
+            if not isinstance(sl, dict):
+                continue
+            for seg in sl.get("segments") or []:
+                if not isinstance(seg, dict):
+                    continue
+                carrier = seg.get("marketing_carrier") or {}
+                code = str(carrier.get("iata_code") or "").strip().upper()
+                if code and code not in airlines:
+                    airlines.append(code)
 
-        # First slice first segment departing_at
-        first_slice = slices[0]
-        first_seg = first_slice.segments[0] if first_slice.segments else None
+        first_slice = slices[0] if isinstance(slices[0], dict) else {}
+        segments = first_slice.get("segments") or []
+        first_seg = segments[0] if segments else {}
         if not first_seg:
             return None
-        departure_at = first_seg.departing_at or ""
+        departure_at = str(first_seg.get("departing_at") or "")
 
-        # Last slice last segment arriving_at
-        last_slice = slices[-1]
-        last_seg = last_slice.segments[-1] if last_slice.segments else None
-        if not last_seg:
-            return None
-        arrival_at = last_seg.arriving_at or ""
+        last_seg_outbound = segments[-1] if segments else first_seg
+        arrival_at = str(last_seg_outbound.get("arriving_at") or "")
 
-        origin = first_slice.origin.iata_code if first_slice.origin else ""
-        destination = last_slice.destination.iata_code if last_slice.destination else ""
+        origin_obj = first_slice.get("origin") or {}
+        dest_obj = first_slice.get("destination") or {}
+        origin = str(origin_obj.get("iata_code") or "")
+        destination = str(dest_obj.get("iata_code") or "")
 
-        duration_minutes = sum(_parse_iso_duration_to_minutes(s.duration) for s in slices)
-        stops = sum(max(0, len(s.segments or []) - 1) for s in slices)
+        duration_minutes = _parse_iso_duration_to_minutes(str(first_slice.get("duration") or ""))
+        stops = max(0, len(segments) - 1)
 
         return FlightResult(
             id=str(rid),
@@ -145,10 +380,9 @@ def _parse_duffel_offer(offer: Any, currency_preference: str) -> FlightResult | 
             deep_link="",
             stops=stops,
         )
-    except Exception as e:
-        logger.warning("Error parsing Duffel offer: %s", e)
+    except Exception as exc:
+        logger.warning("Error parsing Duffel offer: %s", exc)
         return None
-
 
 
 def _search_duffel(
@@ -159,52 +393,47 @@ def _search_duffel(
     currency: str,
     cabins: str,
     return_from: date | None,
+    children: int = 0,
+    infants: int = 0,
 ) -> list[FlightResult]:
-    client = Duffel(access_token=settings.duffel_api_key)
-
-    slices = [
+    slices: list[dict[str, str]] = [
         {
             "origin": fly_from,
             "destination": fly_to,
-            "departure_date": date_from.isoformat()
+            "departure_date": date_from.isoformat(),
         }
     ]
     if return_from is not None:
-        slices.append({
-            "origin": fly_to,
-            "destination": fly_from,
-            "departure_date": return_from.isoformat()
-        })
+        slices.append(
+            {
+                "origin": fly_to,
+                "destination": fly_from,
+                "departure_date": return_from.isoformat(),
+            }
+        )
 
-    passengers = [{"type": "adult"} for _ in range(adults)]
-    
-    cabin_map = {
-        "M": "economy",
-        "W": "premium_economy",
-        "C": "business",
-        "F": "first",
-    }
+    passengers: list[dict[str, str]] = [{"type": "adult"} for _ in range(adults)]
+    passengers.extend({"type": "child"} for _ in range(children))
+    passengers.extend({"type": "infant_without_seat"} for _ in range(infants))
+    cabin_map = {"M": "economy", "W": "premium_economy", "C": "business", "F": "first"}
     duffel_cabin = cabin_map.get(cabins, "economy")
 
-    req = (
-        client.offer_requests.create()
-        .passengers(passengers)
-        .slices(slices)
-        .cabin_class(duffel_cabin)
-        .return_offers()
+    data = create_offer_request(
+        slices=slices,
+        passengers=passengers,
+        cabin_class=duffel_cabin,
     )
-    offer_request = req.execute()
 
+    offers = data.get("offers") or []
     out: list[FlightResult] = []
-    offers = getattr(offer_request, "offers", []) or []
     for offer in offers:
+        if not isinstance(offer, dict):
+            continue
         parsed = _parse_duffel_offer(offer, currency)
         if parsed:
             out.append(parsed)
-
-    out.sort(key=lambda x: x.price)
-    return out
-
+    out.sort(key=lambda row: row.price)
+    return _dedupe_flight_rows(out, limit=12)
 
 
 class FlightService:
@@ -215,14 +444,17 @@ class FlightService:
         date_from: date,
         date_to: date,
         adults: int = 1,
+        children: int = 0,
+        infants: int = 0,
         currency: str = "USD",
         cabins: str = "M",
         return_from: date | None = None,
         return_to: date | None = None,
     ) -> list[FlightResult]:
         """
-        Search flights using Duffel API.
-        Results are cached for CACHE_TTL_SECONDS.
+        Live flight search via Duffel (default when DUFFEL_API_KEY is set).
+        Optional: Kiwi / Travelpayouts when FLIGHT_LIVE_PROVIDER=kiwi|meta.
+        Discovery estimates only when FLIGHT_LIVE_PROVIDER=discovery explicitly.
         """
         raw_from = fly_from.strip()
         raw_to = fly_to.strip()
@@ -232,10 +464,16 @@ class FlightService:
         if not a:
             AppException.bad_request("Origin is required")
         if not b or b == "__ANYWHERE__" or b == "ANYWHERE":
-            AppException.bad_request("Duffel requires a specific destination airport code")
+            AppException.bad_request("A specific destination airport or city code is required")
 
         if adults < 1 or adults > 9:
             AppException.bad_request("Adults must be between 1 and 9")
+        if children < 0 or children > 8:
+            AppException.bad_request("Children must be between 0 and 8")
+        if infants < 0 or infants > 4:
+            AppException.bad_request("Infants must be between 0 and 4")
+        if adults + children + infants > 9:
+            AppException.bad_request("Maximum 9 travelers per search")
 
         if date_from > date_to:
             AppException.bad_request("Invalid outbound date range")
@@ -255,6 +493,8 @@ class FlightService:
             date_from,
             date_to,
             adults,
+            children,
+            infants,
             curr,
             cabin_token,
             return_from,
@@ -267,24 +507,55 @@ class FlightService:
             if now < expires_at:
                 return list(rows)
 
-        duffel_api_key = (settings.duffel_api_key or "").strip()
-        if not duffel_api_key:
-            logger.warning("Duffel API key is not configured")
-            return []
+        mode = _live_provider_mode()
+        live_rows: list[FlightResult] = []
 
-        try:
-            logger.info("Attempting flight search via Duffel API")
-            results = _search_duffel(
+        if mode == "duffel":
+            if not _live_provider_enabled():
+                AppException.service_unavailable("Flight search is not configured")
+            try:
+                from app.services.flight_journey_service import FlightJourneyService
+
+                req = FlightJourneyService.search_request_from_legacy_get(
+                    fly_from=a,
+                    fly_to=b,
+                    date_from=date_from,
+                    adults=adults,
+                    children=children,
+                    infants=infants,
+                    currency=curr,
+                    cabins=cabin_token,
+                    return_from=return_from,
+                )
+                response = FlightJourneyService.search(req)
+                live_rows = FlightJourneyService.journeys_to_flight_results(response.journeys)
+            except HTTPException:
+                raise
+            except Exception as exc:
+                _flight_cache[key] = (now + CACHE_TTL_SECONDS, [])
+                return []
+        elif mode not in {"discovery"}:
+            logger.info("Flight live provider: %s", mode)
+            live_rows = _search_live_meta(
                 fly_from=a,
                 fly_to=b,
                 date_from=date_from,
+                date_to=date_to,
                 adults=adults,
                 currency=curr,
-                cabins=cabin_token,
-                return_from=return_from
+                return_from=return_from,
+                return_to=return_to,
             )
-            _flight_cache[key] = (now + CACHE_TTL_SECONDS, results)
-            return results
-        except Exception as e:
-            logger.warning("Duffel flight search failed: %s", e)
+
+        if live_rows:
+            _flight_cache[key] = (now + CACHE_TTL_SECONDS, live_rows)
+            return live_rows
+
+        if mode != "discovery" or not _discovery_allowed():
+            logger.warning("Live provider %s returned no offers (no mock fallback)", mode)
+            _flight_cache[key] = (now + CACHE_TTL_SECONDS, [])
             return []
+
+        results = _discovery_flight_results(a, b, date_from, curr)
+        _flight_cache[key] = (now + CACHE_TTL_SECONDS, results)
+        return results

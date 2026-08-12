@@ -277,7 +277,7 @@ function NewChatSlidePanel({
   const animStyle: CSSProperties = {
     display: "flex",
     flexDirection: "column",
-    background: "#1e2a3a",
+    background: "#1E293B",
     opacity: exiting ? 0 : entered ? 1 : 0,
     transform: exiting
       ? "translateX(-10px)"

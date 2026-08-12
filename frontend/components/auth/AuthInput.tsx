@@ -21,7 +21,7 @@ export function AuthInput({
     <div className="w-full">
       <div className="relative">
         <span
-          className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-[#94A3B8]"
+          className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-muted"
           aria-hidden
         >
           {icon}
@@ -29,7 +29,7 @@ export function AuthInput({
         <input
           id={id}
           placeholder={placeholder}
-          className={`w-full rounded-2xl border border-[#334155] bg-[#1E293B] py-3 pl-11 ${padRight} text-sm text-white shadow-sm outline-none transition placeholder:text-[#94A3B8] focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 disabled:cursor-not-allowed disabled:bg-[#1E293B]/50 disabled:opacity-70`}
+          className={`w-full rounded-2xl border border-[#334155] bg-[#1E293B] py-3 pl-11 ${padRight} text-sm text-white shadow-sm outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-[#0F766E]/20 disabled:cursor-not-allowed disabled:bg-[#1E293B]/50 disabled:opacity-70`}
           {...rest}
         />
         {endAdornment ? (

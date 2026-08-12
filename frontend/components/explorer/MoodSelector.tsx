@@ -31,8 +31,8 @@ export function MoodSelector({ moods, active, onSelect }: MoodSelectorProps) {
               className={[
                 "rounded-2xl border px-4 py-3 text-left text-sm font-bold transition",
                 isActive
-                  ? "border-[#E94560] bg-[#E94560]/15 text-white"
-                  : "border-white/10 bg-white/5 text-white/75 hover:border-[#E94560]/60 hover:text-white",
+                  ? "border-primary bg-primary/15 text-white"
+                  : "border-white/10 bg-white/5 text-white/75 hover:border-primary/60 hover:text-white",
               ].join(" ")}
             >
               {mood.label}

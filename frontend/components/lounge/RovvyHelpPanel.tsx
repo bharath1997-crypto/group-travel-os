@@ -104,7 +104,7 @@ export function RovvyHelpPanel({
                   ? "max-w-[85%] rounded-2xl px-3 py-2 text-[14px] leading-snug text-white"
                   : `max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${
                       m.role === "user"
-                        ? "bg-[#0F766E] text-white rounded-tr-none"
+                        ? "bg-primary text-white rounded-tr-none"
                         : "bg-white text-slate-900 border border-stone-200 rounded-tl-none"
                     }`
               }
@@ -177,7 +177,7 @@ export function RovvyHelpPanel({
           className={
             isFull
               ? "min-w-0 flex-1 rounded-full border-0 px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 disabled:opacity-45"
-              : "min-w-0 flex-1 rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-[#0F766E] disabled:opacity-45"
+              : "min-w-0 flex-1 rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-primary disabled:opacity-45"
           }
           style={isFull ? { background: LOUNGE_FULL.surface } : undefined}
         />
@@ -188,7 +188,7 @@ export function RovvyHelpPanel({
           className={
             isFull
               ? "shrink-0 rounded-full px-5 py-2 text-sm font-semibold text-white disabled:opacity-45"
-              : "shrink-0 rounded-full bg-[#0F766E] px-3 py-1.5 text-[10px] font-bold text-white disabled:opacity-45"
+              : "shrink-0 rounded-full bg-primary px-3 py-1.5 text-[10px] font-bold text-white disabled:opacity-45"
           }
           style={isFull ? { background: LOUNGE_FULL.accent } : undefined}
         >

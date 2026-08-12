@@ -32,7 +32,7 @@ function CategoryPlaceholder({ categoryLabel }: { categoryLabel: string }) {
       aria-label="No photos yet"
     >
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 shadow-sm">
-        <MapPin className="h-6 w-6 text-[#0F766E]" aria-hidden />
+        <MapPin className="h-6 w-6 text-primary" aria-hidden />
       </div>
       <p className="mt-3 text-sm font-semibold text-stone-700">
         {categoryLabel || "Place"}
@@ -96,6 +96,9 @@ export default function PlacePreviewMedia({
     return (
       <div className="overflow-hidden rounded-xl border border-stone-200 bg-stone-50">
         <div className="relative aspect-[16/9] w-full bg-stone-200">
+          <span className="absolute left-2 top-2 z-10 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white">
+            {sourceLabel(current.source)}
+          </span>
           {isVideo ? (
             <video
               src={current.storageUrl}

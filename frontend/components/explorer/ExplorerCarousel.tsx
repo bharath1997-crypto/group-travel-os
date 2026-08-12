@@ -45,7 +45,7 @@ export function ExplorerCarousel({
           {seeAllHref && (
             <Link
               href={seeAllHref}
-              className="text-[#0F766E] hover:text-[#0D635C] font-bold text-sm flex items-center gap-1 group whitespace-nowrap"
+              className="text-primary hover:text-primary-hover font-bold text-sm flex items-center gap-1 group whitespace-nowrap"
             >
               {seeAllLabel}
               <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
@@ -55,14 +55,14 @@ export function ExplorerCarousel({
             <button
               onClick={() => scroll(-1)}
               aria-label="Scroll left"
-              className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:border-[#0F766E] hover:text-[#0F766E] transition-colors"
+              className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:border-primary hover:text-primary transition-colors"
             >
               <ChevronLeft size={16} />
             </button>
             <button
               onClick={() => scroll(1)}
               aria-label="Scroll right"
-              className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:border-[#0F766E] hover:text-[#0F766E] transition-colors"
+              className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:border-primary hover:text-primary transition-colors"
             >
               <ChevronRight size={16} />
             </button>

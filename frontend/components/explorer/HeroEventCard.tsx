@@ -28,9 +28,9 @@ export function HeroEventCard({ event, onOpen }: HeroEventCardProps) {
     <button
       type="button"
       onClick={() => onOpen(event)}
-      className="group w-[280px] shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-[#102f55] text-left shadow-xl transition hover:-translate-y-0.5 hover:border-[#E94560]/60 sm:w-[320px]"
+      className="group w-[280px] shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-[#102f55] text-left shadow-xl transition hover:-translate-y-0.5 hover:border-primary/60 sm:w-[320px]"
     >
-      <div className="relative h-40 overflow-hidden bg-gradient-to-br from-[#0F3460] via-[#16213E] to-[#E94560]/80">
+      <div className="relative h-40 overflow-hidden bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-primary/80">
         {event.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -64,7 +64,7 @@ export function HeroEventCard({ event, onOpen }: HeroEventCardProps) {
             {event.venue} · {event.dateLabel}
           </p>
         </div>
-        <div className="rounded-2xl bg-[#E94560] px-4 py-2 text-center text-sm font-bold text-white transition group-hover:bg-[#ff5670]">
+        <div className="rounded-2xl bg-primary px-4 py-2 text-center text-sm font-bold text-white transition group-hover:bg-primary-hover">
           I&apos;m Interested
         </div>
       </div>

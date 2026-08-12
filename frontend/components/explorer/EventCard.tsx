@@ -37,7 +37,7 @@ function sourcePillClass(event: EventCardItem): string {
   if (t.includes("eventbrite") || sh === "eb") return "bg-orange-500 ring-orange-400/35";
   if (t.includes("google")) return "bg-blue-600 ring-blue-500/40";
   if (t.includes("ai")) return "bg-violet-600 ring-violet-500/35";
-  return "bg-[#1e4976] ring-[#1e4976]/60";
+  return "bg-[#1E293B] ring-[#1E293B]/60";
 }
 
 function EventImagePanel({
@@ -52,7 +52,7 @@ function EventImagePanel({
   return (
     <div
       className={[
-        "relative w-full overflow-hidden bg-gradient-to-br from-[#0F3460] via-[#16213E] to-[#0d1f33]",
+        "relative w-full overflow-hidden bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0d1f33]",
         className ?? "",
       ].join(" ")}
     >
@@ -78,7 +78,7 @@ function EventImagePanel({
       <span
         className={[
           "absolute right-3 top-3 z-[1] max-w-[45%] truncate rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-md",
-          event.isFree ? "bg-emerald-500 ring-1 ring-emerald-400/50" : "bg-[#E94560] ring-1 ring-[#E94560]/60",
+          event.isFree ? "bg-emerald-500 ring-1 ring-emerald-400/50" : "bg-primary ring-1 ring-primary/60",
         ].join(" ")}
       >
         {event.isFree ? "Free" : event.priceLabel ? event.priceLabel.slice(0, 18) : "Paid"}
@@ -112,7 +112,7 @@ function EventBody({
       {showFooterCta ? (
         <div className="flex items-center gap-2 pt-1">
           <p className="min-w-0 flex-1 truncate text-xs font-semibold text-gray-400">{event.priceLabel || "Price TBD"}</p>
-          <span className="shrink-0 rounded-full bg-[#E94560] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white">
+          <span className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white">
             View
           </span>
         </div>
@@ -147,7 +147,7 @@ export function EventCard({
   const titleClass = compact ? "text-sm" : "text-[15px]";
 
   const explorerActions = (
-    <div className="flex items-center justify-center gap-2 border-t border-[#1e4976]/60 bg-[#071221]/90 px-2 py-2">
+    <div className="flex items-center justify-center gap-2 border-t border-[#1E293B]/60 bg-[#071221]/90 px-2 py-2">
       <button
         type="button"
         title="Save"
@@ -156,7 +156,7 @@ export function EventCard({
           e.stopPropagation();
           onSave?.();
         }}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#1e4976] bg-[#0d1f33] text-gray-300 transition hover:border-[#E94560]/50 hover:text-white"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#1E293B] bg-[#0d1f33] text-gray-300 transition hover:border-primary/50 hover:text-white"
       >
         <Bookmark className="h-4 w-4" />
       </button>
@@ -168,7 +168,7 @@ export function EventCard({
           e.stopPropagation();
           onAddToTrip?.();
         }}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#1e4976] bg-[#0d1f33] text-gray-300 transition hover:border-[#E94560]/50 hover:text-white"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#1E293B] bg-[#0d1f33] text-gray-300 transition hover:border-primary/50 hover:text-white"
       >
         <Users className="h-4 w-4" />
       </button>
@@ -180,7 +180,7 @@ export function EventCard({
           e.stopPropagation();
           onPoll?.();
         }}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#1e4976] bg-[#0d1f33] text-gray-300 transition hover:border-[#E94560]/50 hover:text-white"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#1E293B] bg-[#0d1f33] text-gray-300 transition hover:border-primary/50 hover:text-white"
       >
         <BarChart2 className="h-4 w-4" />
       </button>
@@ -192,7 +192,7 @@ export function EventCard({
           e.stopPropagation();
           onShare?.();
         }}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#1e4976] bg-[#0d1f33] text-gray-300 transition hover:border-[#E94560]/50 hover:text-white"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#1E293B] bg-[#0d1f33] text-gray-300 transition hover:border-primary/50 hover:text-white"
       >
         <Share2 className="h-4 w-4" />
       </button>
@@ -205,7 +205,7 @@ export function EventCard({
         <button
           type="button"
           onClick={() => onOpen(event)}
-          className="group/img grid w-full overflow-hidden rounded-xl border border-[#1e4976] bg-[#0d1f33] text-left shadow-lg transition hover:-translate-y-0.5 hover:border-[#E94560]/45 sm:min-h-[200px] sm:grid-cols-[minmax(0,220px)_1fr]"
+          className="group/img grid w-full overflow-hidden rounded-xl border border-[#1E293B] bg-[#0d1f33] text-left shadow-lg transition hover:-translate-y-0.5 hover:border-primary/45 sm:min-h-[200px] sm:grid-cols-[minmax(0,220px)_1fr]"
         >
           <EventImagePanel event={event} sourceLabel={sourceLabel} className="h-44 sm:h-full sm:min-h-[200px]" />
           <EventBody event={event} titleClass="text-[15px]" showFooterCta />
@@ -217,7 +217,7 @@ export function EventCard({
         type="button"
         onClick={() => onOpen(event)}
         className={[
-          "group/img flex w-full flex-col overflow-hidden rounded-xl border border-[#1e4976] bg-[#0d1f33] text-left shadow-lg transition hover:-translate-y-0.5 hover:border-[#E94560]/45",
+          "group/img flex w-full flex-col overflow-hidden rounded-xl border border-[#1E293B] bg-[#0d1f33] text-left shadow-lg transition hover:-translate-y-0.5 hover:border-primary/45",
           minH,
         ].join(" ")}
       >
@@ -231,13 +231,13 @@ export function EventCard({
 
   if (list) {
     return (
-      <div className="group/img grid overflow-hidden rounded-xl border border-[#1e4976] bg-[#0d1f33] shadow-lg transition hover:border-[#E94560]/45 sm:min-h-[200px] sm:grid-cols-[220px_1fr]">
+      <div className="group/img grid overflow-hidden rounded-xl border border-[#1E293B] bg-[#0d1f33] shadow-lg transition hover:border-primary/45 sm:min-h-[200px] sm:grid-cols-[220px_1fr]">
         <EventImagePanel event={event} sourceLabel={sourceLabel} className="h-44 sm:h-full sm:min-h-[200px]" />
         <div className="flex min-h-0 flex-col">
           <button
             type="button"
             onClick={() => onOpen(event)}
-            className="flex flex-1 flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/50"
+            className="flex flex-1 flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
           >
             <EventBody event={event} titleClass="text-[15px]" showFooterCta={false} />
           </button>
@@ -250,7 +250,7 @@ export function EventCard({
   return (
     <div
       className={[
-        "group/img flex flex-col overflow-hidden rounded-xl border border-[#1e4976] bg-[#0d1f33] shadow-lg transition hover:border-[#E94560]/45",
+        "group/img flex flex-col overflow-hidden rounded-xl border border-[#1E293B] bg-[#0d1f33] shadow-lg transition hover:border-primary/45",
         widthCls,
         minH,
       ].join(" ")}
@@ -258,7 +258,7 @@ export function EventCard({
       <button
         type="button"
         onClick={() => onOpen(event)}
-        className="flex min-h-0 flex-1 flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E94560]/50"
+        className="flex min-h-0 flex-1 flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
       >
         <EventImagePanel event={event} sourceLabel={sourceLabel} className="flex-[0_0_55%] min-h-[120px]" />
         <EventBody event={event} titleClass={titleClass} showFooterCta={false} />

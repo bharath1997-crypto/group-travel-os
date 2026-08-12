@@ -1,7 +1,6 @@
 "use client";
 
 import { AIAssistantSidecar } from "@/components/ai/AIAssistantSidecar";
-import { LoungeDock } from "@/components/LoungeDock";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -10,12 +9,7 @@ import {
   Wallet,
   Briefcase,
   Activity,
-  CloudSun,
-  Map,
   Plane,
-  Building2,
-  Route,
-  Bus,
   Heart,
   Radio,
   Bell,
@@ -36,6 +30,7 @@ import { VerificationBanner } from "@/components/VerificationBanner";
 import { RovvyLogo } from "@/components/RovvyLogo";
 import BrandedLoading from "@/components/BrandedLoading";
 import ConnectionStatusBanner from "@/components/ConnectionStatusBanner";
+import ConsentPreferencesBanner from "@/components/consent/ConsentPreferencesBanner";
 import { HeaderProfileMenu } from "@/components/HeaderProfileMenu";
 import { HeaderSearchBar } from "@/components/HeaderSearchBar";
 import {
@@ -47,11 +42,7 @@ import {
   type LiveImmersiveChromeState,
 } from "@/app/(dashboard)/live/live-immersive-chrome";
 import { API_BASE, apiFetch } from "@/lib/api";
-
-const CORAL = "#E94560";
-
-const NAV_BG = "#0F172A";
-const MUTED = "#94A3B8";
+import { BRAND } from "@/lib/brand";
 
 const GT_NOTIFICATIONS_UNREAD = "gt-notifications-unread";
 
@@ -60,7 +51,7 @@ type NavIcon = LucideIcon | typeof ExploreTabIcon;
 type SubNavItem = { href: string; label: string; Icon?: LucideIcon };
 
 type NavSectionDef = {
-  id: "explore" | "live" | "trips" | "split-activities";
+  id: "explore" | "live" | "trips" | "connect";
   href: string;
   label: string;
   Icon: NavIcon | null;
@@ -75,10 +66,9 @@ const NAV_SECTIONS: NavSectionDef[] = [
     label: "Explore",
     Icon: ExploreTabIcon,
     subs: [
+      { href: "/explore",            label: "Discover" },
       { href: "/explore/activities", label: "Activities", Icon: Activity },
       { href: "/explore/events",     label: "Events",     Icon: Calendar },
-      { href: "/weather",            label: "Weather",    Icon: CloudSun },
-      { href: "/explore/map",        label: "Map View",   Icon: Map },
     ],
   },
   {
@@ -94,21 +84,17 @@ const NAV_SECTIONS: NavSectionDef[] = [
     label: "Trips",
     Icon: Briefcase,
     subs: [
-      { href: "/trip-space",  label: "Trip Space",  Icon: Briefcase },
-      { href: "/flights",     label: "Flights",     Icon: Plane },
-      { href: "/hotels",      label: "Hotels",      Icon: Building2 },
-      { href: "/routes",      label: "Routes",      Icon: Route },
-      { href: "/buses",       label: "Buses",       Icon: Bus },
-      { href: "/group",       label: "Groups",      Icon: LucideUsers },
-      { href: "/buddy",       label: "Buddy Trips", Icon: Heart },
+      { href: "/trips",            label: "Overview", Icon: Briefcase },
+      { href: "/group",            label: "People",   Icon: LucideUsers },
+      { href: "/flights",          label: "Flights",  Icon: Plane },
+      { href: "/split-activities", label: "Money",    Icon: Wallet },
     ],
   },
   {
-    id: "split-activities",
-    href: "/split-activities",
-    label: "Split Activities",
-    mobileLabel: "Split",
-    Icon: Wallet,
+    id: "connect",
+    href: "/buddy",
+    label: "Connect",
+    Icon: Heart,
     subs: [],
   },
 ];
@@ -213,11 +199,16 @@ function sectionActive(pathname: string, section: NavSectionDef): boolean {
       pathname.startsWith("/routes") ||
       pathname.startsWith("/buses") ||
       pathname.startsWith("/group") ||
-      pathname.startsWith("/buddy")
+      pathname.startsWith("/split-activities")
     );
   }
-  if (section.id === "split-activities") {
-    return pathname.startsWith("/split-activities");
+  if (section.id === "connect") {
+    return (
+      pathname.startsWith("/buddy") ||
+      pathname.startsWith("/buddies") ||
+      pathname.startsWith("/connect") ||
+      pathname.startsWith("/join")
+    );
   }
   return false;
 }
@@ -236,10 +227,7 @@ function PlanBadgeFooter({ plan }: { plan: string | null }) {
     );
   if (p === "pass_3day" || p === "pass_7day")
     return (
-      <span
-        className="inline-flex max-w-full truncate rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
-        style={{ backgroundColor: CORAL }}
-      >
+      <span className="inline-flex max-w-full truncate rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-white">
         {p === "pass_3day" ? "3-Day Pass" : "7-Day Pass"}
       </span>
     );
@@ -311,7 +299,7 @@ function SidebarProfileAvatar({
         </span>
       ) : (
         <span
-          className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-red-500 bg-[#0F172A] ring-2 ring-[#0F172A]"
+          className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-red-500 bg-navy ring-2 ring-[#0F172A]"
           aria-hidden
         />
       )}
@@ -351,14 +339,14 @@ function SidebarNavSection({
         "flex items-center gap-2 xl:gap-2.5 rounded-lg px-3 py-2 xl:py-2.5 text-[13px] font-medium transition-colors",
         active
           ? "bg-[rgba(204,251,241,0.1)] text-[#F8FAFC] shadow-[inset_0_0_0_1px_rgba(15,118,110,0.35)]"
-          : "text-[#94A3B8] hover:bg-[rgba(248,250,252,0.06)] hover:text-[#F8FAFC]",
+          : "text-muted hover:bg-[rgba(248,250,252,0.06)] hover:text-[#F8FAFC]",
       ].join(" ")}
     >
       {section.Icon ? (
         <section.Icon
           size={18}
           strokeWidth={2}
-          className={`h-5 w-5 shrink-0 ${active ? "text-[#CCFBF1]" : "text-[#94A3B8]"}`}
+          className={`h-5 w-5 shrink-0 ${active ? "text-primary-soft" : "text-muted"}`}
           aria-hidden
         />
       ) : null}
@@ -397,7 +385,7 @@ function LiveHeaderNavTab({
         onClick={() => setOpen((prev) => !prev)}
         className={`relative flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-all ${
           active
-            ? "text-[#007F73] bg-[#E6F7F4] ring-1 ring-[#007F73]/15"
+            ? "text-primary bg-primary-soft ring-1 ring-[#0F766E]/15"
             : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
         }`}
         title="Live"
@@ -413,7 +401,7 @@ function LiveHeaderNavTab({
           aria-hidden
         />
         {notifCount > 0 ? (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#E94560] px-1 text-[9px] font-bold text-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-white">
             {notifCount > 9 ? "9+" : notifCount}
           </span>
         ) : null}
@@ -434,7 +422,7 @@ function LiveHeaderNavTab({
             }}
             className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] font-medium text-stone-800 hover:bg-stone-50"
           >
-            <Radio size={14} strokeWidth={2} className="text-[#007F73]" aria-hidden />
+            <Radio size={14} strokeWidth={2} className="text-primary" aria-hidden />
             Live map
           </button>
           {notifCount > 0 ? (
@@ -448,7 +436,7 @@ function LiveHeaderNavTab({
                 <Bell size={14} strokeWidth={2} className="text-stone-500" aria-hidden />
                 Notifications
               </span>
-              <span className="rounded-full bg-[#E94560] px-1.5 py-0.5 text-[10px] font-bold text-white">
+              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-white">
                 {notifCount > 99 ? "99+" : notifCount}
               </span>
             </Link>
@@ -585,7 +573,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
       document.body.classList.remove("live-mode");
       return;
     }
-    const currentH = headerVisible ? liveHeaderPx : 0;
+    const currentH = isLivePage ? liveHeaderPx : headerVisible ? liveHeaderPx : 0;
     document.documentElement.style.setProperty("--rovvy-header-h", `${currentH}px`);
     document.documentElement.classList.add("live-mode");
     document.body.classList.add("live-mode");
@@ -757,7 +745,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     if (!mounted) {
       return (
         <div
-          className="fixed inset-0 z-50 bg-[#F8FAFC]"
+          className="fixed inset-0 z-50 bg-app"
           aria-busy="true"
           aria-label="Loading Rovvy"
           suppressHydrationWarning
@@ -787,8 +775,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
   const activeSubs = activeSection?.subs ?? [];
   const hasSubNav = activeSubs.length > 0;
 
-  // Header height: 56px primary row + 44px sub-nav row when present
-  const headerPx = hasSubNav ? 100 : 56;
+  // Header height: 64px primary row + 46px contextual row when present.
+  const headerPx = hasSubNav ? 110 : 64;
   const liveImmersiveHeader = false;
   const liveDarkHeader = false;
 
@@ -798,7 +786,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         isLivePage
           ? "flex h-screen max-h-[100dvh] flex-col overflow-hidden"
           : "min-h-screen min-h-[100dvh]"
-      } ${isLivePage ? "bg-[#0F172A]" : "bg-[#F8F9FA]"}`}
+      } ${isLivePage ? "bg-navy" : "bg-app"}`}
     >
       <ConnectionStatusBanner />
 
@@ -806,19 +794,15 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           FIXED TOP HEADER — never hides on scroll
       ═══════════════════════════════════════════════════ */}
       <header
-        className={`dashboard-header fixed top-0 left-0 right-0 z-40 hidden overflow-visible select-none transition-all duration-300 md:block ${
-          isLivePage && !headerVisible
-            ? "-translate-y-full opacity-0 pointer-events-none"
-            : "translate-y-0 opacity-100"
-        } ${
+        className={`dashboard-header fixed top-0 left-0 right-0 z-40 hidden overflow-visible select-none transition-all duration-300 md:block translate-y-0 opacity-100 ${
           liveDarkHeader
             ? "border-b border-white/10 bg-slate-950/55 shadow-none backdrop-blur-xl"
             : liveImmersiveHeader
               ? "border-b border-white/25 bg-white/70 shadow-[0_4px_24px_rgba(15,23,42,0.06)] backdrop-blur-xl"
-              : "border-b border-slate-100 bg-white shadow-[0_2px_8px_-1px_rgba(15,23,42,0.05)]"
+              : "border-b border-[#E2E8F0] bg-white/95 shadow-[0_8px_30px_-18px_rgba(15,23,42,0.28)] backdrop-blur-xl"
         }`}
       >
-        <div className="flex h-14 items-center gap-3 overflow-visible px-3 md:gap-4 md:px-6">
+        <div className="flex h-16 items-center gap-3 overflow-visible px-4 md:gap-5 md:px-7">
           {/* Logo — image taller than the bar for a zoomed-in wordmark */}
           <Link
             href="/explore"
@@ -826,12 +810,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           >
             <RovvyLogo
               variant={liveDarkHeader ? "white" : "primary"}
-              height={68}
+              height={58}
               className="md:hidden"
             />
             <RovvyLogo
               variant={liveDarkHeader ? "white" : "primary"}
-              height={84}
+              height={70}
               className="hidden md:block"
             />
           </Link>
@@ -864,7 +848,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                       active
                         ? liveDarkHeader
                           ? "bg-teal-500/20 text-teal-200 ring-1 ring-teal-300/30"
-                          : "text-[#007F73] bg-[#E6F7F4] ring-1 ring-[#007F73]/15"
+                          : "text-primary bg-primary-soft ring-1 ring-[#0F766E]/15"
                         : liveDarkHeader
                           ? "text-slate-300 hover:text-white hover:bg-white/10"
                           : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
@@ -900,14 +884,14 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   className={`px-2 py-2 text-sm font-semibold sm:px-3 ${
                     liveDarkHeader
                       ? "text-slate-200 hover:text-white"
-                      : "text-stone-600 hover:text-[#0F766E]"
+                      : "text-stone-600 hover:text-primary"
                   }`}
                 >
                   Log in
                 </Link>
                 <Link
                   href="/register"
-                  className="rounded-xl bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0D635C] sm:px-4"
+                  className="rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover sm:px-4"
                 >
                   Sign up
                 </Link>
@@ -927,8 +911,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   href={href}
                   className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-semibold transition-all ${
                     active
-                      ? "bg-[#0F766E] text-white shadow-sm"
-                      : "text-stone-500 hover:bg-stone-100 hover:text-stone-800"
+                      ? "bg-primary text-white shadow-[0_6px_16px_rgba(15,118,110,0.2)]"
+                      : "text-slate-500 hover:bg-app hover:text-navy"
                   }`}
                 >
                   {Icon && <Icon size={13} strokeWidth={2} aria-hidden />}
@@ -956,9 +940,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
         style={{
           paddingTop: !isMdUp
             ? "0px"
-            : isLivePage && !headerVisible
-              ? "0px"
-              : `${headerPx}px`,
+            : `${headerPx}px`,
         }}
       >
         <main
@@ -967,7 +949,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               ? needsMainOverflowHidden
                 ? "dashboard-main-live flex min-h-0 flex-1 flex-col overflow-hidden p-0"
                 : "flex flex-col p-0 min-h-min"
-              : "min-h-0 flex-1 bg-[#F8F9FA] p-3 md:p-4 xl:p-5"
+              : "min-h-0 flex-1 bg-app p-3 md:p-5 xl:p-7"
           }
         >
           {isMapPage ? (
@@ -1001,12 +983,12 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             MOBILE BOTTOM NAV — fixed, dark bar
         ═══════════════════════════════════════════════════ */}
         <nav
-          className={`bottom-tab-bar fixed bottom-0 left-0 right-0 z-30 flex items-end border-t border-stone-200/90 bg-white/95 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-8px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl md:hidden ${
+          className={`bottom-tab-bar fixed bottom-0 left-0 right-0 z-30 flex items-end border-t border-[#E2E8F0] bg-white/96 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-12px_32px_rgba(15,23,42,0.08)] backdrop-blur-xl md:hidden ${
             hideBottomNav ? "hidden" : ""
           }`}
           aria-label="Primary"
         >
-          <div className="mx-auto flex h-14 w-full max-w-lg items-stretch justify-between px-0.5">
+          <div className="mx-auto flex h-16 w-full max-w-lg items-stretch justify-between px-1.5">
             {MOBILE_TABS.map(({ href, label, Icon, id }) => {
               const def = NAV_SECTIONS.find((s) => s.id === id);
               const active =
@@ -1020,19 +1002,19 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                 <Link
                   key={href}
                   href={href}
-                  className="relative flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-1"
+                  className={`relative flex min-h-[48px] min-w-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-1.5 transition-colors ${active ? "bg-primary-soft" : ""}`}
                 >
                   {Icon && (
                     <Icon
                       size={20}
                       strokeWidth={2}
-                      className={active ? "text-[#0F766E]" : "text-stone-400"}
+                      className={active ? "text-primary" : "text-slate-400"}
                       aria-hidden
                     />
                   )}
                   <span
                     className={`max-w-full truncate text-[10px] font-semibold ${
-                      active ? "text-[#0F766E]" : "text-stone-500"
+                      active ? "text-primary" : "text-slate-500"
                     }`}
                   >
                     {label}
@@ -1063,10 +1045,9 @@ function DashboardChrome({ children }: { children: ReactNode }) {
             return undefined;
           })()}
           context={{ pathname }}
-          className={isLivePage ? "!z-[140]" : undefined}
         />
       ) : null}
-      {user ? <LoungeDock /> : null}
+      <ConsentPreferencesBanner />
     </div>
   );
 }

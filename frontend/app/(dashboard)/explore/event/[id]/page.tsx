@@ -395,7 +395,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] p-4">
+      <div className="flex min-h-screen items-center justify-center bg-app p-4">
         <div className="text-center">
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
           <p className="mt-4 text-sm font-medium text-slate-600 animate-pulse">
@@ -408,7 +408,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
 
   if (error || !event) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] p-4">
+      <div className="flex min-h-screen items-center justify-center bg-app p-4">
         <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
             <MapPin size={24} />
@@ -443,7 +443,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
   const pollQuestion = `Should we go to ${event.title}?`;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-24 text-slate-800">
+    <div className="min-h-screen bg-app pb-24 text-slate-800">
       {toastMessage && (
         <div className="fixed bottom-28 left-1/2 z-50 -translate-x-1/2 transform rounded-2xl border border-slate-200 bg-white/95 px-6 py-3 shadow-xl backdrop-blur-md transition-all duration-300">
           <div className="flex items-center gap-3">

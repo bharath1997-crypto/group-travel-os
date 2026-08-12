@@ -6,7 +6,7 @@ import {
 } from "@/components/lounge/hub/HubIcons";
 import { HubSearchResults, type HubSearchResultsProps } from "@/components/lounge/hub/HubSearchResults";
 
-const BG = "#0f3460";
+const BG = "#0F172A";
 const SURFACE = "#2d4060";
 const BORDER_SUB = "rgba(255,255,255,0.08)";
 const TH_MUTED = "#9ca3af";

@@ -1,5 +1,5 @@
 import { haversineM } from "@/lib/geo";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, optionalSignalInit } from "@/lib/safe-fetch";
 import { logRovvyLiveDebug } from "./live-gps";
 
 const GEO_CACHE_TTL_MS = 8 * 60 * 1000;
@@ -202,7 +202,7 @@ export async function liveAutocompleteSearch(
   try {
     const data = await apiFetch<{ results: SearchPlace[] }>(
       `/search/places?${params.toString()}`,
-      abortSignal ? { signal: abortSignal } : undefined,
+      optionalSignalInit(abortSignal),
     );
     let results = (data?.results || []).map((row) =>
       mapSearchPlaceToAutocomplete({

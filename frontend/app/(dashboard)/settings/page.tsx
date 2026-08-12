@@ -153,7 +153,7 @@ export default function SettingsHubPage() {
                 <span key={kw}>
                   <button
                     type="button"
-                    className="font-medium text-[#0F766E] underline underline-offset-2 hover:text-teal-700"
+                    className="font-medium text-primary underline underline-offset-2 hover:text-teal-700"
                     onClick={() => setQ(kw)}
                   >
                     {kw}

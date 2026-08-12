@@ -67,9 +67,9 @@ export default function LiveMapClickPopup({
           role="menuitem"
           disabled={loading}
           onClick={onPickLocation}
-          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium text-stone-800 hover:bg-[#E6F7F4] disabled:opacity-60"
+          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium text-stone-800 hover:bg-primary-soft disabled:opacity-60"
         >
-          <MapPin className="h-4 w-4 shrink-0 text-[#0F766E]" />
+          <MapPin className="h-4 w-4 shrink-0 text-primary" />
           Pick this location
         </button>
         <button

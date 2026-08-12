@@ -16,7 +16,7 @@ function TravelBackground() {
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
       <div className="absolute inset-0 bg-gradient-to-br from-[#F0FDFA] via-[#F8FAFC] to-[#ECFEFF]" />
       <div className="absolute -left-20 top-0 h-96 w-96 rounded-full bg-[#99F6E4]/30 blur-3xl" />
-      <div className="absolute -right-16 bottom-0 h-80 w-80 rounded-full bg-[#0F766E]/10 blur-3xl" />
+      <div className="absolute -right-16 bottom-0 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
     </div>
   );
 }
@@ -35,14 +35,14 @@ export default function LogoutPage() {
       <TravelBackground />
 
       <header className="relative z-10 flex h-14 items-center justify-center border-b border-stone-200/60 bg-white/70 px-4 backdrop-blur-md">
-        <Link href="/explore" className="text-sm font-semibold text-[#0F766E] hover:text-[#0D635C]">
+        <Link href="/explore" className="text-sm font-semibold text-primary hover:text-primary-hover">
           Back to Explore
         </Link>
       </header>
 
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-12">
         <div className={`w-full ${AUTH_FORM_MAX_TAB} rounded-2xl border border-stone-200/80 bg-white p-8 shadow-lg shadow-stone-900/5 text-center sm:p-10`}>
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-[#0F766E]">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-primary">
             <LogOut size={26} strokeWidth={1.75} />
           </div>
           <h1 className="text-xl font-extrabold text-stone-900 tracking-tight sm:text-2xl">

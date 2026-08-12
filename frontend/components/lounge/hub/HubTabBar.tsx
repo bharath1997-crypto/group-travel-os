@@ -18,7 +18,7 @@ const TAB_LABELS: Record<HubTabId, string> = {
   updates: "Space",
 };
 
-const HUB_BG = "#0f3460";
+const HUB_BG = "#0F172A";
 const HUB_BORDER = "rgba(255,255,255,0.08)";
 const HUB_BRAND = "#E94560";
 
@@ -39,7 +39,7 @@ export function HubTabBar({
               onClick={() => onTabChange(id)}
               className={`flex-1 rounded-md py-1 transition-all ${
                 activeTab === id
-                  ? "bg-[#0F766E] text-white"
+                  ? "bg-primary text-white"
                   : "text-slate-400 hover:text-white"
               }`}
             >

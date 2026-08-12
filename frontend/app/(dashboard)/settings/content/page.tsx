@@ -7,6 +7,7 @@ import { fetchAppSettings, patchAppSettings, prefSection } from "@/lib/app-setti
 
 import { SettingsScreenHeader, SettingsSectionTitle, SettingsToggleRow } from "../_components";
 import { SettingsBreadcrumb, nestedCrumbs } from "@/components/settings/SettingsBreadcrumb";
+import StoragePreferencesPanel from "@/components/consent/StoragePreferencesPanel";
 
 const EMPTY_PREFS: AppPreferences = {};
 
@@ -55,7 +56,7 @@ export default function SettingsContentPage() {
       <>
         <SettingsScreenHeader title="What you see" backHref="/settings" />
         <div className="flex justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-[#E94560]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-primary" />
         </div>
       </>
     );
@@ -108,6 +109,10 @@ export default function SettingsContentPage() {
             void merge({ content: { creator_subscriptions: v } })
           }
         />
+      </div>
+      <div id="storage-preferences" className="scroll-mt-16 px-4 py-4">
+        <SettingsSectionTitle>Storage preferences</SettingsSectionTitle>
+        <StoragePreferencesPanel />
       </div>
     </>
   );

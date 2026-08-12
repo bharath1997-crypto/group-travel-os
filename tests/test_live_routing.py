@@ -45,6 +45,9 @@ def test_route_preview_allows_guest():
         "app.services.live_routing_service.BorderCrossingService.detect_crossings",
         new_callable=AsyncMock,
         return_value=[],
+    ), patch(
+        "app.services.live_routing_service.settings.google_routes_api_key",
+        "",
     ):
         mock_get.return_value = mock_resp
 
@@ -95,6 +98,9 @@ def test_route_preview_success(auth_user):
         "app.services.live_routing_service.BorderCrossingService.detect_crossings",
         new_callable=AsyncMock,
         return_value=[],
+    ), patch(
+        "app.services.live_routing_service.settings.google_routes_api_key",
+        "",
     ):
         mock_get.return_value = mock_resp
 
@@ -160,6 +166,9 @@ def test_route_preview_adds_last_mile_walk(auth_user):
         "app.services.live_routing_service.BorderCrossingService.detect_crossings",
         new_callable=AsyncMock,
         return_value=[],
+    ), patch(
+        "app.services.live_routing_service.settings.google_routes_api_key",
+        "",
     ):
         res = client.post(
             "/api/v1/live/route-preview",
@@ -297,6 +306,9 @@ def test_route_preview_rejects_degenerate_zero_meter_foot(auth_user):
         "app.services.live_routing_service.BorderCrossingService.detect_crossings",
         new_callable=AsyncMock,
         return_value=[],
+    ), patch(
+        "app.services.live_routing_service.settings.google_routes_api_key",
+        "",
     ):
         res = client.post(
             "/api/v1/live/route-preview",
@@ -324,6 +336,102 @@ def test_route_preview_rejects_degenerate_zero_meter_foot(auth_user):
         assert abs(end_lng - (-107.18569)) < 0.001
 
 
+def test_route_preview_google_drive_alternatives(auth_user):
+    from unittest.mock import patch, AsyncMock
+    from app.schemas.live_routing import GeoJSONGeometry, RouteAlternativeOut
+
+    toll_alt = RouteAlternativeOut(
+        id="with_tolls",
+        label="Fastest route",
+        tollLabel="Tolls likely",
+        hasTolls=True,
+        distanceMeters=180000.0,
+        durationSeconds=7200.0,
+        geometry=GeoJSONGeometry(
+            type="LineString",
+            coordinates=[[-87.63, 41.88], [-89.0, 42.2], [-89.63, 42.22]],
+        ),
+        provider="google",
+    )
+    no_toll_alt = RouteAlternativeOut(
+        id="avoid_tolls",
+        label="Avoid tolls",
+        tollLabel="No tolls",
+        hasTolls=False,
+        distanceMeters=195000.0,
+        durationSeconds=7800.0,
+        geometry=GeoJSONGeometry(
+            type="LineString",
+            coordinates=[[-87.63, 41.88], [-88.5, 41.95], [-89.63, 42.22]],
+        ),
+        provider="google",
+    )
+
+    with patch(
+        "app.services.live_routing_service.fetch_google_drive_alternatives",
+        new_callable=AsyncMock,
+        return_value=[toll_alt, no_toll_alt],
+    ), patch(
+        "app.services.live_routing_service.append_last_mile_walk",
+        new_callable=AsyncMock,
+        side_effect=lambda _c, coords, dist, dur, man, *_args: (
+            coords,
+            dist,
+            dur,
+            man,
+            None,
+            None,
+        ),
+    ), patch(
+        "app.services.live_routing_service.BorderCrossingService.detect_crossings",
+        new_callable=AsyncMock,
+        return_value=[],
+    ), patch(
+        "app.services.live_routing_service.settings.google_routes_api_key",
+        "test-google-key",
+    ), patch(
+        "app.services.live_routing_service.is_land_connected_drive_route",
+        return_value=True,
+    ):
+        res = client.post(
+            "/api/v1/live/route-preview",
+            json={
+                "origin": {"latitude": 41.88, "longitude": -87.63, "source": "gps"},
+                "destination": {
+                    "latitude": 42.22,
+                    "longitude": -89.63,
+                    "name": "IL 26",
+                },
+                "travelMode": "Drive",
+            },
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert body["status"] == "ready"
+        assert body["provider"] == "google"
+        assert body["alternatives"] is not None
+        assert len(body["alternatives"]) == 2
+        assert body["alternatives"][0]["id"] == "with_tolls"
+        assert body["alternatives"][1]["id"] == "avoid_tolls"
+
+
+def test_build_osrm_alternatives_dedupes_primary():
+    from app.services.live_routing_service import build_osrm_alternatives
+
+    primary = [[-87.63, 41.88], [-87.62, 41.89]]
+    routes = [
+        {"distance": 1000, "duration": 120, "geometry": {"coordinates": primary}},
+        {
+            "distance": 1100,
+            "duration": 130,
+            "geometry": {"coordinates": [[-87.63, 41.88], [-87.61, 41.885], [-87.62, 41.89]]},
+        },
+    ]
+    alts = build_osrm_alternatives(routes, primary)
+    assert len(alts) == 1
+    assert alts[0].id == "osrm_alt_2"
+
+
 def test_route_preview_includes_border_crossing(auth_user):
     from unittest.mock import patch, AsyncMock
     from app.schemas.live_routing import BorderCrossingOut
@@ -338,7 +446,17 @@ def test_route_preview_includes_border_crossing(auth_user):
                 "duration": 300.0,
                 "geometry": {
                     "type": "LineString",
-                    "coordinates": [[-87.63, 41.88], [-97.0, 49.0]],
+                    "coordinates": [
+                        [-87.63, 41.88],
+                        [-88.5, 42.5],
+                        [-89.5, 43.2],
+                        [-90.5, 44.0],
+                        [-91.5, 45.0],
+                        [-93.0, 46.5],
+                        [-94.5, 47.5],
+                        [-96.0, 48.5],
+                        [-97.0, 49.0],
+                    ],
                 },
             }
         ],
@@ -360,6 +478,9 @@ def test_route_preview_includes_border_crossing(auth_user):
     ), patch(
         "app.services.live_routing_service.BorderCrossingService.build_border_notice",
         return_value="Border notice",
+    ), patch(
+        "app.services.live_routing_service.settings.google_routes_api_key",
+        "",
     ):
         mock_get.return_value = mock_resp
 

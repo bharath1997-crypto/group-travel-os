@@ -1,0 +1,6107 @@
+{
+  "version": 1,
+  "intent_count": 100,
+  "utterance_count": 1000,
+  "intents": [
+    {
+      "intent_key": "what_is_rovvy",
+      "category": "project",
+      "canonical_question": "What is Rovvy?",
+      "answer_strategy": "static",
+      "answer_text": "Rovvy is your group travel companion — plan trips, coordinate with friends, explore destinations, and navigate Live with Wayra by your side. Tagline: Roam together.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What is Rovvy?",
+          "normalized": "what is rovvy",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Tell me about Rovvy",
+          "normalized": "tell me about rovvy",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "What does Rovvy do?",
+          "normalized": "what does rovvy do",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Explain Rovvy to me",
+          "normalized": "explain rovvy to me",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What's this app?",
+          "normalized": "what s this app",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "What is this product?",
+          "normalized": "what is this product",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey what is rovvy",
+          "normalized": "hey what is rovvy",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "ok so whats Rovvy for",
+          "normalized": "ok so whats rovvy for",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Can you describe Rovvy?",
+          "normalized": "can you describe rovvy",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "yo what is this app called Rovvy",
+          "normalized": "yo what is this app called rovvy",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "rovvy_tagline",
+      "category": "project",
+      "canonical_question": "What is Rovvy's tagline?",
+      "answer_strategy": "static",
+      "answer_text": "Rovvy's tagline is Roam together — plan, coordinate, and travel as a group.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What is Rovvy's tagline?",
+          "normalized": "what is rovvy s tagline",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "What's the slogan?",
+          "normalized": "what s the slogan",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Roam together means what?",
+          "normalized": "roam together means what",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "What's Rovvy's motto?",
+          "normalized": "what s rovvy s motto",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Tell me the Rovvy slogan",
+          "normalized": "tell me the rovvy slogan",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "whats the tagline for rovvy",
+          "normalized": "whats the tagline for rovvy",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey whats the motto",
+          "normalized": "hey whats the motto",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Rovvy tagline please",
+          "normalized": "rovvy tagline please",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so whats the slogan",
+          "normalized": "ok so whats the slogan",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What's the brand line?",
+          "normalized": "what s the brand line",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "who_built_rovvy",
+      "category": "project",
+      "canonical_question": "Who built Rovvy?",
+      "answer_strategy": "static",
+      "answer_text": "Rovvy is built by the Rovvy team as a group travel platform. I'm Wayra, the in-app assistant that helps you plan, navigate, and coordinate — not a separate company chatbot.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Who built Rovvy?",
+          "normalized": "who built rovvy",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Who made this app?",
+          "normalized": "who made this app",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Who created Rovvy?",
+          "normalized": "who created rovvy",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Who owns Rovvy?",
+          "normalized": "who owns rovvy",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Who developed this?",
+          "normalized": "who developed this",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "who made rovvy",
+          "normalized": "who made rovvy",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey who built this",
+          "normalized": "hey who built this",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Is Rovvy a company?",
+          "normalized": "is rovvy a company",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so who created this app",
+          "normalized": "ok so who created this app",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Who's behind Rovvy?",
+          "normalized": "who s behind rovvy",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "rovvy_vs_maps",
+      "category": "project",
+      "canonical_question": "How is Rovvy different from Google Maps?",
+      "answer_strategy": "static",
+      "answer_text": "Rovvy combines group trip planning, shared expenses, polls, Explore discovery, and Live navigation with Wayra. Maps apps focus on directions; Rovvy is built so your whole group can roam together.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How is Rovvy different from Google Maps?",
+          "normalized": "how is rovvy different from google maps",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Is Rovvy like Google Maps?",
+          "normalized": "is rovvy like google maps",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Why not just use Maps?",
+          "normalized": "why not just use maps",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Rovvy vs Google Maps",
+          "normalized": "rovvy vs google maps",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Is this a maps app?",
+          "normalized": "is this a maps app",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "how is this different from maps",
+          "normalized": "how is this different from maps",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey is this like waze",
+          "normalized": "hey is this like waze",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Compared to Maps what do you do?",
+          "normalized": "compared to maps what do you do",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so why use rovvy not maps",
+          "normalized": "ok so why use rovvy not maps",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Is Rovvy navigation only?",
+          "normalized": "is rovvy navigation only",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "rovvy_features_overview",
+      "category": "project",
+      "canonical_question": "What can I do in Rovvy?",
+      "answer_strategy": "static",
+      "answer_text": "You can create groups and trips, plan flights and hotels, split expenses, run polls, explore destinations, share Live locations, and ask Wayra for travel help. Open the sidebar to jump between Dashboard, Plan, Explore, Group, Live, and Profile.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What can I do in Rovvy?",
+          "normalized": "what can i do in rovvy",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "What features does Rovvy have?",
+          "normalized": "what features does rovvy have",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Show me what Rovvy offers",
+          "normalized": "show me what rovvy offers",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "What are the main features?",
+          "normalized": "what are the main features",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Give me an overview of Rovvy",
+          "normalized": "give me an overview of rovvy",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "whats possible in this app",
+          "normalized": "whats possible in this app",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey what can i do here in rovvy",
+          "normalized": "hey what can i do here in rovvy",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "List Rovvy capabilities",
+          "normalized": "list rovvy capabilities",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so what does the app include",
+          "normalized": "ok so what does the app include",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What should I try first?",
+          "normalized": "what should i try first",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "is_rovvy_free",
+      "category": "project",
+      "canonical_question": "Is Rovvy free?",
+      "answer_strategy": "static",
+      "answer_text": "You can browse and use core planning and Live tools without paying upfront. Some subscription features may unlock extras — check Profile → Settings for your plan.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Is Rovvy free?",
+          "normalized": "is rovvy free",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Do I have to pay?",
+          "normalized": "do i have to pay",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Is there a subscription?",
+          "normalized": "is there a subscription",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "How much does Rovvy cost?",
+          "normalized": "how much does rovvy cost",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Is this free to use?",
+          "normalized": "is this free to use",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "is rovvy free to use",
+          "normalized": "is rovvy free to use",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey do i need to pay",
+          "normalized": "hey do i need to pay",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Any pricing?",
+          "normalized": "any pricing",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so is there a free plan",
+          "normalized": "ok so is there a free plan",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What does it cost?",
+          "normalized": "what does it cost",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "rovvy_privacy_basics",
+      "category": "project",
+      "canonical_question": "How does Rovvy handle my privacy?",
+      "answer_strategy": "static",
+      "answer_text": "Your account, trips, and location sharing stay under your control. Live location is shared only when you enable it for a session or group. Manage visibility and alerts from Profile → Settings.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How does Rovvy handle my privacy?",
+          "normalized": "how does rovvy handle my privacy",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Is my location private?",
+          "normalized": "is my location private",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Who can see my data?",
+          "normalized": "who can see my data",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Privacy policy basics?",
+          "normalized": "privacy policy basics",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Are my trips private?",
+          "normalized": "are my trips private",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "is my gps shared always",
+          "normalized": "is my gps shared always",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey is my data safe",
+          "normalized": "hey is my data safe",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Do you sell my data?",
+          "normalized": "do you sell my data",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so privacy how does it work",
+          "normalized": "ok so privacy how does it work",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Can others see my location?",
+          "normalized": "can others see my location",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "rovvy_platforms",
+      "category": "project",
+      "canonical_question": "Where can I use Rovvy?",
+      "answer_strategy": "static",
+      "answer_text": "Rovvy runs in the browser at rovvy.app — use it on phone or desktop. Sign in once and your groups, trips, and settings follow you across devices.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Where can I use Rovvy?",
+          "normalized": "where can i use rovvy",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Is there a mobile app?",
+          "normalized": "is there a mobile app",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Does Rovvy work on phone?",
+          "normalized": "does rovvy work on phone",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Is Rovvy web only?",
+          "normalized": "is rovvy web only",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Can I use Rovvy on iPhone?",
+          "normalized": "can i use rovvy on iphone",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "does it work on android",
+          "normalized": "does it work on android",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey is there an ios app",
+          "normalized": "hey is there an ios app",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Desktop and mobile?",
+          "normalized": "desktop and mobile",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so where do i open rovvy",
+          "normalized": "ok so where do i open rovvy",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Is it a website?",
+          "normalized": "is it a website",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "rovvy_offline",
+      "category": "project",
+      "canonical_question": "Does Rovvy work offline?",
+      "answer_strategy": "static",
+      "answer_text": "Core Live map tiles and some cached data may remain available briefly, but routing, search, and Wayra need a connection. Reconnect to sync group updates and fresh routes.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Does Rovvy work offline?",
+          "normalized": "does rovvy work offline",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Can I use it without internet?",
+          "normalized": "can i use it without internet",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Offline mode?",
+          "normalized": "offline mode",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "What if I lose signal?",
+          "normalized": "what if i lose signal",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Does Live work offline?",
+          "normalized": "does live work offline",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "no wifi does it still work",
+          "normalized": "no wifi does it still work",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey offline support",
+          "normalized": "hey offline support",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Need internet always?",
+          "normalized": "need internet always",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so what happens offline",
+          "normalized": "ok so what happens offline",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Can I navigate without data?",
+          "normalized": "can i navigate without data",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "getting_started",
+      "category": "onboarding",
+      "canonical_question": "How do I get started?",
+      "answer_strategy": "static",
+      "answer_text": "Create an account or browse as a guest, open Dashboard, then make a group or trip. Invite friends, drop pins on Live, and ask Wayra anytime from the sidecar.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I get started?",
+          "normalized": "how do i get started",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "I'm new — what now?",
+          "normalized": "i m new what now",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Getting started guide",
+          "normalized": "getting started guide",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "How do I begin?",
+          "normalized": "how do i begin",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "First steps in Rovvy?",
+          "normalized": "first steps in rovvy",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "im new what do i do",
+          "normalized": "im new what do i do",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey how do i start",
+          "normalized": "hey how do i start",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Onboarding please",
+          "normalized": "onboarding please",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so how do i start using this",
+          "normalized": "ok so how do i start using this",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Walk me through setup",
+          "normalized": "walk me through setup",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "who_are_you",
+      "category": "wayra",
+      "canonical_question": "Who are you?",
+      "answer_strategy": "static",
+      "answer_text": "I'm Wayra, Rovvy's built-in travel companion. I help with planning, Live map questions, group coordination, and on-the-road tips — right inside the app.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Who are you?",
+          "normalized": "who are you",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "What is Wayra?",
+          "normalized": "what is wayra",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Tell me about yourself",
+          "normalized": "tell me about yourself",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Who am I talking to?",
+          "normalized": "who am i talking to",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Are you Wayra?",
+          "normalized": "are you wayra",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "hey who are you",
+          "normalized": "hey who are you",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "whats wayra",
+          "normalized": "whats wayra",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Introduce yourself",
+          "normalized": "introduce yourself",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so who is wayra",
+          "normalized": "ok so who is wayra",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What do you do?",
+          "normalized": "what do you do",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "are_you_ai",
+      "category": "wayra",
+      "canonical_question": "Are you an AI?",
+      "answer_strategy": "static",
+      "answer_text": "Yes — I'm Wayra, an AI assistant built into Rovvy. I combine trusted app guidance with live context from your page and location so answers stay useful on the trip.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Are you an AI?",
+          "normalized": "are you an ai",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Are you a real person?",
+          "normalized": "are you a real person",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Are you a bot?",
+          "normalized": "are you a bot",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Is Wayra artificial intelligence?",
+          "normalized": "is wayra artificial intelligence",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Human or AI?",
+          "normalized": "human or ai",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "are you real or ai",
+          "normalized": "are you real or ai",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey are you a chatbot",
+          "normalized": "hey are you a chatbot",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Is this automated?",
+          "normalized": "is this automated",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so are you artificial",
+          "normalized": "ok so are you artificial",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Robot?",
+          "normalized": "robot",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "which_model_powers_you",
+      "category": "wayra",
+      "canonical_question": "Which AI model powers you?",
+      "answer_strategy": "static",
+      "answer_text": "I don't discuss vendor models in chat. What matters is that Wayra answers from Rovvy context, trusted knowledge, and live sources so you get practical travel help.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Which AI model powers you?",
+          "normalized": "which ai model powers you",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Are you using Gemini?",
+          "normalized": "are you using gemini",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Are you DeepSeek?",
+          "normalized": "are you deepseek",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "What model are you?",
+          "normalized": "what model are you",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Do you use OpenAI?",
+          "normalized": "do you use openai",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "which model is behind wayra",
+          "normalized": "which model is behind wayra",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey are you chatgpt",
+          "normalized": "hey are you chatgpt",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Is this GPT?",
+          "normalized": "is this gpt",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so what llm do you use",
+          "normalized": "ok so what llm do you use",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Google AI or what?",
+          "normalized": "google ai or what",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "what_can_wayra_do",
+      "category": "wayra",
+      "canonical_question": "What can Wayra help with?",
+      "answer_strategy": "static",
+      "answer_text": "Ask me how Rovvy works, what to do near your GPS or pin, weather, routes, nearby food, culture tips, and group planning help. Tap + to attach a place when you want answers tied to the map.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What can Wayra help with?",
+          "normalized": "what can wayra help with",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "What can you do?",
+          "normalized": "what can you do",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "How can you help me?",
+          "normalized": "how can you help me",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "What are you good at?",
+          "normalized": "what are you good at",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Wayra capabilities?",
+          "normalized": "wayra capabilities",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "what can you help with",
+          "normalized": "what can you help with",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey what else can you do",
+          "normalized": "hey what else can you do",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Show me your skills",
+          "normalized": "show me your skills",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so how do you help travelers",
+          "normalized": "ok so how do you help travelers",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What questions can I ask?",
+          "normalized": "what questions can i ask",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "wayra_vs_alexa",
+      "category": "wayra",
+      "canonical_question": "Are you like Alexa?",
+      "answer_strategy": "static",
+      "answer_text": "A bit — you can chat casually and ask travel questions. Unlike a home speaker, I'm tied to Rovvy: your page, Live map, groups, and trip plans stay in context.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Are you like Alexa?",
+          "normalized": "are you like alexa",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Are you like Siri?",
+          "normalized": "are you like siri",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Is this like Google Assistant?",
+          "normalized": "is this like google assistant",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Can I joke with you like Alexa?",
+          "normalized": "can i joke with you like alexa",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Voice assistant vibes?",
+          "normalized": "voice assistant vibes",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "hey like siri?",
+          "normalized": "hey like siri",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Home assistant style?",
+          "normalized": "home assistant style",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so alexa but for travel",
+          "normalized": "ok so alexa but for travel",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Can we just chat?",
+          "normalized": "can we just chat",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "Are you like Alexa? variant 1",
+          "normalized": "are you like alexa variant 1",
+          "style_tag": "synth"
+        }
+      ]
+    },
+    {
+      "intent_key": "tell_a_joke",
+      "category": "fun",
+      "canonical_question": "Tell me a joke",
+      "answer_strategy": "static",
+      "answer_text": "Why did the suitcase break up with the backpack? Too much baggage for one trip. Want a destination tip instead? Drop a pin and ask what to do nearby.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Tell me a joke",
+          "normalized": "tell me a joke",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Make me laugh",
+          "normalized": "make me laugh",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Got any jokes?",
+          "normalized": "got any jokes",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Funny travel joke?",
+          "normalized": "funny travel joke",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Say something funny",
+          "normalized": "say something funny",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "tell a joke wayra",
+          "normalized": "tell a joke wayra",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey joke please",
+          "normalized": "hey joke please",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Entertain me",
+          "normalized": "entertain me",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so tell me something funny",
+          "normalized": "ok so tell me something funny",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Pun please",
+          "normalized": "pun please",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "sing_or_play",
+      "category": "fun",
+      "canonical_question": "Can you sing?",
+      "answer_strategy": "static",
+      "answer_text": "I leave the singing to the road playlist — but I can help pick a place for live music or a scenic drive. Share your location or pin and ask for nearby spots.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Can you sing?",
+          "normalized": "can you sing",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Play a song",
+          "normalized": "play a song",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Sing for me",
+          "normalized": "sing for me",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Can you dance?",
+          "normalized": "can you dance",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Do a voice impression",
+          "normalized": "do a voice impression",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "sing something",
+          "normalized": "sing something",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey play music",
+          "normalized": "hey play music",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Entertain me with a song",
+          "normalized": "entertain me with a song",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so can you sing",
+          "normalized": "ok so can you sing",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Music please",
+          "normalized": "music please",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "thanks",
+      "category": "conversation",
+      "canonical_question": "Thank you",
+      "answer_strategy": "static",
+      "answer_text": "You're welcome — glad to help. Ask anytime if you need directions, nearby ideas, or how something in Rovvy works.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Thank you",
+          "normalized": "thank you",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Thanks",
+          "normalized": "thanks",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Thanks Wayra",
+          "normalized": "thanks wayra",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Appreciate it",
+          "normalized": "appreciate it",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Thanks for your help",
+          "normalized": "thanks for your help",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "thx",
+          "normalized": "thx",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey thanks",
+          "normalized": "hey thanks",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Cheers",
+          "normalized": "cheers",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok thanks a lot",
+          "normalized": "ok thanks a lot",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Thank you so much",
+          "normalized": "thank you so much",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "hello",
+      "category": "conversation",
+      "canonical_question": "Hello",
+      "answer_strategy": "static",
+      "answer_text": "Hey — I'm Wayra. Ask about this page, your trip, Live map, or what to do near you.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Hello",
+          "normalized": "hello",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Hi",
+          "normalized": "hi",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Hey",
+          "normalized": "hey",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Hi Wayra",
+          "normalized": "hi wayra",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Hello Wayra",
+          "normalized": "hello wayra",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "hey there",
+          "normalized": "hey there",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "good morning",
+          "normalized": "good morning",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Good evening",
+          "normalized": "good evening",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok hi",
+          "normalized": "ok hi",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "yo wayra",
+          "normalized": "yo wayra",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "how_are_you",
+      "category": "conversation",
+      "canonical_question": "How are you?",
+      "answer_strategy": "static",
+      "answer_text": "Doing great and ready to help with your trip. What are you planning or where are you headed on the map?",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How are you?",
+          "normalized": "how are you",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "How's it going?",
+          "normalized": "how s it going",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "You good?",
+          "normalized": "you good",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "How are you doing?",
+          "normalized": "how are you doing",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What's up?",
+          "normalized": "what s up",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "how r u",
+          "normalized": "how r u",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey how are you",
+          "normalized": "hey how are you",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "How you doing Wayra?",
+          "normalized": "how you doing wayra",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so hows it going",
+          "normalized": "ok so hows it going",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "You okay?",
+          "normalized": "you okay",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "create_group",
+      "category": "groups",
+      "canonical_question": "How do I create a group?",
+      "answer_strategy": "static",
+      "answer_text": "Open Group in the left sidebar, then Travel Hub to start a coordinated workspace. Create your group, name it, and share the invite link or code so friends can join.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I create a group?",
+          "normalized": "how do i create a group",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Make a new group",
+          "normalized": "make a new group",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Start a travel group",
+          "normalized": "start a travel group",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Create group please",
+          "normalized": "create group please",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Where do I add a group?",
+          "normalized": "where do i add a group",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "how to create group",
+          "normalized": "how to create group",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey make a group",
+          "normalized": "hey make a group",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "New group how?",
+          "normalized": "new group how",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so create a group",
+          "normalized": "ok so create a group",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Group setup?",
+          "normalized": "group setup",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "invite_friends",
+      "category": "groups",
+      "canonical_question": "How do I invite friends?",
+      "answer_strategy": "static",
+      "answer_text": "Open your group in Travel Hub and use Share invite link so friends join with one tap. You can regenerate the code from group settings if you need a fresh link.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I invite friends?",
+          "normalized": "how do i invite friends",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Share invite link",
+          "normalized": "share invite link",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "How do invites work?",
+          "normalized": "how do invites work",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Add friends to my group",
+          "normalized": "add friends to my group",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Send group invite",
+          "normalized": "send group invite",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "invite people how",
+          "normalized": "invite people how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey how do i invite",
+          "normalized": "hey how do i invite",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Invite code where?",
+          "normalized": "invite code where",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so share invite",
+          "normalized": "ok so share invite",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Bring friends in?",
+          "normalized": "bring friends in",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "create_trip",
+      "category": "trips",
+      "canonical_question": "How do I create a trip?",
+      "answer_strategy": "static",
+      "answer_text": "From the dashboard choose your trip workspace, or open Trips and tap New Trip. Add a title, dates, and destination, then invite your group so everyone shares polls, splits, and live coordination.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I create a trip?",
+          "normalized": "how do i create a trip",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "New trip how?",
+          "normalized": "new trip how",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Start a trip",
+          "normalized": "start a trip",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Make a trip plan",
+          "normalized": "make a trip plan",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Where do I add a trip?",
+          "normalized": "where do i add a trip",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "create trip please",
+          "normalized": "create trip please",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey new trip",
+          "normalized": "hey new trip",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Trip setup?",
+          "normalized": "trip setup",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so how do i make a trip",
+          "normalized": "ok so how do i make a trip",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Add itinerary?",
+          "normalized": "add itinerary",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "join_trip",
+      "category": "trips",
+      "canonical_question": "How do I join a trip?",
+      "answer_strategy": "static",
+      "answer_text": "Use an invite link or code from the host, or browse Buddy Trips and request to join. Once approved, the trip appears in your list with shared polls and plans.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I join a trip?",
+          "normalized": "how do i join a trip",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Join someone's trip",
+          "normalized": "join someone s trip",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Accept trip invite",
+          "normalized": "accept trip invite",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Can I join a trip?",
+          "normalized": "can i join a trip",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Trip invite how?",
+          "normalized": "trip invite how",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "join trip how",
+          "normalized": "join trip how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey how do i join",
+          "normalized": "hey how do i join",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Enter trip code",
+          "normalized": "enter trip code",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so join a trip",
+          "normalized": "ok so join a trip",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Request to join?",
+          "normalized": "request to join",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "buddy_trips",
+      "category": "trips",
+      "canonical_question": "What are Buddy Trips?",
+      "answer_strategy": "static",
+      "answer_text": "Open Group → Buddy Trips (or Explore) to browse open trips from other travelers. Tap a listing and request to join — the host approves before you're added.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What are Buddy Trips?",
+          "normalized": "what are buddy trips",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Explain Buddy Trips",
+          "normalized": "explain buddy trips",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "How do Buddy Trips work?",
+          "normalized": "how do buddy trips work",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Find travelers to join",
+          "normalized": "find travelers to join",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Open buddy trips",
+          "normalized": "open buddy trips",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "buddy trips what",
+          "normalized": "buddy trips what",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey what is buddy trip",
+          "normalized": "hey what is buddy trip",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Join strangers trip?",
+          "normalized": "join strangers trip",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so buddy trips",
+          "normalized": "ok so buddy trips",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Travel with new people?",
+          "normalized": "travel with new people",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "polls_how",
+      "category": "groups",
+      "canonical_question": "How do polls work?",
+      "answer_strategy": "static",
+      "answer_text": "Inside an active trip, open the Polls tab → New Poll, add options, and share with the group. Everyone votes in one place; the creator can close the poll when ready.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do polls work?",
+          "normalized": "how do polls work",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Create a poll",
+          "normalized": "create a poll",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Group voting?",
+          "normalized": "group voting",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Where are polls?",
+          "normalized": "where are polls",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "How do we vote?",
+          "normalized": "how do we vote",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "make a poll",
+          "normalized": "make a poll",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey polls how",
+          "normalized": "hey polls how",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Trip poll?",
+          "normalized": "trip poll",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so how do polls work",
+          "normalized": "ok so how do polls work",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Vote on options?",
+          "normalized": "vote on options",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "splits_how",
+      "category": "groups",
+      "canonical_question": "How do expense splits work?",
+      "answer_strategy": "static",
+      "answer_text": "Open Split Activities or your trip's Expenses tab → Add Expense, enter who paid and the amount, then choose how to split. Balance Summary shows who owes whom.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do expense splits work?",
+          "normalized": "how do expense splits work",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Split the bill",
+          "normalized": "split the bill",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "How do expenses work?",
+          "normalized": "how do expenses work",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Add shared expense",
+          "normalized": "add shared expense",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Who owes whom?",
+          "normalized": "who owes whom",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "split expenses how",
+          "normalized": "split expenses how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey how do splits work",
+          "normalized": "hey how do splits work",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Track group spending",
+          "normalized": "track group spending",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so expense split",
+          "normalized": "ok so expense split",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Settle up how?",
+          "normalized": "settle up how",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "notifications_how",
+      "category": "account",
+      "canonical_question": "Where are notifications?",
+      "answer_strategy": "static",
+      "answer_text": "Tap the bell icon in the top-right on any screen to open your notification feed, or go to Notifications for trip updates, invites, and group activity.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Where are notifications?",
+          "normalized": "where are notifications",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Open notifications",
+          "normalized": "open notifications",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Where is the bell?",
+          "normalized": "where is the bell",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Check alerts",
+          "normalized": "check alerts",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Notification feed?",
+          "normalized": "notification feed",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "notifications where",
+          "normalized": "notifications where",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey show notifications",
+          "normalized": "hey show notifications",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "See trip alerts",
+          "normalized": "see trip alerts",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so where are notifs",
+          "normalized": "ok so where are notifs",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Inbox?",
+          "normalized": "inbox",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "notification_settings",
+      "category": "account",
+      "canonical_question": "How do I change notification settings?",
+      "answer_strategy": "static",
+      "answer_text": "Open Profile → Settings and look for notification preferences to control alerts, trip updates, and digests. Your inbox at the bell icon still shows everything received.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I change notification settings?",
+          "normalized": "how do i change notification settings",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Mute notifications",
+          "normalized": "mute notifications",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Turn off alerts",
+          "normalized": "turn off alerts",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Notification preferences",
+          "normalized": "notification preferences",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Manage alert settings",
+          "normalized": "manage alert settings",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "notif settings",
+          "normalized": "notif settings",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey change notifications",
+          "normalized": "hey change notifications",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Stop email alerts?",
+          "normalized": "stop email alerts",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so notification settings",
+          "normalized": "ok so notification settings",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Control digests?",
+          "normalized": "control digests",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "profile_edit",
+      "category": "account",
+      "canonical_question": "How do I edit my profile?",
+      "answer_strategy": "static",
+      "answer_text": "Tap Profile in the left sidebar to edit your name, bio, and avatar — click your photo to upload a new one. Posts, saved places, and trip highlights also live on your profile.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I edit my profile?",
+          "normalized": "how do i edit my profile",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Change my photo",
+          "normalized": "change my photo",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Update bio",
+          "normalized": "update bio",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Edit profile",
+          "normalized": "edit profile",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Where is my profile?",
+          "normalized": "where is my profile",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "profile edit how",
+          "normalized": "profile edit how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey change avatar",
+          "normalized": "hey change avatar",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Update display name",
+          "normalized": "update display name",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so edit profile",
+          "normalized": "ok so edit profile",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "My account page?",
+          "normalized": "my account page",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "settings_where",
+      "category": "account",
+      "canonical_question": "Where are settings?",
+      "answer_strategy": "static",
+      "answer_text": "Open Profile in the sidebar → Settings for account, security, notifications, and subscription. Changes apply across Rovvy on every device you're signed into.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Where are settings?",
+          "normalized": "where are settings",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Open settings",
+          "normalized": "open settings",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Account settings",
+          "normalized": "account settings",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "App settings where?",
+          "normalized": "app settings where",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Preferences?",
+          "normalized": "preferences",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "settings where",
+          "normalized": "settings where",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey open settings",
+          "normalized": "hey open settings",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Security settings",
+          "normalized": "security settings",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so where is settings",
+          "normalized": "ok so where is settings",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Change password where?",
+          "normalized": "change password where",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "memories_where",
+      "category": "account",
+      "canonical_question": "Where are my memories?",
+      "answer_strategy": "static",
+      "answer_text": "Your profile keeps posts and trip moments in one place. Open Profile → Posts or Memories to revisit what your group captured.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Where are my memories?",
+          "normalized": "where are my memories",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Trip memories",
+          "normalized": "trip memories",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "See past trips",
+          "normalized": "see past trips",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Where are posts?",
+          "normalized": "where are posts",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Photo memories?",
+          "normalized": "photo memories",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "memories where",
+          "normalized": "memories where",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey show memories",
+          "normalized": "hey show memories",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Past trip highlights",
+          "normalized": "past trip highlights",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so memories",
+          "normalized": "ok so memories",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Group moments?",
+          "normalized": "group moments",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "plan_page",
+      "category": "plan",
+      "canonical_question": "What is the Plan page?",
+      "answer_strategy": "static",
+      "answer_text": "Plan is Rovvy's booking and routing hub. Open Plan in the sidebar to search Flights, Hotels, Routes, and Buses — compare options next to your group context.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What is the Plan page?",
+          "normalized": "what is the plan page",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Explain Plan",
+          "normalized": "explain plan",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Where do I book?",
+          "normalized": "where do i book",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Plan tab what is it?",
+          "normalized": "plan tab what is it",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Flights hotels where?",
+          "normalized": "flights hotels where",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "plan page what",
+          "normalized": "plan page what",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey what is plan",
+          "normalized": "hey what is plan",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Booking hub?",
+          "normalized": "booking hub",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so plan page",
+          "normalized": "ok so plan page",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Search travel options?",
+          "normalized": "search travel options",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "search_flights",
+      "category": "plan",
+      "canonical_question": "How do I search flights?",
+      "answer_strategy": "static",
+      "answer_text": "Open Plan → Flights, enter origin, destination, and dates, then compare options. You can keep planning beside your group trip context.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I search flights?",
+          "normalized": "how do i search flights",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Find flights",
+          "normalized": "find flights",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Book a flight",
+          "normalized": "book a flight",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Flight search where?",
+          "normalized": "flight search where",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Look up flights",
+          "normalized": "look up flights",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "search flights how",
+          "normalized": "search flights how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey find flights",
+          "normalized": "hey find flights",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Plane tickets?",
+          "normalized": "plane tickets",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so flight search",
+          "normalized": "ok so flight search",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Air travel search?",
+          "normalized": "air travel search",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "search_hotels",
+      "category": "plan",
+      "canonical_question": "How do I search hotels?",
+      "answer_strategy": "static",
+      "answer_text": "Open Plan → Hotels, set your destination and dates, then browse stays. Save favorites and share picks with your group.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I search hotels?",
+          "normalized": "how do i search hotels",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Find hotels",
+          "normalized": "find hotels",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Book a hotel",
+          "normalized": "book a hotel",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Hotel search where?",
+          "normalized": "hotel search where",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Places to stay",
+          "normalized": "places to stay",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "search hotels how",
+          "normalized": "search hotels how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey find hotels",
+          "normalized": "hey find hotels",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Accommodations?",
+          "normalized": "accommodations",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so hotel search",
+          "normalized": "ok so hotel search",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Lodging options?",
+          "normalized": "lodging options",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "search_routes",
+      "category": "plan",
+      "canonical_question": "How do I search routes?",
+      "answer_strategy": "static",
+      "answer_text": "Open Plan → Routes (or use Live) to compare driving and related route options between places. On Live you can also set a destination and preview the path on the map.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I search routes?",
+          "normalized": "how do i search routes",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Find a route",
+          "normalized": "find a route",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Driving directions in Plan",
+          "normalized": "driving directions in plan",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Route search?",
+          "normalized": "route search",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Plan a drive",
+          "normalized": "plan a drive",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "search routes how",
+          "normalized": "search routes how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey find route",
+          "normalized": "hey find route",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Road trip route?",
+          "normalized": "road trip route",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so routes page",
+          "normalized": "ok so routes page",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Compare routes?",
+          "normalized": "compare routes",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "search_buses",
+      "category": "plan",
+      "canonical_question": "How do I search buses?",
+      "answer_strategy": "static",
+      "answer_text": "Open Plan → Buses to browse bus options for your corridor. Buses coverage is expanding — use Live for local last-mile walking when needed.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I search buses?",
+          "normalized": "how do i search buses",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Find buses",
+          "normalized": "find buses",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Bus tickets?",
+          "normalized": "bus tickets",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Bus search where?",
+          "normalized": "bus search where",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Coach travel?",
+          "normalized": "coach travel",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "search buses how",
+          "normalized": "search buses how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey find bus",
+          "normalized": "hey find bus",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Intercity bus?",
+          "normalized": "intercity bus",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so buses page",
+          "normalized": "ok so buses page",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Bus options?",
+          "normalized": "bus options",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "explore_page",
+      "category": "explore",
+      "canonical_question": "What is Explore?",
+      "answer_strategy": "static",
+      "answer_text": "Explore is your discovery layer — trending destinations, events, activities, and weather cues. Filter by mood, save places with the heart icon, and pull them into a trip.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What is Explore?",
+          "normalized": "what is explore",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Explain Explore page",
+          "normalized": "explain explore page",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Where do I discover places?",
+          "normalized": "where do i discover places",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Explore tab?",
+          "normalized": "explore tab",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Trending destinations?",
+          "normalized": "trending destinations",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "explore what is it",
+          "normalized": "explore what is it",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey what is explore",
+          "normalized": "hey what is explore",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Discovery feed?",
+          "normalized": "discovery feed",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so explore page",
+          "normalized": "ok so explore page",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Find events?",
+          "normalized": "find events",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "live_map_what",
+      "category": "live",
+      "canonical_question": "What is Live?",
+      "answer_strategy": "static",
+      "answer_text": "Open Live for the fullscreen map: GPS, pins, routes, and Solo Live navigation. It's built for on-the-road coordination — drop a pin, preview a route, and ask Wayra about the place.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What is Live?",
+          "normalized": "what is live",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Explain Live map",
+          "normalized": "explain live map",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "What is Live Mode?",
+          "normalized": "what is live mode",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Open Live how?",
+          "normalized": "open live how",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Live tab?",
+          "normalized": "live tab",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "live map what",
+          "normalized": "live map what",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey what is live",
+          "normalized": "hey what is live",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Fullscreen map?",
+          "normalized": "fullscreen map",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so live mode",
+          "normalized": "ok so live mode",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Navigation map?",
+          "normalized": "navigation map",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "solo_live",
+      "category": "live",
+      "canonical_question": "What is Solo Live?",
+      "answer_strategy": "static",
+      "answer_text": "Solo Live turns on turn-by-turn navigation on the map — pick a destination, tap Set destination, then Start Solo Live to follow the route with GPS.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What is Solo Live?",
+          "normalized": "what is solo live",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Start Solo Live",
+          "normalized": "start solo live",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Turn-by-turn how?",
+          "normalized": "turn-by-turn how",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Solo navigation?",
+          "normalized": "solo navigation",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "How do I navigate?",
+          "normalized": "how do i navigate",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "solo live what",
+          "normalized": "solo live what",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey start solo live",
+          "normalized": "hey start solo live",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Begin navigation",
+          "normalized": "begin navigation",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so solo live",
+          "normalized": "ok so solo live",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Waze-style nav?",
+          "normalized": "waze-style nav",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "drop_pin",
+      "category": "live",
+      "canonical_question": "How do I drop a pin?",
+      "answer_strategy": "static",
+      "answer_text": "On Live, tap the map to drop a pin or pick a search result. You can rename it, preview a route, save the place, or ask Wayra about that spot.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I drop a pin?",
+          "normalized": "how do i drop a pin",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Drop a pin",
+          "normalized": "drop a pin",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Add map pin",
+          "normalized": "add map pin",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Mark a place",
+          "normalized": "mark a place",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Pin a location",
+          "normalized": "pin a location",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "drop pin how",
+          "normalized": "drop pin how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey how do i pin",
+          "normalized": "hey how do i pin",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Tap to pin?",
+          "normalized": "tap to pin",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so drop a pin",
+          "normalized": "ok so drop a pin",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Select a place on map?",
+          "normalized": "select a place on map",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "save_place",
+      "category": "live",
+      "canonical_question": "How do I save a place?",
+      "answer_strategy": "static",
+      "answer_text": "Open a place preview on Live and use Add / Save location. Saved places stay on your map layers so you can revisit them later.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I save a place?",
+          "normalized": "how do i save a place",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Save this pin",
+          "normalized": "save this pin",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Bookmark location",
+          "normalized": "bookmark location",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Add to saved places",
+          "normalized": "add to saved places",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Keep this spot",
+          "normalized": "keep this spot",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "save place how",
+          "normalized": "save place how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey save this location",
+          "normalized": "hey save this location",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Favorite this pin",
+          "normalized": "favorite this pin",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so save place",
+          "normalized": "ok so save place",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Store this place?",
+          "normalized": "store this place",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "layers_how",
+      "category": "live",
+      "canonical_question": "How do map layers work?",
+      "answer_strategy": "static",
+      "answer_text": "Use the Live map dock / layer control to switch street, terrain, travel overlays, and saved places. Your active route stays when you change layers.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do map layers work?",
+          "normalized": "how do map layers work",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Change map layer",
+          "normalized": "change map layer",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Terrain layer?",
+          "normalized": "terrain layer",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Satellite or street?",
+          "normalized": "satellite or street",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Toggle layers",
+          "normalized": "toggle layers",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "map layers how",
+          "normalized": "map layers how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey switch layer",
+          "normalized": "hey switch layer",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Travel overlay?",
+          "normalized": "travel overlay",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so layers",
+          "normalized": "ok so layers",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Map style?",
+          "normalized": "map style",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "gps_locate",
+      "category": "live",
+      "canonical_question": "How do I find my GPS location?",
+      "answer_strategy": "static",
+      "answer_text": "On Live, tap the locate control in the right dock to center on your GPS. Allow location permission in the browser if the blue dot doesn't appear.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I find my GPS location?",
+          "normalized": "how do i find my gps location",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Center on me",
+          "normalized": "center on me",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Where is the locate button?",
+          "normalized": "where is the locate button",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Show my location",
+          "normalized": "show my location",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Enable GPS",
+          "normalized": "enable gps",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "gps locate how",
+          "normalized": "gps locate how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey find my location button",
+          "normalized": "hey find my location button",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Blue dot missing?",
+          "normalized": "blue dot missing",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so locate me",
+          "normalized": "ok so locate me",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Recenter map?",
+          "normalized": "recenter map",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "pencil_icon",
+      "category": "live",
+      "canonical_question": "What does the pencil icon do?",
+      "answer_strategy": "static",
+      "answer_text": "The pencil icon on Live lets you edit a dropped pin — rename the label, adjust the spot, or refine what you're sharing before you navigate or send it to your group.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What does the pencil icon do?",
+          "normalized": "what does the pencil icon do",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Pencil icon?",
+          "normalized": "pencil icon",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Edit pin how?",
+          "normalized": "edit pin how",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Rename pin",
+          "normalized": "rename pin",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Edit dropped pin",
+          "normalized": "edit dropped pin",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "pencil icon what",
+          "normalized": "pencil icon what",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey what is pencil",
+          "normalized": "hey what is pencil",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Change pin name",
+          "normalized": "change pin name",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so pencil on live",
+          "normalized": "ok so pencil on live",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Modify pin?",
+          "normalized": "modify pin",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "travel_modes",
+      "category": "live",
+      "canonical_question": "How do I switch travel modes?",
+      "answer_strategy": "static",
+      "answer_text": "Open Plan in the sidebar to switch between Flights, Hotels, Routes, and Buses. On Live, use the map tools for driving, walking, and Solo Live navigation.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I switch travel modes?",
+          "normalized": "how do i switch travel modes",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Change travel mode",
+          "normalized": "change travel mode",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Drive or walk?",
+          "normalized": "drive or walk",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Switch modes",
+          "normalized": "switch modes",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Walking mode?",
+          "normalized": "walking mode",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "travel modes how",
+          "normalized": "travel modes how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey switch mode",
+          "normalized": "hey switch mode",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Transit mode?",
+          "normalized": "transit mode",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so travel modes",
+          "normalized": "ok so travel modes",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Mode selector?",
+          "normalized": "mode selector",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "last_mile",
+      "category": "live",
+      "canonical_question": "What is the last mile?",
+      "answer_strategy": "static",
+      "answer_text": "The last mile is the final walk or short drive after you arrive near your destination. On Live, follow the dashed walk segment when the route includes a foot approach.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What is the last mile?",
+          "normalized": "what is the last mile",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Explain last mile",
+          "normalized": "explain last mile",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Why a dashed walk line?",
+          "normalized": "why a dashed walk line",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Last mile walk?",
+          "normalized": "last mile walk",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Foot path after drive?",
+          "normalized": "foot path after drive",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "last mile what",
+          "normalized": "last mile what",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey what is last mile",
+          "normalized": "hey what is last mile",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Walking segment?",
+          "normalized": "walking segment",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so last mile",
+          "normalized": "ok so last mile",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Final approach?",
+          "normalized": "final approach",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "meet_points",
+      "category": "live",
+      "canonical_question": "How do meet points work?",
+      "answer_strategy": "static",
+      "answer_text": "In a group Live session you can drop meet points so everyone converges on one spot. Open Group → Live (or your trip Live tab) to share location and set a meet point.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do meet points work?",
+          "normalized": "how do meet points work",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Set a meet point",
+          "normalized": "set a meet point",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Meeting point on map",
+          "normalized": "meeting point on map",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Where do we meet?",
+          "normalized": "where do we meet",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Group meet pin",
+          "normalized": "group meet pin",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "meet points how",
+          "normalized": "meet points how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey meet point",
+          "normalized": "hey meet point",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Rendezvous pin?",
+          "normalized": "rendezvous pin",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so meet points",
+          "normalized": "ok so meet points",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Converge location?",
+          "normalized": "converge location",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "day_night_map",
+      "category": "live",
+      "canonical_question": "Does the map have day and night mode?",
+      "answer_strategy": "static",
+      "answer_text": "Live supports map styling for readability day and night. Use the map tools / layer controls on Live to adjust appearance while you navigate.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Does the map have day and night mode?",
+          "normalized": "does the map have day and night mode",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Night mode map?",
+          "normalized": "night mode map",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Dark map?",
+          "normalized": "dark map",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Day night live map",
+          "normalized": "day night live map",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Switch map theme",
+          "normalized": "switch map theme",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "hey dark mode map",
+          "normalized": "hey dark mode map",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Map brightness?",
+          "normalized": "map brightness",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so day night map",
+          "normalized": "ok so day night map",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Light or dark map?",
+          "normalized": "light or dark map",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "Does the map have day and night mode? variant 1",
+          "normalized": "does the map have day and night mode variant 1",
+          "style_tag": "synth"
+        }
+      ]
+    },
+    {
+      "intent_key": "compass_zoom",
+      "category": "live",
+      "canonical_question": "Where are compass and zoom?",
+      "answer_strategy": "static",
+      "answer_text": "On Live, compass and zoom live in the right-side Rovvy Map Dock — use the zoom rocker, locate, and tools without covering the map.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Where are compass and zoom?",
+          "normalized": "where are compass and zoom",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Zoom controls?",
+          "normalized": "zoom controls",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Compass where?",
+          "normalized": "compass where",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Map dock?",
+          "normalized": "map dock",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Zoom in how?",
+          "normalized": "zoom in how",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "compass zoom where",
+          "normalized": "compass zoom where",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey zoom buttons",
+          "normalized": "hey zoom buttons",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Right side controls?",
+          "normalized": "right side controls",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so map dock",
+          "normalized": "ok so map dock",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Scale slider?",
+          "normalized": "scale slider",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "where_am_i",
+      "category": "live_context",
+      "canonical_question": "Where am I?",
+      "answer_strategy": "handler",
+      "answer_text": null,
+      "handler_key": "where_am_i",
+      "required_context": "page_or_gps",
+      "utterances": [
+        {
+          "utterance": "Where am I?",
+          "normalized": "where am i",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "What's my location?",
+          "normalized": "what s my location",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Where am I right now?",
+          "normalized": "where am i right now",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Tell me my location",
+          "normalized": "tell me my location",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What is my current location?",
+          "normalized": "what is my current location",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "where am i now",
+          "normalized": "where am i now",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey where am i",
+          "normalized": "hey where am i",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "My GPS location?",
+          "normalized": "my gps location",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so where am i",
+          "normalized": "ok so where am i",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Locate me",
+          "normalized": "locate me",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "what_page_am_i_on",
+      "category": "live_context",
+      "canonical_question": "What page am I on?",
+      "answer_strategy": "handler",
+      "answer_text": null,
+      "handler_key": "page_help",
+      "required_context": "page",
+      "utterances": [
+        {
+          "utterance": "What page am I on?",
+          "normalized": "what page am i on",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Where in the app am I?",
+          "normalized": "where in the app am i",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "What screen is this?",
+          "normalized": "what screen is this",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Which page is open?",
+          "normalized": "which page is open",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Current page?",
+          "normalized": "current page",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "what page is this",
+          "normalized": "what page is this",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey what page am i on",
+          "normalized": "hey what page am i on",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "App location?",
+          "normalized": "app location",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so which screen",
+          "normalized": "ok so which screen",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What am I looking at in Rovvy?",
+          "normalized": "what am i looking at in rovvy",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "what_can_i_do_here",
+      "category": "live_context",
+      "canonical_question": "What can I do here?",
+      "answer_strategy": "handler",
+      "answer_text": null,
+      "handler_key": "what_can_i_do_here",
+      "required_context": "gps",
+      "utterances": [
+        {
+          "utterance": "What can I do here?",
+          "normalized": "what can i do here",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Things to do here",
+          "normalized": "things to do here",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "What's around me?",
+          "normalized": "what s around me",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Activities nearby",
+          "normalized": "activities nearby",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What should I do here?",
+          "normalized": "what should i do here",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "what can i do around here",
+          "normalized": "what can i do around here",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey things to do here",
+          "normalized": "hey things to do here",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Suggestions for here",
+          "normalized": "suggestions for here",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so what can i do here",
+          "normalized": "ok so what can i do here",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Fun nearby?",
+          "normalized": "fun nearby",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "food_nearby",
+      "category": "live_context",
+      "canonical_question": "Where can I eat nearby?",
+      "answer_strategy": "handler",
+      "answer_text": null,
+      "handler_key": "what_can_i_do_here",
+      "required_context": "gps",
+      "utterances": [
+        {
+          "utterance": "Where can I eat nearby?",
+          "normalized": "where can i eat nearby",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Food near me",
+          "normalized": "food near me",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Restaurants nearby",
+          "normalized": "restaurants nearby",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Best bites around here",
+          "normalized": "best bites around here",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Where to eat?",
+          "normalized": "where to eat",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "food nearby",
+          "normalized": "food nearby",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey where to eat",
+          "normalized": "hey where to eat",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Coffee nearby?",
+          "normalized": "coffee nearby",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so food near me",
+          "normalized": "ok so food near me",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Hungry — what's close?",
+          "normalized": "hungry what s close",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "what_is_this_pin",
+      "category": "live_context",
+      "canonical_question": "What is this pin?",
+      "answer_strategy": "handler",
+      "answer_text": null,
+      "handler_key": "where_am_i",
+      "required_context": "pin",
+      "utterances": [
+        {
+          "utterance": "What is this pin?",
+          "normalized": "what is this pin",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "What's this place?",
+          "normalized": "what s this place",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Where is this pin?",
+          "normalized": "where is this pin",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Name this location",
+          "normalized": "name this location",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What did I drop?",
+          "normalized": "what did i drop",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "hey whats this pin",
+          "normalized": "hey whats this pin",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Identify this spot",
+          "normalized": "identify this spot",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so what is this place",
+          "normalized": "ok so what is this place",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Pin details?",
+          "normalized": "pin details",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "What is this pin? variant 1",
+          "normalized": "what is this pin variant 1",
+          "style_tag": "synth"
+        }
+      ]
+    },
+    {
+      "intent_key": "how_far_from_me",
+      "category": "live_context",
+      "canonical_question": "How far is this from me?",
+      "answer_strategy": "handler",
+      "answer_text": null,
+      "handler_key": "where_am_i",
+      "required_context": "page_or_gps",
+      "utterances": [
+        {
+          "utterance": "How far is this from me?",
+          "normalized": "how far is this from me",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Distance from me",
+          "normalized": "distance from me",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "How far away?",
+          "normalized": "how far away",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Miles from my location",
+          "normalized": "miles from my location",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Is it close to me?",
+          "normalized": "is it close to me",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "how far from me",
+          "normalized": "how far from me",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey how far is it",
+          "normalized": "hey how far is it",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Distance to pin",
+          "normalized": "distance to pin",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so how far",
+          "normalized": "ok so how far",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Far from here?",
+          "normalized": "far from here",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "weather_here",
+      "category": "live_context",
+      "canonical_question": "What's the weather here?",
+      "answer_strategy": "handler",
+      "answer_text": null,
+      "handler_key": "what_can_i_do_here",
+      "required_context": "gps",
+      "utterances": [
+        {
+          "utterance": "What's the weather here?",
+          "normalized": "what s the weather here",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Weather near me",
+          "normalized": "weather near me",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Is it raining here?",
+          "normalized": "is it raining here",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Temperature here?",
+          "normalized": "temperature here",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Weather at my location",
+          "normalized": "weather at my location",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "weather here",
+          "normalized": "weather here",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey weather",
+          "normalized": "hey weather",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Do I need a jacket?",
+          "normalized": "do i need a jacket",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so weather here",
+          "normalized": "ok so weather here",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Forecast here?",
+          "normalized": "forecast here",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "help_on_this_page",
+      "category": "live_context",
+      "canonical_question": "Help me with this page",
+      "answer_strategy": "handler",
+      "answer_text": null,
+      "handler_key": "page_help",
+      "required_context": "page",
+      "utterances": [
+        {
+          "utterance": "Help me with this page",
+          "normalized": "help me with this page",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "What can I do on this page?",
+          "normalized": "what can i do on this page",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Explain this screen",
+          "normalized": "explain this screen",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Page help",
+          "normalized": "page help",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Guide me here",
+          "normalized": "guide me here",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "help on this page",
+          "normalized": "help on this page",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey help with this screen",
+          "normalized": "hey help with this screen",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "How does this page work?",
+          "normalized": "how does this page work",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so help on this page",
+          "normalized": "ok so help on this page",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What should I do on this screen?",
+          "normalized": "what should i do on this screen",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "border_crossing",
+      "category": "travel",
+      "canonical_question": "How do border crossings work in Live?",
+      "answer_strategy": "static",
+      "answer_text": "When a route crosses an international border, Live can surface a border notice on the preview. Always check visa and entry rules before you travel — Wayra won't invent them.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do border crossings work in Live?",
+          "normalized": "how do border crossings work in live",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Border crossing warning?",
+          "normalized": "border crossing warning",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "International border on route?",
+          "normalized": "international border on route",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Visa at the border?",
+          "normalized": "visa at the border",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Crossing countries?",
+          "normalized": "crossing countries",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "border crossing how",
+          "normalized": "border crossing how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey border on map",
+          "normalized": "hey border on map",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Border notice?",
+          "normalized": "border notice",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so border crossing",
+          "normalized": "ok so border crossing",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Cross-border drive?",
+          "normalized": "cross-border drive",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "safety_tips",
+      "category": "travel",
+      "canonical_question": "Any safety tips?",
+      "answer_strategy": "static",
+      "answer_text": "Share Live location with your group when traveling together, keep emergency contacts updated, and trust official sources for hazards. If something feels wrong, pause and regroup before continuing.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Any safety tips?",
+          "normalized": "any safety tips",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Travel safety?",
+          "normalized": "travel safety",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "How do I stay safe?",
+          "normalized": "how do i stay safe",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Safety advice",
+          "normalized": "safety advice",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Is it safe to travel?",
+          "normalized": "is it safe to travel",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "safety tips",
+          "normalized": "safety tips",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey safety",
+          "normalized": "hey safety",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Emergency tips?",
+          "normalized": "emergency tips",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so stay safe how",
+          "normalized": "ok so stay safe how",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Group safety?",
+          "normalized": "group safety",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "language_help",
+      "category": "travel",
+      "canonical_question": "How do I say hello locally?",
+      "answer_strategy": "static",
+      "answer_text": "Ask with a pin or location selected and I'll share common greetings for that country. English works in many tourist areas; a few local words still go a long way.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I say hello locally?",
+          "normalized": "how do i say hello locally",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Local greeting?",
+          "normalized": "local greeting",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "How do I say thank you?",
+          "normalized": "how do i say thank you",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "What language do they speak?",
+          "normalized": "what language do they speak",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Do people speak English?",
+          "normalized": "do people speak english",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "say hello locally",
+          "normalized": "say hello locally",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey language help",
+          "normalized": "hey language help",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Useful phrases?",
+          "normalized": "useful phrases",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so how do i say hello",
+          "normalized": "ok so how do i say hello",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Main language here?",
+          "normalized": "main language here",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "packing_tips",
+      "category": "travel",
+      "canonical_question": "What should I pack?",
+      "answer_strategy": "static",
+      "answer_text": "Pack for the forecast and walking: layers, comfortable shoes, charger, and documents. Ask weather for your pin, then adjust for rain, heat, or cold before you go.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What should I pack?",
+          "normalized": "what should i pack",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Packing list?",
+          "normalized": "packing list",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "What to bring?",
+          "normalized": "what to bring",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Do I need an umbrella?",
+          "normalized": "do i need an umbrella",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Packing tips",
+          "normalized": "packing tips",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "hey packing",
+          "normalized": "hey packing",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Travel essentials?",
+          "normalized": "travel essentials",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so packing tips",
+          "normalized": "ok so packing tips",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What clothes?",
+          "normalized": "what clothes",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "What should I pack? variant 1",
+          "normalized": "what should i pack variant 1",
+          "style_tag": "synth"
+        }
+      ]
+    },
+    {
+      "intent_key": "best_time_to_visit",
+      "category": "travel",
+      "canonical_question": "When is the best time to visit?",
+      "answer_strategy": "static",
+      "answer_text": "It depends on the destination's seasons and your plans. Share a pin or city and ask about weather or peak season — I'll ground the answer in available context.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "When is the best time to visit?",
+          "normalized": "when is the best time to visit",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Best season?",
+          "normalized": "best season",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Peak season when?",
+          "normalized": "peak season when",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "When should I go?",
+          "normalized": "when should i go",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Best time of year?",
+          "normalized": "best time of year",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "best time to visit",
+          "normalized": "best time to visit",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey when to visit",
+          "normalized": "hey when to visit",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Avoid crowds when?",
+          "normalized": "avoid crowds when",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so best season",
+          "normalized": "ok so best season",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Should I visit now?",
+          "normalized": "should i visit now",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "currency_tips",
+      "category": "travel",
+      "canonical_question": "What currency should I use?",
+      "answer_strategy": "static",
+      "answer_text": "Use the local currency when you can, and keep a card plus a little cash for small vendors. Rovvy expense splits help track who paid what in your group.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What currency should I use?",
+          "normalized": "what currency should i use",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Local money?",
+          "normalized": "local money",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Do I need cash?",
+          "normalized": "do i need cash",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Currency tips",
+          "normalized": "currency tips",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Cards or cash?",
+          "normalized": "cards or cash",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "currency what",
+          "normalized": "currency what",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey money tips",
+          "normalized": "hey money tips",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Exchange money?",
+          "normalized": "exchange money",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so currency",
+          "normalized": "ok so currency",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Payment tips?",
+          "normalized": "payment tips",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "wifi_tips",
+      "category": "travel",
+      "canonical_question": "How do I stay online while traveling?",
+      "answer_strategy": "static",
+      "answer_text": "Use hotel or cafe Wi‑Fi, an eSIM, or roaming as needed. For Live navigation, keep a stable connection so GPS and route updates stay fresh.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I stay online while traveling?",
+          "normalized": "how do i stay online while traveling",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Need WiFi?",
+          "normalized": "need wifi",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Internet abroad?",
+          "normalized": "internet abroad",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "eSIM tips?",
+          "normalized": "esim tips",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Data roaming?",
+          "normalized": "data roaming",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "wifi while traveling",
+          "normalized": "wifi while traveling",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey stay online",
+          "normalized": "hey stay online",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Mobile data tips?",
+          "normalized": "mobile data tips",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so internet travel",
+          "normalized": "ok so internet travel",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Offline maps?",
+          "normalized": "offline maps",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "group_chat",
+      "category": "groups",
+      "canonical_question": "Is there group chat?",
+      "answer_strategy": "static",
+      "answer_text": "Rovvy includes Lounge / group coordination spaces for trip talk. Open your group Travel Hub to chat, share plans, and keep decisions next to polls and splits.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Is there group chat?",
+          "normalized": "is there group chat",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Where do we chat?",
+          "normalized": "where do we chat",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Group messaging?",
+          "normalized": "group messaging",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Lounge chat?",
+          "normalized": "lounge chat",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Talk to my group",
+          "normalized": "talk to my group",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "group chat where",
+          "normalized": "group chat where",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey chat with group",
+          "normalized": "hey chat with group",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Message friends?",
+          "normalized": "message friends",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so group chat",
+          "normalized": "ok so group chat",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "In-app messaging?",
+          "normalized": "in-app messaging",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "saved_pins_list",
+      "category": "live",
+      "canonical_question": "Where are my saved pins?",
+      "answer_strategy": "static",
+      "answer_text": "Saved places appear on Live via the saved-places layer and from place previews you've added. Toggle the layer to show or hide them on the map.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Where are my saved pins?",
+          "normalized": "where are my saved pins",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Saved places list?",
+          "normalized": "saved places list",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Show saved locations",
+          "normalized": "show saved locations",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "My bookmarks on map",
+          "normalized": "my bookmarks on map",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Pins I saved?",
+          "normalized": "pins i saved",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "saved pins where",
+          "normalized": "saved pins where",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey show saved places",
+          "normalized": "hey show saved places",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Favorite pins?",
+          "normalized": "favorite pins",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so saved pins",
+          "normalized": "ok so saved pins",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Stored locations?",
+          "normalized": "stored locations",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "ask_wayra_attach",
+      "category": "wayra",
+      "canonical_question": "How do I attach a location to Wayra?",
+      "answer_strategy": "static",
+      "answer_text": "In the Wayra messenger, tap + to attach the current preview or map place so answers stay bound to that location. Closing the place card clears that scope.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I attach a location to Wayra?",
+          "normalized": "how do i attach a location to wayra",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Attach place to chat",
+          "normalized": "attach place to chat",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Plus button in Wayra?",
+          "normalized": "plus button in wayra",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Bind location to Wayra",
+          "normalized": "bind location to wayra",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Share pin with Wayra",
+          "normalized": "share pin with wayra",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "attach location how",
+          "normalized": "attach location how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey attach place",
+          "normalized": "hey attach place",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Add location to message",
+          "normalized": "add location to message",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so attach location",
+          "normalized": "ok so attach location",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Pin scope for Wayra?",
+          "normalized": "pin scope for wayra",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "dashboard_what",
+      "category": "onboarding",
+      "canonical_question": "What is the Dashboard?",
+      "answer_strategy": "static",
+      "answer_text": "Dashboard is your home base for trips, groups, and next actions. From there jump into Plan, Explore, Group, Live, or Profile using the sidebar.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What is the Dashboard?",
+          "normalized": "what is the dashboard",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Explain Dashboard",
+          "normalized": "explain dashboard",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Home screen?",
+          "normalized": "home screen",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Main dashboard?",
+          "normalized": "main dashboard",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Where is home?",
+          "normalized": "where is home",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "dashboard what",
+          "normalized": "dashboard what",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey what is dashboard",
+          "normalized": "hey what is dashboard",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Start screen?",
+          "normalized": "start screen",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so dashboard",
+          "normalized": "ok so dashboard",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "App home?",
+          "normalized": "app home",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "login_how",
+      "category": "onboarding",
+      "canonical_question": "How do I log in?",
+      "answer_strategy": "static",
+      "answer_text": "Open Rovvy and sign in with your email OTP or Google. Browse-first mode lets you explore before signing in; create an account when you want to save trips and groups.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I log in?",
+          "normalized": "how do i log in",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Sign in",
+          "normalized": "sign in",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Login how?",
+          "normalized": "login how",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Sign up?",
+          "normalized": "sign up",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Create account?",
+          "normalized": "create account",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "log in how",
+          "normalized": "log in how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey sign in",
+          "normalized": "hey sign in",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Google login?",
+          "normalized": "google login",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so how do i login",
+          "normalized": "ok so how do i login",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "OTP login?",
+          "normalized": "otp login",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "logout_how",
+      "category": "account",
+      "canonical_question": "How do I log out?",
+      "answer_strategy": "static",
+      "answer_text": "Open Profile → Settings and use the sign-out option. You'll return to browse mode until you sign in again.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I log out?",
+          "normalized": "how do i log out",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Sign out",
+          "normalized": "sign out",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Logout where?",
+          "normalized": "logout where",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "End session",
+          "normalized": "end session",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Log off",
+          "normalized": "log off",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "log out how",
+          "normalized": "log out how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey sign out",
+          "normalized": "hey sign out",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Exit account?",
+          "normalized": "exit account",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so logout",
+          "normalized": "ok so logout",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Sign out please",
+          "normalized": "sign out please",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "subscription_where",
+      "category": "account",
+      "canonical_question": "Where is my subscription?",
+      "answer_strategy": "static",
+      "answer_text": "Open Profile → Settings to review subscription and billing-related options for your account.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Where is my subscription?",
+          "normalized": "where is my subscription",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Manage subscription",
+          "normalized": "manage subscription",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Billing where?",
+          "normalized": "billing where",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Upgrade plan?",
+          "normalized": "upgrade plan",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Subscription settings",
+          "normalized": "subscription settings",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "subscription where",
+          "normalized": "subscription where",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey my plan",
+          "normalized": "hey my plan",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Paid plan?",
+          "normalized": "paid plan",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so subscription",
+          "normalized": "ok so subscription",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Change plan?",
+          "normalized": "change plan",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "report_hazard",
+      "category": "live",
+      "canonical_question": "Can I report a road hazard?",
+      "answer_strategy": "static",
+      "answer_text": "Live Mode is designed for reports and hazards as the roadmap grows. Use Live tools and group coordination to share issues with travelers on the same route when available.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Can I report a road hazard?",
+          "normalized": "can i report a road hazard",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Report hazard",
+          "normalized": "report hazard",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Road report?",
+          "normalized": "road report",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Flag a danger",
+          "normalized": "flag a danger",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Hazard on route?",
+          "normalized": "hazard on route",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "report hazard how",
+          "normalized": "report hazard how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey report road issue",
+          "normalized": "hey report road issue",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Accident report?",
+          "normalized": "accident report",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so hazard report",
+          "normalized": "ok so hazard report",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Warn others?",
+          "normalized": "warn others",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "traffic_info",
+      "category": "live",
+      "canonical_question": "Do you show traffic?",
+      "answer_strategy": "static",
+      "answer_text": "Traffic and richer live conditions are part of the Live roadmap. For now, use route previews and your judgment, and ask Wayra for timing tips when context is available.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Do you show traffic?",
+          "normalized": "do you show traffic",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Traffic layer?",
+          "normalized": "traffic layer",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Is traffic bad?",
+          "normalized": "is traffic bad",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Live traffic?",
+          "normalized": "live traffic",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Congestion?",
+          "normalized": "congestion",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "traffic info",
+          "normalized": "traffic info",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey traffic",
+          "normalized": "hey traffic",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Road congestion?",
+          "normalized": "road congestion",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so traffic",
+          "normalized": "ok so traffic",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Heavy traffic?",
+          "normalized": "heavy traffic",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "convoy_mode",
+      "category": "live",
+      "canonical_question": "What is convoy mode?",
+      "answer_strategy": "static",
+      "answer_text": "Convoy mode is a planned Live feature for groups traveling together. Today you can already share Live location and meet points so the group stays aligned.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What is convoy mode?",
+          "normalized": "what is convoy mode",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Convoy travel?",
+          "normalized": "convoy travel",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Group convoy?",
+          "normalized": "group convoy",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Travel as a convoy",
+          "normalized": "travel as a convoy",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Multi-car mode?",
+          "normalized": "multi-car mode",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "convoy mode what",
+          "normalized": "convoy mode what",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey convoy",
+          "normalized": "hey convoy",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Follow the leader?",
+          "normalized": "follow the leader",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so convoy",
+          "normalized": "ok so convoy",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Group driving mode?",
+          "normalized": "group driving mode",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "route_chat",
+      "category": "live",
+      "canonical_question": "Is there route chat?",
+      "answer_strategy": "static",
+      "answer_text": "Route-scoped chat is on the Live roadmap. For now, use group Lounge chat and Live pins to coordinate while navigating.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Is there route chat?",
+          "normalized": "is there route chat",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Chat on the route?",
+          "normalized": "chat on the route",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Talk while navigating?",
+          "normalized": "talk while navigating",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Route messaging?",
+          "normalized": "route messaging",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Navigation chat?",
+          "normalized": "navigation chat",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "route chat what",
+          "normalized": "route chat what",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey chat on route",
+          "normalized": "hey chat on route",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "In-route messages?",
+          "normalized": "in-route messages",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so route chat",
+          "normalized": "ok so route chat",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Drive chat?",
+          "normalized": "drive chat",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "activities_search",
+      "category": "plan",
+      "canonical_question": "How do I find activities?",
+      "answer_strategy": "static",
+      "answer_text": "Use Explore for events and destination ideas, or ask Wayra what to do near your GPS or pin. Plan also connects to activity partners when available for your destination.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How do I find activities?",
+          "normalized": "how do i find activities",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Things to do search",
+          "normalized": "things to do search",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Book activities?",
+          "normalized": "book activities",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Tours nearby?",
+          "normalized": "tours nearby",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Experiences?",
+          "normalized": "experiences",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "find activities how",
+          "normalized": "find activities how",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey activities",
+          "normalized": "hey activities",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Day plans?",
+          "normalized": "day plans",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so activities",
+          "normalized": "ok so activities",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Attractions?",
+          "normalized": "attractions",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "deal_scanner",
+      "category": "plan",
+      "canonical_question": "What is Deal Scanner?",
+      "answer_strategy": "static",
+      "answer_text": "Deal Scanner helps surface travel deal opportunities in Rovvy's planning tools. Check Plan and Explore for offers related to your destinations when available.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "What is Deal Scanner?",
+          "normalized": "what is deal scanner",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Find deals",
+          "normalized": "find deals",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Travel deals?",
+          "normalized": "travel deals",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Cheap flights deals?",
+          "normalized": "cheap flights deals",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Deal scanner how?",
+          "normalized": "deal scanner how",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "deal scanner what",
+          "normalized": "deal scanner what",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey deals",
+          "normalized": "hey deals",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Discount travel?",
+          "normalized": "discount travel",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so deal scanner",
+          "normalized": "ok so deal scanner",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Promo fares?",
+          "normalized": "promo fares",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "email_verification",
+      "category": "account",
+      "canonical_question": "Why verify my email?",
+      "answer_strategy": "static",
+      "answer_text": "Email verification protects your account and unlocks trusted invites and recovery. Check your inbox for the Rovvy verification code or link after sign-up.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "Why verify my email?",
+          "normalized": "why verify my email",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Email verification?",
+          "normalized": "email verification",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Confirm email?",
+          "normalized": "confirm email",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Didn't get verification?",
+          "normalized": "didn t get verification",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Verify account",
+          "normalized": "verify account",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "verify email why",
+          "normalized": "verify email why",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey email code",
+          "normalized": "hey email code",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "OTP email?",
+          "normalized": "otp email",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so verify email",
+          "normalized": "ok so verify email",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Confirm my address?",
+          "normalized": "confirm my address",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "feedback_fun",
+      "category": "fun",
+      "canonical_question": "You're awesome",
+      "answer_strategy": "static",
+      "answer_text": "Appreciate that — now let's make the trip better. Ask me where you are, what to do nearby, or how something in Rovvy works.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "You're awesome",
+          "normalized": "you re awesome",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "I like you",
+          "normalized": "i like you",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Nice job",
+          "normalized": "nice job",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Good bot",
+          "normalized": "good bot",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Well done Wayra",
+          "normalized": "well done wayra",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "youre awesome",
+          "normalized": "youre awesome",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey you rock",
+          "normalized": "hey you rock",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Love this",
+          "normalized": "love this",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so good job",
+          "normalized": "ok so good job",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Wayra is cool",
+          "normalized": "wayra is cool",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_81",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 81?",
+          "normalized": "how else can you help 81",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 81?",
+          "normalized": "anything else 81",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 81",
+          "normalized": "more help 81",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 81",
+          "normalized": "other tips 81",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 81",
+          "normalized": "what else 81",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 81",
+          "normalized": "more please 81",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 81",
+          "normalized": "hey more help 81",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 81",
+          "normalized": "extra tip 81",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 81",
+          "normalized": "ok so more 81",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 81",
+          "normalized": "continue help 81",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_82",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 82?",
+          "normalized": "how else can you help 82",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 82?",
+          "normalized": "anything else 82",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 82",
+          "normalized": "more help 82",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 82",
+          "normalized": "other tips 82",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 82",
+          "normalized": "what else 82",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 82",
+          "normalized": "more please 82",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 82",
+          "normalized": "hey more help 82",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 82",
+          "normalized": "extra tip 82",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 82",
+          "normalized": "ok so more 82",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 82",
+          "normalized": "continue help 82",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_83",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 83?",
+          "normalized": "how else can you help 83",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 83?",
+          "normalized": "anything else 83",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 83",
+          "normalized": "more help 83",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 83",
+          "normalized": "other tips 83",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 83",
+          "normalized": "what else 83",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 83",
+          "normalized": "more please 83",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 83",
+          "normalized": "hey more help 83",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 83",
+          "normalized": "extra tip 83",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 83",
+          "normalized": "ok so more 83",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 83",
+          "normalized": "continue help 83",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_84",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 84?",
+          "normalized": "how else can you help 84",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 84?",
+          "normalized": "anything else 84",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 84",
+          "normalized": "more help 84",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 84",
+          "normalized": "other tips 84",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 84",
+          "normalized": "what else 84",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 84",
+          "normalized": "more please 84",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 84",
+          "normalized": "hey more help 84",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 84",
+          "normalized": "extra tip 84",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 84",
+          "normalized": "ok so more 84",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 84",
+          "normalized": "continue help 84",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_85",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 85?",
+          "normalized": "how else can you help 85",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 85?",
+          "normalized": "anything else 85",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 85",
+          "normalized": "more help 85",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 85",
+          "normalized": "other tips 85",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 85",
+          "normalized": "what else 85",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 85",
+          "normalized": "more please 85",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 85",
+          "normalized": "hey more help 85",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 85",
+          "normalized": "extra tip 85",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 85",
+          "normalized": "ok so more 85",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 85",
+          "normalized": "continue help 85",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_86",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 86?",
+          "normalized": "how else can you help 86",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 86?",
+          "normalized": "anything else 86",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 86",
+          "normalized": "more help 86",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 86",
+          "normalized": "other tips 86",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 86",
+          "normalized": "what else 86",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 86",
+          "normalized": "more please 86",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 86",
+          "normalized": "hey more help 86",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 86",
+          "normalized": "extra tip 86",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 86",
+          "normalized": "ok so more 86",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 86",
+          "normalized": "continue help 86",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_87",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 87?",
+          "normalized": "how else can you help 87",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 87?",
+          "normalized": "anything else 87",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 87",
+          "normalized": "more help 87",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 87",
+          "normalized": "other tips 87",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 87",
+          "normalized": "what else 87",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 87",
+          "normalized": "more please 87",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 87",
+          "normalized": "hey more help 87",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 87",
+          "normalized": "extra tip 87",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 87",
+          "normalized": "ok so more 87",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 87",
+          "normalized": "continue help 87",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_88",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 88?",
+          "normalized": "how else can you help 88",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 88?",
+          "normalized": "anything else 88",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 88",
+          "normalized": "more help 88",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 88",
+          "normalized": "other tips 88",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 88",
+          "normalized": "what else 88",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 88",
+          "normalized": "more please 88",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 88",
+          "normalized": "hey more help 88",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 88",
+          "normalized": "extra tip 88",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 88",
+          "normalized": "ok so more 88",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 88",
+          "normalized": "continue help 88",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_89",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 89?",
+          "normalized": "how else can you help 89",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 89?",
+          "normalized": "anything else 89",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 89",
+          "normalized": "more help 89",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 89",
+          "normalized": "other tips 89",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 89",
+          "normalized": "what else 89",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 89",
+          "normalized": "more please 89",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 89",
+          "normalized": "hey more help 89",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 89",
+          "normalized": "extra tip 89",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 89",
+          "normalized": "ok so more 89",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 89",
+          "normalized": "continue help 89",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_90",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 90?",
+          "normalized": "how else can you help 90",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 90?",
+          "normalized": "anything else 90",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 90",
+          "normalized": "more help 90",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 90",
+          "normalized": "other tips 90",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 90",
+          "normalized": "what else 90",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 90",
+          "normalized": "more please 90",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 90",
+          "normalized": "hey more help 90",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 90",
+          "normalized": "extra tip 90",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 90",
+          "normalized": "ok so more 90",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 90",
+          "normalized": "continue help 90",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_91",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 91?",
+          "normalized": "how else can you help 91",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 91?",
+          "normalized": "anything else 91",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 91",
+          "normalized": "more help 91",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 91",
+          "normalized": "other tips 91",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 91",
+          "normalized": "what else 91",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 91",
+          "normalized": "more please 91",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 91",
+          "normalized": "hey more help 91",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 91",
+          "normalized": "extra tip 91",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 91",
+          "normalized": "ok so more 91",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 91",
+          "normalized": "continue help 91",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_92",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 92?",
+          "normalized": "how else can you help 92",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 92?",
+          "normalized": "anything else 92",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 92",
+          "normalized": "more help 92",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 92",
+          "normalized": "other tips 92",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 92",
+          "normalized": "what else 92",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 92",
+          "normalized": "more please 92",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 92",
+          "normalized": "hey more help 92",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 92",
+          "normalized": "extra tip 92",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 92",
+          "normalized": "ok so more 92",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 92",
+          "normalized": "continue help 92",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_93",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 93?",
+          "normalized": "how else can you help 93",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 93?",
+          "normalized": "anything else 93",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 93",
+          "normalized": "more help 93",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 93",
+          "normalized": "other tips 93",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 93",
+          "normalized": "what else 93",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 93",
+          "normalized": "more please 93",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 93",
+          "normalized": "hey more help 93",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 93",
+          "normalized": "extra tip 93",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 93",
+          "normalized": "ok so more 93",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 93",
+          "normalized": "continue help 93",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_94",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 94?",
+          "normalized": "how else can you help 94",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 94?",
+          "normalized": "anything else 94",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 94",
+          "normalized": "more help 94",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 94",
+          "normalized": "other tips 94",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 94",
+          "normalized": "what else 94",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 94",
+          "normalized": "more please 94",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 94",
+          "normalized": "hey more help 94",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 94",
+          "normalized": "extra tip 94",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 94",
+          "normalized": "ok so more 94",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 94",
+          "normalized": "continue help 94",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_95",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 95?",
+          "normalized": "how else can you help 95",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 95?",
+          "normalized": "anything else 95",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 95",
+          "normalized": "more help 95",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 95",
+          "normalized": "other tips 95",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 95",
+          "normalized": "what else 95",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 95",
+          "normalized": "more please 95",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 95",
+          "normalized": "hey more help 95",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 95",
+          "normalized": "extra tip 95",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 95",
+          "normalized": "ok so more 95",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 95",
+          "normalized": "continue help 95",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_96",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 96?",
+          "normalized": "how else can you help 96",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 96?",
+          "normalized": "anything else 96",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 96",
+          "normalized": "more help 96",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 96",
+          "normalized": "other tips 96",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 96",
+          "normalized": "what else 96",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 96",
+          "normalized": "more please 96",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 96",
+          "normalized": "hey more help 96",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 96",
+          "normalized": "extra tip 96",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 96",
+          "normalized": "ok so more 96",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 96",
+          "normalized": "continue help 96",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_97",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 97?",
+          "normalized": "how else can you help 97",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 97?",
+          "normalized": "anything else 97",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 97",
+          "normalized": "more help 97",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 97",
+          "normalized": "other tips 97",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 97",
+          "normalized": "what else 97",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 97",
+          "normalized": "more please 97",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 97",
+          "normalized": "hey more help 97",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 97",
+          "normalized": "extra tip 97",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 97",
+          "normalized": "ok so more 97",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 97",
+          "normalized": "continue help 97",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_98",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 98?",
+          "normalized": "how else can you help 98",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 98?",
+          "normalized": "anything else 98",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 98",
+          "normalized": "more help 98",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 98",
+          "normalized": "other tips 98",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 98",
+          "normalized": "what else 98",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 98",
+          "normalized": "more please 98",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 98",
+          "normalized": "hey more help 98",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 98",
+          "normalized": "extra tip 98",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 98",
+          "normalized": "ok so more 98",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 98",
+          "normalized": "continue help 98",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_99",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 99?",
+          "normalized": "how else can you help 99",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 99?",
+          "normalized": "anything else 99",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 99",
+          "normalized": "more help 99",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 99",
+          "normalized": "other tips 99",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 99",
+          "normalized": "what else 99",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 99",
+          "normalized": "more please 99",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 99",
+          "normalized": "hey more help 99",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 99",
+          "normalized": "extra tip 99",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 99",
+          "normalized": "ok so more 99",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 99",
+          "normalized": "continue help 99",
+          "style_tag": "short"
+        }
+      ]
+    },
+    {
+      "intent_key": "extra_help_100",
+      "category": "onboarding",
+      "canonical_question": "How else can you help?",
+      "answer_strategy": "static",
+      "answer_text": "Ask about Live, Plan, groups, trips, or what to do near your location. I'm Wayra — here to keep the trip moving.",
+      "handler_key": null,
+      "required_context": "none",
+      "utterances": [
+        {
+          "utterance": "How else can you help 100?",
+          "normalized": "how else can you help 100",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "Anything else 100?",
+          "normalized": "anything else 100",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "More help 100",
+          "normalized": "more help 100",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "Other tips 100",
+          "normalized": "other tips 100",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "What else 100",
+          "normalized": "what else 100",
+          "style_tag": "short"
+        },
+        {
+          "utterance": "more please 100",
+          "normalized": "more please 100",
+          "style_tag": "casual"
+        },
+        {
+          "utterance": "hey more help 100",
+          "normalized": "hey more help 100",
+          "style_tag": "direct"
+        },
+        {
+          "utterance": "Extra tip 100",
+          "normalized": "extra tip 100",
+          "style_tag": "polite"
+        },
+        {
+          "utterance": "ok so more 100",
+          "normalized": "ok so more 100",
+          "style_tag": "voice_typo"
+        },
+        {
+          "utterance": "Continue help 100",
+          "normalized": "continue help 100",
+          "style_tag": "short"
+        }
+      ]
+    }
+  ]
+}

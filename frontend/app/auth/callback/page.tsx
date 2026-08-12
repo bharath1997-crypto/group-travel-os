@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { apiFetchWithStatus } from "@/lib/api";
 import { clearToken, saveToken } from "@/lib/auth";
 import { syncLocalProfileCache } from "@/lib/profileCache";
+import { recalledAuthReturnPath } from "@/lib/auth-return";
 
 const WELCOME_KEY = "gt_oauth_welcome";
 
@@ -21,8 +22,8 @@ async function fetchMeWithRetry(): Promise<Me | null> {
   return null;
 }
 
-function oauthErrorPath(err: string, intent: string | null): string {
-  const q = `oauth_error=${encodeURIComponent(err)}`;
+function oauthErrorPath(err: string, intent: string | null, next: string): string {
+  const q = `oauth_error=${encodeURIComponent(err)}&next=${encodeURIComponent(next)}`;
   if (intent === "signup") {
     return `/register?${q}`;
   }
@@ -39,16 +40,17 @@ export default function OAuthCallbackPage() {
     const token = q.get("access_token");
     const oauthNewUser = q.get("oauth_new_user") === "1";
     const oauthIntent = q.get("oauth_intent");
+    const next = recalledAuthReturnPath();
 
     if (err) {
       setMsg("Redirecting…");
-      router.replace(oauthErrorPath(err, oauthIntent));
+      router.replace(oauthErrorPath(err, oauthIntent, next));
       return;
     }
 
     if (!token) {
       setMsg("Missing token — redirecting…");
-      router.replace(oauthErrorPath("missing_token", oauthIntent));
+      router.replace(oauthErrorPath("missing_token", oauthIntent, next));
       return;
     }
 
@@ -72,12 +74,16 @@ export default function OAuthCallbackPage() {
             /* ignore quota / private mode */
           }
         }
-        router.replace(oauthNewUser ? "/complete-profile" : "/explore");
+        if (oauthNewUser) {
+          router.replace(`/complete-profile?next=${encodeURIComponent(next)}`);
+        } else {
+          router.replace(recalledAuthReturnPath(next, true));
+        }
       } catch {
         clearToken();
         setMsg("Could not load profile — redirecting…");
         router.replace(
-          oauthErrorPath("profile_unavailable", oauthIntent ?? "login"),
+          oauthErrorPath("profile_unavailable", oauthIntent ?? "login", next),
         );
       }
     })();

@@ -111,7 +111,7 @@ export function DemoDmChatPanel({
       >
         {onBack ? (
           <button type="button" onClick={onBack} className="p-1 text-stone-400" aria-label="Back">
-            <ChevronLeft size={18} className={isFull ? "text-white" : "text-[#0F766E]"} />
+            <ChevronLeft size={18} className={isFull ? "text-white" : "text-primary"} />
           </button>
         ) : null}
         <span
@@ -213,7 +213,7 @@ export function DemoDmChatPanel({
             type="button"
             onClick={sendDemo}
             disabled={!input.trim()}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0F766E] text-white disabled:opacity-40"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white disabled:opacity-40"
           >
             <Send size={14} />
           </button>

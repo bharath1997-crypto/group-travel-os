@@ -9,6 +9,7 @@ from app.schemas.ai_assistant import AIAssistantResponse, WayraSource
 from app.services.places_nearby_service import calculate_distance_miles
 from app.services.wayra_intent import WayraMode, _is_live_page
 from app.services.wayra_llm_providers import summarize_from_sources
+from app.services.wayra_behavior_hints import is_composite_whats_here_question
 from app.services.wayra_source_intent import (
     classify_wayra_answer_tier,
     extract_place_from_context,
@@ -21,6 +22,7 @@ from app.services.wayra_sources_service import (
     build_user_place_distance_block,
     fetch_discovery_sources,
     fetch_nearby_sources,
+    fetch_nearby_sources_combined,
 )
 
 logger = logging.getLogger(__name__)
@@ -72,21 +74,64 @@ class WayraAnswerService:
         lat, lng = float(place["lat"]), float(place["lng"])
         label = str(place.get("name") or "your location")
         try:
-            sources, block = await fetch_nearby_sources(
-                category=category,
-                lat=lat,
-                lng=lng,
-                place_label=label,
-            )
+            if category == "all":
+                sources, block, _pois = await fetch_nearby_sources_combined(
+                    lat=lat,
+                    lng=lng,
+                    place_label=label,
+                )
+            else:
+                sources, block, _pois = await fetch_nearby_sources(
+                    category=category,
+                    lat=lat,
+                    lng=lng,
+                    place_label=label,
+                )
         except Exception as exc:  # noqa: BLE001
             logger.warning("Wayra nearby sources failed: %s", exc)
-            return None
+            return AIAssistantResponse(
+                message=(
+                    "I couldn't load nearby places from OpenStreetMap right now — the map data "
+                    "service may be busy. Try again in a moment, or use Search on the Live map."
+                ),
+                sources=[],
+                summary={
+                    "intent": "nearby",
+                    "tier": "nearby",
+                    "provider": "local",
+                    "local": True,
+                    "osm_error": True,
+                },
+            )
+
+        if not block.strip() or (block.startswith("No ") and "found within" in block):
+            empty_msg = (
+                f"I searched OpenStreetMap near {label} but didn't find mapped "
+                f"{category.replace('_', ' ')} in this radius. Try widening the area on the map "
+                "or ask about a specific category (restaurants, cafes, attractions)."
+            )
+            if block.strip():
+                empty_msg = f"{empty_msg}\n\n{block.strip()}"
+            return AIAssistantResponse(
+                message=empty_msg,
+                sources=sources,
+                summary={
+                    "intent": "nearby",
+                    "tier": "nearby",
+                    "provider": "local",
+                    "local": True,
+                    "category": category,
+                    "empty": True,
+                },
+            )
 
         message, provider, usage = await summarize_from_sources(
             user_message=user_message,
             place_label=label,
             source_block=block,
             tier="nearby",
+            ctx=ctx,
+            place=place,
         )
         return AIAssistantResponse(
             message=message,
@@ -126,6 +171,8 @@ class WayraAnswerService:
             place_label=label,
             source_block=block,
             tier="discovery",
+            ctx=ctx,
+            place=place,
         )
         return AIAssistantResponse(
             message=message,
@@ -146,6 +193,8 @@ class WayraAnswerService:
         place: dict[str, Any] | None,
     ) -> AIAssistantResponse | None:
         """Zero-token distance answer when GPS + pin are both known."""
+        if is_composite_whats_here_question(user_message):
+            return None
         if not is_distance_from_me_question(user_message) or not place:
             return None
 
@@ -224,6 +273,8 @@ class WayraAnswerService:
             place_label=label,
             source_block=source_block,
             tier="location_hard",
+            ctx=ctx,
+            place=place,
         )
         sources: list[WayraSource] = []
         if place:

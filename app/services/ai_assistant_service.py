@@ -1,13 +1,14 @@
 """
 Rovvy AI assistant service.
 
-Primary engine  : Google Gemini (gemini-2.0-flash via google-generativeai SDK)
-Fallback engine : OpenAI GPT-4o-mini
-Branding rule   : NEVER reveal the underlying model or provider to the user.
-                  All responses must appear as Rovvy's own native AI.
+Wayra cascade (latency + cost):
+  1. Internal — local rules, time/weather/distance (~0 ms)
+  2. Hybrid   — OSM/Wikipedia + DeepSeek summary (~200 ms–1 s)
+  3. DeepSeek — first full LLM when hybrid misses (~0.5–12 s)
+  4. Gemini   — fallback when DeepSeek fails (~1–40 s on complex questions)
+  5. OpenAI   — last resort
 
-The system prompt explicitly forbids the model from mentioning Google, Gemini,
-OpenAI, GPT, or any third-party AI name — the user experience is "Rovvy AI".
+Branding: NEVER reveal underlying model names to the user.
 """
 from __future__ import annotations
 
@@ -16,6 +17,8 @@ import logging
 import os
 import re
 from typing import Any
+
+from sqlalchemy.orm import Session
 
 from config import settings
 from app.services.gemini_usage import (
@@ -46,6 +49,9 @@ from app.services.wayra_discovery import (
     is_place_name_llm_question,
 )
 from app.services.wayra_local_replies import try_local_reply
+from app.services.wayra_llm_providers import generate_wayra_full_response
+from app.services.wayra_output_budget import is_plan_question, resolve_output_budget
+from app.services.wayra_knowledge_service import WayraKnowledgeService
 
 logger = logging.getLogger(__name__)
 
@@ -263,6 +269,7 @@ def _response_rules_block(mode: WayraMode, *, on_live: bool) -> str:
 RESPONSE RULES (travel discovery on Live):
 - Lead with the place name from context. Plain text only, no markdown.
 - 4 to 8 sentences for "what's here", activities, culture, food, safety, or prep questions.
+- For restaurant or "what to do" lists: give numbered suggestions with area or town names; use pin coordinates and region knowledge; say honestly if the pin is remote.
 - Mention Rovvy features only as optional next steps at the end — never as the main answer.
 - Never say "I don't know" — use geographic knowledge from coordinates and region when needed.
 - You are read-only: do NOT claim to have saved, deleted, or changed anything.
@@ -551,9 +558,15 @@ def _coerce_action(row: object) -> AISuggestedAction | None:
     )
 
 
+def _message_char_cap(user_message: str) -> int:
+    style = "plan" if is_plan_question(user_message) else "full"
+    return resolve_output_budget(style, user_message).max_message_chars
+
+
 def _build_response(data: dict[str, Any] | None, raw: str, user_message: str) -> AIAssistantResponse:
+    cap = _message_char_cap(user_message)
     if data is None:
-        clean = _strip_markdown_lite(raw)[:1200]
+        clean = _strip_markdown_lite(raw)[:cap]
         return AIAssistantResponse(
             message=clean or "I couldn't process that right now. Please try again.",
             suggested_actions=[],
@@ -563,7 +576,9 @@ def _build_response(data: dict[str, Any] | None, raw: str, user_message: str) ->
     message = data.get("message", "")
     if not isinstance(message, str):
         message = str(message)
-    message = _strip_markdown_lite(message)[:1200]
+    message = _strip_markdown_lite(message)[:cap]
+    if message.strip() in {"...", "…", ".", ".."} or re.fullmatch(r"[.\u2026\s]+", message.strip()):
+        message = ""
 
     actions: list[AISuggestedAction] = []
     for a in (data.get("suggested_actions") or []):
@@ -609,7 +624,10 @@ def _fallback_response(
 
 class AIAssistantService:
     @staticmethod
-    async def respond(request: AIAssistantRequest) -> AIAssistantResponse:
+    async def respond(
+        request: AIAssistantRequest,
+        db: Session | None = None,
+    ) -> AIAssistantResponse:
         mode = classify_mode(request.user_message)
         ctx = request.context if isinstance(request.context, dict) else None
         ctx = await _enrich_live_context(ctx)
@@ -640,9 +658,27 @@ class AIAssistantService:
                 summary={"intent": "live_map_context", "local": True},
             )
 
+        live_prep = resolve_live_travel_prep_message(
+            request.user_message,
+            request.page,
+            ctx,
+        )
+        if live_prep:
+            return AIAssistantResponse(
+                message=live_prep[:1200],
+                suggested_actions=[],
+                summary={"intent": "live_travel_prep", "local": True},
+            )
+
         local = try_local_reply(request.user_message, request.page, ctx)
         if local is not None:
             return local
+
+        # Canonical knowledge: exact variants + DeepSeek intent resolve.
+        # Runs after deterministic local replies (weather/safety/nav) and before LLM.
+        knowledge = await WayraKnowledgeService.try_answer(db, request)
+        if knowledge is not None:
+            return knowledge
 
         # Reliable App Guide: answer locally for known product intents (no LLM latency).
         if mode == WayraMode.APP_GUIDE:
@@ -677,29 +713,15 @@ class AIAssistantService:
         temperature = _generation_temperature(mode, on_live=_is_live_page(request.page, ctx))
 
         raw_text = ""
-        gemini_usage: dict[str, int] | None = None
+        llm_provider = "none"
+        llm_usage: dict[str, int] | None = None
 
-        # 1. Try Gemini first
-        if _gemini_key():
-            try:
-                raw_text, gemini_usage = _call_gemini(
-                    system_prompt,
-                    user_block,
-                    temperature=temperature,
-                )
-                logger.debug("Rovvy AI (primary) responded OK")
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Rovvy AI primary call failed: %s", exc, exc_info=False)
-                raw_text = ""
-
-        # 2. Fall back to OpenAI if Gemini failed or key missing
-        if not raw_text and _openai_key():
-            try:
-                raw_text = _call_openai(system_prompt, user_block, temperature=temperature)
-                logger.debug("Rovvy AI (secondary) responded OK")
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Rovvy AI secondary call failed: %s", exc, exc_info=False)
-                raw_text = ""
+        raw_text, llm_provider, llm_usage = await generate_wayra_full_response(
+            system_prompt=system_prompt,
+            user_block=user_block,
+            user_message=request.user_message,
+            temperature=temperature,
+        )
 
         if not raw_text:
             prefer_travel = mode == WayraMode.TRAVEL
@@ -721,10 +743,14 @@ class AIAssistantService:
 
         data = _parse_model_json(raw_text)
         response = _build_response(data, raw_text, request.user_message)
-        if gemini_usage and isinstance(response.summary, dict):
-            response.summary = {**response.summary, "gemini_usage": gemini_usage}
-        elif gemini_usage:
-            response.summary = {"gemini_usage": gemini_usage}
+        if isinstance(response.summary, dict):
+            response.summary = {
+                **response.summary,
+                "provider": llm_provider,
+                **({"llm_usage": llm_usage} if llm_usage else {}),
+            }
+        elif llm_usage or llm_provider != "none":
+            response.summary = {"provider": llm_provider, **({"llm_usage": llm_usage} if llm_usage else {})}
         return response
 
 

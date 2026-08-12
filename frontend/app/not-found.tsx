@@ -14,7 +14,7 @@ export default function NotFound() {
   }, []);
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#0F172A] px-6 py-12 text-[#F8FAFC] overflow-hidden" suppressHydrationWarning>
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-navy px-6 py-12 text-[#F8FAFC] overflow-hidden" suppressHydrationWarning>
       {/* Background Radial Glow */}
       <div 
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full opacity-20 pointer-events-none blur-[100px]"
@@ -31,7 +31,7 @@ export default function NotFound() {
 
         {/* Huge "404" text in teal */}
         <div className="relative mb-6">
-          <h1 className="text-8xl font-extrabold tracking-widest text-[#0F766E] select-none drop-shadow-[0_0_15px_rgba(15,118,110,0.3)] animate-pulse">
+          <h1 className="text-8xl font-extrabold tracking-widest text-primary select-none drop-shadow-[0_0_15px_rgba(15,118,110,0.3)] animate-pulse">
             404
           </h1>
           <div className="absolute inset-0 flex items-center justify-center opacity-10">
@@ -45,7 +45,7 @@ export default function NotFound() {
         </h2>
         
         {/* Subtext */}
-        <p className="mt-4 text-base text-[#94A3B8]">
+        <p className="mt-4 text-base text-muted">
           The page you&apos;re looking for has moved or never existed.
         </p>
 
@@ -60,7 +60,7 @@ export default function NotFound() {
           {mounted ? (
             <button
               onClick={() => router.back()}
-              className="inline-flex items-center justify-center rounded-xl border border-[#334155] bg-[#1E293B]/60 px-6 py-3 text-sm font-semibold text-[#94A3B8] transition duration-300 hover:bg-[#1E293B] hover:text-white active:scale-95"
+              className="inline-flex items-center justify-center rounded-xl border border-[#334155] bg-[#1E293B]/60 px-6 py-3 text-sm font-semibold text-muted transition duration-300 hover:bg-[#1E293B] hover:text-white active:scale-95"
             >
               Go Back
             </button>

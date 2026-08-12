@@ -15,7 +15,7 @@ export type OpenWayraDetail = {
 /** Live map / preview cards push selected-place context for smarter replies. */
 export const WAYRA_CONTEXT_EVENT = "rovvy:wayra-context";
 
-/** Clear preview-scoped Live pin context (e.g. when the place preview card closes). */
+/** Clear ephemeral Live pin chat (e.g. when the place preview card closes). */
 export const WAYRA_CLEAR_CONTEXT_EVENT = "rovvy:wayra-clear-context";
 
 export function emitOpenWayra(detail?: OpenWayraDetail): void {

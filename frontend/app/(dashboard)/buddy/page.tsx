@@ -4,6 +4,9 @@ import { API_BASE, apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { useDashboardUser } from "@/contexts/dashboard-user-context";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 type OrganizerBrief = {
   id: string;
@@ -227,60 +230,54 @@ export default function BuddyTripsPage() {
   const rows = tab === "browse" ? filteredBrowse : mineRows;
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
-      {/* Search Header */}
-      <div className="max-w-6xl mx-auto mb-6">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center border border-teal-200/60">
-            <span className="text-xl">🤝</span>
-          </div>
-          <span className="text-xs font-bold uppercase tracking-widest text-teal-600">Rovvy Buddies</span>
-        </div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-          Buddy trips
-        </h1>
-        <p className="mt-2 text-sm text-slate-500 leading-relaxed max-w-2xl">
-          Meet travelers headed to the same destination — request to join curated groups.
-        </p>
+    <PageShell wide>
+      <PageHeader
+        title="Buddy trips"
+        description="Meet travelers headed to the same destination — request to join curated groups."
+        actions={<Badge tone="primary">Connect</Badge>}
+      />
 
-        <div className="mt-6 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setTab("browse");
-              void loadBrowse();
-            }}
-            className={`rounded-full px-4 py-2 text-xs font-bold md:text-sm transition ${
-              tab === "browse"
-                ? "bg-teal-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
-            }`}
-          >
-            Browse trips
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setTab("mine");
-              void loadMine();
-            }}
-            className={`rounded-full px-4 py-2 text-xs font-bold md:text-sm transition ${
-              tab === "mine"
-                ? "bg-teal-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
-            }`}
-          >
-            My trips
-          </button>
-          <button
-            type="button"
-            onClick={() => void refreshTab()}
-            className="ml-auto rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 md:text-sm transition"
-          >
-            Refresh
-          </button>
-        </div>
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setTab("browse");
+            void loadBrowse();
+          }}
+          className={`min-h-11 rounded-pill px-4 py-2 text-xs font-bold transition md:text-sm ${
+            tab === "browse"
+              ? "bg-primary text-white shadow-sm"
+              : "bg-app text-text hover:bg-border/40"
+          }`}
+        >
+          Browse trips
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setTab("mine");
+            void loadMine();
+          }}
+          className={`min-h-11 rounded-pill px-4 py-2 text-xs font-bold transition md:text-sm ${
+            tab === "mine"
+              ? "bg-primary text-white shadow-sm"
+              : "bg-app text-text hover:bg-border/40"
+          }`}
+        >
+          My trips
+        </button>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="ml-auto"
+          onClick={() => void refreshTab()}
+        >
+          Refresh
+        </Button>
+      </div>
 
+      <div className="max-w-6xl">
         {tab === "browse" ? (
           <div className="mt-4 flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <label className="flex min-w-[200px] flex-1 flex-col gap-2">
@@ -621,6 +618,6 @@ export default function BuddyTripsPage() {
           </div>
         </div>
       ) : null}
-    </div>
+    </PageShell>
   );
 }

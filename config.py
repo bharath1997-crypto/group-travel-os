@@ -72,6 +72,8 @@ class Settings(BaseSettings):
         default="deepseek-v4-flash",
         validation_alias="DEEPSEEK_MODEL",
     )
+    # Wayra LLM output caps (tokens) — see app/services/wayra_output_budget.py
+    # WAYRA_OUTPUT_TOKENS_COMPACT=400, STANDARD=800, PLAN=1200, FULL=2048, ORCHESTRATOR=1200
 
     # ── OpenWeatherMap (Phase 3 / travel intel) ────────────────────────────────
     openweather_api_key: str | None = Field(
@@ -167,12 +169,30 @@ class Settings(BaseSettings):
         validation_alias="DUFFEL_API_KEY",
     )
 
+    # duffel = production-safe Duffel-only search (recommended)
+    # discovery = estimates only when ALLOW_ESTIMATED_FLIGHTS=true
+    flight_live_provider: str = Field(
+        default="duffel",
+        validation_alias="FLIGHT_LIVE_PROVIDER",
+    )
+
+    allow_estimated_flights: bool = Field(
+        default=False,
+        validation_alias="ALLOW_ESTIMATED_FLIGHTS",
+        description="When false, discovery/estimated flight results are never returned",
+    )
+
 
 
     # ── Travelpayouts (tp.media affiliate marker / trs) ──────────────────────────
     travelpayouts_marker: str = Field(
         default="727732",
         validation_alias="TRAVELPAYOUTS_MARKER",
+    )
+    travelpayouts_api_token: str | None = Field(
+        default=None,
+        validation_alias="TRAVELPAYOUTS_API_TOKEN",
+        description="Travelpayouts Data API token for Aviasales live/cached prices",
     )
 
     # ── Google Routes API (Directions v2 computeRoutes) ─────────────────────────
