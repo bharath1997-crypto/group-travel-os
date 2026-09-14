@@ -9,7 +9,17 @@ export const LIVE_MAP_CONTROLS_POSITION =
 
 /** Right-side control rail — sits above the bottom strip. */
 export const LIVE_MAP_CONTROLS_RAIL_POSITION =
-  "fixed z-[40] right-2 bottom-[calc(3.5rem+26px+env(safe-area-inset-bottom,0px))] md:right-4 md:bottom-[calc(26px+0.75rem)]";
+  "fixed right-2 bottom-[calc(3.5rem+26px+env(safe-area-inset-bottom,0px))] md:right-4 md:bottom-[calc(26px+0.75rem)]";
+
+/** Default rail stacking — below place preview (250) and Wayra (3000). */
+export const LIVE_MAP_CONTROLS_RAIL_Z = "z-[40]";
+
+/** Raised when layers panel is open — must sit above place preview cards. */
+export const LIVE_MAP_CONTROLS_RAIL_ELEVATED_Z = "z-[280]";
+
+export function liveMapControlsRailZClass(layersPanelOpen: boolean): string {
+  return layersPanelOpen ? LIVE_MAP_CONTROLS_RAIL_ELEVATED_Z : LIVE_MAP_CONTROLS_RAIL_Z;
+}
 
 /** Map corner notices — stacked above the right control rail (never over the search bar). */
 export const LIVE_MAP_NOTICE_STACK_POSITION =

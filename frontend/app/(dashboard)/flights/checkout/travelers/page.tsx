@@ -23,14 +23,14 @@ type PassengerFormData = {
 };
 
 const inputCls =
-  "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all";
+  "h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all";
 
 const selectCls =
-  "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all appearance-none";
+  "h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all";
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">{children}</span>
+    <span className="mb-1.5 flex min-h-5 items-end text-xs font-bold uppercase tracking-wider text-slate-500">{children}</span>
   );
 }
 
@@ -159,11 +159,11 @@ function TravelersCheckoutContent() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-      <div className="space-y-5">
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:gap-8">
+      <div className="min-w-0 space-y-5">
         {/* Itinerary Context Card */}
-        <div className="rounded-3xl border border-slate-200/90 bg-white px-5 py-4 shadow-xs">
-          <div className="flex items-center justify-between">
+        <div className="rounded-2xl border border-slate-200/90 bg-white px-5 py-4 shadow-xs sm:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-base font-black text-slate-900">{routeLabel}</p>
               <p className="mt-0.5 text-xs font-semibold text-slate-500">
@@ -172,7 +172,7 @@ function TravelersCheckoutContent() {
               </p>
             </div>
             {tripId ? (
-              <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-700 border border-teal-200">
+              <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary border border-teal-200">
                 ✦ Trip Space Attached
               </span>
             ) : null}
@@ -181,11 +181,11 @@ function TravelersCheckoutContent() {
 
         {/* Traveler Forms */}
         {passengers.map((passenger, idx) => (
-          <div key={idx} className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5">
+          <div key={idx} className="space-y-5 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-6">
             {/* Form Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-teal-50 border border-teal-100 text-teal-700">
+                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-soft border border-primary/20 text-primary">
                   <User className="h-4 w-4" />
                 </div>
                 <div>
@@ -204,8 +204,8 @@ function TravelersCheckoutContent() {
             ) : null}
 
             {/* Name Row */}
-            <div className="grid gap-4 sm:grid-cols-3">
-              <label className="block">
+            <div className="grid gap-4 sm:grid-cols-8">
+              <label className="block sm:col-span-2">
                 <FieldLabel>Title</FieldLabel>
                 <select
                   value={passenger.title}
@@ -220,7 +220,7 @@ function TravelersCheckoutContent() {
                 </select>
               </label>
 
-              <label className="block">
+              <label className="block sm:col-span-3">
                 <FieldLabel>First / Given name *</FieldLabel>
                 <input
                   type="text"
@@ -231,7 +231,7 @@ function TravelersCheckoutContent() {
                 />
               </label>
 
-              <label className="block">
+              <label className="block sm:col-span-3">
                 <FieldLabel>Last / Family name *</FieldLabel>
                 <input
                   type="text"
@@ -298,7 +298,7 @@ function TravelersCheckoutContent() {
               <button
                 type="button"
                 onClick={() => setShowPassport(!showPassport)}
-                className="flex w-full items-center justify-between text-xs font-bold text-teal-700 hover:text-teal-800 transition-colors"
+                className="flex w-full items-center justify-between text-xs font-bold text-primary hover:text-teal-800 transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <Globe className="h-4 w-4" />
@@ -351,7 +351,7 @@ function TravelersCheckoutContent() {
       </div>
 
       {/* Sidebar */}
-      <div className="space-y-4">
+      <aside className="space-y-4 lg:sticky lg:top-6">
         <BookingPriceSummary
           currency={currency}
           lines={[
@@ -361,15 +361,15 @@ function TravelersCheckoutContent() {
           ]}
         />
 
-        <div className="rounded-3xl border border-slate-100 bg-white p-4 space-y-3">
+        <div className="space-y-3 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-            <ShieldCheck className="h-4 w-4 text-teal-600" />
+            <ShieldCheck className="h-4 w-4 text-primary" />
             <span>Your details are secure &amp; encrypted</span>
           </div>
           <button
             type="button"
             onClick={proceedToExtras}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 py-4 text-sm font-black text-white shadow-lg shadow-teal-600/20 hover:bg-teal-700 active:scale-[0.99] transition-all"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-sm font-black text-white shadow-lg shadow-teal-600/20 hover:bg-primary-hover active:scale-[0.99] transition-all"
           >
             <span>Continue to extras</span>
             <ArrowRight className="h-4 w-4" />
@@ -378,7 +378,7 @@ function TravelersCheckoutContent() {
             No payment charged yet
           </p>
         </div>
-      </div>
+      </aside>
     </div>
   );
 }

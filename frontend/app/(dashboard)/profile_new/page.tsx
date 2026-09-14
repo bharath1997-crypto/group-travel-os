@@ -84,7 +84,7 @@ export default function ProfileRedesignPage() {
             <div className="overflow-hidden rounded-2xl border border-stone-100 bg-white shadow-sm transition-shadow hover:shadow-md">
               <div className="relative h-48 w-full">
                 <img src={upcomingTrip.image} alt={upcomingTrip.title} className="h-full w-full object-cover" />
-                <div className="absolute top-4 right-4 rounded-full bg-teal-600 px-3 py-1 text-xs font-semibold text-white">
+                <div className="absolute top-4 right-4 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white">
                   Confirmed
                 </div>
               </div>
@@ -93,11 +93,11 @@ export default function ProfileRedesignPage() {
                 <p className="mt-1 text-sm text-stone-500">{upcomingTrip.location}</p>
                 <div className="mt-4 flex items-center justify-between text-sm text-stone-600">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-teal-600" />
+                    <Calendar className="h-4 w-4 text-primary" />
                     <span>{upcomingTrip.dates}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-teal-600" />
+                    <Users className="h-4 w-4 text-primary" />
                     <span>{upcomingTrip.groupSize} travelers</span>
                   </div>
                 </div>
@@ -176,7 +176,7 @@ export default function ProfileRedesignPage() {
                       <p className="text-xs text-stone-400 mt-0.5">{friend.mutual} mutual trips</p>
                     </div>
                   </div>
-                  <button className="rounded-full border border-teal-600 px-4 py-1.5 text-xs font-semibold text-teal-600 hover:bg-teal-50">
+                  <button className="rounded-full border border-teal-600 px-4 py-1.5 text-xs font-semibold text-primary hover:bg-primary-soft">
                     Message
                   </button>
                 </div>
@@ -207,15 +207,15 @@ export default function ProfileRedesignPage() {
               <h3 className="text-lg font-bold text-stone-800">Fast Facts</h3>
               <ul className="mt-3 space-y-3 text-sm text-stone-600">
                 <li className="flex items-center gap-3">
-                  <Globe className="h-4 w-4 text-teal-600" />
+                  <Globe className="h-4 w-4 text-primary" />
                   <span>Languages: English, Spanish</span>
                 </li>
                 <li className="flex items-center gap-3">
-                  <Compass className="h-4 w-4 text-teal-600" />
+                  <Compass className="h-4 w-4 text-primary" />
                   <span>Favorite Region: Southeast Asia</span>
                 </li>
                 <li className="flex items-center gap-3">
-                  <Info className="h-4 w-4 text-teal-600" />
+                  <Info className="h-4 w-4 text-primary" />
                   <span>Joined Rovvy: March 2024</span>
                 </li>
               </ul>
@@ -255,14 +255,14 @@ export default function ProfileRedesignPage() {
               <p className="text-sm font-medium text-stone-500">@{user.username}</p>
               
               <div className="mt-2 flex items-center gap-1 text-sm text-stone-600">
-                <MapPin className="h-4 w-4 text-teal-600" />
+                <MapPin className="h-4 w-4 text-primary" />
                 <span>{user.location}</span>
               </div>
             </div>
 
             {/* CTAs */}
             <div className="mt-4 flex gap-2 sm:mt-0 sm:pb-2">
-              <button className="flex items-center gap-2 rounded-full bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700 transition-colors shadow-sm">
+              <button className="flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors shadow-sm">
                 <Edit className="h-4 w-4" />
                 <span>Edit Profile</span>
               </button>
@@ -278,7 +278,7 @@ export default function ProfileRedesignPage() {
             
             <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
               {user.vibes.map((vibe) => (
-                <span key={vibe} className="rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">
+                <span key={vibe} className="rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
                   {vibe}
                 </span>
               ))}
@@ -297,7 +297,7 @@ export default function ProfileRedesignPage() {
             { label: "Buddies", value: user.stats.buddies, icon: Users },
           ].map((stat) => (
             <div key={stat.label} className="flex flex-col items-center rounded-2xl border border-stone-100 bg-white p-4 text-center shadow-sm hover:shadow-md transition-shadow">
-              <stat.icon className="h-5 w-5 text-teal-600 mb-1" />
+              <stat.icon className="h-5 w-5 text-primary mb-1" />
               <div className="text-2xl font-bold text-stone-800">{stat.value}</div>
               <div className="text-xs font-medium text-stone-500 uppercase tracking-wide mt-0.5">{stat.label}</div>
             </div>
@@ -314,7 +314,7 @@ export default function ProfileRedesignPage() {
                 <img src={upcomingTrip.image} alt={upcomingTrip.title} className="h-full w-full object-cover" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold text-teal-600 uppercase">Next Trip</p>
+                <p className="text-[10px] font-semibold text-primary uppercase">Next Trip</p>
                 <h3 className="truncate font-bold text-stone-800">{upcomingTrip.title}</h3>
                 <p className="text-xs text-stone-500">{upcomingTrip.dates.split(" - ")[0]}</p>
               </div>
@@ -322,11 +322,11 @@ export default function ProfileRedesignPage() {
 
             {/* Map Preview Card */}
             <div className="min-w-[280px] rounded-2xl border border-stone-100 bg-white p-4 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
                 <MapIcon className="h-8 w-8" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold text-teal-600 uppercase">Travel Map</p>
+                <p className="text-[10px] font-semibold text-primary uppercase">Travel Map</p>
                 <h3 className="font-bold text-stone-800">{user.stats.countries} Countries</h3>
                 <p className="text-xs text-stone-500">View world map →</p>
               </div>
@@ -361,7 +361,7 @@ export default function ProfileRedesignPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 border-b-2 py-3 px-1 text-sm font-medium transition-colors ${
                   activeTab === tab.id
-                    ? "border-teal-600 text-teal-600"
+                    ? "border-teal-600 text-primary"
                     : "border-transparent text-stone-500 hover:text-stone-700"
                 }`}
               >

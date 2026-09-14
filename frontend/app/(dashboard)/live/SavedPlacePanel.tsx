@@ -172,7 +172,7 @@ export default function SavedPlacePanel({
       aria-label="Saved place"
     >
       <div className="flex items-start gap-2 border-b border-stone-100 px-3 py-2.5">
-        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-50 text-primary">
+        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
           <Bookmark className="h-3.5 w-3.5 fill-current" />
         </span>
         <div className="min-w-0 flex-1">
@@ -210,7 +210,7 @@ export default function SavedPlacePanel({
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Comments, reminders, packing list…"
             rows={4}
-            className="w-full resize-none rounded-xl border border-stone-200/80 bg-white/90 px-2.5 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-[#0F766E]/15"
+            className="w-full resize-none rounded-xl border border-stone-200/80 bg-white/90 px-2.5 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-[#0E6E5C]/15"
           />
           <p className="mt-1 text-[10px] text-stone-400">
             Stored only in this browser — Rovvy servers never see this.

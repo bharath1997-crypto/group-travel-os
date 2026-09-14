@@ -73,7 +73,7 @@ function ProcessingBookingContent() {
 
   return (
     <div className="mx-auto max-w-lg py-16 text-center">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-teal-50 text-teal-600 shadow-sm">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-primary-soft text-primary shadow-sm">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
 
@@ -82,7 +82,7 @@ function ProcessingBookingContent() {
 
       <div className="mt-8 space-y-4 rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-600 text-white text-xs font-bold">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-white text-xs font-bold">
             <Check className="h-4 w-4" />
           </div>
           <span className="text-sm font-semibold text-slate-900">Payment submitted</span>
@@ -91,7 +91,7 @@ function ProcessingBookingContent() {
         <div className="flex items-center gap-3">
           <div
             className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition ${
-              step >= 2 ? "bg-teal-600 text-white" : "bg-slate-100 text-slate-400"
+              step >= 2 ? "bg-primary text-white" : "bg-slate-100 text-slate-400"
             }`}
           >
             {step >= 2 ? <Check className="h-4 w-4" /> : "2"}
@@ -104,7 +104,7 @@ function ProcessingBookingContent() {
         <div className="flex items-center gap-3">
           <div
             className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition ${
-              step >= 3 || confirmed ? "bg-teal-600 text-white" : "bg-slate-100 text-slate-400"
+              step >= 3 || confirmed ? "bg-primary text-white" : "bg-slate-100 text-slate-400"
             }`}
           >
             {step >= 3 || confirmed ? <Check className="h-4 w-4" /> : "3"}

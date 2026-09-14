@@ -26,7 +26,7 @@ export default function StoragePreferencesPanel() {
               setSaved(false);
               setPrefs((current) => ({ ...current, preferences: e.target.checked }));
             }}
-            className="mt-1 h-4 w-4 rounded border-stone-300 text-teal-600 focus:ring-teal-500"
+            className="mt-1 h-4 w-4 rounded border-stone-300 text-primary focus:ring-primary"
           />
           <span>Remember recent airport selections (preference storage)</span>
         </label>
@@ -38,7 +38,7 @@ export default function StoragePreferencesPanel() {
               setSaved(false);
               setPrefs((current) => ({ ...current, analytics: e.target.checked }));
             }}
-            className="mt-1 h-4 w-4 rounded border-stone-300 text-teal-600 focus:ring-teal-500"
+            className="mt-1 h-4 w-4 rounded border-stone-300 text-primary focus:ring-primary"
           />
           <span>Allow optional analytics when enabled</span>
         </label>
@@ -52,11 +52,11 @@ export default function StoragePreferencesPanel() {
           });
           setSaved(true);
         }}
-        className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-700"
+        className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover"
       >
         Save storage preferences
       </button>
-      {saved ? <p className="mt-2 text-xs font-medium text-teal-700">Preferences saved.</p> : null}
+      {saved ? <p className="mt-2 text-xs font-medium text-primary">Preferences saved.</p> : null}
     </div>
   );
 }

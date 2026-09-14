@@ -16,6 +16,7 @@ import {
   Train,
   Users,
   Bookmark,
+  AlertTriangle,
 } from "lucide-react";
 import { MapLayersIcon } from "@/components/map/MapControlIcons";
 import type { LiveMapLayer } from "@/lib/map-providers";
@@ -64,7 +65,7 @@ const LIVE_MAP_LAYER_OPTIONS = [
     label: "Dark",
     description: "Low-light map",
     icon: "moon" as const,
-    previewClass: "bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#334155]",
+    previewClass: "bg-gradient-to-br from-[#0F1614] via-[#1E293B] to-[#334155]",
   },
 ] as const;
 
@@ -195,6 +196,8 @@ type Props = {
   onFriendTrackingChange?: (enabled: boolean) => void;
   savedPlacesLayerEnabled?: boolean;
   onSavedPlacesLayerChange?: (enabled: boolean) => void;
+  reportsLayerEnabled?: boolean;
+  onReportsLayerChange?: (enabled: boolean) => void;
   /** Controlled open state — used when opened from Map Tools. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -229,6 +232,8 @@ export default function LiveMapLayerControl({
   onFriendTrackingChange,
   savedPlacesLayerEnabled = true,
   onSavedPlacesLayerChange,
+  reportsLayerEnabled = true,
+  onReportsLayerChange,
   open: openProp,
   onOpenChange,
   showTrigger = true,
@@ -261,8 +266,9 @@ export default function LiveMapLayerControl({
   const selectLayer = useCallback(
     (layer: LiveMapLayer) => {
       onLayerChange(layer);
+      setOpen(false);
     },
-    [onLayerChange],
+    [onLayerChange, setOpen],
   );
 
   useEffect(() => {
@@ -298,7 +304,7 @@ export default function LiveMapLayerControl({
             panelAnchor === "right-rail"
               ? `relative ${liveMapFloatBtnLight(open, false)}`
               : `flex h-11 w-11 items-center justify-center rounded-full bg-white/95 shadow-[0_8px_24px_rgba(15,23,42,0.10)] backdrop-blur-md transition-all hover:bg-white ${
-                  open ? "ring-2 ring-[#0F766E]/25" : ""
+                  open ? "ring-2 ring-[#0E6E5C]/25" : ""
                 }`
           }
           data-live-layers-trigger
@@ -355,7 +361,7 @@ export default function LiveMapLayerControl({
                     <div
                       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         selected
-                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0F766E]/20"
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
                           : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >
@@ -396,7 +402,7 @@ export default function LiveMapLayerControl({
                     <div
                       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         friendTrackingEnabled
-                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0F766E]/20"
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
                           : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >
@@ -424,12 +430,12 @@ export default function LiveMapLayerControl({
                     <div
                       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         savedPlacesLayerEnabled
-                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0F766E]/20"
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
                           : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >
                       <Bookmark
-                        className={`h-4.5 w-4.5 ${savedPlacesLayerEnabled ? "fill-[#0F766E] text-primary" : "text-stone-500"}`}
+                        className={`h-4.5 w-4.5 ${savedPlacesLayerEnabled ? "fill-[#0E6E5C] text-primary" : "text-stone-500"}`}
                       />
                       {savedPlacesLayerEnabled && (
                         <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-1 ring-white">
@@ -445,6 +451,37 @@ export default function LiveMapLayerControl({
                   </button>
                 )}
 
+                {onReportsLayerChange && (
+                  <button
+                    type="button"
+                    onClick={() => onReportsLayerChange(!reportsLayerEnabled)}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
+                    title="Place vibe reports — fade after 2 hours"
+                  >
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        reportsLayerEnabled
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <AlertTriangle
+                        className={`h-4.5 w-4.5 ${reportsLayerEnabled ? "text-primary" : "text-stone-500"}`}
+                      />
+                      {reportsLayerEnabled && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className={`text-[9px] font-extrabold tracking-wide transition-colors ${reportsLayerEnabled ? "text-primary" : "text-stone-500 group-hover:text-stone-700"}`}
+                    >
+                      Reports
+                    </span>
+                  </button>
+                )}
+
                 {/* Overlay 2: Travel layer */}
                 {onTravelLayerChange && (
                   <button
@@ -455,7 +492,7 @@ export default function LiveMapLayerControl({
                     <div
                       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         travelLayerEnabled
-                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0F766E]/20"
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
                           : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >
@@ -482,7 +519,7 @@ export default function LiveMapLayerControl({
                     <div
                       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         seaRoutesEnabled
-                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0F766E]/20"
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
                           : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >
@@ -509,7 +546,7 @@ export default function LiveMapLayerControl({
                     <div
                       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         cruiseRoutesEnabled
-                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0F766E]/20"
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
                           : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >
@@ -536,7 +573,7 @@ export default function LiveMapLayerControl({
                     <div
                       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         footRoutesEnabled
-                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0F766E]/20"
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
                           : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >
@@ -563,7 +600,7 @@ export default function LiveMapLayerControl({
                     <div
                       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         mapViewMode === "3d"
-                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0F766E]/20"
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
                           : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >

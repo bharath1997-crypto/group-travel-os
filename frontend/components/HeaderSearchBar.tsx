@@ -157,7 +157,7 @@ export function HeaderSearchBar() {
           aria-label="Ask Wayra"
           title="Ask Wayra"
         >
-          <WayraIcon state="flying" size={0.28} variant="raw" animate />
+          <WayraIcon state="flying" size={0.72} variant="launcher" animate={false} />
         </button>
 
         <button

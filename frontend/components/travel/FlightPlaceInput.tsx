@@ -298,7 +298,7 @@ export default function FlightPlaceInput({
           onKeyDown={onKeyDown}
           className={
             inputClassName ??
-            "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+            "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           }
         />
 
@@ -328,15 +328,15 @@ export default function FlightPlaceInput({
                           onMouseDown={(e) => e.preventDefault()}
                           onClick={() => pickOption(item)}
                           className={`flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-slate-50 ${
-                            idx === activeIndex ? "bg-teal-50/60" : ""
+                            idx === activeIndex ? "bg-primary-soft/60" : ""
                           }`}
                         >
                           {item.id === "gps" ? (
-                            <Navigation className="h-4 w-4 shrink-0 text-teal-600" />
+                            <Navigation className="h-4 w-4 shrink-0 text-primary" />
                           ) : item.id === "map" ? (
-                            <MapPinned className="h-4 w-4 shrink-0 text-teal-600" />
+                            <MapPinned className="h-4 w-4 shrink-0 text-primary" />
                           ) : (
-                            <Globe2 className="h-4 w-4 shrink-0 text-teal-600" />
+                            <Globe2 className="h-4 w-4 shrink-0 text-primary" />
                           )}
                           <span className="text-sm font-medium text-slate-900">{item.label}</span>
                         </button>
@@ -354,7 +354,7 @@ export default function FlightPlaceInput({
                               clearRecentFlightAirports(userId);
                               setRecent([]);
                             }}
-                            className="inline-flex min-h-11 items-center gap-1 px-2 text-[11px] font-semibold text-slate-500 hover:text-teal-700"
+                            className="inline-flex min-h-11 items-center gap-1 px-2 text-[11px] font-semibold text-slate-500 hover:text-primary"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                             Clear
@@ -373,7 +373,7 @@ export default function FlightPlaceInput({
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={() => confirmSelection(airport)}
                               className={`flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-slate-50 ${
-                                optionIndex === activeIndex ? "bg-teal-50/60" : ""
+                                optionIndex === activeIndex ? "bg-primary-soft/60" : ""
                               }`}
                             >
                               <Clock3 className="h-4 w-4 shrink-0 text-slate-400" />
@@ -399,7 +399,7 @@ export default function FlightPlaceInput({
                   <div className="px-3 py-2">
                     {gpsLoading ? (
                       <div className="flex items-center gap-2 py-2 text-sm text-slate-500">
-                        <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         Finding nearby airports…
                       </div>
                     ) : null}
@@ -412,7 +412,7 @@ export default function FlightPlaceInput({
 
                 {mode === "search" && loading && suggestions.length === 0 ? (
                   <div className="flex items-center gap-2 px-3 py-2.5 text-sm text-slate-500">
-                    <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
                     Searching airports…
                   </div>
                 ) : null}
@@ -441,7 +441,7 @@ export default function FlightPlaceInput({
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={() => confirmSelection(place)}
                               className={`flex min-h-11 w-full items-start gap-3 px-3 py-2.5 text-left hover:bg-slate-50 ${
-                                optionIndex === activeIndex ? "bg-teal-50/60" : ""
+                                optionIndex === activeIndex ? "bg-primary-soft/60" : ""
                               }`}
                             >
                               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
@@ -472,10 +472,10 @@ export default function FlightPlaceInput({
                           onMouseDown={(e) => e.preventDefault()}
                           onClick={() => confirmSelection(place)}
                           className={`flex min-h-11 w-full items-start gap-3 px-3 py-2.5 text-left hover:bg-slate-50 ${
-                            optionIndex === activeIndex ? "bg-teal-50/60" : ""
+                            optionIndex === activeIndex ? "bg-primary-soft/60" : ""
                           }`}
                         >
-                          <Compass className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" />
+                          <Compass className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-medium text-slate-900">{place.label}</span>
                             <span className="block truncate text-xs text-slate-500">

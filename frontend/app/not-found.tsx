@@ -19,7 +19,7 @@ export default function NotFound() {
       <div 
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full opacity-20 pointer-events-none blur-[100px]"
         style={{
-          background: "radial-gradient(circle, #0F766E 0%, transparent 70%)"
+          background: "radial-gradient(circle, #0E6E5C 0%, transparent 70%)"
         }}
       />
 
@@ -31,7 +31,7 @@ export default function NotFound() {
 
         {/* Huge "404" text in teal */}
         <div className="relative mb-6">
-          <h1 className="text-8xl font-extrabold tracking-widest text-primary select-none drop-shadow-[0_0_15px_rgba(15,118,110,0.3)] animate-pulse">
+          <h1 className="text-8xl font-extrabold tracking-widest text-primary select-none drop-shadow-[0_0_15px_rgba(14,110,92,0.3)] animate-pulse">
             404
           </h1>
           <div className="absolute inset-0 flex items-center justify-center opacity-10">
@@ -53,7 +53,7 @@ export default function NotFound() {
         <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
           <Link
             href="/explore"
-            className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#0F766E] to-[#14B8A6] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#0F766E]/20 transition duration-300 hover:brightness-110 active:scale-95 hover:shadow-[#0F766E]/40"
+            className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#0E6E5C] to-[#14B8A6] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#0E6E5C]/20 transition duration-300 hover:brightness-110 active:scale-95 hover:shadow-[#0E6E5C]/40"
           >
             Go to Explore
           </Link>

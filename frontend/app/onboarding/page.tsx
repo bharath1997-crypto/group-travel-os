@@ -70,8 +70,8 @@ function e164ToDialAndLocal(
   return { dial: "+1", local: d };
 }
 
-const NAVY = "#0F172A";
-const CORAL = "#0F766E";
+const NAVY = "#0F1614";
+const CORAL = "#0E6E5C";
 const TEAL = "#0D9488";
 const PINK_RING = "#EC4899";
 const CRIMSON = "#DC2626";

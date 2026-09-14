@@ -26,7 +26,7 @@ export default function TravelHandoffBanner({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-teal-700">
+          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-primary">
             <MapPin className="h-3.5 w-3.5 shrink-0" />
             From Live map
           </div>
@@ -50,7 +50,7 @@ export default function TravelHandoffBanner({
         <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
           <Link
             href="/live"
-            className="text-[11px] font-semibold text-teal-700 hover:underline"
+            className="text-[11px] font-semibold text-primary hover:underline"
           >
             Back to Live map
           </Link>

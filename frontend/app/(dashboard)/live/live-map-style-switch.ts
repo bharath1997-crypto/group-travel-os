@@ -1,5 +1,5 @@
 import type { Map as MaplibreMap } from "maplibre-gl";
-import type { LiveMapLayer } from "@/lib/map-providers";
+import { isCartoBasemapConfigured, type LiveMapLayer } from "@/lib/map-providers";
 
 /** Basemap layer ids used to verify the rendered style matches the selected layer. */
 export const LIVE_MAP_BASE_LAYER_MARKERS: Partial<Record<LiveMapLayer, string>> = {
@@ -10,10 +10,18 @@ export const LIVE_MAP_BASE_LAYER_MARKERS: Partial<Record<LiveMapLayer, string>> 
   hybrid: "esri-imagery",
 };
 
+function mapHasStyleSpec(map: MaplibreMap): boolean {
+  try {
+    return Boolean(map.getStyle());
+  } catch {
+    return false;
+  }
+}
+
 export function detectLiveMapBaseLayer(map: MaplibreMap | null | undefined): LiveMapLayer | null {
   if (!map) return null;
   try {
-    if (!map.isStyleLoaded()) return null;
+    if (!mapHasStyleSpec(map) || !map.isStyleLoaded()) return null;
   } catch {
     return null;
   }
@@ -32,19 +40,38 @@ export function detectLiveMapBaseLayer(map: MaplibreMap | null | undefined): Liv
   return null;
 }
 
+function openFreeMapVectorMatches(
+  map: MaplibreMap | null | undefined,
+  expected: LiveMapLayer,
+): boolean {
+  const detected = detectLiveMapBaseLayer(map);
+  if (detected === "clean") return true;
+  if (detected !== null) return false;
+  try {
+    return Boolean(map?.getStyle() && map?.isStyleLoaded());
+  } catch {
+    return false;
+  }
+}
+
 export function liveMapBaseLayerMatches(
   map: MaplibreMap | null | undefined,
   expected: LiveMapLayer,
 ): boolean {
   const detected = detectLiveMapBaseLayer(map);
   if (detected === expected) return true;
+
+  // Without CARTO, street/dark basemaps render as OpenFreeMap vector (detected as clean).
+  if (
+    !isCartoBasemapConfigured() &&
+    (expected === "street" || expected === "dark" || expected === "clean")
+  ) {
+    return openFreeMapVectorMatches(map, expected);
+  }
+
   // Clean map style URLs vary; treat unknown vector styles as clean when requested.
   if (expected === "clean" && detected === null) {
-    try {
-      return !!map?.isStyleLoaded();
-    } catch {
-      return false;
-    }
+    return openFreeMapVectorMatches(map, expected);
   }
   return false;
 }

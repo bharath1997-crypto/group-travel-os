@@ -286,7 +286,7 @@ export default function ActivitiesPage() {
                 onClick={() => setActiveTab("search")}
                 className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                   activeTab === "search"
-                    ? "bg-teal-500 text-white shadow"
+                    ? "bg-primary-soft0 text-white shadow"
                     : "text-slate-200 hover:text-white"
                 }`}
               >
@@ -297,7 +297,7 @@ export default function ActivitiesPage() {
                 onClick={() => setActiveTab("partners")}
                 className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                   activeTab === "partners"
-                    ? "bg-teal-500 text-white shadow"
+                    ? "bg-primary-soft0 text-white shadow"
                     : "text-slate-200 hover:text-white"
                 }`}
               >
@@ -367,7 +367,7 @@ export default function ActivitiesPage() {
                 <button
                   type="button"
                   onClick={() => void runSearch()}
-                  className="w-full rounded-xl bg-teal-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-teal-900/30 transition hover:bg-teal-400"
+                  className="w-full rounded-xl bg-primary-soft0 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-teal-900/30 transition hover:bg-teal-400"
                 >
                   Search
                 </button>
@@ -449,7 +449,7 @@ export default function ActivitiesPage() {
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Presets</p>
                 <div className="mt-3 space-y-3.5">
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-teal-600">US Destinations</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary">US Destinations</span>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {["New York", "Chicago", "Miami", "Los Angeles"].map((city) => (
                         <button
@@ -458,7 +458,7 @@ export default function ActivitiesPage() {
                           onClick={() => handlePresetClick(city)}
                           className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium transition ${
                             location.toLowerCase() === city.toLowerCase()
-                              ? "bg-teal-600 text-white"
+                              ? "bg-primary text-white"
                               : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                           }`}
                         >
@@ -468,7 +468,7 @@ export default function ActivitiesPage() {
                     </div>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-teal-600">Europe Destinations</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Europe Destinations</span>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {["London", "Paris", "Berlin", "Rome"].map((city) => (
                         <button
@@ -477,7 +477,7 @@ export default function ActivitiesPage() {
                           onClick={() => handlePresetClick(city)}
                           className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium transition ${
                             location.toLowerCase() === city.toLowerCase()
-                              ? "bg-teal-600 text-white"
+                              ? "bg-primary text-white"
                               : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                           }`}
                         >
@@ -487,7 +487,7 @@ export default function ActivitiesPage() {
                     </div>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-teal-600">Asia Destinations</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Asia Destinations</span>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {["Hyderabad", "Tokyo", "Singapore", "Bali"].map((city) => (
                         <button
@@ -496,7 +496,7 @@ export default function ActivitiesPage() {
                           onClick={() => handlePresetClick(city)}
                           className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium transition ${
                             location.toLowerCase() === city.toLowerCase()
-                              ? "bg-teal-600 text-white"
+                              ? "bg-primary text-white"
                               : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                           }`}
                         >
@@ -525,7 +525,7 @@ export default function ActivitiesPage() {
                     onClick={() => setSort(v)}
                     className={`rounded-full px-3 py-1 text-xs font-bold ${
                       sort === v
-                        ? "bg-teal-500 text-white"
+                        ? "bg-primary-soft0 text-white"
                         : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
                   >
@@ -609,7 +609,7 @@ export default function ActivitiesPage() {
                           <p className="text-xs font-semibold uppercase text-slate-500">
                             From
                           </p>
-                          <p className="text-2xl font-extrabold text-teal-600">
+                          <p className="text-2xl font-extrabold text-primary">
                             {a.currency} {a.price.toFixed(0)}
                           </p>
                         </div>
@@ -628,11 +628,11 @@ export default function ActivitiesPage() {
               </ul>
 
               {/* Viator Affiliate Section */}
-              <div className="mt-8 rounded-2xl border border-teal-500/20 bg-gradient-to-r from-[#0F172A] to-slate-900 p-6 text-white shadow-lg">
+              <div className="mt-8 rounded-2xl border border-teal-500/20 bg-gradient-to-r from-[#0F1614] to-slate-900 p-6 text-white shadow-lg">
                 <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-teal-500/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-400 border border-teal-500/30">
+                      <span className="rounded-full bg-primary-soft0/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-400 border border-teal-500/30">
                         Premium Partner
                       </span>
                       <span className="text-xs text-slate-300">· Earns 8-12% commission per booking</span>
@@ -648,7 +648,7 @@ export default function ActivitiesPage() {
                     href={`https://www.viator.com/searchResults/all?text=${encodeURIComponent(location || "travel")}&pid=P00049707`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-teal-500 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-teal-400 active:scale-95 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary-soft0 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-teal-400 active:scale-95 focus:outline-none focus:ring-2 focus:ring-teal-400"
                   >
                     Browse Viator Activities &rarr;
                   </a>
@@ -663,7 +663,7 @@ export default function ActivitiesPage() {
             <div className="rounded-2xl border border-teal-200 bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-xl">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="space-y-2 max-w-xl">
-                  <span className="rounded-full bg-teal-500/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-400">
+                  <span className="rounded-full bg-primary-soft0/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-400">
                     Interactive Revenue Calculator
                   </span>
                   <h2 className="text-xl font-bold tracking-tight md:text-2xl">
@@ -673,7 +673,7 @@ export default function ActivitiesPage() {
                     Adjust the sliders below to estimate the cash commission Rovvy earns when a group travel coordinator books tickets for their trip buddies.
                   </p>
                 </div>
-                <div className="shrink-0 rounded-2xl bg-teal-500/10 border border-teal-500/30 p-5 text-center min-w-[200px]">
+                <div className="shrink-0 rounded-2xl bg-primary-soft0/10 border border-teal-500/30 p-5 text-center min-w-[200px]">
                   <p className="text-xs font-semibold uppercase tracking-wider text-teal-300">Estimated Commission Payout</p>
                   <p className="mt-1 text-4xl font-extrabold text-teal-400">
                     USD {calcTotalPayout.toFixed(2)}
@@ -763,9 +763,9 @@ export default function ActivitiesPage() {
                     ].map(([provider, icost, mfee, comm], idx) => (
                       <tr key={idx} className="hover:bg-slate-50/50">
                         <td className="px-4 py-3.5 font-bold text-slate-800">{provider}</td>
-                        <td className="px-4 py-3.5 text-teal-600 font-semibold">{icost}</td>
+                        <td className="px-4 py-3.5 text-primary font-semibold">{icost}</td>
                         <td className="px-4 py-3.5 text-slate-500">{mfee}</td>
-                        <td className="px-4 py-3.5 text-slate-800 font-medium bg-teal-50/10">{comm}</td>
+                        <td className="px-4 py-3.5 text-slate-800 font-medium bg-primary-soft/10">{comm}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -793,7 +793,7 @@ export default function ActivitiesPage() {
                     <div key={idx} className="flex justify-between items-center border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                       <div>
                         <p className="text-sm font-bold text-slate-800">{provider}</p>
-                        <p className="text-xs text-teal-600 font-semibold mt-0.5">{limit}</p>
+                        <p className="text-xs text-primary font-semibold mt-0.5">{limit}</p>
                       </div>
                       <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 px-2 py-1 rounded">
                         {pricing}
@@ -822,7 +822,7 @@ export default function ActivitiesPage() {
                           <p className="text-sm font-bold text-slate-800">{provider}</p>
                           <p className="text-xs text-slate-500 mt-0.5">Monthly Cost: $0.00</p>
                         </div>
-                        <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2.5 py-1 rounded-lg">
+                        <span className="text-xs font-bold text-primary bg-primary-soft px-2.5 py-1 rounded-lg">
                           {comm}
                         </span>
                       </div>

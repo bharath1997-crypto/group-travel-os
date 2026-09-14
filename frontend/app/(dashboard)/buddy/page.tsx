@@ -288,13 +288,13 @@ export default function BuddyTripsPage() {
                 value={destination}
                 onChange={(e) => setDestination(e.target.value)}
                 placeholder="Tokyo, Lisbon…"
-                className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+                className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
               />
             </label>
             <button
               type="button"
               onClick={() => void loadBrowse()}
-              className="rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/10 hover:bg-teal-700 transition"
+              className="rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/10 hover:bg-primary-hover transition"
             >
               Search
             </button>
@@ -309,7 +309,7 @@ export default function BuddyTripsPage() {
                 value={createDest}
                 onChange={(e) => setCreateDest(e.target.value)}
                 placeholder="Where to?"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-primary focus:bg-white focus:outline-none transition"
               />
             </label>
             <label className="lg:col-span-2 flex flex-col gap-1.5">
@@ -320,7 +320,7 @@ export default function BuddyTripsPage() {
                 type="date"
                 value={createFrom}
                 onChange={(e) => setCreateFrom(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-primary focus:bg-white focus:outline-none transition"
               />
             </label>
             <label className="lg:col-span-2 flex flex-col gap-1.5">
@@ -331,7 +331,7 @@ export default function BuddyTripsPage() {
                 type="date"
                 value={createTo}
                 onChange={(e) => setCreateTo(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-primary focus:bg-white focus:outline-none transition"
               />
             </label>
             <label className="lg:col-span-1 flex flex-col gap-1.5">
@@ -344,7 +344,7 @@ export default function BuddyTripsPage() {
                 max={500}
                 value={createMax}
                 onChange={(e) => setCreateMax(Number(e.target.value))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-primary focus:bg-white focus:outline-none transition"
               />
             </label>
             <label className="lg:col-span-4 flex flex-col gap-1.5">
@@ -355,7 +355,7 @@ export default function BuddyTripsPage() {
                 value={createTags}
                 onChange={(e) => setCreateTags(e.target.value)}
                 placeholder="Adventure, Chill"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-primary focus:bg-white focus:outline-none transition"
               />
             </label>
             <label className="lg:col-span-12 flex flex-col gap-1.5">
@@ -367,7 +367,7 @@ export default function BuddyTripsPage() {
                 onChange={(e) => setCreateDesc(e.target.value)}
                 rows={2}
                 placeholder="Tell buddies about your plans..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-primary focus:bg-white focus:outline-none transition"
               />
             </label>
             <div className="lg:col-span-12">
@@ -375,7 +375,7 @@ export default function BuddyTripsPage() {
                 type="button"
                 disabled={createBusy}
                 onClick={() => void submitCreate()}
-                className="rounded-xl bg-teal-600 hover:bg-teal-700 px-5 py-2.5 text-sm font-bold text-white shadow transition disabled:opacity-50"
+                className="rounded-xl bg-primary hover:bg-primary-hover px-5 py-2.5 text-sm font-bold text-white shadow transition disabled:opacity-50"
               >
                 {createBusy ? "Creating…" : "Create buddy trip"}
               </button>
@@ -402,7 +402,7 @@ export default function BuddyTripsPage() {
                 }
                 className={`rounded-full px-3 py-1 text-xs font-bold transition ${
                   vibePick[v]
-                    ? "bg-teal-600 text-white shadow-sm"
+                    ? "bg-primary text-white shadow-sm"
                     : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
               >
@@ -482,7 +482,7 @@ export default function BuddyTripsPage() {
                           {t.vibe_tags.map((tag) => (
                             <span
                               key={tag}
-                              className="rounded-full bg-gradient-to-r from-teal-50 to-indigo-50 px-3 py-1 text-[11px] font-bold text-teal-700 ring-1 ring-teal-100/50"
+                              className="rounded-full bg-gradient-to-r from-teal-50 to-indigo-50 px-3 py-1 text-[11px] font-bold text-primary ring-1 ring-teal-100/50"
                             >
                               {tag}
                             </span>
@@ -504,7 +504,7 @@ export default function BuddyTripsPage() {
                           <button
                             type="button"
                             onClick={() => setModalTrip(t)}
-                            className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-bold text-white shadow hover:bg-teal-700 transition"
+                            className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white shadow hover:bg-primary-hover transition"
                           >
                             Request to join
                           </button>
@@ -522,7 +522,7 @@ export default function BuddyTripsPage() {
                               void loadRequests(t.id);
                             }
                           }}
-                          className="flex items-center text-sm font-semibold text-teal-600 hover:text-teal-750 transition"
+                          className="flex items-center text-sm font-semibold text-primary hover:text-teal-750 transition"
                         >
                           <span>Requests</span>
                           <span className="ml-1">{expandedRequests[t.id] ? "▲" : "▼"}</span>
@@ -549,7 +549,7 @@ export default function BuddyTripsPage() {
                                     <button
                                       type="button"
                                       onClick={() => void handleRequestAction(t.id, r.id, true)}
-                                      className="rounded-lg bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-700 hover:bg-teal-100 transition"
+                                      className="rounded-lg bg-primary-soft px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary-soft transition"
                                     >
                                       ✅ Approve
                                     </button>
@@ -592,7 +592,7 @@ export default function BuddyTripsPage() {
               value={joinMsg}
               onChange={(e) => setJoinMsg(e.target.value)}
               rows={4}
-              className="mt-3 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:outline-none transition"
+              className="mt-3 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-primary focus:outline-none transition"
               placeholder="Hey! I'd love to join..."
             />
             <div className="mt-4 flex justify-end gap-2">
@@ -610,7 +610,7 @@ export default function BuddyTripsPage() {
                 type="button"
                 disabled={joinBusy}
                 onClick={() => void submitJoin()}
-                className="rounded-xl bg-teal-600 px-5 py-2 text-sm font-bold text-white hover:bg-teal-700 transition disabled:opacity-50"
+                className="rounded-xl bg-primary px-5 py-2 text-sm font-bold text-white hover:bg-primary-hover transition disabled:opacity-50"
               >
                 {joinBusy ? "Sending…" : "Submit request"}
               </button>

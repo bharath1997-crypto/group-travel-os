@@ -2,7 +2,7 @@
 
 import { Check } from "lucide-react";
 
-const CORAL = "#0F766E";
+const CORAL = "#0E6E5C";
 
 export function Stepper({
   steps,

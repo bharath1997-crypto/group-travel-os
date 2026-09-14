@@ -14,7 +14,7 @@ export default function FlightsAuthPrompt({
 }: Props) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center shadow-sm">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-teal-700">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary">
         <Plane className="h-7 w-7" />
       </div>
       <h3 className="mt-4 text-lg font-bold text-slate-900">{title}</h3>
@@ -22,7 +22,7 @@ export default function FlightsAuthPrompt({
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         <Link
           href="/login"
-          className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-teal-700"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-hover"
         >
           <LogIn className="h-4 w-4" />
           Log in

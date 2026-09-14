@@ -1,469 +1,484 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useDashboardUser } from "@/contexts/dashboard-user-context";
 import { RovvyLogo } from "@/components/RovvyLogo";
-import { apiFetch } from "@/lib/api";
+import { useDashboardUser } from "@/contexts/dashboard-user-context";
+import { ExploreAskCard } from "./components/ExploreAskCard";
+import { ExploreAvatarStack } from "./components/ExploreAvatarStack";
+import { ExploreCityReelCard } from "./components/ExploreCityReelCard";
+import { ExploreDetailDrawer } from "./components/ExploreDetailDrawer";
+import { ExploreFilterChip } from "./components/ExploreFilterChip";
+import { ExploreInviteSheet } from "./components/ExploreInviteSheet";
+import { ExploreRankingRow } from "./components/ExploreRankingRow";
+import { ExploreSavedBar } from "./components/ExploreSavedBar";
+import { ExploreSlotCard } from "./components/ExploreSlotCard";
+import { ExploreWayraPlanCard } from "./components/ExploreWayraPlanCard";
+import { HeroLocationWidget } from "./HeroLocationWidget";
 import {
-  formatDateTime,
-  formatPrice,
-  sourceLabel,
-  type ExploreEvent,
-  type ExploreSections,
-  hydrateSectionsFromResponse,
-  EXPLORE_FETCH_TIMEOUT_MS,
-} from "@/lib/explore-events";
-import { ExplorerItemDetailDrawer, type ExplorerDrawerItem } from "@/components/explorer/ExplorerItemDetailDrawer";
+  EXPLORE_CITY,
+  EXPLORE_CITY_REEL,
+  EXPLORE_FEED,
+  EXPLORE_PROMPT_SUGGESTIONS,
+  EXPLORE_RANKING,
+  EXPLORE_SLOTS_LIVE,
+  EXPLORE_STATS,
+  EXPLORE_VIBES,
+  EXPLORE_WAYRA_PLANS,
+  EXPLORE_WHEN_OPTIONS,
+  slotDetail,
+} from "./explore-fixtures";
+import styles from "./explore.module.css";
 
-import { ExplorerHero } from "@/components/explorer/ExplorerHero";
-import { ExplorerCategoryGrid } from "@/components/explorer/ExplorerCategoryGrid";
-import { ExplorerCarousel } from "@/components/explorer/ExplorerCarousel";
-import { ExplorerDestinationCard } from "@/components/explorer/ExplorerDestinationCard";
-import {
-  ExplorerExperienceCard,
-  ExplorerExperienceCardSkeleton,
-  type ExplorerItem,
-} from "@/components/explorer/ExplorerExperienceCard";
-import { WayraDiscoveryCard } from "@/components/explorer/WayraDiscoveryCard";
-import { MoreToExploreGrid } from "@/components/explorer/MoreToExploreGrid";
-import { WhyChooseRovvy } from "@/components/explorer/WhyChooseRovvy";
-import { ExploreTags } from "@/components/explorer/ExploreTags";
-
-// ─── Constants ──────────────────────────────────────────────────────────────
-
-const CITIES = [
-  { name: "Chicago", count: "120+ Activities", image: "https://images.unsplash.com/photo-1494526585095-c41746248156?w=400&fit=crop&q=60" },
-  { name: "New York", count: "350+ Activities", image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400&fit=crop&q=60" },
-  { name: "Los Angeles", count: "210+ Activities", image: "https://images.unsplash.com/photo-1535498730771-e735b998cd64?w=400&fit=crop&q=60" },
-  { name: "Miami", count: "95+ Activities", image: "https://images.unsplash.com/photo-1533105079780-92b9be482077?w=400&fit=crop&q=60" },
-  { name: "Las Vegas", count: "180+ Activities", image: "https://images.unsplash.com/photo-1522083165195-3427502977a1?w=400&fit=crop&q=60" },
-  { name: "San Francisco", count: "140+ Activities", image: "https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?w=400&fit=crop&q=60" },
-  { name: "Orlando", count: "80+ Activities", image: "https://images.unsplash.com/photo-1597466765990-64ad1c35dafc?w=400&fit=crop&q=60" },
-  { name: "Seattle", count: "110+ Activities", image: "https://images.unsplash.com/photo-1502175353174-a7a70e73b362?w=400&fit=crop&q=60" },
-];
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function eventToExplorerItem(event: ExploreEvent): ExplorerItem {
-  const isFree = event.price_min === 0 && event.price_max === 0;
-  let emoji = "🎟️";
-  const cat = (event.category || "").toLowerCase();
-  if (cat.includes("music") || cat.includes("concert")) emoji = "🎵";
-  else if (cat.includes("sport")) emoji = "⚽";
-  else if (cat.includes("food") || cat.includes("dine")) emoji = "🍔";
-  else if (cat.includes("night")) emoji = "🍸";
-  else if (cat.includes("park") || cat.includes("outdoor")) emoji = "🌲";
-  else if (cat.includes("comedy")) emoji = "🎭";
-  else if (cat.includes("art") || cat.includes("theater")) emoji = "🎨";
-
-  return {
-    id: event.id,
-    title: event.name,
-    category: event.category,
-    city: event.city,
-    venue: event.venue,
-    dateLabel: formatDateTime(event),
-    imageUrl: event.image_url,
-    priceLabel: formatPrice(event),
-    isFree,
-    source: event.source,
-    sourceType: event.source,
-    emoji,
-    ticketUrl: event.ticket_url,
-  };
-}
-
-function itemToDrawerItem(item: ExplorerItem): ExplorerDrawerItem {
-  return {
-    id: item.id,
-    title: item.title,
-    source: sourceLabel(item.source),
-    venue: item.venue ?? "",
-    city: item.city ?? "",
-    dateLabel: item.dateLabel ?? "",
-    priceLabel: item.priceLabel ?? "",
-    description: item.venue ?? "A curated experience selected for your trip.",
-    emoji: item.emoji ?? "🎟️",
-    imageUrl: item.imageUrl,
-    sourceUrl: item.ticketUrl ?? null,
-  };
-}
-
-// ─── Component ───────────────────────────────────────────────────────────────
+const FILTER_GROUPS = [
+  ["Kind", ["Music", "Food", "Comedy", "Outdoors", "Art"]],
+  ["Price, all-in", ["Free", "Under $25", "$25–60", "$60+"]],
+  ["Practical", ["Bookable now", "Walk-in OK", "Indoor", "Friends going"]],
+] as const;
 
 export default function ExplorePage() {
-  const router = useRouter();
   const { user } = useDashboardUser();
-  const wayraRef = useRef<HTMLDivElement>(null);
 
-  const [selectedCity, setSelectedCity] = useState("Chicago");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sections, setSections] = useState<ExploreSections | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [selectedDrawerItem, setSelectedDrawerItem] = useState<ExplorerDrawerItem | null>(null);
+  const [city, setCity] = useState(EXPLORE_CITY);
+  const [pickedCityBanner, setPickedCityBanner] = useState<string | null>(null);
+  const [prompt, setPrompt] = useState("Saturday night, six of us, under $70");
+  const promptRef = useRef<HTMLTextAreaElement>(null);
+  const syncPromptHeight = useCallback(() => {
+    const field = promptRef.current;
+    if (!field) return;
+    field.style.height = "auto";
+    field.style.height = `${Math.min(field.scrollHeight, 116)}px`;
+  }, []);
 
-  const isLoggedIn = Boolean(user);
-
-  // Events
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-    apiFetch<{
-      trending?: ExploreEvent[];
-      events?: ExploreEvent[];
-      weekend?: ExploreEvent[];
-      popular?: ExploreEvent[];
-      national?: ExploreEvent[];
-    }>(
-      `/explore/events?city=${encodeURIComponent(selectedCity)}&view=hub`,
-      {},
-      EXPLORE_FETCH_TIMEOUT_MS,
-    )
-      .then((data) => {
-        if (!active) return;
-        const { sections: s } = hydrateSectionsFromResponse(data);
-        setSections(s);
-        setLoading(false);
-      })
-      .catch(() => {
-        if (active) {
-          setSections({ trending: [], weekend: [], popular: [], national: [] });
-          setLoading(false);
-        }
-      });
-    return () => { active = false; };
-  }, [selectedCity]);
+    syncPromptHeight();
+  }, [prompt, syncPromptHeight]);
+  const [when, setWhen] = useState("Tonight");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [answered, setAnswered] = useState(false);
+  const [chips, setChips] = useState<string[]>([]);
+  const [broadcasting, setBroadcasting] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [country, setCountry] = useState("USA");
+  const [broadcastLabel, setBroadcastLabel] = useState("I'm free tonight");
 
-  // ─── Actions ───────────────────────────────────────────────────────────────
+  const detail = slotDetail(detailId);
+  const chipCount = chips.length;
 
-  const triggerAuthGuard = (message: string, targetPath: string) => {
-    showToast(message);
-    if (isLoggedIn) {
-      router.push(targetPath);
-    }
+  const filteredCount = useMemo(() => {
+    if (!chipCount) return 41;
+    return Math.max(8, 41 - chipCount * 3);
+  }, [chipCount]);
+
+  const toggleChip = (label: string) => {
+    setChips((all) => (all.includes(label) ? all.filter((x) => x !== label) : [...all, label]));
   };
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 2500);
+  const openDetail = (id: string) => setDetailId(id);
+  const closeDetail = () => setDetailId(null);
+  const openInvite = () => {
+    setInviteOpen(true);
+    setDetailId(null);
   };
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      router.push(`/explore/events?q=${encodeURIComponent(searchQuery)}&city=${encodeURIComponent(selectedCity)}`);
-    }
+  const saveDetail = (id: string) => {
+    setSavedIds((all) => (all.includes(id) ? all : [...all, id]));
+    setDetailId(null);
   };
 
-  const handleNearMe = () => {
-    if (!navigator.geolocation) {
-      showToast("Geolocation is not supported by your browser.");
+  const ask = (value?: string) => {
+    if (value) setPrompt(value);
+    setAnswered(true);
+  };
+
+  const pickCity = (name: string) => {
+    if (name === "anywhere") {
+      const pick = EXPLORE_CITY_REEL[Math.floor(Math.random() * EXPLORE_CITY_REEL.length)].name;
+      setCity(pick);
+      setPickedCityBanner(pick);
       return;
     }
-    showToast("Detecting your location...");
-    navigator.geolocation.getCurrentPosition(
-      () => showToast("Location detected! Showing nearby results."),
-      () => showToast("Location access denied. Enable it in your browser settings."),
-    );
+    setCity(name);
+    setPickedCityBanner(name);
   };
-
-  const handleAskWayra = (prompt?: string) => {
-    if (prompt) {
-      wayraRef.current?.scrollIntoView({ behavior: "smooth" });
-    } else {
-      triggerAuthGuard("Sign in to chat with Wayra AI", "/trips");
-    }
-  };
-
-  const handleItemOpen = (item: ExplorerItem) => {
-    setSelectedDrawerItem(itemToDrawerItem(item));
-  };
-
-  const handleSave = () => triggerAuthGuard("Sign in to save places", "/trips");
-  const handleAddToTrip = () => triggerAuthGuard("Sign in to add to a trip", "/trips");
-  const handleVote = () => triggerAuthGuard("Sign in to vote", "/trips");
-
-  // ─── Derived Data ──────────────────────────────────────────────────────────
-
-  const trending = useMemo(() => {
-    if (!sections?.trending.length) return [];
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return sections.trending.slice(0, 10);
-    return sections.trending.filter(
-      (ev) =>
-        ev.name?.toLowerCase().includes(q) ||
-        ev.venue?.toLowerCase().includes(q) ||
-        ev.category?.toLowerCase().includes(q),
-    ).slice(0, 10);
-  }, [sections?.trending, searchQuery]);
-
-  const weekend = useMemo(() => (sections?.weekend ?? []).slice(0, 10), [sections?.weekend]);
-  const popular = useMemo(() => (sections?.popular ?? []).slice(0, 10), [sections?.popular]);
-
-  const SKELETON_COUNT = 5;
-
-  // ─── JSX ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-full bg-white text-slate-800 font-sans pb-16">
-      {/* ── 1. HERO ─────────────────────────────────────────────────────────── */}
-      <ExplorerHero
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        selectedCity={selectedCity}
-        onCityChange={setSelectedCity}
-        onSearch={handleSearch}
-        onNearMe={handleNearMe}
-        onAskWayra={() => handleAskWayra()}
-      />
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <div>
+          <Link href="/explore" className={styles.logoLink}>
+            <RovvyLogo variant="primary" size="lg" />
+          </Link>
+          <nav aria-label="Explorer primary">
+            <Link href="/explore" className={styles.active}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M15.6 8.4l-2.1 5.1-5.1 2.1 2.1-5.1z" />
+              </svg>
+              Explore
+            </Link>
+            <Link href="/live">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <circle cx="12" cy="12" r="2.2" />
+                <path d="M7.8 7.8a6 6 0 000 8.4M16.2 16.2a6 6 0 000-8.4M4.9 4.9a10 10 0 000 14.2M19.1 19.1a10 10 0 000-14.2" />
+              </svg>
+              Live
+              <i />
+            </Link>
+            <Link href="/trips">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <rect x="3" y="7.5" width="18" height="12.5" rx="2.5" />
+                <path d="M8.5 7.5V5.5a2 2 0 012-2h3a2 2 0 012 2v2M3 13h18" />
+              </svg>
+              Trips
+            </Link>
+            <Link href="/split-activities">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M4 5h11a5 5 0 010 10H8" />
+                <path d="M11 12l-3 3 3 3" />
+                <circle cx="19" cy="19" r="2" />
+              </svg>
+              Split Activities
+            </Link>
+          </nav>
+          <aside>
+            {user ? (
+              <Link href="/profile">Profile</Link>
+            ) : (
+              <Link href="/login?next=%2Fexplore">Log in</Link>
+            )}
+            <Link href={user ? "/trips" : "/register"} className={styles.signUp}>
+              {user ? "My trips" : "Sign up"}
+            </Link>
+          </aside>
+        </div>
+      </header>
 
-      {/* ── 2. CATEGORY GRID ────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-6 py-8">
-        <ExplorerCategoryGrid />
-      </section>
-
-      {/* ── 3. RECOMMENDED FOR YOU ──────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-6 py-8 border-t border-slate-100">
-        <ExplorerCarousel
-          title="Recommended for you"
-          subtitle={`Trending events and experiences in ${selectedCity} this week.`}
-          seeAllHref="/explore/events"
-        >
-          {loading
-            ? Array.from({ length: SKELETON_COUNT }).map((_, i) => (
-                <ExplorerExperienceCardSkeleton key={i} />
-              ))
-            : trending.length === 0
-            ? (
-              <div className="w-full py-12 px-8 border-2 border-dashed border-slate-200 rounded-3xl text-slate-400 text-sm font-medium text-center">
-                No trending events found in {selectedCity}. Try a different city.
-              </div>
-            )
-            : trending.map((ev) => {
-                const item = eventToExplorerItem(ev);
-                return (
-                  <ExplorerExperienceCard
-                    key={item.id}
-                    item={item}
-                    onOpen={handleItemOpen}
-                    onSave={handleSave}
-                    onAddToTrip={handleAddToTrip}
-                    onVote={handleVote}
-                  />
-                );
-              })}
-        </ExplorerCarousel>
-      </section>
-
-      {/* ── 4. WHERE TO NEXT ────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-6 py-8 border-t border-slate-100">
-        <ExplorerCarousel
-          title="Where to next?"
-          subtitle="Explore activities in our most popular group destinations."
-          rightSlot={
-            <span className="text-xs text-slate-400 font-medium">
-              {CITIES.length} cities
+      <main>
+        <section className={styles.hero}>
+          <HeroLocationWidget
+            currentCity={city}
+            signedIn={Boolean(user)}
+            slotsLive={EXPLORE_SLOTS_LIVE}
+            onCityChange={setCity}
+          />
+          <div className={styles.heroContent}>
+            <span className={styles.livePill}>
+              <i />
+              PRICES FINAL · FEES INCLUDED
             </span>
-          }
-        >
-          {CITIES.map((city) => (
-            <ExplorerDestinationCard
-              key={city.name}
-              name={city.name}
-              count={city.count}
-              image={city.image}
-              onClick={() => setSelectedCity(city.name)}
-            />
-          ))}
-        </ExplorerCarousel>
-      </section>
-
-      {/* ── 5. THIS WEEKEND ─────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-6 py-8 border-t border-slate-100">
-        <ExplorerCarousel
-          title="This weekend"
-          subtitle="Upcoming events and activities happening soon."
-          seeAllHref="/explore/events"
-          seeAllLabel="See all events"
-        >
-          {loading
-            ? Array.from({ length: SKELETON_COUNT }).map((_, i) => (
-                <ExplorerExperienceCardSkeleton key={i} />
-              ))
-            : weekend.length === 0
-            ? (
-              <div className="flex flex-col items-center justify-center w-full py-12 px-8 border-2 border-dashed border-slate-200 rounded-3xl text-center gap-3">
-                <span className="text-4xl">📅</span>
-                <p className="text-slate-500 font-semibold text-sm">No weekend events loaded yet</p>
-                <p className="text-slate-400 text-xs font-medium max-w-xs">
-                  Check back soon — events are refreshed daily from Ticketmaster and Eventbrite.
-                </p>
-                <Link
-                  href="/explore/events"
-                  className="mt-1 text-primary font-bold text-xs hover:text-primary-hover underline underline-offset-2"
-                >
-                  Browse all events →
-                </Link>
-              </div>
-            )
-            : weekend.map((ev) => {
-                const item = eventToExplorerItem(ev);
-                return (
-                  <ExplorerExperienceCard
-                    key={item.id}
-                    item={item}
-                    onOpen={handleItemOpen}
-                    onSave={handleSave}
-                    onAddToTrip={handleAddToTrip}
-                    onVote={handleVote}
-                  />
-                );
-              })}
-        </ExplorerCarousel>
-      </section>
-
-      {/* ── 6. POPULAR ACTIVITIES ───────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-6 py-8 border-t border-slate-100">
-        <ExplorerCarousel
-          title="Popular activities"
-          subtitle="Top-rated places and experiences picked for your group."
-          seeAllHref="/explore/activities"
-        >
-          {loading
-            ? Array.from({ length: SKELETON_COUNT }).map((_, i) => (
-                <ExplorerExperienceCardSkeleton key={i} />
-              ))
-            : popular.length === 0
-            ? (
-              <div className="flex flex-col items-center justify-center w-full py-12 px-8 border-2 border-dashed border-slate-200 rounded-3xl text-center gap-3">
-                <span className="text-4xl">🎯</span>
-                <p className="text-slate-500 font-semibold text-sm">Activities loading soon</p>
-                <p className="text-slate-400 text-xs font-medium max-w-xs">
-                  OSM places and cached activities refresh periodically. Try again shortly.
-                </p>
-                <Link
-                  href="/explore/activities"
-                  className="mt-1 text-primary font-bold text-xs hover:text-primary-hover underline underline-offset-2"
-                >
-                  Browse activities →
-                </Link>
-              </div>
-            )
-            : popular.map((ev) => {
-                const item = eventToExplorerItem(ev);
-                return (
-                  <ExplorerExperienceCard
-                    key={item.id}
-                    item={item}
-                    onOpen={handleItemOpen}
-                    onSave={handleSave}
-                    onAddToTrip={handleAddToTrip}
-                    onVote={handleVote}
-                  />
-                );
-              })}
-        </ExplorerCarousel>
-      </section>
-
-      {/* ── 7. WAYRA AI DISCOVERY ───────────────────────────────────────────── */}
-      <section ref={wayraRef} className="max-w-7xl mx-auto px-6 py-8 border-t border-slate-100">
-        <WayraDiscoveryCard onAskWayra={handleAskWayra} />
-      </section>
-
-      {/* ── 8. MORE TO EXPLORE ──────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-6 py-8 border-t border-slate-100">
-        <div className="mb-6">
-          <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight">
-            More to explore on Rovvy
-          </h2>
-          <p className="text-slate-500 text-sm mt-1 font-medium">
-            Everything you need for seamless group travel.
-          </p>
-        </div>
-        <MoreToExploreGrid
-          onCreateTrip={() => triggerAuthGuard("Sign in to create a trip", "/trips")}
-          onOpenMap={() => triggerAuthGuard("Sign in to open the map", "/map")}
-          onSplitCosts={() => triggerAuthGuard("Sign in to split costs", "/splits")}
-        />
-      </section>
-
-      {/* ── 9. WHY CHOOSE ROVVY ─────────────────────────────────────────────── */}
-      <WhyChooseRovvy />
-
-      {/* ── 10. EXPLORE TAGS ────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-6 py-8">
-        <ExploreTags />
-      </section>
-
-      {/* ── FOOTER ──────────────────────────────────────────────────────────── */}
-      <footer className="max-w-7xl mx-auto px-6 pt-12 pb-8 border-t border-slate-100 text-slate-500 text-xs">
-        <div className="grid gap-8 sm:grid-cols-4 mb-12 select-none">
-          <div className="space-y-4">
-            <RovvyLogo variant="primary" size="md" />
-            <p className="text-slate-400 leading-relaxed font-medium">
-              Roam together. Keep groups synced, itineraries simple, and memories beautiful.
+            <h1>
+              What are you doing <em>tonight?</em>
+            </h1>
+            <p>
+              Ask in plain words. Rovvy reads every provider in {city}, checks who&apos;s free and comes back with a plan
+              you can book.
             </p>
-          </div>
-          <div>
-            <h4 className="font-bold text-slate-900 mb-3 text-sm">Destinations</h4>
-            <ul className="space-y-2 font-medium">
-              {["Chicago", "New York", "Los Angeles", "Miami"].map((city) => (
-                <li key={city}>
-                  <button onClick={() => setSelectedCity(city)} className="hover:text-primary transition-colors">
-                    {city}
-                  </button>
-                </li>
+            <div className={styles.prompt}>
+              <label className="sr-only" htmlFor="plan-prompt">
+                Describe your plans
+              </label>
+              <textarea
+                id="plan-prompt"
+                ref={promptRef}
+                rows={1}
+                value={prompt}
+                onChange={(event) => {
+                  setPrompt(event.target.value);
+                  syncPromptHeight();
+                }}
+              />
+              <div>
+                <span>
+                  {EXPLORE_PROMPT_SUGGESTIONS.map((x) => (
+                    <button type="button" key={x} onClick={() => setPrompt(x)}>
+                      {x.replace(", walkable", "")}
+                    </button>
+                  ))}
+                </span>
+                <button type="button" className={styles.planItBtn} onClick={() => ask()}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />
+                  </svg>
+                  Plan it
+                </button>
+              </div>
+            </div>
+            <div className={styles.when}>
+              {EXPLORE_WHEN_OPTIONS.map((x) => (
+                <button
+                  type="button"
+                  key={x}
+                  className={when === x ? styles.whenSelected : ""}
+                  onClick={() => setWhen(x)}
+                >
+                  {x}
+                </button>
               ))}
-            </ul>
+              <button type="button" className={styles.refineBtn} onClick={() => setFiltersOpen((v) => !v)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M4 7h16M7 12h10M10 17h4" />
+                </svg>
+                Refine{chipCount ? ` · ${chipCount}` : ""}
+              </button>
+            </div>
           </div>
-          <div>
-            <h4 className="font-bold text-slate-900 mb-3 text-sm">Products</h4>
-            <ul className="space-y-2 font-medium">
-              <li><Link href="/trips" className="hover:text-primary transition-colors">Trip Planner</Link></li>
-              <li><Link href="/map" className="hover:text-primary transition-colors">Shared Map</Link></li>
-              <li><Link href="/splits" className="hover:text-primary transition-colors">Cost Splitter</Link></li>
-              <li><Link href="/explore" className="hover:text-primary transition-colors">Explorer Hub</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold text-slate-900 mb-3 text-sm">Company</h4>
-            <ul className="space-y-2 font-medium">
-              <li><span className="hover:text-primary cursor-pointer">About Us</span></li>
-              <li><span className="hover:text-primary cursor-pointer">Careers</span></li>
-              <li><span className="hover:text-primary cursor-pointer">Privacy Policy</span></li>
-              <li><span className="hover:text-primary cursor-pointer">Terms of Service</span></li>
-            </ul>
-          </div>
-        </div>
-        <div className="border-t border-slate-100 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-medium text-slate-400">
-          <span>&copy; {new Date().getFullYear()} Rovvy Inc. All rights reserved.</span>
-          <span>Made with love for group adventurers.</span>
-        </div>
-      </footer>
+        </section>
 
-      {/* ── ITEM DETAIL DRAWER ──────────────────────────────────────────────── */}
-      <ExplorerItemDetailDrawer
-        item={selectedDrawerItem}
-        onClose={() => setSelectedDrawerItem(null)}
-        onToast={(msg) => {
-          showToast(msg);
-          if (!isLoggedIn && (msg.includes("Failed") || msg.includes("not available"))) {
-            triggerAuthGuard("Sign in to save places", "/trips");
-          }
-        }}
-      />
+        <section className={styles.pulseBar}>
+          <div>
+            <span>
+              <i />
+              Last hour
+            </span>
+            <p>
+              <strong>Tomas</strong> booked the blues night · <strong>Ana</strong> saved two slots ·{" "}
+              <strong>9 spots</strong> gone across {city}
+            </p>
+            <button
+              type="button"
+              className={styles.broadcastBtn}
+              onClick={() => {
+                setBroadcasting((v) => !v);
+                setBroadcastLabel((v) => (v === "I'm free tonight" ? "You're visible till midnight ✓" : "I'm free tonight"));
+              }}
+            >
+              {broadcastLabel}
+            </button>
+          </div>
+        </section>
 
-      {/* ── FLOATING TOAST ──────────────────────────────────────────────────── */}
-      {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-slate-900/95 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5 duration-300">
-          <span className="text-sm font-semibold">{toastMessage}</span>
-        </div>
-      )}
+        <section className={styles.stats}>
+          {EXPLORE_STATS.map(({ count, label, accent }) => (
+            <button
+              type="button"
+              key={label}
+              className={`${styles.statChip} ${chips.includes(label) ? styles.statChipOn : ""}`}
+              onClick={() => toggleChip(label)}
+            >
+              <b className={accent ? styles.accentText : undefined}>{count}</b>
+              <span>{label}</span>
+            </button>
+          ))}
+        </section>
+
+        <section className={styles.vibes}>
+          <small>Vibe</small>
+          <div>
+            {EXPLORE_VIBES.map((x) => (
+              <ExploreFilterChip key={x} label={x} selected={chips.includes(x)} onToggle={() => toggleChip(x)} />
+            ))}
+          </div>
+        </section>
+
+        {broadcasting && (
+          <section className={styles.broadcastBanner}>
+            <div>
+              <ExploreAvatarStack
+                people={[
+                  { initials: "AR", tone: "gold" },
+                  { initials: "TK", tone: "purple" },
+                ]}
+              />
+              <p>
+                <strong>Ana and Tomas</strong> are free tonight too. They can see what you&apos;re browsing until midnight.
+              </p>
+              <button type="button" className={styles.pullThemIn} onClick={openInvite}>
+                Pull them in
+              </button>
+            </div>
+          </section>
+        )}
+
+        {filtersOpen && (
+          <section className={styles.filters}>
+            <div>
+              <div className={styles.filterGroups}>
+                {FILTER_GROUPS.map(([name, items]) => (
+                  <div key={name}>
+                    <small>{name}</small>
+                    <span>
+                      {items.map((x) => (
+                        <ExploreFilterChip key={x} label={x} selected={chips.includes(x)} onToggle={() => toggleChip(x)} />
+                      ))}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <footer>
+                <button type="button" onClick={() => setChips([])}>
+                  Clear all
+                </button>
+                <button type="button" onClick={() => setFiltersOpen(false)}>
+                  Show {filteredCount} slots
+                </button>
+              </footer>
+            </div>
+          </section>
+        )}
+
+        {answered && (
+          <section className={styles.wayraAnswer}>
+            <div className={styles.wayraAnswerInner}>
+              <header>
+                <div>
+                  <span className={styles.wayraBadge}>✦ Wayra answered</span>
+                  <h2>Three ways to spend it — stitched from 4 providers</h2>
+                </div>
+                <button type="button" className={styles.wayraClose} onClick={() => setAnswered(false)} aria-label="Close">
+                  ×
+                </button>
+              </header>
+              <div className={styles.wayraPlans}>
+                {EXPLORE_WAYRA_PLANS.map((plan) => (
+                  <ExploreWayraPlanCard key={plan.id} plan={plan} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        <section className={styles.friendBar}>
+          <ExploreAvatarStack
+            people={[
+              { initials: "AR", tone: "gold" },
+              { initials: "TK", tone: "purple" },
+              { initials: "SM", tone: "green" },
+            ]}
+          />
+          <p>
+            <strong>Ana</strong> saved two slots for Saturday · <strong>Tomas</strong> booked the blues night ·{" "}
+            <strong>Sam</strong> is free after 9
+          </p>
+          <button type="button" className={styles.friendBarBtn} onClick={openInvite}>
+            See what friends picked
+          </button>
+        </section>
+
+        <section className={styles.masonry}>
+          {EXPLORE_FEED.map((item) => {
+            if (item.kind === "slot") return <ExploreSlotCard key={item.id} slot={item} onOpen={openDetail} />;
+            if (item.kind === "ask") return <ExploreAskCard key={item.id} card={item} onClick={ask} />;
+            if (item.kind === "live") {
+              return (
+                <button type="button" key={item.id} className={styles.liveCard} onClick={() => ask("Show me tonight's late events")}>
+                  <span className={styles.liveCardLabel}>
+                    <i />
+                    Live now
+                  </span>
+                  <b>
+                    Late events,
+                    <br />
+                    starting soon
+                  </b>
+                  <small>Nine doors open after 10 PM tonight — walk-in space still showing.</small>
+                  <span>See what&apos;s open →</span>
+                </button>
+              );
+            }
+            return (
+              <button type="button" key={item.id} className={styles.inviteCard} onClick={openInvite}>
+                <ExploreAvatarStack
+                  size="lg"
+                  people={[
+                    { initials: "AR", tone: "gold" },
+                    { initials: "TK", tone: "purple" },
+                    { initials: "SM", tone: "green" },
+                  ]}
+                />
+                <b>Book one thing for six people</b>
+                <small>One tap, they vote, cost splits →</small>
+              </button>
+            );
+          })}
+        </section>
+
+        <p className={styles.note}>
+          Thin night? Rovvy falls back to open venues from OpenStreetMap and editorial picks — the feed never comes back
+          empty. Prices are final, fees included, refreshed every 5 minutes.
+        </p>
+
+        <section className={styles.ranking}>
+          <header>
+            <div>
+              <small>Ranked by Rovvy · 4,180 verified check-ins this month</small>
+              <h2>Highest rated in {city} right now</h2>
+            </div>
+            <span>updated 4 min ago</span>
+          </header>
+          <div className={styles.table}>
+            <div className={styles.tableHead}>
+              <span>#</span>
+              <span>Place</span>
+              <span>Rating</span>
+              <span>Distance</span>
+              <span>All-in</span>
+              <span>Availability</span>
+            </div>
+            {EXPLORE_RANKING.map((row) => (
+              <ExploreRankingRow key={row.id} row={row} onOpen={openDetail} />
+            ))}
+          </div>
+        </section>
+
+        <section className={styles.destinations}>
+          <header>
+            <div>
+              <small>Popular in {country === "USA" ? "the USA" : country}</small>
+              <h2>Where people are going</h2>
+            </div>
+            <span>
+              {(["USA", "Canada", "Mexico"] as const).map((c) => (
+                <button
+                  type="button"
+                  key={c}
+                  className={`${styles.regionTab} ${country === c ? styles.regionTabActive : ""}`}
+                  onClick={() => setCountry(c)}
+                >
+                  {c}
+                </button>
+              ))}
+              <Link href="/explore">All countries →</Link>
+            </span>
+          </header>
+          <div className={styles.reel}>
+            {EXPLORE_CITY_REEL.map((c) => (
+              <ExploreCityReelCard key={c.id} city={c} onPick={pickCity} />
+            ))}
+            <button type="button" className={styles.surpriseCard} onClick={() => pickCity("anywhere")}>
+              <b>
+                Surprise
+                <br />
+                me
+              </b>
+              <small>Wayra picks a city →</small>
+            </button>
+          </div>
+          {pickedCityBanner && pickedCityBanner !== EXPLORE_CITY ? (
+            <div className={styles.cityPickedBanner}>
+              <p>
+                Showing <strong>{pickedCityBanner}</strong> — the feed and every filter now follow that city.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setCity(EXPLORE_CITY);
+                  setPickedCityBanner(null);
+                }}
+              >
+                Back to Chicago
+              </button>
+            </div>
+          ) : null}
+        </section>
+      </main>
+
+      <ExploreSavedBar savedIds={savedIds} onClear={() => setSavedIds([])} onInvite={openInvite} />
+      <ExploreDetailDrawer detail={detail} onClose={closeDetail} onSave={saveDetail} onInvite={openInvite} />
+      <ExploreInviteSheet open={inviteOpen} onClose={() => setInviteOpen(false)} />
     </div>
   );
 }

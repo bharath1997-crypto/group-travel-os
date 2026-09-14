@@ -83,7 +83,7 @@ describe("buildUserMarkerHtml", () => {
       acquiring: false,
       approximate: false,
     });
-    expect(html).toContain("--rovvy-gps-core:#0F766E");
+    expect(html).toContain("--rovvy-gps-core:#0E6E5C");
   });
 
   it("accepts legacy boolean args without crashing", () => {

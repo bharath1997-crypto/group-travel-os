@@ -39,7 +39,7 @@ const LIGHT_PALETTE: TravelRoutePalette = {
   local: "#CBD5E1",
   path: "#94A3B8",
   rail: { core: "#6366F1", casing: "#4338CA" },
-  transit: { fill: "#0F766E", stroke: "#FFFFFF", label: "#0F172A" },
+  transit: { fill: "#0E6E5C", stroke: "#FFFFFF", label: "#0F1614" },
 };
 
 const DARK_PALETTE: TravelRoutePalette = {
@@ -50,7 +50,7 @@ const DARK_PALETTE: TravelRoutePalette = {
   local: "#94A3B8",
   path: "#64748B",
   rail: { core: "#C4B5FD", casing: "#7C3AED" },
-  transit: { fill: "#2DD4BF", stroke: "#0F172A", label: "#F8FAFC" },
+  transit: { fill: "#2DD4BF", stroke: "#0F1614", label: "#F8FAFC" },
 };
 
 export function getTravelRoutePalette(activeBaseLayer: LiveMapLayer): TravelRoutePalette {

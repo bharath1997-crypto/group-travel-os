@@ -5,6 +5,7 @@ import {
   countAdvancedOptions,
   isReturnBeforeDepart,
   validateMultiCityLegs,
+  validateFlightSearchDates,
   validateRoundTripDates,
 } from "@/lib/flight-search-validation";
 import {
@@ -15,6 +16,7 @@ import {
 } from "@/lib/flight-journey-ui";
 import { countActiveFilters, createDefaultFilters, formatPrice } from "@/lib/flight-format";
 import type { FlightJourney } from "@/lib/flight-types";
+import { FLIGHT_RESULTS_NAVIGATION_TIMEOUT_MS } from "@/components/travel/FlightSearchForm";
 
 function sampleJourney(overrides: Partial<FlightJourney> = {}): FlightJourney {
   return {
@@ -66,6 +68,11 @@ function sampleJourney(overrides: Partial<FlightJourney> = {}): FlightJourney {
 }
 
 describe("flight search validation", () => {
+  it("bounds a stalled results-page navigation", () => {
+    expect(FLIGHT_RESULTS_NAVIGATION_TIMEOUT_MS).toBeGreaterThanOrEqual(5_000);
+    expect(FLIGHT_RESULTS_NAVIGATION_TIMEOUT_MS).toBeLessThanOrEqual(15_000);
+  });
+
   it("rejects invalid return dates", () => {
     expect(validateRoundTripDates("2026-10-20", "2026-10-10")).toMatch(/return date/i);
     expect(isReturnBeforeDepart("2026-10-20", "2026-10-10")).toBe(true);
@@ -88,11 +95,28 @@ describe("flight search validation", () => {
       }),
     ).toBe(3);
   });
+
+  it("blocks stale results URLs before a provider search", () => {
+    expect(
+      validateFlightSearchDates({
+        from: "ORD",
+        to: "HYD",
+        depart: "2020-01-01",
+        adults: 1,
+        children: 0,
+        infants: 0,
+        cabin: "M",
+        tripType: "oneway",
+      }),
+    ).toMatch(/past/i);
+  });
 });
 
 describe("flight journey ui helpers", () => {
-  it("shows separate tickets when connection protection is false", () => {
-    const status = getConnectionProtectionStatus(sampleJourney({ protected_connection: true }));
+  it("shows separate tickets when ticket type is separate", () => {
+    const status = getConnectionProtectionStatus(
+      sampleJourney({ ticket_type: "separate_tickets", protected_connection: null }),
+    );
     expect(status).toBe("separate_tickets");
     expect(connectionProtectionLabel(status!)).toBe("Separate tickets");
   });

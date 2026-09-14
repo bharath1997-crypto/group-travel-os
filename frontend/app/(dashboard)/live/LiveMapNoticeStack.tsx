@@ -17,13 +17,29 @@ export function LiveMapNoticeStack({ children }: Props) {
   );
 }
 
-export function LiveMapNoticeToast({ children }: { children: ReactNode }) {
+export function LiveMapNoticeToast({
+  children,
+  onDismiss,
+}: {
+  children: ReactNode;
+  onDismiss?: () => void;
+}) {
   return (
     <div
-      className="pointer-events-auto rounded-xl bg-stone-900/92 px-3 py-2 text-left text-sm leading-snug text-white shadow-[0_4px_20px_rgba(15,23,42,0.35)] backdrop-blur-md"
+      className="pointer-events-auto flex items-start gap-2 rounded-xl bg-stone-900/92 px-3 py-2 text-left text-sm leading-snug text-white shadow-[0_4px_20px_rgba(15,23,42,0.35)] backdrop-blur-md"
       role="status"
     >
-      {children}
+      <span className="min-w-0 flex-1">{children}</span>
+      {onDismiss ? (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          className="shrink-0 rounded-md px-1 text-base leading-none text-white/70 transition hover:text-white"
+        >
+          ×
+        </button>
+      ) : null}
     </div>
   );
 }

@@ -8,7 +8,7 @@ const TRUST_CARDS = [
     title: "Plan together",
     description:
       "Collaborative itineraries where everyone gets a vote on what to do next.",
-    iconBg: "bg-teal-50",
+    iconBg: "bg-primary-soft",
     iconColor: "text-primary",
   },
   {

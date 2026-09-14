@@ -35,10 +35,10 @@ export default function FlightResultsToolbar({
           onClick={onOpenFilters}
           className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-bold text-slate-800"
         >
-          <SlidersHorizontal className="h-4 w-4 text-teal-600" />
+          <SlidersHorizontal className="h-4 w-4 text-primary" />
           Filters
           {activeFilterCount > 0 ? (
-            <span className="rounded-full bg-teal-600 px-2 py-0.5 text-[10px] font-bold text-white">
+            <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">
               {activeFilterCount}
             </span>
           ) : null}
@@ -48,7 +48,7 @@ export default function FlightResultsToolbar({
           onClick={onOpenSort}
           className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-bold text-slate-800"
         >
-          <ArrowUpDown className="h-4 w-4 text-teal-600" />
+          <ArrowUpDown className="h-4 w-4 text-primary" />
           {sortLabel}
         </button>
       </div>

@@ -54,7 +54,7 @@ export function presentWikiAbout(
 
   return {
     badge: "Verified source",
-    badgeClass: "bg-teal-50 text-primary",
+    badgeClass: "bg-primary-soft text-primary",
     heading: "About",
     disclaimer: null,
   };

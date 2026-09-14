@@ -10,6 +10,8 @@ type Props = {
   airlines: string[];
   maxPrice: number;
   maxDuration?: number;
+  resultCount?: number;
+  filteredOutCount?: number;
   journeys?: FlightJourney[];
   minPriceNonstop?: number | null;
   minPriceOneStop?: number | null;
@@ -29,7 +31,7 @@ export default function FlightFilterPanel({
   filters,
   airlines,
   maxPrice,
-  maxDuration = 24 * 60,
+  maxDuration = 72 * 60,
   journeys = [],
   minPriceNonstop,
   minPriceOneStop,
@@ -60,6 +62,12 @@ export default function FlightFilterPanel({
     filters.departureBuckets.length > 0 ||
     filters.maxPrice !== null ||
     filters.maxDurationMinutes !== null ||
+    filters.maxLayoverMinutes !== null ||
+    filters.excludeOvernightConnections ||
+    filters.excludeAirportChanges ||
+    filters.protectedConnectionsOnly ||
+    filters.automaticBaggageTransferOnly ||
+    !filters.allowSelfTransfer ||
     filters.baggageIncluded ||
     filters.refundableOnly ||
     filters.changeableOnly;
@@ -81,14 +89,14 @@ export default function FlightFilterPanel({
     >
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
         <div className="flex items-center gap-2">
-          <SlidersHorizontal className="h-4 w-4 text-teal-600" />
+          <SlidersHorizontal className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-bold uppercase tracking-wide text-slate-900">Filters</h3>
         </div>
         {hasActiveFilters ? (
           <button
             type="button"
             onClick={resetFilters}
-            className="inline-flex min-h-11 items-center gap-1 px-2 text-xs font-bold text-teal-700 hover:text-teal-800"
+            className="inline-flex min-h-11 items-center gap-1 px-2 text-xs font-bold text-primary hover:text-teal-800"
           >
             <RotateCcw className="h-3 w-3" />
             Reset
@@ -111,7 +119,7 @@ export default function FlightFilterPanel({
                     maxStops: e.target.checked ? 0 : null,
                   })
                 }
-                className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
               />
               <span>Nonstop only</span>
             </div>
@@ -135,15 +143,53 @@ export default function FlightFilterPanel({
                     nonstopOnly: false,
                   })
                 }
-                className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 disabled:opacity-50"
+                className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary disabled:opacity-50"
               />
-              <span>1 stop max</span>
+              <span>Up to 1 connection</span>
             </div>
             {minPriceOneStop ? (
               <span className="text-[11px] font-bold text-slate-500">{formatPrice(currency, minPriceOneStop)}</span>
             ) : (
               <span className="text-[10px] text-slate-400">—</span>
             )}
+          </label>
+
+          <label className={`flex cursor-pointer items-center justify-between rounded-lg p-1.5 hover:bg-slate-50 ${filters.nonstopOnly ? "opacity-50" : ""}`}>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={filters.maxStops === 2}
+                disabled={filters.nonstopOnly}
+                onChange={(e) =>
+                  onChange({
+                    ...filters,
+                    maxStops: e.target.checked ? 2 : null,
+                    nonstopOnly: false,
+                  })
+                }
+                className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary disabled:opacity-50"
+              />
+              <span>Up to 2 connections</span>
+            </div>
+          </label>
+
+          <label className={`flex cursor-pointer items-center justify-between rounded-lg p-1.5 hover:bg-slate-50 ${filters.nonstopOnly ? "opacity-50" : ""}`}>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={filters.maxStops === 3}
+                disabled={filters.nonstopOnly}
+                onChange={(e) =>
+                  onChange({
+                    ...filters,
+                    maxStops: e.target.checked ? 3 : null,
+                    nonstopOnly: false,
+                  })
+                }
+                className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary disabled:opacity-50"
+              />
+              <span>Up to 3 connections</span>
+            </div>
           </label>
         </div>
       </div>
@@ -160,7 +206,7 @@ export default function FlightFilterPanel({
                 onClick={() => toggleBucket(bucket.id)}
                 className={`flex min-h-11 flex-col items-center justify-center rounded-xl px-2 py-2 text-center transition ${
                   isSelected
-                    ? "bg-teal-600 font-bold text-white"
+                    ? "bg-primary font-bold text-white"
                     : "bg-slate-100/90 text-slate-700 hover:bg-slate-200"
                 }`}
               >
@@ -184,7 +230,7 @@ export default function FlightFilterPanel({
                   type="checkbox"
                   checked={filters.airlines.includes(code)}
                   onChange={() => toggleAirline(code)}
-                  className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
                 />
                 <span>{code}</span>
               </label>
@@ -226,6 +272,72 @@ export default function FlightFilterPanel({
         />
       </div>
 
+      <div className="space-y-2.5 border-t border-slate-100 pt-4">
+        <div className="flex items-center justify-between text-xs font-bold">
+          <span className="uppercase tracking-wider text-slate-500">Max layover</span>
+          <span className="text-slate-900">
+            {formatDuration(filters.maxLayoverMinutes ?? 12 * 60)}
+          </span>
+        </div>
+        <input
+          type="range"
+          min={60}
+          max={12 * 60}
+          step={15}
+          value={filters.maxLayoverMinutes ?? 12 * 60}
+          onChange={(e) => onChange({ ...filters, maxLayoverMinutes: Number(e.target.value) })}
+          className="h-2 w-full cursor-pointer accent-teal-600"
+        />
+      </div>
+
+      <div className="space-y-2 border-t border-slate-100 pt-4 text-xs font-medium text-slate-700">
+        <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 hover:bg-slate-50">
+          <input
+            type="checkbox"
+            checked={filters.excludeOvernightConnections}
+            onChange={(e) => onChange({ ...filters, excludeOvernightConnections: e.target.checked })}
+            className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+          />
+          <span>Exclude overnight connections</span>
+        </label>
+        <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 hover:bg-slate-50">
+          <input
+            type="checkbox"
+            checked={filters.excludeAirportChanges}
+            onChange={(e) => onChange({ ...filters, excludeAirportChanges: e.target.checked })}
+            className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+          />
+          <span>Exclude airport changes</span>
+        </label>
+        <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 hover:bg-slate-50">
+          <input
+            type="checkbox"
+            checked={filters.protectedConnectionsOnly}
+            onChange={(e) => onChange({ ...filters, protectedConnectionsOnly: e.target.checked })}
+            className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+          />
+          <span>Protected connections only</span>
+        </label>
+        <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 hover:bg-slate-50">
+          <input
+            type="checkbox"
+            checked={filters.automaticBaggageTransferOnly}
+            onChange={(e) => onChange({ ...filters, automaticBaggageTransferOnly: e.target.checked })}
+            className="h-4 w-4 rounded border-slate-600 text-primary focus:ring-primary"
+          />
+          <span>Automatic baggage transfer only</span>
+        </label>
+        <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 hover:bg-slate-50">
+          <input
+            type="checkbox"
+            checked={filters.allowSelfTransfer}
+            onChange={(e) => onChange({ ...filters, allowSelfTransfer: e.target.checked })}
+            className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+          />
+          <span>Self-transfer permitted</span>
+        </label>
+      </div>
+
       {hasBaggageData || hasFlexData ? (
         <div className="space-y-2 border-t border-slate-100 pt-4 text-xs font-medium text-slate-700">
           {hasBaggageData ? (
@@ -234,7 +346,7 @@ export default function FlightFilterPanel({
                 type="checkbox"
                 checked={filters.baggageIncluded}
                 onChange={(e) => onChange({ ...filters, baggageIncluded: e.target.checked })}
-                className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
               />
               <span>Baggage included</span>
             </label>
@@ -246,7 +358,7 @@ export default function FlightFilterPanel({
                   type="checkbox"
                   checked={filters.refundableOnly}
                   onChange={(e) => onChange({ ...filters, refundableOnly: e.target.checked })}
-                  className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
                 />
                 <span>Refundable only</span>
               </label>
@@ -255,7 +367,7 @@ export default function FlightFilterPanel({
                   type="checkbox"
                   checked={filters.changeableOnly}
                   onChange={(e) => onChange({ ...filters, changeableOnly: e.target.checked })}
-                  className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
                 />
                 <span>Changeable only</span>
               </label>

@@ -303,7 +303,7 @@ function VerifyInner() {
                   className={`h-12 w-full text-center text-lg font-bold rounded-lg bg-slate-900 border text-white transition focus:outline-none focus:ring-2 ${
                     otpError
                       ? "border-[#E8619A] focus:border-[#E8619A] focus:ring-[#E8619A]/20"
-                      : "border-slate-700 focus:border-primary focus:ring-[#0F766E]/20"
+                      : "border-slate-700 focus:border-primary focus:ring-[#0E6E5C]/20"
                   }`}
                 />
               ))}

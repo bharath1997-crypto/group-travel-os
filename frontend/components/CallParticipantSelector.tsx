@@ -126,7 +126,7 @@ export function CallParticipantSelector({
 
         {/* Selected chips */}
         {selectedContacts.length > 0 && (
-          <div className="flex flex-wrap gap-2 border-b px-4 py-2" style={{ borderColor: "#334155", background: "#0f172a" }}>
+          <div className="flex flex-wrap gap-2 border-b px-4 py-2" style={{ borderColor: "#334155", background: "#0f1614" }}>
             {selectedContacts.map((contact) => (
               <span
                 key={contact.id}
@@ -149,7 +149,7 @@ export function CallParticipantSelector({
         <div className="px-4 py-3">
           <div
             className="flex items-center gap-2 rounded-full px-3 py-2"
-            style={{ background: "#0f172a" }}
+            style={{ background: "#0f1614" }}
           >
             <IconSearch size={16} />
             <input

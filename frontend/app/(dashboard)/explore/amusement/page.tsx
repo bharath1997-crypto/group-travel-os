@@ -37,7 +37,7 @@ function ExploreCard({
         category={item.category}
         placeId={item.id}
       >
-        <span className="absolute left-3 top-3 rounded-lg bg-white/95 px-2 py-0.5 text-[9px] font-semibold text-teal-700 shadow-sm backdrop-blur">
+        <span className="absolute left-3 top-3 rounded-lg bg-white/95 px-2 py-0.5 text-[9px] font-semibold text-primary shadow-sm backdrop-blur">
           {item.category || "Amusement"}
         </span>
         <span className="absolute right-3 top-3 rounded-lg px-2 py-0.5 text-[9px] font-semibold text-white backdrop-blur bg-amber-600/90">
@@ -46,7 +46,7 @@ function ExploreCard({
       </ExploreCardImage>
 
       <div className="flex flex-1 flex-col p-3">
-        <h3 className="mb-1 line-clamp-1 text-[13px] font-bold leading-snug text-[#1E293B] group-hover:text-teal-700">
+        <h3 className="mb-1 line-clamp-1 text-[13px] font-bold leading-snug text-[#1E293B] group-hover:text-primary">
           {item.name}
         </h3>
 

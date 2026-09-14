@@ -89,12 +89,16 @@ def _normalize_fly_term(term: str) -> str:
     raw = term.strip()
     if not raw:
         return raw
-    letters = "".join(c for c in raw.upper() if c.isalpha())
+    upper = raw.upper()
+    # Preserve explicit 3-letter airport or city codes (HBA, VGA, SAN, etc.).
+    if len(upper) == 3 and upper.isalpha():
+        return upper
+    letters = "".join(c for c in upper if c.isalpha())
     if len(letters) >= 3:
         hit = _FLY_LOCATION_ALIASES.get(letters)
         if hit:
             return hit
-    return raw.upper()
+    return upper
 
 
 def _cache_key(

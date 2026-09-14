@@ -265,10 +265,10 @@ function BusesPageContent() {
       {/* Search Header */}
       <div className="max-w-6xl mx-auto mb-6">
         <div className="flex items-center gap-3 mb-3">
-          <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center border border-teal-200/60">
+          <div className="h-10 w-10 rounded-xl bg-primary-soft flex items-center justify-center border border-teal-200/60">
             <span className="text-xl">🚌</span>
           </div>
-          <span className="text-xs font-bold uppercase tracking-widest text-teal-600">Rovvy Buses</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-primary">Rovvy Buses</span>
         </div>
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Buses</h1>
         <p className="mt-2 text-sm text-slate-500 leading-relaxed max-w-2xl">
@@ -287,7 +287,7 @@ function BusesPageContent() {
               value={from}
               onChange={(e) => setFrom(e.target.value)}
               placeholder="e.g. NYC, Chicago"
-              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
             />
           </label>
           <label className="flex flex-col gap-2 lg:col-span-3">
@@ -298,7 +298,7 @@ function BusesPageContent() {
               value={to}
               onChange={(e) => setTo(e.target.value)}
               placeholder="e.g. Boston, Detroit"
-              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
             />
           </label>
           <label className="flex flex-col gap-2 lg:col-span-3">
@@ -309,7 +309,7 @@ function BusesPageContent() {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
             />
           </label>
           <label className="flex flex-col gap-2 lg:col-span-1">
@@ -319,7 +319,7 @@ function BusesPageContent() {
             <select
               value={passengers}
               onChange={(e) => setPassengers(Number(e.target.value))}
-              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
             >
               {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
                 <option key={n} value={n}>
@@ -332,7 +332,7 @@ function BusesPageContent() {
             <button
               type="button"
               onClick={() => void runSearch()}
-              className="w-full rounded-xl bg-teal-600 hover:bg-teal-700 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/10 transition"
+              className="w-full rounded-xl bg-primary hover:bg-primary-hover py-3 text-sm font-bold text-white shadow-md shadow-teal-600/10 transition"
             >
               Search Buses
             </button>
@@ -394,7 +394,7 @@ function BusesPageContent() {
                             [op]: e.target.checked,
                           }))
                         }
-                        className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                        className="rounded border-slate-300 text-primary focus:ring-primary"
                       />
                       {op}
                     </label>
@@ -421,7 +421,7 @@ function BusesPageContent() {
                     onClick={() => setTimeFilter(v)}
                     className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${
                       timeFilter === v
-                        ? "bg-teal-600 text-white shadow-sm"
+                        ? "bg-primary text-white shadow-sm"
                         : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
                   >
@@ -452,7 +452,7 @@ function BusesPageContent() {
                             [am]: e.target.checked,
                           }))
                         }
-                        className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                        className="rounded border-slate-300 text-primary focus:ring-primary"
                       />
                       {am}
                     </label>
@@ -480,7 +480,7 @@ function BusesPageContent() {
                   onClick={() => setSort(v)}
                   className={`rounded-full px-3 py-1 text-xs font-bold ${
                     sort === v
-                      ? "bg-teal-500 text-white"
+                      ? "bg-primary-soft0 text-white"
                       : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                   }`}
                 >
@@ -513,7 +513,7 @@ function BusesPageContent() {
                           </p>
                           <p className="text-xs text-slate-500">from ${route.price}</p>
                         </div>
-                        <span className="text-teal-600">→</span>
+                        <span className="text-primary">→</span>
                       </div>
                     </div>
                   ))}
@@ -581,7 +581,7 @@ function BusesPageContent() {
                           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             From
                           </p>
-                          <p className="text-2xl font-extrabold text-teal-600">
+                          <p className="text-2xl font-extrabold text-primary">
                             {b.currency}&nbsp;{b.price.toFixed(2)}
                           </p>
                           {b.available_seats && (
@@ -594,7 +594,7 @@ function BusesPageContent() {
                           href={b.booking_url || "#"}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex min-w-[112px] items-center justify-center rounded-xl bg-teal-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-teal-700 shadow-sm"
+                          className="inline-flex min-w-[112px] items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white transition hover:bg-primary-hover shadow-sm"
                         >
                           Book Now
                         </a>

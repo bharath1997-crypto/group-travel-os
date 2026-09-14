@@ -53,7 +53,7 @@ export function HeaderProfileMenu({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-1.5 rounded-xl p-1 hover:bg-stone-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/40"
+        className="flex items-center gap-1.5 rounded-xl p-1 hover:bg-stone-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6E5C]/40"
         aria-label="Profile menu"
         aria-expanded={open}
         aria-haspopup="menu"
@@ -64,10 +64,10 @@ export function HeaderProfileMenu({
             <img
               src={avatarUrl}
               alt=""
-              className="h-9 w-9 rounded-full object-cover ring-2 ring-[#0F766E]/15"
+              className="h-9 w-9 rounded-full object-cover ring-2 ring-[#0E6E5C]/15"
             />
           ) : (
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-white ring-2 ring-[#0F766E]/15">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-white ring-2 ring-[#0E6E5C]/15">
               {initialsFromName(displayName)}
             </span>
           )}

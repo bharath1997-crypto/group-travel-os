@@ -15,7 +15,7 @@ export default function FlightPriceInsightsBanner({ lowestPrice, averagePrice = 
 
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-teal-200/80 bg-gradient-to-r from-teal-50/80 via-emerald-50/40 to-white p-4 shadow-xs">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white shadow-xs">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-white shadow-xs">
         <Sparkles className="h-4 w-4" />
       </div>
 

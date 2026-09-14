@@ -194,7 +194,7 @@ export default function RovvyFlightSearch({ handoff = null }: Props) {
               }}
               className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
                 tripType === type
-                  ? "bg-teal-600 text-white"
+                  ? "bg-primary text-white"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
@@ -212,7 +212,7 @@ export default function RovvyFlightSearch({ handoff = null }: Props) {
             type="button"
             onClick={swapPlaces}
             aria-label="Swap origin and destination"
-            className="mt-6 flex h-11 w-11 items-center justify-center self-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-teal-600 md:mt-7"
+            className="mt-6 flex h-11 w-11 items-center justify-center self-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-primary md:mt-7"
           >
             <ArrowLeftRight className="h-4 w-4" />
           </button>
@@ -229,7 +229,7 @@ export default function RovvyFlightSearch({ handoff = null }: Props) {
               type="date"
               value={departDate}
               onChange={(e) => setDepartDate(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
           {tripType === "roundtrip" ? (
@@ -240,7 +240,7 @@ export default function RovvyFlightSearch({ handoff = null }: Props) {
                 value={returnDate}
                 min={departDate}
                 onChange={(e) => setReturnDate(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
           ) : (
@@ -250,7 +250,7 @@ export default function RovvyFlightSearch({ handoff = null }: Props) {
             <button
               type="button"
               onClick={() => void runSearch()}
-              className="w-full rounded-xl bg-teal-600 px-8 py-3 text-sm font-bold text-white shadow-sm hover:bg-teal-700 lg:min-w-[140px]"
+              className="w-full rounded-xl bg-primary px-8 py-3 text-sm font-bold text-white shadow-sm hover:bg-primary-hover lg:min-w-[140px]"
             >
               Search
             </button>
@@ -302,7 +302,7 @@ export default function RovvyFlightSearch({ handoff = null }: Props) {
               <li key={row.id} className="p-4 transition hover:bg-slate-50/80 md:p-5">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div className="flex min-w-0 flex-1 gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
                       <Plane className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
@@ -330,7 +330,7 @@ export default function RovvyFlightSearch({ handoff = null }: Props) {
                     <button
                       type="button"
                       onClick={() => setSelectedRow(row)}
-                      className="inline-flex min-w-[100px] items-center justify-center rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-teal-700"
+                      className="inline-flex min-w-[100px] items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-hover"
                     >
                       Select
                     </button>

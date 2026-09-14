@@ -82,3 +82,64 @@ def test_flight_book_requires_auth_401():
         },
     )
     assert res.status_code == 401
+
+
+@patch("app.services.flight_booking_service.get_order")
+def test_order_detail_normalizes_duffel_airport_objects(mock_get_order, auth_header):
+    airport_ord = {
+        "iata_country_code": "US",
+        "iata_city_code": "CHI",
+        "city_name": "Chicago",
+        "icao_code": "KORD",
+        "iata_code": "ORD",
+        "type": "airport",
+        "name": "O'Hare International Airport",
+        "id": "arp_ord",
+    }
+    airport_nag = {
+        "iata_country_code": "IN",
+        "iata_city_code": "NAG",
+        "city_name": "Nagpur",
+        "icao_code": "VANP",
+        "iata_code": "NAG",
+        "type": "airport",
+        "name": "Dr. Babasaheb Ambedkar International Airport",
+        "id": "arp_nag",
+    }
+    mock_get_order.return_value = {
+        "id": "ord_123",
+        "booking_references": [{"booking_reference": "ABC123"}],
+        "total_amount": "458.28",
+        "total_currency": "USD",
+        "slices": [
+            {
+                "origin": airport_ord,
+                "destination": airport_nag,
+                "duration": "PT17H25M",
+                "segments": [
+                    {
+                        "origin": airport_ord,
+                        "destination": airport_nag,
+                        "departing_at": "2026-09-03T01:32:00",
+                        "arriving_at": "2026-09-03T05:27:00",
+                        "duration": "PT17H25M",
+                        "marketing_carrier": {"iata_code": "ZZ", "name": "Duffel Airways"},
+                        "marketing_carrier_flight_number": "6846",
+                    }
+                ],
+            }
+        ],
+        "passengers": [],
+        "available_actions": [],
+        "live_mode": False,
+    }
+
+    response = client.get("/api/v1/flights/orders/ord_123")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["slices"][0]["origin"] == "ORD"
+    assert body["slices"][0]["destination"] == "NAG"
+    assert body["slices"][0]["duration_minutes"] == 1045
+    assert body["slices"][0]["segments"][0]["origin"] == "ORD"
+    assert body["slices"][0]["segments"][0]["destination"] == "NAG"

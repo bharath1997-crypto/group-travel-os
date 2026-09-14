@@ -299,7 +299,7 @@ export function AdvancedScheduledCallModal({
           <>
             <div className="travello-dark-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-3">
               {/* Search */}
-              <div className="mb-3 flex items-center gap-2 rounded-full border px-3 py-2" style={{ borderColor: "#334155", background: "#0f172a" }}>
+              <div className="mb-3 flex items-center gap-2 rounded-full border px-3 py-2" style={{ borderColor: "#334155", background: "#0f1614" }}>
                 <IconUsers size={16} />
                 <input
                   type="text"
@@ -454,7 +454,7 @@ export function AdvancedScheduledCallModal({
                   {showReminderDropdown && (
                     <div
                       className="absolute z-20 mt-1 w-full rounded-lg border py-1 shadow-lg"
-                      style={{ borderColor: "#334155", background: "#0f172a" }}
+                      style={{ borderColor: "#334155", background: "#0f1614" }}
                     >
                       {REMINDER_OPTIONS.map((option) => (
                         <button
@@ -613,7 +613,7 @@ export function AdvancedScheduledCallModal({
               {/* Info box */}
               <div
                 className="flex items-start gap-2 rounded-lg px-3 py-2 text-xs"
-                style={{ background: "#0f172a" }}
+                style={{ background: "#0f1614" }}
               >
                 <IconAlertCircle size={16} className="mt-0.5 flex-shrink-0" />
                 <p className="text-gray-400">

@@ -80,7 +80,7 @@ function useSearchTone(tone: "overlay" | "dock") {
       ? "mt-0.5 inline-block rounded bg-stone-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-700"
       : "mt-0.5 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white/90",
     planBadgeStyle: isDock ? undefined : { background: "#334155" },
-    spinnerBorder: isDock ? "border-stone-300 border-t-[#0F766E]" : "border-slate-600 border-t-white",
+    spinnerBorder: isDock ? "border-stone-300 border-t-[#0E6E5C]" : "border-slate-600 border-t-white",
   };
 }
 

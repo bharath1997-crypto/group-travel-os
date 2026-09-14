@@ -20,9 +20,9 @@ export const GPS_MARKER_HEADING_MIN_SPEED_MPS = 0.8;
 const BROWSE_CORE = "#1A73E8";
 const BROWSE_PULSE = "26, 115, 232";
 const BROWSE_CONE = "rgba(26, 115, 232, 0.38)";
-const LIVE_CORE = "#0F766E";
+const LIVE_CORE = "#0E6E5C";
 const LIVE_PULSE = "15, 118, 110";
-const LIVE_CONE = "rgba(15, 118, 110, 0.42)";
+const LIVE_CONE = "rgba(14, 110, 92, 0.42)";
 const NAV_CONE = "rgba(26, 115, 232, 0.48)";
 
 const GPS_MARKER_HOST_STYLE =
@@ -160,7 +160,8 @@ export function buildGpsMarkerCss(): string {
 .rovvy-live-map-container .maplibregl-marker:has(.rovvy-gps-marker),
 .rovvy-live-map-container .maplibregl-marker:has(.rovvy-gps-marker-host),
 .rovvy-live-map-container .maplibregl-marker:has(.rovvy-gps-marker-outer),
-.rovvy-live-map-container .maplibregl-marker:has([data-gps-dot="true"]) {
+.rovvy-live-map-container .maplibregl-marker:has([data-gps-dot="true"]),
+.rovvy-live-map-container .maplibregl-marker:has(.rovvy-meetup-marker) {
   z-index: 100 !important;
 }
 .rovvy-gps-marker-outer {
@@ -222,7 +223,7 @@ export function buildGpsMarkerCss(): string {
   background: #ffffff;
   box-shadow:
     0 0 0 2px rgba(255, 255, 255, 0.98),
-    0 2px 8px rgba(15, 23, 42, 0.35),
+    0 2px 8px rgba(15, 22, 20, 0.35),
     0 0 0 5px rgba(var(--rovvy-gps-pulse-rgb, 26, 115, 232), 0.18);
   display: flex;
   align-items: center;
@@ -232,7 +233,7 @@ export function buildGpsMarkerCss(): string {
 .rovvy-gps-marker--approximate .rovvy-gps-marker__dot {
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.95),
-    0 1px 4px rgba(15, 23, 42, 0.28),
+    0 1px 4px rgba(15, 22, 20, 0.28),
     0 0 0 4px rgba(var(--rovvy-gps-pulse-rgb, 26, 115, 232), 0.18);
 }
 .rovvy-gps-marker__core {
@@ -272,9 +273,9 @@ export function buildGpsMarkerCss(): string {
 .user-location-popup .maplibregl-popup-content {
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
-  font-family: Inter, system-ui, sans-serif;
+  border: 1px solid rgba(15, 22, 20, 0.08);
+  box-shadow: 0 8px 24px rgba(15, 22, 20, 0.14);
+  font-family: var(--font-schibsted), system-ui, sans-serif;
 }
 .user-location-popup .maplibregl-popup-tip {
   border-top-color: #ffffff;
@@ -357,7 +358,7 @@ export function buildUserLocationPopupHtml(
     ageSec == null ? "Just now" : ageSec <= 1 ? "Just now" : `${ageSec}s ago`;
 
   return `<div style="min-width:148px;">
-    <div style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:4px;">Your location</div>
+    <div style="font-size:13px;font-weight:600;color:#0F1614;margin-bottom:4px;">Your location</div>
     <div style="font-size:11px;color:#64748B;">Accuracy ${accuracyLabel}</div>
     <div style="font-size:11px;color:#94A3B8;margin-top:2px;">Updated ${updatedLabel}</div>
   </div>`;

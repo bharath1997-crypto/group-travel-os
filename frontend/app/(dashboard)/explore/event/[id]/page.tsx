@@ -447,7 +447,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
       {toastMessage && (
         <div className="fixed bottom-28 left-1/2 z-50 -translate-x-1/2 transform rounded-2xl border border-slate-200 bg-white/95 px-6 py-3 shadow-xl backdrop-blur-md transition-all duration-300">
           <div className="flex items-center gap-3">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-teal-50 text-teal-600">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-soft text-primary">
               <Plus size={14} className="animate-bounce" />
             </div>
             <span className="text-sm font-semibold text-slate-800">{toastMessage}</span>
@@ -506,7 +506,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
                       onClick={() => setSelectedTripId(trip.id)}
                       className={`flex w-full flex-col rounded-xl border px-4 py-3 text-left transition ${
                         selectedTripId === trip.id
-                          ? "border-teal-600 bg-teal-50"
+                          ? "border-teal-600 bg-primary-soft"
                           : "border-slate-200 hover:border-teal-300"
                       }`}
                     >
@@ -590,7 +590,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
                       onClick={() => setSelectedTripId(trip.id)}
                       className={`flex w-full flex-col rounded-xl border px-4 py-3 text-left transition ${
                         selectedTripId === trip.id
-                          ? "border-teal-600 bg-teal-50"
+                          ? "border-teal-600 bg-primary-soft"
                           : "border-slate-200 hover:border-teal-300"
                       }`}
                     >
@@ -656,7 +656,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
               <span className="text-sm font-bold text-slate-700">{event.rating} Rating</span>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-slate-500">
-              <Navigation size={12} className="text-teal-600" />
+              <Navigation size={12} className="text-primary" />
               <span>{event.distance_miles} mi away</span>
             </div>
           </div>
@@ -667,7 +667,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
 
           <div className="mt-6 space-y-4 border-t border-slate-100 pt-4">
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-600">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
                 <MapPin size={16} />
               </div>
               <div>
@@ -680,7 +680,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-600">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
                 <Calendar size={16} />
               </div>
               <div>
@@ -709,7 +709,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
                   : "Check official ticket link for rates"}
               </p>
             </div>
-            <div className="rounded-lg bg-teal-50/50 px-3.5 py-2 text-xs font-semibold text-teal-800">
+            <div className="rounded-lg bg-primary-soft/50 px-3.5 py-2 text-xs font-semibold text-teal-800">
               via {event.source || "Partner"}
             </div>
           </div>
@@ -767,7 +767,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
                         className="relative h-full w-full overflow-hidden"
                         imgClassName="h-full w-full object-cover"
                       />
-                      <span className="absolute left-2 top-2 rounded-md bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-teal-700">
+                      <span className="absolute left-2 top-2 rounded-md bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-primary">
                         {item.category}
                       </span>
                     </div>
@@ -783,7 +783,7 @@ export default function ExploreEventDetailPage({ params }: PageProps) {
                           <Star size={12} className="fill-yellow-400 text-yellow-400" />
                           {item.rating}
                         </span>
-                        <span className="font-semibold text-teal-700">{price}</span>
+                        <span className="font-semibold text-primary">{price}</span>
                       </div>
                     </div>
                   </Link>

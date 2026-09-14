@@ -9,6 +9,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import type { FlightOrder, FlightCancelQuote, FlightCancelConfirm } from "@/lib/flight-types";
 import { formatClock, formatDuration, formatPriceExact } from "@/lib/flight-format";
+import { airportDisplayCode } from "@/lib/flight-airport-display";
 
 function ConfirmationBookingContent() {
   const params = useParams();
@@ -110,7 +111,7 @@ function ConfirmationBookingContent() {
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl space-y-5 py-8">
-        <div className="h-48 animate-pulse rounded-3xl bg-teal-50 border border-teal-100" />
+        <div className="h-48 animate-pulse rounded-3xl bg-primary-soft border border-primary/20" />
         <div className="h-64 animate-pulse rounded-3xl bg-white border border-slate-200" />
       </div>
     );
@@ -124,7 +125,7 @@ function ConfirmationBookingContent() {
         <div className="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-teal-100/40 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-teal-100/30 blur-2xl pointer-events-none" />
 
-        <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-teal-600 text-white shadow-lg shadow-teal-600/30 ring-4 ring-teal-100">
+        <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-primary text-white shadow-lg shadow-teal-600/30 ring-4 ring-teal-100">
           <CheckCircle2 className="h-9 w-9" strokeWidth={2.5} />
         </div>
 
@@ -136,10 +137,10 @@ function ConfirmationBookingContent() {
         </p>
 
         {/* Booking Reference Grid */}
-        <div className="relative mt-6 grid gap-4 rounded-2xl border border-teal-100/80 bg-white/80 p-5 text-left backdrop-blur-sm sm:grid-cols-3 shadow-xs">
+        <div className="relative mt-6 grid gap-4 rounded-2xl border border-primary/20/80 bg-white/80 p-5 text-left backdrop-blur-sm sm:grid-cols-3 shadow-xs">
           <div>
             <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Airline PNR</span>
-            <span className="mt-1 block text-2xl font-black tracking-widest text-teal-700">{pnr}</span>
+            <span className="mt-1 block text-2xl font-black tracking-widest text-primary">{pnr}</span>
           </div>
           <div>
             <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Rovvy Booking ID</span>
@@ -171,7 +172,7 @@ function ConfirmationBookingContent() {
               type="button"
               disabled={associated || associating}
               onClick={() => void attachToTripSpace()}
-              className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/20 hover:bg-teal-700 disabled:opacity-70 transition-all"
+              className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/20 hover:bg-primary-hover disabled:opacity-70 transition-all"
             >
               <PlusCircle className="h-4 w-4" />
               <span>{associated ? "Attached to Trip Space ✓" : associating ? "Attaching…" : "Add to Trip Space"}</span>
@@ -215,7 +216,7 @@ function ConfirmationBookingContent() {
       </div>
 
       {assocMessage ? (
-        <div className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-xs font-bold text-teal-900">
+        <div className="rounded-2xl border border-teal-200 bg-primary-soft px-4 py-3 text-xs font-bold text-primary-dark">
           {assocMessage}
         </div>
       ) : null}
@@ -224,20 +225,20 @@ function ConfirmationBookingContent() {
       {order && order.slices.length > 0 ? (
         <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
-            <Calendar className="h-4 w-4 text-teal-600" />
+            <Calendar className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">Flight Itinerary</h3>
           </div>
           <div className="space-y-6">
             {order.slices.map((slice, idx) => (
               <div key={idx} className="space-y-3">
                 <p className="text-xs font-black uppercase tracking-widest text-slate-400">
-                  {idx === 0 ? "Outbound" : "Return"} · {slice.origin} → {slice.destination}
+                  {idx === 0 ? "Outbound" : "Return"} · {airportDisplayCode(slice.origin)} → {airportDisplayCode(slice.destination)}
                 </p>
                 {slice.segments.map((seg, sIdx) => (
                   <div key={sIdx} className="rounded-2xl border border-slate-200/90 p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Plane className="h-4 w-4 text-teal-600" />
+                        <Plane className="h-4 w-4 text-primary" />
                         <span className="text-sm font-bold text-slate-900">
                           {seg.airline_name || seg.airline_code} · {seg.flight_number}
                         </span>
@@ -247,7 +248,7 @@ function ConfirmationBookingContent() {
                     <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-4 text-xs">
                       <div>
                         <p className="text-lg font-black text-slate-900">{formatClock(seg.departure_at)}</p>
-                        <p className="font-bold text-slate-700">{seg.origin}</p>
+                        <p className="font-bold text-slate-700">{airportDisplayCode(seg.origin)}</p>
                       </div>
                       <div className="flex items-center">
                         <div className="h-px w-8 bg-slate-300" />
@@ -255,7 +256,7 @@ function ConfirmationBookingContent() {
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-black text-slate-900">{formatClock(seg.arrival_at)}</p>
-                        <p className="font-bold text-slate-700">{seg.destination}</p>
+                        <p className="font-bold text-slate-700">{airportDisplayCode(seg.destination)}</p>
                       </div>
                     </div>
                   </div>
@@ -288,7 +289,7 @@ function ConfirmationBookingContent() {
               </div>
               <div className="flex justify-between">
                 <span className="font-bold text-slate-500 uppercase tracking-wider">Status</span>
-                <span className={`font-black uppercase tracking-wider text-sm ${order?.status === "cancelled" ? "text-rose-600" : "text-teal-700"}`}>
+                <span className={`font-black uppercase tracking-wider text-sm ${order?.status === "cancelled" ? "text-rose-600" : "text-primary"}`}>
                   {order?.status || "Confirmed"}
                 </span>
               </div>
@@ -301,8 +302,8 @@ function ConfirmationBookingContent() {
             ) : null}
 
             {cancelResult ? (
-              <div className="rounded-2xl border border-teal-200 bg-teal-50 p-4 space-y-1 text-xs">
-                <p className="font-extrabold text-teal-900 text-sm">{cancelResult.message}</p>
+              <div className="rounded-2xl border border-teal-200 bg-primary-soft p-4 space-y-1 text-xs">
+                <p className="font-extrabold text-primary-dark text-sm">{cancelResult.message}</p>
                 <p className="text-teal-800 font-medium">
                   Refund amount: <strong>{formatPriceExact(cancelResult.currency, cancelResult.refund_amount)}</strong>
                 </p>

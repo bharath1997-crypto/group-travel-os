@@ -5,6 +5,12 @@ alwaysApply: true
 
 This project has a graphify knowledge graph at graphify-out/.
 
+## Scram Book documentation protocol
+
+- Treat `D:\group travel os\Scram Book` as the authoritative product planning and activity record.
+- Inspect the matching product-area workbook/report before planning or implementation. Travel/Flights work belongs in `Scram Book\Travel Tab`.
+- After verified work, update the relevant artifact with date, context, goals addressed, result, verification, risks, and next action. Never record unverified completion or create a duplicate roadmap elsewhere.
+
 **MANDATORY: Before using Read, Grep, Glob, or Bash to explore the codebase, you MUST run graphify first:**
 - `graphify query "<question>"` — scoped subgraph for any codebase or architecture question
 - `graphify path "<A>" "<B>"` — dependency path between two symbols

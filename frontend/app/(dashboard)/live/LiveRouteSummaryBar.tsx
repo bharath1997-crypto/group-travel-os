@@ -8,7 +8,7 @@ import {
   type RoutePreviewStatus,
 } from "./live-types";
 
-const TEAL = "#0F766E";
+const TEAL = "#0E6E5C";
 
 type Props = {
   destinationName: string;

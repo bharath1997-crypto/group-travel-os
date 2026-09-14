@@ -2,13 +2,19 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plane, Search, LogIn, X, RefreshCw } from "lucide-react";
-import Link from "next/link";
+import { Plane, Search, RefreshCw, X } from "lucide-react";
 import { API_BASE, apiFetch } from "@/lib/api";
-import { getToken } from "@/lib/auth";
 import { parseFlightSearchParams } from "@/lib/flight-search-params";
 import { searchFlightJourneys } from "@/lib/flight-journey-api";
-import type { FlightJourney, FlightOfferDetail, FlightSortMode } from "@/lib/flight-types";
+import type {
+  FlightJourney,
+  FlightRouteRecoveryOption,
+  FlightOfferDetail,
+  FlightSortMode,
+  ProviderEnvironment,
+  ProviderStatusRecord,
+  RovvyItineraryGroup,
+} from "@/lib/flight-types";
 import {
   countActiveFilters,
   createDefaultFilters,
@@ -23,11 +29,10 @@ import FlightSortTabs from "@/components/travel/FlightSortTabs";
 import FlightFilterPanel from "@/components/travel/FlightFilterPanel";
 import FlightOfferCard from "@/components/travel/FlightOfferCard";
 import FlightDetailsDrawer from "@/components/travel/FlightDetailsDrawer";
-import FlightSearchForm from "@/components/travel/FlightSearchForm";
+import FlightOptionsDrawer from "@/components/travel/FlightOptionsDrawer";
 import FlightTrustStrip from "@/components/travel/FlightTrustStrip";
 import FlightResultsToolbar from "@/components/travel/FlightResultsToolbar";
 import FlightMobileFiltersDrawer from "@/components/travel/FlightMobileFiltersDrawer";
-import { authHref } from "@/lib/auth-return";
 
 function SkeletonCard() {
   return (
@@ -54,59 +59,29 @@ function SkeletonCard() {
   );
 }
 
-function AuthRequiredModal({ onClose, returnPath }: { onClose: () => void; returnPath: string }) {
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [onClose]);
-
-  const loginHref = authHref("/login", returnPath);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
-      <div className="relative w-full max-w-md space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-        <button type="button" onClick={onClose} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600" aria-label="Close sign-in prompt">
-          <X className="h-5 w-5" />
-        </button>
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
-          <Plane className="h-6 w-6" />
-        </div>
-        <div>
-          <h3 id="auth-modal-title" className="text-lg font-bold text-slate-900">Sign in to book this flight</h3>
-          <p className="mt-1 text-sm leading-relaxed text-slate-600">
-            Guests can search and review live fares. Sign in when you are ready to book securely inside Rovvy.
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 pt-2">
-          <Link href={loginHref} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-3 text-sm font-bold text-white hover:bg-teal-700">
-            <LogIn className="h-4 w-4" />
-            Log in to continue
-          </Link>
-          <Link href={authHref("/register", returnPath)} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
-            Create free account
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
+function findItineraryGroup(groups: RovvyItineraryGroup[], row: FlightJourney): RovvyItineraryGroup | null {
+  if (!groups.length) return null;
+  for (const g of groups) {
+    if (g.seller_options.some((opt) => opt.provider_offer_id === row.id || opt.provider_offer_id === row.provider_offer_id)) {
+      return g;
+    }
+  }
+  return null;
 }
 
 function FlightResultsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const criteria = useMemo(() => parseFlightSearchParams(searchParams), [searchParams]);
-  const isGuest = !getToken();
 
   const [rows, setRows] = useState<FlightJourney[]>([]);
+  const [itineraryGroups, setItineraryGroups] = useState<RovvyItineraryGroup[]>([]);
+  const [providerStatuses, setProviderStatuses] = useState<ProviderStatusRecord[]>([]);
+  const [partialResults, setPartialResults] = useState(false);
+  const [searchEnvironment, setSearchEnvironment] = useState<ProviderEnvironment | null>("test");
+  const [searchLiveMode, setSearchLiveMode] = useState(false);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
+  const [routeRecovery, setRouteRecovery] = useState<FlightRouteRecoveryOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<FlightSortMode>("best");
@@ -120,9 +95,7 @@ function FlightResultsContent() {
   const [detailsId, setDetailsId] = useState<string | null>(null);
   const [detailsOffer, setDetailsOffer] = useState<FlightOfferDetail | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
-  const [showEdit, setShowEdit] = useState(searchParams.get("edit") === "1");
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [pendingOfferPath, setPendingOfferPath] = useState<string | null>(null);
+  const [optionsGroup, setOptionsGroup] = useState<RovvyItineraryGroup | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [mobileSortOpen, setMobileSortOpen] = useState(false);
   const travelerCount = criteria ? criteria.adults + criteria.children + criteria.infants : 1;
@@ -135,9 +108,18 @@ function FlightResultsContent() {
     try {
       const data = await searchFlightJourneys(criteria);
       setRows(Array.isArray(data.journeys) ? data.journeys : []);
+      setItineraryGroups(Array.isArray(data.itinerary_groups) ? data.itinerary_groups : []);
+      setProviderStatuses(Array.isArray(data.provider_statuses) ? data.provider_statuses : []);
+      setPartialResults(Boolean(data.partial_results));
+      setSearchEnvironment(data.environment || (data.live_mode ? "live" : "test"));
+      setSearchLiveMode(Boolean(data.live_mode));
       setSearchMessage(data.message);
+      setRouteRecovery(Array.isArray(data.route_recovery) ? data.route_recovery : []);
     } catch (e) {
       setRows([]);
+      setItineraryGroups([]);
+      setProviderStatuses([]);
+      setRouteRecovery([]);
       const hint = e instanceof Error ? e.message : String(e);
       const unavailable = hint.toLowerCase().includes("unavailable") || hint.toLowerCase().includes("not configured");
       setErrorBanner(
@@ -198,6 +180,13 @@ function FlightResultsContent() {
 
   const filteredOutCount = rows.length - filtered.length;
   const currency = rows[0]?.currency || "USD";
+  const travelpayoutsStatus = providerStatuses.find(
+    (status) => status.provider_id === "travelpayouts",
+  );
+  const travelpayoutsEmpty =
+    rows.length === 0 &&
+    travelpayoutsStatus?.status === "ok" &&
+    travelpayoutsStatus.offer_count === 0;
 
   const openDetails = async (offerId: string) => {
     setDetailsId(offerId);
@@ -213,29 +202,81 @@ function FlightResultsContent() {
     }
   };
 
-  const selectOffer = (row: FlightJourney) => {
-    if (row.expires_at && new Date(row.expires_at).getTime() <= Date.now()) {
-      setErrorBanner("This offer has expired. Search again for live fares.");
+  const tryRecoveredRoute = (option: FlightRouteRecoveryOption) => {
+    const next = new URLSearchParams(searchParams.toString());
+    next.set("from", option.origin);
+    next.set("to", option.destination);
+    next.set("fromLabel", option.origin);
+    next.set("toLabel", option.destination);
+    next.set("depart", option.departure_date);
+    router.push(`/flights/results?${next.toString()}`);
+  };
+
+  const openOptions = (row: FlightJourney) => {
+    const group = findItineraryGroup(itineraryGroups, row);
+    if (group) {
+      setOptionsGroup(group);
       return;
     }
-    const qs = new URLSearchParams({ searchPrice: String(row.price) });
-    if (criteria) {
-      qs.set("from", criteria.from);
-      qs.set("to", criteria.to);
-      qs.set("depart", criteria.depart);
-      if (criteria.return) qs.set("return", criteria.return);
-    }
-    if (isGuest && typeof window !== "undefined") {
-      qs.set("restored", "1");
-      qs.set("searchReturn", `${window.location.pathname}${window.location.search}`);
-    }
-    const path = `/flights/offer/${encodeURIComponent(row.id)}?${qs.toString()}`;
-    if (isGuest) {
-      setPendingOfferPath(path);
-      setShowAuthModal(true);
-      return;
-    }
-    router.push(path);
+    setOptionsGroup({
+      itinerary_key: row.id,
+      marketing_airlines: row.airlines,
+      operating_airlines: row.airlines,
+      slices: row.slices,
+      total_duration_minutes: row.total_duration_minutes || row.duration_minutes,
+      stops: row.stops,
+      departure_at: row.departure_at,
+      arrival_at: row.arrival_at,
+      origin: row.origin,
+      destination: row.destination,
+      lowest_price: row.price,
+      currency: row.currency,
+      seller_options: [
+        {
+          provider_id: row.provider,
+          provider_offer_id: row.provider_offer_id,
+          seller_id: row.provider,
+          seller_name: row.live_mode ? "Duffel" : "Duffel sandbox",
+          total_price: row.price,
+          currency: row.currency,
+          baggage: {
+            carry_on_included: row.carry_on_included,
+            checked_bag_included: row.checked_bag_included,
+            summary:
+              row.carry_on_included || row.checked_bag_included
+                ? [
+                    row.carry_on_included ? "Carry-on included" : null,
+                    row.checked_bag_included ? "Checked bag included" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
+                : "Not confirmed",
+          },
+          fare_conditions: {
+            refundable: row.refundable,
+            changeable: row.changeable,
+            summary:
+              row.changeable || row.refundable
+                ? [
+                    row.changeable ? "Changeable" : null,
+                    row.refundable ? "Refundable" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
+                : "Not confirmed",
+          },
+          protected_connection: row.protected_connection,
+          separate_tickets: null,
+          self_transfer: null,
+          redirect_url: row.deep_link || null,
+          action_type: row.deep_link ? "external_redirect" : "unavailable",
+          checked_at: row.checked_at,
+          expires_at: row.expires_at || null,
+          last_ticketing_date: row.last_ticketing_date ?? null,
+          environment: row.live_mode ? "live" : "test",
+        },
+      ],
+    });
   };
 
   if (!criteria) {
@@ -252,7 +293,12 @@ function FlightResultsContent() {
   return (
     <div className="space-y-4">
       <FlightSearchSummary params={criteria} resultCount={sorted.length} loading={loading} />
-      <FlightTrustStrip />
+      <FlightTrustStrip
+        environment={searchEnvironment}
+        liveMode={searchLiveMode}
+        providerStatuses={providerStatuses}
+        partialResults={partialResults}
+      />
 
       <FlightResultsToolbar
         sortMode={sortMode}
@@ -265,23 +311,16 @@ function FlightResultsContent() {
         onOpenSort={() => setMobileSortOpen(true)}
       />
 
-      {showEdit ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <FlightSearchForm initial={criteria} compact />
-          <button type="button" onClick={() => setShowEdit(false)} className="mt-4 text-sm font-bold text-slate-600 hover:text-slate-900">
-            Cancel edit
-          </button>
-        </div>
-      ) : null}
-
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-        <aside className="hidden lg:block lg:w-72 lg:shrink-0">
+      <div className="flex gap-6">
+        <aside className="hidden w-72 shrink-0 lg:block">
           <div className="sticky top-24">
             <FlightFilterPanel
               filters={filters}
               airlines={airlineOptions}
               maxPrice={maxPrice}
               maxDuration={maxDuration}
+              resultCount={sorted.length}
+              filteredOutCount={filteredOutCount}
               journeys={rows}
               minPriceNonstop={minPriceNonstop}
               minPriceOneStop={minPriceOneStop}
@@ -301,10 +340,9 @@ function FlightResultsContent() {
             />
           </div>
 
-          {!loading ? (
-            <p className="px-1 text-sm text-slate-600">
-              {sorted.length} live {sorted.length === 1 ? "fare" : "fares"} for your search
-              {filteredOutCount > 0 ? ` · ${filteredOutCount} hidden by filters` : ""}
+          {searchMessage && sorted.length > 0 ? (
+            <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-600">
+              {searchMessage}
             </p>
           ) : null}
 
@@ -331,24 +369,24 @@ function FlightResultsContent() {
             </div>
           ) : null}
 
-          {!loading && searchMessage && sorted.length === 0 && !errorBanner ? (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-              {searchMessage}
-            </div>
-          ) : null}
-
           {!loading && sorted.length === 0 && !errorBanner ? (
-            <div className="rounded-xl border border-slate-200 bg-white px-6 py-12 text-center">
+            <div className="rounded-xl border border-slate-200 bg-white px-6 py-8 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
                 <Plane className="h-7 w-7 text-slate-400" />
               </div>
               <p className="mt-4 text-base font-bold text-slate-900">
-                {filteredOutCount > 0 ? "No flights match your filters" : "No flights found"}
+                {filteredOutCount > 0
+                  ? "No flights match your filters"
+                  : travelpayoutsEmpty
+                    ? "No cached Aviasales fares for this search"
+                    : "No flights found"}
               </p>
               <p className="mx-auto mt-2 max-w-sm text-sm text-slate-600">
                 {filteredOutCount > 0
                   ? "Try clearing filters or adjusting your departure time window."
-                  : "Try different dates or adjust your advanced options."}
+                  : travelpayoutsEmpty
+                    ? "Travelpayouts responded successfully, but Aviasales did not return a cached fare for this route and date. Try a major nearby airport or different dates."
+                    : searchMessage || "Try different dates or adjust your advanced options."}
               </p>
               <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
                 {filteredOutCount > 0 ? (
@@ -363,12 +401,47 @@ function FlightResultsContent() {
                 <button
                   type="button"
                   onClick={() => router.push("/flights")}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-teal-700"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-hover"
                 >
                   <Search className="h-4 w-4" />
                   Edit search
                 </button>
               </div>
+              {routeRecovery.length > 0 && filteredOutCount === 0 ? (
+                <div className="mx-auto mt-8 max-w-3xl border-t border-slate-200 pt-6 text-left">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <h2 className="text-base font-extrabold text-slate-950">Other ways to search this journey</h2>
+                      <p className="mt-1 text-xs leading-5 text-slate-600">
+                        These are alternate searches, not confirmed itineraries. Rovvy shows a price only after an authorized provider returns one.
+                      </p>
+                    </div>
+                    <span className="mt-2 text-xs font-bold uppercase tracking-wide text-primary sm:mt-0">Route recovery</span>
+                  </div>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    {routeRecovery.map((option) => (
+                      <button
+                        key={`${option.tier}-${option.origin}-${option.destination}`}
+                        type="button"
+                        onClick={() => tryRecoveredRoute(option)}
+                        className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-teal-400 hover:bg-primary-soft focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-extrabold text-slate-950">{option.title}</p>
+                            <p className="mt-1 text-lg font-black text-primary">{option.origin} → {option.destination}</p>
+                          </div>
+                          <Search className="mt-1 h-4 w-4 shrink-0 text-primary" />
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-slate-600">{option.explanation}</p>
+                        {option.separate_searches_required ? (
+                          <p className="mt-2 text-xs font-bold text-amber-700">Separate tickets or ground travel may be required.</p>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
@@ -382,7 +455,7 @@ function FlightResultsContent() {
                   sortMode={sortMode}
                   roundTrip={Boolean(criteria.return || criteria.tripType === "roundtrip")}
                   travelerCount={travelerCount}
-                  onSelect={() => selectOffer(row)}
+                  onSelect={() => openOptions(row)}
                   onDetails={() => void openDetails(row.id)}
                 />
               ))}
@@ -390,6 +463,10 @@ function FlightResultsContent() {
           ) : null}
         </div>
       </div>
+
+      {optionsGroup ? (
+        <FlightOptionsDrawer group={optionsGroup} onClose={() => setOptionsGroup(null)} />
+      ) : null}
 
       {detailsId ? (
         <FlightDetailsDrawer
@@ -400,10 +477,6 @@ function FlightResultsContent() {
             setDetailsOffer(null);
           }}
         />
-      ) : null}
-
-      {showAuthModal && pendingOfferPath ? (
-        <AuthRequiredModal onClose={() => setShowAuthModal(false)} returnPath={pendingOfferPath} />
       ) : null}
 
       <FlightMobileFiltersDrawer

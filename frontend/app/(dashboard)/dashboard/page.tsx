@@ -41,18 +41,18 @@ import { emitOpenWayra } from "@/lib/open-wayra";
 import WayraIcon from "@/components/ui/WayraIcon";
 
 /** Dashboard color roles — navy structure, teal primary, neutrals surfaces. */
-const NAVY = "#0F172A";
-const BRAND = "#0F766E";
+const NAVY = "#0F1614";
+const BRAND = "#0E6E5C";
 const BRAND_DARK = "#0D5C56";
 const BRAND_SUBTLE = "#F0FDFA";
-const BRAND_MUTED = "rgba(15, 118, 110, 0.12)";
+const BRAND_MUTED = "rgba(14, 110, 92, 0.12)";
 const CARD = "#FFFFFF";
 const SURFACE = "#F8F9FA";
 const SURFACE_ALT = "#FAFBFC";
 const BORDER = "#E9ECEF";
 const MUTED = "#6C757D";
 /** Text links — navy, quieter than filled primary buttons */
-const LINK = "#0F172A";
+const LINK = "#0F1614";
 const SUCCESS = "#22C55E";
 const SUCCESS_SUBTLE = "#F0FDF4";
 const SUCCESS_BORDER = "#BBF7D0";
@@ -1728,7 +1728,7 @@ export default function DashboardPage() {
                 className={
                   a.primary
                     ? "group rounded-xl px-3 py-4 text-center text-[11px] font-bold text-white shadow-sm transition hover:opacity-95"
-                    : "group rounded-xl border bg-white px-3 py-4 text-center text-[11px] font-bold transition hover:border-[#0F172A]/25 hover:bg-[#F8F9FA]"
+                    : "group rounded-xl border bg-white px-3 py-4 text-center text-[11px] font-bold transition hover:border-[#0F1614]/25 hover:bg-[#F8F9FA]"
                 }
                 style={
                   a.primary

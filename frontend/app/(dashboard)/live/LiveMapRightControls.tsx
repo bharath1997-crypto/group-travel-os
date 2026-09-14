@@ -1,10 +1,13 @@
 "use client";
 
-import { Compass } from "lucide-react";
+import { Compass, Megaphone } from "lucide-react";
 import { MyLocationIcon } from "@/components/map/MapControlIcons";
 import type { LiveMapLayer } from "@/lib/map-providers";
 import LiveMapLayerControl from "./LiveMapLayerControl";
-import { LIVE_MAP_CONTROLS_RAIL_POSITION } from "./live-layout";
+import {
+  LIVE_MAP_CONTROLS_RAIL_POSITION,
+  liveMapControlsRailZClass,
+} from "./live-layout";
 import {
   isLiveMapDarkLayer,
   liveMapFloatBtnDark,
@@ -38,6 +41,9 @@ type Props = {
   onFriendTrackingChange?: (enabled: boolean) => void;
   savedPlacesLayerEnabled?: boolean;
   onSavedPlacesLayerChange?: (enabled: boolean) => void;
+  reportsLayerEnabled?: boolean;
+  onReportsLayerChange?: (enabled: boolean) => void;
+  onOpenReport?: () => void;
   mapViewMode?: LiveMapViewMode;
   onToggleViewMode?: () => void;
   isFullscreen?: boolean;
@@ -74,6 +80,9 @@ export default function LiveMapRightControls({
   onFriendTrackingChange,
   savedPlacesLayerEnabled,
   onSavedPlacesLayerChange,
+  reportsLayerEnabled,
+  onReportsLayerChange,
+  onOpenReport,
   mapViewMode,
   onToggleViewMode,
   isFullscreen,
@@ -89,7 +98,7 @@ export default function LiveMapRightControls({
 
   return (
     <div
-      className={`pointer-events-none flex flex-col items-end gap-1 ${LIVE_MAP_CONTROLS_RAIL_POSITION}`}
+      className={`pointer-events-none flex flex-col items-end gap-1 ${LIVE_MAP_CONTROLS_RAIL_POSITION} ${liveMapControlsRailZClass(layersPanelOpen)}`}
     >
       <div className="pointer-events-auto">
         <LiveMapLayerControl
@@ -107,6 +116,8 @@ export default function LiveMapRightControls({
           onFriendTrackingChange={onFriendTrackingChange}
           savedPlacesLayerEnabled={savedPlacesLayerEnabled}
           onSavedPlacesLayerChange={onSavedPlacesLayerChange}
+          reportsLayerEnabled={reportsLayerEnabled}
+          onReportsLayerChange={onReportsLayerChange}
           open={layersPanelOpen}
           onOpenChange={onLayersPanelOpenChange}
           showTrigger={false}
@@ -123,6 +134,20 @@ export default function LiveMapRightControls({
           onResetNorth={onResetNorth}
         />
       </div>
+
+      {onOpenReport ? (
+        <div className="pointer-events-auto mb-0.5">
+          <button
+            type="button"
+            onClick={onOpenReport}
+            className={`relative ${liveMapFloatBtnLight(false, isDark)}`}
+            title="Report place vibe"
+            aria-label="Report place vibe"
+          >
+            <Megaphone className="h-[18px] w-[18px]" aria-hidden />
+          </button>
+        </div>
+      ) : null}
 
       <div className="pointer-events-auto">
         <button

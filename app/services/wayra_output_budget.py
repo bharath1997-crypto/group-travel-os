@@ -10,12 +10,14 @@ from app.services.wayra_intent import normalize_query
 
 # Defaults — override via env (WAYRA_OUTPUT_TOKENS_*).
 _DEFAULT_COMPACT = 400
+_DEFAULT_VOICE = 180
 _DEFAULT_STANDARD = 800
 _DEFAULT_PLAN = 1200
 _DEFAULT_FULL = 2048
 _DEFAULT_ORCHESTRATOR = 1200
 
 _DEFAULT_CHARS_COMPACT = 1200
+_DEFAULT_CHARS_VOICE = 360
 _DEFAULT_CHARS_STANDARD = 2400
 _DEFAULT_CHARS_PLAN = 4000
 _DEFAULT_CHARS_FULL = 6000
@@ -34,7 +36,7 @@ class WayraOutputBudget:
     max_output_tokens: int
     max_message_chars: int
     orchestrator_max_tokens: int
-    style: str  # compact | standard | plan | full
+    style: str  # compact | voice | standard | plan | full
 
 
 _PLAN_QUESTION_RE = re.compile(
@@ -60,8 +62,19 @@ def is_plan_question(message: str) -> bool:
     return bool(_PLAN_QUESTION_RE.search(normalize_query(message)))
 
 
-def resolve_output_budget(tier: str, user_message: str = "") -> WayraOutputBudget:
+def resolve_output_budget(tier: str, user_message: str = "", *, voice_mode: bool = False) -> WayraOutputBudget:
     """Map answer tier + question shape to explicit output limits."""
+    if voice_mode or tier == "voice":
+        tokens = _env_int("WAYRA_OUTPUT_TOKENS_VOICE", _DEFAULT_VOICE)
+        chars = _env_int("WAYRA_OUTPUT_CHARS_VOICE", _DEFAULT_CHARS_VOICE)
+        return WayraOutputBudget(
+            tier="voice",
+            max_output_tokens=tokens,
+            max_message_chars=chars,
+            orchestrator_max_tokens=min(tokens + 120, _env_int("WAYRA_OUTPUT_TOKENS_ORCHESTRATOR", _DEFAULT_ORCHESTRATOR)),
+            style="voice",
+        )
+
     if tier == "nearby":
         tokens = _env_int("WAYRA_OUTPUT_TOKENS_COMPACT", _DEFAULT_COMPACT)
         chars = _env_int("WAYRA_OUTPUT_CHARS_COMPACT", _DEFAULT_CHARS_COMPACT)

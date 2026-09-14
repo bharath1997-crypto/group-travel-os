@@ -101,9 +101,9 @@ function relativeTime(date: Date): string {
 // Device icon
 // ─────────────────────────────────────────────
 function DeviceIcon({ isMobile, os }: { isMobile: boolean; os: string }) {
-  if (isMobile) return <Smartphone size={16} strokeWidth={1.8} className="text-teal-700" />;
-  if (/macOS|iPad/.test(os)) return <Laptop size={16} strokeWidth={1.8} className="text-teal-700" />;
-  return <Monitor size={16} strokeWidth={1.8} className="text-teal-700" />;
+  if (isMobile) return <Smartphone size={16} strokeWidth={1.8} className="text-primary" />;
+  if (/macOS|iPad/.test(os)) return <Laptop size={16} strokeWidth={1.8} className="text-primary" />;
+  return <Monitor size={16} strokeWidth={1.8} className="text-primary" />;
 }
 
 // ─────────────────────────────────────────────
@@ -135,14 +135,14 @@ function useCurrentSession(): SessionData | null {
 // ─────────────────────────────────────────────
 function CurrentSessionCard({ session }: { session: SessionData }) {
   return (
-    <div className="mx-1 overflow-hidden rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50 to-white">
+    <div className="mx-1 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-teal-50 to-white">
       {/* Top accent bar */}
       <div className="h-1 w-full bg-gradient-to-r from-teal-400 to-teal-600" aria-hidden="true" />
 
       <div className="px-4 py-4">
         {/* Device row */}
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-teal-100 bg-white shadow-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-white shadow-sm">
             <DeviceIcon isMobile={session.isMobile} os={session.os} />
           </div>
           <div className="flex-1 min-w-0">
@@ -150,7 +150,7 @@ function CurrentSessionCard({ session }: { session: SessionData }) {
               <p className="text-[14px] font-semibold text-neutral-900">
                 {session.browser}
               </p>
-              <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-teal-700">
+              <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-primary">
                 CURRENT SESSION
               </span>
             </div>
@@ -199,7 +199,7 @@ function CurrentSessionCard({ session }: { session: SessionData }) {
               <p className="text-[10px] font-medium uppercase tracking-wide text-stone-400">
                 Status
               </p>
-              <p className="truncate text-[12px] font-semibold text-teal-700">Active</p>
+              <p className="truncate text-[12px] font-semibold text-primary">Active</p>
             </div>
           </div>
         </div>
@@ -304,8 +304,8 @@ function ActionRow({
 }) {
   const iconCls = danger
     ? "border-red-100 bg-red-50"
-    : "border-teal-100 bg-teal-50";
-  const iconColor = danger ? "text-red-500" : "text-teal-700";
+    : "border-primary/20 bg-primary-soft";
+  const iconColor = danger ? "text-red-500" : "text-primary";
   const disabledCls = disabled
     ? "cursor-default select-none opacity-70 pointer-events-none"
     : "";
@@ -483,7 +483,7 @@ export default function LoginActivityPage() {
       </div>
 
       {/* ── Security tips ─────────────────────────── */}
-      <div className="mx-3 mt-3 rounded-2xl border border-teal-100 bg-teal-50 px-4 py-3.5">
+      <div className="mx-3 mt-3 rounded-2xl border border-primary/20 bg-primary-soft px-4 py-3.5">
         <p className="mb-2 text-[12px] font-semibold text-teal-800">
           Keep your account safe
         </p>
@@ -496,7 +496,7 @@ export default function LoginActivityPage() {
           ].map((tip) => (
             <li key={tip} className="flex items-start gap-2">
               <CheckCircle2 size={11} className="mt-0.5 shrink-0 text-teal-500" />
-              <p className="text-[11px] leading-snug text-teal-700">{tip}</p>
+              <p className="text-[11px] leading-snug text-primary">{tip}</p>
             </li>
           ))}
         </ul>

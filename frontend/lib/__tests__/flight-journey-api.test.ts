@@ -3,7 +3,7 @@ import { buildFlightSearchRequestBody } from "@/lib/flight-journey-api";
 import type { FlightSearchParams } from "@/lib/flight-types";
 
 describe("buildFlightSearchRequestBody", () => {
-  it("serializes one-way search", () => {
+  it("serializes one-way search with explicit departure window", () => {
     const params: FlightSearchParams = {
       from: "ORD",
       to: "HYD",
@@ -21,6 +21,23 @@ describe("buildFlightSearchRequestBody", () => {
     expect(body.slices).toHaveLength(1);
     expect(body.slices[0].origin).toBe("ORD");
     expect(body.slices[0].departure_time_to).toBe("12:00");
+  });
+
+  it("omits legacy placeholder departure window", () => {
+    const params: FlightSearchParams = {
+      from: "ORD",
+      to: "HYD",
+      depart: "2026-10-10",
+      adults: 1,
+      children: 0,
+      infants: 0,
+      cabin: "M",
+      tripType: "oneway",
+      departureTimeTo: "12:00",
+    };
+    const body = buildFlightSearchRequestBody(params);
+    expect(body.slices[0].departure_time_from).toBeUndefined();
+    expect(body.slices[0].departure_time_to).toBeUndefined();
   });
 
   it("serializes round-trip with reciprocal slices", () => {

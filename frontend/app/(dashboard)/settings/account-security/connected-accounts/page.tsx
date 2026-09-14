@@ -101,11 +101,11 @@ function ServiceRow({
 }) {
   const inner = (
     <>
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
         <Icon
           size={16}
           strokeWidth={1.8}
-          className={comingSoon ? "text-teal-400" : "text-teal-700"}
+          className={comingSoon ? "text-teal-400" : "text-primary"}
         />
       </div>
       <div className="min-w-0 flex-1">
@@ -169,8 +169,8 @@ function SecurityRow({
   return (
     <div className={`px-4 py-3.5 ${last ? "" : "border-b border-stone-100"}`}>
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
-          <Icon size={16} strokeWidth={1.8} className="text-teal-700" />
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
+          <Icon size={16} strokeWidth={1.8} className="text-primary" />
         </div>
         <div>
           <p className="text-[14px] font-medium text-neutral-900">{label}</p>

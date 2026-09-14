@@ -4,22 +4,31 @@
  */
 
 export const ROVVY_COLORS = {
-  primary: "#0F766E",
-  primaryHover: "#0D635C",
-  primarySoft: "#CCFBF1",
-  navy: "#0F172A",
+  primary: "#0E6E5C",
+  primaryHover: "#0A4A3E",
+  primarySoft: "#DCEAE5",
+  primaryLight: "#12856F",
+  primaryDark: "#0A4A3E",
+  primaryHighlight: "#BFF0E1",
+  primaryDot: "#6FE0C0",
+  navy: "#0F1614",
   surface: "#1E293B",
-  appBg: "#F8FAFC",
+  appBg: "#FBFAF7",
+  cream: "#F1EFE8",
   card: "#FFFFFF",
-  text: "#0F172A",
-  textOnDark: "#F8FAFC",
-  muted: "#94A3B8",
-  border: "#E2E8F0",
+  text: "#0F1614",
+  textOnDark: "#F6F4EF",
+  body: "#3A423B",
+  bodyMuted: "#2A312B",
+  muted: "#5F665F",
+  border: "rgba(15, 22, 20, 0.12)",
   success: "#22C55E",
   warning: "#F59E0B",
-  error: "#EF4444",
-  info: "#0F766E",
-  overlay: "rgba(15, 23, 42, 0.45)",
+  error: "#D2453D",
+  live: "#D2453D",
+  wayraAccent: "#C9BFFF",
+  info: "#0E6E5C",
+  overlay: "rgba(7, 17, 14, 0.5)",
 } as const;
 
 export const ROVVY_RADIUS = {
@@ -27,12 +36,20 @@ export const ROVVY_RADIUS = {
   card: "1.25rem",
   modal: "1rem",
   pill: "9999px",
+  sheet: "1.625rem",
+  xl: "1.375rem",
+  md: "1.125rem",
+  badge: "0.4375rem",
 } as const;
 
 export const ROVVY_SHADOW = {
-  card: "0 18px 45px -30px rgba(15, 23, 42, 0.32)",
-  panel: "0 12px 32px rgba(15, 23, 42, 0.12)",
-  float: "0 8px 24px rgba(15, 23, 42, 0.10)",
+  card: "0 18px 45px -30px rgba(15, 22, 20, 0.32)",
+  panel: "0 12px 32px rgba(15, 22, 20, 0.12)",
+  float: "0 8px 24px rgba(15, 22, 20, 0.10)",
+  composer: "0 24px 50px -34px rgba(15, 22, 20, 0.5)",
+  bar: "0 20px 44px -20px rgba(15, 22, 20, 0.7)",
+  drawer: "-30px 0 80px rgba(0, 0, 0, 0.34)",
+  sheet: "0 -20px 60px rgba(0, 0, 0, 0.3)",
 } as const;
 
 export const ROVVY_LAYOUT = {
@@ -64,16 +81,16 @@ export const rovvy = {
     "inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-border bg-card px-4 text-sm font-semibold text-text shadow-sm transition hover:bg-app focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60",
   btnGhost:
     "inline-flex min-h-11 items-center justify-center gap-2 rounded-control px-3 text-sm font-semibold text-text transition hover:bg-app focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-  badge:
-    "inline-flex items-center rounded-pill px-2.5 py-0.5 text-xs font-semibold",
+  badge: "inline-flex items-center rounded-pill px-2.5 py-0.5 text-xs font-semibold",
   badgePrimary: "bg-primary-soft text-primary",
   badgeMuted: "bg-app text-muted border border-border",
   divider: "border-border",
-  focusRing: "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+  focusRing:
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
   navActiveLight: "text-primary bg-primary-soft ring-1 ring-primary/15",
   navIdleLight: "text-muted hover:text-text hover:bg-app",
   navActiveDark:
-    "bg-primary/10 text-text-on-dark shadow-[inset_0_0_0_1px_rgba(15,118,110,0.35)]",
+    "bg-primary/10 text-text-on-dark shadow-[inset_0_0_0_1px_rgba(14,110,92,0.35)]",
   navIdleDark: "text-muted hover:bg-white/5 hover:text-text-on-dark",
   emptyState:
     "flex flex-col items-center justify-center rounded-card border border-dashed border-border bg-card px-6 py-12 text-center",

@@ -24,6 +24,8 @@ type Props = {
   onSelect: () => void;
   onDetails?: () => void;
   travelerCount?: number;
+  optionCount?: number;
+  qualityNote?: string;
 };
 
 function ProtectionBadge({ journey }: { journey: FlightJourney }) {
@@ -90,6 +92,8 @@ export default function FlightOfferCard({
   onSelect,
   onDetails,
   travelerCount = 1,
+  optionCount = 1,
+  qualityNote,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const recommended = isRecommendedJourney(journey, sortedJourneys, sortMode);
@@ -100,12 +104,12 @@ export default function FlightOfferCard({
 
   return (
     <article
-      className={`relative rounded-xl border bg-white p-4 md:p-5 transition-colors ${
+      className={`relative overflow-hidden rounded-xl border bg-white p-4 transition-all hover:-translate-y-px hover:shadow-md ${
         recommended ? "border-teal-400 ring-1 ring-teal-500/15" : "border-slate-200 hover:border-teal-200"
       }`}
     >
       {recommended ? (
-        <div className="mb-3 inline-flex items-center gap-1 rounded-full bg-teal-600 px-3 py-0.5 text-[11px] font-bold text-white">
+        <div className="mb-3 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-0.5 text-[11px] font-bold text-white">
           <Sparkles className="h-3 w-3" />
           <span>Rovvy Recommended</span>
           {journey.recommendation_reason ? (
@@ -114,8 +118,8 @@ export default function FlightOfferCard({
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-        <div className="min-w-0 flex-1 space-y-4">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-stretch xl:justify-between">
+        <div className="min-w-0 flex-1 space-y-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <AirlineIdentity
               airlineCodes={journey.airlines}
@@ -159,15 +163,21 @@ export default function FlightOfferCard({
           )}
 
           {recommended && journey.recommendation_reason ? (
-            <p className="text-xs leading-relaxed text-teal-700">{journey.recommendation_reason}</p>
+            <p className="text-xs leading-relaxed text-primary">{journey.recommendation_reason}</p>
           ) : null}
 
-          <div className="flex flex-wrap items-center gap-2">
+          {qualityNote ? (
+            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600">
+              {qualityNote}
+            </p>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-1 border-t border-slate-100 pt-1">
             <button
               type="button"
               onClick={() => setExpanded((value) => !value)}
               aria-expanded={expanded}
-              className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
             >
               {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               {expanded ? "Hide segment timeline" : "View segment timeline"}
@@ -176,7 +186,7 @@ export default function FlightOfferCard({
               <button
                 type="button"
                 onClick={onDetails}
-                className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-teal-700 hover:bg-teal-50"
+                className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-primary hover:bg-primary-soft"
               >
                 <Info className="h-4 w-4" />
                 Fare details
@@ -194,6 +204,7 @@ export default function FlightOfferCard({
           travelerCount={travelerCount}
           onSelect={onSelect}
           expired={expired}
+          optionCount={optionCount}
         />
       </div>
     </article>

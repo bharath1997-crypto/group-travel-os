@@ -398,7 +398,7 @@ export function LoungeChatWindow({
         ) : null}
 
         {replyTo ? (
-          <div className="flex shrink-0 items-center gap-2 border-b border-teal-100 bg-teal-50 px-3 py-1.5 text-[10px]">
+          <div className="flex shrink-0 items-center gap-2 border-b border-primary/20 bg-primary-soft px-3 py-1.5 text-[10px]">
             <Reply size={12} className="shrink-0 text-primary" />
             <span className="flex-1 truncate text-slate-700">
               Replying to <strong>{replyTo.sender_name}</strong>: {replyTo.text.slice(0, 40)}
@@ -434,7 +434,7 @@ export function LoungeChatWindow({
                       })}
                     </span>
                     {isUser && !m.type ? (
-                      <CheckCheck size={10} className="text-teal-600" aria-label="Sent" />
+                      <CheckCheck size={10} className="text-primary" aria-label="Sent" />
                     ) : null}
                   </div>
                   <div

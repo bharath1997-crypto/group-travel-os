@@ -185,14 +185,14 @@ function travelpayoutsWidgetUrl(extra: Record<string, string>): string {
     powered_by: "true",
     locale: "en",
     searchUrl: "www.aviasales.com/search",
-    primary_override: "#0F766E",
-    color_button: "#0F766E",
-    color_icons: "#0F766E",
+    primary_override: "#0E6E5C",
+    color_button: "#0E6E5C",
+    color_icons: "#0E6E5C",
     color_text: "#FFFFFF",
     color_bg: "#FFFFFF",
     color_bg_search: "#1F2326",
     color_border: "#C4C4C4",
-    color_focused: "#0F766E",
+    color_focused: "#0E6E5C",
     border_radius: "0",
     plain: "false",
     ...extra,
@@ -213,7 +213,7 @@ export function buildTravelpayoutsFlightSearchWidgetUrl(handoff: TravelHandoffCo
 
 export function buildTravelpayoutsScheduleWidgetUrl(handoff: TravelHandoffContext | null): string {
   const extra: Record<string, string> = {
-    color_button: "#0F766E",
+    color_button: "#0E6E5C",
     target_host: "www.aviasales.com/search",
     one_way: "false",
     only_direct: "false",

@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#0B1210; color:#0F1614; font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif; -webkit-font-smoothing:antialiased; overflow:hidden; }
+  a { color:#0E6E5C; text-decoration:none; }
+  a:hover { color:#093F35; }
+  * { box-sizing:border-box; }
+  ::-webkit-scrollbar { height:6px; width:6px; }
+  ::-webkit-scrollbar-thumb { background:rgba(15,22,20,0.24); border-radius:6px; }
+  @keyframes rvPop { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+  @keyframes rvIn { from { opacity:0; transform:translateX(24px); } to { opacity:1; transform:none; } }
+  @keyframes rvUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+  @keyframes rvPulse { 0%,100% { opacity:.25; transform:scale(1); } 50% { opacity:.6; transform:scale(1.5); } }
+  @keyframes rvDrop { 0% { opacity:0; transform:translateY(-14px) scale(.9); } 60% { transform:translateY(2px) scale(1.04); } 100% { opacity:1; transform:none; } }
+  input::placeholder { color:#9AA3A0; }
+  @media (max-width: 1180px) { [data-navlabel] { display:none; } }
+  @media (max-width: 900px)  { [data-navsecondary] { display:none !important; } }
+</style>
+</helmet>
+
+<div style="position:relative;width:100%;height:100vh;overflow:hidden;background:#0B1210">
+
+  <div style="position:absolute;inset:0;background:#0C1412">
+    <div style="position:absolute;inset:0;background-image:linear-gradient(0deg,rgba(150,170,164,0.2) 1.5px,transparent 1.5px),linear-gradient(90deg,rgba(150,170,164,0.2) 1.5px,transparent 1.5px);background-size:126px 104px;background-position:-20px -14px"></div>
+    <div style="position:absolute;inset:0;background-image:linear-gradient(0deg,rgba(150,170,164,0.1) 1px,transparent 1px),linear-gradient(90deg,rgba(150,170,164,0.1) 1px,transparent 1px);background-size:31.5px 26px"></div>
+    <div style="position:absolute;inset:0;background-image:linear-gradient(0deg,rgba(180,200,194,0.34) 3px,transparent 3px);background-size:100% 416px;background-position:0 92px"></div>
+    <div style="position:absolute;inset:0;background-image:linear-gradient(90deg,rgba(180,200,194,0.34) 3px,transparent 3px);background-size:504px 100%;background-position:100px 0"></div>
+    <div style="position:absolute;left:52%;top:30%;width:236px;height:286px;border-radius:44% 56% 48% 52%;background:rgba(28,74,58,0.6)"></div>
+    <div style="position:absolute;left:10%;top:62%;width:178px;height:126px;border-radius:38% 54% 42% 58%;background:rgba(28,74,58,0.42)"></div>
+    <div style="position:absolute;left:0;right:0;top:50%;height:24px;background:rgba(24,52,76,0.52);transform:rotate(-1.1deg)"></div>
+    <div style="position:absolute;left:55%;top:36%;font-size:18px;font-weight:500;line-height:1.2;color:rgba(122,196,168,0.58)">Mozart<br>Park</div>
+    <div style="position:absolute;left:12%;top:14%;font-size:13px;font-weight:500;line-height:1.25;color:rgba(206,198,150,0.46)">Nixon<br>Elementary</div>
+    <div style="position:absolute;left:4%;top:29%;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(168,186,180,0.42)">West Dickens Avenue</div>
+    <div style="position:absolute;left:38%;top:84%;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(168,186,180,0.42)">West Cortland Street</div>
+
+    <sc-if value="{{ showRoutes }}" hint-placeholder-val="{{ false }}">
+      <svg viewBox="0 0 1200 700" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none">
+        <path d="M120 620 C 260 560, 300 470, 430 430 C 540 396, 590 350, 648 322" fill="none" stroke="#0E6E5C" stroke-opacity="0.32" stroke-width="11" stroke-linecap="round"></path>
+        <path d="M120 620 C 260 560, 300 470, 430 430 C 540 396, 590 350, 648 322" fill="none" stroke="#6FE0C0" stroke-width="3.5" stroke-linecap="round"></path>
+        <path d="M1060 140 C 940 200, 880 250, 790 282 C 730 302, 690 312, 656 318" fill="none" stroke="#8A7BD8" stroke-opacity="0.3" stroke-width="11" stroke-linecap="round"></path>
+        <path d="M1060 140 C 940 200, 880 250, 790 282 C 730 302, 690 312, 656 318" fill="none" stroke="#C9BFFF" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="14 10"></path>
+        <path d="M250 120 C 330 190, 420 240, 520 282 C 580 306, 620 314, 644 318" fill="none" stroke="#D8A23A" stroke-opacity="0.28" stroke-width="11" stroke-linecap="round"></path>
+        <path d="M250 120 C 330 190, 420 240, 520 282 C 580 306, 620 314, 644 318" fill="none" stroke="#F0C978" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="14 10"></path>
+      </svg>
+    </sc-if>
+
+    <div style="position:absolute;left:47%;top:80%;width:104px;height:104px;border-radius:999px;background:radial-gradient(circle,rgba(64,132,232,0.28),transparent 70%);transform:translate(-50%,-50%)"></div>
+    <div style="position:absolute;left:47%;top:80%;width:14px;height:14px;border-radius:999px;background:#4084E8;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.5);transform:translate(-50%,-50%)"></div>
+    <div style="position:absolute;left:47%;top:80%;transform:translate(-50%,14px);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.72);background:rgba(9,17,15,0.7);padding:3px 7px;border-radius:5px;white-space:nowrap">You</div>
+
+    <sc-if value="{{ showVotePins }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ focusPin }}" data-pin="Fulton Kitchen" style="position:absolute;left:54%;top:46%;transform:translate(-50%,-100%);border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit;animation:rvDrop .3s ease both">
+        <span style="position:relative;display:flex;flex-direction:column;align-items:center">
+          <span style="display:flex;align-items:center;gap:6px;padding:7px 11px;border-radius:12px;background:#FBFAF7;border:1.5px solid #0E6E5C;box-shadow:0 6px 18px rgba(0,0,0,0.4);white-space:nowrap">
+            <span style="font-size:12.5px;font-weight:600;color:#0F1614">Fulton Kitchen</span>
+            <span data-accent-bg="1" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:500;color:#fff;background:#0E6E5C;padding:2px 6px;border-radius:999px">3</span>
+          </span>
+          <span style="width:2px;height:16px;background:#0E6E5C"></span>
+          <span data-accent-dot="1" style="width:11px;height:11px;border-radius:999px;background:#0E6E5C;border:2px solid #FBFAF7"></span>
+        </span>
+      </button>
+      <button onClick="{{ focusPin }}" data-pin="Taco crawl" style="position:absolute;left:53%;top:64%;transform:translate(-50%,-100%);border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit;animation:rvDrop .3s .06s ease both">
+        <span style="position:relative;display:flex;flex-direction:column;align-items:center">
+          <span style="display:flex;align-items:center;gap:6px;padding:7px 11px;border-radius:12px;background:rgba(251,250,247,0.94);border:1px solid rgba(15,22,20,0.14);box-shadow:0 6px 18px rgba(0,0,0,0.36);white-space:nowrap">
+            <span style="font-size:12.5px;font-weight:500;color:#2A312B">Taco crawl</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5F665F;background:#EDEAE2;padding:2px 6px;border-radius:999px">1</span>
+          </span>
+          <span style="width:2px;height:16px;background:rgba(251,250,247,0.8)"></span>
+          <span style="width:11px;height:11px;border-radius:999px;background:#FBFAF7;border:2px solid rgba(15,22,20,0.3)"></span>
+        </span>
+      </button>
+      <button onClick="{{ focusPin }}" data-pin="Ramen counter" style="position:absolute;left:78%;top:44%;transform:translate(-50%,-100%);border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit;animation:rvDrop .3s .12s ease both">
+        <span style="position:relative;display:flex;flex-direction:column;align-items:center">
+          <span style="display:flex;align-items:center;gap:6px;padding:7px 11px;border-radius:12px;background:rgba(251,250,247,0.94);border:1px solid rgba(15,22,20,0.14);box-shadow:0 6px 18px rgba(0,0,0,0.36);white-space:nowrap">
+            <span style="font-size:12.5px;font-weight:500;color:#2A312B">Ramen counter</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5F665F;background:#EDEAE2;padding:2px 6px;border-radius:999px">0</span>
+          </span>
+          <span style="width:2px;height:16px;background:rgba(251,250,247,0.8)"></span>
+          <span style="width:11px;height:11px;border-radius:999px;background:#FBFAF7;border:2px solid rgba(15,22,20,0.3)"></span>
+        </span>
+      </button>
+    </sc-if>
+
+    <sc-if value="{{ showDest }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:54%;top:46%;transform:translate(-50%,-100%);animation:rvDrop .3s ease both">
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <div data-accent-bg="1" style="display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:12px;background:linear-gradient(150deg,#12856F,#0A4A3E);box-shadow:0 8px 22px rgba(0,0,0,0.45);white-space:nowrap">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4h11l-1.6 4.2L17 12H6"></path></svg>
+            <span style="font-size:12.5px;font-weight:600;color:#fff">Fulton Kitchen</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,0.78)">7:00 PM</span>
+          </div>
+          <div data-accent-bg="1" style="width:2px;height:18px;background:#0E6E5C"></div>
+          <div data-accent-dot="1" style="width:12px;height:12px;border-radius:999px;background:#0E6E5C;border:2.5px solid #FBFAF7"></div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showFriends }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ focusFriend }}" data-who="Ana" style="position:absolute;left:56%;top:70%;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit">
+        <span style="position:relative;display:block;width:40px;height:40px">
+          <span style="position:absolute;inset:0;border-radius:999px;border:2.5px solid #6FE0C0;background:#F0E5D2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#7A5A22;box-shadow:0 4px 14px rgba(0,0,0,0.42)">AR</span>
+          <span style="position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;color:#04120E;background:#6FE0C0;padding:2px 6px;border-radius:999px;white-space:nowrap">8 min</span>
+        </span>
+      </button>
+      <button onClick="{{ focusFriend }}" data-who="Tomas" style="position:absolute;left:80%;top:26%;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit">
+        <span style="position:relative;display:block;width:40px;height:40px">
+          <span style="position:absolute;inset:0;border-radius:999px;border:2.5px solid #C9BFFF;background:#E4E1F2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#474079;box-shadow:0 4px 14px rgba(0,0,0,0.42)">TK</span>
+          <span style="position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;color:#1B1636;background:#C9BFFF;padding:2px 6px;border-radius:999px;white-space:nowrap">22 min</span>
+        </span>
+      </button>
+      <button onClick="{{ focusFriend }}" data-who="Sam" style="position:absolute;left:63%;top:16%;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit">
+        <span style="position:relative;display:block;width:40px;height:40px">
+          <span style="position:absolute;inset:0;border-radius:999px;border:2.5px solid rgba(170,178,172,0.7);background:#D8D5CC;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#5A615A;box-shadow:0 4px 14px rgba(0,0,0,0.42)">SM</span>
+          <span style="position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;color:#F6F4EF;background:rgba(90,97,90,0.94);padding:2px 6px;border-radius:999px;white-space:nowrap">4m ago</span>
+        </span>
+      </button>
+    </sc-if>
+
+    <sc-if value="{{ showReports }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ focusReport }}" data-r="line" style="position:absolute;left:62%;top:38%;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit;animation:rvDrop .26s ease both">
+        <span style="display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:rgba(210,69,61,0.95);box-shadow:0 5px 16px rgba(0,0,0,0.4);white-space:nowrap">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 8v4.5l3 1.8"></path></svg>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#fff">45 min line</span>
+        </span>
+      </button>
+      <button onClick="{{ focusReport }}" data-r="packed" style="position:absolute;left:49%;top:55%;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit;animation:rvDrop .26s .08s ease both">
+        <span style="display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:rgba(216,162,58,0.92);box-shadow:0 5px 16px rgba(0,0,0,0.36);white-space:nowrap">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#2A1F06" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"></circle><circle cx="16" cy="9" r="2.4"></circle><path d="M3.5 19a5.5 5.5 0 0111 0M15 19a4 4 0 015.5-3.6"></path></svg>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#2A1F06">Packed</span>
+        </span>
+      </button>
+      <button onClick="{{ focusReport }}" data-r="quiet" style="position:absolute;left:86%;top:72%;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit;opacity:.62;animation:rvDrop .26s .16s ease both">
+        <span style="display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:rgba(251,250,247,0.9);box-shadow:0 5px 16px rgba(0,0,0,0.3);white-space:nowrap">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#2A312B">Quiet · 2h ago</span>
+        </span>
+      </button>
+    </sc-if>
+  </div>
+
+  <header style="position:absolute;top:0;left:0;right:0;z-index:50;height:64px;background:#FBFAF7;border-bottom:1px solid rgba(15,22,20,0.08);display:flex;align-items:center;gap:18px;padding:0 26px">
+    <div style="flex:0 0 auto;display:flex;align-items:center;gap:9px">
+      <div data-accent-bg="1" style="width:26px;height:26px;border-radius:9px;background:linear-gradient(150deg,#12856F,#0A4A3E);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13.5px">R</div>
+      <span style="font-family:'Instrument Serif',Georgia,serif;font-size:23px;letter-spacing:-0.015em">rovvy</span>
+    </div>
+    <div style="flex:1 1 auto;min-width:140px;max-width:480px;height:42px;display:flex;align-items:center;background:#fff;border:1px solid rgba(15,22,20,0.12);border-radius:999px;box-shadow:0 2px 10px rgba(15,22,20,0.06);padding:0 6px 0 17px">
+      <input type="text" placeholder="Search destinations, trips, activities…" aria-label="Search Rovvy" style="flex:1 1 auto;min-width:0;border:0;outline:none;background:transparent;font-family:inherit;font-size:14px;color:#0F1614">
+      <button onClick="{{ openWayra }}" aria-label="Ask Wayra" title="Ask Wayra" style-hover="background:#DCEAE5" style="flex:0 0 auto;width:32px;height:32px;border:0;border-radius:999px;background:transparent;color:#0E6E5C;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path></svg></button>
+      <button data-accent-bg="1" aria-label="Search" title="Search" style-hover="filter:brightness(1.1)" style="flex:0 0 auto;width:32px;height:32px;border:0;border-radius:999px;background:linear-gradient(150deg,#12856F,#0A4A3E);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:filter .15s"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path></svg></button>
+    </div>
+    <nav style="flex:0 0 auto;min-width:max-content;display:flex;align-items:center;justify-content:flex-end;gap:2px;white-space:nowrap">
+      <a href="#" data-navsecondary="1" aria-label="Explore" title="Explore" style="display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;font-size:14px;font-weight:500;color:#4A514A"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M15.6 8.4l-2.1 5.1-5.1 2.1 2.1-5.1z"></path></svg><span data-navlabel="1">Explore</span></a>
+      <a href="#" aria-label="Live" title="Live" style="display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;font-size:14px;font-weight:600;color:#0A4A3E;background:#DCEAE5"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.2"></circle><path d="M7.8 7.8a6 6 0 000 8.4M16.2 16.2a6 6 0 000-8.4M4.9 4.9a10 10 0 000 14.2M19.1 19.1a10 10 0 000-14.2"></path></svg><span data-navlabel="1">Live</span></a>
+      <a href="#" data-navsecondary="1" aria-label="Trips" title="Trips" style="display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;font-size:14px;font-weight:500;color:#4A514A"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7.5" width="18" height="12.5" rx="2.5"></rect><path d="M8.5 7.5V5.5a2 2 0 012-2h3a2 2 0 012 2v2M3 13h18"></path></svg><span data-navlabel="1">Trips</span></a>
+      <a href="#" data-navsecondary="1" aria-label="Splits" title="Splits" style="display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;font-size:14px;font-weight:500;color:#4A514A"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h11a5 5 0 010 10H8"></path><path d="M11 12l-3 3 3 3"></path><circle cx="19" cy="19" r="2"></circle></svg><span data-navlabel="1">Splits</span></a>
+      <div style="width:33px;height:33px;border-radius:999px;background:#DCEAE5;border:1px solid rgba(10,74,62,0.16);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0A4A3E;margin-left:8px">MJ</div>
+    </nav>
+  </header>
+
+  <div style="position:absolute;top:80px;right:84px;z-index:44;width:min(408px,calc(100vw - 490px))">
+    <div style="height:46px;display:flex;align-items:center;gap:8px;padding:0 6px 0 10px;background:rgba(9,17,24,0.78);backdrop-filter:blur(14px) saturate(140%);border:1px solid rgba(255,255,255,0.15);border-radius:9999px;box-shadow:0 4px 20px rgba(0,0,0,0.35)">
+      <button onClick="{{ toggleSetup }}" aria-label="Travel mode and workflow" title="{{ chipTitle }}" style-hover="background:rgba(255,255,255,0.16)" style="position:relative;flex:0 0 auto;display:flex;align-items:center;gap:8px;height:32px;padding:0 11px;border:1px solid rgba(255,255,255,0.18);border-radius:999px;background:rgba(255,255,255,0.08);cursor:pointer;font-family:inherit;transition:background .15s">
+        <span style="font-size:13px;line-height:1">🚗</span>
+        <span style="width:1px;height:15px;background:rgba(255,255,255,0.22)"></span>
+        <span style="font-size:12px;line-height:1">👥</span>
+      </button>
+      <input type="text" placeholder="Search places or meet points" aria-label="Search this map area" style="flex:1 1 auto;min-width:0;border:0;outline:none;background:transparent;font-family:inherit;font-size:14.5px;color:#fff">
+      <button onClick="{{ toggleSetup }}" style-hover="filter:brightness(1.04)" style="flex:0 0 auto;height:34px;padding:0 15px;border:0;border-radius:9999px;background:#DCEAE5;color:#0E6E5C;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:filter .15s;white-space:nowrap">Suggestions</button>
+    </div>
+  </div>
+
+  <div style="position:absolute;top:80px;left:22px;bottom:48px;z-index:46;width:min(356px,calc(100vw - 44px));display:flex;flex-direction:column;gap:10px;min-height:0">
+    <div style="flex:0 0 auto;align-self:flex-start;max-width:100%;display:flex;align-items:center;gap:3px;padding:4px;border-radius:999px;background:rgba(9,17,24,0.8);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.14);overflow-x:auto">
+      <button onClick="{{ go }}" data-s="setup" style="flex:0 0 auto;border:0;border-radius:999px;background:{{ bgSetup }};color:{{ fgSetup }};font-family:inherit;font-size:11px;font-weight:600;padding:6px 10px;cursor:pointer;white-space:nowrap">Setup</button>
+      <button onClick="{{ go }}" data-s="vote" style="flex:0 0 auto;border:0;border-radius:999px;background:{{ bgVote }};color:{{ fgVote }};font-family:inherit;font-size:11px;font-weight:600;padding:6px 10px;cursor:pointer;white-space:nowrap">Vote</button>
+      <button onClick="{{ go }}" data-s="converge" style="flex:0 0 auto;border:0;border-radius:999px;background:{{ bgConv }};color:{{ fgConv }};font-family:inherit;font-size:11px;font-weight:600;padding:6px 10px;cursor:pointer;white-space:nowrap">Converge</button>
+      <button onClick="{{ go }}" data-s="partial" style="flex:0 0 auto;border:0;border-radius:999px;background:{{ bgPart }};color:{{ fgPart }};font-family:inherit;font-size:11px;font-weight:600;padding:6px 10px;cursor:pointer;white-space:nowrap">Arrival</button>
+      <button onClick="{{ go }}" data-s="empty" style="flex:0 0 auto;border:0;border-radius:999px;background:{{ bgEmpty }};color:{{ fgEmpty }};font-family:inherit;font-size:11px;font-weight:600;padding:6px 10px;cursor:pointer;white-space:nowrap">Empty</button>
+    </div>
+    <div style="flex:1 1 auto;min-width:0;min-height:0;display:flex;flex-direction:column;gap:12px;overflow-y:auto;overflow-x:hidden;padding-bottom:4px">
+
+    <sc-if value="{{ isSetup }}" hint-placeholder-val="{{ true }}">
+      <div style="border-radius:22px;background:#FBFAF7;border:1px solid rgba(15,22,20,0.08);box-shadow:0 18px 44px -18px rgba(0,0,0,0.5);padding:18px;animation:rvIn .22s ease both">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:#5F665F;margin-bottom:10px">Travel mode</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:18px">
+          <button onClick="{{ setMode }}" data-m="Drive" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:40px;border-radius:14px;border:1px solid {{ bDrive }};background:{{ gDrive }};color:{{ tDrive }};font-family:inherit;font-size:10px;font-weight:700;cursor:pointer"><span style="font-size:13px;line-height:1">🚗</span>Drive</button>
+          <button onClick="{{ setMode }}" data-m="Bike" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:40px;border-radius:14px;border:1px solid {{ bBike }};background:{{ gBike }};color:{{ tBike }};font-family:inherit;font-size:10px;font-weight:700;cursor:pointer"><span style="font-size:13px;line-height:1">🚲</span>Bike</button>
+          <button onClick="{{ setMode }}" data-m="Trek" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:40px;border-radius:14px;border:1px solid {{ bTrek }};background:{{ gTrek }};color:{{ tTrek }};font-family:inherit;font-size:10px;font-weight:700;cursor:pointer"><span style="font-size:13px;line-height:1">🥾</span>Trek</button>
+          <button onClick="{{ setMode }}" data-m="Walk" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:40px;border-radius:14px;border:1px solid {{ bWalk }};background:{{ gWalk }};color:{{ tWalk }};font-family:inherit;font-size:10px;font-weight:700;cursor:pointer"><span style="font-size:13px;line-height:1">🚶</span>Walk</button>
+        </div>
+
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:#5F665F;margin-bottom:10px">Workflow</div>
+        <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:18px">
+          <button onClick="{{ setFlow }}" data-f="Solo" style="display:flex;align-items:center;gap:11px;padding:12px 13px;border-radius:16px;border:1px solid {{ bSolo }};background:{{ gSolo }};cursor:pointer;font-family:inherit;text-align:left">
+            <span style="flex:0 0 auto;font-size:15px;line-height:1">👤</span>
+            <span style="flex:1 1 auto;min-width:0"><span style="display:block;font-size:13.5px;font-weight:600;color:{{ tSolo }}">Solo</span><span style="display:block;font-size:11.5px;color:#5F665F;margin-top:1px">Route, nav, saves. Just you</span></span>
+          </button>
+          <button onClick="{{ setFlow }}" data-f="Group Travel" style="display:flex;align-items:center;gap:11px;padding:12px 13px;border-radius:16px;border:1px solid {{ bGroup }};background:{{ gGroup }};cursor:pointer;font-family:inherit;text-align:left">
+            <span style="flex:0 0 auto;font-size:15px;line-height:1">👥</span>
+            <span style="flex:1 1 auto;min-width:0"><span style="display:block;font-size:13.5px;font-weight:600;color:{{ tGroup }}">Group Travel</span><span style="display:block;font-size:11.5px;color:#5F665F;margin-top:1px">Meet point, live ETAs, votes, split</span></span>
+            <span data-accent-text="1" style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#0E6E5C">6 in</span>
+          </button>
+          <button onClick="{{ setFlow }}" data-f="Seat Share" style="display:flex;align-items:center;gap:11px;padding:12px 13px;border-radius:16px;border:1px solid {{ bSeat }};background:{{ gSeat }};cursor:pointer;font-family:inherit;text-align:left">
+            <span style="flex:0 0 auto;font-size:15px;line-height:1">💺</span>
+            <span style="flex:1 1 auto;min-width:0"><span style="display:block;font-size:13.5px;font-weight:600;color:{{ tSeat }}">Seat Share</span><span style="display:block;font-size:11.5px;color:#5F665F;margin-top:1px">Empty seats, pickup points, cost per head</span></span>
+          </button>
+        </div>
+
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:#5F665F;margin-bottom:10px">Destination</div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid rgba(15,22,20,0.1);border-radius:14px;background:#fff;margin-bottom:14px">
+          <span style="flex:1 1 auto;min-width:0;font-size:13.5px;color:{{ destColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ destText }}</span>
+          <button onClick="{{ setDest }}" data-accent-text="1" style="flex:0 0 auto;border:0;background:transparent;padding:0;font-family:inherit;font-size:12.5px;font-weight:700;color:#0E6E5C;cursor:pointer">{{ destAction }}</button>
+        </div>
+
+        <sc-if value="{{ isGroup }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:14px;border-radius:16px;background:#F1EFE8;margin-bottom:14px;animation:rvPop .18s ease both">
+            <div style="display:flex;align-items:center;gap:11px;margin-bottom:11px">
+              <div style="flex:0 0 auto;display:flex;align-items:center">
+                <span style="width:25px;height:25px;border-radius:999px;background:#F0E5D2;border:2px solid #F1EFE8;font-size:9px;font-weight:700;color:#7A5A22;display:flex;align-items:center;justify-content:center">AR</span>
+                <span style="width:25px;height:25px;border-radius:999px;background:#E4E1F2;border:2px solid #F1EFE8;margin-left:-8px;font-size:9px;font-weight:700;color:#474079;display:flex;align-items:center;justify-content:center">TK</span>
+                <span style="width:25px;height:25px;border-radius:999px;background:#DCEAE5;border:2px solid #F1EFE8;margin-left:-8px;font-size:9px;font-weight:700;color:#0A4A3E;display:flex;align-items:center;justify-content:center">SM</span>
+                <span style="width:25px;height:25px;border-radius:999px;background:#ECE9E1;border:2px solid #F1EFE8;margin-left:-8px;font-size:9px;font-weight:700;color:#5A615A;display:flex;align-items:center;justify-content:center">+3</span>
+              </div>
+              <span style="flex:1 1 auto;min-width:0;font-size:12.5px;color:#3A423B;line-height:1.45">Six people, four origins. Rovvy solves the meet point.</span>
+            </div>
+            <button onClick="{{ solveMeet }}" style-hover="border-color:#0F1614" style="width:100%;border:1px solid rgba(15,22,20,0.16);border-radius:999px;background:#fff;color:#0F1614;font-family:inherit;font-size:12.5px;font-weight:600;padding:10px;cursor:pointer;transition:border-color .15s">{{ meetLabel }}</button>
+          </div>
+        </sc-if>
+
+        <button onClick="{{ start }}" data-accent-bg="1" style-hover="filter:brightness(1.08)" style="width:100%;border:0;border-radius:999px;background:linear-gradient(150deg,#12856F,#0A4A3E);color:#fff;font-family:inherit;font-size:14px;font-weight:600;padding:14px;cursor:pointer;transition:filter .15s;box-shadow:0 12px 26px -14px rgba(10,74,62,0.9)">{{ startLabel }}</button>
+        <div style="margin-top:10px;text-align:center;font-size:11.5px;color:#5F665F">Browse free. Sign in only to go live.</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isVote }}" hint-placeholder-val="{{ false }}">
+      <div style="border-radius:22px;background:#FBFAF7;border:1.5px solid #D2453D;box-shadow:0 18px 44px -18px rgba(0,0,0,0.5);overflow:hidden;animation:rvIn .22s ease both">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;background:#FEF7F6;border-bottom:1px solid rgba(15,22,20,0.07)">
+          <span style="display:flex;align-items:center;gap:9px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#B4453D"><span style="width:6px;height:6px;border-radius:999px;background:#D2453D;animation:rvPulse 2.2s ease-in-out infinite"></span>Vote open</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#fff;background:#D2453D;padding:4px 9px;border-radius:7px">Closes 8:00</span>
+        </div>
+        <div style="padding:18px">
+          <div style="font-family:'Instrument Serif',Georgia,serif;font-size:25px;line-height:1.12;letter-spacing:-0.015em;margin-bottom:5px">Where are we eating?</div>
+          <div style="font-size:12.5px;color:#5F665F;margin-bottom:18px">{{ voteTotal }} of 6 voted · winner gets booked and pinned</div>
+
+          <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:16px">
+            <button onClick="{{ vote }}" data-o="fulton" style-hover="border-color:#0F1614" style="display:block;width:100%;text-align:left;border:1.5px solid {{ v1 }};border-radius:16px;background:#fff;padding:13px 14px;cursor:pointer;font-family:inherit;transition:border-color .15s">
+              <span style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+                <span style="flex:1 1 auto;min-width:0"><span style="display:block;font-size:14px;font-weight:600">Fulton Kitchen</span><span style="display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5F665F;margin-top:2px">7:00 PM · 2.6 mi · $32 ea</span></span>
+                <span data-accent-text="1" style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;color:#0E6E5C">{{ c1 }}/6</span>
+              </span>
+              <span style="display:block;height:5px;border-radius:999px;background:#EDEAE2;overflow:hidden"><span data-accent-bg="1" style="display:block;height:100%;width:{{ w1 }};border-radius:999px;background:linear-gradient(90deg,#12856F,#0A4A3E);transition:width .35s"></span></span>
+            </button>
+            <button onClick="{{ vote }}" data-o="tacos" style-hover="border-color:#0F1614" style="display:block;width:100%;text-align:left;border:1.5px solid {{ v2 }};border-radius:16px;background:#fff;padding:13px 14px;cursor:pointer;font-family:inherit;transition:border-color .15s">
+              <span style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+                <span style="flex:1 1 auto;min-width:0"><span style="display:block;font-size:14px;font-weight:600">Taco crawl, Pilsen</span><span style="display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5F665F;margin-top:2px">1:00 PM · 4.0 mi · ~$28 ea</span></span>
+                <span data-accent-text="1" style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;color:#0E6E5C">{{ c2 }}/6</span>
+              </span>
+              <span style="display:block;height:5px;border-radius:999px;background:#EDEAE2;overflow:hidden"><span data-accent-bg="1" style="display:block;height:100%;width:{{ w2 }};border-radius:999px;background:linear-gradient(90deg,#12856F,#0A4A3E);transition:width .35s"></span></span>
+            </button>
+            <button onClick="{{ vote }}" data-o="ramen" style-hover="border-color:#0F1614" style="display:block;width:100%;text-align:left;border:1.5px solid {{ v3 }};border-radius:16px;background:#fff;padding:13px 14px;cursor:pointer;font-family:inherit;transition:border-color .15s">
+              <span style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+                <span style="flex:1 1 auto;min-width:0"><span style="display:block;font-size:14px;font-weight:600">Ramen counter</span><span style="display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5F665F;margin-top:2px">6:30 PM · walk-in · $18 ea</span></span>
+                <span data-accent-text="1" style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;color:#0E6E5C">{{ c3 }}/6</span>
+              </span>
+              <span style="display:block;height:5px;border-radius:999px;background:#EDEAE2;overflow:hidden"><span data-accent-bg="1" style="display:block;height:100%;width:{{ w3 }};border-radius:999px;background:linear-gradient(90deg,#12856F,#0A4A3E);transition:width .35s"></span></span>
+            </button>
+          </div>
+
+          <div style="display:flex;gap:7px;flex-wrap:wrap;padding-top:14px;border-top:1px solid rgba(15,22,20,0.08)">
+            <span style="width:100%;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#5F665F;margin-bottom:4px">{{ voteState }}</span>
+            <button onClick="{{ react }}" style-hover="border-color:#0F1614" style="border:1px solid rgba(15,22,20,0.14);border-radius:999px;background:#fff;color:#2A312B;font-family:inherit;font-size:12px;font-weight:500;padding:8px 13px;cursor:pointer;transition:border-color .15s">Any works</button>
+            <button onClick="{{ react }}" style-hover="border-color:#0F1614" style="border:1px solid rgba(15,22,20,0.14);border-radius:999px;background:#fff;color:#2A312B;font-family:inherit;font-size:12px;font-weight:500;padding:8px 13px;cursor:pointer;transition:border-color .15s">Can't tonight</button>
+            <button onClick="{{ react }}" style-hover="border-color:#0F1614" style="border:1px solid rgba(15,22,20,0.14);border-radius:999px;background:#fff;color:#2A312B;font-family:inherit;font-size:12px;font-weight:500;padding:8px 13px;cursor:pointer;transition:border-color .15s">Add option</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isConv }}" hint-placeholder-val="{{ false }}">
+      <div style="border-radius:22px;background:#FBFAF7;border:1px solid rgba(15,22,20,0.08);box-shadow:0 18px 44px -18px rgba(0,0,0,0.5);overflow:hidden;animation:rvIn .22s ease both">
+        <div style="padding:16px 18px 14px;border-bottom:1px solid rgba(15,22,20,0.08)">
+          <div style="display:flex;align-items:center;gap:9px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#5F665F;margin-bottom:10px"><span style="width:6px;height:6px;border-radius:999px;background:#0E6E5C;animation:rvPulse 2.2s ease-in-out infinite"></span>Converging · Fulton Kitchen</div>
+          <div style="font-family:'Instrument Serif',Georgia,serif;font-size:30px;line-height:1.02;letter-spacing:-0.02em;margin-bottom:6px">Last one in at <em>7:22</em></div>
+          <div style="font-size:12.5px;color:#5F665F">Table held till 7:15. Rovvy pushed it to 7:30 automatically.</div>
+        </div>
+
+        <div style="padding:6px 0">
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 18px">
+            <span style="flex:0 0 auto;width:30px;height:30px;border-radius:999px;background:#DCEAE5;border:2px solid #6FE0C0;font-size:11px;font-weight:700;color:#0A4A3E;display:flex;align-items:center;justify-content:center">MJ</span>
+            <span style="flex:1 1 auto;min-width:0"><span style="display:block;font-size:13.5px;font-weight:600">You</span><span style="display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5F665F;margin-top:1px">driving · 1.4 mi out</span></span>
+            <span data-accent-text="1" style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:500;color:#0E6E5C">6 min</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 18px;border-top:1px solid rgba(15,22,20,0.06)">
+            <span style="flex:0 0 auto;width:30px;height:30px;border-radius:999px;background:#F0E5D2;border:2px solid #6FE0C0;font-size:11px;font-weight:700;color:#7A5A22;display:flex;align-items:center;justify-content:center">AR</span>
+            <span style="flex:1 1 auto;min-width:0"><span style="display:block;font-size:13.5px;font-weight:600">Ana</span><span style="display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5F665F;margin-top:1px">walking · 0.5 mi out</span></span>
+            <span data-accent-text="1" style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:500;color:#0E6E5C">8 min</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 18px;border-top:1px solid rgba(15,22,20,0.06)">
+            <span style="flex:0 0 auto;width:30px;height:30px;border-radius:999px;background:#E4E1F2;border:2px solid #C9BFFF;font-size:11px;font-weight:700;color:#474079;display:flex;align-items:center;justify-content:center">TK</span>
+            <span style="flex:1 1 auto;min-width:0"><span style="display:block;font-size:13.5px;font-weight:600">Tomas</span><span style="display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8D6A1E;margin-top:1px">running late · traffic on 90</span></span>
+            <span style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:500;color:#8D6A1E">22 min</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 18px;border-top:1px solid rgba(15,22,20,0.06)">
+            <span style="flex:0 0 auto;width:30px;height:30px;border-radius:999px;background:#D8D5CC;border:2px solid rgba(170,178,172,0.7);font-size:11px;font-weight:700;color:#5A615A;display:flex;align-items:center;justify-content:center">SM</span>
+            <span style="flex:1 1 auto;min-width:0"><span style="display:block;font-size:13.5px;font-weight:600;color:#5A615A">Sam</span><span style="display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5F665F;margin-top:1px">location 4 min old</span></span>
+            <button onClick="{{ react }}" style-hover="border-color:#0F1614" style="flex:0 0 auto;border:1px solid rgba(15,22,20,0.14);border-radius:999px;background:#fff;color:#2A312B;font-family:inherit;font-size:11.5px;font-weight:600;padding:6px 11px;cursor:pointer;transition:border-color .15s">Nudge</button>
+          </div>
+        </div>
+
+        <div style="padding:14px 18px;background:#F1EFE8;border-top:1px solid rgba(15,22,20,0.08);display:flex;gap:8px;flex-wrap:wrap">
+          <button onClick="{{ react }}" style-hover="border-color:#0F1614" style="flex:1 1 110px;border:1px solid rgba(15,22,20,0.16);border-radius:999px;background:#fff;color:#0F1614;font-family:inherit;font-size:12.5px;font-weight:600;padding:10px;cursor:pointer;transition:border-color .15s">On my way</button>
+          <button onClick="{{ react }}" style-hover="border-color:#0F1614" style="flex:1 1 110px;border:1px solid rgba(15,22,20,0.16);border-radius:999px;background:#fff;color:#0F1614;font-family:inherit;font-size:12.5px;font-weight:600;padding:10px;cursor:pointer;transition:border-color .15s">Running late</button>
+          <button onClick="{{ react }}" style-hover="border-color:#0F1614" style="flex:1 1 110px;border:1px solid rgba(15,22,20,0.16);border-radius:999px;background:#fff;color:#0F1614;font-family:inherit;font-size:12.5px;font-weight:600;padding:10px;cursor:pointer;transition:border-color .15s">Start without me</button>
+        </div>
+      </div>
+
+      <div style="border-radius:20px;background:linear-gradient(155deg,#141033,#0B1512 72%);color:#F6F4EF;border:1px solid rgba(255,255,255,0.1);box-shadow:0 16px 36px -16px rgba(0,0,0,0.55);padding:17px;animation:rvIn .26s .06s ease both">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:#C9BFFF;margin-bottom:11px">✦ Wayra noticed</div>
+        <div style="font-family:'Instrument Serif',Georgia,serif;font-size:20px;line-height:1.16;letter-spacing:-0.01em;margin-bottom:13px">Tomas is 14 min behind everyone else.</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <button onClick="{{ react }}" style-hover="border-color:rgba(255,255,255,0.5)" style="border:1px solid rgba(255,255,255,0.2);border-radius:12px;background:rgba(255,255,255,0.05);color:#F6F4EF;font-family:inherit;font-size:12.5px;font-weight:500;padding:10px 13px;cursor:pointer;text-align:left;transition:border-color .15s">Order his drink now</button>
+          <button onClick="{{ react }}" style-hover="border-color:rgba(255,255,255,0.5)" style="border:1px solid rgba(255,255,255,0.2);border-radius:12px;background:rgba(255,255,255,0.05);color:#F6F4EF;font-family:inherit;font-size:12.5px;font-weight:500;padding:10px 13px;cursor:pointer;text-align:left;transition:border-color .15s">Move the table to 7:40</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPart }}" hint-placeholder-val="{{ false }}">
+      <div style="border-radius:22px;background:#FBFAF7;border:1px solid rgba(15,22,20,0.08);box-shadow:0 18px 44px -18px rgba(0,0,0,0.5);overflow:hidden;animation:rvIn .22s ease both">
+        <div style="padding:18px;border-bottom:1px solid rgba(15,22,20,0.08)">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#5F665F;margin-bottom:10px">Arrived · 4 of 6</div>
+          <div style="font-family:'Instrument Serif',Georgia,serif;font-size:29px;line-height:1.04;letter-spacing:-0.02em;margin-bottom:6px">Four of you are in.</div>
+          <div style="font-size:12.5px;color:#5F665F">Tomas 9 min out. Sam hasn't moved in 12 minutes.</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:16px 18px;background:#F1EFE8;border-bottom:1px solid rgba(15,22,20,0.08)">
+          <div style="flex:1 1 auto;min-width:0">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#5F665F;margin-bottom:4px">Running total</div>
+            <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:23px;font-weight:700;letter-spacing:-0.015em">$186</span><span style="font-size:12.5px;color:#5F665F">· $31 each at six</span></div>
+          </div>
+          <button onClick="{{ react }}" data-accent-bg="1" style-hover="filter:brightness(1.08)" style="flex:0 0 auto;border:0;border-radius:999px;background:linear-gradient(150deg,#12856F,#0A4A3E);color:#fff;font-family:inherit;font-size:12.5px;font-weight:600;padding:11px 16px;cursor:pointer;transition:filter .15s">Open split</button>
+        </div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:9px">
+          <button onClick="{{ react }}" style-hover="border-color:#0F1614" style="display:flex;align-items:center;gap:11px;border:1px solid rgba(15,22,20,0.14);border-radius:14px;background:#fff;padding:12px 13px;cursor:pointer;font-family:inherit;text-align:left;transition:border-color .15s">
+            <span style="flex:0 0 auto;width:28px;height:28px;border-radius:999px;background:#DCEAE5;display:flex;align-items:center;justify-content:center;color:#0A4A3E"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"></path></svg></span>
+            <span style="flex:1 1 auto;min-width:0;font-size:13px;font-weight:500;color:#0F1614">Mark everyone arrived</span>
+          </button>
+          <button onClick="{{ react }}" style-hover="border-color:#0F1614" style="display:flex;align-items:center;gap:11px;border:1px solid rgba(15,22,20,0.14);border-radius:14px;background:#fff;padding:12px 13px;cursor:pointer;font-family:inherit;text-align:left;transition:border-color .15s">
+            <span style="flex:0 0 auto;width:28px;height:28px;border-radius:999px;background:#F5EBD8;display:flex;align-items:center;justify-content:center;color:#8D6A1E"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 8v4.5l3 1.8"></path></svg></span>
+            <span style="flex:1 1 auto;min-width:0;font-size:13px;font-weight:500;color:#0F1614">Check on Sam</span>
+          </button>
+          <button onClick="{{ openReport }}" style-hover="border-color:#0F1614" style="display:flex;align-items:center;gap:11px;border:1px dashed rgba(15,22,20,0.22);border-radius:14px;background:transparent;padding:12px 13px;cursor:pointer;font-family:inherit;text-align:left;transition:border-color .15s">
+            <span style="flex:0 0 auto;width:28px;height:28px;border-radius:999px;background:#F6F4EF;display:flex;align-items:center;justify-content:center;color:#5F665F"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.5"></path><circle cx="12" cy="12" r="8.5"></circle></svg></span>
+            <span style="flex:1 1 auto;min-width:0;font-size:13px;font-weight:500;color:#0F1614">Report what it's like here</span>
+          </button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="border-radius:22px;background:#FBFAF7;border:1px solid rgba(15,22,20,0.08);box-shadow:0 18px 44px -18px rgba(0,0,0,0.5);padding:22px;animation:rvIn .22s ease both">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:#5F665F;margin-bottom:16px">Empty &amp; error states</div>
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="padding:16px;border-radius:16px;background:#fff;border:1px solid rgba(15,22,20,0.08);text-align:center">
+            <div style="width:38px;height:38px;margin:0 auto 11px;border-radius:999px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;color:#5F665F"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path></svg></div>
+            <div style="font-family:'Instrument Serif',Georgia,serif;font-size:18px;line-height:1.2;margin-bottom:5px">Nothing open in this square</div>
+            <div style="font-size:12px;color:#5F665F;line-height:1.5;margin-bottom:12px">Pan the map or widen to 5 miles — 19 places match further out.</div>
+            <button onClick="{{ react }}" data-accent-text="1" style="border:1px solid rgba(14,110,92,0.3);border-radius:999px;background:#fff;color:#0E6E5C;font-family:inherit;font-size:12px;font-weight:600;padding:8px 15px;cursor:pointer">Widen to 5 mi</button>
+          </div>
+
+          <div style="padding:16px;border-radius:16px;background:#fff;border:1px solid rgba(15,22,20,0.08)">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+              <span style="width:8px;height:8px;border-radius:999px;background:#8D6A1E"></span>
+              <span style="font-size:13.5px;font-weight:600">Location is approximate</span>
+            </div>
+            <div style="font-size:12px;color:#5F665F;line-height:1.5;margin-bottom:12px">GPS is off, so this is your city not your street. We check where you are — we don't keep it.</div>
+            <button onClick="{{ react }}" style-hover="background:#0F1614;color:#fff" style="border:1px solid #0F1614;border-radius:999px;background:transparent;color:#0F1614;font-family:inherit;font-size:12px;font-weight:600;padding:8px 15px;cursor:pointer;transition:all .15s">Use exact location</button>
+          </div>
+
+          <div style="padding:16px;border-radius:16px;background:#fff;border:1px solid rgba(180,69,61,0.3)">
+            <div style="font-size:13.5px;font-weight:600;color:#B4453D;margin-bottom:6px">Can't drive there</div>
+            <div style="font-size:12px;color:#5F665F;line-height:1.5;margin-bottom:12px">No land route to this pin. Try Air or Ship, or pick a mainland meet point.</div>
+            <button onClick="{{ react }}" style-hover="border-color:#0F1614" style="border:1px solid rgba(15,22,20,0.16);border-radius:999px;background:#fff;color:#0F1614;font-family:inherit;font-size:12px;font-weight:600;padding:8px 15px;cursor:pointer;transition:border-color .15s">Pick a meet point</button>
+          </div>
+
+          <div style="padding:16px;border-radius:16px;background:#fff;border:1px solid rgba(15,22,20,0.08);text-align:center">
+            <div style="display:flex;justify-content:center;margin-bottom:11px">
+              <span style="width:28px;height:28px;border-radius:999px;background:#F1EFE8;border:2px solid #FBFAF7;font-size:10px;font-weight:700;color:#5F665F;display:flex;align-items:center;justify-content:center">?</span>
+              <span style="width:28px;height:28px;border-radius:999px;background:#F1EFE8;border:2px solid #FBFAF7;margin-left:-9px;font-size:10px;font-weight:700;color:#5F665F;display:flex;align-items:center;justify-content:center">?</span>
+            </div>
+            <div style="font-family:'Instrument Serif',Georgia,serif;font-size:18px;line-height:1.2;margin-bottom:5px">No one's sharing yet</div>
+            <div style="font-size:12px;color:#5F665F;line-height:1.5;margin-bottom:12px">Friends appear here the moment they go live. Nobody sees you unless you share back.</div>
+            <button onClick="{{ react }}" data-accent-bg="1" style="border:0;border-radius:999px;background:linear-gradient(150deg,#12856F,#0A4A3E);color:#fff;font-family:inherit;font-size:12px;font-weight:600;padding:9px 16px;cursor:pointer">Invite the group</button>
+          </div>
+
+          <div style="padding:14px 16px;border-radius:16px;background:#F1EFE8;border:1px solid rgba(15,22,20,0.06);display:flex;align-items:center;gap:12px">
+            <span style="flex:1 1 auto;min-width:0;font-size:12px;color:#3A423B;line-height:1.5"><strong style="font-weight:600">Offline.</strong> Map is cached, ETAs paused. Last update 4 min ago.</span>
+            <span style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#5F665F">Stale</span>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{ reportOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeReport }}" style="position:absolute;inset:0;z-index:70;background:rgba(7,17,14,0.5);backdrop-filter:blur(3px);display:flex;align-items:flex-end;justify-content:center;padding-bottom:56px">
+      <div onClick="{{ stop }}" style="width:min(420px,calc(100% - 40px));border-radius:24px;background:#FBFAF7;box-shadow:0 -16px 50px rgba(0,0,0,0.4);padding:20px;animation:rvUp .24s ease both">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:#5F665F;margin-bottom:7px">Report · Fulton Kitchen</div>
+            <div style="font-family:'Instrument Serif',Georgia,serif;font-size:24px;line-height:1.1">What's it like there?</div>
+          </div>
+          <button onClick="{{ closeReport }}" aria-label="Close" style-hover="border-color:#0F1614" style="flex:0 0 auto;width:28px;height:28px;border:1px solid rgba(15,22,20,0.14);border-radius:999px;background:#fff;color:#2A312B;cursor:pointer;font-size:14px;transition:border-color .15s">×</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,124px),1fr));gap:8px;margin-bottom:14px">
+          <button onClick="{{ sendReport }}" data-r="Long line" style-hover="border-color:#0F1614" style="display:flex;flex-direction:column;gap:6px;padding:14px 13px;border:1px solid rgba(15,22,20,0.13);border-radius:16px;background:#fff;cursor:pointer;font-family:inherit;text-align:left;transition:border-color .15s"><span style="color:#B4453D"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 8v4.5l3 1.8"></path></svg></span><span style="font-size:12.5px;font-weight:600">Long line</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#5F665F">how long?</span></button>
+          <button onClick="{{ sendReport }}" data-r="Packed" style-hover="border-color:#0F1614" style="display:flex;flex-direction:column;gap:6px;padding:14px 13px;border:1px solid rgba(15,22,20,0.13);border-radius:16px;background:#fff;cursor:pointer;font-family:inherit;text-align:left;transition:border-color .15s"><span style="color:#8D6A1E"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"></circle><circle cx="16" cy="9" r="2.4"></circle><path d="M3.5 19a5.5 5.5 0 0111 0M15 19a4 4 0 015.5-3.6"></path></svg></span><span style="font-size:12.5px;font-weight:600">Packed</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#5F665F">standing room</span></button>
+          <button onClick="{{ sendReport }}" data-r="Quiet" style-hover="border-color:#0F1614" style="display:flex;flex-direction:column;gap:6px;padding:14px 13px;border:1px solid rgba(15,22,20,0.13);border-radius:16px;background:#fff;cursor:pointer;font-family:inherit;text-align:left;transition:border-color .15s"><span style="color:#0E6E5C"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h16M7 18V11M12 18V7M17 18v-4"></path></svg></span><span style="font-size:12.5px;font-weight:600">Quiet</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#5F665F">tables free</span></button>
+          <button onClick="{{ sendReport }}" data-r="Price changed" style-hover="border-color:#0F1614" style="display:flex;flex-direction:column;gap:6px;padding:14px 13px;border:1px solid rgba(15,22,20,0.13);border-radius:16px;background:#fff;cursor:pointer;font-family:inherit;text-align:left;transition:border-color .15s"><span style="color:#2A312B"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M8.5 8h5.5a2.5 2.5 0 010 5H9a2.5 2.5 0 000 5h6"></path></svg></span><span style="font-size:12.5px;font-weight:600">Price changed</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#5F665F">cover or menu</span></button>
+          <button onClick="{{ sendReport }}" data-r="Closed early" style-hover="border-color:#0F1614" style="display:flex;flex-direction:column;gap:6px;padding:14px 13px;border:1px solid rgba(15,22,20,0.13);border-radius:16px;background:#fff;cursor:pointer;font-family:inherit;text-align:left;transition:border-color .15s"><span style="color:#B4453D"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M8 8l8 8M16 8l-8 8"></path><circle cx="12" cy="12" r="8.5"></circle></svg></span><span style="font-size:12.5px;font-weight:600">Closed early</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#5F665F">saves the night</span></button>
+          <button onClick="{{ sendReport }}" data-r="No parking" style-hover="border-color:#0F1614" style="display:flex;flex-direction:column;gap:6px;padding:14px 13px;border:1px solid rgba(15,22,20,0.13);border-radius:16px;background:#fff;cursor:pointer;font-family:inherit;text-align:left;transition:border-color .15s"><span style="color:#2A312B"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6h4a3.5 3.5 0 010 7H9"></path></svg></span><span style="font-size:12.5px;font-weight:600">No parking</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#5F665F">circle 20 min</span></button>
+        </div>
+        <div style="font-size:11.5px;color:#5F665F;line-height:1.5">Reports fade after two hours. Three matching reports mark a place confirmed.</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="position:absolute;right:22px;bottom:52px;z-index:48;display:flex;flex-direction:column;gap:5px;align-items:center">
+    <button onClick="{{ openWayra }}" aria-label="Open Wayra" title="Open Wayra" style-hover="transform:scale(1.05)" style="width:52px;height:52px;border-radius:9999px;background:rgba(255,255,255,0.95);border:1px solid rgba(15,22,20,0.1);box-shadow:0 4px 20px rgba(15,23,42,0.18);cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;transition:transform .18s;margin-bottom:7px">
+      <span style="position:absolute;inset:4px;border-radius:9999px;border:1.5px solid rgba(14,110,92,0.3)"></span>
+      <span data-accent-bg="1" style="width:32px;height:32px;border-radius:9999px;background:linear-gradient(150deg,#12856F,#0A4A3E);display:flex;align-items:center;justify-content:center;color:#fff"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path></svg></span>
+      <sc-if value="{{ wayraBadge }}" hint-placeholder-val="{{ true }}">
+        <span style="position:absolute;top:-2px;right:-2px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#D2453D;border:2px solid #fff;color:#fff;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;display:flex;align-items:center;justify-content:center">1</span>
+      </sc-if>
+    </button>
+    <button onClick="{{ openReport }}" aria-label="Report conditions" title="Report conditions" data-accent-bg="1" style-hover="filter:brightness(1.12)" style="width:44px;height:44px;border-radius:22px;border:0;background:linear-gradient(150deg,#12856F,#0A4A3E);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(15,23,42,0.28);transition:filter .15s;margin-bottom:5px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5l8 14.5H4z"></path><path d="M12 10v3.5M12 16v.5"></path></svg></button>
+    <button onClick="{{ toggleFriends }}" aria-label="Friends layer" title="Friends layer" style-hover="background:#fff" style="width:40px;height:40px;border-radius:20px;border:1px solid rgba(15,22,20,0.08);background:{{ friendsBg }};color:{{ friendsFg }};cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(15,23,42,0.1);transition:background .15s"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><circle cx="16.5" cy="9" r="2.5"></circle><path d="M3 19a6 6 0 0112 0M15.5 19a4.5 4.5 0 016-4"></path></svg></button>
+    <button onClick="{{ toggleLayers }}" aria-label="Map layers" title="Map layers" style-hover="background:#fff" style="width:40px;height:40px;border-radius:20px;border:1px solid rgba(15,22,20,0.08);background:{{ layersBg }};color:{{ layersFg }};cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(15,23,42,0.1);transition:background .15s"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l8.5 4.8L12 13 3.5 8.3z"></path><path d="M4.5 12.5L12 16.8l7.5-4.3M4.5 16.5L12 20.8l7.5-4.3"></path></svg></button>
+    <button onClick="{{ faceNorth }}" aria-label="Facing north" title="Facing north" style-hover="background:#fff" style="width:40px;height:40px;border-radius:20px;border:1px solid rgba(15,22,20,0.08);background:rgba(251,250,247,0.96);color:#1C2321;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(15,23,42,0.1);transition:background .15s"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5l2.6 6.4L12 12.6l-2.6 1.3z" fill="currentColor"></path></svg></button>
+    <button onClick="{{ locate }}" aria-label="Locate me" title="Locate me" style-hover="filter:brightness(1.18)" style="width:40px;height:40px;border-radius:20px;border:0;background:{{ locateBg }};color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(15,23,42,0.18);transition:filter .15s"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.4"></circle><circle cx="12" cy="12" r="8"></circle><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22"></path></svg></button>
+  </div>
+
+  <sc-if value="{{ layersOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;right:76px;bottom:52px;z-index:47;max-width:calc(100vw - 480px);border-radius:18px;background:rgba(251,250,247,0.95);backdrop-filter:blur(14px);border:1px solid rgba(15,22,20,0.08);box-shadow:0 12px 34px -12px rgba(15,23,42,0.35);padding:12px;animation:rvIn .18s ease both">
+      <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:2px">
+        <button onClick="{{ setLayer }}" data-l="Dark" style="flex:0 0 auto;width:58px;border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:42px;height:42px;border-radius:999px;background:#101C28;border:2px solid {{ lDark }}"></span><span style="font-size:10.5px;font-weight:600;color:{{ ltDark }}">Dark</span></button>
+        <button onClick="{{ setLayer }}" data-l="Clean" style="flex:0 0 auto;width:58px;border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:42px;height:42px;border-radius:999px;background:#F6F5F1;border:2px solid {{ lClean }}"></span><span style="font-size:10.5px;font-weight:600;color:{{ ltClean }}">Clean</span></button>
+        <button onClick="{{ setLayer }}" data-l="Satellite" style="flex:0 0 auto;width:58px;border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:42px;height:42px;border-radius:999px;background:radial-gradient(circle at 35% 30%,#4A6B52,#22402F);border:2px solid {{ lSat }}"></span><span style="font-size:10.5px;font-weight:600;color:{{ ltSat }}">Satellite</span></button>
+        <button onClick="{{ setLayer }}" data-l="Terrain" style="flex:0 0 auto;width:58px;border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:42px;height:42px;border-radius:999px;background:repeating-linear-gradient(0deg,#3E6B4E 0 4px,#5A8460 4px 8px);border:2px solid {{ lTer }}"></span><span style="font-size:10.5px;font-weight:600;color:{{ ltTer }}">Terrain</span></button>
+        <span style="flex:0 0 auto;width:1px;background:rgba(15,22,20,0.12);margin:2px 3px"></span>
+        <button onClick="{{ toggleTool }}" data-t="saves" title="Your saved pins — stored on this device only" style="flex:0 0 auto;width:58px;border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:42px;height:42px;border-radius:999px;background:#fff;border:2px solid {{ oSaves }};display:flex;align-items:center;justify-content:center;color:{{ otSaves }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="{{ fSaves }}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-3.4-6 3.4z"></path></svg></span><span style="font-size:10.5px;font-weight:600;color:{{ otSaves }}">Saves</span></button>
+        <button onClick="{{ toggleTool }}" data-t="reports" style="flex:0 0 auto;width:58px;border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:42px;height:42px;border-radius:999px;background:#fff;border:2px solid {{ oReports }};display:flex;align-items:center;justify-content:center;color:{{ otReports }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5l8 14.5H4z"></path><path d="M12 10v3.5"></path></svg></span><span style="font-size:10.5px;font-weight:600;color:{{ otReports }}">Reports</span></button>
+        <button onClick="{{ toggleTool }}" data-t="foot" style="flex:0 0 auto;width:58px;border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:42px;height:42px;border-radius:999px;background:#fff;border:2px solid {{ oFoot }};display:flex;align-items:center;justify-content:center;color:{{ otFoot }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5c1.7 0 2.5 1.6 2.5 3.5 0 2.4-1 3.5-1 5.5 0 1.4.5 2 .5 3 0 1.4-1 2-2.5 2s-2.5-.8-2.5-2.4c0-2 .5-2.6.5-4.6 0-2.4-.5-3.4-.5-5C6.5 5.2 7.4 4.5 9 4.5z"></path><path d="M16 9.5c1 0 1.6 1 1.6 2.2 0 1.5-.6 2.2-.6 3.4 0 .9.3 1.3.3 1.9 0 .9-.6 1.3-1.6 1.3s-1.6-.5-1.6-1.5c0-1.2.3-1.6.3-2.9 0-1.5-.3-2.1-.3-3.1 0-.8.6-1.3 1.9-1.3z"></path></svg></span><span style="font-size:10.5px;font-weight:600;color:{{ otFoot }}">Foot</span></button>
+        <button onClick="{{ toggleTool }}" data-t="sea" style="flex:0 0 auto;width:58px;border:0;background:transparent;padding:0;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:42px;height:42px;border-radius:999px;background:#fff;border:2px solid {{ oSea }};display:flex;align-items:center;justify-content:center;color:{{ otSea }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16c1.6 0 2.4-1.2 4-1.2S9.4 16 11 16s2.4-1.2 4-1.2S17.4 16 19 16M3 20c1.6 0 2.4-1.2 4-1.2S9.4 20 11 20s2.4-1.2 4-1.2S17.4 20 19 20M12 11V4M8 7h8"></path></svg></span><span style="font-size:10.5px;font-weight:600;color:{{ otSea }}">Sea</span></button>
+      </div>
+      <div style="margin-top:9px;padding-top:9px;border-top:1px solid rgba(15,22,20,0.08);font-size:11px;color:#5F665F;line-height:1.45">{{ layerHint }}</div>
+    </div>
+  </sc-if>
+
+  <div style="display:none">
+    <button onClick="{{ openWayra }}" aria-label="Open Wayra" title="Open Wayra" style-hover="transform:scale(1.05)" style="width:54px;height:54px;border-radius:9999px;background:rgba(255,255,255,0.95);border:1px solid rgba(15,22,20,0.1);box-shadow:0 4px 20px rgba(15,23,42,0.14);cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;transition:transform .18s">
+      <span style="position:absolute;inset:4px;border-radius:9999px;border:1.5px solid rgba(14,110,92,0.3)"></span>
+      <span data-accent-bg="1" style="width:33px;height:33px;border-radius:9999px;background:linear-gradient(150deg,#12856F,#0A4A3E);display:flex;align-items:center;justify-content:center;color:#fff"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path></svg></span>
+      <sc-if value="{{ wayraBadge }}" hint-placeholder-val="{{ true }}">
+        <span style="position:absolute;top:-2px;right:-2px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#D2453D;border:2px solid #fff;color:#fff;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;display:flex;align-items:center;justify-content:center">1</span>
+      </sc-if>
+    </button>
+  </div>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;right:84px;bottom:60px;z-index:60;max-width:calc(100vw - 490px);display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:999px;background:#0F1614;color:#F6F4EF;box-shadow:0 12px 30px -10px rgba(0,0,0,0.6);animation:rvUp .22s ease both">
+      <span style="flex:0 0 auto;width:7px;height:7px;border-radius:999px;background:#6FE0C0"></span>
+      <span style="flex:1 1 auto;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ toastText }}</span>
+      <button onClick="{{ hideToast }}" aria-label="Dismiss" style-hover="color:#fff" style="flex:0 0 auto;border:0;background:transparent;color:rgba(246,244,239,0.6);font-family:inherit;font-size:15px;line-height:1;cursor:pointer;padding:0 2px;transition:color .15s">×</button>
+    </div>
+  </sc-if>
+
+  <div style="position:absolute;left:0;right:0;bottom:0;z-index:52;min-height:34px;padding-bottom:env(safe-area-inset-bottom);background:rgba(9,17,15,0.9);backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:14px;padding-left:14px;padding-right:14px">
+    <div style="flex:0 0 auto;display:flex;align-items:center;gap:2px">
+      <button onClick="{{ zoomOut }}" aria-label="Zoom out" title="Zoom out" style-hover="background:rgba(255,255,255,0.14)" style="width:34px;height:34px;border:0;border-radius:8px;background:transparent;color:rgba(246,244,239,0.88);cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;transition:background .15s">−</button>
+      <button onClick="{{ zoomIn }}" aria-label="Zoom in" title="Zoom in" style-hover="background:rgba(255,255,255,0.14)" style="width:34px;height:34px;border:0;border-radius:8px;background:transparent;color:rgba(246,244,239,0.88);cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;transition:background .15s">+</button>
+      <button onClick="{{ noop }}" aria-label="Fullscreen" title="Fullscreen" style-hover="background:rgba(255,255,255,0.14)" style="width:34px;height:34px;border:0;border-radius:8px;background:transparent;color:rgba(246,244,239,0.88);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 15v5h-5M15 4h5v5M9 20H4v-5"></path></svg></button>
+    </div>
+    <div style="flex:0 1 170px;min-width:0;display:flex;align-items:center;gap:8px">
+      <div style="flex:1 1 auto;min-width:0;position:relative;height:3px;border-radius:999px;background:rgba(255,255,255,0.18)">
+        <div data-accent-bg="1" style="position:absolute;left:0;top:0;bottom:0;width:{{ zoomPct }};border-radius:999px;background:#0E6E5C;transition:width .2s"></div>
+        <div style="position:absolute;left:{{ zoomPct }};top:50%;transform:translate(-50%,-50%);width:9px;height:9px;border-radius:999px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.5)"></div>
+      </div>
+      <span style="flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(246,244,239,0.68)">{{ zoomLabel }}</span>
+    </div>
+    <div style="flex:0 0 auto;display:flex;align-items:center;gap:7px">
+      <span style="width:44px;height:1px;background:rgba(246,244,239,0.75);position:relative"><span style="position:absolute;left:0;top:-3px;width:1px;height:7px;background:rgba(246,244,239,0.75)"></span><span style="position:absolute;right:0;top:-3px;width:1px;height:7px;background:rgba(246,244,239,0.75)"></span></span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(246,244,239,0.78)">{{ scaleLabel }}</span>
+    </div>
+    <span style="flex:1 1 auto;min-width:0;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(246,244,239,0.72);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">41.91757° N, 87.72626° W · © CARTO · © OpenStreetMap</span>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;accent&quot;: {&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#0E6E5C&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Look&quot;,&quot;options&quot;:[&quot;#0E6E5C&quot;,&quot;#1F5FA8&quot;,&quot;#8A4B2A&quot;,&quot;#4A3C86&quot;]},
+  &quot;selectedFill&quot;: {&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#DCEAE5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Look&quot;,&quot;options&quot;:[&quot;#DCEAE5&quot;,&quot;#E4E8F2&quot;,&quot;#F0E8DE&quot;,&quot;#E6E2F2&quot;]}
+}">
+const ZOOMS = [
+  { z: 11, scale: "5 mi" }, { z: 12, scale: "2 mi" }, { z: 13, scale: "1 mi" },
+  { z: 14, scale: "2,000 ft" }, { z: 15, scale: "1,000 ft" }, { z: 16, scale: "500 ft" },
+  { z: 17, scale: "200 ft" }, { z: 18, scale: "100 ft" }
+];
+const TOASTS = {
+  setup: "Ana and Tomas are free tonight",
+  vote: "Ana opened a vote — closes at 8:00",
+  converge: "Tomas hit traffic on the 90",
+  partial: "Sam hasn't moved in 12 minutes",
+  empty: "GPS is off — showing Chicago, approximate"
+};
+
+class Component extends DCLogic {
+  state = {
+    stage: "setup", mode: "Drive", flow: "Group Travel", dest: null, meet: false,
+    votes: { fulton: 3, tacos: 1, ramen: 0 }, mine: null,
+    layersOpen: false, layer: "Dark", friends: true, reportOpen: false,
+    tools: { saves: true, reports: true, foot: false, sea: false },
+    hint: "Dark base map · reports fade after 2 hours",
+    zoomIdx: 5, located: true, toastOn: true
+  };
+  componentDidMount() {
+    this.apply();
+    this._esc = (e) => {
+      if (e.key !== "Escape") return;
+      this.setState({ layersOpen: false, reportOpen: false });
+    };
+    document.addEventListener("keydown", this._esc);
+  }
+  componentWillUnmount() { document.removeEventListener("keydown", this._esc); }
+  componentDidUpdate() { this.apply(); }
+  apply() {
+    const root = this.el || (this.el = document.querySelector('x-dc')) || document;
+    const accent = this.props.accent || "#0E6E5C";
+    root.querySelectorAll('[data-accent-bg]').forEach(n => {
+      n.style.background = `linear-gradient(150deg,${accent},color-mix(in oklab,${accent} 60%,#04120E))`;
+    });
+    root.querySelectorAll('[data-accent-dot]').forEach(n => { n.style.background = accent; });
+    root.querySelectorAll('[data-accent-text]').forEach(n => { n.style.color = accent; });
+  }
+  renderVals() {
+    const s = this.state, v = s.votes;
+    const accent = this.props.accent || "#0E6E5C";
+    const soft = this.props.selectedFill || "#DCEAE5";
+    const pill = on => ({ b: on ? accent : "rgba(15,22,20,0.12)", g: on ? soft : "#FFFFFF", t: on ? accent : "#2A312B" });
+    const m = k => pill(s.mode === k), f = k => pill(s.flow === k);
+    const dM = m("Drive"), bM = m("Bike"), tM = m("Trek"), wM = m("Walk");
+    const so = f("Solo"), gr = f("Group Travel"), se = f("Seat Share");
+    const tab = k => s.stage === k
+      ? { bg: "#F6F4EF", fg: "#0F1614" }
+      : { bg: "transparent", fg: "rgba(255,255,255,0.68)" };
+    const T = { setup: tab("setup"), vote: tab("vote"), conv: tab("converge"), part: tab("partial"), empty: tab("empty") };
+    const lay = k => s.layer === k ? accent : "rgba(15,22,20,0.12)";
+    const layT = k => s.layer === k ? accent : "#2A312B";
+    const tool = k => s.tools[k] ? accent : "rgba(15,22,20,0.12)";
+    const toolT = k => s.tools[k] ? accent : "#2A312B";
+    const z = ZOOMS[s.zoomIdx];
+    const total = v.fulton + v.tacos + v.ramen;
+    const pct = n => Math.round((n / 6) * 100) + "%";
+    const bd = k => s.mine === k ? accent : "rgba(15,22,20,0.1)";
+    const group = s.flow !== "Solo";
+    return {
+      isSetup: s.stage === "setup", isVote: s.stage === "vote",
+      isConv: s.stage === "converge", isPart: s.stage === "partial", isEmpty: s.stage === "empty",
+      bgSetup: T.setup.bg, fgSetup: T.setup.fg,
+      bgVote: T.vote.bg, fgVote: T.vote.fg,
+      bgConv: T.conv.bg, fgConv: T.conv.fg,
+      bgPart: T.part.bg, fgPart: T.part.fg,
+      bgEmpty: T.empty.bg, fgEmpty: T.empty.fg,
+      go: e => this.setState({ stage: e.currentTarget.dataset.s, toastOn: true, reportOpen: false }),
+      showRoutes: s.stage === "converge" || s.stage === "partial",
+      showVotePins: s.stage === "vote",
+      showDest: s.stage === "converge" || s.stage === "partial",
+      showFriends: s.friends && (s.stage === "converge" || s.stage === "partial"),
+      showReports: s.tools.reports && (s.stage === "partial" || s.stage === "vote"),
+      chipTitle: s.mode + " · " + s.flow,
+      bDrive: dM.b, gDrive: dM.g, tDrive: dM.t,
+      bBike: bM.b, gBike: bM.g, tBike: bM.t,
+      bTrek: tM.b, gTrek: tM.g, tTrek: tM.t,
+      bWalk: wM.b, gWalk: wM.g, tWalk: wM.t,
+      bSolo: so.b, gSolo: so.g, tSolo: so.t,
+      bGroup: gr.b, gGroup: gr.g, tGroup: gr.t,
+      bSeat: se.b, gSeat: se.g, tSeat: se.t,
+      setMode: e => this.setState({ mode: e.currentTarget.dataset.m }),
+      setFlow: e => this.setState({ flow: e.currentTarget.dataset.f }),
+      isGroup: group,
+      destText: s.dest || (s.meet ? "Fulton Kitchen · fairest for six" : "No destination set"),
+      destColor: (s.dest || s.meet) ? "#0F1614" : "#5F665F",
+      destAction: (s.dest || s.meet) ? "Change" : "Set",
+      setDest: () => this.setState(st => ({ dest: st.dest ? null : "Fulton Kitchen, West Loop", meet: false })),
+      meetLabel: s.meet ? "Meet point solved ✓" : "Solve the fairest meet point",
+      solveMeet: () => this.setState({ meet: true, dest: null }),
+      startLabel: group ? "Start Group Live · 6 people" : "Start Solo Live",
+      start: e => { e.currentTarget.textContent = "Sign in to go live"; },
+      toggleSetup: () => this.setState({ stage: "setup" }),
+      c1: v.fulton, c2: v.tacos, c3: v.ramen,
+      w1: pct(v.fulton), w2: pct(v.tacos), w3: pct(v.ramen),
+      v1: bd("fulton"), v2: bd("tacos"), v3: bd("ramen"),
+      voteTotal: total,
+      voteState: s.mine ? "Vote counted — change any time" : "Tap an option to vote",
+      vote: e => {
+        const k = e.currentTarget.dataset.o;
+        this.setState(st => {
+          const nv = Object.assign({}, st.votes);
+          if (st.mine === k) { nv[k] = Math.max(0, nv[k] - 1); return { votes: nv, mine: null }; }
+          if (st.mine) nv[st.mine] = Math.max(0, nv[st.mine] - 1);
+          nv[k] = nv[k] + 1;
+          return { votes: nv, mine: k };
+        });
+      },
+      react: e => { e.currentTarget.textContent = "Sent ✓"; e.currentTarget.style.borderColor = accent; e.currentTarget.style.color = accent; },
+      focusPin: e => this.setState({ stage: "vote", toastOn: true }),
+      focusFriend: e => this.setState({ toastOn: true }),
+      focusReport: () => this.setState({ reportOpen: true }),
+      reportOpen: s.reportOpen,
+      openReport: () => this.setState({ reportOpen: true }),
+      closeReport: () => this.setState({ reportOpen: false }),
+      sendReport: e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.background = soft; },
+      stop: e => e.stopPropagation(),
+      friends: s.friends,
+      friendsBg: s.friends ? "#DCEAE5" : "rgba(251,250,247,0.96)",
+      friendsFg: s.friends ? accent : "#1C2321",
+      toggleFriends: () => this.setState(st => ({ friends: !st.friends, hint: st.friends ? "Friend markers hidden" : "Friends visible while they share" })),
+      layersOpen: s.layersOpen,
+      toggleLayers: () => this.setState(st => ({ layersOpen: !st.layersOpen })),
+      layersBg: s.layersOpen ? "#FFFFFF" : "rgba(251,250,247,0.96)",
+      layersFg: s.layersOpen ? accent : "#1C2321",
+      lDark: lay("Dark"), ltDark: layT("Dark"),
+      lClean: lay("Clean"), ltClean: layT("Clean"),
+      lSat: lay("Satellite"), ltSat: layT("Satellite"),
+      lTer: lay("Terrain"), ltTer: layT("Terrain"),
+      setLayer: e => {
+        const k = e.currentTarget.dataset.l;
+        this.setState({ layer: k, hint: k + " base map · tiles from CARTO and OpenStreetMap" });
+      },
+      oSaves: tool("saves"), otSaves: toolT("saves"), fSaves: s.tools.saves ? accent : "none",
+      oReports: tool("reports"), otReports: toolT("reports"),
+      oFoot: tool("foot"), otFoot: toolT("foot"),
+      oSea: tool("sea"), otSea: toolT("sea"),
+      toggleTool: e => {
+        const k = e.currentTarget.dataset.t;
+        this.setState(st => {
+          const next = Object.assign({}, st.tools, { [k]: !st.tools[k] });
+          const hints = {
+            saves: next.saves ? "Your saved pins — stored on this device only" : "Saved pins hidden",
+            reports: next.reports ? "Reports fade after 2 hours · 3 matching = confirmed" : "Reports hidden",
+            foot: next.foot ? "Trekking trails from OpenStreetMap" : "Foot routes hidden",
+            sea: next.sea ? "Ferry and shipping lanes" : "Sea routes hidden"
+          };
+          return { tools: next, hint: hints[k] };
+        });
+      },
+      layerHint: s.hint,
+      zoomPct: Math.round((s.zoomIdx / (ZOOMS.length - 1)) * 100) + "%",
+      zoomLabel: "z" + z.z, scaleLabel: z.scale,
+      zoomIn: () => this.setState(st => ({ zoomIdx: Math.min(ZOOMS.length - 1, st.zoomIdx + 1) })),
+      zoomOut: () => this.setState(st => ({ zoomIdx: Math.max(0, st.zoomIdx - 1) })),
+      locateBg: s.located ? accent : "rgba(60,64,67,0.94)",
+      locate: () => this.setState(st => ({ located: !st.located })),
+      faceNorth: () => {},
+      wayraBadge: s.stage === "converge" || s.stage === "partial",
+      openWayra: () => this.setState({ stage: "converge", toastOn: true }),
+      toast: s.toastOn,
+      toastText: TOASTS[s.stage] || "",
+      hideToast: () => this.setState({ toastOn: false }),
+      noop: () => {}
+    };
+  }
+}
+</script>
+</body>
+</html>

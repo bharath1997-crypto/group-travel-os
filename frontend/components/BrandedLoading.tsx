@@ -63,7 +63,7 @@ export default function BrandedLoading({
     <div className={containerClasses} suppressHydrationWarning>
       <div className="relative flex flex-col items-center">
         {/* Animated outer ring */}
-        <div className="absolute h-20 w-20 animate-spin rounded-full border-2 border-[#CCFBF1] border-t-[#0F766E]" />
+        <div className="absolute h-20 w-20 animate-spin rounded-full border-2 border-[#DCEAE5] border-t-[#0E6E5C]" />
         
         {/* Logo Icon */}
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-sm">

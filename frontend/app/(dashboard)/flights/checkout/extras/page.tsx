@@ -114,7 +114,7 @@ function ExtrasCheckoutContent() {
         {/* Baggage Extras Section */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <Luggage className="h-5 w-5 text-teal-600" />
+            <Luggage className="h-5 w-5 text-primary" />
             <h3 className="text-base font-bold text-slate-900">Baggage Options</h3>
           </div>
 
@@ -123,7 +123,7 @@ function ExtrasCheckoutContent() {
               <p className="font-bold text-slate-900">Personal Item & Carry-on</p>
               <p className="text-xs text-slate-500">Fits under seat or overhead bin</p>
             </div>
-            <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-700">Included</span>
+            <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary">Included</span>
           </div>
 
           <div className="rounded-xl border border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3">
@@ -156,7 +156,7 @@ function ExtrasCheckoutContent() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
-              <Armchair className="h-5 w-5 text-teal-600" />
+              <Armchair className="h-5 w-5 text-primary" />
               <h3 className="text-base font-bold text-slate-900">Seat Selection</h3>
             </div>
             <span className="text-xs text-slate-500">Optional</span>
@@ -179,7 +179,7 @@ function ExtrasCheckoutContent() {
                           onClick={() => toggleSeatSelection(seat, 15.0)}
                           className={`rounded-lg py-2 font-bold transition ${
                             isSelected
-                              ? "bg-teal-600 text-white shadow-sm"
+                              ? "bg-primary text-white shadow-sm"
                               : "border border-slate-200 bg-white text-slate-700 hover:border-teal-400"
                           }`}
                         >
@@ -214,7 +214,7 @@ function ExtrasCheckoutContent() {
         <button
           type="button"
           onClick={proceedToReview}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 py-3.5 text-sm font-bold text-white shadow-sm hover:bg-teal-700"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-white shadow-sm hover:bg-primary-hover"
         >
           <span>Continue to review</span>
           <ArrowRight className="h-4 w-4" />

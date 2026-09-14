@@ -107,7 +107,7 @@ export function syncLiveGlobeBackground(map: MaplibreMap): void {
             map.setPaintProperty(layer.id, "background-color", LIVE_GLOBE_OCEAN_BG);
           } else {
             const isDarkStyle = layer.id.includes("dark") || layer.id.includes("night");
-            map.setPaintProperty(layer.id, "background-color", isDarkStyle ? "#0f172a" : "#f8f4f0");
+            map.setPaintProperty(layer.id, "background-color", isDarkStyle ? "#0f1614" : "#f8f4f0");
           }
         }
       }
@@ -188,15 +188,17 @@ export function bindLiveGlobeMode(
   };
 }
 
-/** Keep user on globe when locating from world view; street zoom when already local. */
+/** Target zoom when centering on the user. */
 export function resolveLiveLocateZoom(
   currentZoom: number,
   accuracyMeters: number | null | undefined,
+  options?: { zoomToStreet?: boolean },
 ): number {
-  if (currentZoom <= LIVE_GLOBE_VIEW_MAX_ZOOM) {
+  // Passive updates while still at world zoom can stay on the globe (pan only).
+  if (!options?.zoomToStreet && currentZoom <= LIVE_GLOBE_VIEW_MAX_ZOOM) {
     return 2.2;
   }
-  if (currentZoom <= 8) {
+  if (currentZoom <= 8 || options?.zoomToStreet) {
     return accuracyMeters != null && accuracyMeters > 150 ? 12 : 14;
   }
   return accuracyMeters != null && accuracyMeters > 150 ? 14 : 16;

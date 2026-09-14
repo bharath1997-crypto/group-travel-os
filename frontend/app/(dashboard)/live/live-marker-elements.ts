@@ -25,11 +25,11 @@ export function createStartMarkerElement(): HTMLDivElement {
       align-items: center;
       justify-content: center;
     ">
-      <div style="width: 4px; height: 4px; border-radius: 50%; background: #0F766E;"></div>
+      <div style="width: 4px; height: 4px; border-radius: 50%; background: #0E6E5C;"></div>
     </div>
     <div style="
       margin-top: 4px;
-      background: #0F172A;
+      background: #0F1614;
       color: #FFFFFF;
       font-family: sans-serif;
       font-size: 9px;
@@ -66,7 +66,7 @@ function createRovvyTeardropPinElement(size: "md" | "lg" = "md"): HTMLDivElement
         height: ${pinSize}px;
         border-radius: 50% 50% 50% 0;
         transform: rotate(-45deg);
-        background: #0F766E;
+        background: #0E6E5C;
         border: 3px solid #ffffff;
         box-shadow: 0 3px 10px rgba(0,0,0,0.35);
       "></div>
@@ -89,7 +89,7 @@ function createRovvyTeardropPinElement(size: "md" | "lg" = "md"): HTMLDivElement
 export function createDestinationMarkerElement(navigating: boolean): HTMLDivElement {
   if (navigating) {
     const el = document.createElement("div");
-    el.innerHTML = `<div style="width:22px;height:22px;border-radius:50%;background:#FFFFFF;border:4px solid #0F766E;box-shadow:0 2px 8px rgba(0,0,0,0.25);"></div>`;
+    el.innerHTML = `<div style="width:22px;height:22px;border-radius:50%;background:#FFFFFF;border:4px solid #0E6E5C;box-shadow:0 2px 8px rgba(0,0,0,0.25);"></div>`;
     return el;
   }
   return createRovvyTeardropPinElement("lg");
@@ -107,7 +107,7 @@ export function createCoordinateOverlayElement(lat: number, lng: number): HTMLDi
   const lngDir = lng >= 0 ? "E" : "W";
   el.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;gap:4px;transform:translateY(-4px);">
-      <div style="width:12px;height:12px;border-radius:50%;background:#0F766E;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
+      <div style="width:12px;height:12px;border-radius:50%;background:#0E6E5C;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
       <div style="max-width:220px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.96);border:1px solid #e7e5e4;font-size:11px;font-weight:600;color:#1c1917;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.12);font-family:ui-monospace,monospace;line-height:1.35;">
         ${Math.abs(lat).toFixed(5)}° ${latDir}<br/>${Math.abs(lng).toFixed(5)}° ${lngDir}
       </div>

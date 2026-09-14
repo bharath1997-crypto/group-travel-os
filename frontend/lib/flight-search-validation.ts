@@ -1,11 +1,16 @@
-import type { MultiCityLeg } from "@/lib/flight-types";
+import type { FlightSearchParams, MultiCityLeg } from "@/lib/flight-types";
 
 export const MAX_MULTI_CITY_LEGS = 6;
 
+/** Legacy FlightSearchForm default for the outbound "to" time field — not a real filter. */
+export const LEGACY_PLACEHOLDER_DEPARTURE_TIME_TO = "12:00";
+
 export function todayIso(): string {
   const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function isDateBeforeToday(isoDate: string): boolean {
@@ -25,7 +30,7 @@ export function countAdvancedOptions(input: {
 }): number {
   let count = 0;
   if (input.departureTimeFrom) count += 1;
-  if (input.departureTimeTo && input.departureTimeTo !== "12:00") count += 1;
+  if (input.departureTimeTo && input.departureTimeTo !== LEGACY_PLACEHOLDER_DEPARTURE_TIME_TO) count += 1;
   if (input.nonstop) count += 1;
   if (input.maximumConnections !== undefined && input.maximumConnections !== 1) count += 1;
   return count;
@@ -70,5 +75,23 @@ export function validateMultiCityLegs(
     }
     previousDate = leg.depart;
   }
+  return null;
+}
+
+/** Validates every itinerary date before a live provider request is made. */
+export function validateFlightSearchDates(criteria: FlightSearchParams): string | null {
+  if (criteria.tripType === "multicity") {
+    return validateMultiCityLegs(
+      { from: criteria.from, to: criteria.to, depart: criteria.depart },
+      criteria.multiCityLegs ?? [],
+    );
+  }
+
+  if (criteria.tripType === "roundtrip" || Boolean(criteria.return)) {
+    return validateRoundTripDates(criteria.depart, criteria.return ?? "");
+  }
+
+  if (!criteria.depart) return "Choose a departure date.";
+  if (isDateBeforeToday(criteria.depart)) return "Departure date cannot be in the past.";
   return null;
 }

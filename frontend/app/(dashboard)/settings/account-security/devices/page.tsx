@@ -97,7 +97,7 @@ function relativeTime(date: Date): string {
 // ─────────────────────────────────────────────
 function DeviceIcon({
   type,
-  className = "text-teal-700",
+  className = "text-primary",
   size = 18,
 }: {
   type: DeviceInfo["type"];
@@ -125,14 +125,14 @@ function CurrentDeviceCard({ device }: { device: CurrentDevice }) {
   const { info, city, tz, signedIn } = device;
 
   return (
-    <div className="mx-1 overflow-hidden rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50 to-white">
+    <div className="mx-1 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-teal-50 to-white">
       {/* Accent bar */}
       <div className="h-1 w-full bg-gradient-to-r from-teal-400 to-teal-600" aria-hidden="true" />
 
       <div className="px-4 py-4">
         {/* Header row */}
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-teal-100 bg-white shadow-sm">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-white shadow-sm">
             <DeviceIcon type={info.type} size={22} />
           </div>
           <div className="flex-1 min-w-0">
@@ -140,7 +140,7 @@ function CurrentDeviceCard({ device }: { device: CurrentDevice }) {
               <p className="text-[15px] font-semibold text-neutral-900">
                 {info.browser}
               </p>
-              <span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-[10px] font-bold tracking-wide text-teal-700">
+              <span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-[10px] font-bold tracking-wide text-primary">
                 THIS DEVICE
               </span>
             </div>
@@ -177,7 +177,7 @@ function CurrentDeviceCard({ device }: { device: CurrentDevice }) {
             <CheckCircle2 size={13} className="shrink-0 text-teal-500" />
             <div className="min-w-0">
               <p className="text-[10px] font-medium uppercase tracking-wide text-stone-400">Status</p>
-              <p className="truncate text-[12px] font-semibold text-teal-700">Active</p>
+              <p className="truncate text-[12px] font-semibold text-primary">Active</p>
             </div>
           </div>
         </div>
@@ -258,7 +258,7 @@ function ComingSoonRow({
       tabIndex={-1}
       className={`flex cursor-default select-none items-center gap-3.5 px-4 py-3.5 opacity-80 pointer-events-none ${last ? "" : "border-b border-stone-100"}`}
     >
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
         <Icon size={16} strokeWidth={1.8} className="text-teal-400" />
       </div>
       <div className="min-w-0 flex-1">
@@ -389,8 +389,8 @@ export default function DevicesPage() {
 
         <div className="border-b border-stone-100 px-4 py-3.5">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
-              <Laptop size={16} strokeWidth={1.8} className="text-teal-700" />
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
+              <Laptop size={16} strokeWidth={1.8} className="text-primary" />
             </div>
             <div>
               <p className="text-[14px] font-medium text-neutral-900">What is a trusted device?</p>
@@ -404,8 +404,8 @@ export default function DevicesPage() {
 
         <div className="border-b border-stone-100 px-4 py-3.5">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
-              <Lock size={16} strokeWidth={1.8} className="text-teal-700" />
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
+              <Lock size={16} strokeWidth={1.8} className="text-primary" />
             </div>
             <div>
               <p className="text-[14px] font-medium text-neutral-900">JWT session security</p>
@@ -419,8 +419,8 @@ export default function DevicesPage() {
 
         <div className="px-4 py-3.5">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
-              <Shield size={16} strokeWidth={1.8} className="text-teal-700" />
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
+              <Shield size={16} strokeWidth={1.8} className="text-primary" />
             </div>
             <div>
               <p className="text-[14px] font-medium text-neutral-900">Protect lost devices immediately</p>
@@ -454,7 +454,7 @@ export default function DevicesPage() {
       </div>
 
       {/* ── Security tips ─────────────────────────── */}
-      <div className="mx-3 mt-3 rounded-2xl border border-teal-100 bg-teal-50 px-4 py-3.5">
+      <div className="mx-3 mt-3 rounded-2xl border border-primary/20 bg-primary-soft px-4 py-3.5">
         <p className="mb-2 text-[12px] font-semibold text-teal-800">Security tips</p>
         <ul className="space-y-1.5" role="list">
           {[
@@ -465,7 +465,7 @@ export default function DevicesPage() {
           ].map((tip) => (
             <li key={tip} className="flex items-start gap-2">
               <CheckCircle2 size={11} className="mt-0.5 shrink-0 text-teal-500" />
-              <p className="text-[11px] leading-snug text-teal-700">{tip}</p>
+              <p className="text-[11px] leading-snug text-primary">{tip}</p>
             </li>
           ))}
         </ul>

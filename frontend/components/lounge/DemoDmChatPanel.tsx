@@ -95,7 +95,7 @@ export function DemoDmChatPanel({
     }, 1200);
   };
 
-  const bubbleOut = isFull ? "#0F766E" : "#0F766E";
+  const bubbleOut = isFull ? "#0E6E5C" : "#0E6E5C";
   const bubbleIn = isFull ? "#263545" : "#ffffff";
   const textOut = "#fff";
   const textIn = isFull ? "#fff" : "#1e293b";

@@ -132,7 +132,7 @@ function ReviewCheckoutContent() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
-              <Plane className="h-5 w-5 text-teal-600" />
+              <Plane className="h-5 w-5 text-primary" />
               <h3 className="text-base font-bold text-slate-900">1. Flight Itinerary</h3>
             </div>
           </div>
@@ -169,13 +169,13 @@ function ReviewCheckoutContent() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
-              <User className="h-5 w-5 text-teal-600" />
+              <User className="h-5 w-5 text-primary" />
               <h3 className="text-base font-bold text-slate-900">2. Travelers</h3>
             </div>
             <button
               type="button"
               onClick={() => router.back()}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-teal-700 hover:text-teal-800"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-teal-800"
             >
               <Edit3 className="h-3.5 w-3.5" />
               <span>Edit</span>
@@ -201,23 +201,23 @@ function ReviewCheckoutContent() {
         {/* 3. Baggage & Extras */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <Luggage className="h-5 w-5 text-teal-600" />
+            <Luggage className="h-5 w-5 text-primary" />
             <h3 className="text-base font-bold text-slate-900">3. Baggage & Extras</h3>
           </div>
           <ul className="space-y-1 text-xs text-slate-700">
             <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-teal-600" />
+              <Check className="h-4 w-4 text-primary" />
               <span>Personal item & cabin baggage included</span>
             </li>
             {extras.extraBagsCount ? (
               <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-teal-600" />
+                <Check className="h-4 w-4 text-primary" />
                 <span>{extras.extraBagsCount} Extra checked bag(s) added</span>
               </li>
             ) : null}
             {extras.seats && extras.seats.length > 0 ? (
               <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-teal-600" />
+                <Check className="h-4 w-4 text-primary" />
                 <span>
                   Seats assigned: {extras.seats.map((s) => s.seatDesignator).join(", ")}
                 </span>
@@ -233,7 +233,7 @@ function ReviewCheckoutContent() {
               type="checkbox"
               checked={termsAccepted}
               onChange={(e) => setTermsAccepted(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
             />
             <span className="text-xs text-slate-600">
               I acknowledge the fare rules, ticket change/cancellation terms, and Rovvy booking terms. I confirm traveler names match official travel documents.
@@ -258,7 +258,7 @@ function ReviewCheckoutContent() {
           type="button"
           disabled={!termsAccepted}
           onClick={proceedToPayment}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 py-3.5 text-sm font-bold text-white shadow-sm hover:bg-teal-700 disabled:opacity-50"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-white shadow-sm hover:bg-primary-hover disabled:opacity-50"
         >
           <span>Proceed to payment</span>
           <ArrowRight className="h-4 w-4" />

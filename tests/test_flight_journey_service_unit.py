@@ -182,7 +182,7 @@ def test_multi_city_sends_all_slices(mock_create):
     assert len(slices) == 2
     assert slices[0]["origin"] == "ORD"
     assert slices[1]["destination"] == "SIN"
-    assert mock_create.call_args.kwargs["max_connections"] == 1
+    assert mock_create.call_args_list[0].kwargs["max_connections"] == 1
 
 
 def test_search_unconfigured_duffel_returns_503():

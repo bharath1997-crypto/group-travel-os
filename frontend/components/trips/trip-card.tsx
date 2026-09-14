@@ -3,13 +3,13 @@
 import { Check } from "lucide-react";
 import type { ReactNode } from "react";
 
-const NAVY = "#0F172A";
-const CORAL = "#0F766E";
+const NAVY = "#0F1614";
+const CORAL = "#0E6E5C";
 const BORDER = "#E9ECEF";
 
 /** Navy → coral gradient per design system */
 export const TRIP_CARD_HEADER_GRADIENT =
-  "linear-gradient(135deg, #0F172A 0%, #E94560 100%)";
+  "linear-gradient(135deg, #0F1614 0%, #E94560 100%)";
 
 export type TripCardTrip = {
   id: string;

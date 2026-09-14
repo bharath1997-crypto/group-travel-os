@@ -36,13 +36,13 @@ export default function ConsentPreferencesBanner() {
       className="fixed inset-x-0 bottom-0 z-[120] border-t border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur sm:bottom-4 sm:left-4 sm:right-auto sm:max-w-xl sm:rounded-2xl sm:border"
     >
       <div className="flex items-start gap-3">
-        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-600" aria-hidden="true" />
+        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-900">Storage preferences</p>
           <p className="mt-1 text-xs leading-relaxed text-slate-600">
             Rovvy can remember recent airport picks on this device when you allow preference storage.
             Flight search works either way.{" "}
-            <Link href="/cookie-policy" className="font-medium text-teal-700 underline-offset-2 hover:underline">
+            <Link href="/cookie-policy" className="font-medium text-primary underline-offset-2 hover:underline">
               Cookie Policy
             </Link>
           </p>
@@ -56,7 +56,7 @@ export default function ConsentPreferencesBanner() {
                   onChange={(e) =>
                     setPrefs((current) => ({ ...current, preferences: e.target.checked }))
                   }
-                  className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
                 />
                 <span>
                   <span className="font-medium">Preference storage</span>
@@ -72,7 +72,7 @@ export default function ConsentPreferencesBanner() {
                   onChange={(e) =>
                     setPrefs((current) => ({ ...current, analytics: e.target.checked }))
                   }
-                  className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
                 />
                 <span>
                   <span className="font-medium">Analytics</span>
@@ -85,7 +85,7 @@ export default function ConsentPreferencesBanner() {
                 <button
                   type="button"
                   onClick={saveCustom}
-                  className="inline-flex min-h-11 items-center rounded-xl bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-700"
+                  className="inline-flex min-h-11 items-center rounded-xl bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover"
                 >
                   Save preferences
                 </button>
@@ -106,7 +106,7 @@ export default function ConsentPreferencesBanner() {
                   acceptAllConsent();
                   setVisible(false);
                 }}
-                className="inline-flex min-h-11 items-center rounded-xl bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-700"
+                className="inline-flex min-h-11 items-center rounded-xl bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover"
               >
                 Accept all
               </button>

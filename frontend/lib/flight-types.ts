@@ -1,5 +1,10 @@
 export type FlightCabin = "M" | "W" | "C" | "F";
 
+export type TicketType = "single_ticket" | "separate_tickets" | "unknown";
+export type ConnectionProtection = "protected" | "unprotected" | "unknown";
+export type BaggageTransfer = "automatic" | "self_transfer" | "unknown";
+export type YesNoUnknown = "yes" | "no" | "unknown";
+
 export type FlightRow = {
   id: string;
   price: number;
@@ -27,6 +32,16 @@ export type FlightConnectionDetail = {
   airport_change: boolean | null;
   terminal_change: boolean | null;
   protected: boolean | null;
+  ticket_type?: TicketType;
+  connection_protection?: ConnectionProtection;
+  baggage_transfer?: BaggageTransfer;
+  airport_change_status?: YesNoUnknown;
+  terminal_change_status?: YesNoUnknown;
+  provider_disclosure_text?: string | null;
+  baggage_recheck_required?: YesNoUnknown;
+  source_provider?: string | null;
+  source_offer_id?: string | null;
+  normalized_at?: string | null;
 };
 
 export type FlightJourneySegment = FlightSegmentDetail & {
@@ -48,11 +63,17 @@ export type FlightJourney = FlightRow & {
   provider_offer_id: string;
   checked_at: string;
   expires_at: string;
+  last_ticketing_date?: string | null;
   live_mode: boolean;
   slices: FlightJourneySlice[];
   total_duration_minutes: number;
   maximum_connections: number;
   protected_connection: boolean | null;
+  ticket_type?: TicketType;
+  connection_protection?: ConnectionProtection;
+  baggage_transfer?: BaggageTransfer;
+  separate_tickets?: boolean | null;
+  self_transfer?: boolean | null;
   bookable_in_rovvy: boolean;
   carry_on_included: boolean | null;
   checked_bag_included: boolean | null;
@@ -61,11 +82,114 @@ export type FlightJourney = FlightRow & {
   recommendation_score?: number | null;
 };
 
+export type SellerActionType = "external_redirect" | "provider_checkout" | "unavailable";
+
+export type RovvyBaggageSummary = {
+  carry_on_included: boolean | null;
+  checked_bag_included: boolean | null;
+  summary: string | null;
+};
+
+export type RovvyFareConditions = {
+  refundable: boolean | null;
+  changeable: boolean | null;
+  summary: string | null;
+};
+
+export type RovvySellerOption = {
+  provider_id: string;
+  provider_offer_id: string;
+  seller_id: string;
+  seller_name: string;
+  total_price: number;
+  currency: string;
+  baggage: RovvyBaggageSummary;
+  fare_conditions: RovvyFareConditions;
+  protected_connection: boolean | null;
+  ticket_type?: TicketType;
+  connection_protection?: ConnectionProtection;
+  baggage_transfer?: BaggageTransfer;
+  separate_tickets: boolean | null;
+  self_transfer: boolean | null;
+  redirect_url: string | null;
+  action_type: SellerActionType;
+  checked_at: string;
+  expires_at: string | null;
+  last_ticketing_date?: string | null;
+  environment: ProviderEnvironment;
+};
+
+export type RovvyItineraryGroup = {
+  itinerary_key: string;
+  marketing_airlines: string[];
+  operating_airlines: string[];
+  slices: FlightJourneySlice[];
+  total_duration_minutes: number;
+  stops: number;
+  departure_at: string;
+  arrival_at: string;
+  origin: string;
+  destination: string;
+  seller_options: RovvySellerOption[];
+  lowest_price: number | null;
+  currency: string | null;
+  recommendation_score?: number | null;
+  recommendation_reason?: string | null;
+};
+
+export type ProviderEnvironment = "test" | "live" | null;
+
+export type ProviderStatusRecord = {
+  provider_id: string;
+  status: "ok" | "timeout" | "error" | "disabled" | "unconfigured";
+  offer_count: number;
+  environment: "test" | "live" | null;
+  message: string | null;
+  elapsed_ms: number | null;
+};
+
 export type FlightJourneySearchResponse = {
   journeys: FlightJourney[];
+  itinerary_groups: RovvyItineraryGroup[];
+  provider_statuses: ProviderStatusRecord[];
+  providers_requested: number;
+  providers_succeeded: number;
+  providers_failed: number;
+  offers_before_grouping?: number;
+  unique_itinerary_count?: number;
+  partial_results: boolean;
+  searched_at: string | null;
   provider: string;
   live_mode: boolean | null;
+  environment: "test" | "live" | null;
   message: string | null;
+  route_recovery?: FlightRouteRecoveryOption[];
+  search_metadata?: {
+    strict_connection_limit: boolean;
+    adaptive_attempts: Array<{
+      attempt_number: number;
+      maximum_connections: number;
+      offer_count: number;
+      group_count: number;
+      status: "ok" | "timeout" | "error" | "skipped";
+      elapsed_ms?: number | null;
+    }>;
+    merged_offer_count: number;
+    merged_group_count: number;
+    requested_destinations: string[];
+  } | null;
+};
+
+export type FlightRouteRecoveryOption = {
+  origin: string;
+  destination: string;
+  departure_date: string;
+  tier: "nearby_origin" | "nearby_destination" | "national_gateway" | "international_gateway";
+  title: string;
+  explanation: string;
+  origin_distance_km?: number | null;
+  destination_distance_km?: number | null;
+  separate_searches_required: boolean;
 };
 
 export type FlightSearchSlicePayload = {
@@ -106,6 +230,8 @@ export type FlightSearchParams = {
   tripType?: "oneway" | "roundtrip" | "multicity";
   multiCityLegs?: MultiCityLeg[];
   maximumConnections?: number;
+  strictConnectionLimit?: boolean;
+  flexibleDates?: boolean;
   departureTimeFrom?: string;
   departureTimeTo?: string;
   returnDepartureTimeFrom?: string;

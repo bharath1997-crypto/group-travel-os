@@ -10,7 +10,7 @@ type Props = {
 const VARIANTS = {
   verified: {
     badge: "Verified source",
-    badgeClass: "bg-teal-50 text-primary",
+    badgeClass: "bg-primary-soft text-primary",
     detail: "OpenStreetMap / Rovvy Places",
   },
   ai: {

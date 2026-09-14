@@ -48,7 +48,7 @@ export function CityHero({
       <div className="relative aspect-[21/9] min-h-[200px] w-full max-h-[420px] sm:min-h-[240px] md:aspect-[2.4/1]">
         {showSkeleton ? (
           <div
-            className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#1E293B]"
+            className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#0F1614] via-[#1E293B] to-[#1E293B]"
             aria-hidden
           />
         ) : null}
@@ -65,7 +65,7 @@ export function CityHero({
 
         {showGradient ? (
           <div
-            className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-primary/40"
+            className="absolute inset-0 bg-gradient-to-br from-[#0F1614] via-[#1E293B] to-primary/40"
             aria-hidden
           />
         ) : null}

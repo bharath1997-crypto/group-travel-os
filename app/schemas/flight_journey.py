@@ -7,6 +7,13 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.schemas.flight_disclosure import (
+    BaggageTransfer,
+    ConnectionProtection,
+    FlightSearchMetadata,
+    TicketType,
+    YesNoUnknown,
+)
 from app.schemas.flight_offer import FlightSegmentDetail, FlightSliceDetail
 
 TripType = Literal["one_way", "round_trip", "multi_city"]
@@ -53,6 +60,8 @@ class FlightSearchRequest(BaseModel):
     passengers: list[FlightSearchPassengerRequest] = Field(..., min_length=1, max_length=9)
     cabin: CabinClass = "economy"
     maximum_connections: int = Field(default=1, ge=0, le=3)
+    strict_connection_limit: bool = False
+    flexible_dates: bool = False
     currency: str = Field(default="USD", min_length=3, max_length=3)
 
     @field_validator("currency")
@@ -106,6 +115,16 @@ class FlightConnectionDetail(BaseModel):
     airport_change: bool | None = None
     terminal_change: bool | None = None
     protected: bool | None = None
+    ticket_type: TicketType = "unknown"
+    connection_protection: ConnectionProtection = "unknown"
+    baggage_transfer: BaggageTransfer = "unknown"
+    airport_change_status: YesNoUnknown = "unknown"
+    terminal_change_status: YesNoUnknown = "unknown"
+    provider_disclosure_text: str | None = None
+    baggage_recheck_required: YesNoUnknown = "unknown"
+    source_provider: str | None = None
+    source_offer_id: str | None = None
+    normalized_at: str | None = None
 
 
 class FlightJourneySegment(FlightSegmentDetail):
@@ -135,6 +154,11 @@ class FlightJourney(BaseModel):
     total_duration_minutes: int = 0
     maximum_connections: int = 0
     protected_connection: bool | None = None
+    ticket_type: TicketType = "unknown"
+    connection_protection: ConnectionProtection = "unknown"
+    baggage_transfer: BaggageTransfer = "unknown"
+    separate_tickets: bool | None = None
+    self_transfer: bool | None = None
     bookable_in_rovvy: bool = True
     airlines: list[str] = Field(default_factory=list)
     carry_on_included: bool | None = None
@@ -151,12 +175,41 @@ class FlightJourney(BaseModel):
     duration_minutes: int = 0
     stops: int = 0
     deep_link: str = ""
+    last_ticketing_date: str | None = None
 
 
 class FlightJourneySearchResponse(BaseModel):
     model_config = ConfigDict(from_attributes=False)
 
     journeys: list[FlightJourney] = Field(default_factory=list)
+    itinerary_groups: list["RovvyItineraryGroup"] = Field(default_factory=list)
+    provider_statuses: list["ProviderStatusRecord"] = Field(default_factory=list)
+    providers_requested: int = 0
+    providers_succeeded: int = 0
+    providers_failed: int = 0
+    offers_before_grouping: int = 0
+    unique_itinerary_count: int = 0
+    partial_results: bool = False
+    searched_at: str | None = None
     provider: str = "duffel"
     live_mode: bool | None = None
+    environment: Literal["test", "live"] | None = None
     message: str | None = None
+    search_metadata: FlightSearchMetadata | None = None
+    route_recovery: list["FlightRouteRecoveryOption"] = Field(default_factory=list)
+
+
+class FlightRouteRecoveryOption(BaseModel):
+    """An alternate search proposal, never an unverified flight offer."""
+
+    model_config = ConfigDict(from_attributes=False)
+
+    origin: str
+    destination: str
+    departure_date: date
+    tier: Literal["nearby_origin", "nearby_destination", "national_gateway", "international_gateway"]
+    title: str
+    explanation: str
+    origin_distance_km: float | None = None
+    destination_distance_km: float | None = None
+    separate_searches_required: bool = False

@@ -95,6 +95,20 @@ describe("live-map-style-switch", () => {
     expect(liveMapBaseLayerMatches(map as never, "dark")).toBe(true);
   });
 
+  it("matches dark/street to OpenFreeMap vector when CARTO is unavailable", () => {
+    const vectorMap = {
+      isStyleLoaded: () => true,
+      getLayer: () => undefined,
+      getStyle: () => ({
+        sources: { openmaptiles: { type: "vector" } },
+        layers: [],
+      }),
+    };
+    expect(liveMapBaseLayerMatches(vectorMap as never, "dark")).toBe(true);
+    expect(liveMapBaseLayerMatches(vectorMap as never, "street")).toBe(true);
+    expect(liveMapBaseLayerMatches(vectorMap as never, "clean")).toBe(true);
+  });
+
   it("calls onReady for the latest terrain request", async () => {
     resetLiveMapStyleSwitchGenerationForTests();
     const map = createMockMap("dark");

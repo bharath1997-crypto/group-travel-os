@@ -44,10 +44,10 @@ export default function FlightSortTabs({ value, onChange, cheapestPrice, fastest
               }`}
             >
               <div className="flex items-center gap-1.5">
-                <Icon className={`h-4 w-4 ${active ? "text-teal-600" : "text-slate-400"}`} />
+                <Icon className={`h-4 w-4 ${active ? "text-primary" : "text-slate-400"}`} />
                 <span className="text-xs">{mode.label}</span>
               </div>
-              <span className={`text-[10px] mt-0.5 ${active ? "text-teal-700 font-semibold" : "text-slate-400"}`}>
+              <span className={`text-[10px] mt-0.5 ${active ? "text-primary font-semibold" : "text-slate-400"}`}>
                 {badgeText}
               </span>
             </button>

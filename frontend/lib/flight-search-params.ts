@@ -1,4 +1,7 @@
 import type { FlightCabin, FlightSearchParams, MultiCityLeg } from "@/lib/flight-types";
+import {
+  LEGACY_PLACEHOLDER_DEPARTURE_TIME_TO,
+} from "@/lib/flight-search-validation";
 
 const CABIN_CODES = new Set<FlightCabin>(["M", "W", "C", "F"]);
 
@@ -32,7 +35,7 @@ export function parseFlightSearchParams(sp: URLSearchParams): FlightSearchParams
     }
   }
 
-  return {
+  return normalizeFlightSearchParams({
     from,
     to,
     fromLabel: sp.get("fromLabel") || undefined,
@@ -51,31 +54,59 @@ export function parseFlightSearchParams(sp: URLSearchParams): FlightSearchParams
     departureTimeTo: sp.get("depTo") || undefined,
     returnDepartureTimeFrom: sp.get("retFrom") || undefined,
     returnDepartureTimeTo: sp.get("retTo") || undefined,
+  });
+}
+
+/** Drop legacy placeholder departure windows that were never user intent. */
+export function normalizeFlightSearchParams(params: FlightSearchParams): FlightSearchParams {
+  const departureTimeFrom = params.departureTimeFrom?.trim() || undefined;
+  let departureTimeTo = params.departureTimeTo?.trim() || undefined;
+  if (departureTimeTo === LEGACY_PLACEHOLDER_DEPARTURE_TIME_TO && !departureTimeFrom) {
+    departureTimeTo = undefined;
+  }
+
+  const returnDepartureTimeFrom = params.returnDepartureTimeFrom?.trim() || undefined;
+  let returnDepartureTimeTo = params.returnDepartureTimeTo?.trim() || undefined;
+  if (returnDepartureTimeTo === LEGACY_PLACEHOLDER_DEPARTURE_TIME_TO && !returnDepartureTimeFrom) {
+    returnDepartureTimeTo = undefined;
+  }
+
+  return {
+    ...params,
+    departureTimeFrom,
+    departureTimeTo,
+    returnDepartureTimeFrom,
+    returnDepartureTimeTo,
   };
 }
 
+export function flightSearchParamsDiffer(a: FlightSearchParams, b: FlightSearchParams): boolean {
+  return buildFlightSearchQuery(a).toString() !== buildFlightSearchQuery(b).toString();
+}
+
 export function buildFlightSearchQuery(params: FlightSearchParams): URLSearchParams {
+  const normalized = normalizeFlightSearchParams(params);
   const qs = new URLSearchParams({
-    from: params.from,
-    to: params.to,
-    depart: params.depart,
-    adults: String(params.adults),
-    children: String(params.children),
-    infants: String(params.infants),
-    cabin: params.cabin,
+    from: normalized.from,
+    to: normalized.to,
+    depart: normalized.depart,
+    adults: String(normalized.adults),
+    children: String(normalized.children),
+    infants: String(normalized.infants),
+    cabin: normalized.cabin,
   });
-  if (params.fromLabel) qs.set("fromLabel", params.fromLabel);
-  if (params.toLabel) qs.set("toLabel", params.toLabel);
-  if (params.return) qs.set("return", params.return);
-  if (params.nonstop) qs.set("nonstop", "1");
-  if (params.maximumConnections !== undefined) qs.set("maxConn", String(params.maximumConnections));
-  if (params.departureTimeFrom) qs.set("depFrom", params.departureTimeFrom);
-  if (params.departureTimeTo) qs.set("depTo", params.departureTimeTo);
-  if (params.returnDepartureTimeFrom) qs.set("retFrom", params.returnDepartureTimeFrom);
-  if (params.returnDepartureTimeTo) qs.set("retTo", params.returnDepartureTimeTo);
-  if (params.tripType) qs.set("tripType", params.tripType);
-  if (params.multiCityLegs && params.multiCityLegs.length > 0) {
-    qs.set("legs", JSON.stringify(params.multiCityLegs));
+  if (normalized.fromLabel) qs.set("fromLabel", normalized.fromLabel);
+  if (normalized.toLabel) qs.set("toLabel", normalized.toLabel);
+  if (normalized.return) qs.set("return", normalized.return);
+  if (normalized.nonstop) qs.set("nonstop", "1");
+  if (normalized.maximumConnections !== undefined) qs.set("maxConn", String(normalized.maximumConnections));
+  if (normalized.departureTimeFrom) qs.set("depFrom", normalized.departureTimeFrom);
+  if (normalized.departureTimeTo) qs.set("depTo", normalized.departureTimeTo);
+  if (normalized.returnDepartureTimeFrom) qs.set("retFrom", normalized.returnDepartureTimeFrom);
+  if (normalized.returnDepartureTimeTo) qs.set("retTo", normalized.returnDepartureTimeTo);
+  if (normalized.tripType) qs.set("tripType", normalized.tripType);
+  if (normalized.multiCityLegs && normalized.multiCityLegs.length > 0) {
+    qs.set("legs", JSON.stringify(normalized.multiCityLegs));
   }
   return qs;
 }

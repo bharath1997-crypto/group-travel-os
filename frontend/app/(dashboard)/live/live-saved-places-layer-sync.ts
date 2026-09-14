@@ -65,7 +65,7 @@ export function syncSavedPlacesOverlay(
             18,
             12,
           ],
-          "circle-color": "#0F766E",
+          "circle-color": "#0E6E5C",
           "circle-stroke-width": 2,
           "circle-stroke-color": "#ffffff",
           "circle-opacity": 0.95,
@@ -88,7 +88,7 @@ export function syncSavedPlacesOverlay(
           "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
         },
         paint: {
-          "text-color": "#0F766E",
+          "text-color": "#0E6E5C",
           "text-halo-color": "#ffffff",
           "text-halo-width": 1.5,
         },

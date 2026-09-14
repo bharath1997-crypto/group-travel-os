@@ -362,7 +362,7 @@ export default function ExploreV2Page() {
     <main className="bg-white text-slate-800 p-6 pb-20 md:p-10">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header Hero Section */}
-        <header className="relative rounded-2xl overflow-hidden mb-2" style={{ background: "linear-gradient(135deg, #0F766E 0%, #134E4A 100%)" }}>
+        <header className="relative rounded-2xl overflow-hidden mb-2" style={{ background: "linear-gradient(135deg, #0E6E5C 0%, #134E4A 100%)" }}>
           {/* Dot pattern overlay */}
           <div style={{
             position: "absolute", inset: 0, opacity: 0.07,
@@ -390,7 +390,7 @@ export default function ExploreV2Page() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="flex-1 text-sm text-slate-800 bg-transparent outline-none placeholder:text-slate-400"
               />
-              <button className="bg-primary text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-teal-700 transition shrink-0">
+              <button className="bg-primary text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-primary-hover transition shrink-0">
                 Search
               </button>
             </div>
@@ -407,7 +407,7 @@ export default function ExploreV2Page() {
                   type="text"
                   value={locationInput}
                   onChange={(e) => setLocationInput(e.target.value)}
-                  className="px-3 py-2 text-xs border border-primary rounded-full focus:outline-none focus:ring-1 focus:ring-[#0F766E] text-slate-800 w-36"
+                  className="px-3 py-2 text-xs border border-primary rounded-full focus:outline-none focus:ring-1 focus:ring-[#0E6E5C] text-slate-800 w-36"
                   placeholder="Type city name..."
                   autoFocus
                   onBlur={() => setTimeout(() => setIsEditingLocation(false), 200)}
@@ -419,7 +419,7 @@ export default function ExploreV2Page() {
                   setIsEditingLocation(true);
                   setLocationInput(city);
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-teal-700 text-white rounded-full text-xs font-semibold shadow-sm transition shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary-hover text-white rounded-full text-xs font-semibold shadow-sm transition shrink-0"
               >
                 <Navigation className="h-3.5 w-3.5" />
                 <span>{city}</span>
@@ -479,7 +479,7 @@ export default function ExploreV2Page() {
                 style={{
                   padding: "10px 14px",
                   borderRadius: "14px",
-                  border: activeCategory === cat.id ? "2px solid #0F766E" : "2px solid #E2E8F0",
+                  border: activeCategory === cat.id ? "2px solid #0E6E5C" : "2px solid #E2E8F0",
                   background: activeCategory === cat.id ? "#F0FDF9" : "#FFFFFF",
                   cursor: "pointer",
                   minWidth: "68px",
@@ -489,7 +489,7 @@ export default function ExploreV2Page() {
                 <span style={{
                   fontSize: "11px",
                   fontWeight: 600,
-                  color: activeCategory === cat.id ? "#0F766E" : "#64748B",
+                  color: activeCategory === cat.id ? "#0E6E5C" : "#64748B",
                   whiteSpace: "nowrap",
                 }}>{cat.label}</span>
               </button>
@@ -509,7 +509,7 @@ export default function ExploreV2Page() {
                 key={topCity.name}
                 onClick={() => setLocationInput(topCity.name + ", " + topCity.state)}
                 className="rounded-2xl p-4 text-left transition hover:scale-105 cursor-pointer"
-                style={{ background: "linear-gradient(135deg, #0F766E, #134E4A)", border: "none" }}
+                style={{ background: "linear-gradient(135deg, #0E6E5C, #134E4A)", border: "none" }}
               >
                 <div style={{ fontSize: "26px", marginBottom: "6px" }}>{topCity.emoji}</div>
                 <div className="text-white font-bold text-[13px]">{topCity.name}</div>
@@ -586,7 +586,7 @@ export default function ExploreV2Page() {
                 </div>
                 <Link
                   href={`/explore/map?lat=${lat}&lng=${lng}`}
-                  className="bg-white hover:bg-teal-50 text-primary px-5 py-2.5 rounded-full font-bold text-xs shadow-sm transition"
+                  className="bg-white hover:bg-primary-soft text-primary px-5 py-2.5 rounded-full font-bold text-xs shadow-sm transition"
                 >
                   Open map
                 </Link>

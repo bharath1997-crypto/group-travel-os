@@ -61,7 +61,7 @@ function formatDate(iso: string | null): string {
 
 function statusColor(status: string): string {
   switch (status) {
-    case "ready":      return "bg-teal-50 text-primary";
+    case "ready":      return "bg-primary-soft text-primary";
     case "processing": return "bg-amber-50 text-amber-700";
     case "pending":    return "bg-stone-100 text-stone-500";
     case "failed":     return "bg-red-50 text-red-600";
@@ -206,7 +206,7 @@ export default function GoogleDrivePage() {
         ) : isConnected ? (
           <>
             <div className="flex items-center gap-3.5 border-b border-stone-100 px-4 py-3.5">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft">
                 <CheckCircle2 size={16} className="text-primary" strokeWidth={1.8} />
               </div>
               <div className="min-w-0 flex-1">
@@ -282,7 +282,7 @@ export default function GoogleDrivePage() {
                       type="button"
                       disabled={isBacking}
                       onClick={() => handleBackup(exp.id)}
-                      className="flex shrink-0 items-center gap-1.5 rounded-full border border-primary px-3 py-1.5 text-[12px] font-semibold text-primary transition-colors hover:bg-teal-50 disabled:opacity-40"
+                      className="flex shrink-0 items-center gap-1.5 rounded-full border border-primary px-3 py-1.5 text-[12px] font-semibold text-primary transition-colors hover:bg-primary-soft disabled:opacity-40"
                     >
                       {isBacking ? (
                         <><RefreshCw size={12} className="animate-spin" /> Uploading…</>

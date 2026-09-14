@@ -176,6 +176,36 @@ class Settings(BaseSettings):
         validation_alias="FLIGHT_LIVE_PROVIDER",
     )
 
+    flight_enabled_providers: str = Field(
+        default="duffel",
+        validation_alias="FLIGHT_ENABLED_PROVIDERS",
+        description="Comma-separated authorized flight provider adapters to enable",
+    )
+
+    amadeus_client_id: str | None = Field(
+        default=None,
+        validation_alias="AMADEUS_CLIENT_ID",
+    )
+    amadeus_client_secret: str | None = Field(
+        default=None,
+        validation_alias="AMADEUS_CLIENT_SECRET",
+    )
+    amadeus_environment: str = Field(
+        default="test",
+        validation_alias="AMADEUS_ENVIRONMENT",
+        description="Amadeus Self-Service environment: test or production",
+    )
+    amadeus_base_url: str = Field(
+        default="https://test.api.amadeus.com",
+        validation_alias="AMADEUS_BASE_URL",
+    )
+    amadeus_timeout_seconds: int = Field(
+        default=15,
+        ge=1,
+        le=120,
+        validation_alias="AMADEUS_TIMEOUT_SECONDS",
+    )
+
     allow_estimated_flights: bool = Field(
         default=False,
         validation_alias="ALLOW_ESTIMATED_FLIGHTS",

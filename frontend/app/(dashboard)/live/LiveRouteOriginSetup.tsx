@@ -180,7 +180,7 @@ export default function LiveRouteOriginSetup({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search start address"
-              className="w-full rounded-xl border border-stone-200 px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30"
+              className="w-full rounded-xl border border-stone-200 px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#0E6E5C]/30"
               autoFocus
             />
             {loading ? (

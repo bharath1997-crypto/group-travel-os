@@ -37,9 +37,12 @@ class WayraAnswerService:
         ctx = request.context if isinstance(request.context, dict) else {}
         tier = classify_wayra_answer_tier(request.user_message, ctx)
         place = extract_place_from_context(ctx)
+        voice_mode = bool(getattr(request, "voice_mode", False))
 
         if tier == "nearby":
-            return await WayraAnswerService._answer_nearby(request.user_message, ctx, place)
+            return await WayraAnswerService._answer_nearby(
+                request.user_message, ctx, place, voice_mode=voice_mode
+            )
 
         if tier == "discovery" and place:
             from app.services.wayra_events_context import try_future_events_reply
@@ -47,10 +50,14 @@ class WayraAnswerService:
             future_local = try_future_events_reply(request.user_message, place)
             if future_local is not None:
                 return future_local
-            return await WayraAnswerService._answer_discovery(request.user_message, ctx, place)
+            return await WayraAnswerService._answer_discovery(
+                request.user_message, ctx, place, voice_mode=voice_mode
+            )
 
         if tier == "location_hard":
-            return await WayraAnswerService._answer_location_hard(request.user_message, ctx, place)
+            return await WayraAnswerService._answer_location_hard(
+                request.user_message, ctx, place, voice_mode=voice_mode
+            )
 
         return None
 
@@ -59,6 +66,8 @@ class WayraAnswerService:
         user_message: str,
         ctx: dict[str, Any],
         place: dict[str, Any] | None,
+        *,
+        voice_mode: bool = False,
     ) -> AIAssistantResponse | None:
         category = nearby_category_from_message(user_message) or "all"
         if not place:
@@ -132,6 +141,7 @@ class WayraAnswerService:
             tier="nearby",
             ctx=ctx,
             place=place,
+            voice_mode=voice_mode,
         )
         return AIAssistantResponse(
             message=message,
@@ -150,6 +160,8 @@ class WayraAnswerService:
         user_message: str,
         ctx: dict[str, Any],
         place: dict[str, Any],
+        *,
+        voice_mode: bool = False,
     ) -> AIAssistantResponse | None:
         normalized = normalize_place_for_sources(place, ctx)
         label = str(normalized.get("name") or "Selected location")
@@ -173,6 +185,7 @@ class WayraAnswerService:
             tier="discovery",
             ctx=ctx,
             place=place,
+            voice_mode=voice_mode,
         )
         return AIAssistantResponse(
             message=message,
@@ -249,6 +262,8 @@ class WayraAnswerService:
         user_message: str,
         ctx: dict[str, Any],
         place: dict[str, Any] | None,
+        *,
+        voice_mode: bool = False,
     ) -> AIAssistantResponse | None:
         local_distance = WayraAnswerService._try_local_distance_answer(
             user_message, ctx, place
@@ -275,6 +290,7 @@ class WayraAnswerService:
             tier="location_hard",
             ctx=ctx,
             place=place,
+            voice_mode=voice_mode,
         )
         sources: list[WayraSource] = []
         if place:

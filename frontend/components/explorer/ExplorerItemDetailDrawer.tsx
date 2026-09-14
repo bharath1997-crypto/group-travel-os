@@ -283,7 +283,7 @@ export function ExplorerItemDetailDrawer({
                   type="button"
                   onClick={handleAddToCart}
                   disabled={addingToCart}
-                  className="rounded-2xl bg-teal-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-600 disabled:opacity-50"
+                  className="rounded-2xl bg-teal-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-primary disabled:opacity-50"
                 >
                   {addingToCart ? "Adding..." : "Add to Cart"}
                 </button>

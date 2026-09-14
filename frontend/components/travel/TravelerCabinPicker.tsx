@@ -91,7 +91,7 @@ export default function TravelerCabinPicker({
         className={
           triggerClassName
             ? `flex w-full items-center justify-between text-left ${triggerClassName}`
-            : "flex h-11 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 text-left text-sm font-medium text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+            : "flex h-11 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 text-left text-sm font-medium text-slate-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
         }
       >
         <span className="truncate">{label}</span>
@@ -116,7 +116,7 @@ export default function TravelerCabinPicker({
                   type="button"
                   onClick={() => onChange({ adults, children: childCount, infants, cabin: code })}
                   className={`rounded-xl px-3 py-2 text-xs font-semibold ${
-                    cabin === code ? "bg-teal-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    cabin === code ? "bg-primary text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                   }`}
                 >
                   {CABIN_LABELS[code]}
@@ -127,7 +127,7 @@ export default function TravelerCabinPicker({
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="mt-4 w-full rounded-xl bg-teal-600 py-2 text-sm font-bold text-white"
+            className="mt-4 w-full rounded-xl bg-primary py-2 text-sm font-bold text-white"
           >
             Done
           </button>

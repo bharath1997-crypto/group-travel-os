@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.models.user import User
+from app.schemas.flight_disclosure import RovvyOfferProvenance
 from app.schemas.flight import FlightResult
 from app.schemas.flight_journey import FlightJourneySearchResponse, FlightSearchRequest
 from app.schemas.flight_booking import (
@@ -26,16 +27,80 @@ from app.schemas.flight_places import (
     FlightPlaceSuggestion,
     FlightRegionItem,
 )
+from app.schemas.flight_provider_registry import FlightProviderRegistryRecord
+from app.schemas.flight_provider_directory import FlightProviderDirectoryItem, FlightProviderDirectoryResponse
+from app.services.flight_disclosure_service import get_offer_provenance
 from app.services.flight_booking_service import FlightBookingService
 from app.services.flight_offer_service import FlightOfferService
 from app.services.flight_places_service import FlightPlacesService
 from app.services.flight_journey_service import FlightJourneyService
+from app.services.flight_providers.registry import provider_registry_records
+from app.services.flight_provider_directory_service import FlightProviderDirectoryService
 from app.services.flight_service import FlightService
 from app.utils.auth import get_current_user, get_current_user_optional
 from app.utils.database import get_db
 from app.utils.exceptions import AppException
 
 router = APIRouter(prefix="/flights", tags=["flights"])
+
+
+def _require_admin(current_user: User) -> None:
+    if not current_user.is_admin:
+        AppException.forbidden("Admin access required")
+
+
+@router.get(
+    "/providers",
+    response_model=list[FlightProviderRegistryRecord],
+    summary="Enabled flight-provider capabilities and readiness",
+)
+def enabled_flight_providers() -> list[FlightProviderRegistryRecord]:
+    return provider_registry_records(include_disabled=False)
+
+
+@router.get(
+    "/admin/providers",
+    response_model=list[FlightProviderRegistryRecord],
+    summary="Admin-only flight-provider registry and runtime health",
+)
+def admin_flight_providers(
+    current_user: User = Depends(get_current_user),
+) -> list[FlightProviderRegistryRecord]:
+    _require_admin(current_user)
+    return provider_registry_records(include_disabled=True)
+
+
+@router.get(
+    "/provider-directory",
+    response_model=FlightProviderDirectoryResponse,
+    summary="Browse Rovvy's informational flight-provider directory",
+)
+def flight_provider_directory(
+    q: str = Query("", max_length=120),
+    provider_type: str | None = Query(None, max_length=80),
+    passenger_only: bool = Query(False),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(24, ge=1, le=100),
+) -> FlightProviderDirectoryResponse:
+    return FlightProviderDirectoryService.list(
+        query=q,
+        provider_type=provider_type,
+        passenger_only=passenger_only,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get(
+    "/provider-directory/{provider_slug}",
+    response_model=FlightProviderDirectoryItem,
+    summary="View informational details for one flight provider",
+)
+def flight_provider_directory_detail(provider_slug: str) -> FlightProviderDirectoryItem:
+    provider = FlightProviderDirectoryService.get(provider_slug)
+    if provider is None:
+        raise AppException.not_found("Flight provider not found")
+    return provider
 
 
 @router.get(
@@ -132,13 +197,29 @@ def airport_list(
 @router.post(
     "/search",
     response_model=FlightJourneySearchResponse,
-    summary="Search complete Duffel flight journeys (production-safe)",
+    summary="Search complete journeys from enabled authorized flight providers",
 )
 def search_flights_post(
     body: FlightSearchRequest,
     _: User | None = Depends(get_current_user_optional),
 ) -> FlightJourneySearchResponse:
     return FlightJourneyService.search(body)
+
+
+@router.get(
+    "/admin/provenance/{provider_offer_id}",
+    response_model=RovvyOfferProvenance,
+    summary="Admin-only offer normalization provenance",
+)
+def flight_offer_provenance(
+    provider_offer_id: str,
+    current_user: User = Depends(get_current_user),
+) -> RovvyOfferProvenance:
+    _require_admin(current_user)
+    provenance = get_offer_provenance(provider_offer_id)
+    if provenance is None:
+        AppException.not_found("Provenance record not found for this offer")
+    return provenance
 
 
 @router.get("/search", response_model=list[FlightResult], summary="Search flights (legacy GET)")
@@ -186,9 +267,10 @@ def search_flights(
 )
 def get_flight_offer(
     offer_id: str,
-    _: User | None = Depends(get_current_user_optional),
+    _: User = Depends(get_current_user),
 ) -> FlightOfferDetail:
     return FlightOfferService.get_offer_detail(offer_id)
+
 
 
 @router.post(
@@ -282,4 +364,3 @@ def associate_trip_space(
         trip_id_str=body.trip_id,
         current_user=current_user,
     )
-

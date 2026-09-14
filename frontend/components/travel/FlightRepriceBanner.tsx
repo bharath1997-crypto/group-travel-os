@@ -20,7 +20,7 @@ export default function FlightRepriceBanner({ reprice, onContinue, onChooseAnoth
         <button
           type="button"
           onClick={onContinue}
-          className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-bold text-white hover:bg-teal-700"
+          className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary-hover"
         >
           Continue at {formatPriceExact(reprice.currency, reprice.current_price)}
         </button>

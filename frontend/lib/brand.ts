@@ -25,8 +25,9 @@ export const BRAND = {
   radius: ROVVY_RADIUS,
   shadow: ROVVY_SHADOW,
   fonts: {
-    display: "Outfit",
-    body: "Inter",
+    display: "Instrument Serif",
+    body: "Schibsted Grotesk",
+    mono: "JetBrains Mono",
   },
   social: {
     instagram: "@rovvyapp",

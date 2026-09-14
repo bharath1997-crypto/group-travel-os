@@ -56,8 +56,8 @@ const FitBounds = dynamic(
   { ssr: false },
 );
 
-const NAVY = "#0F172A";
-const CORAL = "#0F766E";
+const NAVY = "#0F1614";
+const CORAL = "#0E6E5C";
 const BORDER = "#E9ECEF";
 const BG = "#F8F9FA";
 
@@ -844,7 +844,7 @@ export default function PlanTripPage() {
                     padding: "10px 32px",
                     borderRadius: 8,
                     border: `0.5px solid ${BORDER}`,
-                    backgroundColor: isGroupTrip === false ? "#0F766E" : "#F8FAFC",
+                    backgroundColor: isGroupTrip === false ? "#0E6E5C" : "#F8FAFC",
                     color: isGroupTrip === false ? "#FFFFFF" : "#64748B",
                   }}
                 >
@@ -862,7 +862,7 @@ export default function PlanTripPage() {
                     padding: "10px 32px",
                     borderRadius: 8,
                     border: `0.5px solid ${BORDER}`,
-                    backgroundColor: isGroupTrip === true ? "#0F766E" : "#F8FAFC",
+                    backgroundColor: isGroupTrip === true ? "#0E6E5C" : "#F8FAFC",
                     color: isGroupTrip === true ? "#FFFFFF" : "#64748B",
                   }}
                 >
@@ -923,7 +923,7 @@ export default function PlanTripPage() {
                         }
                       }}
                       placeholder="Search any address, landmark, factory, area..."
-                      className="min-w-0 flex-1 rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#0F766E]/25"
+                      className="min-w-0 flex-1 rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#0E6E5C]/25"
                       style={{ borderColor: BORDER, color: "#2C3E50" }}
                       autoComplete="off"
                     />
@@ -932,7 +932,7 @@ export default function PlanTripPage() {
                       onClick={() => void handleAddFirst()}
                       disabled={searchLoading || searchText.trim().length < 3}
                       className="shrink-0 rounded-xl px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-                      style={{ background: "#0F766E" }}
+                      style={{ background: "#0E6E5C" }}
                     >
                       Add
                     </button>
@@ -1005,7 +1005,7 @@ export default function PlanTripPage() {
                     <div className="flex items-start gap-3">
                       <span
                         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                        style={{ background: "#0F766E" }}
+                        style={{ background: "#0E6E5C" }}
                       >
                         {idx + 1}
                       </span>
@@ -1079,7 +1079,7 @@ export default function PlanTripPage() {
                   });
                 }}
                 className="w-full rounded-xl border border-dashed py-3 text-sm font-semibold text-primary transition hover:bg-[#F0FDF9]"
-                style={{ borderColor: "#0F766E" }}
+                style={{ borderColor: "#0E6E5C" }}
               >
                 + Add another stop
               </button>

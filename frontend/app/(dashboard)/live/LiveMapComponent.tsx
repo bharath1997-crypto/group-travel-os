@@ -23,12 +23,10 @@ import {
 import { patchMapLibreTileAbortRace } from "./live-maplibre-tile-abort-fix";
 import {
   createBorderCheckpointMarkerElement,
-  createClickedPinMarkerElement,
   createCoordinateOverlayElement,
-  createDestinationMarkerElement,
-  createExactSelectedPlaceMarkerElement,
   createStartMarkerElement,
 } from "./live-marker-elements";
+import { resolveLivePlaceMarkerContent } from "./live-map-place-marker";
 import {
   applyLiveMapZoomLimits,
   clampLiveMapZoom,
@@ -51,11 +49,20 @@ import { syncDarkMapStreetLabels } from "./live-dark-map-labels";
 import { beginLiveMapStyleSwitch } from "./live-map-style-switch";
 import { syncFriendLocationsOverlay, type FriendLocation } from "./live-friend-layer-sync";
 import {
+  syncGroupConvergeRoutesOverlay,
+  type GroupConvergeRouteSegment,
+} from "./live-group-routes-sync";
+import { syncVotePinMarkers } from "./live-vote-pins-sync";
+import { syncConvoyPinMarkers } from "./live-convoy-pins-sync";
+import type { VoteMapPin } from "./live-vote-marker-elements";
+import type { ConvoyMapPin } from "./live-convoy-map-pins";
+import {
   bindSavedPlacesLayerClick,
   syncSavedPlacesOverlay,
 } from "./live-saved-places-layer-sync";
+import { syncPlaceReportsOverlay } from "./live-place-reports-sync";
+import type { LivePlaceReportSummary } from "./live-place-report-types";
 import type { LiveSavedPlace } from "./live-saved-places-store";
-import { createMeetupMarkerElement } from "./live-meetup-marker";
 import { getPoiMarkerPresentation } from "./live-poi-icons";
 import type { AutocompleteResult } from "./live-geocoding";
 import type { RouteLine, UserLocationUpdate } from "./live-types";
@@ -145,7 +152,7 @@ const ORBITS = [
   { radius: 340, duration: "85s", color: "#fef08a", size: 10, name: "Saturn", hasRing: true },
   { radius: 410, duration: "110s", color: "#67e8f9", size: 9, name: "Uranus" },
   { radius: 480, duration: "140s", color: "#3b82f6", size: 8, name: "Neptune" },
-  { radius: 550, duration: "180s", color: "#0f766e", size: 7, name: "Rovi Core" },
+  { radius: 550, duration: "180s", color: "#0e6e5c", size: 7, name: "Rovi Core" },
 ];
 
 let liveCssInjected = false;
@@ -222,6 +229,8 @@ type Props = {
   friendTrackingEnabled?: boolean;
   savedPlaces?: LiveSavedPlace[];
   savedPlacesLayerEnabled?: boolean;
+  placeReports?: LivePlaceReportSummary[];
+  reportsLayerEnabled?: boolean;
   onSavedPlaceSelect?: (placeId: string) => void;
   mapRef: React.MutableRefObject<LiveMapRef | null>;
   mapPin?: { lat: number; lng: number } | null;
@@ -238,6 +247,14 @@ type Props = {
   onGpsStateChange?: (state: GpsState) => void;
   nearbyResults?: any[] | null;
   onNearbyMarkerClick?: (place: any) => void;
+  votePins?: VoteMapPin[];
+  showVotePins?: boolean;
+  onVotePinClick?: (pinId: string) => void;
+  convoyPins?: ConvoyMapPin[];
+  showConvoyPins?: boolean;
+  onConvoyPinClick?: (pinId: string) => void;
+  groupConvergeRoutes?: GroupConvergeRouteSegment[];
+  showGroupConvergeRoutes?: boolean;
   onMapClick?: (payload: MapClickPayload) => void;
   onMapDoubleClick?: (payload: Omit<MapClickPayload, "features">) => void;
   onLiveGpsChange?: (active: boolean) => void;
@@ -302,8 +319,8 @@ function showClickRipple(container: HTMLElement, x: number, y: number): void {
     height: 40px;
     transform: translate(-50%, -50%) scale(0);
     border-radius: 50%;
-    border: 2px solid #0F766E;
-    background: rgba(15,118,110,0.12);
+    border: 2px solid #0E6E5C;
+    background: rgba(14,110,92,0.12);
     pointer-events: none;
     z-index: 9999;
     animation: rovvy-ripple 0.75s ease-out forwards;
@@ -328,6 +345,7 @@ function showClickRipple(container: HTMLElement, x: number, y: number): void {
 
 function isMapStyleReady(map: maplibregl.Map): boolean {
   try {
+    if (!map.getStyle()) return false;
     return !!map.isStyleLoaded();
   } catch {
     return false;
@@ -837,6 +855,8 @@ export default function LiveMapComponent({
   friendTrackingEnabled = false,
   savedPlaces = [],
   savedPlacesLayerEnabled = true,
+  placeReports = [],
+  reportsLayerEnabled = true,
   onSavedPlaceSelect,
   mapRef,
   mapPin,
@@ -853,6 +873,14 @@ export default function LiveMapComponent({
   onGpsStateChange,
   nearbyResults,
   onNearbyMarkerClick,
+  votePins = [],
+  showVotePins = false,
+  onVotePinClick,
+  convoyPins = [],
+  showConvoyPins = false,
+  onConvoyPinClick,
+  groupConvergeRoutes = [],
+  showGroupConvergeRoutes = false,
   onMapClick,
   onMapDoubleClick,
   onLiveGpsChange,
@@ -930,6 +958,8 @@ export default function LiveMapComponent({
   const coordinateOverlayMarkerRef = useRef<maplibregl.Marker | null>(null);
   const ensureUserMarkerRef = useRef<((lat: number, lng: number, accuracy: number | null, timestamp: number | null) => void) | null>(null);
   const nearbyMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const votePinMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const convoyPinMarkersRef = useRef<maplibregl.Marker[]>([]);
   const borderCheckpointMarkersRef = useRef<maplibregl.Marker[]>([]);
   const skipInitialStyleSwitchRef = useRef(true);
   const styleTransitionRef = useRef(false);
@@ -937,6 +967,12 @@ export default function LiveMapComponent({
   const viewModeRef = useRef<LiveMapViewMode>("2d");
   const mapPinRef = useRef(mapPin);
   mapPinRef.current = mapPin;
+  const pinModeRef = useRef(pinMode);
+  pinModeRef.current = pinMode;
+  const pinLabelRef = useRef(pinLabel);
+  pinLabelRef.current = pinLabel;
+  const mapZoomRef = useRef(mapZoom);
+  mapZoomRef.current = mapZoom;
   const routeOriginPinRef = useRef(routeOriginPin);
   routeOriginPinRef.current = routeOriginPin;
   const routeLineRef = useRef(routeLine);
@@ -947,6 +983,18 @@ export default function LiveMapComponent({
   nearbyResultsRef.current = nearbyResults;
   const onNearbyMarkerClickRef = useRef(onNearbyMarkerClick);
   onNearbyMarkerClickRef.current = onNearbyMarkerClick;
+  const votePinsRef = useRef(votePins);
+  votePinsRef.current = votePins;
+  const showVotePinsRef = useRef(showVotePins);
+  showVotePinsRef.current = showVotePins;
+  const onVotePinClickRef = useRef(onVotePinClick);
+  onVotePinClickRef.current = onVotePinClick;
+  const convoyPinsRef = useRef(convoyPins);
+  convoyPinsRef.current = convoyPins;
+  const showConvoyPinsRef = useRef(showConvoyPins);
+  showConvoyPinsRef.current = showConvoyPins;
+  const onConvoyPinClickRef = useRef(onConvoyPinClick);
+  onConvoyPinClickRef.current = onConvoyPinClick;
   const activeLayerRef = useRef(activeLayer);
   activeLayerRef.current = activeLayer;
   const travelLayerEnabledRef = useRef(travelLayerEnabled);
@@ -965,6 +1013,10 @@ export default function LiveMapComponent({
   savedPlacesRef.current = savedPlaces;
   const savedPlacesLayerEnabledRef = useRef(savedPlacesLayerEnabled);
   savedPlacesLayerEnabledRef.current = savedPlacesLayerEnabled;
+  const placeReportsRef = useRef(placeReports);
+  placeReportsRef.current = placeReports;
+  const reportsLayerEnabledRef = useRef(reportsLayerEnabled);
+  reportsLayerEnabledRef.current = reportsLayerEnabled;
   const onSavedPlaceSelectRef = useRef(onSavedPlaceSelect);
   onSavedPlaceSelectRef.current = onSavedPlaceSelect;
 
@@ -991,6 +1043,11 @@ export default function LiveMapComponent({
       savedPlacesRef.current || [],
       !!savedPlacesLayerEnabledRef.current,
     );
+    syncPlaceReportsOverlay(
+      map,
+      placeReportsRef.current || [],
+      !!reportsLayerEnabledRef.current,
+    );
 
     const loc = userLocationRef.current;
     if (loc) {
@@ -1012,17 +1069,19 @@ export default function LiveMapComponent({
 
     const pin = mapPinRef.current;
     if (pin) {
+      const { element, anchor } = resolveLivePlaceMarkerContent({
+        pinMode: pinModeRef.current,
+        navigationMode: navigationModeRef.current,
+        pinLabel: pinLabelRef.current,
+        mapZoom: mapZoomRef.current,
+      });
       if (placeMarkerRef.current) {
-        placeMarkerRef.current.setLngLat([pin.lng, pin.lat]);
-        reattachHtmlMarker(placeMarkerRef.current, map);
-      } else {
-        placeMarkerRef.current = new maplibregl.Marker({
-          element: createExactSelectedPlaceMarkerElement(pin.lat, pin.lng),
-          anchor: "center",
-        })
-          .setLngLat([pin.lng, pin.lat])
-          .addTo(map);
+        placeMarkerRef.current.remove();
+        placeMarkerRef.current = null;
       }
+      placeMarkerRef.current = new maplibregl.Marker({ element, anchor })
+        .setLngLat([pin.lng, pin.lat])
+        .addTo(map);
     }
 
     const originPin = routeOriginPinRef.current;
@@ -1658,7 +1717,9 @@ export default function LiveMapComponent({
         map.flyTo({
           center: [lng, lat],
           zoom: clampLiveMapZoom(
-            resolveLiveLocateZoom(map.getZoom(), accuracyMeters),
+            resolveLiveLocateZoom(map.getZoom(), accuracyMeters, {
+              zoomToStreet: centerMap,
+            }),
             map,
             activeLayerRef.current,
             zoomContext(),
@@ -2058,7 +2119,9 @@ export default function LiveMapComponent({
             const targetZoom = navigationModeRef.current
               ? navigationZoomRef.current
               : clampLiveMapZoom(
-                  resolveLiveLocateZoom(map.getZoom(), loc.accuracy),
+                  resolveLiveLocateZoom(map.getZoom(), loc.accuracy, {
+                    zoomToStreet: true,
+                  }),
                   map,
                   activeLayerRef.current,
                   zoomContext(),
@@ -2270,8 +2333,20 @@ export default function LiveMapComponent({
   useEffect(() => {
     const map = instanceRef.current;
     if (!map) return;
+    syncGroupConvergeRoutesOverlay(map, groupConvergeRoutes, showGroupConvergeRoutes);
+  }, [groupConvergeRoutes, showGroupConvergeRoutes]);
+
+  useEffect(() => {
+    const map = instanceRef.current;
+    if (!map) return;
     syncSavedPlacesOverlay(map, savedPlaces || [], !!savedPlacesLayerEnabled);
   }, [savedPlaces, savedPlacesLayerEnabled]);
+
+  useEffect(() => {
+    const map = instanceRef.current;
+    if (!map) return;
+    syncPlaceReportsOverlay(map, placeReports || [], !!reportsLayerEnabled);
+  }, [placeReports, reportsLayerEnabled]);
 
   useEffect(() => {
     const map = instanceRef.current;
@@ -2352,29 +2427,19 @@ export default function LiveMapComponent({
       return;
     }
 
-    let el: HTMLDivElement;
-    let anchor: "center" | "bottom" = "center";
-    if (navigationMode) {
-      el = pinLabel
-        ? createMeetupMarkerElement(pinLabel, mapZoom)
-        : createDestinationMarkerElement(navigationMode);
-      anchor = pinLabel ? "bottom" : "center";
-    } else if (pinMode === "meetup") {
-      el = createMeetupMarkerElement(pinLabel ?? undefined, mapZoom);
-      anchor = "bottom";
-    } else {
-      el = createExactSelectedPlaceMarkerElement(mapPin.lat, mapPin.lng);
-    }
+    const { element, anchor } = resolveLivePlaceMarkerContent({
+      pinMode,
+      navigationMode,
+      pinLabel,
+      mapZoom,
+    });
 
     if (placeMarkerRef.current) {
       placeMarkerRef.current.remove();
       placeMarkerRef.current = null;
     }
 
-    placeMarkerRef.current = new maplibregl.Marker({
-      element: el,
-      anchor,
-    })
+    placeMarkerRef.current = new maplibregl.Marker({ element, anchor })
       .setLngLat([mapPin.lng, mapPin.lat])
       .addTo(map);
   }, [mapPin, navigationMode, pinMode, pinLabel, mapZoom]);
@@ -2415,16 +2480,21 @@ export default function LiveMapComponent({
 
     if (mapPin) return;
 
+    const { element, anchor } = resolveLivePlaceMarkerContent({
+      pinMode: "selected",
+      navigationMode: false,
+      pinLabel: "Dropped pin",
+      mapZoom: mapZoomRef.current,
+    });
+
     if (clickedPinMarkerRef.current) {
-      clickedPinMarkerRef.current.setLngLat([mapClickPin.lng, mapClickPin.lat]);
-    } else {
-      clickedPinMarkerRef.current = new maplibregl.Marker({
-        element: createClickedPinMarkerElement(),
-        anchor: "bottom",
-      })
-        .setLngLat([mapClickPin.lng, mapClickPin.lat])
-        .addTo(map);
+      clickedPinMarkerRef.current.remove();
+      clickedPinMarkerRef.current = null;
     }
+
+    clickedPinMarkerRef.current = new maplibregl.Marker({ element, anchor })
+      .setLngLat([mapClickPin.lng, mapClickPin.lat])
+      .addTo(map);
   }, [mapClickPin, mapPin]);
 
   useEffect(() => {
@@ -2473,6 +2543,42 @@ export default function LiveMapComponent({
       nearbyMarkersRef.current = [];
     };
   }, [nearbyResults, onNearbyMarkerClick]);
+
+  useEffect(() => {
+    const map = instanceRef.current;
+    if (!map) return;
+
+    const pins = showVotePins ? votePins : [];
+    votePinMarkersRef.current = syncVotePinMarkers(
+      map,
+      pins,
+      onVotePinClick,
+      votePinMarkersRef.current,
+    );
+
+    return () => {
+      votePinMarkersRef.current.forEach((marker) => marker.remove());
+      votePinMarkersRef.current = [];
+    };
+  }, [showVotePins, votePins, onVotePinClick]);
+
+  useEffect(() => {
+    const map = instanceRef.current;
+    if (!map) return;
+
+    const pins = showConvoyPins ? convoyPins : [];
+    convoyPinMarkersRef.current = syncConvoyPinMarkers(
+      map,
+      pins,
+      onConvoyPinClick,
+      convoyPinMarkersRef.current,
+    );
+
+    return () => {
+      convoyPinMarkersRef.current.forEach((marker) => marker.remove());
+      convoyPinMarkersRef.current = [];
+    };
+  }, [showConvoyPins, convoyPins, onConvoyPinClick]);
 
   const routeFitKeyRef = useRef("");
 

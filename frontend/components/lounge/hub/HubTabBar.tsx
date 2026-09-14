@@ -18,7 +18,7 @@ const TAB_LABELS: Record<HubTabId, string> = {
   updates: "Space",
 };
 
-const HUB_BG = "#0F172A";
+const HUB_BG = "#0F1614";
 const HUB_BORDER = "rgba(255,255,255,0.08)";
 const HUB_BRAND = "#E94560";
 

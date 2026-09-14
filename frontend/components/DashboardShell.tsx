@@ -207,7 +207,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0A0F1E]">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-700 border-t-[#0F766E]" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-700 border-t-[#0E6E5C]" />
       </div>
     );
   }

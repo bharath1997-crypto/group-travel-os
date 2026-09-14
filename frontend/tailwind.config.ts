@@ -4,13 +4,18 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-inter)", "sans-serif"],
-        display: ["var(--font-outfit)", "sans-serif"],
+        sans: ["var(--font-schibsted)", "sans-serif"],
+        display: ["var(--font-instrument)", "Georgia", "serif"],
+        mono: ["var(--font-jetbrains)", "ui-monospace", "monospace"],
       },
       colors: {
         primary: "var(--color-primary)",
         "primary-hover": "var(--color-primary-hover)",
         "primary-soft": "var(--color-primary-soft)",
+        "primary-light": "var(--color-primary-light)",
+        "primary-dark": "var(--color-primary-dark)",
+        "primary-highlight": "var(--color-primary-highlight)",
+        cream: "var(--color-cream)",
         navy: "var(--color-navy)",
         surface: "var(--color-surface)",
         app: "var(--color-app)",

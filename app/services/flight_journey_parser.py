@@ -6,6 +6,7 @@ import re
 from datetime import datetime
 from typing import Any
 
+from app.services.flight_disclosure_service import apply_disclosures_to_journey
 from app.schemas.flight_journey import (
     FlightConnectionDetail,
     FlightJourney,
@@ -32,6 +33,14 @@ def _parse_iso_datetime(iso: str | None) -> datetime | None:
         return datetime.fromisoformat(iso.replace("Z", "+00:00"))
     except ValueError:
         return None
+
+
+def _is_timezone_aware(value: datetime | None) -> bool:
+    return (
+        value is not None
+        and value.tzinfo is not None
+        and value.utcoffset() is not None
+    )
 
 
 def _bag_included(offer: dict[str, Any], bag_type: str) -> bool | None:
@@ -89,19 +98,36 @@ def _parse_segment(seg: dict[str, Any]) -> FlightJourneySegment | None:
     )
 
 
+def _connection_layover_minutes(
+    prev: FlightJourneySegment,
+    nxt: FlightJourneySegment,
+) -> tuple[int | None, bool | None]:
+    arrival_dt = _parse_iso_datetime(prev.arrival_at)
+    depart_dt = _parse_iso_datetime(nxt.departure_at)
+    if not arrival_dt or not depart_dt or depart_dt <= arrival_dt:
+        return None, None
+
+    same_airport = prev.destination == nxt.origin
+    if same_airport:
+        # Same-airport layovers may use local timestamps even when naive.
+        layover_minutes = max(0, int((depart_dt - arrival_dt).total_seconds() // 60))
+        overnight = arrival_dt.date() != depart_dt.date()
+        return layover_minutes, overnight
+
+    if _is_timezone_aware(arrival_dt) and _is_timezone_aware(depart_dt):
+        layover_minutes = max(0, int((depart_dt - arrival_dt).total_seconds() // 60))
+        overnight = arrival_dt.date() != depart_dt.date()
+        return layover_minutes, overnight
+
+    return None, None
+
+
 def _derive_connections(segments: list[FlightJourneySegment]) -> list[FlightConnectionDetail]:
     connections: list[FlightConnectionDetail] = []
     for idx in range(len(segments) - 1):
         prev = segments[idx]
         nxt = segments[idx + 1]
-        arrival_dt = _parse_iso_datetime(prev.arrival_at)
-        depart_dt = _parse_iso_datetime(nxt.departure_at)
-        layover_minutes: int | None = None
-        overnight: bool | None = None
-        if arrival_dt and depart_dt:
-            delta = depart_dt - arrival_dt
-            layover_minutes = max(0, int(delta.total_seconds() // 60))
-            overnight = arrival_dt.date() != depart_dt.date()
+        layover_minutes, overnight = _connection_layover_minutes(prev, nxt)
         same_airport = prev.destination == nxt.origin
         airport_change = not same_airport if prev.destination and nxt.origin else None
         term_a = (prev.destination_terminal or "").strip()
@@ -128,6 +154,50 @@ def _derive_connections(segments: list[FlightJourneySegment]) -> list[FlightConn
     return connections
 
 
+def _duration_from_segments_and_layovers(
+    segments: list[FlightJourneySegment],
+    connections: list[FlightConnectionDetail],
+) -> int:
+    seg_sum = sum(seg.duration_minutes for seg in segments if seg.duration_minutes > 0)
+    layover_sum = sum(
+        conn.layover_minutes
+        for conn in connections
+        if conn.layover_minutes is not None and conn.layover_minutes > 0
+    )
+    combined = seg_sum + layover_sum
+    if combined > 0:
+        return combined
+    if seg_sum > 0:
+        return seg_sum
+    return 0
+
+
+def _calculate_slice_duration(
+    raw_duration: str | None,
+    segments: list[FlightJourneySegment],
+    connections: list[FlightConnectionDetail],
+) -> int:
+    prov_dur = parse_iso_duration_to_minutes(raw_duration)
+    if prov_dur > 0:
+        return prov_dur
+
+    if segments:
+        first_dep = _parse_iso_datetime(segments[0].departure_at)
+        last_arr = _parse_iso_datetime(segments[-1].arrival_at)
+        if (
+            _is_timezone_aware(first_dep)
+            and _is_timezone_aware(last_arr)
+            and last_arr is not None
+            and first_dep is not None
+            and last_arr > first_dep
+        ):
+            elapsed = int((last_arr - first_dep).total_seconds() // 60)
+            if elapsed > 0:
+                return elapsed
+
+    return _duration_from_segments_and_layovers(segments, connections)
+
+
 def _parse_slice(sl: dict[str, Any]) -> FlightJourneySlice | None:
     if not isinstance(sl, dict):
         return None
@@ -140,13 +210,19 @@ def _parse_slice(sl: dict[str, Any]) -> FlightJourneySlice | None:
         return None
     origin_obj = sl.get("origin") or {}
     dest_obj = sl.get("destination") or {}
+    connections = _derive_connections(segments)
+    calc_duration = _calculate_slice_duration(
+        str(sl.get("duration") or "") if sl.get("duration") else None,
+        segments,
+        connections,
+    )
     return FlightJourneySlice(
         origin=str(origin_obj.get("iata_code") or segments[0].origin),
         destination=str(dest_obj.get("iata_code") or segments[-1].destination),
-        duration_minutes=parse_iso_duration_to_minutes(str(sl.get("duration") or "")),
+        duration_minutes=calc_duration,
         stops=max(0, len(segments) - 1),
         segments=segments,
-        connections=_derive_connections(segments),
+        connections=connections,
     )
 
 
@@ -200,7 +276,8 @@ def parse_duffel_journey(
             if isinstance(change, dict) and change.get("allowed") is not None:
                 changeable = bool(change.get("allowed"))
 
-        return FlightJourney(
+        return apply_disclosures_to_journey(
+            FlightJourney(
             id=rid,
             provider="duffel",
             provider_offer_id=rid,
@@ -213,7 +290,7 @@ def parse_duffel_journey(
             total_duration_minutes=total_duration,
             maximum_connections=maximum_connections,
             protected_connection=None,
-            bookable_in_rovvy=True,
+            bookable_in_rovvy=False,
             airlines=airlines,
             carry_on_included=_bag_included(offer, "carry_on"),
             checked_bag_included=_bag_included(offer, "checked"),
@@ -226,6 +303,9 @@ def parse_duffel_journey(
             duration_minutes=total_duration,
             stops=total_stops,
             deep_link="",
+        ),
+            offer,
+            checked_at=checked_at,
         )
     except Exception:
         return None

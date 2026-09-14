@@ -30,7 +30,7 @@ export function HeroEventCard({ event, onOpen }: HeroEventCardProps) {
       onClick={() => onOpen(event)}
       className="group w-[280px] shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-[#102f55] text-left shadow-xl transition hover:-translate-y-0.5 hover:border-primary/60 sm:w-[320px]"
     >
-      <div className="relative h-40 overflow-hidden bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-primary/80">
+      <div className="relative h-40 overflow-hidden bg-gradient-to-br from-[#0F1614] via-[#1E293B] to-primary/80">
         {event.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

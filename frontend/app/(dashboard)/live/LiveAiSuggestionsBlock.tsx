@@ -53,7 +53,7 @@ export default function LiveAiSuggestionsBlock({
         <button
           type="button"
           onClick={handleAskWayra}
-          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-primary/20 bg-white px-3 py-1.5 text-xs font-semibold text-primary hover:bg-teal-50/80"
+          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-primary/20 bg-white px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-soft/80"
         >
           <MessageCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
           Ask Wayra about this place
@@ -95,7 +95,7 @@ export default function LiveAiSuggestionsBlock({
 
       {tips.length > 0 ? (
         <section
-          className={`rounded-xl border border-teal-100/90 bg-gradient-to-br from-[#F0FDFA]/80 via-white to-white shadow-sm ${pad}`}
+          className={`rounded-xl border border-primary/20/90 bg-gradient-to-br from-[#F0FDFA]/80 via-white to-white shadow-sm ${pad}`}
         >
           <div className="mb-1.5 flex items-center gap-1.5">
             <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary">

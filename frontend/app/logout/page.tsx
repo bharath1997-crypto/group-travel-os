@@ -42,7 +42,7 @@ export default function LogoutPage() {
 
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-12">
         <div className={`w-full ${AUTH_FORM_MAX_TAB} rounded-2xl border border-stone-200/80 bg-white p-8 shadow-lg shadow-stone-900/5 text-center sm:p-10`}>
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-primary">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary">
             <LogOut size={26} strokeWidth={1.75} />
           </div>
           <h1 className="text-xl font-extrabold text-stone-900 tracking-tight sm:text-2xl">

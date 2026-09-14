@@ -39,7 +39,7 @@ export default function AirlineIdentity({
             onError={() => setLogoFailed(true)}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-teal-50 text-xs font-black tracking-tight text-teal-700">
+          <div className="flex h-full w-full items-center justify-center bg-primary-soft text-xs font-black tracking-tight text-primary">
             {code ? code.slice(0, 2) : <Plane className="h-5 w-5" />}
           </div>
         )}

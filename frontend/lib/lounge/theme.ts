@@ -1,6 +1,8 @@
+import { ROVVY_COLORS } from "@/lib/design-tokens";
+
 /** Full-page Rovvy Lounge (travel-hub) dark theme tokens */
 export const LOUNGE_FULL = {
-  bg: "#0F172A",
+  bg: ROVVY_COLORS.navy,
   surface: "#2d4060",
   borderSub: "rgba(255,255,255,0.08)",
   textMuted: "#8892a4",

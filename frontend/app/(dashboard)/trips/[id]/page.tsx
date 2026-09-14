@@ -91,8 +91,8 @@ const MapClick = dynamic(
   { ssr: false },
 );
 
-const NAVY = "#0F172A";
-const CORAL = "#0F766E";
+const NAVY = "#0F1614";
+const CORAL = "#0E6E5C";
 const BORDER = "#E9ECEF";
 
 type TripOut = {

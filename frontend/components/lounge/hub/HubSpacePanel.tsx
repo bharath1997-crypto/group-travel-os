@@ -441,7 +441,7 @@ export function HubSpacePanel() {
               type="button"
               onClick={() => folderInputRef.current?.click()}
               className={`relative flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white shadow-md transition active:scale-95 ${
-                localActive ? "ring-2 ring-[#0F766E] ring-offset-2" : ""
+                localActive ? "ring-2 ring-[#0E6E5C] ring-offset-2" : ""
               }`}
               title="Rovvy Music — your files"
             >
@@ -553,13 +553,13 @@ export function HubSpacePanel() {
               value={draftName}
               onChange={(e) => setDraftName(e.target.value)}
               placeholder="Name"
-              className="mb-2 w-full rounded-xl border-0 bg-stone-100 px-3 py-2.5 text-xs outline-none ring-1 ring-stone-200 focus:ring-[#0F766E]"
+              className="mb-2 w-full rounded-xl border-0 bg-stone-100 px-3 py-2.5 text-xs outline-none ring-1 ring-stone-200 focus:ring-[#0E6E5C]"
             />
             <input
               value={draftUrl}
               onChange={(e) => setDraftUrl(e.target.value)}
               placeholder="https://…"
-              className="mb-3 w-full rounded-xl border-0 bg-stone-100 px-3 py-2.5 text-xs outline-none ring-1 ring-stone-200 focus:ring-[#0F766E]"
+              className="mb-3 w-full rounded-xl border-0 bg-stone-100 px-3 py-2.5 text-xs outline-none ring-1 ring-stone-200 focus:ring-[#0E6E5C]"
             />
             <button
               type="button"

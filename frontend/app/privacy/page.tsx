@@ -9,14 +9,14 @@ export default function PrivacyPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="flex flex-col h-screen bg-white" style={{ color: "#0F172A" }}>
+    <div className="flex flex-col h-screen bg-white" style={{ color: "#0F1614" }}>
       {/* Header */}
       <header className="shrink-0 border-b border-slate-100 bg-white px-6 py-4 z-40">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2 outline-none">
             <RovvyLogo variant="primary" size="sm" />
           </Link>
-          <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#0F766E" }}>
+          <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#0E6E5C" }}>
             Privacy Policy
           </span>
         </div>
@@ -31,11 +31,11 @@ export default function PrivacyPage() {
           <div className="mb-12">
             <div
               className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold mb-5"
-              style={{ background: "#F0FDFA", color: "#0F766E", border: "1px solid #99F6E4" }}
+              style={{ background: "#F0FDFA", color: "#0E6E5C", border: "1px solid #99F6E4" }}
             >
               Last Updated: June 2026 &nbsp;·&nbsp; Version 3.0
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: "#0F172A" }}>
+            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: "#0F1614" }}>
               Privacy Policy
             </h1>
             <p className="mt-3 text-base" style={{ color: "#6B7280", lineHeight: "1.8" }}>
@@ -47,7 +47,7 @@ export default function PrivacyPage() {
 
             {/* 1 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">01.</span> Introduction
               </h2>
               <div className="space-y-3">
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
 
             {/* 2 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-4" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-4" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">02.</span> Information We Collect
               </h2>
               <p className="mb-5">
@@ -79,7 +79,7 @@ export default function PrivacyPage() {
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: "#0F172A" }}>Information You Provide</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: "#0F1614" }}>Information You Provide</h3>
                   <p className="mb-3">Depending on how you use Rovvy, we may collect:</p>
                   <ul className="space-y-1.5 pl-5" style={{ listStyleType: "disc" }}>
                     <li>Full name or display name</li>
@@ -98,7 +98,7 @@ export default function PrivacyPage() {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: "#0F172A" }}>Authentication Information</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: "#0F1614" }}>Authentication Information</h3>
                   <p className="mb-3">
                     If you register or sign in through third-party providers such as Google or Facebook, we may receive information from those providers, including:
                   </p>
@@ -113,7 +113,7 @@ export default function PrivacyPage() {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: "#0F172A" }}>Information Collected Automatically</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: "#0F1614" }}>Information Collected Automatically</h3>
                   <p className="mb-3">When you use the Service, we may automatically collect technical and usage information, including:</p>
                   <ul className="space-y-1.5 pl-5" style={{ listStyleType: "disc" }}>
                     <li>IP address</li>
@@ -130,7 +130,7 @@ export default function PrivacyPage() {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: "#0F172A" }}>Search Information</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: "#0F1614" }}>Search Information</h3>
                   <p className="mb-3">
                     To improve search functionality and platform performance, Rovvy may log search queries entered by users. Search logs may include query text, timestamp, and general session information.
                   </p>
@@ -145,7 +145,7 @@ export default function PrivacyPage() {
 
             {/* 3 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-4" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-4" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">03.</span> Location Information
               </h2>
               <p className="mb-5">
@@ -154,7 +154,7 @@ export default function PrivacyPage() {
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: "#0F172A" }}>Precise Location Data</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: "#0F1614" }}>Precise Location Data</h3>
                   <p className="mb-3">With your explicit permission, Rovvy may collect precise GPS location data from your device. Location data may be used to:</p>
                   <ul className="space-y-1.5 pl-5" style={{ listStyleType: "disc" }}>
                     <li>Enable Trip LIVE functionality</li>
@@ -165,7 +165,7 @@ export default function PrivacyPage() {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: "#0F172A" }}>Location Controls</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: "#0F1614" }}>Location Controls</h3>
                   <p className="mb-3">Location sharing is entirely optional. Users may:</p>
                   <ul className="space-y-1.5 pl-5" style={{ listStyleType: "disc" }}>
                     <li>Enable or disable location sharing at any time</li>
@@ -175,11 +175,11 @@ export default function PrivacyPage() {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: "#0F172A" }}>Location Retention</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: "#0F1614" }}>Location Retention</h3>
                   <p>
                     Rovvy processes location information primarily in real time to support trip coordination features. LIVE location information is not retained permanently beyond operational requirements, except where temporary retention is necessary for security, troubleshooting, fraud prevention, or compliance with legal obligations.
                   </p>
-                  <p className="mt-2 font-medium" style={{ color: "#0F172A" }}>
+                  <p className="mt-2 font-medium" style={{ color: "#0F1614" }}>
                     Rovvy does not sell location information to advertisers or data brokers.
                   </p>
                 </div>
@@ -190,7 +190,7 @@ export default function PrivacyPage() {
 
             {/* 4 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">04.</span> How We Use Information
               </h2>
               <p className="mb-4">We use personal information for legitimate business and operational purposes, including to:</p>
@@ -220,7 +220,7 @@ export default function PrivacyPage() {
 
             {/* 5 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">05.</span> Artificial Intelligence and Automated Features
               </h2>
               <div className="space-y-3">
@@ -240,16 +240,16 @@ export default function PrivacyPage() {
 
             {/* 6 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-4" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-4" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">06.</span> Information Sharing and Disclosure
               </h2>
-              <p className="mb-5 font-medium" style={{ color: "#0F172A" }}>
+              <p className="mb-5 font-medium" style={{ color: "#0F1614" }}>
                 Rovvy does not sell users' personal information.
               </p>
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: "#0F172A" }}>Service Providers</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: "#0F1614" }}>Service Providers</h3>
                   <p className="mb-3">We may share information with trusted service providers that assist in operating the Service, including:</p>
                   <ul className="space-y-1.5 pl-5" style={{ listStyleType: "disc" }}>
                     <li>Cloud hosting providers</li>
@@ -264,7 +264,7 @@ export default function PrivacyPage() {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: "#0F172A" }}>Trip Participants</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: "#0F1614" }}>Trip Participants</h3>
                   <p className="mb-3">Certain information may be visible to members of a trip or group, including:</p>
                   <ul className="space-y-1.5 pl-5" style={{ listStyleType: "disc" }}>
                     <li>Display name</li>
@@ -277,7 +277,7 @@ export default function PrivacyPage() {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: "#0F172A" }}>Legal Requirements</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: "#0F1614" }}>Legal Requirements</h3>
                   <p className="mb-3">We may disclose information where required to:</p>
                   <ul className="space-y-1.5 pl-5" style={{ listStyleType: "disc" }}>
                     <li>Comply with legal obligations</li>
@@ -289,14 +289,14 @@ export default function PrivacyPage() {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: "#0F172A" }}>Business Transfers</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: "#0F1614" }}>Business Transfers</h3>
                   <p>
                     In the event of a merger, acquisition, restructuring, or sale of assets, personal information may be transferred as part of the transaction, subject to applicable law.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: "#0F172A" }}>Affiliate Partners</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: "#0F1614" }}>Affiliate Partners</h3>
                   <p>
                     When users interact with affiliate links or third-party travel services, limited information necessary to track referrals or facilitate transactions may be shared with applicable partners. Rovvy does not share personally identifiable information with affiliate partners without user action or where otherwise required to provide the requested service.
                   </p>
@@ -308,7 +308,7 @@ export default function PrivacyPage() {
 
             {/* 7 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-4" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-4" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">07.</span> Data Retention
               </h2>
               <p className="mb-5">
@@ -347,7 +347,7 @@ export default function PrivacyPage() {
                     className="rounded-lg p-4"
                     style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}
                   >
-                    <p className="font-semibold mb-1" style={{ color: "#0F172A" }}>{label}</p>
+                    <p className="font-semibold mb-1" style={{ color: "#0F1614" }}>{label}</p>
                     <p className="text-sm" style={{ color: "#4B5563" }}>{text}</p>
                   </div>
                 ))}
@@ -358,7 +358,7 @@ export default function PrivacyPage() {
 
             {/* 8 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">08.</span> Data Security
               </h2>
               <div className="space-y-3">
@@ -385,7 +385,7 @@ export default function PrivacyPage() {
 
             {/* 9 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-4" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-4" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">09.</span> Cookies and Similar Technologies
               </h2>
               <p className="mb-5">
@@ -394,7 +394,7 @@ export default function PrivacyPage() {
 
               <div className="space-y-5">
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: "#0F172A" }}>Essential Cookies</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: "#0F1614" }}>Essential Cookies</h3>
                   <p className="mb-2">Required for the operation of the Service, including:</p>
                   <ul className="space-y-1.5 pl-5" style={{ listStyleType: "disc" }}>
                     <li>Authentication cookies</li>
@@ -405,7 +405,7 @@ export default function PrivacyPage() {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: "#0F172A" }}>Functional Cookies</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: "#0F1614" }}>Functional Cookies</h3>
                   <p className="mb-2">Used to remember user preferences and improve experiences, such as:</p>
                   <ul className="space-y-1.5 pl-5" style={{ listStyleType: "disc" }}>
                     <li>Language preferences</li>
@@ -415,7 +415,7 @@ export default function PrivacyPage() {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-2" style={{ color: "#0F172A" }}>Analytics Cookies</h3>
+                  <h3 className="font-semibold mb-2" style={{ color: "#0F1614" }}>Analytics Cookies</h3>
                   <p>
                     Rovvy may use limited analytics technologies to understand platform usage, monitor performance, improve features, and diagnose technical issues.
                   </p>
@@ -424,7 +424,7 @@ export default function PrivacyPage() {
 
               <p
                 className="mt-5 rounded-lg p-4 text-sm font-medium"
-                style={{ background: "#F0FDFA", border: "1px solid #99F6E4", color: "#0F766E" }}
+                style={{ background: "#F0FDFA", border: "1px solid #99F6E4", color: "#0E6E5C" }}
               >
                 Rovvy does not use advertising cookies or sell personal information to advertising networks.
               </p>
@@ -434,7 +434,7 @@ export default function PrivacyPage() {
 
             {/* 10 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-4" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-4" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">10.</span> Your Privacy Rights
               </h2>
               <p className="mb-5">
@@ -456,7 +456,7 @@ export default function PrivacyPage() {
                     className="rounded-lg p-4"
                     style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}
                   >
-                    <p className="font-semibold text-sm mb-1" style={{ color: "#0F766E" }}>{right}</p>
+                    <p className="font-semibold text-sm mb-1" style={{ color: "#0E6E5C" }}>{right}</p>
                     <p className="text-sm" style={{ color: "#4B5563" }}>{desc}</p>
                   </div>
                 ))}
@@ -471,7 +471,7 @@ export default function PrivacyPage() {
 
             {/* 11 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">11.</span> California Privacy Rights
               </h2>
               <div className="space-y-3">
@@ -495,7 +495,7 @@ export default function PrivacyPage() {
 
             {/* 12 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">12.</span> International Data Transfers
               </h2>
               <p>
@@ -507,7 +507,7 @@ export default function PrivacyPage() {
 
             {/* 13 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">13.</span> Children's Privacy
               </h2>
               <p>
@@ -519,7 +519,7 @@ export default function PrivacyPage() {
 
             {/* 14 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">14.</span> Changes to This Privacy Policy
               </h2>
               <div className="space-y-3">
@@ -537,7 +537,7 @@ export default function PrivacyPage() {
 
             {/* 15 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">15.</span> Contact Information
               </h2>
               <p className="mb-4">If you have questions regarding this Privacy Policy or wish to exercise privacy rights, please contact us:</p>
@@ -546,16 +546,16 @@ export default function PrivacyPage() {
                 className="rounded-lg p-5 space-y-1 text-sm mb-4"
                 style={{ background: "#F0FDFA", border: "1px solid #99F6E4" }}
               >
-                <p className="font-semibold" style={{ color: "#0F172A" }}>Rovvy Privacy Team</p>
+                <p className="font-semibold" style={{ color: "#0F1614" }}>Rovvy Privacy Team</p>
                 <p>
                   <span style={{ color: "#6B7280" }}>Email: </span>
-                  <a href="mailto:privacy@rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0F766E" }}>
+                  <a href="mailto:privacy@rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0E6E5C" }}>
                     privacy@rovvy.app
                   </a>
                 </p>
                 <p>
                   <span style={{ color: "#6B7280" }}>Website: </span>
-                  <a href="https://rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0F766E" }}>
+                  <a href="https://rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0E6E5C" }}>
                     https://rovvy.app
                   </a>
                 </p>
@@ -575,14 +575,14 @@ export default function PrivacyPage() {
         <div className="mx-auto flex max-w-[800px] items-center justify-between gap-3">
           <p className="text-xs" style={{ color: "#6B7280" }}>
             Questions?{" "}
-            <a href="mailto:privacy@rovvy.app" className="underline underline-offset-2" style={{ color: "#0F766E" }}>
+            <a href="mailto:privacy@rovvy.app" className="underline underline-offset-2" style={{ color: "#0E6E5C" }}>
               privacy@rovvy.app
             </a>
           </p>
           <Link
             href="/terms"
             className="text-xs font-semibold underline underline-offset-2"
-            style={{ color: "#0F766E" }}
+            style={{ color: "#0E6E5C" }}
           >
             View Terms of Service
           </Link>

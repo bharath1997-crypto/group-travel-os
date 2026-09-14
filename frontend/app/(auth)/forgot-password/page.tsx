@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="flex min-h-svh flex-col bg-navy">
       <GradientHeader
-        gradient="linear-gradient(135deg, #0F766E, #0D9488, #14B8A6)"
+        gradient="linear-gradient(135deg, #0E6E5C, #0D9488, #14B8A6)"
         title=""
         subtitle={sent ? "We emailed you a link" : "Forgot Password?"}
         height={sent ? 100 : 120}

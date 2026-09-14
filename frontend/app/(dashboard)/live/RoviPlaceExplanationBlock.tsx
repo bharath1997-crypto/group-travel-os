@@ -4,7 +4,7 @@ import { Sparkles } from "lucide-react";
 import type { LocationContextTemplate } from "./live-location-context";
 import type { RoviPlaceExplanation } from "./live-rovi";
 
-const TEAL = "#0F766E";
+const TEAL = "#0E6E5C";
 
 type Props = {
   showAskButton: boolean;

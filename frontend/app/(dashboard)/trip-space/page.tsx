@@ -458,7 +458,7 @@ export default function TripSpacePage() {
             {/* SETUP FORM */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950 flex items-center gap-2 mb-6">
-                <Sparkles className="h-5 w-5 text-teal-600" />
+                <Sparkles className="h-5 w-5 text-primary" />
                 Plan Your Perfect Weekend Trip
               </h2>
               
@@ -469,7 +469,7 @@ export default function TripSpacePage() {
                     Starting From
                   </label>
                   <div className="relative">
-                    <MapPin className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-teal-600" />
+                    <MapPin className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
                     <select
                       id="origin"
                       value={origin}
@@ -491,7 +491,7 @@ export default function TripSpacePage() {
                   </label>
                   <div className="flex items-center gap-2">
                     <div className="relative flex-1">
-                      <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-teal-600" />
+                      <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
                       <input
                         type="date"
                         value={dateFrom}
@@ -501,7 +501,7 @@ export default function TripSpacePage() {
                     </div>
                     <span className="text-slate-500 text-xs font-bold">to</span>
                     <div className="relative flex-1">
-                      <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-teal-600" />
+                      <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
                       <input
                         type="date"
                         value={dateTo}
@@ -518,7 +518,7 @@ export default function TripSpacePage() {
                     Group Size
                   </label>
                   <div className="relative">
-                    <Users className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-teal-600" />
+                    <Users className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
                     <select
                       id="group-size"
                       value={groupSize}
@@ -538,7 +538,7 @@ export default function TripSpacePage() {
                     Max Drive Time
                   </label>
                   <div className="relative">
-                    <Clock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-teal-600" />
+                    <Clock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
                     <select
                       id="drive-time"
                       value={maxDriveHours}
@@ -568,7 +568,7 @@ export default function TripSpacePage() {
                       onClick={() => setSelectedVibe(v)}
                       className={`rounded-full px-4 py-2 text-xs font-semibold border transition-all ${
                         selectedVibe === v
-                          ? "bg-primary text-white border-primary shadow-lg shadow-[#0F766E]/20"
+                          ? "bg-primary text-white border-primary shadow-lg shadow-[#0E6E5C]/20"
                           : "bg-white border-slate-200 text-slate-600 hover:border-primary hover:text-primary"
                       }`}
                     >
@@ -582,7 +582,7 @@ export default function TripSpacePage() {
                 <button
                   type="button"
                   onClick={handleFindDestinations}
-                  className="flex items-center gap-2 rounded-xl bg-teal-500 hover:bg-teal-600 active:scale-95 px-8 py-3.5 text-sm font-bold text-slate-900 transition shadow-lg shadow-teal-500/20"
+                  className="flex items-center gap-2 rounded-xl bg-primary-soft0 hover:bg-primary active:scale-95 px-8 py-3.5 text-sm font-bold text-slate-900 transition shadow-lg shadow-teal-500/20"
                 >
                   <Search className="h-4 w-4" />
                   Find Destinations
@@ -594,7 +594,7 @@ export default function TripSpacePage() {
             {destinations.length > 0 && (
               <div className="space-y-4 animate-fade-in">
                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Compass className="h-5 w-5 text-teal-600" />
+                  <Compass className="h-5 w-5 text-primary" />
                   AI Suggested Weekend Getaways from {origin}
                 </h3>
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -689,7 +689,7 @@ export default function TripSpacePage() {
                     onClick={() => setSelectedTab(t.id)}
                     className={`flex items-center gap-2 px-5 py-3 text-xs font-bold transition-all border-b-2 rounded-t-lg -mb-[2px] ${
                       selectedTab === t.id
-                        ? "border-teal-600 text-teal-600 bg-teal-50"
+                        ? "border-teal-600 text-primary bg-primary-soft"
                         : "border-transparent text-slate-500 hover:text-teal-650 hover:bg-slate-50"
                     }`}
                   >
@@ -879,7 +879,7 @@ export default function TripSpacePage() {
                                   href={event.ticket_url} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="bg-teal-600 hover:bg-teal-500 text-white text-[11px] px-3 py-1.5 rounded-lg transition font-bold"
+                                  className="bg-primary hover:bg-primary-soft0 text-white text-[11px] px-3 py-1.5 rounded-lg transition font-bold"
                                 >
                                   Get Tickets →
                                 </a>
@@ -892,7 +892,7 @@ export default function TripSpacePage() {
                       <div className="bg-app rounded-xl p-6 text-center border border-slate-200">
                         <p className="text-slate-600 text-sm">No events found for these dates.</p>
                         <p className="text-slate-500 text-xs mt-1">Try browsing the full Events Directory for more options.</p>
-                        <Link href="/explore/events" className="text-teal-600 text-sm mt-3 inline-block hover:underline font-bold">
+                        <Link href="/explore/events" className="text-primary text-sm mt-3 inline-block hover:underline font-bold">
                           Browse All Events →
                         </Link>
                       </div>
@@ -901,14 +901,14 @@ export default function TripSpacePage() {
 
                   {/* Add to Trip Poll Button */}
                   {tripEvents.length > 0 && (
-                    <div className="mb-6 p-4 bg-teal-50 border border-teal-200 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                    <div className="mb-6 p-4 bg-primary-soft border border-teal-200 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                       <p className="text-teal-800 text-xs font-semibold">
                         🗳️ Want your group to vote on which events to attend?
                       </p>
                       <button 
                         type="button"
                         onClick={createEventPoll}
-                        className="bg-teal-600 hover:bg-teal-500 text-white text-xs px-4 py-2.5 rounded-xl transition font-bold"
+                        className="bg-primary hover:bg-primary-soft0 text-white text-xs px-4 py-2.5 rounded-xl transition font-bold"
                       >
                         Create Event Poll for Group →
                       </button>
@@ -1046,7 +1046,7 @@ export default function TripSpacePage() {
                   {/* Route overview */}
                   <div className="rounded-xl border border-slate-200 bg-app p-5">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2 mb-3">
-                      <Navigation className="h-4 w-4 text-teal-600" />
+                      <Navigation className="h-4 w-4 text-primary" />
                       Drive Route Summary
                     </h4>
                     {routeLoading ? (
@@ -1071,7 +1071,7 @@ export default function TripSpacePage() {
             {/* GROUP COORDINATION TOOLS PANEL */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <h3 className="text-base font-bold text-primary flex items-center gap-2 mb-6">
-                <Users className="h-5 w-5 text-teal-600" />
+                <Users className="h-5 w-5 text-primary" />
                 Group Coordination Panel
               </h3>
               
@@ -1081,7 +1081,7 @@ export default function TripSpacePage() {
                   href="/trips/new?tab=polls"
                   className="flex flex-col items-center justify-center text-center rounded-xl border border-slate-200 bg-white hover:border-primary hover:bg-slate-50 p-5 group transition shadow-sm"
                 >
-                  <Vote className="h-6 w-6 text-teal-600 group-hover:scale-110 transition-transform mb-3" />
+                  <Vote className="h-6 w-6 text-primary group-hover:scale-110 transition-transform mb-3" />
                   <span className="text-xs font-bold text-slate-800">Create Poll</span>
                   <span className="text-[9px] text-slate-500 mt-1">Vote on details</span>
                 </Link>

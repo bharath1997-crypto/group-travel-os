@@ -15,7 +15,7 @@ type WayraDiscoveryCardProps = {
 
 export function WayraDiscoveryCard({ onAskWayra }: WayraDiscoveryCardProps) {
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0F766E] via-teal-600 to-emerald-600 p-8 md:p-10">
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0E6E5C] via-primary to-primary-light p-8 md:p-10">
       {/* Decorative background circles */}
       <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-white/10 blur-2xl pointer-events-none" />
       <div className="absolute -bottom-16 -left-8 w-56 h-56 rounded-full bg-teal-400/20 blur-3xl pointer-events-none" />
@@ -39,7 +39,7 @@ export function WayraDiscoveryCard({ onAskWayra }: WayraDiscoveryCardProps) {
           </p>
           <button
             onClick={() => onAskWayra?.()}
-            className="inline-flex items-center gap-2 bg-white text-primary font-bold px-7 py-3.5 rounded-xl hover:bg-teal-50 transition-colors shadow-lg text-sm"
+            className="inline-flex items-center gap-2 bg-white text-primary font-bold px-7 py-3.5 rounded-xl hover:bg-primary-soft transition-colors shadow-lg text-sm"
           >
             <Sparkles size={16} />
             Ask Wayra

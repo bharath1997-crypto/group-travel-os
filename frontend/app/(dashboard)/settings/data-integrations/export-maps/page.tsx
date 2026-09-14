@@ -62,7 +62,7 @@ function StatusChip({ status }: { status: ExportRequest["status"] }) {
   const map: Record<string, { label: string; cls: string }> = {
     pending:    { label: "Pending",    cls: "bg-amber-50 text-amber-700" },
     processing: { label: "Processing", cls: "bg-blue-50 text-blue-700" },
-    ready:      { label: "Ready",      cls: "bg-teal-50 text-primary" },
+    ready:      { label: "Ready",      cls: "bg-primary-soft text-primary" },
     failed:     { label: "Failed",     cls: "bg-red-50 text-red-600" },
     expired:    { label: "Expired",    cls: "bg-stone-100 text-stone-500" },
   };
@@ -188,7 +188,7 @@ function ExportHistoryRow({ req }: { req: ExportRequest }) {
         <a
           href={req.file_url}
           download
-          className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl border border-primary py-2.5 text-[13px] font-semibold text-primary transition-colors hover:bg-teal-50 active:bg-teal-100"
+          className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl border border-primary py-2.5 text-[13px] font-semibold text-primary transition-colors hover:bg-primary-soft active:bg-teal-100"
         >
           <Download size={14} />
           Download GeoJSON

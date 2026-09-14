@@ -12,11 +12,12 @@ from urllib.parse import quote
 
 from pydantic import ValidationError
 
-from app.schemas.bus import BusResult
+from app.schemas.bus import BusProviderOffer, BusResult
 from app.utils.exceptions import AppException
 from config import settings
 
 logger = logging.getLogger(__name__)
+
 
 _CACHE_TTL = 3_600
 _bus_cache: dict[tuple[str, str, str], tuple[float, list[BusResult]]] = {}
@@ -58,7 +59,6 @@ _CITY_ALIASES: dict[str, str] = {
     "seattle": "seattle",
 }
 
-# Base templates for realistic results
 _OPERATORS = ["Greyhound", "FlixBus", "Megabus", "Peter Pan", "BoltBus"]
 
 _ROUTE_DEFAULTS: dict[tuple[str, str], dict[str, Any]] = {
@@ -81,15 +81,23 @@ _ROUTE_DEFAULTS: dict[tuple[str, str], dict[str, Any]] = {
 }
 
 
+
 def _busbud_booking_url(origin_key: str, dest_key: str) -> str:
     m = (settings.travelpayouts_marker or "").strip() or "727732"
     orig_slug = _CITY_SLUGS.get(origin_key, "new-york")
     dest_slug = _CITY_SLUGS.get(dest_key, "boston")
-    
-    # Example u: https://www.busbud.com/en/bus-new-york--boston
+
     inner = f"https://www.busbud.com/en/bus-{orig_slug}--{dest_slug}"
-    
     return f"https://tp.media/r?marker={m}&p=5782&u={quote(inner, safe='')}"
+
+
+def _omio_booking_url(origin_key: str, dest_key: str) -> str:
+    m = (settings.travelpayouts_marker or "").strip() or "727732"
+    orig_slug = _CITY_SLUGS.get(origin_key, "new-york")
+    dest_slug = _CITY_SLUGS.get(dest_key, "boston")
+
+    inner = f"https://www.omio.com/search-frontend/results?origin={orig_slug}&destination={dest_slug}"
+    return f"https://tp.media/r?marker={m}&p=4114&u={quote(inner, safe='')}"
 
 
 def _canonical_city(location: str) -> str | None:
@@ -103,14 +111,14 @@ def _build_buses(origin_key: str, dest_key: str, date_str: str) -> list[BusResul
     route_info = _ROUTE_DEFAULTS.get((origin_key, dest_key))
     if not route_info:
         return []
-        
-    booking = _busbud_booking_url(origin_key, dest_key)
+
+    busbud_link = _busbud_booking_url(origin_key, dest_key)
+    omio_link = _omio_booking_url(origin_key, dest_key)
     out: list[BusResult] = []
-    
-    # Generate 3 realistic options per route
+
     base_duration = route_info["duration"]
     base_price = route_info["price"]
-    
+
     # Option 1: Morning
     out.append(
         BusResult(
@@ -124,13 +132,17 @@ def _build_buses(origin_key: str, dest_key: str, date_str: str) -> list[BusResul
             price=base_price,
             currency="USD",
             available_seats=12,
-            booking_url=booking,
+            booking_url=busbud_link,
             provider="Busbud",
             amenities=["WiFi", "AC", "USB charging"],
+            provider_offers=[
+                BusProviderOffer(provider_name="Busbud", price=base_price, currency="USD", booking_url=busbud_link),
+                BusProviderOffer(provider_name="Omio", price=round(base_price * 1.02, 2), currency="USD", booking_url=omio_link),
+            ],
         )
     )
-    
-    # Option 2: Afternoon (Faster or cheaper)
+
+    # Option 2: Afternoon
     out.append(
         BusResult(
             id=f"{origin_key}-{dest_key}-opt2",
@@ -143,12 +155,17 @@ def _build_buses(origin_key: str, dest_key: str, date_str: str) -> list[BusResul
             price=base_price - 5.0,
             currency="USD",
             available_seats=5,
-            booking_url=booking,
-            provider="Busbud",
+            booking_url=busbud_link,
+            provider="FlixBus Direct",
             amenities=["WiFi", "AC"],
+            provider_offers=[
+                BusProviderOffer(provider_name="FlixBus Direct", price=base_price - 5.0, currency="USD", booking_url=busbud_link),
+                BusProviderOffer(provider_name="Busbud", price=base_price - 3.0, currency="USD", booking_url=busbud_link),
+                BusProviderOffer(provider_name="Omio", price=base_price - 4.0, currency="USD", booking_url=omio_link),
+            ],
         )
     )
-    
+
     # Option 3: Evening
     out.append(
         BusResult(
@@ -162,13 +179,18 @@ def _build_buses(origin_key: str, dest_key: str, date_str: str) -> list[BusResul
             price=base_price + 10.0,
             currency="USD",
             available_seats=20,
-            booking_url=booking,
+            booking_url=busbud_link,
             provider="Busbud",
             amenities=["WiFi", "AC", "USB charging", "Power outlets"],
+            provider_offers=[
+                BusProviderOffer(provider_name="Busbud", price=base_price + 10.0, currency="USD", booking_url=busbud_link),
+                BusProviderOffer(provider_name="Omio", price=base_price + 9.50, currency="USD", booking_url=omio_link),
+            ],
         )
     )
-    
+
     return out
+
 
 
 class BusService:

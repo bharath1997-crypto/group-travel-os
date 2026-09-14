@@ -263,7 +263,19 @@ TRAVEL DISCOVERY ON LIVE MAP (default for pin questions — priority over app na
 """
 
 
-def _response_rules_block(mode: WayraMode, *, on_live: bool) -> str:
+def _voice_rules_block() -> str:
+    return """
+VOICE MODE (reply will be read aloud):
+- 1 to 3 short sentences, conversational tone for text-to-speech.
+- Lead with the direct answer; no long lists (max 3 items if needed).
+- Plain text only — no markdown, bullet symbols, or URLs.
+- Skip disclaimers and sign-offs unless safety-critical.
+"""
+
+
+def _response_rules_block(mode: WayraMode, *, on_live: bool, voice_mode: bool = False) -> str:
+    if voice_mode:
+        return _voice_rules_block()
     if mode == WayraMode.TRAVEL and on_live:
         return """
 RESPONSE RULES (travel discovery on Live):
@@ -305,12 +317,25 @@ def _build_system_prompt(
     *,
     mode: WayraMode = WayraMode.APP_GUIDE,
     on_live: bool = False,
+    voice_mode: bool = False,
 ) -> str:
     tab = active_tab or "(not specified)"
-    travel_live = mode == WayraMode.TRAVEL and on_live
+    travel_live = mode == WayraMode.TRAVEL and on_live and not voice_mode
+    char_cap = _message_char_cap("", voice_mode=voice_mode)
+
+    if voice_mode:
+        return f"""You are Wayra, Rovvy's built-in travel assistant.
+Never mention Google, Gemini, DeepSeek, OpenAI, or any AI vendor.
+If asked what you are: "I'm Wayra, Rovvy's built-in travel assistant."
+{_voice_rules_block()}
+The user is on page {page!r} (tab {tab!r}). Mode: {mode.value!r}.
+Reply with JSON only:
+{{"message": "string, spoken answer, <= {char_cap} chars, no markdown"}}
+"""
 
     priority_block = _travel_live_discovery_block() if travel_live else ""
 
+    # Static identity + knowledge first so DeepSeek can prefix-cache the bulk.
     return f"""You are Wayra, the built-in AI assistant for Rovvy — a group travel planning app.
 You are a native feature of Rovvy, not a third-party service.
 
@@ -318,15 +343,10 @@ IDENTITY RULES (never break):
 - NEVER mention Google, Gemini, OpenAI, GPT, Claude, or any third-party AI name.
 - If asked what AI you are: "I'm Wayra, Rovvy's built-in travel assistant."
 - Always present yourself as a core part of Rovvy.
-
-The user is currently on page: {page!r} (active tab: {tab!r}).
-Wayra mode for this turn: {mode.value!r}.
-{priority_block}
 {_app_knowledge_block()}
-{_response_rules_block(mode, on_live=on_live)}
 Output format — single JSON object only:
 {{
-  "message": "string, plain text, <= 1200 chars, no markdown",
+  "message": "string, plain text, <= {char_cap} chars, no markdown",
   "suggested_actions": [
     {{
       "type": "string",
@@ -336,7 +356,12 @@ Output format — single JSON object only:
     }}
   ],
   "summary": {{}} or null
-}}"""
+}}
+
+The user is currently on page: {page!r} (active tab: {tab!r}).
+Wayra mode for this turn: {mode.value!r}.
+{priority_block}
+{_response_rules_block(mode, on_live=on_live, voice_mode=voice_mode)}"""
 
 
 def _extract_city_from_context(ctx: dict[str, Any] | None) -> str | None:
@@ -368,7 +393,46 @@ def _enrich_destination_intel(ctx: dict[str, Any] | None) -> dict[str, Any] | No
     return intel if len(intel) > 1 else None
 
 
+def _slim_selected_place(selected: dict[str, Any]) -> dict[str, Any]:
+    slim: dict[str, Any] = {}
+    for key in ("name", "city", "state", "country", "lat", "lng"):
+        value = selected.get(key)
+        if value is not None and value != "":
+            slim[key] = value
+    return slim
+
+
+def _build_voice_input_payload(request: AIAssistantRequest, *, mode: WayraMode) -> str:
+    """Tiny context for spoken turns — skip route dumps, events, and weather APIs."""
+    ctx = request.context if isinstance(request.context, dict) else {}
+    selected = ctx.get("selectedPlace")
+    payload: dict[str, Any] = {
+        "page": request.page,
+        "user_message": request.user_message,
+        "wayra_mode": mode.value,
+        "voice_mode": True,
+    }
+    if isinstance(selected, dict):
+        slim = _slim_selected_place(selected)
+        if slim:
+            payload["selected_place_on_map"] = slim
+    if ctx.get("resolvedMapRegion") is not None:
+        payload["resolved_map_region"] = ctx.get("resolvedMapRegion")
+    live_block = ctx.get("liveContextBlock")
+    if isinstance(live_block, str) and live_block.strip():
+        payload["live_context_block"] = live_block.strip()[:1200]
+    attached = ctx.get("chatAttachedLocation")
+    if isinstance(attached, dict) and attached.get("lat") is not None:
+        payload["chat_attached_location"] = {
+            k: attached.get(k) for k in ("name", "lat", "lng") if attached.get(k) is not None
+        }
+    return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+
+
 def _build_input_payload(request: AIAssistantRequest, *, mode: WayraMode) -> str:
+    if request.voice_mode:
+        return _build_voice_input_payload(request, mode=mode)
+
     ctx = request.context if isinstance(request.context, dict) else {}
     on_live = _is_live_page(request.page, ctx)
     payload: dict[str, Any] = {
@@ -380,12 +444,17 @@ def _build_input_payload(request: AIAssistantRequest, *, mode: WayraMode) -> str
         "user_message": request.user_message,
         "wayra_mode": mode.value,
         "response_style": (
-            "travel_discovery_live"
+            "voice_live"
+            if request.voice_mode and on_live
+            else "voice"
+            if request.voice_mode
+            else "travel_discovery_live"
             if mode == WayraMode.TRAVEL and on_live
             else "travel"
             if mode == WayraMode.TRAVEL
             else "app_guide"
         ),
+        "voice_mode": request.voice_mode,
     }
     selected = ctx.get("selectedPlace")
     if isinstance(selected, dict):
@@ -558,13 +627,31 @@ def _coerce_action(row: object) -> AISuggestedAction | None:
     )
 
 
-def _message_char_cap(user_message: str) -> int:
+def _message_char_cap(user_message: str, *, voice_mode: bool = False) -> int:
+    if voice_mode:
+        return resolve_output_budget("voice", user_message, voice_mode=True).max_message_chars
     style = "plan" if is_plan_question(user_message) else "full"
     return resolve_output_budget(style, user_message).max_message_chars
 
 
-def _build_response(data: dict[str, Any] | None, raw: str, user_message: str) -> AIAssistantResponse:
-    cap = _message_char_cap(user_message)
+def _finalize_response(response: AIAssistantResponse, request: AIAssistantRequest) -> AIAssistantResponse:
+    if not request.voice_mode:
+        return response
+    cap = _message_char_cap(request.user_message, voice_mode=True)
+    message = response.message[:cap] if response.message else response.message
+    summary = dict(response.summary) if isinstance(response.summary, dict) else {}
+    summary["voice_mode"] = True
+    return response.model_copy(update={"message": message, "summary": summary})
+
+
+def _build_response(
+    data: dict[str, Any] | None,
+    raw: str,
+    user_message: str,
+    *,
+    voice_mode: bool = False,
+) -> AIAssistantResponse:
+    cap = _message_char_cap(user_message, voice_mode=voice_mode)
     if data is None:
         clean = _strip_markdown_lite(raw)[:cap]
         return AIAssistantResponse(
@@ -652,10 +739,13 @@ class AIAssistantService:
             ctx,
         )
         if live_map:
-            return AIAssistantResponse(
-                message=live_map[:1200],
-                suggested_actions=[],
-                summary={"intent": "live_map_context", "local": True},
+            return _finalize_response(
+                AIAssistantResponse(
+                    message=live_map[:1200],
+                    suggested_actions=[],
+                    summary={"intent": "live_map_context", "local": True},
+                ),
+                request,
             )
 
         live_prep = resolve_live_travel_prep_message(
@@ -664,21 +754,24 @@ class AIAssistantService:
             ctx,
         )
         if live_prep:
-            return AIAssistantResponse(
-                message=live_prep[:1200],
-                suggested_actions=[],
-                summary={"intent": "live_travel_prep", "local": True},
+            return _finalize_response(
+                AIAssistantResponse(
+                    message=live_prep[:1200],
+                    suggested_actions=[],
+                    summary={"intent": "live_travel_prep", "local": True},
+                ),
+                request,
             )
 
         local = try_local_reply(request.user_message, request.page, ctx)
         if local is not None:
-            return local
+            return _finalize_response(local, request)
 
         # Canonical knowledge: exact variants + DeepSeek intent resolve.
         # Runs after deterministic local replies (weather/safety/nav) and before LLM.
         knowledge = await WayraKnowledgeService.try_answer(db, request)
         if knowledge is not None:
-            return knowledge
+            return _finalize_response(knowledge, request)
 
         # Reliable App Guide: answer locally for known product intents (no LLM latency).
         if mode == WayraMode.APP_GUIDE:
@@ -691,23 +784,27 @@ class AIAssistantService:
             if allow_app_local:
                 local_app = resolve_app_guide_message(request.user_message, request.page)
                 if local_app:
-                    return AIAssistantResponse(
-                        message=local_app,
-                        suggested_actions=[],
-                        summary={"intent": "app_guide", "local": True},
+                    return _finalize_response(
+                        AIAssistantResponse(
+                            message=local_app,
+                            suggested_actions=[],
+                            summary={"intent": "app_guide", "local": True},
+                        ),
+                        request,
                     )
 
         # Perplexity-style travel answers: OSM/Wikipedia sources + compact cheap LLM.
         if mode == WayraMode.TRAVEL:
             hybrid = await WayraAnswerService.try_answer(request, mode)
             if hybrid is not None:
-                return hybrid
+                return _finalize_response(hybrid, request)
 
         system_prompt = _build_system_prompt(
             request.page,
             request.active_tab,
             mode=mode,
             on_live=_is_live_page(request.page, ctx),
+            voice_mode=request.voice_mode,
         )
         user_block = _build_input_payload(request, mode=mode)
         temperature = _generation_temperature(mode, on_live=_is_live_page(request.page, ctx))
@@ -721,6 +818,7 @@ class AIAssistantService:
             user_block=user_block,
             user_message=request.user_message,
             temperature=temperature,
+            voice_mode=request.voice_mode,
         )
 
         if not raw_text:
@@ -728,21 +826,35 @@ class AIAssistantService:
             if prefer_travel:
                 travel_local = travel_fallback_message(request.user_message, ctx)
                 if travel_local:
-                    return AIAssistantResponse(
-                        message=travel_local[:1200],
-                        suggested_actions=[],
-                        summary={"fallback": True, "local": True, "mode": "travel"},
+                    return _finalize_response(
+                        AIAssistantResponse(
+                            message=travel_local[:1200],
+                            suggested_actions=[],
+                            summary={"fallback": True, "local": True, "mode": "travel"},
+                        ),
+                        request,
                     )
             if mode == WayraMode.APP_GUIDE:
-                return AIAssistantResponse(
-                    message=contextual_app_fallback(request.page, request.active_tab)[:1200],
-                    suggested_actions=[],
-                    summary={"fallback": True, "local": True, "mode": "app_guide"},
+                return _finalize_response(
+                    AIAssistantResponse(
+                        message=contextual_app_fallback(request.page, request.active_tab)[:1200],
+                        suggested_actions=[],
+                        summary={"fallback": True, "local": True, "mode": "app_guide"},
+                    ),
+                    request,
                 )
-            return _fallback_response(request, prefer_travel=prefer_travel)
+            return _finalize_response(
+                _fallback_response(request, prefer_travel=prefer_travel),
+                request,
+            )
 
         data = _parse_model_json(raw_text)
-        response = _build_response(data, raw_text, request.user_message)
+        response = _build_response(
+            data,
+            raw_text,
+            request.user_message,
+            voice_mode=request.voice_mode,
+        )
         if isinstance(response.summary, dict):
             response.summary = {
                 **response.summary,
@@ -751,7 +863,7 @@ class AIAssistantService:
             }
         elif llm_usage or llm_provider != "none":
             response.summary = {"provider": llm_provider, **({"llm_usage": llm_usage} if llm_usage else {})}
-        return response
+        return _finalize_response(response, request)
 
 
 class AwaitableString(str):

@@ -129,7 +129,7 @@ export function RovvyHelpPanel({
                 className={
                   isFull
                     ? "rounded-full border px-3 py-1.5 text-left text-[12px] text-white disabled:opacity-45"
-                    : "rounded-full border border-stone-200 bg-white px-2.5 py-1 text-[10px] font-medium text-slate-700 hover:bg-teal-50 disabled:opacity-45"
+                    : "rounded-full border border-stone-200 bg-white px-2.5 py-1 text-[10px] font-medium text-slate-700 hover:bg-primary-soft disabled:opacity-45"
                 }
                 style={isFull ? { borderColor: LOUNGE_FULL.msgBorder, background: LOUNGE_FULL.surface } : undefined}
               >

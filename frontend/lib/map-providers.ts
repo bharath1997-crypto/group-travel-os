@@ -165,8 +165,9 @@ export const TILE_PROVIDER_REGISTRY: TileProviderEntry[] = [
     url: "https://tiles.openfreemap.org/styles/liberty",
     attribution: "© OpenFreeMap © OpenStreetMap",
     productionRisk: "medium",
-    reason: "Vector liberty style — simplified Live map option (Clean Map)",
-    usedIn: ["live/LiveMapLayerControl.tsx (clean layer)"],
+    reason:
+      "Vector liberty style — Clean Map; override via NEXT_PUBLIC_OPENFREEMAP_BASE_URL for self-host",
+    usedIn: ["live/LiveMapLayerControl.tsx (clean layer)", "lib/map-providers.ts"],
   },
   {
     provider: "OpenRailwayMap",
@@ -278,27 +279,41 @@ function logDetailedMapFallbackWarning(reason: string): void {
   detailedMapFallbackWarningLogged = true;
 }
 
+function appendCartoApiKey(template: string): string {
+  const key = trimEnv(process.env.NEXT_PUBLIC_CARTO_API_KEY);
+  if (!key) return template;
+  const separator = template.includes("?") ? "&" : "?";
+  return `${template}${separator}key=${encodeURIComponent(key)}`;
+}
+
 export function resolveStreetTileUrl(): string {
-  const override = process.env.NEXT_PUBLIC_MAP_TILE_URL?.trim();
+  const override = trimEnv(process.env.NEXT_PUBLIC_MAP_TILE_URL);
   if (override) {
-    if (isValidRasterTileTemplate(override)) return override;
+    if (isValidRasterTileTemplate(override)) return appendCartoApiKey(override);
     if (process.env.NODE_ENV === "development") {
       console.warn(
         "[Rovvy Map] NEXT_PUBLIC_MAP_TILE_URL is missing {z}/{x}/{y} or uses an invalid scheme — using built-in street tiles.",
       );
     }
   }
-  // Same Detailed Map tiles locally and in production (CARTO Voyager).
-  return PRODUCTION_STREET_TILE_DEFAULT.url;
+  if (isLiveOpenFreeMapBasemapPrimary()) {
+    return "";
+  }
+  return appendCartoApiKey(PRODUCTION_STREET_TILE_DEFAULT.url);
 }
 
 /** Resolved raster tile URLs for MapLibre `sources.*.tiles` (never blank). */
 export function resolveStreetRasterTileUrls(): string[] {
-  const primary = expandRasterTileUrls(resolveStreetTileUrl());
+  const primaryUrl = resolveStreetTileUrl();
+  if (!primaryUrl) return [];
+
+  const primary = expandRasterTileUrls(primaryUrl);
   if (primary.length > 0) return primary;
 
+  if (isLiveOpenFreeMapBasemapPrimary()) return [];
+
   const productionFallback = expandRasterTileUrls(
-    PRODUCTION_STREET_TILE_DEFAULT.url,
+    appendCartoApiKey(PRODUCTION_STREET_TILE_DEFAULT.url),
   );
   if (productionFallback.length > 0) return productionFallback;
 
@@ -315,13 +330,91 @@ export function tileUrlNeedsCommercialReview(url: string): boolean {
   return COMMERCIAL_REVIEW_TILE_PATTERNS.some((pattern) => url.includes(pattern));
 }
 
-/** Simplified vector OSM style — optional Clean Map layer (queryable labels/POIs). */
-export const OPENFREEMAP_STREET_STYLE_URL =
-  "https://tiles.openfreemap.org/styles/liberty";
+/** Public OpenFreeMap CDN — fallback when self-host env is unset. */
+export const OPENFREEMAP_PUBLIC_ORIGIN = "https://tiles.openfreemap.org";
 
-/** OpenFreeMap vector tiles — hybrid thin-road overlay + label search. */
-export const OPENFREEMAP_VECTOR_TILES =
-  "https://tiles.openfreemap.org/planet/{z}/{x}/{y}.pbf";
+const OPENFREEMAP_DEFAULT_CLEAN_STYLE = "liberty";
+const OPENFREEMAP_DEFAULT_STREET_STYLE = "bright";
+
+function trimEnv(value: string | undefined): string {
+  return value?.trim() ?? "";
+}
+
+/** Normalize base URL (no trailing slash). */
+export function normalizeOpenFreeMapBaseUrl(url: string): string {
+  return url.trim().replace(/\/+$/, "");
+}
+
+/** Self-hosted OpenFreeMap origin or public CDN. */
+export function resolveOpenFreeMapBaseUrl(): string {
+  const override = trimEnv(process.env.NEXT_PUBLIC_OPENFREEMAP_BASE_URL);
+  if (override) return normalizeOpenFreeMapBaseUrl(override);
+  return OPENFREEMAP_PUBLIC_ORIGIN;
+}
+
+/** True when Live should use your OpenFreeMap http-host instead of tiles.openfreemap.org. */
+export function isOpenFreeMapSelfHosted(): boolean {
+  return resolveOpenFreeMapBaseUrl() !== OPENFREEMAP_PUBLIC_ORIGIN;
+}
+
+export function resolveOpenFreeMapStyleUrl(
+  styleName = OPENFREEMAP_DEFAULT_CLEAN_STYLE,
+): string {
+  const style = trimEnv(styleName) || OPENFREEMAP_DEFAULT_CLEAN_STYLE;
+  return `${resolveOpenFreeMapBaseUrl()}/styles/${style}`;
+}
+
+/** Detailed Map vector style when self-hosting (more labels than liberty). */
+export function resolveOpenFreeMapStreetStyleUrl(): string {
+  const style =
+    trimEnv(process.env.NEXT_PUBLIC_OPENFREEMAP_STREET_STYLE) ||
+    OPENFREEMAP_DEFAULT_STREET_STYLE;
+  return resolveOpenFreeMapStyleUrl(style);
+}
+
+/** Clean Map vector style URL. */
+export function resolveOpenFreeMapCleanStyleUrl(): string {
+  const style =
+    trimEnv(process.env.NEXT_PUBLIC_OPENFREEMAP_CLEAN_STYLE) ||
+    OPENFREEMAP_DEFAULT_CLEAN_STYLE;
+  return resolveOpenFreeMapStyleUrl(style);
+}
+
+/** OpenFreeMap vector tiles — hybrid overlay, travel layer, foot routes. */
+export function resolveOpenFreeMapVectorTilesUrl(): string {
+  return `${resolveOpenFreeMapBaseUrl()}/planet/{z}/{x}/{y}.pbf`;
+}
+
+/** @deprecated Prefer resolveOpenFreeMapCleanStyleUrl() — kept for legacy imports. */
+export const OPENFREEMAP_STREET_STYLE_URL = resolveOpenFreeMapCleanStyleUrl();
+
+/** @deprecated Prefer resolveOpenFreeMapVectorTilesUrl() — kept for legacy imports. */
+export const OPENFREEMAP_VECTOR_TILES = resolveOpenFreeMapVectorTilesUrl();
+
+/** CARTO raster basemaps (Detailed/Dark) need a free API key since 2024. */
+export function isCartoBasemapConfigured(): boolean {
+  return trimEnv(process.env.NEXT_PUBLIC_CARTO_API_KEY).length > 0;
+}
+
+/**
+ * Live basemap mode: OpenFreeMap vector (self-host or public) vs CARTO raster street tiles.
+ * Set NEXT_PUBLIC_LIVE_BASEMAP=openfreemap to force vector basemaps without self-host URL.
+ */
+export function isLiveOpenFreeMapBasemapPrimary(): boolean {
+  const mode = trimEnv(process.env.NEXT_PUBLIC_LIVE_BASEMAP).toLowerCase();
+  if (mode === "openfreemap" || mode === "vector") return true;
+  if (mode === "carto" || mode === "raster") {
+    return !isCartoBasemapConfigured();
+  }
+  if (isOpenFreeMapSelfHosted()) return true;
+  // CARTO Voyager/Dark require a key — avoid "API KEY REQUIRED" watermarks.
+  if (!isCartoBasemapConfigured()) return true;
+  return false;
+}
+
+export function isLiveDarkBasemapAvailable(): boolean {
+  return isCartoBasemapConfigured();
+}
 
 export type LiveMapLayer = "street" | "clean" | "satellite" | "terrain" | "hybrid" | "dark";
 
@@ -416,7 +509,7 @@ function buildHybridStyle(streetFallback: LiveMapStyle): LiveMapStyle {
     },
     openmaptiles: {
       type: "vector",
-      tiles: [OPENFREEMAP_VECTOR_TILES],
+      tiles: [resolveOpenFreeMapVectorTilesUrl()],
       maxzoom: LIVE_MAP_VECTOR_MAX_ZOOM,
     },
     "esri-labels-places": {
@@ -451,10 +544,14 @@ function buildHybridStyle(streetFallback: LiveMapStyle): LiveMapStyle {
 
 /** Detailed OSM raster style — default Live map (labels, POIs, buildings). */
 function buildDetailedStreetStyle(): LiveMapStyle {
+  if (isLiveOpenFreeMapBasemapPrimary()) {
+    return resolveOpenFreeMapStreetStyleUrl();
+  }
+
   const tileUrls = resolveStreetRasterTileUrls();
   if (tileUrls.length === 0) {
     logDetailedMapFallbackWarning("no valid raster tile template");
-    return OPENFREEMAP_STREET_STYLE_URL;
+    return resolveOpenFreeMapStreetStyleUrl();
   }
 
   const streetAttribution = resolveStreetTileAttribution();
@@ -476,12 +573,35 @@ function buildDetailedStreetStyle(): LiveMapStyle {
 }
 
 /** MapLibre styles for Live Tab. Street = detailed OSM raster; clean = simplified vector style. */
+function buildDarkStyle(): LiveMapStyle {
+  const darkUrl = appendCartoApiKey(DEV_TILE_DEFAULTS.dark.url);
+  if (!isCartoBasemapConfigured()) {
+    return resolveOpenFreeMapCleanStyleUrl();
+  }
+
+  return withGlobeProjection({
+    version: 8,
+    sources: {
+      carto: {
+        type: "raster",
+        tiles: [darkUrl],
+        tileSize: 256,
+        attribution: DEV_TILE_DEFAULTS.dark.attribution,
+        maxzoom: LIVE_MAP_DARK_MAX_ZOOM,
+      },
+    },
+    layers: [
+      { id: "carto-tiles", type: "raster", source: "carto", minzoom: 0, maxzoom: LIVE_MAP_DARK_MAX_ZOOM },
+    ],
+  });
+}
+
 export function getLiveMapLibreLayerStyles(): Record<LiveMapLayer, LiveMapStyle> {
   const detailedStreetStyle = buildDetailedStreetStyle();
 
   return {
     street: detailedStreetStyle,
-    clean: OPENFREEMAP_STREET_STYLE_URL,
+    clean: resolveOpenFreeMapCleanStyleUrl(),
     satellite: withGlobeProjection({
       version: 8,
       sources: {
@@ -514,30 +634,20 @@ export function getLiveMapLibreLayerStyles(): Record<LiveMapLayer, LiveMapStyle>
         { id: "esri-topo-tiles", type: "raster", source: "esri", minzoom: 0, maxzoom: LIVE_MAP_ESRI_MAX_ZOOM },
       ],
     }),
-    dark: withGlobeProjection({
-      version: 8,
-      sources: {
-        carto: {
-          type: "raster",
-          tiles: [DEV_TILE_DEFAULTS.dark.url],
-          tileSize: 256,
-          attribution: DEV_TILE_DEFAULTS.dark.attribution,
-          maxzoom: LIVE_MAP_DARK_MAX_ZOOM,
-        },
-      },
-      layers: [
-        { id: "carto-tiles", type: "raster", source: "carto", minzoom: 0, maxzoom: LIVE_MAP_DARK_MAX_ZOOM },
-      ],
-    }),
+    dark: buildDarkStyle(),
     hybrid: buildHybridStyle(detailedStreetStyle),
   };
 }
 
 /** Flat basemap for modal pickers — same production tile URLs as Live, without globe projection. */
 export function getFlightPickerBasemapStyle(): LiveMapStyle {
+  if (isLiveOpenFreeMapBasemapPrimary()) {
+    return resolveOpenFreeMapCleanStyleUrl();
+  }
+
   const tileUrls = resolveStreetRasterTileUrls();
   if (tileUrls.length === 0) {
-    return OPENFREEMAP_STREET_STYLE_URL;
+    return resolveOpenFreeMapCleanStyleUrl();
   }
 
   return {

@@ -15,13 +15,14 @@ export function getConnectionProtectionStatus(
 ): ConnectionProtectionStatus | null {
   if (!journeyHasConnections(journey)) return null;
 
-  if (journey.protected_connection === true) {
-    const hasSeparateTickets = journey.slices.some((slice) =>
-      slice.connections.some((connection) => connection.protected === false),
-    );
-    return hasSeparateTickets ? "separate_tickets" : "protected";
+  if (journey.connection_protection === "protected") return "protected";
+  if (journey.connection_protection === "unprotected") return "self_transfer";
+  if (journey.ticket_type === "separate_tickets") return "separate_tickets";
+  if (journey.baggage_transfer === "self_transfer" || journey.self_transfer === true) {
+    return "self_transfer";
   }
 
+  if (journey.protected_connection === true) return "protected";
   if (journey.protected_connection === false) return "self_transfer";
   return "not_confirmed";
 }

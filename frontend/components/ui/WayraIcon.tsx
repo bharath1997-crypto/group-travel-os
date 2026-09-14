@@ -1,168 +1,216 @@
-'use client'
-import React from 'react'
+"use client";
+
+import React, { useId } from "react";
+import { Loader2, Mic, Sparkles, Volume2 } from "lucide-react";
+
+import type { WayraVoicePhase } from "@/lib/wayra/use-wayra-voice";
 
 interface WayraIconProps {
-  state?: 'flying' | 'perched'
-  size?: number
-  variant?: 'fog' | 'navy' | 'raw'
-  animate?: boolean
-  className?: string
+  /** Controls subtle motion only — icon shape is unified app-wide. */
+  state?: "flying" | "perched";
+  size?: number;
+  variant?: "fog" | "navy" | "raw" | "launcher" | "inline";
+  animate?: boolean;
+  className?: string;
 }
 
-function FlyingSVG() {
+function SparkleGlyph() {
   return (
-    <svg width="56" height="56" viewBox="0 0 100 100" fill="none">
-      {/* Outer compass ring */}
-      <circle cx="50" cy="50" r="42" stroke="url(#compass-gradient)" strokeWidth="2.5" strokeDasharray="6 3" />
-      <circle cx="50" cy="50" r="35" stroke="url(#ring-gradient)" strokeWidth="1" opacity="0.6" />
-      
-      {/* Compass pointer lines */}
-      <line x1="50" y1="8" x2="50" y2="15" stroke="#E94560" strokeWidth="2" strokeLinecap="round" />
-      <line x1="50" y1="85" x2="50" y2="92" stroke="#0F172A" strokeWidth="2" strokeLinecap="round" />
-      <line x1="8" y1="50" x2="15" y2="50" stroke="#0F172A" strokeWidth="2" strokeLinecap="round" />
-      <line x1="85" y1="50" x2="92" y2="50" stroke="#0F172A" strokeWidth="2" strokeLinecap="round" />
+    <g>
+      <path d="M24 13 L25.35 21.4 L24 29.8 L22.65 21.4 Z" fill="white" />
+      <path d="M32.2 24 L23.8 25.35 L15.4 24 L23.8 22.65 Z" fill="white" opacity="0.95" />
+      <circle cx="24" cy="24" r="2.6" fill="white" />
+    </g>
+  );
+}
 
-      {/* Soaring travel bird / paper plane fusion */}
-      <g transform="translate(18, 22)">
-        {/* Back wing */}
-        <path d="M12 28 L40 10 L28 32 Z" fill="url(#wing-back-grad)" />
-        {/* Front wing */}
-        <path d="M28 32 L56 5 L42 36 Z" fill="url(#wing-front-grad)" />
-        {/* Main fuselage / bird body */}
-        <path d="M8 40 L50 20 L28 32 Z" fill="url(#body-grad)" />
-        {/* Beak / compass needle point */}
-        <path d="M50 20 L58 17 L46 25 Z" fill="#E94560" />
-      </g>
-
-      {/* Sparkles / stars (smart AI touch) */}
-      <path d="M72 24 L74 29 L79 31 L74 33 L72 38 L70 33 L65 31 L70 29 Z" fill="#FFD700" />
-      <path d="M25 68 L26 71 L29 72 L26 73 L25 76 L24 73 L21 72 L24 71 Z" fill="#FFD700" opacity="0.8" />
-
-      {/* Gradients definitions */}
+/** Shared AI agent mark — teal disc + sparkle (account-wide Wayra launcher). */
+function WayraMark({ px, gradId }: { px: number; gradId: string }) {
+  return (
+    <svg width={px} height={px} viewBox="0 0 48 48" fill="none" aria-hidden className="shrink-0">
       <defs>
-        <radialGradient id="compass-gradient" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#E94560" />
-          <stop offset="100%" stopColor="#0F766E" />
-        </radialGradient>
-        <linearGradient id="ring-gradient" x1="0" y1="0" x2="100" y2="100">
-          <stop offset="0%" stopColor="#0F766E" />
-          <stop offset="100%" stopColor="#0F172A" />
-        </linearGradient>
-        <linearGradient id="body-grad" x1="8" y1="40" x2="50" y2="20">
-          <stop offset="0%" stopColor="#0F172A" />
-          <stop offset="100%" stopColor="#E94560" />
-        </linearGradient>
-        <linearGradient id="wing-front-grad" x1="28" y1="32" x2="56" y2="5">
-          <stop offset="0%" stopColor="#E94560" />
-          <stop offset="100%" stopColor="#FF7597" />
-        </linearGradient>
-        <linearGradient id="wing-back-grad" x1="12" y1="28" x2="40" y2="10">
-          <stop offset="0%" stopColor="#0F766E" />
-          <stop offset="100%" stopColor="#0D9488" />
+        <linearGradient id={gradId} x1="10" y1="6" x2="38" y2="42" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#14B8A6" />
+          <stop offset="0.45" stopColor="#0F766E" />
+          <stop offset="1" stopColor="#0A4A3E" />
         </linearGradient>
       </defs>
+      <circle cx="24" cy="24" r="24" fill={`url(#${gradId})`} />
+      <circle
+        cx="24"
+        cy="24"
+        r="16"
+        stroke="white"
+        strokeOpacity="0.32"
+        strokeWidth="1.2"
+        strokeDasharray="3.8 2.8"
+      />
+      <SparkleGlyph />
     </svg>
   );
 }
 
-function PerchedSVG() {
+function WayraInlineMark({ px }: { px: number }) {
+  const icon = Math.round(px * 0.48);
   return (
-    <svg width="56" height="56" viewBox="0 0 100 100" fill="none">
-      {/* Glowing circular background */}
-      <circle cx="50" cy="50" r="40" stroke="url(#ring-gradient)" strokeWidth="2" />
-      <circle cx="50" cy="50" r="32" stroke="url(#ring-gradient)" strokeWidth="1" strokeDasharray="4 2" opacity="0.7" />
-      
-      {/* Stylized geometric perched bird / travel guide */}
-      <g transform="translate(25, 22)">
-        {/* Folded wing */}
-        <path d="M12 35 Q22 15 36 24 Q24 28 12 35" fill="url(#wing-folded-grad)" stroke="#0F172A" strokeWidth="0.8" />
-        {/* Compact body */}
-        <ellipse cx="22" cy="38" rx="14" ry="10" fill="url(#body-perched-grad)" stroke="#0F172A" strokeWidth="0.8" />
-        {/* Head */}
-        <circle cx="34" cy="26" r="9" fill="white" stroke="#0F172A" strokeWidth="1" />
-        {/* Smart crown cap */}
-        <path d="M26 21 Q34 14 42 19 C40 26 30 26 26 21" fill="#0F172A" />
-        {/* Eye (smart dot) */}
-        <circle cx="37" cy="24" r="2.2" fill="#E94560" />
-        <circle cx="38" cy="23.2" r="0.8" fill="white" />
-        {/* Downward beak / pointer */}
-        <path d="M34 33 L32 48 L36 33 Z" fill="#E94560" />
-        {/* Perch branch */}
-        <line x1="4" y1="48" x2="40" y2="48" stroke="#0F766E" strokeWidth="2" strokeLinecap="round" />
-      </g>
-
-      {/* Gradients definitions */}
-      <defs>
-        <linearGradient id="ring-gradient" x1="0" y1="0" x2="100" y2="100">
-          <stop offset="0%" stopColor="#0F766E" />
-          <stop offset="100%" stopColor="#E94560" />
-        </linearGradient>
-        <linearGradient id="body-perched-grad" x1="8" y1="48" x2="36" y2="28">
-          <stop offset="0%" stopColor="#0F172A" />
-          <stop offset="100%" stopColor="#E94560" />
-        </linearGradient>
-        <linearGradient id="wing-folded-grad" x1="12" y1="35" x2="36" y2="24">
-          <stop offset="0%" stopColor="#0F766E" />
-          <stop offset="100%" stopColor="#0D9488" />
-        </linearGradient>
-      </defs>
-    </svg>
+    <span
+      className="inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#14B8A6] via-[#0F766E] to-[#0A4A3E] text-white shadow-sm"
+      style={{ width: px, height: px }}
+      aria-hidden
+    >
+      <Sparkles width={icon} height={icon} strokeWidth={2.25} />
+    </span>
   );
 }
 
 export default function WayraIcon({
-  state = 'flying',
+  state = "flying",
   size = 1,
-  variant = 'fog',
+  variant = "fog",
   animate = true,
-  className = ''
+  className = "",
 }: WayraIconProps) {
+  const gradId = useId().replace(/:/g, "");
+  const basePx = variant === "inline" ? 28 : variant === "launcher" ? 56 : 48;
+  const px = Math.round(basePx * size);
 
-  const wrapStyle: React.CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...(variant === 'fog' ? {
-      background: 'radial-gradient(ellipse at center, rgba(233,69,96,0.13) 0%, rgba(233,69,96,0.03) 65%, transparent 100%)',
-      borderRadius: '50%',
-      padding: '10px',
-    } : variant === 'navy' ? {
-      background: '#0F172A',
-      borderRadius: '50%',
-      padding: '8px',
-      boxShadow: '0 3px 10px rgba(15,52,96,0.22)',
-    } : {}),
-    transform: `scale(${size})`,
-    transformOrigin: 'center',
+  const animation =
+    animate && state === "flying"
+      ? "wayra-agent-float 3s ease-in-out infinite"
+      : animate && state === "perched"
+        ? "wayra-agent-pulse 4s ease-in-out infinite"
+        : undefined;
+
+  const shellStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transform: variant === "launcher" || variant === "inline" ? undefined : `scale(${size})`,
+    transformOrigin: "center",
+    animation,
+  };
+
+  let content: React.ReactNode;
+  if (variant === "inline" || variant === "navy") {
+    content = <WayraInlineMark px={px} />;
+  } else if (variant === "launcher" || variant === "raw") {
+    content = <WayraMark px={px} gradId={gradId} />;
+  } else {
+    content = (
+      <span
+        className="inline-flex items-center justify-center rounded-full"
+        style={{
+          padding: 8,
+          background:
+            "radial-gradient(ellipse at center, rgba(15,118,110,0.14) 0%, rgba(15,118,110,0.04) 65%, transparent 100%)",
+        }}
+      >
+        <WayraMark px={px} gradId={gradId} />
+      </span>
+    );
   }
-
-  const innerStyle: React.CSSProperties = animate ? {
-    animation: state === 'flying'
-      ? 'wayra-soar 3s ease-in-out infinite'
-      : 'wayra-bob 4s ease-in-out infinite',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  } : { display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }
 
   return (
     <>
       <style>{`
-        @keyframes wayra-soar {
-          0%,100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-4px) rotate(1deg); }
+        @keyframes wayra-agent-float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
         }
-        @keyframes wayra-bob {
-          0%,100% { transform: rotate(0deg); }
-          25% { transform: rotate(-3deg); }
-          75% { transform: rotate(3deg); }
+        @keyframes wayra-agent-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.92; }
         }
       `}</style>
-      <div style={wrapStyle} className={className}>
-        <div style={innerStyle}>
-          {state === 'flying' ? <FlyingSVG /> : <PerchedSVG />}
-        </div>
-      </div>
+      <span style={shellStyle} className={className}>
+        {content}
+      </span>
     </>
-  )
+  );
+}
+
+function voicePhaseLabel(phase: WayraVoicePhase | undefined, isOpen: boolean): string {
+  if (phase === "listening") return "Wayra is listening — tap to stop";
+  if (phase === "thinking") return "Wayra is thinking";
+  if (phase === "speaking") return "Wayra is speaking";
+  return isOpen ? "Close Wayra" : "Talk to Wayra";
+}
+
+/** One global Wayra agent orb — same mark in the FAB, chat header, and compact dock. */
+export function WayraAgentOrb({
+  size = 56,
+  voicePhase = "idle",
+  className = "",
+}: {
+  size?: number;
+  voicePhase?: WayraVoicePhase;
+  className?: string;
+}) {
+  const gradId = useId().replace(/:/g, "");
+  const icon = Math.round(size * 0.42);
+  const active = voicePhase === "listening" || voicePhase === "thinking" || voicePhase === "speaking";
+
+  return (
+    <span
+      className={`relative inline-flex items-center justify-center ${className}`}
+      style={{ width: size, height: size }}
+      aria-hidden
+    >
+      {active ? (
+        <span className="pointer-events-none absolute inset-[-6px] rounded-full border border-teal-300/50 animate-ping" />
+      ) : (
+        <span className="pointer-events-none absolute inset-[-5px] rounded-full bg-[radial-gradient(circle,rgba(20,184,166,0.35)_0%,transparent_70%)]" />
+      )}
+      <span className="relative z-[1] overflow-hidden rounded-full shadow-[0_10px_28px_rgba(10,74,62,0.42)]">
+        <WayraMark px={size} gradId={gradId} />
+        {voicePhase === "listening" ? (
+          <span className="absolute inset-0 flex items-center justify-center bg-[#0F766E]/25">
+            <Mic className="text-white animate-pulse" width={icon} height={icon} strokeWidth={2.4} />
+          </span>
+        ) : voicePhase === "thinking" ? (
+          <span className="absolute inset-0 flex items-center justify-center bg-[#0F766E]/20">
+            <Loader2 className="text-white animate-spin" width={icon} height={icon} strokeWidth={2.4} />
+          </span>
+        ) : voicePhase === "speaking" ? (
+          <span className="absolute inset-0 flex items-center justify-center bg-[#0F766E]/20">
+            <Volume2 className="text-white animate-pulse" width={icon} height={icon} strokeWidth={2.4} />
+          </span>
+        ) : null}
+      </span>
+    </span>
+  );
+}
+
+/** Standard global Wayra FAB — same on Live map and every tab. */
+export function WayraLauncherButton({
+  onClick,
+  onMouseDown,
+  onTouchStart,
+  isOpen = false,
+  voicePhase = "idle",
+  ariaControls,
+  className = "",
+}: {
+  onClick?: () => void;
+  onMouseDown?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onTouchStart?: (e: React.TouchEvent<HTMLButtonElement>) => void;
+  isOpen?: boolean;
+  voicePhase?: WayraVoicePhase;
+  ariaControls?: string;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseDown={onMouseDown}
+      onTouchStart={onTouchStart}
+      className={`group relative flex h-16 w-16 items-center justify-center rounded-full bg-transparent transition-transform hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/70 ${className}`}
+      aria-label={voicePhaseLabel(voicePhase, isOpen)}
+      aria-expanded={isOpen}
+      aria-controls={ariaControls}
+    >
+      <WayraAgentOrb size={56} voicePhase={voicePhase} />
+    </button>
+  );
 }

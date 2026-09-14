@@ -350,7 +350,7 @@ function tempBorderColor(celsius: number) {
 function tempTextColor(celsius: number) {
   if (celsius < 0) return "#3B82F6";
   if (celsius < 15) return "#64748B";
-  if (celsius < 25) return "#0F766E";
+  if (celsius < 25) return "#0E6E5C";
   if (celsius < 35) return "#D97706";
   return "#DC2626";
 }
@@ -683,7 +683,7 @@ function createTempIcon(
         background:#FFFFFF;border:0.5px solid ${border};
         border-radius:20px;padding:3px 8px;
         box-shadow:0 2px 8px rgba(0,0,0,0.12);
-        font-family:Inter,system-ui,sans-serif;font-size:11px;font-weight:500;color:#0F172A;
+        font-family:var(--font-schibsted),system-ui,sans-serif;font-size:11px;font-weight:500;color:#0F1614;
         white-space:nowrap;
       ">
         <span style="display:inline-flex;align-items:center;line-height:0;">${iconSvg}</span>
@@ -692,7 +692,7 @@ function createTempIcon(
       ${
         showCityName
           ? `<span style="
-        margin-top:2px;font-family:Inter,system-ui,sans-serif;
+        margin-top:2px;font-family:var(--font-schibsted),system-ui,sans-serif;
         font-size:9px;color:#64748B;white-space:nowrap;
       ">${city.name}</span>`
           : ""
@@ -806,7 +806,7 @@ function PopupContent({
   const kind = wmoToIconKind(weather.weathercode);
   const countryName = COUNTRY_NAMES[city.country] ?? city.country;
   return (
-    <div className="min-w-[160px] font-[Inter,system-ui,sans-serif]">
+    <div className="min-w-[160px] font-sans">
       <p className="text-sm font-bold text-navy">{city.name}</p>
       <p className="mt-0.5 text-xs text-[#64748B]">
         {countryFlag(city.country)} {countryName}
@@ -1181,7 +1181,7 @@ export default function WeatherPage() {
           margin: 12px 14px;
         }
         .leaflet-container {
-          font-family: Inter, system-ui, sans-serif;
+          font-family: var(--font-schibsted), system-ui, sans-serif;
           background: #ffffff;
         }
         .weather-map-page .leaflet-control-attribution {

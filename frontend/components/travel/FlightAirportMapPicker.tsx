@@ -215,7 +215,7 @@ export default function FlightAirportMapPicker({
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-left");
 
-    const marker = new maplibregl.Marker({ draggable: true, color: "#0F766E" })
+    const marker = new maplibregl.Marker({ draggable: true, color: "#0E6E5C" })
       .setLngLat(DEFAULT_CENTER)
       .addTo(map);
 
@@ -363,7 +363,7 @@ export default function FlightAirportMapPicker({
                     }
                   }}
                   placeholder="Search for a place"
-                  className="min-h-11 w-full rounded-xl border border-slate-200 bg-white/95 py-2 pl-9 pr-3 text-sm shadow-sm backdrop-blur focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                  className="min-h-11 w-full rounded-xl border border-slate-200 bg-white/95 py-2 pl-9 pr-3 text-sm shadow-sm backdrop-blur focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
               {searchHits.length > 0 ? (
@@ -374,7 +374,7 @@ export default function FlightAirportMapPicker({
                         type="button"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => selectSearchHit(hit)}
-                        className="flex min-h-11 w-full px-3 py-2 text-left text-sm text-slate-800 hover:bg-teal-50"
+                        className="flex min-h-11 w-full px-3 py-2 text-left text-sm text-slate-800 hover:bg-primary-soft"
                       >
                         {hit.label}
                       </button>
@@ -394,7 +394,7 @@ export default function FlightAirportMapPicker({
             <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
               {loadingAirports ? (
                 <div className="flex items-center gap-2 px-2 py-3 text-sm text-slate-500">
-                  <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
                   Finding nearby airports…
                 </div>
               ) : null}
@@ -405,10 +405,10 @@ export default function FlightAirportMapPicker({
                   onClick={() => handleAirportPointer(row)}
                   onDoubleClick={() => confirmAirport(row)}
                   className={`mb-1 flex min-h-11 w-full items-start gap-3 rounded-xl px-3 py-2 text-left ${
-                    selected?.id === row.id ? "bg-teal-50 ring-1 ring-teal-200" : "hover:bg-slate-50"
+                    selected?.id === row.id ? "bg-primary-soft ring-1 ring-primary/20" : "hover:bg-slate-50"
                   }`}
                 >
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" />
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-medium text-slate-900">{row.label}</span>
                     <span className="block truncate text-xs text-slate-500">{formatPlaceDetail(row)}</span>
@@ -426,7 +426,7 @@ export default function FlightAirportMapPicker({
                 onClick={() => {
                   if (selected) confirmAirport(selected);
                 }}
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-teal-600 px-4 text-sm font-bold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 Confirm airport
               </button>

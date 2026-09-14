@@ -18,6 +18,7 @@ class AIAssistantRequest(BaseModel):
     group_id: UUID | None = None
     active_tab: str | None = None
     context: dict[str, Any] = Field(default_factory=dict)
+    voice_mode: bool = False
 
 
 class AISuggestedAction(BaseModel):

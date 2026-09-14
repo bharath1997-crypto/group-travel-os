@@ -107,22 +107,30 @@ def _parse_slice(sl: dict[str, Any]) -> FlightSliceDetail | None:
     )
 
 
+def parse_duffel_slices(slices_raw: object) -> list[FlightSliceDetail]:
+    """Normalize Duffel slice/location objects for all frontend flight surfaces."""
+    if not isinstance(slices_raw, list):
+        return []
+    slices: list[FlightSliceDetail] = []
+    for raw_slice in slices_raw:
+        parsed = _parse_slice(raw_slice if isinstance(raw_slice, dict) else {})
+        if parsed:
+            slices.append(parsed)
+    return slices
+
+
 def parse_duffel_offer_detail(offer: dict[str, Any]) -> FlightOfferDetail:
     rid = str(offer.get("id") or "")
     price_str = offer.get("total_amount")
     if not rid or not price_str:
         raise ValueError("Invalid Duffel offer shape")
 
-    slices_raw = offer.get("slices") or []
-    slices: list[FlightSliceDetail] = []
+    slices = parse_duffel_slices(offer.get("slices") or [])
     airlines: list[str] = []
-    for sl in slices_raw:
-        parsed = _parse_slice(sl if isinstance(sl, dict) else {})
-        if parsed:
-            slices.append(parsed)
-            for seg in parsed.segments:
-                if seg.airline_code and seg.airline_code not in airlines:
-                    airlines.append(seg.airline_code)
+    for parsed in slices:
+        for seg in parsed.segments:
+            if seg.airline_code and seg.airline_code not in airlines:
+                airlines.append(seg.airline_code)
 
     if not slices:
         raise ValueError("Offer has no slices")

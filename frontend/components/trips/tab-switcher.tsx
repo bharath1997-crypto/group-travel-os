@@ -1,7 +1,7 @@
 "use client";
 
 const BORDER = "#E9ECEF";
-const CORAL = "#0F766E";
+const CORAL = "#0E6E5C";
 
 export type TabItem<T extends string = string> = {
   id: T;

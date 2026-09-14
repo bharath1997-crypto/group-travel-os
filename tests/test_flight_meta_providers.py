@@ -113,11 +113,15 @@ def test_search_flights_uses_kiwi_meta_search(mock_kiwi):
     mock_kiwi.assert_called_once()
 
 
+@patch("app.services.flight_places_service._from_duffel_places")
+@patch("app.services.flight_places_service._from_dataset_search")
 @patch("app.services.flight_places_service._from_travelpayouts_places")
-def test_flight_places_service_merges(mock_tp):
+def test_flight_places_service_merges(mock_tp, mock_dataset, mock_duffel):
     from app.services.flight_places_service import FlightPlacesService
     from app.schemas.flight_places import FlightPlaceSuggestion
 
+    mock_duffel.return_value = []
+    mock_dataset.return_value = []
     mock_tp.return_value = [
         FlightPlaceSuggestion(
             id="tp-city-CHI",
@@ -130,3 +134,5 @@ def test_flight_places_service_merges(mock_tp):
     rows = FlightPlacesService.suggest("chi")
     assert len(rows) == 1
     assert rows[0].iata == "CHI"
+
+

@@ -110,7 +110,7 @@ export default function FlightMobileFiltersDrawer({
             <button
               type="button"
               onClick={onApply}
-              className="inline-flex min-h-11 flex-[2] items-center justify-center rounded-xl bg-teal-600 px-4 text-sm font-bold text-white"
+              className="inline-flex min-h-11 flex-[2] items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white"
             >
               Apply · {resultCount} {resultCount === 1 ? "flight" : "flights"}
             </button>

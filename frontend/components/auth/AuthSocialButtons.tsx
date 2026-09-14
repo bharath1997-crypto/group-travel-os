@@ -96,7 +96,7 @@ export function AuthSocialButtons({
         >
           {googleBusy ? (
             <>
-              <span className="h-5 w-5 animate-spin rounded-full border-2 border-stone-300 border-t-[#0F766E]" aria-hidden />
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-stone-300 border-t-[#0E6E5C]" aria-hidden />
               Connecting…
             </>
           ) : (

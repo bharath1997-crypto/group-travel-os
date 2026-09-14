@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftRight, Search, Calendar, Users, Plus, Trash2, Clock, SlidersHorizontal, ChevronDown, Loader2 } from "lucide-react";
 import { labelForFlightIata, resolveFlightIataFromText } from "@/lib/flight-place-suggestions";
 import { buildFlightResultsPath } from "@/lib/flight-search-params";
@@ -20,12 +20,14 @@ import type { TravelHandoffContext } from "@/lib/travel-handoff";
 import { useDashboardUser } from "@/contexts/dashboard-user-context";
 
 const fieldBase =
-  "w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20";
+  "w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
 
 const inputClass = `${fieldBase} py-3`;
 
 /** Fixed height so depart / return / travelers align on one row. */
 const rowFieldClass = `${fieldBase} h-11`;
+
+export const FLIGHT_RESULTS_NAVIGATION_TIMEOUT_MS = 12_000;
 
 function todayPlus(days: number): string {
   const d = new Date();
@@ -53,10 +55,14 @@ const TRIP_TYPES = [
 
 export default function FlightSearchForm({ handoff = null, initial = null, compact = false }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useDashboardUser();
   const userId = user?.id ? String(user.id) : null;
   const minDate = todayIso();
   const [submitting, setSubmitting] = useState(false);
+  const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const navigationKey = `${pathname}?${searchParams.toString()}`;
   const [tripType, setTripType] = useState<"oneway" | "roundtrip" | "multicity">(
     initial?.tripType || (initial?.return ? "roundtrip" : "roundtrip"),
   );
@@ -75,7 +81,7 @@ export default function FlightSearchForm({ handoff = null, initial = null, compa
   const [departDate, setDepartDate] = useState(initial?.depart || todayPlus(14));
   const [returnDate, setReturnDate] = useState(initial?.return || "");
   const [departureTimeFrom, setDepartureTimeFrom] = useState(initial?.departureTimeFrom || "");
-  const [departureTimeTo, setDepartureTimeTo] = useState(initial?.departureTimeTo || "12:00");
+  const [departureTimeTo, setDepartureTimeTo] = useState(initial?.departureTimeTo || "");
 
   const [extraLegs, setExtraLegs] = useState<
     Array<{ from: FlightPlaceValue; to: FlightPlaceValue; date: string }>
@@ -118,6 +124,22 @@ export default function FlightSearchForm({ handoff = null, initial = null, compa
     if (handoff.originIata) setFrom(placeFromHandoff(handoff.originIata, handoff.origin.name));
     if (handoff.destinationIata) setTo(placeFromHandoff(handoff.destinationIata, handoff.destination.name));
   }, [handoff]);
+
+  useEffect(() => {
+    if (!navigationTimerRef.current) return;
+    clearTimeout(navigationTimerRef.current);
+    navigationTimerRef.current = null;
+    // A changed route/query means the router completed the transition.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- navigation completion resets transient UI state
+    setSubmitting(false);
+  }, [navigationKey]);
+
+  useEffect(
+    () => () => {
+      if (navigationTimerRef.current) clearTimeout(navigationTimerRef.current);
+    },
+    [],
+  );
 
   const handleDepartChange = (value: string) => {
     setDepartDate(value);
@@ -194,7 +216,17 @@ export default function FlightSearchForm({ handoff = null, initial = null, compa
     };
 
     setSubmitting(true);
-    router.push(buildFlightResultsPath(params));
+    try {
+      router.push(buildFlightResultsPath(params));
+      navigationTimerRef.current = setTimeout(() => {
+        setSubmitting(false);
+        setErrorBanner("The results page is taking too long to open. Please try again.");
+        navigationTimerRef.current = null;
+      }, FLIGHT_RESULTS_NAVIGATION_TIMEOUT_MS);
+    } catch {
+      setSubmitting(false);
+      setErrorBanner("The results page could not be opened. Please try again.");
+    }
   }, [
     submitting,
     from,
@@ -256,7 +288,7 @@ export default function FlightSearchForm({ handoff = null, initial = null, compa
                 }}
                 className={`rounded-lg border px-4 py-2.5 text-sm font-semibold transition ${
                   active
-                    ? "border-teal-600 bg-teal-50 text-teal-900"
+                    ? "border-teal-600 bg-primary-soft text-primary-dark"
                     : "border-transparent text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -277,7 +309,7 @@ export default function FlightSearchForm({ handoff = null, initial = null, compa
             type="button"
             onClick={swapPlaces}
             aria-label="Swap origin and destination"
-            className="absolute right-3 top-[calc(50%+0.75rem)] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm hover:border-teal-300 hover:text-teal-700 md:static md:h-11 md:w-11 md:translate-y-0 md:rounded-xl md:shadow-none"
+            className="absolute right-3 top-[calc(50%+0.75rem)] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm hover:border-teal-300 hover:text-primary md:static md:h-11 md:w-11 md:translate-y-0 md:rounded-xl md:shadow-none"
           >
             <ArrowLeftRight className="h-4 w-4" />
           </button>
@@ -354,7 +386,7 @@ export default function FlightSearchForm({ handoff = null, initial = null, compa
               type="button"
               onClick={addLeg}
               disabled={1 + extraLegs.length >= MAX_MULTI_CITY_LEGS}
-              className="inline-flex min-h-11 items-center gap-1.5 px-1 text-xs font-bold text-teal-700 hover:text-teal-800 disabled:opacity-50"
+              className="inline-flex min-h-11 items-center gap-1.5 px-1 text-xs font-bold text-primary hover:text-teal-800 disabled:opacity-50"
             >
               <Plus className="h-4 w-4" />
               Add flight
@@ -423,7 +455,7 @@ export default function FlightSearchForm({ handoff = null, initial = null, compa
               type="button"
               onClick={submit}
               disabled={submitting}
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 text-sm font-bold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-400 md:w-auto md:min-w-[160px]"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-bold text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-teal-400 md:w-auto md:min-w-[160px]"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               Search flights
@@ -439,7 +471,7 @@ export default function FlightSearchForm({ handoff = null, initial = null, compa
             aria-expanded={showAdvanced}
           >
             <span className="inline-flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-teal-600" />
+              <SlidersHorizontal className="h-4 w-4 text-primary" />
               Advanced options
               {advancedCount > 0 ? (
                 <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-bold text-teal-800">
@@ -463,14 +495,17 @@ export default function FlightSearchForm({ handoff = null, initial = null, compa
                     value={departureTimeFrom}
                     onChange={(e) => setDepartureTimeFrom(e.target.value)}
                     className={inputClass}
+                    aria-label="Earliest outbound departure"
                   />
                   <input
                     type="time"
                     value={departureTimeTo}
                     onChange={(e) => setDepartureTimeTo(e.target.value)}
                     className={inputClass}
+                    aria-label="Latest outbound departure"
                   />
                 </div>
+                <p className="mt-1 text-[11px] text-slate-500">Leave blank for any departure time.</p>
               </div>
               <div className="flex flex-col justify-end gap-3 text-xs font-medium text-slate-600">
                 <label className="flex min-h-11 cursor-pointer items-center gap-2">
@@ -481,7 +516,7 @@ export default function FlightSearchForm({ handoff = null, initial = null, compa
                       setNonstop(e.target.checked);
                       if (e.target.checked) setMaximumConnections(0);
                     }}
-                    className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                    className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
                   />
                   <span>Direct flights only</span>
                 </label>

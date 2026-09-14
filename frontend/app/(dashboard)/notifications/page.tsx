@@ -14,8 +14,8 @@ const PAGE_BG = "#f8fafc";
 const UNREAD_ROW = "#f1f5f9";
 const READ_ROW = "#ffffff";
 const MUTED = "#64748b";
-const TEXT = "#0f172a";
-const CORAL = "#0F766E";
+const TEXT = "#0f1614";
+const CORAL = "#0E6E5C";
 
 type NotificationRow = {
   id: string;

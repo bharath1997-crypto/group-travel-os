@@ -22,8 +22,8 @@ import {
 import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
 
-const NAVY = "#0F172A";
-const CORAL = "#0F766E";
+const NAVY = "#0F1614";
+const CORAL = "#0E6E5C";
 const BG = "#F8F9FA";
 const BORDER = "#E9ECEF";
 

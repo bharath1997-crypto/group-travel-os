@@ -1,8 +1,10 @@
 "use client";
 
 import { Suspense, useMemo } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ShieldCheck } from "lucide-react";
+import { Database, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import TravelHandoffBanner from "@/components/travel/TravelHandoffBanner";
 import FlightSearchForm from "@/components/travel/FlightSearchForm";
 import { Card } from "@/components/ui/card";
@@ -19,7 +21,12 @@ function FlightsPageContent() {
     <PageShell wide className="space-y-8">
       <PageHeader
         title="Flights"
-        description="Search live airline fares, compare options, and complete your booking without leaving Rovvy."
+        description="Search airline offers, understand routes, compare available options, and continue to the provider you choose. Rovvy does not sell or issue tickets."
+        actions={
+          <Link href="/flights/providers">
+            <Button variant="secondary" size="sm"><Database className="h-4 w-4" /> Provider directory</Button>
+          </Link>
+        }
       />
 
       {handoff ? <TravelHandoffBanner handoff={handoff} /> : null}
@@ -28,8 +35,8 @@ function FlightsPageContent() {
 
       <section className="grid gap-3 sm:grid-cols-3">
         {[
-          { title: "Live inventory", body: "Fares pulled from airline systems in real time." },
-          { title: "Transparent pricing", body: "Review full fare details before you pay." },
+          { title: "Provider inventory", body: "Compare available fares from authorized airline and travel providers." },
+          { title: "Transparent pricing", body: "Review full fare details before you choose a provider." },
           { title: "Group-ready", body: "Attach confirmed flights to your Trip Space." },
         ].map((item) => (
           <Card key={item.title} padding="sm" className="shadow-sm">
@@ -41,7 +48,7 @@ function FlightsPageContent() {
 
       <p className="flex items-center gap-2 text-xs text-muted">
         <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-        Secure checkout · Live airline fares · Book entirely inside Rovvy
+        Compare available airline offers · Authorized provider fares · Complete booking with the seller you choose
       </p>
     </PageShell>
   );

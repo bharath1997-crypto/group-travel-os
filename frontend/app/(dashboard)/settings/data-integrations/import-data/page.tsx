@@ -80,7 +80,7 @@ function formatDate(iso: string | null): string {
 function StatusChip({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     preview:  { label: "Preview",  cls: "bg-amber-50 text-amber-700" },
-    imported: { label: "Imported", cls: "bg-teal-50 text-primary" },
+    imported: { label: "Imported", cls: "bg-primary-soft text-primary" },
     failed:   { label: "Failed",   cls: "bg-red-50 text-red-600" },
   };
   const { label, cls } = map[status] ?? { label: status, cls: "bg-stone-100 text-stone-500" };
@@ -95,7 +95,7 @@ function StatusChip({ status }: { status: string }) {
 
 function RowStatusChip({ status }: { status: PreviewRow["status"] }) {
   const map = {
-    valid:     { label: "Valid",     cls: "bg-teal-50 text-primary" },
+    valid:     { label: "Valid",     cls: "bg-primary-soft text-primary" },
     duplicate: { label: "Duplicate", cls: "bg-amber-50 text-amber-700" },
     error:     { label: "Error",     cls: "bg-red-50 text-red-600" },
   };
@@ -260,11 +260,11 @@ export default function ImportDataPage() {
 
       {/* Success banner */}
       {confirmed && (
-        <div className="mx-4 mt-3 flex items-start gap-2.5 rounded-xl border border-teal-100 bg-teal-50 px-3.5 py-3">
+        <div className="mx-4 mt-3 flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary-soft px-3.5 py-3">
           <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" />
           <div>
             <p className="text-[13px] font-semibold text-primary">Import complete</p>
-            <p className="text-[12px] text-teal-700">
+            <p className="text-[12px] text-primary">
               {confirmed.imported_count} item{confirmed.imported_count !== 1 ? "s" : ""} imported
               {confirmed.skipped_duplicates > 0
                 ? ` · ${confirmed.skipped_duplicates} duplicate${confirmed.skipped_duplicates !== 1 ? "s" : ""} skipped`
@@ -289,7 +289,7 @@ export default function ImportDataPage() {
                 onClick={() => { setImportType(t); setPreview(null); setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
                 className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
                   importType === t
-                    ? "border-primary bg-teal-50 text-primary"
+                    ? "border-primary bg-primary-soft text-primary"
                     : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
                 }`}
               >

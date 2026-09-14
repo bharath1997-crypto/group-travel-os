@@ -359,7 +359,7 @@ export function syncTravelVectorLayersNow(
       },
       paint: {
         "text-color": palette.transit.label,
-        "text-halo-color": isDark ? "#0F172A" : "#FFFFFF",
+        "text-halo-color": isDark ? "#0F1614" : "#FFFFFF",
         "text-halo-width": 1.25,
         "text-opacity": [
           "interpolate",

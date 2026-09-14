@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { Calendar, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { formatLocalDate } from "@/lib/explore-date-utils";
 import {
@@ -85,12 +85,15 @@ export default function FlightDateField({
   });
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const calendarDialogId = useId();
+  const openRef = useRef(open);
+  const commitDraftRef = useRef<() => void>(() => {});
   const today = formatLocalDate(new Date());
 
   const parsed = parseUsDateInput(draft);
   const highlightIso = value || previewIsoFromParsed(parsed) || "";
 
-  const commitDraft = () => {
+  const commitDraft = useCallback(() => {
     if (!draft.trim()) {
       if (allowClear) onChange("");
       return;
@@ -104,8 +107,12 @@ export default function FlightDateField({
     } else {
       setDraft("");
     }
-  };
+  }, [allowClear, draft, min, onChange, value]);
 
+  useLayoutEffect(() => {
+    openRef.current = open;
+    commitDraftRef.current = commitDraft;
+  });
   useEffect(() => {
     if (document.activeElement !== inputRef.current) {
       setDraft(value ? isoToUsDisplay(value) : "");
@@ -122,18 +129,21 @@ export default function FlightDateField({
       }
     }
     setViewDate(viewDateFromParsed(parsed));
+    // parsed is intentionally represented by its stable scalar fields below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, value, parsed.month, parsed.day, parsed.year, parsed.iso]);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
+      if (!openRef.current) return;
       if (ref.current && !ref.current.contains(e.target as Node)) {
-        commitDraft();
+        commitDraftRef.current();
         setOpen(false);
       }
     };
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
-  }, [draft, value, min, allowClear, onChange]);
+  }, []);
 
   const days = buildMonthGrid(viewDate);
   const years = Array.from({ length: 3 }, (_, i) => new Date().getFullYear() + i);
@@ -203,6 +213,8 @@ export default function FlightDateField({
           }}
           aria-haspopup="dialog"
           aria-expanded={open}
+          aria-controls={calendarDialogId}
+          role="combobox"
           aria-label="Flight date"
           className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none"
         />
@@ -221,6 +233,7 @@ export default function FlightDateField({
 
       {open ? (
         <div
+          id={calendarDialogId}
           role="dialog"
           aria-label="Choose date"
           className={`absolute left-0 z-30 w-72 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl sm:w-80 ${
@@ -242,7 +255,7 @@ export default function FlightDateField({
               onChange={(e) =>
                 setViewDate(new Date(viewDate.getFullYear(), Number(e.target.value), 1))
               }
-              className="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-teal-500"
+              className="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-primary"
               aria-label="Month"
             >
               {MONTH_NAMES.map((name, idx) => (
@@ -257,7 +270,7 @@ export default function FlightDateField({
               onChange={(e) =>
                 setViewDate(new Date(Number(e.target.value), viewDate.getMonth(), 1))
               }
-              className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-teal-500"
+              className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-primary"
               aria-label="Year"
             >
               {years.map((y) => (
@@ -305,10 +318,10 @@ export default function FlightDateField({
                       : !cell.isCurrentMonth
                         ? "text-slate-300 hover:bg-slate-50"
                         : isSelected
-                          ? "bg-teal-600 font-bold text-white shadow-sm"
+                          ? "bg-primary font-bold text-white shadow-sm"
                           : isToday
-                            ? "border border-teal-500 font-semibold text-teal-600 hover:bg-teal-50"
-                            : "text-slate-600 hover:bg-slate-50 hover:text-teal-600"
+                            ? "border border-teal-500 font-semibold text-primary hover:bg-primary-soft"
+                            : "text-slate-600 hover:bg-slate-50 hover:text-primary"
                   }`}
                 >
                   {cell.date.getDate()}

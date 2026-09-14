@@ -6,21 +6,21 @@ import { SettingsBreadcrumb, legalCrumbs } from "@/components/settings/SettingsB
 
 export default function CommunityGuidelinesPage() {
   return (
-    <div className="flex flex-col h-screen bg-white" style={{ color: "#0F172A" }}>
+    <div className="flex flex-col h-screen bg-white" style={{ color: "#0F1614" }}>
       {/* Header */}
       <header className="shrink-0 border-b border-slate-100 bg-white px-6 py-4 z-40">
         <div className="flex items-center justify-between">
           <Link
             href="/settings/support-legal"
             className="flex items-center gap-2.5 rounded-lg px-1 py-1 text-sm font-medium transition-colors hover:bg-stone-50 outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
-            style={{ color: "#0F172A" }}
+            style={{ color: "#0F1614" }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4 shrink-0">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
             <RovvyLogo variant="primary" size="sm" />
           </Link>
-          <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#0F766E" }}>
+          <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#0E6E5C" }}>
             Community Guidelines
           </span>
         </div>
@@ -35,11 +35,11 @@ export default function CommunityGuidelinesPage() {
           <div className="mb-12">
             <div
               className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold mb-5"
-              style={{ background: "#F0FDFA", color: "#0F766E", border: "1px solid #99F6E4" }}
+              style={{ background: "#F0FDFA", color: "#0E6E5C", border: "1px solid #99F6E4" }}
             >
               Last Updated: June 2026 &nbsp;·&nbsp; Version 1.0
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: "#0F172A" }}>
+            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: "#0F1614" }}>
               Community Guidelines
             </h1>
             <p className="mt-3 text-base" style={{ color: "#6B7280", lineHeight: "1.8" }}>
@@ -71,7 +71,7 @@ export default function CommunityGuidelinesPage() {
 
             {/* 1 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">01.</span> Respect Other Travelers
               </h2>
               <div className="space-y-3">
@@ -92,7 +92,7 @@ export default function CommunityGuidelinesPage() {
 
             {/* 2 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">02.</span> Authentic Identity and Accounts
               </h2>
               <div className="space-y-3">
@@ -113,7 +113,7 @@ export default function CommunityGuidelinesPage() {
 
             {/* 3 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">03.</span> Safe Travel and Responsible Use
               </h2>
               <div className="space-y-3">
@@ -134,7 +134,7 @@ export default function CommunityGuidelinesPage() {
 
             {/* 4 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">04.</span> Trip LIVE and Location Sharing
               </h2>
               <div className="space-y-3">
@@ -160,7 +160,7 @@ export default function CommunityGuidelinesPage() {
 
             {/* 5 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">05.</span> Messaging and Rovvy Lounge
               </h2>
               <div className="space-y-3">
@@ -181,7 +181,7 @@ export default function CommunityGuidelinesPage() {
 
             {/* 6 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">06.</span> Fraud and Scams
               </h2>
               <div className="space-y-3">
@@ -204,7 +204,7 @@ export default function CommunityGuidelinesPage() {
 
             {/* 7 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">07.</span> Illegal Activities
               </h2>
               <div className="space-y-3">
@@ -226,7 +226,7 @@ export default function CommunityGuidelinesPage() {
 
             {/* 8 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">08.</span> Child Safety
               </h2>
               <div className="space-y-3">
@@ -244,7 +244,7 @@ export default function CommunityGuidelinesPage() {
 
             {/* 9 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">09.</span> Content Standards
               </h2>
               <div className="space-y-3">
@@ -266,7 +266,7 @@ export default function CommunityGuidelinesPage() {
 
             {/* 10 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">10.</span> Intellectual Property
               </h2>
               <div className="space-y-3">
@@ -285,7 +285,7 @@ export default function CommunityGuidelinesPage() {
 
             {/* 11 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">11.</span> AI and Wayra
               </h2>
               <div className="space-y-3">
@@ -305,7 +305,7 @@ export default function CommunityGuidelinesPage() {
 
             {/* 12 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">12.</span> Enforcement and Account Actions
               </h2>
               <div className="space-y-3">
@@ -326,7 +326,7 @@ export default function CommunityGuidelinesPage() {
 
             {/* 13 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">13.</span> Reporting and Appeals
               </h2>
               <div className="space-y-3">
@@ -346,7 +346,7 @@ export default function CommunityGuidelinesPage() {
 
             {/* 14 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">14.</span> Updates to These Guidelines
               </h2>
               <div className="space-y-3">
@@ -365,7 +365,7 @@ export default function CommunityGuidelinesPage() {
 
             {/* 15 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">15.</span> Contact Information
               </h2>
               <p className="mb-4">For questions regarding these Community Guidelines:</p>
@@ -373,16 +373,16 @@ export default function CommunityGuidelinesPage() {
                 className="rounded-lg p-5 space-y-1.5 text-sm"
                 style={{ background: "#F0FDFA", border: "1px solid #99F6E4" }}
               >
-                <p className="font-semibold" style={{ color: "#0F172A" }}>Rovvy Community Team</p>
+                <p className="font-semibold" style={{ color: "#0F1614" }}>Rovvy Community Team</p>
                 <p>
                   <span style={{ color: "#6B7280" }}>Email: </span>
-                  <a href="mailto:community@rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0F766E" }}>
+                  <a href="mailto:community@rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0E6E5C" }}>
                     community@rovvy.app
                   </a>
                 </p>
                 <p>
                   <span style={{ color: "#6B7280" }}>Website: </span>
-                  <a href="https://rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0F766E" }}>
+                  <a href="https://rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0E6E5C" }}>
                     https://rovvy.app
                   </a>
                 </p>
@@ -401,18 +401,18 @@ export default function CommunityGuidelinesPage() {
         <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="text-xs" style={{ color: "#6B7280" }}>
             Questions?{" "}
-            <a href="mailto:community@rovvy.app" className="underline underline-offset-2" style={{ color: "#0F766E" }}>
+            <a href="mailto:community@rovvy.app" className="underline underline-offset-2" style={{ color: "#0E6E5C" }}>
               community@rovvy.app
             </a>
           </p>
           <div className="flex items-center gap-4 text-xs">
-            <Link href="/privacy" className="underline underline-offset-2 hover:text-stone-800 transition-colors" style={{ color: "#0F766E" }}>
+            <Link href="/privacy" className="underline underline-offset-2 hover:text-stone-800 transition-colors" style={{ color: "#0E6E5C" }}>
               Privacy Policy
             </Link>
-            <Link href="/terms" className="underline underline-offset-2 hover:text-stone-800 transition-colors" style={{ color: "#0F766E" }}>
+            <Link href="/terms" className="underline underline-offset-2 hover:text-stone-800 transition-colors" style={{ color: "#0E6E5C" }}>
               Terms of Service
             </Link>
-            <Link href="/cookie-policy" className="underline underline-offset-2 hover:text-stone-800 transition-colors" style={{ color: "#0F766E" }}>
+            <Link href="/cookie-policy" className="underline underline-offset-2 hover:text-stone-800 transition-colors" style={{ color: "#0E6E5C" }}>
               Cookie Policy
             </Link>
           </div>

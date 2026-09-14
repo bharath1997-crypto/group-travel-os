@@ -14,7 +14,7 @@ const CARDS = [
       "Create a shared workspace to coordinate flights, stays, activities, and calendars with your whole crew.",
     cta: "Create Trip",
     gradient: "from-teal-50 to-emerald-50",
-    border: "border-teal-100",
+    border: "border-primary/20",
     action: "trip" as const,
   },
   {

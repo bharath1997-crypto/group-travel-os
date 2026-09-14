@@ -10,9 +10,9 @@ type Props = {
 
 export default function CheckoutStepper({ current }: Props) {
   return (
-    <nav aria-label="Checkout progress" className="mb-8">
+    <nav aria-label="Checkout progress">
       {/* Desktop Stepper */}
-      <ol className="hidden items-center md:flex">
+      <ol className="hidden grid-cols-5 md:grid">
         {STEPS.map((label, idx) => {
           const step = idx + 1;
           const active = step === current;
@@ -20,14 +20,22 @@ export default function CheckoutStepper({ current }: Props) {
           const isLast = idx === STEPS.length - 1;
 
           return (
-            <li key={label} className="flex flex-1 items-center">
-              <div className="flex flex-col items-center gap-1.5">
+            <li key={label} className="relative flex min-w-0 justify-center">
+              {!isLast ? (
                 <span
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-black transition-all duration-300 ${
+                  aria-hidden
+                  className={`absolute left-[calc(50%+1.5rem)] right-[calc(-50%+1.5rem)] top-5 h-0.5 transition-colors duration-300 ${
+                    done ? "bg-primary-soft0" : "bg-slate-200"
+                  }`}
+                />
+              ) : null}
+              <div className="relative z-10 flex min-w-20 flex-col items-center gap-2 px-2 text-center">
+                <span
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-black transition-all duration-300 ${
                     done
-                      ? "bg-teal-600 text-white shadow-md shadow-teal-600/20"
+                      ? "bg-primary text-white shadow-md shadow-teal-600/20"
                       : active
-                      ? "bg-teal-600 text-white shadow-lg shadow-teal-600/25 ring-4 ring-teal-200"
+                      ? "bg-primary text-white shadow-lg shadow-teal-600/25 ring-4 ring-primary/20"
                       : "bg-slate-100 text-slate-400"
                   }`}
                 >
@@ -35,27 +43,20 @@ export default function CheckoutStepper({ current }: Props) {
                 </span>
                 <span
                   className={`whitespace-nowrap text-xs font-bold transition-colors ${
-                    active ? "text-teal-700" : done ? "text-slate-600" : "text-slate-400"
+                    active ? "text-primary" : done ? "text-slate-600" : "text-slate-400"
                   }`}
                 >
                   {label}
                 </span>
               </div>
-              {!isLast ? (
-                <div
-                  className={`mx-2 mb-5 h-0.5 flex-1 transition-colors duration-300 ${
-                    done ? "bg-teal-500" : "bg-slate-200"
-                  }`}
-                />
-              ) : null}
             </li>
           );
         })}
       </ol>
 
       {/* Mobile Compact Stepper */}
-      <div className="flex items-center gap-3 md:hidden">
-        <div className="flex items-center gap-1">
+      <div className="flex min-h-10 items-center justify-between gap-4 md:hidden">
+        <div className="flex flex-1 items-center gap-1.5">
           {STEPS.map((_, idx) => {
             const step = idx + 1;
             const done = step < current;
@@ -65,17 +66,17 @@ export default function CheckoutStepper({ current }: Props) {
                 key={idx}
                 className={`h-2 rounded-full transition-all duration-300 ${
                   done
-                    ? "w-6 bg-teal-500"
+                    ? "flex-1 bg-primary-soft0"
                     : active
-                    ? "w-8 bg-teal-600"
-                    : "w-2 bg-slate-200"
+                    ? "flex-[1.35] bg-primary"
+                    : "flex-1 bg-slate-200"
                 }`}
               />
             );
           })}
         </div>
-        <p className="text-sm font-bold text-slate-700">
-          Step {current}/{STEPS.length} — <span className="text-teal-700">{STEPS[current - 1]}</span>
+        <p className="shrink-0 text-xs font-bold text-slate-700 sm:text-sm">
+          Step {current}/{STEPS.length} — <span className="text-primary">{STEPS[current - 1]}</span>
         </p>
       </div>
     </nav>

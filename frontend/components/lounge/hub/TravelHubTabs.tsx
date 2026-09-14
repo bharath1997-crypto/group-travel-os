@@ -959,7 +959,7 @@ function HubGroupsTab({
               </span>
               {online ? (
                 <span
-                  className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-[#0F172A]"
+                  className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-[#0F1614]"
                   style={{ background: ONLINE }}
                 />
               ) : null}

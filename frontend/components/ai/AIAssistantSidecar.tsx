@@ -1,12 +1,23 @@
 "use client";
 
+/**
+ * Global Wayra — one launcher, one panel template, every tab.
+ * Host pages keep their own layout; Wayra never gets a per-tab skin or embedded feed.
+ * Context (page, GPS, pin) is passed to the API silently — not a separate Wayra UI per route.
+ */
+
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
-import WayraIcon from "@/components/ui/WayraIcon";
+import { WayraLauncherButton } from "@/components/ui/WayraIcon";
 import { apiFetchWithStatus } from "@/lib/safe-fetch";
 import { OPEN_WAYRA_EVENT, TOGGLE_WAYRA_EVENT, WAYRA_CLEAR_CONTEXT_EVENT, WAYRA_CONTEXT_EVENT, type OpenWayraDetail } from "@/lib/open-wayra";
-import { Maximize2, MapPin, Minimize2, Minus, Plus, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Bookmark, Link2, Mic, Minimize2, Sparkles, Users, Utensils, Volume2, VolumeX, X } from "lucide-react";
+import { WayraAgentDock } from "@/components/ai/WayraAgentDock";
+import { WayraAssistantMessage } from "@/components/ai/WayraAssistantMessage";
+import { WayraLiveWire } from "@/components/ai/WayraLiveWire";
+import { cancelWayraSpeech, speakWayraText } from "@/lib/wayra/wayra-speech";
+import { useWayraVoice } from "@/lib/wayra/use-wayra-voice";
 import {
   classifyMode,
   detectBirdState,
@@ -24,7 +35,6 @@ import {
   prepareLiveWayraContext,
   type WayraPlacePickedDetail,
 } from "@/lib/wayra/live-map-context";
-import { WAYRA_DATA_DISCLAIMER } from "@/app/(dashboard)/live/wiki-about-display";
 import {
   resolveWayraSourceMapFocus,
   shouldOpenWayraSourceOnLiveMap,
@@ -38,7 +48,6 @@ import {
 import {
   buildWayraSessionGreeting,
   chatLocationFromPlace,
-  formatWayraMessageTime,
   markWayraSessionGreeted,
   readWayraSessionGreeted,
   type WayraChatLocation,
@@ -52,16 +61,35 @@ import {
   withoutLivePinMessages,
 } from "@/lib/wayra/live-pin-session";
 import {
-  LIVE_WAYRA_FOOTER,
-  LIVE_WAYRA_HEADER,
-  LIVE_WAYRA_MESSAGES,
-  LIVE_WAYRA_PANEL,
-  LIVE_WAYRA_PANEL_DOCKED,
   LIVE_WAYRA_PANEL_WIDTH,
-  LIVE_WAYRA_SEND_BTN,
   LIVE_WAYRA_SHEET_RIGHT,
-  LIVE_WAYRA_USER_BUBBLE,
 } from "@/app/(dashboard)/live/live-design-tokens";
+import {
+  WAYRA_COMPOSER_BOX,
+  WAYRA_COMPOSER_ROW,
+  WAYRA_FOOTER,
+  WAYRA_HEADER,
+  WAYRA_HEADER_BODY,
+  WAYRA_HEADER_BTN,
+  WAYRA_HEADLINE,
+  WAYRA_HINT,
+  WAYRA_ICON_BTN,
+  WAYRA_ICON_BTN_ACTIVE,
+  WAYRA_INPUT,
+  WAYRA_MESSAGES,
+  WAYRA_PANEL_BASE,
+  WAYRA_PANEL_DOCKED,
+  WAYRA_PIN_BADGE,
+  WAYRA_SEND_BTN,
+  WAYRA_STATUS,
+  WAYRA_SUBHEAD,
+  WAYRA_SYSTEM_MSG,
+  WAYRA_TITLE,
+  WAYRA_TRY_CHIP,
+  WAYRA_TRY_CHIP_MUTED,
+  WAYRA_TRY_LABEL,
+  WAYRA_USER_BUBBLE,
+} from "@/lib/wayra/wayra-chat-tokens";
 import {
   readLiveImmersiveChrome,
 } from "@/app/(dashboard)/live/live-immersive-chrome";
@@ -130,10 +158,21 @@ export interface AIAssistantSidecarProps {
   className?: string;
 }
 
+const WAYRA_TRY_ONE: { label: string; muted?: boolean; icon: "utensils" | "users" | "bookmark" | "link" }[] = [
+  { label: "Dinner for six on Saturday, under $70 each", icon: "utensils" },
+  { label: "Where is everyone right now?", icon: "users" },
+  { label: "Something from my saves, walkable from here", icon: "bookmark" },
+  { label: "Paste a reel or article link and I'll pull the place out of it.", icon: "link", muted: true },
+];
+
 const OFFLINE_HELP_REPLY =
   "I'm in offline help mode right now. Ask how to plan a trip, create a group, run polls, or split expenses—I can walk you through Rovvy without the full assistant.";
 
-const PANEL_LAYOUT_KEY = "rovvy_wayra_panel_layout";
+const PANEL_LAYOUT_KEY = "rovvy_wayra_chrome_layout";
+const WAYRA_INPUT_MODE_KEY = "rovvy_wayra_input_mode";
+const WAYRA_SPEAKER_KEY = "rovvy_wayra_speaker_on";
+
+type WayraInputMode = "text" | "voice";
 const LIVE_FLOAT_LAYOUT_KEY = "rovvy_wayra_live_float_layout";
 const LIVE_HEADER_OFFSET_PX = 56;
 const PANEL_MIN_WIDTH = 280;
@@ -155,14 +194,14 @@ function viewportPanelLimits() {
 
 function defaultPanelBounds(): PanelBounds {
   if (typeof window === "undefined") {
-    return { x: 0, y: 0, width: 380, height: 520 };
+    return { x: 0, y: 0, width: 400, height: 640 };
   }
   const { maxW, maxH } = viewportPanelLimits();
-  const width = Math.min(380, maxW);
-  const height = Math.min(520, Math.round(window.innerHeight * 0.85), maxH);
+  const width = Math.min(400, maxW);
+  const height = Math.min(640, Math.round(window.innerHeight * 0.86), maxH);
   return {
-    x: Math.max(PANEL_EDGE_MARGIN, window.innerWidth - width - 24),
-    y: Math.max(PANEL_EDGE_MARGIN, window.innerHeight - height - 96),
+    x: Math.max(PANEL_EDGE_MARGIN, window.innerWidth - width - 20),
+    y: Math.max(PANEL_EDGE_MARGIN, window.innerHeight - height - 24),
     width,
     height,
   };
@@ -314,9 +353,13 @@ export function AIAssistantSidecar({
   const pathname = usePathname() ?? "";
   const panelId = useId();
   const [isOpen, setIsOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [lastSpokenReply, setLastSpokenReply] = useState<string | null>(null);
   const [birdState, setBirdState] = useState<"flying" | "perched">("perched");
   const prevModeRef = useRef<"flying" | "perched">("perched");
   const [input, setInput] = useState("");
+  const [wayraInputMode, setWayraInputMode] = useState<WayraInputMode>("text");
+  const [speakerOn, setSpeakerOn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [actionHint, setActionHint] = useState<string | null>(null);
@@ -375,6 +418,7 @@ export function AIAssistantSidecar({
   );
   const greetingQueuedRef = useRef(false);
   const attachMenuRef = useRef<HTMLDivElement>(null);
+  const startTalkRef = useRef<() => void>(() => undefined);
 
   // DRAGGABLE POSITION FOR THE FLOATING LOGO (remembered in localStorage)
   const [position, setPosition] = useState<{ x: number; y: number }>(() => {
@@ -420,6 +464,37 @@ export function AIAssistantSidecar({
   };
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = sessionStorage.getItem(WAYRA_INPUT_MODE_KEY);
+    if (saved === "voice" || saved === "text") {
+      setWayraInputMode(saved);
+    }
+    const speaker = sessionStorage.getItem(WAYRA_SPEAKER_KEY);
+    if (speaker === "off") setSpeakerOn(false);
+  }, []);
+
+  const toggleSpeaker = useCallback(() => {
+    setSpeakerOn((on) => {
+      const next = !on;
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(WAYRA_SPEAKER_KEY, next ? "on" : "off");
+      }
+      if (!next) cancelWayraSpeech();
+      return next;
+    });
+  }, []);
+
+  const setWayraInputModePersisted = useCallback((mode: WayraInputMode) => {
+    setWayraInputMode(mode);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(WAYRA_INPUT_MODE_KEY, mode);
+    }
+    if (mode === "text") {
+      cancelWayraSpeech();
+    }
+  }, []);
+
+  useEffect(() => {
     if (!isDragging) return;
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -440,7 +515,7 @@ export function AIAssistantSidecar({
         Math.pow(e.clientY - dragStartCoords.current.y, 2)
       );
       if (dist < 6) {
-        setIsOpen((prev) => !prev);
+        startTalkRef.current();
       }
       if (position.x !== -1) {
         localStorage.setItem("rovvy_ai_btn_pos", JSON.stringify(position));
@@ -480,7 +555,7 @@ export function AIAssistantSidecar({
           Math.pow(touch.clientY - touchStartCoords.current.y, 2)
         );
         if (dist < 6) {
-          setIsOpen((prev) => !prev);
+          startTalkRef.current();
         }
       }
       if (position.x !== -1) {
@@ -661,7 +736,11 @@ export function AIAssistantSidecar({
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsOpen(false);
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setIsOpen(false);
+        setIsMinimized(true);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -702,6 +781,7 @@ export function AIAssistantSidecar({
   useEffect(() => {
     const onOpen = (e: Event) => {
       const ce = e as CustomEvent<OpenWayraDetail | undefined>;
+      setIsMinimized(false);
       setIsOpen(true);
       const p = ce.detail?.prompt?.trim();
       if (!p) return;
@@ -712,6 +792,7 @@ export function AIAssistantSidecar({
       }
     };
     const onToggle = () => {
+      setIsMinimized(false);
       setIsOpen((prev) => !prev);
     };
     const onContext = (e: Event) => {
@@ -751,7 +832,10 @@ export function AIAssistantSidecar({
       };
       const brief = buildLiveMapTapBrief(briefCtx);
       pendingTapBriefRef.current = brief;
-      if (ce.detail?.autoOpen) setIsOpen(true);
+      if (ce.detail?.autoOpen) {
+        setIsMinimized(false);
+        setIsOpen(true);
+      }
     };
     window.addEventListener(WAYRA_PLACE_PICKED_EVENT, onPlacePicked as EventListener);
     return () => {
@@ -907,10 +991,24 @@ export function AIAssistantSidecar({
     [],
   );
 
+  type SendMessageOptions = { voiceMode?: boolean };
+
   const sendMessage = useCallback(
-    async (override?: string) => {
+    async (override?: string, opts?: SendMessageOptions): Promise<string | null> => {
       const userMessage = (override ?? input).trim();
-      if (!userMessage || loading) return;
+      if (!userMessage || loading) return null;
+
+      const useVoiceApi =
+        opts?.voiceMode === true || wayraInputMode === "voice";
+      const finishReply = (reply: string | null): string | null => {
+        if (reply?.trim()) {
+          setLastSpokenReply(reply.trim());
+        }
+        if (reply && wayraInputMode === "voice" && opts?.voiceMode !== true && speakerOn) {
+          speakWayraText(reply);
+        }
+        return reply;
+      };
 
       const bird = detectBirdState(userMessage);
       const modeChanged = bird !== prevModeRef.current;
@@ -950,7 +1048,7 @@ export function AIAssistantSidecar({
       const liveMapReply = resolveLiveMapContextReply(userMessage, page, ctx);
       if (liveMapReply) {
         setMessages((m) => [...m, buildAssistantRow(liveMapReply, { userMessage })]);
-        return;
+        return finishReply(liveMapReply);
       }
 
       // Fast path: App Guide how-tos only (on Live, trip-prep questions go to the LLM).
@@ -962,7 +1060,7 @@ export function AIAssistantSidecar({
         const instant = resolveAppGuideReply(userMessage);
         if (instant) {
           setMessages((m) => [...m, buildAssistantRow(instant, { userMessage })]);
-          return;
+          return finishReply(instant);
         }
       }
 
@@ -1002,6 +1100,7 @@ export function AIAssistantSidecar({
               group_id: groupId ?? null,
               active_tab: activeTab ?? null,
               context: apiContext,
+              voice_mode: useVoiceApi,
             }),
           },
           60_000,
@@ -1014,13 +1113,9 @@ export function AIAssistantSidecar({
             activeTab,
             ctx,
           );
-          commitAssistantRow(
-            buildAssistantRow(
-              `${fallback}\n\n— Sign in for personalized AI responses from Wayra.`,
-              { userMessage },
-            ),
-          );
-          return;
+          const reply = `${fallback}\n\n— Sign in for personalized AI responses from Wayra.`;
+          commitAssistantRow(buildAssistantRow(reply, { userMessage }));
+          return finishReply(reply);
         }
 
         if (status === 408) {
@@ -1030,13 +1125,9 @@ export function AIAssistantSidecar({
             activeTab,
             ctx,
           );
-          commitAssistantRow(
-            buildAssistantRow(
-              `${fallback}\n\n— The assistant took too long; this is an offline summary.`,
-              { userMessage },
-            ),
-          );
-          return;
+          const reply = `${fallback}\n\n— The assistant took too long; this is an offline summary.`;
+          commitAssistantRow(buildAssistantRow(reply, { userMessage }));
+          return finishReply(reply);
         }
 
         if (status < 200 || status >= 300 || !data) {
@@ -1047,7 +1138,7 @@ export function AIAssistantSidecar({
             ctx,
           );
           commitAssistantRow(buildAssistantRow(fallback, { userMessage }));
-          return;
+          return finishReply(fallback);
         }
 
         if (!data.message || typeof data.message !== "string") {
@@ -1058,7 +1149,7 @@ export function AIAssistantSidecar({
             ctx,
           );
           commitAssistantRow(buildAssistantRow(fallback, { userMessage }));
-          return;
+          return finishReply(fallback);
         }
 
         commitAssistantRow(
@@ -1080,6 +1171,7 @@ export function AIAssistantSidecar({
             })),
           }),
         );
+        return finishReply(data.message);
       } catch {
         const fallback = appendAssistantFallback(
           userMessage,
@@ -1088,6 +1180,7 @@ export function AIAssistantSidecar({
           ctx,
         );
         commitAssistantRow(buildAssistantRow(fallback, { userMessage }));
+        return finishReply(fallback);
       } finally {
         pendingAssistantIdRef.current = null;
         setLoading(false);
@@ -1102,6 +1195,8 @@ export function AIAssistantSidecar({
       messengerProfile,
       groupId,
       input,
+      wayraInputMode,
+      speakerOn,
       loading,
       page,
       tripId,
@@ -1180,9 +1275,56 @@ export function AIAssistantSidecar({
     [showActionHint],
   );
 
-  const pageLabel = page.replace(/_/g, "/").replace(/^/, "/");
-
   const isLiveRoute = pathname === "/live" || pathname.startsWith("/live/");
+
+  const askWayraVoice = useCallback(
+    (transcript: string) => sendMessage(transcript, { voiceMode: true }),
+    [sendMessage],
+  );
+
+  const wayraVoice = useWayraVoice({
+    ask: askWayraVoice,
+    enabled: true,
+    speakerOn,
+  });
+
+  const restoreChat = useCallback(() => {
+    setIsMinimized(false);
+    setIsOpen(true);
+    if (
+      lastSpokenReply &&
+      speakerOn &&
+      wayraVoice.phase === "idle" &&
+      wayraInputMode === "voice"
+    ) {
+      speakWayraText(lastSpokenReply);
+    }
+  }, [lastSpokenReply, speakerOn, wayraInputMode, wayraVoice.phase]);
+
+  const minimizeChat = useCallback(() => {
+    setIsOpen(false);
+    setIsMinimized(true);
+  }, []);
+
+  const closeWayra = useCallback(() => {
+    wayraVoice.cancel();
+    setIsOpen(false);
+    setIsMinimized(false);
+  }, [wayraVoice]);
+
+  const startTalk = useCallback(() => {
+    setWayraInputModePersisted("voice");
+    setIsMinimized(false);
+    setIsOpen(true);
+    if (wayraVoice.phase === "listening") {
+      wayraVoice.stopAndAnswer();
+      return;
+    }
+    if (wayraVoice.isActive) return;
+    void wayraVoice.runVoiceTurn();
+  }, [setWayraInputModePersisted, wayraVoice]);
+  startTalkRef.current = startTalk;
+
   const isLiveFloating = isLiveRoute && livePanelExpanded;
   const isLiveDocked =
     isLiveRoute && isOpen && !isLiveFloating && isDesktopLive;
@@ -1214,23 +1356,15 @@ export function AIAssistantSidecar({
       ? LIVE_SHEET_BOTTOM_IMMERSIVE
       : LIVE_SHEET_BOTTOM_DEFAULT;
 
-  const wayraPanelShellClass = isLiveRoute
-    ? `${isLiveDocked ? LIVE_WAYRA_PANEL_DOCKED : LIVE_WAYRA_PANEL}${isOpen ? " live-panel-enter" : ""}`
-    : `pointer-events-auto fixed z-[2999] flex flex-col overflow-hidden border border-[#E9ECEF] bg-[#F8F9FA] shadow-2xl ${
-        isLiveDocked ? "rounded-none rounded-l-2xl border-r-0" : "rounded-2xl"
-      }`;
+  const wayraPanelShellClass = `${isLiveDocked ? WAYRA_PANEL_DOCKED : WAYRA_PANEL_BASE}${
+    isOpen ? " live-panel-enter" : ""
+  }`;
 
-  const wayraHeaderClass = isLiveRoute
-    ? `${LIVE_WAYRA_HEADER} ${isLiveFloating ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`
-    : `flex items-start justify-between gap-2 border-b border-[#E9ECEF] bg-white px-3.5 py-2 ${
-        isLiveRoute && !isLiveFloating && !isLiveDocked
-          ? "cursor-default"
-          : "cursor-grab active:cursor-grabbing"
-      }`;
-
-  const wayraMessagesClass = isLiveRoute
-    ? LIVE_WAYRA_MESSAGES
-    : `min-h-0 flex-1 space-y-2.5 overflow-y-auto bg-[#F8F9FA] px-3 py-2`;
+  const wayraHeaderClass = `${WAYRA_HEADER} ${
+    isLiveRoute && !isLiveFloating && !isLiveDocked
+      ? "cursor-default"
+      : "cursor-grab active:cursor-grabbing"
+  }`;
 
   const activeLivePin = useMemo(
     () =>
@@ -1383,81 +1517,78 @@ export function AIAssistantSidecar({
     );
   }, [showActionHint]);
 
-  const headerStatus = isLiveRoute
-    ? birdState === "flying"
-      ? loading
-        ? "Wayra · thinking..."
-        : "Wayra · AI Travel Guide"
-      : "Wayra · ready"
-    : birdState === "flying"
-      ? loading
-        ? "AI Travel Guide · thinking..."
-        : "AI Travel Guide"
-      : "App Guide · online";
+  const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+  const foundPlaces =
+    lastAssistant && "sources" in lastAssistant ? lastAssistant.sources?.length ?? 0 : 0;
 
-  const isExplorerRoute =
-    pathname.startsWith("/explore/events") ||
-    pathname.startsWith("/explore/shorts") ||
-    pathname.startsWith("/activities") ||
-    pathname.startsWith("/weather");
-  if (isExplorerRoute) {
-    return null;
-  }
+  const headerStatus =
+    wayraVoice.phase === "listening"
+      ? "Listening"
+      : wayraVoice.phase === "thinking" || loading
+        ? "Thinking"
+        : wayraVoice.phase === "speaking"
+          ? "Speaking"
+          : foundPlaces > 0
+            ? `${foundPlaces} place${foundPlaces === 1 ? "" : "s"} found`
+            : "Ready";
 
   return (
     <>
-      {/* Wayra launcher — draggable on other pages; fixed FAB on Live map */}
-      {!isLiveRoute ? (
-      <div
-        style={
-          position.x === -1 || position.y === -1
-            ? {
-                position: "fixed",
-                bottom: "96px",
-                right: "24px",
-                zIndex: 50,
-              }
-            : {
-                position: "fixed",
-                left: `${position.x}px`,
-                top: `${position.y}px`,
-                zIndex: 50,
-              }
-        }
-        className={`pointer-events-auto flex items-center justify-center select-none ${
-          isDragging ? "cursor-grabbing" : "cursor-grab"
-        }`}
-      >
-        <button
-          type="button"
-          onMouseDown={handleMouseDown}
-          onTouchStart={handleTouchStart}
-          className="group flex h-14 w-14 items-center justify-center rounded-full border border-[#E9ECEF] bg-white shadow-xl transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/30"
-          aria-label={isOpen ? "Close Wayra" : "Open Wayra"}
-          aria-expanded={isOpen}
-          aria-controls={panelId}
-        >
-          <WayraIcon state={birdState} size={0.9} variant="raw" animate={true} />
-        </button>
-      </div>
-      ) : !isOpen ? (
+      {/* Wayra agent — one orb globally; compact dock keeps the spoken answer when minimized */}
+      {isMinimized && !isOpen ? (
         <div
           className={
-            liveChromeActive
-              ? LIVE_MAP_CHAT_FAB_IMMERSIVE_POSITION
-              : LIVE_MAP_CHAT_FAB_POSITION
+            isLiveRoute
+              ? liveChromeActive
+                ? LIVE_MAP_CHAT_FAB_IMMERSIVE_POSITION
+                : LIVE_MAP_CHAT_FAB_POSITION
+              : "fixed z-[3000] bottom-6 right-5"
           }
         >
-          <button
-            type="button"
-            onClick={() => setIsOpen(true)}
-            className="group flex h-14 w-14 items-center justify-center rounded-full border border-stone-200/70 bg-white/95 shadow-[0_4px_20px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30"
-            aria-label="Open Wayra"
-            aria-expanded={false}
-            aria-controls={panelId}
-          >
-            <WayraIcon state={birdState} size={0.9} variant="raw" animate={true} />
-          </button>
+          <WayraAgentDock
+            phase={wayraVoice.phase}
+            interimTranscript={wayraVoice.interimTranscript}
+            lastReply={lastSpokenReply}
+            onExpand={restoreChat}
+            onTalk={startTalk}
+            onClose={closeWayra}
+          />
+        </div>
+      ) : !isOpen ? (
+        <div
+          style={
+            isLiveRoute
+              ? undefined
+              : position.x === -1 || position.y === -1
+                ? {
+                    position: "fixed",
+                    bottom: "24px",
+                    right: "20px",
+                    zIndex: 3000,
+                  }
+                : {
+                    position: "fixed",
+                    left: `${position.x}px`,
+                    top: `${position.y}px`,
+                    zIndex: 3000,
+                  }
+          }
+          className={
+            isLiveRoute
+              ? liveChromeActive
+                ? LIVE_MAP_CHAT_FAB_IMMERSIVE_POSITION
+                : LIVE_MAP_CHAT_FAB_POSITION
+              : `pointer-events-auto select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`
+          }
+        >
+          <WayraLauncherButton
+            onClick={isLiveRoute ? startTalk : undefined}
+            onMouseDown={isLiveRoute ? undefined : handleMouseDown}
+            onTouchStart={isLiveRoute ? undefined : handleTouchStart}
+            isOpen={false}
+            voicePhase={wayraVoice.phase}
+            ariaControls={panelId}
+          />
         </div>
       ) : null}
 
@@ -1576,433 +1707,234 @@ export function AIAssistantSidecar({
               : finishPanelInteraction
           }
         >
-          <div className="flex min-w-0 shrink-0 items-center gap-2">
-            <WayraIcon
-              state={birdState}
-              size={0.42}
-              variant={birdState === "flying" ? "fog" : "navy"}
-              animate={true}
-            />
+          <div className={WAYRA_HEADER_BODY}>
+            <button
+              type="button"
+              onClick={startTalk}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0F3D32] text-white focus:outline-none"
+              aria-label="Talk to Wayra"
+            >
+              <Sparkles className="h-3.5 w-3.5" strokeWidth={2.4} />
+            </button>
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <h2
-                  id={`${panelId}-title`}
-                  className={`text-xs font-bold sm:text-sm ${isLiveRoute ? "text-primary" : "text-navy"}`}
-                >
+              <div className="flex items-center gap-2">
+                <h2 id={`${panelId}-title`} className={WAYRA_TITLE}>
                   Wayra
                 </h2>
-                {isLiveRoute && activeLivePin ? (
+                {activeLivePin ? (
                   <span
-                    className="max-w-[11rem] truncate rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-medium text-teal-900"
+                    className={WAYRA_PIN_BADGE}
                     title={activeLivePin.name?.trim() || "Dropped pin"}
                   >
                     {activeLivePin.name?.trim() || "Dropped pin"}
                   </span>
                 ) : null}
               </div>
-              <p
-                className={
-                  birdState === "flying"
-                    ? isLiveRoute
-                      ? "text-[11px] text-primary"
-                      : "text-[11px] text-primary"
-                    : isLiveRoute
-                      ? "text-[11px] text-stone-500"
-                      : "text-[11px] text-navy"
-                }
-              >
+              <p className={WAYRA_STATUS}>
                 {headerStatus}
-                {isTemporaryLivePinChat ? (
-                  <span className="block text-[10px] font-normal text-stone-400">
-                    Temporary — clears when you close this place
-                  </span>
-                ) : null}
-                {!isLiveRoute && activeLivePin ? (
-                  <span className="block truncate text-[11px] font-normal text-stone-500">
-                    Pin: {activeLivePin.name?.trim() || "Dropped pin"}
-                  </span>
-                ) : null}
+                {isTemporaryLivePinChat ? " · pin" : ""}
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-1 shrink-0 ml-auto">
-            {/* Minimize/Off-screen Button */}
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className={`rounded-lg p-1.5 focus:outline-none ${
-                isLiveRoute
-                  ? "text-stone-500 hover:bg-teal-50 hover:text-primary"
-                  : "text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50]"
-              }`}
-              title="Minimize assistant (off-screen)"
-              aria-label="Minimize Wayra"
-            >
-              <Minus className="h-3.5 w-3.5" />
-            </button>
-
-            {/* Expand / Restore Button */}
-            <button
-              type="button"
-              onClick={isLiveRoute ? toggleLivePanelExpand : toggleWidePanel}
-              className="hidden sm:inline-flex rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none"
-              title={
-                isLiveRoute
-                  ? isLiveFloating
-                    ? "Dock to bottom"
-                    : "Expand full height"
-                  : isWidePanel
-                    ? "Restore normal width"
-                    : "Expand width"
-              }
-              aria-label={
-                isLiveRoute
-                  ? isLiveFloating
-                    ? "Dock to bottom"
-                    : "Expand full height"
-                  : isWidePanel
-                    ? "Restore normal width"
-                    : "Expand width"
-              }
-            >
-              {isLiveRoute ? (
-                isLiveFloating ? (
-                  <Minimize2 className="h-3.5 w-3.5" />
+            <div className="flex shrink-0 items-center gap-0.5">
+              <button
+                type="button"
+                onClick={toggleSpeaker}
+                className={WAYRA_HEADER_BTN}
+                title={speakerOn ? "Speaker on — tap to mute Wayra" : "Speaker off — tap to hear Wayra"}
+                aria-label={speakerOn ? "Turn speaker off" : "Turn speaker on"}
+                aria-pressed={speakerOn}
+              >
+                {speakerOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isLiveRoute) toggleLivePanelExpand();
+                  else toggleWidePanel();
+                  if (
+                    lastSpokenReply &&
+                    speakerOn &&
+                    wayraInputMode === "voice" &&
+                    wayraVoice.phase === "idle"
+                  ) {
+                    speakWayraText(lastSpokenReply);
+                  }
+                }}
+                className={WAYRA_HEADER_BTN}
+                title="Expand chat"
+                aria-label="Expand Wayra chat"
+              >
+                {isLiveRoute && isLiveFloating ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : isWidePanel ? (
+                  <Minimize2 className="h-4 w-4" />
                 ) : (
-                  <Maximize2 className="h-3.5 w-3.5" />
-                )
-              ) : isWidePanel ? (
-                <Minimize2 className="h-3.5 w-3.5" />
-              ) : (
-                <Maximize2 className="h-3.5 w-3.5" />
-              )}
-            </button>
-
-            {/* Close Button */}
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="shrink-0 rounded-lg p-1.5 text-[#6C757D] hover:bg-[#F8F9FA] hover:text-[#2C3E50] focus:outline-none focus:ring-2 focus:ring-primary/30"
-              aria-label="Close Wayra"
-            >
-              <span className="text-lg leading-none" aria-hidden>
-                ×
-              </span>
-            </button>
+                  <ArrowUpRight className="h-4 w-4" />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={closeWayra}
+                className={WAYRA_HEADER_BTN}
+                aria-label="Close Wayra"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
 
-        <div
-          ref={messagesScrollRef}
-          className={wayraMessagesClass}
-          role="log"
-        >
-          {messages.length === 0 ? (
-            <p className={`rounded-xl border p-2.5 text-sm leading-normal ${isLiveRoute ? "border-stone-200/60 bg-white text-stone-700" : "border-[#E9ECEF] bg-white text-[11px] text-[#2C3E50]"}`}>
-              {isLiveRoute ? (
-                <>
-                  Hi — I&apos;m <strong>Wayra</strong>. Pick a place on the map or attach your
-                  location, then ask about routes, nearby spots, or how Live works.
-                </>
-              ) : (
-                <>
-                  Hi — I&apos;m <strong>Wayra</strong>. Ask how{" "}
-                  <strong>{pageLabel}</strong> works, or get destination ideas. App how-tos work
-                  offline; travel tips need the assistant when it&apos;s up.
-                </>
-              )}
-            </p>
-          ) : null}
-
-          {messages.map((m) => {
-            if (m.role === "system") {
-              return (
-                <p
-                  key={m.id}
-                  className={`py-0.5 text-center text-xs ${isLiveRoute ? "text-stone-500" : "text-[9px] text-[#6C757D]"}`}
-                >
-                  {m.text}
-                </p>
-              );
+        {wayraVoice.phase === "listening" ||
+        wayraVoice.phase === "thinking" ||
+        wayraVoice.phase === "speaking" ? (
+          <WayraLiveWire
+            phase={wayraVoice.phase}
+            transcript={
+              wayraVoice.phase === "speaking"
+                ? lastSpokenReply ?? ""
+                : wayraVoice.interimTranscript
             }
-            return (
-              <div key={m.id} className="flex w-full">
-                {m.role === "user" ? (
-                  <div className="ml-auto max-w-[90%]">
-                    <div className={`rounded-2xl rounded-br-md px-3 py-2 text-sm leading-normal ${isLiveRoute ? LIVE_WAYRA_USER_BUBBLE : "bg-primary/12 px-2.5 py-1.5 text-[11.5px] text-[#2C3E50]"}`}>
+            onStop={() => wayraVoice.stopAndAnswer()}
+          />
+        ) : null}
+
+        <div ref={messagesScrollRef} className={WAYRA_MESSAGES} role="log">
+          {messages.length === 0 && wayraVoice.phase === "idle" ? (
+            <div className="flex h-full flex-col justify-center pb-4">
+              <h3 className={WAYRA_HEADLINE}>What should I work out?</h3>
+              <p className={WAYRA_SUBHEAD}>
+                Say it the way you&apos;d say it to a friend. Constraints help — people,
+                budget, night.
+              </p>
+              <p className={`${WAYRA_TRY_LABEL} mt-8`}>Try one</p>
+              <div className="space-y-2">
+                {WAYRA_TRY_ONE.map((chip) => {
+                  const Icon =
+                    chip.icon === "utensils"
+                      ? Utensils
+                      : chip.icon === "users"
+                        ? Users
+                        : chip.icon === "bookmark"
+                          ? Bookmark
+                          : Link2;
+                  return (
+                    <button
+                      key={chip.label}
+                      type="button"
+                      onClick={() => {
+                        if (chip.muted) {
+                          inputRef.current?.focus();
+                          return;
+                        }
+                        void sendMessage(chip.label);
+                      }}
+                      className={chip.muted ? WAYRA_TRY_CHIP_MUTED : WAYRA_TRY_CHIP}
+                    >
+                      <Icon className="h-4 w-4 shrink-0 text-[#0F3D32]" strokeWidth={1.75} />
+                      <span>{chip.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <>
+              {messages.map((m) => {
+                if (m.role === "system") {
+                  return (
+                    <p key={m.id} className={WAYRA_SYSTEM_MSG}>
                       {m.text}
-                    </div>
-                    <p className={`mt-0.5 text-right ${isLiveRoute ? "text-xs text-stone-500" : "text-[9px] text-[#6C757D]"}`}>
-                      {formatWayraMessageTime(m.createdAt)}
                     </p>
-                  </div>
-                ) : (
-                  <div className="mr-auto max-w-[92%]">
-                    {"pending" in m && m.pending ? (
-                      <div
-                        className={`rounded-2xl rounded-bl-md border px-3 py-2 text-sm ${isLiveRoute ? "border-stone-200/60 bg-white text-stone-500" : "border-[#E9ECEF] bg-white px-2.5 py-2 text-[11.5px] text-[#6C757D]"}`}
-                        aria-live="polite"
-                      >
-                        <span className="inline-flex items-center gap-2">
-                          <span
-                            className={`inline-block h-3 w-3 animate-spin rounded-full border-2 ${isLiveRoute ? "border-stone-200 border-t-[#0F766E]" : "border-[#E9ECEF] border-t-primary"}`}
-                            aria-hidden
-                          />
-                          Wayra is thinking…
-                        </span>
+                  );
+                }
+                return (
+                  <div key={m.id} className="flex w-full">
+                    {m.role === "user" ? (
+                      <div className="w-full">
+                        <div className={WAYRA_USER_BUBBLE}>{m.text}</div>
                       </div>
-                    ) : isLiveRoute ? (
-                      <article className="overflow-hidden rounded-2xl rounded-bl-md border border-stone-200/60 bg-white shadow-sm">
-                        <div className="px-3 py-2.5 text-sm leading-relaxed whitespace-pre-wrap text-stone-800">
-                          {m.text}
-                        </div>
-                        {((m.suggestedActions && m.suggestedActions.length > 0) ||
-                          (m.sources && m.sources.length > 0) ||
-                          (m.followUpPrompts && m.followUpPrompts.length > 0)) ? (
-                          <div className="space-y-2 border-t border-stone-100 bg-stone-50/60 px-3 py-2">
-                            {m.suggestedActions && m.suggestedActions.length > 0 ? (
-                              <div className="flex flex-wrap gap-1.5">
-                                {m.suggestedActions.map((a, i) => (
-                                  <button
-                                    key={`${a.type}-${a.label}-${i}`}
-                                    type="button"
-                                    onClick={() =>
-                                      onActionPill(a.type, a.label, a.target)
-                                    }
-                                    className="rounded-full border border-primary/25 bg-white px-2 py-0.5 text-xs text-primary hover:bg-teal-50 focus:outline-none disabled:opacity-50"
-                                  >
-                                    {a.label}
-                                  </button>
-                                ))}
-                              </div>
-                            ) : null}
-                            {m.sources && m.sources.length > 0 ? (
-                              <div>
-                                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-stone-500">
-                                  Sources
-                                </p>
-                                <div className="flex flex-wrap gap-1">
-                                  {m.sources.map((s) => (
-                                    <a
-                                      key={`${s.url}-${s.label}`}
-                                      href={s.url}
-                                      target={s.url.startsWith("/") ? undefined : "_blank"}
-                                      rel={
-                                        s.url.startsWith("/")
-                                          ? undefined
-                                          : "noopener noreferrer"
-                                      }
-                                      onClick={(event) => handleWayraSourceClick(s, event)}
-                                      className="inline-flex max-w-full truncate rounded-full border border-teal-200/70 bg-white px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-teal-50"
-                                    >
-                                      {s.label}
-                                    </a>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : null}
-                            {m.followUpPrompts && m.followUpPrompts.length > 0 ? (
-                              <div>
-                                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-stone-500">
-                                  Ask next
-                                </p>
-                                <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 no-scrollbar">
-                                  {m.followUpPrompts.map((q) => (
-                                    <button
-                                      key={q}
-                                      type="button"
-                                      onClick={() => void sendMessage(q)}
-                                      disabled={loading}
-                                      className="shrink-0 rounded-full border border-stone-200/80 bg-white px-2.5 py-1 text-xs text-stone-700 hover:border-primary/35 focus:outline-none disabled:opacity-50"
-                                    >
-                                      {q}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : null}
-                          </div>
-                        ) : null}
-                        <p className="px-3 py-1.5 text-xs text-stone-400">
-                          {formatWayraMessageTime(m.createdAt)}
-                        </p>
-                      </article>
                     ) : (
-                      <>
-                        <div className="rounded-2xl rounded-bl-md border border-[#E9ECEF] bg-white px-2.5 py-1.5 text-[11.5px] leading-normal whitespace-pre-wrap text-[#2C3E50]">
-                          {m.text}
-                        </div>
-                        <p className="mt-0.5 text-[9px] text-[#6C757D]">
-                          {formatWayraMessageTime(m.createdAt)}
-                        </p>
-                        {m.suggestedActions && m.suggestedActions.length > 0 ? (
-                          <div className="mt-1.5 flex flex-wrap gap-1.5">
-                            {m.suggestedActions.map((a, i) => (
-                              <button
-                                key={`${a.type}-${a.label}-${i}`}
-                                type="button"
-                                onClick={() =>
-                                  onActionPill(a.type, a.label, a.target)
-                                }
-                                className="rounded-full border border-[#0F172A]/20 bg-white px-2 py-0.5 text-[10px] text-navy hover:bg-navy hover:text-white focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
-                              >
-                                {a.label}
-                              </button>
-                            ))}
-                          </div>
-                        ) : null}
-                        {m.sources && m.sources.length > 0 ? (
-                          <div className="mt-2">
-                            <p className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-[#6C757D]">
-                              Sources
-                            </p>
-                            <div className="flex flex-col gap-1">
-                              {m.sources.map((s) => (
-                                <a
-                                  key={`${s.url}-${s.label}`}
-                                  href={s.url}
-                                  target={s.url.startsWith("/") ? undefined : "_blank"}
-                                  rel={
-                                    s.url.startsWith("/")
-                                      ? undefined
-                                      : "noopener noreferrer"
-                                  }
-                                  onClick={(event) => handleWayraSourceClick(s, event)}
-                                  className="text-[10px] text-navy underline decoration-[#0F172A]/30 hover:decoration-[#0F172A]"
-                                >
-                                  {s.label}
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        ) : null}
-                        {m.followUpPrompts && m.followUpPrompts.length > 0 ? (
-                          <div className="mt-2">
-                            <p className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-[#6C757D]">
-                              Ask next
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {m.followUpPrompts.map((q) => (
-                                <button
-                                  key={q}
-                                  type="button"
-                                  onClick={() => void sendMessage(q)}
-                                  disabled={loading}
-                                  className="max-w-full rounded-full border border-[#E9ECEF] bg-[#F8F9FA] px-2 py-0.5 text-left text-[10px] text-[#2C3E50] hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
-                                >
-                                  {q}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        ) : null}
-                      </>
+                      <div className="w-full">
+                        <WayraAssistantMessage
+                          text={m.text}
+                          createdAt={m.createdAt}
+                          pending={"pending" in m ? m.pending : false}
+                          suggestedActions={m.suggestedActions}
+                          sources={m.sources}
+                          followUpPrompts={m.followUpPrompts}
+                          loading={loading}
+                          onActionPill={onActionPill}
+                          onSourceClick={handleWayraSourceClick}
+                          onFollowUp={(q) => void sendMessage(q)}
+                        />
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
-            );
-          })}
-          <div ref={endRef} />
+                );
+              })}
+              {foundPlaces > 0 ? (
+                <p className={`${WAYRA_HINT} px-1`}>
+                  Nothing is booked. I&apos;ll ask before anything costs money or reaches the
+                  group.
+                </p>
+              ) : null}
+              <div ref={endRef} />
+            </>
+          )}
         </div>
 
         {actionHint ? (
-          <div className="shrink-0 border-t border-[#E9ECEF] bg-[#F0F4F8] px-3 py-1 text-center text-[10px] text-[#2C3E50]">
+          <div className="shrink-0 px-4 pb-1 text-center text-[11px] text-[#6B7280]">
             {actionHint}
           </div>
         ) : null}
 
-        <div className={isLiveRoute ? LIVE_WAYRA_FOOTER : "shrink-0 border-t border-[#E9ECEF] bg-white p-2.5"}>
-          {attachedLocation && !isLiveRoute ? (
-            <div
-              className={`mb-2 flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 ${
-                isLiveRoute ? "px-2 py-0.5" : "rounded-xl px-2 py-1"
-              }`}
-            >
-              <MapPin className="h-3 w-3 shrink-0 text-primary" aria-hidden />
-              <span
-                className={`min-w-0 flex-1 truncate font-medium text-[#2C3E50] ${
-                  isLiveRoute ? "text-[11px]" : "text-[10px]"
-                }`}
-              >
-                {attachedLocation.label}
-              </span>
+        <div className={WAYRA_FOOTER}>
+          {wayraVoice.errorMessage ? (
+            <p className="mb-2 px-1 text-[12px] leading-snug text-amber-800">
+              {wayraVoice.errorMessage}
+            </p>
+          ) : null}
+          <div className={WAYRA_COMPOSER_ROW}>
+            <div className={WAYRA_COMPOSER_BOX}>
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void sendMessage();
+                  }
+                }}
+                rows={1}
+                placeholder="Ask, or paste a link"
+                className={WAYRA_INPUT}
+                disabled={loading}
+              />
               <button
                 type="button"
-                onClick={() => setAttachedLocation(null)}
-                className="rounded p-0.5 text-[#6C757D] hover:bg-white hover:text-[#2C3E50]"
-                aria-label="Remove attached location"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ) : null}
-          {isLiveRoute ? (
-            <p className="mb-1.5 text-[10px] leading-snug text-stone-500">{WAYRA_DATA_DISCLAIMER}</p>
-          ) : null}
-          <div className="flex gap-2">
-            <div className="relative shrink-0 self-end" ref={attachMenuRef}>
-              <button
-                type="button"
-                onClick={() => setAttachMenuOpen((open) => !open)}
-                className={`flex h-[34px] w-[34px] items-center justify-center rounded-xl border bg-[#F8F9FA] focus:outline-none ${
-                  isLiveRoute
-                    ? "border-stone-200/80 text-stone-500 hover:border-primary/30 hover:text-primary focus:ring-2 focus:ring-[#0F766E]/25"
-                    : "border-[#E9ECEF] text-[#6C757D] hover:border-primary/30 hover:text-primary focus:ring-2 focus:ring-primary/30"
-                }`}
-                title="Attach location"
-                aria-label="Attach location"
-                aria-expanded={attachMenuOpen}
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-              {attachMenuOpen ? (
-                <div className="absolute bottom-full left-0 z-30 mb-1 min-w-[168px] overflow-hidden rounded-xl border border-[#E9ECEF] bg-white py-1 shadow-lg">
-                  <button
-                    type="button"
-                    onClick={attachMapPinLocation}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-[11px] text-[#2C3E50] hover:bg-[#F8F9FA]"
-                  >
-                    <MapPin className="h-3.5 w-3.5 text-primary" />
-                    Map pin
-                  </button>
-                  <button
-                    type="button"
-                    onClick={attachGpsLocation}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-[11px] text-[#2C3E50] hover:bg-[#F8F9FA]"
-                  >
-                    <MapPin className="h-3.5 w-3.5 text-primary" />
-                    My GPS
-                  </button>
-                </div>
-              ) : null}
-            </div>
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  void sendMessage();
+                onClick={startTalk}
+                disabled={loading && !wayraVoice.isActive}
+                className={
+                  wayraVoice.phase === "listening" || wayraVoice.isActive
+                    ? WAYRA_ICON_BTN_ACTIVE
+                    : WAYRA_ICON_BTN
                 }
-              }}
-              rows={1}
-              placeholder="Ask Wayra…"
-              className="min-h-[34px] flex-1 resize-y rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] px-2.5 py-1.5 text-xs text-[#2C3E50] placeholder:text-[#6C757D] focus:outline-none focus:ring-2 focus:ring-primary/30"
-              disabled={loading}
-            />
+                title="Talk to Wayra"
+                aria-label="Talk to Wayra"
+              >
+                <Mic className="h-4 w-4" />
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => void sendMessage()}
               disabled={loading || !input.trim()}
-              className={
-                isLiveRoute
-                  ? `${LIVE_WAYRA_SEND_BTN} focus:outline-none`
-                  : "h-fit shrink-0 self-end rounded-xl bg-primary px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50"
-              }
+              className={WAYRA_SEND_BTN}
+              aria-label="Send message"
             >
-              Send
+              <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </div>

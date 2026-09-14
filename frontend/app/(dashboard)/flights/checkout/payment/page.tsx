@@ -113,7 +113,7 @@ function PaymentCheckoutContent() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-teal-600" />
+              <CreditCard className="h-5 w-5 text-primary" />
               <h3 className="text-base font-bold text-slate-900">Payment Method</h3>
             </div>
             <div className="flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
@@ -122,9 +122,9 @@ function PaymentCheckoutContent() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-teal-500 bg-teal-50/40 p-4 flex items-center justify-between">
+          <div className="rounded-xl border border-teal-500 bg-primary-soft/40 p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-600 text-white font-bold text-xs">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-bold text-xs">
                 CARD
               </div>
               <div>
@@ -132,7 +132,7 @@ function PaymentCheckoutContent() {
                 <p className="text-xs text-slate-500">Processed securely via Duffel / Rovvy Checkout</p>
               </div>
             </div>
-            <CheckCircle className="h-5 w-5 text-teal-600" />
+            <CheckCircle className="h-5 w-5 text-primary" />
           </div>
 
           {error ? (
@@ -158,7 +158,7 @@ function PaymentCheckoutContent() {
           type="button"
           disabled={loading}
           onClick={() => void submitPaymentAndBook()}
-          className="w-full rounded-xl bg-teal-600 py-3.5 text-center text-sm font-bold text-white shadow-sm hover:bg-teal-700 disabled:opacity-60"
+          className="w-full rounded-xl bg-primary py-3.5 text-center text-sm font-bold text-white shadow-sm hover:bg-primary-hover disabled:opacity-60"
         >
           {loading ? "Confirming booking…" : `Pay ${formatPriceExact("USD", searchPrice)} & Book`}
         </button>

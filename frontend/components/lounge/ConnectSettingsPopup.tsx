@@ -202,35 +202,35 @@ export function ConnectSettingsPopup({ onClose, onToast }: ConnectSettingsPopupP
             onToast("Could not copy link");
           }
         }}
-        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-teal-50"
+        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-primary-soft"
       >
         <Link2 size={14} className="text-primary" /> Share invite link
       </button>
       <button
         type="button"
         onClick={() => setScreen("notifications")}
-        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-teal-50"
+        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-primary-soft"
       >
         <Bell size={14} className="text-primary" /> Notifications
       </button>
       <button
         type="button"
         onClick={() => setScreen("privacy")}
-        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-teal-50"
+        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-primary-soft"
       >
         <Shield size={14} className="text-primary" /> Privacy
       </button>
       <button
         type="button"
         onClick={() => setScreen("blocked")}
-        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-teal-50"
+        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-primary-soft"
       >
         <Ban size={14} className="text-primary" /> Blocked users
       </button>
       <button
         type="button"
         onClick={() => setScreen("devices")}
-        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-teal-50"
+        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-primary-soft"
       >
         <Smartphone size={14} className="text-primary" /> Linked devices
       </button>

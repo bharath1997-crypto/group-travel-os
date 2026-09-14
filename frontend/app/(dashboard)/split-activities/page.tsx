@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -38,12 +38,14 @@ import { apiFetch, apiFetchWithStatus } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
 import { getPreferredCurrency } from "@/lib/user-locale";
 
-const NAVY = "#0F172A";
-const PRIMARY = "#0F766E";
-const GREEN = "#22C55E";
+import { ROVVY_COLORS } from "@/lib/design-tokens";
+
+const NAVY = ROVVY_COLORS.navy;
+const PRIMARY = ROVVY_COLORS.primary;
+const GREEN = ROVVY_COLORS.success;
 const BORDER = "#E2E8F0";
-const BG = "#F8FAFC";
-const GROUP_CIRCLE_COLORS = ["#0F766E", "#0F172A", "#22C55E", "#F59E0B"];
+const BG = ROVVY_COLORS.appBg;
+const GROUP_CIRCLE_COLORS = [ROVVY_COLORS.primary, ROVVY_COLORS.navy, ROVVY_COLORS.success, ROVVY_COLORS.warning];
 
 type UserOut = {
   id: string;
@@ -283,6 +285,8 @@ async function withStatusDeadline<T>(
 
 export default function SplitActivitiesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const deepLinkTripId = searchParams.get("trip_id");
   const loadAbortRef = useRef<AbortController | null>(null);
   const [user, setUser] = useState<UserOut | null>(null);
   const [groups, setGroups] = useState<GroupOut[]>([]);
@@ -745,6 +749,15 @@ export default function SplitActivitiesPage() {
     void loadData();
     return () => loadAbortRef.current?.abort();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!deepLinkTripId || loading || trips.length === 0) return;
+    const trip = trips.find((t) => t.id === deepLinkTripId);
+    if (!trip) return;
+    setFormTripId(trip.id);
+    setView({ type: "group", id: trip.group_id });
+    setMobileTab("groups");
+  }, [deepLinkTripId, loading, trips]);
 
   useEffect(() => {
     if (user?.id) setFormPaidBy(user.id);

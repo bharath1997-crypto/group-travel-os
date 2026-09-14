@@ -62,7 +62,7 @@ function Toggle({
       disabled={disabled || loading}
       className={`relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-teal-500 ${
         checked
-          ? "bg-teal-500"
+          ? "bg-primary-soft0"
           : "bg-stone-200"
       } ${disabled || loading ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
     >
@@ -171,7 +171,7 @@ function VisSelector({
             disabled={disabled}
             className={`flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-[11px] font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
               active
-                ? "bg-white text-teal-700 shadow-sm"
+                ? "bg-white text-primary shadow-sm"
                 : "text-stone-400 hover:text-stone-600"
             }`}
           >
@@ -289,7 +289,7 @@ function SavedToast({ show }: { show: boolean }) {
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 flex items-center gap-2 rounded-2xl border border-teal-100 bg-white px-4 py-2.5 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-200"
+      className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 flex items-center gap-2 rounded-2xl border border-primary/20 bg-white px-4 py-2.5 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-200"
     >
       <CheckCircle2 size={14} className="text-teal-500" />
       <p className="text-[13px] font-semibold text-neutral-800">Privacy setting saved</p>

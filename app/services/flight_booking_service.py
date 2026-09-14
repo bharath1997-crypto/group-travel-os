@@ -25,6 +25,7 @@ from app.services.duffel_client import (
     get_offer,
     get_order,
 )
+from app.services.flight_offer_service import parse_duffel_slices
 from app.utils.exceptions import AppException
 from config import settings
 
@@ -169,6 +170,10 @@ class FlightBookingService:
         available_actions = [str(a) for a in actions] if isinstance(actions, list) else []
 
         status_str = "cancelled" if order.get("cancelled_at") else "confirmed"
+        normalized_slices = [
+            flight_slice.model_dump()
+            for flight_slice in parse_duffel_slices(order.get("slices") or [])
+        ]
 
         return FlightOrderResponse(
             id=str(order.get("id") or oid),
@@ -176,7 +181,7 @@ class FlightBookingService:
             status=status_str,
             total_amount=float(order.get("total_amount") or 0.0),
             currency=str(order.get("total_currency") or "USD").upper(),
-            slices=order.get("slices") if isinstance(order.get("slices"), list) else [],
+            slices=normalized_slices,
             passengers=pax_list,
             available_actions=available_actions,
             live_mode=bool(order.get("live_mode")),

@@ -154,13 +154,13 @@ function DesktopSplitLayout({
       <aside className="relative flex w-[46%] flex-col justify-between overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={heroImage} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0F766E]/90 via-[#0F766E]/55 to-[#0F766E]/35" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0E6E5C]/90 via-[#0E6E5C]/55 to-[#0E6E5C]/35" />
 
         <div className="relative z-10 flex flex-1 flex-col justify-center px-10 xl:px-14">
           <h2 className="max-w-md text-2xl font-extrabold leading-tight text-white tracking-tight xl:text-3xl">
             {heroTitle}
           </h2>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-teal-50/90 xl:text-base">
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-primary-highlight/90 xl:text-base">
             {heroSubtitle}
           </p>
         </div>

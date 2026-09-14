@@ -201,7 +201,7 @@ export default function WayraPersonalPage() {
             <div>
               <h1 className="text-xl font-bold text-slate-850 flex items-center gap-2">
                 Personal Wayra
-                <span className="text-[10px] uppercase bg-teal-50 text-primary px-2 py-0.5 rounded-full font-bold border border-teal-100">
+                <span className="text-[10px] uppercase bg-primary-soft text-primary px-2 py-0.5 rounded-full font-bold border border-primary/20">
                   AI Companion
                 </span>
               </h1>
@@ -292,7 +292,7 @@ export default function WayraPersonalPage() {
             {/* Input Form */}
             <form onSubmit={handleSend} className="p-4 border-t border-slate-100 bg-white flex flex-col gap-2 shrink-0">
               {attachedLocation ? (
-                <div className="flex items-center gap-2 rounded-xl border border-teal-100 bg-teal-50/60 px-3 py-1.5">
+                <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary-soft/60 px-3 py-1.5">
                   <MapPin className="h-3.5 w-3.5 text-primary" />
                   <span className="flex-1 truncate text-[11px] font-medium text-slate-700">
                     {attachedLocation.label}
@@ -343,7 +343,7 @@ export default function WayraPersonalPage() {
               <button
                 type="submit"
                 disabled={!inputText.trim() || loading || !greetingReady}
-                className="bg-primary text-white p-3 rounded-xl hover:bg-teal-700 disabled:opacity-40 transition-all flex items-center justify-center shrink-0 active:scale-95 shadow-md shadow-teal-700/10"
+                className="bg-primary text-white p-3 rounded-xl hover:bg-primary-hover disabled:opacity-40 transition-all flex items-center justify-center shrink-0 active:scale-95 shadow-md shadow-teal-700/10"
               >
                 <Send className="h-4 w-4" />
               </button>
@@ -396,7 +396,7 @@ export default function WayraPersonalPage() {
                       <div key={item.id} className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-[11px] font-semibold text-slate-700">
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-slate-800">{item.item_name}</span>
-                          <span className="text-[9px] bg-teal-50 text-primary border border-teal-100 px-1.5 py-0.2 rounded uppercase font-bold">
+                          <span className="text-[9px] bg-primary-soft text-primary border border-primary/20 px-1.5 py-0.2 rounded uppercase font-bold">
                             {item.item_type}
                           </span>
                         </div>

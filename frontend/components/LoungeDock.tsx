@@ -1626,17 +1626,17 @@ export function LoungeDock() {
                           <button
                             type="button"
                             onClick={() => setSettingsScreen("profile")}
-                            className="flex w-full items-center gap-3 rounded-xl border border-stone-200 bg-stone-50/90 p-2.5 text-left transition-colors hover:border-primary/25 hover:bg-teal-50/50"
+                            className="flex w-full items-center gap-3 rounded-xl border border-stone-200 bg-stone-50/90 p-2.5 text-left transition-colors hover:border-primary/25 hover:bg-primary-soft/50"
                           >
                             {loungeAvatarUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
                                 src={loungeAvatarUrl}
                                 alt=""
-                                className="h-11 w-11 rounded-full object-cover ring-2 ring-[#0F766E]/15"
+                                className="h-11 w-11 rounded-full object-cover ring-2 ring-[#0E6E5C]/15"
                               />
                             ) : (
-                              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-sm font-bold text-white ring-2 ring-[#0F766E]/15">
+                              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-sm font-bold text-white ring-2 ring-[#0E6E5C]/15">
                                 {loungeUserInitials}
                               </span>
                             )}
@@ -1656,7 +1656,7 @@ export function LoungeDock() {
                           <nav className="flex flex-col text-xs font-semibold space-y-1">
                             <button
                               type="button"
-                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-primary transition-colors"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-primary-soft hover:text-primary transition-colors"
                               onClick={() => {
                                 setShowSettingsOverlay(false);
                                 setShowNewChatOverlay(true);
@@ -1666,7 +1666,7 @@ export function LoungeDock() {
                             </button>
                             <button
                               type="button"
-                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-primary transition-colors"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-primary-soft hover:text-primary transition-colors"
                               onClick={() => {
                                 setShowSettingsOverlay(false);
                                 setCreateGroupRequestId((n) => n + 1);
@@ -1676,7 +1676,7 @@ export function LoungeDock() {
                             </button>
                             <button
                               type="button"
-                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-primary transition-colors"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-primary-soft hover:text-primary transition-colors"
                               onClick={() => {
                                 setShowSettingsOverlay(false);
                                 setActiveTab("chats");
@@ -1686,14 +1686,14 @@ export function LoungeDock() {
                             </button>
                             <button
                               type="button"
-                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-primary transition-colors"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-primary-soft hover:text-primary transition-colors"
                               onClick={() => setSettingsScreen("connect")}
                             >
                               Privacy &amp; blocked
                             </button>
                             <button
                               type="button"
-                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-primary transition-colors flex items-center justify-between"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-primary-soft hover:text-primary transition-colors flex items-center justify-between"
                               onClick={() => setSettingsScreen("starred")}
                             >
                               <span>Starred</span>
@@ -1706,7 +1706,7 @@ export function LoungeDock() {
 
                             <button
                               type="button"
-                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-teal-50 hover:text-primary font-bold transition-colors"
+                              className="w-full text-left py-2 px-2.5 rounded-lg text-slate-700 hover:bg-primary-soft hover:text-primary font-bold transition-colors"
                               onClick={() => setSettingsScreen("settings")}
                             >
                               Settings
@@ -1818,7 +1818,7 @@ export function LoungeDock() {
                                 type="checkbox"
                                 checked={wifiOnly}
                                 onChange={(e) => updateSettings(backupInterval, e.target.checked)}
-                                className="h-4 w-4 text-primary focus:ring-[#0F766E] border-stone-300 rounded"
+                                className="h-4 w-4 text-primary focus:ring-[#0E6E5C] border-stone-300 rounded"
                               />
                             </div>
                           </div>
@@ -1842,7 +1842,7 @@ export function LoungeDock() {
                       {/* Create Group Button */}
                       <button
                         onClick={() => setCreateGroupRequestId((n) => n + 1)}
-                        className="w-full flex items-center gap-2 p-2 rounded-lg bg-teal-50 hover:bg-teal-100 text-primary text-xs font-bold transition-all mb-2 border border-teal-100"
+                        className="w-full flex items-center gap-2 p-2 rounded-lg bg-primary-soft hover:bg-primary-soft text-primary text-xs font-bold transition-all mb-2 border border-primary/20"
                       >
                         <Plus size={16} />
                         <span>Create Group Chat</span>

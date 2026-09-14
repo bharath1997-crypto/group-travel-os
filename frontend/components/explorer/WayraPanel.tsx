@@ -1,5 +1,7 @@
 "use client";
 
+/** @deprecated Use global AIAssistantSidecar — one Wayra template app-wide, not per-tab panels. */
+
 import { Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -353,7 +355,7 @@ export function WayraPanel({ open, city, onClose, onOpen, seedMessage, onSeedCon
             zIndex: 40,
           }}
         >
-          <WayraIcon state={birdState} size={1} variant="fog" animate={true} />
+          <WayraIcon state={birdState} size={1} variant="launcher" animate={true} />
         </button>
       ) : null}
     </>

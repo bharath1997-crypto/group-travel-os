@@ -29,7 +29,7 @@ import {
 import { CityTag } from "@/components/shared/CityTag";
 import { ShortsImportModal } from "@/components/explorer/ShortsImportModal";
 
-const CORAL = "#0F766E";
+const CORAL = "#0E6E5C";
 
 type ExploreFeedPayload = {
   city?: string;

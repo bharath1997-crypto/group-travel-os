@@ -61,7 +61,7 @@ export function UpdatesStatusPanel({ userId, userName }: UpdatesStatusPanelProps
           <button
             type="button"
             onClick={() => setComposing((c) => !c)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-50 text-primary"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-soft text-primary"
           >
             {composing ? <X size={14} /> : <Plus size={14} />}
           </button>

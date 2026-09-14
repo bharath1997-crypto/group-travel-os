@@ -1,4 +1,5 @@
 import type { FlightJourney, FlightRow, FlightSortMode } from "@/lib/flight-types";
+import { hasAirportChange, hasOvernightConnection, maxLayoverMinutes } from "@/lib/flight-disclosure-ui";
 
 export function formatClock(iso: string): string {
   const d = new Date(iso);
@@ -89,6 +90,12 @@ export type FlightFilters = {
   departureBuckets: Array<"morning" | "afternoon" | "evening" | "night">;
   maxPrice: number | null;
   maxDurationMinutes: number | null;
+  maxLayoverMinutes: number | null;
+  excludeOvernightConnections: boolean;
+  excludeAirportChanges: boolean;
+  protectedConnectionsOnly: boolean;
+  automaticBaggageTransferOnly: boolean;
+  allowSelfTransfer: boolean;
   baggageIncluded: boolean;
   refundableOnly: boolean;
   changeableOnly: boolean;
@@ -102,6 +109,12 @@ export function createDefaultFilters(partial?: Partial<FlightFilters>): FlightFi
     departureBuckets: [],
     maxPrice: null,
     maxDurationMinutes: null,
+    maxLayoverMinutes: null,
+    excludeOvernightConnections: false,
+    excludeAirportChanges: false,
+    protectedConnectionsOnly: false,
+    automaticBaggageTransferOnly: false,
+    allowSelfTransfer: true,
     baggageIncluded: false,
     refundableOnly: false,
     changeableOnly: false,
@@ -117,6 +130,12 @@ export function countActiveFilters(filters: FlightFilters): number {
   if (filters.departureBuckets.length > 0) count += 1;
   if (filters.maxPrice !== null) count += 1;
   if (filters.maxDurationMinutes !== null) count += 1;
+  if (filters.maxLayoverMinutes !== null) count += 1;
+  if (filters.excludeOvernightConnections) count += 1;
+  if (filters.excludeAirportChanges) count += 1;
+  if (filters.protectedConnectionsOnly) count += 1;
+  if (filters.automaticBaggageTransferOnly) count += 1;
+  if (!filters.allowSelfTransfer) count += 1;
   if (filters.baggageIncluded) count += 1;
   if (filters.refundableOnly) count += 1;
   if (filters.changeableOnly) count += 1;
@@ -140,6 +159,21 @@ export function filterFlights(
     if (filters.maxPrice !== null && row.price > filters.maxPrice) return false;
     const duration = journeyDuration(row);
     if (filters.maxDurationMinutes !== null && duration > filters.maxDurationMinutes) return false;
+
+    if ("slices" in row) {
+      const journey = row as FlightJourney;
+      const layover = maxLayoverMinutes(journey);
+      if (filters.maxLayoverMinutes !== null && layover > filters.maxLayoverMinutes) return false;
+      if (filters.excludeOvernightConnections && hasOvernightConnection(journey)) return false;
+      if (filters.excludeAirportChanges && hasAirportChange(journey)) return false;
+      if (filters.protectedConnectionsOnly && journey.connection_protection !== "protected") {
+        return false;
+      }
+      if (filters.automaticBaggageTransferOnly && journey.baggage_transfer !== "automatic") {
+        return false;
+      }
+      if (!filters.allowSelfTransfer && journey.baggage_transfer === "self_transfer") return false;
+    }
 
     if ("carry_on_included" in row || "checked_bag_included" in row) {
       const journey = row as FlightJourney;

@@ -267,8 +267,8 @@ function SidebarProfileAvatar({
   const bg = deterministicAvatarBg(displayName);
 
   const ringClass = profileComplete
-    ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0F172A]"
-    : "ring-2 ring-red-500 ring-offset-2 ring-offset-[#0F172A]";
+    ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0F1614]"
+    : "ring-2 ring-red-500 ring-offset-2 ring-offset-[#0F1614]";
 
   return (
     <span className="relative inline-flex shrink-0">
@@ -292,14 +292,14 @@ function SidebarProfileAvatar({
       )}
       {profileComplete ? (
         <span
-          className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-[#0F172A]"
+          className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-[#0F1614]"
           aria-hidden
         >
           <IconCheck size={10} darkBg />
         </span>
       ) : (
         <span
-          className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-red-500 bg-navy ring-2 ring-[#0F172A]"
+          className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-red-500 bg-navy ring-2 ring-[#0F1614]"
           aria-hidden
         />
       )}
@@ -338,7 +338,7 @@ function SidebarNavSection({
       className={[
         "flex items-center gap-2 xl:gap-2.5 rounded-lg px-3 py-2 xl:py-2.5 text-[13px] font-medium transition-colors",
         active
-          ? "bg-[rgba(204,251,241,0.1)] text-[#F8FAFC] shadow-[inset_0_0_0_1px_rgba(15,118,110,0.35)]"
+          ? "bg-primary/10 text-text-on-dark shadow-[inset_0_0_0_1px_rgba(14,110,92,0.35)]"
           : "text-muted hover:bg-[rgba(248,250,252,0.06)] hover:text-[#F8FAFC]",
       ].join(" ")}
     >
@@ -385,7 +385,7 @@ function LiveHeaderNavTab({
         onClick={() => setOpen((prev) => !prev)}
         className={`relative flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-all ${
           active
-            ? "text-primary bg-primary-soft ring-1 ring-[#0F766E]/15"
+            ? "text-primary bg-primary-soft ring-1 ring-[#0E6E5C]/15"
             : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
         }`}
         title="Live"
@@ -794,7 +794,9 @@ function DashboardChrome({ children }: { children: ReactNode }) {
           FIXED TOP HEADER — never hides on scroll
       ═══════════════════════════════════════════════════ */}
       <header
-        className={`dashboard-header fixed top-0 left-0 right-0 z-40 hidden overflow-visible select-none transition-all duration-300 md:block translate-y-0 opacity-100 ${
+        className={`dashboard-header fixed top-0 left-0 right-0 z-40 overflow-visible select-none transition-all duration-300 translate-y-0 opacity-100 ${
+          isExploreHub ? "hidden" : "hidden md:block"
+        } ${
           liveDarkHeader
             ? "border-b border-white/10 bg-slate-950/55 shadow-none backdrop-blur-xl"
             : liveImmersiveHeader
@@ -847,8 +849,8 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                     className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 xl:px-3 text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-all ${
                       active
                         ? liveDarkHeader
-                          ? "bg-teal-500/20 text-teal-200 ring-1 ring-teal-300/30"
-                          : "text-primary bg-primary-soft ring-1 ring-[#0F766E]/15"
+                          ? "bg-primary/20 text-primary-highlight ring-1 ring-primary/30"
+                          : "text-primary bg-primary-soft ring-1 ring-[#0E6E5C]/15"
                         : liveDarkHeader
                           ? "text-slate-300 hover:text-white hover:bg-white/10"
                           : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
@@ -911,7 +913,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
                   href={href}
                   className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-semibold transition-all ${
                     active
-                      ? "bg-primary text-white shadow-[0_6px_16px_rgba(15,118,110,0.2)]"
+                      ? "bg-primary text-white shadow-[0_6px_16px_rgba(14,110,92,0.2)]"
                       : "text-slate-500 hover:bg-app hover:text-navy"
                   }`}
                 >
@@ -938,7 +940,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               }`
         }`}
         style={{
-          paddingTop: !isMdUp
+          paddingTop: isExploreHub || !isMdUp
             ? "0px"
             : `${headerPx}px`,
         }}

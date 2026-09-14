@@ -142,7 +142,7 @@ export function ChatEmojiGifPicker({
               isDark
                 ? "shrink-0 rounded-t-lg px-3 py-2 text-[13px] font-semibold"
                 : `shrink-0 rounded-t-lg px-2.5 py-1.5 text-[11px] font-semibold ${
-                    tab === k ? "bg-teal-50 text-primary" : "text-stone-500"
+                    tab === k ? "bg-primary-soft text-primary" : "text-stone-500"
                   }`
             }
             style={
@@ -176,7 +176,7 @@ export function ChatEmojiGifPicker({
                 type="button"
                 title={s.label}
                 onClick={() => onPickSticker?.(s.emoji)}
-                className="flex flex-col items-center gap-0.5 rounded-lg border border-stone-100 bg-stone-50 p-2 hover:bg-teal-50"
+                className="flex flex-col items-center gap-0.5 rounded-lg border border-stone-100 bg-stone-50 p-2 hover:bg-primary-soft"
               >
                 <span className="text-2xl leading-none">{s.emoji}</span>
                 <span className="text-[8px] font-semibold text-stone-500">{s.label}</span>

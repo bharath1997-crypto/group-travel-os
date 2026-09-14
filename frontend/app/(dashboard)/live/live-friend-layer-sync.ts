@@ -113,7 +113,7 @@ export function syncFriendLocationsOverlay(
           "circle-color": [
             "match",
             ["get", "status"],
-            "active", "#0F766E", // Brand primary teal
+            "active", "#0E6E5C", // Brand primary teal
             "idle", "#F59E0B",   // Warning amber
             "#6B7280"           // Stale gray
           ],
@@ -145,7 +145,7 @@ export function syncFriendLocationsOverlay(
           "text-ignore-placement": false,
         },
         paint: {
-          "text-color": "#0F172A", // Dark navy slate
+          "text-color": "#0F1614", // Dark navy slate
           "text-halo-color": "#ffffff",
           "text-halo-width": 2,
         },

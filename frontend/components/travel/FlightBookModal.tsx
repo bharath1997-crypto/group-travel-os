@@ -97,11 +97,11 @@ export default function FlightBookModal({ row, meta, onClose }: Props) {
               {routeLabel} · Depart {meta.departDate}
               {meta.roundTrip && meta.returnDate ? ` · Return ${meta.returnDate}` : ""}
             </p>
-            <p className="mt-2 text-lg font-bold text-teal-700">{formatPrice(row.currency, row.price)}</p>
+            <p className="mt-2 text-lg font-bold text-primary">{formatPrice(row.currency, row.price)}</p>
           </div>
 
           {success ? (
-            <div className="mt-4 rounded-xl border border-teal-200 bg-teal-50 px-4 py-4 text-sm text-teal-900">
+            <div className="mt-4 rounded-xl border border-teal-200 bg-primary-soft px-4 py-4 text-sm text-primary-dark">
               <p className="font-semibold">{success.message}</p>
               <p className="mt-2">
                 Airline reference: <strong>{success.booking_reference}</strong>
@@ -180,7 +180,7 @@ export default function FlightBookModal({ row, meta, onClose }: Props) {
               type="button"
               disabled={loading}
               onClick={() => void submit()}
-              className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-teal-700 disabled:opacity-60"
+              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-hover disabled:opacity-60"
             >
               {loading ? "Booking…" : "Confirm booking"}
             </button>

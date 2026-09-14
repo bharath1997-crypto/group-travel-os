@@ -29,13 +29,13 @@ export function ExploreV2Section({
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <div style={{ fontSize: "20px", display: "flex", alignItems: "center" }}>{icon}</div>
-          <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#0F172A", margin: 0 }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#0F1614", margin: 0 }}>
             {title}
           </h2>
         </div>
         <Link href={seeAllHref} style={{
           fontSize: "13px",
-          color: "#0F766E",
+          color: "#0E6E5C",
           background: "none",
           border: "none",
           cursor: "pointer",

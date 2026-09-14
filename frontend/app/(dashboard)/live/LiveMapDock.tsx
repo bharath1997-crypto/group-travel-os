@@ -56,8 +56,8 @@ export default function LiveMapDock({
     if (isActive) {
       return `${base} ${
         isDark
-          ? "bg-teal-500/25 border-teal-400/40 text-teal-300 ring-1 ring-teal-400/30"
-          : "bg-teal-50 border-primary/30 text-primary ring-1 ring-teal-100/80"
+          ? "bg-primary-soft0/25 border-teal-400/40 text-teal-300 ring-1 ring-teal-400/30"
+          : "bg-primary-soft border-primary/30 text-primary ring-1 ring-teal-100/80"
       }`;
     }
     return `${base} ${
@@ -126,7 +126,7 @@ export default function LiveMapDock({
           aria-label="Toggle Sound"
         >
           {soundEnabled ? (
-            <Volume2 className="h-4.5 w-4.5 text-teal-600 dark:text-teal-400" />
+            <Volume2 className="h-4.5 w-4.5 text-primary dark:text-teal-400" />
           ) : (
             <VolumeX className="h-4.5 w-4.5 text-stone-400" />
           )}
@@ -141,7 +141,7 @@ export default function LiveMapDock({
           aria-label="Toggle Notifications"
         >
           {notificationsEnabled ? (
-            <Bell className="h-4.5 w-4.5 text-teal-600 dark:text-teal-400" />
+            <Bell className="h-4.5 w-4.5 text-primary dark:text-teal-400" />
           ) : (
             <BellOff className="h-4.5 w-4.5 text-stone-400" />
           )}

@@ -131,7 +131,7 @@ export function ProfileAccountMenuPanel({
           Travel Cart
         </span>
         {cartCount > 0 ? (
-          <span className="rounded-full bg-teal-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+          <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-white">
             {cartCount > 99 ? "99" : cartCount}
           </span>
         ) : null}

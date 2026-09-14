@@ -19,7 +19,7 @@ import { LiveDataTrustBadge, LiveDataTrustFooter } from "./LiveDataTrustBadge";
 import { buildRoutePreviewAiSuggestions } from "./live-ai-suggestions";
 import { formatPlaceSubtitle } from "./live-place-display";
 
-const TEAL = "#0F766E";
+const TEAL = "#0E6E5C";
 
 type Props = {
   destination: PlacePreviewData;
@@ -167,7 +167,7 @@ export default function SoloRoutePreviewPanel({
           <button
             type="button"
             onClick={onPlanTrip}
-            className="w-full rounded-lg border py-2 text-xs font-semibold hover:bg-teal-50"
+            className="w-full rounded-lg border py-2 text-xs font-semibold hover:bg-primary-soft"
             style={{ borderColor: TEAL, color: TEAL }}
           >
             Plan trip

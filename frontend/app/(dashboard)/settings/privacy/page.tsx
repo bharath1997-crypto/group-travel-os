@@ -32,7 +32,7 @@ export default function PrivacyPage() {
         {/* Section 1: Visibility */}
         <div className="bg-white rounded-2xl border border-stone-100 p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <Eye size={20} className="text-teal-600" />
+            <Eye size={20} className="text-primary" />
             <h2 className="text-lg font-bold text-stone-800">Visibility</h2>
           </div>
           
@@ -61,7 +61,7 @@ export default function PrivacyPage() {
         {/* Section 2: Interactions */}
         <div className="bg-white rounded-2xl border border-stone-100 p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <MessageSquare size={20} className="text-teal-600" />
+            <MessageSquare size={20} className="text-primary" />
             <h2 className="text-lg font-bold text-stone-800">Interactions</h2>
           </div>
           
@@ -84,7 +84,7 @@ export default function PrivacyPage() {
         {/* Section 3: Activity & Safety */}
         <div className="bg-white rounded-2xl border border-stone-100 p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <Shield size={20} className="text-teal-600" />
+            <Shield size={20} className="text-primary" />
             <h2 className="text-lg font-bold text-stone-800">Activity & Safety</h2>
           </div>
           
@@ -114,7 +114,7 @@ export default function PrivacyPage() {
                 <p className="font-semibold text-stone-700">Blocked Users</p>
                 <p className="text-xs text-stone-500">Manage the people you've blocked.</p>
               </div>
-              <Link href="/settings/blocked" className="text-sm font-semibold text-teal-600 hover:text-teal-700">
+              <Link href="/settings/blocked" className="text-sm font-semibold text-primary hover:text-primary">
                 Manage →
               </Link>
             </div>

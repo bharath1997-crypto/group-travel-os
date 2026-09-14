@@ -13,8 +13,9 @@ from urllib.parse import quote
 
 import httpx
 
-from app.schemas.flight import FlightResult
+from app.schemas.flight import FlightResult, ProviderOffer
 from config import settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,15 @@ def _parse_kiwi_offer(item: dict[str, Any], currency: str) -> FlightResult | Non
         stops = max(0, len(route) - 1)
         deep_link = str(item.get("deep_link") or "")
 
+        initial_offers = [
+            ProviderOffer(
+                provider_name="Kiwi.com",
+                price=float(price),
+                currency=str(item.get("currency") or currency).upper(),
+                booking_url=deep_link,
+            )
+        ] if deep_link else []
+
         return FlightResult(
             id=f"kiwi-{fid}",
             price=float(price),
@@ -84,6 +94,8 @@ def _parse_kiwi_offer(item: dict[str, Any], currency: str) -> FlightResult | Non
             duration_minutes=duration_minutes,
             deep_link=deep_link,
             stops=stops,
+            provider="Kiwi.com",
+            provider_offers=initial_offers,
         )
     except Exception as exc:
         logger.debug("Skip Kiwi row parse: %s", exc)
@@ -140,6 +152,12 @@ def search_kiwi(
     if not isinstance(data, list):
         return []
 
+    response_currency = currency
+    if isinstance(payload, dict):
+        candidate_currency = payload.get("currency") or payload.get("currency_code")
+        if isinstance(candidate_currency, str) and len(candidate_currency.strip()) == 3:
+            response_currency = candidate_currency.strip().upper()
+
     out: list[FlightResult] = []
     for row in data:
         if not isinstance(row, dict):
@@ -175,6 +193,16 @@ def _parse_travelpayouts_row(row: dict[str, Any], currency: str) -> FlightResult
 
         link = _aviasales_booking_link(str(row.get("link") or ""))
         row_id = str(row.get("flight_number") or row.get("link") or f"{origin}-{destination}-{dep}")
+        gate_name = str(row.get("gate") or row.get("agency_name") or "Aviasales Partner").strip()
+
+        tp_offers = [
+            ProviderOffer(
+                provider_name=f"Aviasales ({gate_name})" if gate_name != "Aviasales Partner" else "Aviasales",
+                price=float(price),
+                currency=currency.upper(),
+                booking_url=link,
+            )
+        ] if link else []
 
         return FlightResult(
             id=f"tp-{row_id}",
@@ -188,6 +216,8 @@ def _parse_travelpayouts_row(row: dict[str, Any], currency: str) -> FlightResult
             duration_minutes=duration_minutes,
             deep_link=link,
             stops=max(0, stops),
+            provider="Aviasales",
+            provider_offers=tp_offers,
         )
     except Exception as exc:
         logger.debug("Skip Travelpayouts row parse: %s", exc)
@@ -240,7 +270,8 @@ def search_travelpayouts_prices(
     for row in data:
         if not isinstance(row, dict):
             continue
-        parsed = _parse_travelpayouts_row(row, currency)
+        row_currency = row.get("currency") if isinstance(row.get("currency"), str) else response_currency
+        parsed = _parse_travelpayouts_row(row, str(row_currency))
         if parsed:
             out.append(parsed)
 
@@ -249,23 +280,63 @@ def search_travelpayouts_prices(
 
 
 def merge_flight_results(*groups: list[FlightResult], limit: int = 30) -> list[FlightResult]:
-    """Dedupe similar offers and sort by price — meta-search aggregator step."""
-    merged: list[FlightResult] = []
-    seen: set[tuple[str, str, str, int, int]] = set()
+    """Dedupe similar offers, aggregate seller offers into provider_offers list, and sort by price."""
+    merged_map: dict[tuple[str, str, str, int, int], FlightResult] = {}
 
     for group in groups:
         for row in group:
             key = (
                 row.origin.upper(),
                 row.destination.upper(),
-                row.departure_at[:10] if row.departure_at else "",
-                int(row.price),
+                row.departure_at[:16] if row.departure_at else "",
                 row.stops,
+                tuple(sorted(row.airlines)),
             )
-            if key in seen:
-                continue
-            seen.add(key)
-            merged.append(row)
 
+            if key not in merged_map:
+                # Store new canonical flight result
+                if not row.provider_offers and row.deep_link:
+                    row.provider_offers = [
+                        ProviderOffer(
+                            provider_name=row.provider or "Partner",
+                            price=row.price,
+                            currency=row.currency,
+                            booking_url=row.deep_link,
+                        )
+                    ]
+                merged_map[key] = row
+            else:
+                existing = merged_map[key]
+                if row.price < existing.price:
+                    existing.price = row.price
+                # Combine seller offers into existing itinerary
+                new_offers = list(row.provider_offers)
+                if not new_offers and row.deep_link:
+                    new_offers = [
+                        ProviderOffer(
+                            provider_name=row.provider or "Partner",
+                            price=row.price,
+                            currency=row.currency,
+                            booking_url=row.deep_link,
+                        )
+                    ]
+
+                for offer in new_offers:
+                    # Avoid exact duplicate provider name & price
+                    if not any(
+                        o.provider_name == offer.provider_name and abs(o.price - offer.price) < 0.01
+                        for o in existing.provider_offers
+                    ):
+                        existing.provider_offers.append(offer)
+
+                # Update main price to lowest available offer
+                if row.price < existing.price:
+                    existing.price = row.price
+                    existing.deep_link = row.deep_link
+                    existing.provider = row.provider
+
+    merged = list(merged_map.values())
     merged.sort(key=lambda r: r.price)
     return merged[:limit]
+
+

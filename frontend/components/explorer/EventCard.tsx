@@ -52,7 +52,7 @@ function EventImagePanel({
   return (
     <div
       className={[
-        "relative w-full overflow-hidden bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0d1f33]",
+        "relative w-full overflow-hidden bg-gradient-to-br from-[#0F1614] via-[#1E293B] to-[#0d1f33]",
         className ?? "",
       ].join(" ")}
     >

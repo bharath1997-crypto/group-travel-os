@@ -50,8 +50,12 @@ import {
 } from "./live-place-display";
 import { useLivePlaceDisplayName } from "./live-place-name-i18n";
 import { isGenericPlaceName } from "@/lib/wayra/place-region";
+import {
+  LivePlacePreviewGroupSection,
+  LivePlacePreviewHero,
+} from "./LivePlacePreviewV3Sections";
 
-const TEAL = "#0F766E";
+const TEAL = "#0E6E5C";
 
 function PlacePreviewTitle({
   name,
@@ -187,6 +191,10 @@ type Props = {
   vehiclePreference?: VehiclePreference;
   onVehiclePreferenceChange?: (value: VehiclePreference) => void;
   onOpenTravelTab?: () => void;
+  /** v3 group stubs — toast until L6. */
+  onPutToVote?: () => void;
+  onInviteGroup?: () => void;
+  onReserveStub?: () => void;
 };
 
 function useMediaQuery(query: string): boolean {
@@ -249,7 +257,7 @@ function QuickActionIOS({
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
         active
-          ? "bg-teal-50 text-primary"
+          ? "bg-primary-soft text-primary"
           : "bg-stone-100/60 text-stone-850 hover:bg-stone-200/60"
       }`}
     >
@@ -276,7 +284,7 @@ function QuickActionAndroid({
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all ${
         active
-          ? "border-primary/35 bg-teal-50 text-primary"
+          ? "border-primary/35 bg-primary-soft text-primary"
           : "border-stone-200 bg-white text-stone-700 hover:bg-stone-50"
       }`}
     >
@@ -341,6 +349,9 @@ export default function PlacePreviewCard({
   vehiclePreference = "private",
   onVehiclePreferenceChange,
   onOpenTravelTab,
+  onPutToVote,
+  onInviteGroup,
+  onReserveStub,
 }: Props) {
   const [wikiSummary, setWikiSummary] = useState<{
     available: boolean;
@@ -676,7 +687,7 @@ export default function PlacePreviewCard({
               <button
                 type="button"
                 onClick={onAskRovi}
-                className="h-10 rounded-lg border border-primary/30 bg-teal-50/50 px-3 text-xs font-bold text-primary hover:bg-teal-50 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                className="h-10 rounded-lg border border-primary/30 bg-primary-soft/50 px-3 text-xs font-bold text-primary hover:bg-primary-soft active:scale-95 transition-all flex items-center justify-center gap-1.5"
               >
                 Ask Wayra
               </button>
@@ -779,7 +790,7 @@ export default function PlacePreviewCard({
               />
 
               {(routeLoading || routePreviewStatus === "loading") && routePreviewStatus !== "idle" ? (
-                <div className="rounded-xl border border-teal-100 bg-teal-50/70 px-3 py-2.5">
+                <div className="rounded-xl border border-primary/20 bg-primary-soft/70 px-3 py-2.5">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-teal-800">
                     {travelMode} route preview
                   </p>
@@ -887,7 +898,7 @@ export default function PlacePreviewCard({
 
               <div className="space-y-1 border-t border-stone-100/50 pt-2">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
+                  <span className="inline-flex rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
                     Verified source
                   </span>
                   <span className="text-[10px] text-stone-400">{sourceLabel}</span>
@@ -998,7 +1009,7 @@ export default function PlacePreviewCard({
               />
 
               {(routeLoading || routePreviewStatus === "loading") && routePreviewStatus !== "idle" ? (
-                <div className="rounded-lg border border-teal-100 bg-teal-50 px-3 py-2">
+                <div className="rounded-lg border border-primary/20 bg-primary-soft px-3 py-2">
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-800">
                     {travelMode} route preview
                   </p>
@@ -1106,7 +1117,7 @@ export default function PlacePreviewCard({
 
               <div className="space-y-1 border-t border-stone-100 pt-2">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
+                  <span className="inline-flex rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
                     Verified source
                   </span>
                   <span className="text-[10px] text-stone-400">{sourceLabel}</span>
@@ -1182,7 +1193,7 @@ export default function PlacePreviewCard({
             <button
               type="button"
               onClick={onAskRovi}
-              className="w-full rounded-xl border border-primary/30 bg-teal-50/50 py-2 text-xs font-semibold text-primary hover:bg-teal-50"
+              className="w-full rounded-xl border border-primary/30 bg-primary-soft/50 py-2 text-xs font-semibold text-primary hover:bg-primary-soft"
             >
               Ask Wayra
             </button>
@@ -1192,6 +1203,8 @@ export default function PlacePreviewCard({
       </div>
     );
   }
+
+  const showV3Hero = !isDroppedPinOrAddress;
 
   return (
     <div
@@ -1203,6 +1216,15 @@ export default function PlacePreviewCard({
       <PanelResizeHandles />
       <PhoneSheetHandle />
       <div className="max-h-[min(var(--live-preview-max-height,55dvh),calc(100dvh-8rem))] overflow-y-auto no-scrollbar px-3 pt-2.5 pb-2">
+        {showV3Hero ? (
+          <LivePlacePreviewHero
+            placeMedia={placeMedia}
+            placeMediaLoading={placeMediaLoading}
+            categoryLabel={place.categoryLabel}
+            onClose={onClose}
+          />
+        ) : null}
+
         <div className="flex items-start gap-2">
           <button
             type="button"
@@ -1237,14 +1259,16 @@ export default function PlacePreviewCard({
               </div>
             ) : null}
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600"
-            aria-label="Close details"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
+          {!showV3Hero ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+              aria-label="Close details"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
           {wayraChatOpen && onToggleCompact ? (
             <button
               type="button"
@@ -1257,6 +1281,15 @@ export default function PlacePreviewCard({
             </button>
           ) : null}
         </div>
+
+        {!isDroppedPinOrAddress ? (
+          <LivePlacePreviewGroupSection
+            categoryLabel={place.categoryLabel}
+            onPutToVote={onPutToVote}
+            onInviteGroup={onInviteGroup}
+            onReserve={onReserveStub}
+          />
+        ) : null}
 
         {/* Tab Selection */}
         <div className="mt-3 mb-2.5 flex shrink-0 overflow-x-auto border-b border-stone-100 text-xs font-semibold text-stone-500 no-scrollbar">
@@ -1312,7 +1345,7 @@ export default function PlacePreviewCard({
             />
 
             {(routeLoading || routePreviewStatus === "loading") && routePreviewStatus !== "idle" ? (
-              <div className="rounded-lg border border-teal-100 bg-teal-50/80 px-2.5 py-2">
+              <div className="rounded-lg border border-primary/20 bg-primary-soft/80 px-2.5 py-2">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-800">
                   {travelMode} route preview
                 </p>
@@ -1330,16 +1363,6 @@ export default function PlacePreviewCard({
 
         {activeTab === "about" && (
           <div className="space-y-3">
-            {!isDroppedPinOrAddress && !hasNoPhotos ? (
-              <div className={`overflow-hidden rounded-lg ${mediaMaxHeightClass}`}>
-                <PlacePreviewMedia
-                  media={placeMedia}
-                  categoryLabel={place.categoryLabel}
-                  loading={placeMediaLoading}
-                />
-              </div>
-            ) : null}
-
             {wikiLoading || wikiSummary ? (
               <PlaceWikiAboutSection
                 wikiLoading={wikiLoading}
@@ -1422,7 +1445,7 @@ export default function PlacePreviewCard({
 
             <div className="space-y-1 border-t border-stone-100 pt-2">
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
+                <span className="inline-flex rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
                   Verified source
                 </span>
                 <span className="text-[10px] text-stone-400">{sourceLabel}</span>
@@ -1483,7 +1506,7 @@ function PreviewPlaceActionRow({
                 onClick={() => onVehiclePreferenceChange?.(option.id)}
                 className={`rounded-md border px-2 py-2 text-left transition-all ${
                   selected
-                    ? "border-primary bg-teal-50 shadow-sm"
+                    ? "border-primary bg-primary-soft shadow-sm"
                     : "border-stone-200 bg-stone-50 hover:border-stone-300"
                 }`}
               >
@@ -1528,7 +1551,7 @@ function PreviewPlaceActionRow({
                     onClick={() => onSelectRouteAlternative?.(alt.id)}
                     className={`rounded-md border px-2.5 py-2 text-left transition-all ${
                       selected
-                        ? "border-primary bg-teal-50 shadow-sm"
+                        ? "border-primary bg-primary-soft shadow-sm"
                         : "border-stone-200 bg-white hover:border-stone-300"
                     }`}
                   >
@@ -1563,7 +1586,7 @@ function PreviewPlaceActionRow({
         className={`flex-1 rounded-lg px-3 py-2.5 text-xs font-semibold shadow-sm active:scale-[0.98] transition-all ${
           directionReady
             ? "text-white hover:opacity-95"
-            : "border-2 border-primary bg-primary-soft text-primary hover:bg-teal-50"
+            : "border-2 border-primary bg-primary-soft text-primary hover:bg-primary-soft"
         }`}
         style={directionReady ? { backgroundColor: TEAL } : undefined}
         aria-label={
@@ -1604,7 +1627,7 @@ function QuickAction({
       disabled={disabled}
       className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold disabled:cursor-not-allowed disabled:opacity-45 ${
         active
-          ? "border-primary/35 bg-teal-50 text-primary"
+          ? "border-primary/35 bg-primary-soft text-primary"
           : "border-stone-200 text-stone-700 hover:bg-stone-50"
       }`}
     >

@@ -93,8 +93,8 @@ export function liveMapFloatBtnLight(active = false, isDark = false): string {
   if (active) {
     return `${LIVE_MAP_FLOAT_BTN} ${
       isDark
-        ? "bg-teal-500/25 text-teal-200 ring-1 ring-teal-400/35"
-        : "bg-[#E6F4F2] text-[#0F766E] ring-1 ring-[#0F766E]/20"
+        ? "bg-primary-soft0/25 text-teal-200 ring-1 ring-teal-400/35"
+        : "bg-[#E6F4F2] text-[#0E6E5C] ring-1 ring-[#0E6E5C]/20"
     }`;
   }
   return `${LIVE_MAP_FLOAT_BTN} ${

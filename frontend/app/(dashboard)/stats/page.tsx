@@ -129,10 +129,10 @@ export default function StatsPage() {
   return (
     <div className="min-h-[calc(100dvh-80px)] bg-app rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
       <div className="flex items-center gap-3 mb-3">
-        <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center border border-teal-200/60">
+        <div className="h-10 w-10 rounded-xl bg-primary-soft flex items-center justify-center border border-teal-200/60">
           <span className="text-xl">📊</span>
         </div>
-        <span className="text-xs font-bold uppercase tracking-widest text-teal-600">Rovvy Analytics</span>
+        <span className="text-xs font-bold uppercase tracking-widest text-primary">Rovvy Analytics</span>
       </div>
       <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">My Stats</h1>
       <p className="mt-1 text-sm text-slate-500">Your activity overview</p>
@@ -143,7 +143,7 @@ export default function StatsPage() {
           <button
             type="button"
             onClick={() => void load()}
-            className="mt-2 font-semibold text-teal-600 hover:text-teal-700 underline"
+            className="mt-2 font-semibold text-primary hover:text-primary underline"
           >
             Retry
           </button>
@@ -199,7 +199,7 @@ export default function StatsPage() {
                 key={key}
                 className="rounded-xl border border-slate-200 bg-white px-5 py-6 shadow-sm transition hover:shadow-md"
               >
-                <p className="text-3xl font-semibold tabular-nums text-teal-600">
+                <p className="text-3xl font-semibold tabular-nums text-primary">
                   {stats?.[key] ?? 0}
                 </p>
                 <p className="mt-2 text-sm font-medium text-slate-600">

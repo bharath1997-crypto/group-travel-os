@@ -24,7 +24,7 @@ export function LoadingSkeleton({
             className="overflow-hidden rounded-2xl border bg-white shadow-sm"
             style={{ borderColor: BORDER }}
           >
-            <div className="h-20 animate-pulse bg-gradient-to-r from-[#0F172A]/30 to-primary/30" />
+            <div className="h-20 animate-pulse bg-gradient-to-r from-[#0F1614]/30 to-primary/30" />
             <div className="space-y-3 p-3.5">
               <div className="h-4 w-3/4 animate-pulse rounded bg-[#E9ECEF]" />
               <div className="h-3 w-1/2 animate-pulse rounded bg-[#E9ECEF]" />

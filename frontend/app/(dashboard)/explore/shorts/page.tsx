@@ -164,7 +164,7 @@ function extractHashtagsFromShortItems(
   return out;
 }
 
-export function formatCompactViews(n: number): string {
+function formatCompactViews(n: number): string {
   if (n >= 1_000_000) {
     const v = n / 1_000_000;
     return `${v >= 10 ? Math.round(v) : v.toFixed(1).replace(/\.0$/, "")}M views`;

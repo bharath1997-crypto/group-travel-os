@@ -59,7 +59,14 @@ End with one concrete follow-up question if the user's goal is still ambiguous.
 Never reply with ellipsis or placeholders.
 Reply with JSON where message is the full plain-text plan for the user."""
 
+_WAYRA_VOICE_SYSTEM = """You are Wayra, Rovvy's built-in travel assistant.
+Answer only from the supplied snippets. 1–3 short spoken sentences. Plain text, no markdown or URLs.
+Never mention Google, Gemini, DeepSeek, OpenAI, or any AI vendor.
+Reply with JSON where message is the spoken answer."""
+
 _WAYRA_SUMMARY_SYSTEM = _WAYRA_STANDARD_SYSTEM
+
+_VOICE_SOURCE_CHAR_CAP = 1600
 
 _DEEPSEEK_ORCHESTRATOR_SYSTEM = """You are Wayra's routing controller and first responder.
 Convert the user's input and supplied context into a precise, self-contained prompt.
@@ -96,6 +103,8 @@ class DeepSeekRouteDecision:
 
 
 def _system_prompt_for_budget(budget: WayraOutputBudget) -> str:
+    if budget.style == "voice":
+        return _WAYRA_VOICE_SYSTEM
     if budget.style == "compact":
         return _WAYRA_COMPACT_SYSTEM
     if budget.style == "plan":
@@ -103,6 +112,13 @@ def _system_prompt_for_budget(budget: WayraOutputBudget) -> str:
     if budget.style == "full":
         return _WAYRA_PLAN_SYSTEM
     return _WAYRA_STANDARD_SYSTEM
+
+
+def _clip_source_block(source_block: str, *, voice_mode: bool) -> str:
+    text = (source_block or "").strip()
+    if not voice_mode or len(text) <= _VOICE_SOURCE_CHAR_CAP:
+        return text
+    return text[:_VOICE_SOURCE_CHAR_CAP].rstrip() + "\n[truncated for voice]"
 
 
 def _discovery_style_hint(user_message: str, *, style: str) -> str:
@@ -330,6 +346,7 @@ async def summarize_from_sources(
     tier: str,
     ctx: dict[str, Any] | None = None,
     place: dict[str, Any] | None = None,
+    voice_mode: bool = False,
 ) -> tuple[str, str, dict[str, int] | None]:
     """
     Returns (message, provider_used, usage_dict).
@@ -338,23 +355,54 @@ async def summarize_from_sources(
     DeepSeek normalizes every LLM-bound request, decides whether it can answer,
     and supplies a provisional answer. Gemini is called only when DeepSeek routes
     the request there. Deterministic local answers bypass this paid orchestration.
+    Voice and compact nearby answers skip the routing hop (one DeepSeek call).
     """
-    budget = resolve_output_budget(tier, user_message)
-    behavior = build_wayra_behavior_hints(user_message, ctx, place)
-    origin_block = build_user_origin_planning_block(ctx, place) if ctx else ""
-    extra_context = "\n".join(p for p in (origin_block, behavior) if p).strip()
+    budget = resolve_output_budget(tier, user_message, voice_mode=voice_mode)
+    clipped = _clip_source_block(source_block, voice_mode=budget.style == "voice")
+    extra_context = ""
+    if budget.style != "voice":
+        behavior = build_wayra_behavior_hints(user_message, ctx, place)
+        origin_block = build_user_origin_planning_block(ctx, place) if ctx else ""
+        extra_context = "\n".join(p for p in (origin_block, behavior) if p).strip()
     user_block = (
         f"Place context: {place_label}\n"
         f"User question: {user_message}\n"
         f"{_discovery_style_hint(user_message, style=budget.style)}\n"
         f"Output budget: up to {budget.max_output_tokens} tokens.\n\n"
-        f"SOURCE SNIPPETS:\n{source_block}\n\n"
+        f"SOURCE SNIPPETS:\n{clipped}\n\n"
         'Reply with JSON only: {"message": "<plain text answer>"}'
     )
     if extra_context:
         user_block = f"{user_block}\n\n{extra_context}\n"
 
     return await _summarize_cost_first(user_block, budget)
+
+
+async def _summarize_direct_deepseek(
+    user_block: str,
+    budget: WayraOutputBudget,
+    system_prompt: str,
+) -> tuple[str, str, dict[str, int] | None] | None:
+    """Single DeepSeek completion — no routing JSON, no Gemini hop."""
+    if not _deepseek_key():
+        return None
+    try:
+        text, usage = await _call_deepseek(
+            user_block,
+            system_prompt=system_prompt,
+            max_tokens=budget.max_output_tokens,
+        )
+        record_gemini_usage(
+            feature=f"wayra_{budget.tier}_deepseek_direct",
+            model=_deepseek_model(),
+            usage=usage,
+        )
+        message = _parse_summary_json(text, max_chars=budget.max_message_chars)
+        if message:
+            return message, "deepseek", usage
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Wayra DeepSeek direct answer failed (tier=%s): %s", budget.tier, exc)
+    return None
 
 
 async def _summarize_cost_first(
@@ -368,7 +416,22 @@ async def _summarize_cost_first(
     provisional = ""
     orchestration_usage: dict[str, int] | None = None
 
-    if _deepseek_key():
+    if budget.style in {"voice", "compact"}:
+        direct = await _summarize_direct_deepseek(user_block, budget, system_prompt)
+        if direct is not None:
+            return direct
+        if budget.style == "voice":
+            source_block = source_block_from_user(user_block)
+            first_line = source_block.split("\n")[0].strip() if source_block else ""
+            place_ctx = user_block.split("\n", 1)[0].replace("Place context: ", "").strip()
+            fallback = (
+                f"I can still help with {place_ctx or 'this place'}. "
+                f"{first_line} Ask again in a moment if you want more detail."
+            )
+            return fallback[:max_chars], "template", None
+        # Compact: skip the paid routing hop; fall through to Gemini outage / template.
+
+    if budget.style not in {"voice", "compact"} and _deepseek_key():
         try:
             decision, raw, orchestration_usage = await _ask_deepseek_to_route(
                 final_system_prompt=system_prompt,
@@ -418,7 +481,7 @@ async def _summarize_cost_first(
         except Exception as exc:  # noqa: BLE001
             logger.warning("Wayra DeepSeek orchestrator failed (tier=%s): %s", tier, exc)
 
-    if _deepseek_key():
+    if budget.style not in {"voice", "compact"} and _deepseek_key():
         try:
             text, usage = await _call_deepseek(
                 user_block,
@@ -634,15 +697,42 @@ async def generate_wayra_full_response(
     user_block: str,
     user_message: str,
     temperature: float = 0.4,
+    voice_mode: bool = False,
 ) -> tuple[str, str, dict[str, int] | None]:
     """
     Full assistant flow: DeepSeek normalizes, decides, and answers or selects Gemini.
     Returns (raw_json_text, provider_used, usage_dict).
     """
+    full_budget = resolve_output_budget(
+        "voice" if voice_mode else "full",
+        user_message,
+        voice_mode=voice_mode,
+    )
+
+    if voice_mode and _deepseek_key():
+        try:
+            text, usage = await _call_deepseek(
+                user_block,
+                system_prompt=system_prompt,
+                max_tokens=full_budget.max_output_tokens,
+            )
+            record_gemini_usage(
+                feature="wayra_assistant_voice_direct",
+                model=_deepseek_model(),
+                usage=usage,
+            )
+            message = _parse_summary_json(text, max_chars=full_budget.max_message_chars)
+            if message:
+                return message, "deepseek", usage
+            if text.strip():
+                return text, "deepseek", usage
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Wayra voice DeepSeek direct failed: %s", exc)
+        return "", "none", None
+
     from app.services.wayra_routing import llm_timeout_seconds
 
     timeout = llm_timeout_seconds(user_message)
-    full_budget = resolve_output_budget("full", user_message)
 
     if _deepseek_key():
         try:
@@ -665,7 +755,10 @@ async def generate_wayra_full_response(
                 if decision.route == "deepseek" and provisional:
                     return provisional, "deepseek", orchestration_usage
 
-                if decision.route == "gemini" and _gemini_key():
+                if voice_mode and provisional:
+                    return provisional, "deepseek", orchestration_usage
+
+                if decision.route == "gemini" and _gemini_key() and not voice_mode:
                     try:
                         gemini_text, gemini_usage = await _call_gemini_full_async(
                             system_prompt,
@@ -696,7 +789,7 @@ async def generate_wayra_full_response(
             logger.warning("Wayra DeepSeek full orchestrator failed: %s", exc)
 
     # Availability fallback when the DeepSeek controller itself is unavailable.
-    if _gemini_key():
+    if _gemini_key() and not voice_mode:
         try:
             raw_text, usage = await _call_gemini_full_async(
                 system_prompt,

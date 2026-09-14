@@ -155,7 +155,7 @@ export function CurrencySafetyWidget({
               </div>
 
               <div className="flex justify-center -my-3 relative z-10">
-                <div className="bg-primary p-2 rounded-full shadow-lg border-4 border-[#0F172A]">
+                <div className="bg-primary p-2 rounded-full shadow-lg border-4 border-[#0F1614]">
                   <ArrowLeftRight className="h-5 w-5 text-white" />
                 </div>
               </div>

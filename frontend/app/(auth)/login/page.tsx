@@ -90,7 +90,7 @@ function LoginField({
 
 function EnvelopeIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#0F766E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden className="shrink-0">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#0E6E5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden className="shrink-0">
       <rect x="2" y="4" width="20" height="16" rx="3" />
       <path d="M2 8l10 6 10-6" />
     </svg>
@@ -99,7 +99,7 @@ function EnvelopeIcon() {
 
 function LockIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#0F766E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden className="shrink-0">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#0E6E5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden className="shrink-0">
       <rect x="5" y="11" width="14" height="10" rx="2" />
       <path d="M8 11V7a4 4 0 018 0v4" />
     </svg>

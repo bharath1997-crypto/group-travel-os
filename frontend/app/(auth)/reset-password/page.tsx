@@ -8,8 +8,8 @@ import { AuthInput } from "@/components/auth/AuthInput";
 import { GradientHeader } from "@/components/auth/GradientHeader";
 import { apiFetch } from "@/lib/api";
 
-const BRAND_GRADIENT = "linear-gradient(135deg, #0F766E, #0D635C)";
-const GREEN_GRADIENT = "linear-gradient(135deg, #0F766E, #14B8A6)";
+const BRAND_GRADIENT = "linear-gradient(135deg, #0E6E5C, #0A4A3E)";
+const GREEN_GRADIENT = "linear-gradient(135deg, #0E6E5C, #14B8A6)";
 
 function LockIcon() {
   return (

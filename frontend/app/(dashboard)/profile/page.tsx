@@ -1650,7 +1650,7 @@ export default function ProfilePage() {
               <div className="flex items-center gap-2 max-w-full">
                 <h1 className="break-words text-2xl font-extrabold text-[#2C3E50] sm:text-3xl">{displayName}</h1>
                 {me?.is_verified && (
-                  <span className="text-teal-600 shrink-0" title="Verified">
+                  <span className="text-primary shrink-0" title="Verified">
                     <IconPlane size={20} active />
                   </span>
                 )}
@@ -1659,7 +1659,7 @@ export default function ProfilePage() {
 
               {locationLine && (
                 <div className="mt-2 flex items-center gap-1 text-sm text-[#6C757D]">
-                  <IconMapPin size={16} className="text-teal-600" />
+                  <IconMapPin size={16} className="text-primary" />
                   <span>{locationLine}</span>
                 </div>
               )}
@@ -1669,7 +1669,7 @@ export default function ProfilePage() {
                 <div className="mt-4 flex gap-2 w-full sm:w-auto">
                   <button 
                     type="button"
-                    className="flex items-center justify-center gap-2 rounded-full bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-colors shadow-sm w-full sm:w-auto"
+                    className="flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover transition-colors shadow-sm w-full sm:w-auto"
                     onClick={() => setEditOpen(true)}
                   >
                     <span>Edit Profile</span>
@@ -1690,7 +1690,7 @@ export default function ProfilePage() {
             )}
             
             <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
-              <span className="rounded-full bg-teal-50 px-3.5 py-1 text-xs font-semibold text-teal-700">
+              <span className="rounded-full bg-primary-soft px-3.5 py-1 text-xs font-semibold text-primary">
                 {level.emoji} {level.label}
               </span>
               <span className="rounded-full bg-stone-100 px-3.5 py-1 text-xs font-semibold text-stone-700">
@@ -1710,7 +1710,7 @@ export default function ProfilePage() {
         {/* 2. PREMIUM STATS ROW */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { key: "trips", label: "Trips Done", value: tripsLoading ? "…" : String(tripsCount), icon: IconPlane, color: "bg-teal-50 text-teal-600", onClick: () => setContentTab("trips") },
+            { key: "trips", label: "Trips Done", value: tripsLoading ? "…" : String(tripsCount), icon: IconPlane, color: "bg-primary-soft text-primary", onClick: () => setContentTab("trips") },
             { key: "countries", label: "Countries", value: String(stats?.countries_from_trips?.length ?? 0), icon: IconMap, color: "bg-sky-50 text-sky-600", href: "/map" },
             { key: "cities", label: "Cities", value: String(stats?.locations_saved ?? 0), icon: IconMapPin, color: "bg-amber-50 text-amber-600", href: "/map" },
             { key: "buddies", label: "Buddies", value: String(buddiesCount), icon: IconUserSquare, color: "bg-rose-50 text-rose-600", onClick: () => setContentTab("friends") },
@@ -1772,7 +1772,7 @@ export default function ProfilePage() {
             </div>
             <Link
               href="/map"
-              className="text-sm font-semibold text-teal-600 hover:text-teal-700"
+              className="text-sm font-semibold text-primary hover:text-primary"
             >
               Full Map →
             </Link>
@@ -1796,12 +1796,12 @@ export default function ProfilePage() {
           <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-[#2C3E50]">Communities</h2>
-              <Backpack size={20} className="text-teal-600" aria-hidden />
+              <Backpack size={20} className="text-primary" aria-hidden />
             </div>
             <p className="text-sm leading-relaxed text-[#6C757D]">
               Join travel groups, meet like-minded explorers, and share your journey.
             </p>
-            <OpenLoungeButton className="mt-4 inline-flex items-center gap-2 rounded-full border border-teal-600 px-4 py-1.5 text-xs font-semibold text-teal-600 hover:bg-teal-50">
+            <OpenLoungeButton className="mt-4 inline-flex items-center gap-2 rounded-full border border-teal-600 px-4 py-1.5 text-xs font-semibold text-primary hover:bg-primary-soft">
               Open Rovvy Lounge
               <IconChevronRight size={14} />
             </OpenLoungeButton>
@@ -1833,7 +1833,7 @@ export default function ProfilePage() {
             ) : (
               <div>
                 <p className="text-sm text-[#6C757D]">No upcoming trips planned yet.</p>
-                <Link href="/trips/plan" className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-teal-700">
+                <Link href="/trips/plan" className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover">
                   Plan a Trip
                 </Link>
               </div>
@@ -1884,7 +1884,7 @@ export default function ProfilePage() {
                 onClick={() => setContentTab(tab.id as any)}
                 className={`flex items-center gap-2 border-b-2 py-3.5 px-1 text-sm font-semibold transition-colors ${
                   contentTab === tab.id
-                    ? "border-teal-600 text-teal-600"
+                    ? "border-teal-600 text-primary"
                     : "border-transparent text-stone-500 hover:text-stone-700"
                 }`}
               >
@@ -1943,7 +1943,7 @@ export default function ProfilePage() {
                   <p className="mt-1 max-w-sm text-sm text-[#6C757D]">
                     Start planning your next adventure with friends.
                   </p>
-                  <Link href="/trips/plan" className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700">
+                  <Link href="/trips/plan" className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover">
                     Plan a Trip
                   </Link>
                 </div>
@@ -1956,7 +1956,7 @@ export default function ProfilePage() {
                           <div className="font-bold text-[#2C3E50]">{t.title}</div>
                           <div className="mt-0.5 text-xs text-[#6C757D]">{t.group_name || "Group trip"}</div>
                         </div>
-                        <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-teal-50 text-teal-700">
+                        <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-primary-soft text-primary">
                           Upcoming
                         </span>
                       </div>
@@ -1997,7 +1997,7 @@ export default function ProfilePage() {
                   </div>
                   <h3 className="text-lg font-bold text-stone-800">Your bucket list is empty</h3>
                   <p className="text-sm text-stone-500 mt-1 max-w-sm">Save spots from the map to build your dream itinerary.</p>
-                  <Link href="/map" className="mt-4 inline-flex items-center gap-2 rounded-full border border-teal-600 px-5 py-2 text-sm font-semibold text-teal-600 hover:bg-teal-50">
+                  <Link href="/map" className="mt-4 inline-flex items-center gap-2 rounded-full border border-teal-600 px-5 py-2 text-sm font-semibold text-primary hover:bg-primary-soft">
                     Explore Map
                   </Link>
                 </div>
@@ -2006,7 +2006,7 @@ export default function ProfilePage() {
                   {savedPins.map((p) => (
                     <div key={p.id} className="flex items-center justify-between rounded-xl border border-stone-100 bg-white px-4 py-3 shadow-sm">
                       <span className="text-sm font-semibold text-stone-800">{p.name}</span>
-                      <Link href="/map" className="text-sm font-semibold text-teal-600 hover:text-teal-700">View</Link>
+                      <Link href="/map" className="text-sm font-semibold text-primary hover:text-primary">View</Link>
                     </div>
                   ))}
                 </div>
@@ -2036,7 +2036,7 @@ export default function ProfilePage() {
                           <h4 className="font-bold text-stone-800">@{c.username}</h4>
                         </div>
                       </div>
-                      <button className="rounded-full border border-teal-600 px-4 py-1.5 text-xs font-semibold text-teal-600 hover:bg-teal-50">
+                      <button className="rounded-full border border-teal-600 px-4 py-1.5 text-xs font-semibold text-primary hover:bg-primary-soft">
                         Message
                       </button>
                     </div>
@@ -2185,7 +2185,7 @@ export default function ProfilePage() {
                     <item.icon size={18} className="text-stone-500" />
                     <span>{item.label}</span>
                     {item.label === "Map Sharing" && (
-                      <span className={`ml-auto text-xs font-bold ${mapShare ? "text-teal-600" : "text-stone-400"}`}>
+                      <span className={`ml-auto text-xs font-bold ${mapShare ? "text-primary" : "text-stone-400"}`}>
                         {mapShare ? "ON" : "OFF"}
                       </span>
                     )}

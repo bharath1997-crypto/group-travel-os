@@ -11,6 +11,15 @@
 - Branch: Production-main (always push here, NEVER to main)
 - Project root: D:\group travel os
 
+## Scram Book documentation protocol
+
+- `D:\group travel os\Scram Book` is the authoritative product planning and activity record; preserve the existing `Scram` spelling.
+- Before any development, UI, API/provider, research, planning, or bug-fix task, inspect the matching Scram Book product-area folder and read the current workbook/report.
+- All Travel-unit work belongs in `Scram Book\Travel Tab`. For Flights, read `Rovvy_Travel_Flights_Scrum_Plan.xlsx` and `Rovvy_Flights_Detailed_Product_Report.docx` when present.
+- After verified work, update the relevant artifact with the date, task context, sprint goals addressed, actual result, files changed, tests/verification, risks, decisions, and next action.
+- Never create a parallel roadmap/report elsewhere, never duplicate an existing entry, and never record unverified work as complete or test/sandbox inventory as live data.
+- If an artifact cannot be edited safely, leave it unchanged and report the exact update that remains required.
+
 ---
 
 ## Tech Stack
@@ -248,7 +257,7 @@ After every feature change, update this section in GEMINI.md:
 | Page / Feature | Status | Last Updated |
 |---|---|---|
 | Auth (JWT + OTP + Google OAuth) | Complete | 2025-06 |
-| Flights page (Production Skyscanner Experience) | Complete | 2026-08-10 (Implemented public guest flight searching without sign-in, Skyscanner search engine with Multi-city, Everywhere, Nearby airports, Date-Price Matrix, Price Insights Banner, Skyscanner sort modes, live min-price badges, and in-feed/on-select sign-in conversion flow.) |
+| Flights page (Production Skyscanner Experience) | Complete | 2026-08-18 (Fixed multi-segment itinerary duration calculation hierarchy, protection normalization, flexible-date search per requested date, recommendation ranking copy, 72-hour duration slider, inclusive stop filters, and environment-neutral landing page copy.) |
 | Hotels page (Agoda) | Complete | 2025-06 |
 | Routes search | Complete | 2025-06 |
 | Activities (GetYourGuide) | Complete | 2025-06 |
@@ -263,14 +272,15 @@ After every feature change, update this section in GEMINI.md:
 | Buses page | Pending | — |
 | Rovi Travel Route Intelligence | Complete | 2026-07-04 (Backend deterministic resolver + Rovi AI explanation endpoint. Frontend RoviRouteIntelligencePanel with route option cards + segment breakdown. Wired into long_distance_preview stage in Live page.) |
 | Wayra AI Assistant Integration in Live Map | Complete | 2026-07-20 (Integrated Wayra sidecar toggle button into Live Map Dock, maintaining clean state synchronization. Refined assistant sidecar layout with compact typography, reduced paddings, larger expanded views, and smooth slide-off-screen animation.) |
-| Platform-Specific Place Preview UI | Complete | 2026-07-20 (Designed four tailored variations of Place Preview Card for CarPlay, iOS, Android, and Web with native-inspired geometries, typography, and controls) |
 | Live Map Interface Polish (Google Maps style compact controls and interactive header hiding) | Complete | 2026-07-21 (Relocated and restyled Option B tools dock to lower-left corner. Restyled and cleaned up dock to horizontal 5-box configuration. Added animated 🐒 monkey mascot/emoji on top. Gated friend tracking layer behind dev flag. Removed redundant compass control from right-side stack. Implemented automatic clean map style fallback on detailed map style loading/tile failures. Restored premium sizing of controls (h-9 w-9, rounded-xl, shadow-md) to match the application's glassmorphic aesthetics.) |
+| Travelpayouts Multi-Provider N-Solution Engine | Complete | 2026-08-20 (Upgraded Flight, Hotel, and Bus schemas and services to parse, aggregate, and present N provider seller solutions per itinerary/property via Travelpayouts tp.media tracking.) |
+| Flights Metasearch Sprint 1 (Redirect-Only Handoff & Direct Route Guards) | Complete | 2026-08-24 (Enforced redirect-only comparison journey across normalizer, results page, and FlightOptionsDrawer. Added direct route guards for offer/checkout/booking pages to redirect to /flights. Disclosed seller-owned payment and support responsibilities. Fixed Explore Shorts Next.js page export.) |
 
 ---
 
 ## Test Registry (Auto-Updated by AntiGravity)
 After every pytest run, update this section in GEMINI.md:
-- If module already listed → update timestamp + count only. NO duplicate.
+- If feature already listed → update timestamp + count only. NO duplicate.
 - If new module → append to list.
 - Never delete entries.
 
@@ -291,6 +301,7 @@ After every pytest run, update this section in GEMINI.md:
 | tests/test_places_nearby.py | 7 | 2026-07-20 |
 | tests/test_route_intelligence.py | 12 | 2026-07-20 |
 | tests/test_live_routing.py | 3 | 2026-07-20 |
-
-
-
+| tests/test_flight_phase2_connections.py | 36 | 2026-08-24 |
+| tests/test_flight_metasearch.py | 17 | 2026-08-24 |
+| tests/test_flight_journey_service_unit.py | 6 | 2026-08-18 |
+| tests/test_multi_provider_aggregator.py | 4 | 2026-08-24 |

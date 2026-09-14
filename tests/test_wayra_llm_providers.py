@@ -297,3 +297,42 @@ async def test_full_response_calls_gemini_only_when_deepseek_selects_it():
     routed_input = gemini.await_args.args[1]
     assert decision.rewritten_prompt in routed_input
     assert "Compare this multi-country route." in routed_input
+
+
+@pytest.mark.asyncio
+async def test_nearby_compact_uses_one_deepseek_call():
+    with (
+        patch.object(providers, "_deepseek_key", return_value="ds-key"),
+        patch.object(providers, "_gemini_key", return_value="gem-key"),
+        patch.object(
+            providers,
+            "_call_deepseek",
+            new=AsyncMock(
+                return_value=('{"message": "Two cafes sit on the square."}', {"total_tokens": 18})
+            ),
+        ) as direct,
+        patch.object(providers, "_ask_deepseek_to_route", new=AsyncMock()) as orchestrator,
+        patch.object(providers, "_call_gemini_compact", new=AsyncMock()) as gemini,
+        patch.object(providers, "record_gemini_usage"),
+    ):
+        message, provider, usage = await providers.summarize_from_sources(
+            user_message="Food nearby?",
+            place_label="Red Square",
+            source_block="OSM: Cafe Pushkin 80m.",
+            tier="nearby",
+        )
+
+    assert provider == "deepseek"
+    assert "cafes" in message.lower()
+    assert usage == {"total_tokens": 18}
+    direct.assert_awaited_once()
+    orchestrator.assert_not_awaited()
+    gemini.assert_not_awaited()
+
+
+def test_voice_source_block_is_clipped():
+    huge = "POI line\n" * 400
+    clipped = providers._clip_source_block(huge, voice_mode=True)
+    assert len(clipped) < len(huge)
+    assert "[truncated for voice]" in clipped
+    assert providers._clip_source_block("short", voice_mode=True) == "short"
