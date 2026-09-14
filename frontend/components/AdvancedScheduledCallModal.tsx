@@ -256,7 +256,7 @@ export function AdvancedScheduledCallModal({
       <div
         className="relative z-10 flex w-full max-w-2xl flex-col overflow-hidden"
         style={{
-          background: "#1e2a3a",
+          background: "#1E293B",
           borderRadius: 20,
           maxHeight: "90vh",
         }}
@@ -299,7 +299,7 @@ export function AdvancedScheduledCallModal({
           <>
             <div className="travello-dark-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-3">
               {/* Search */}
-              <div className="mb-3 flex items-center gap-2 rounded-full border px-3 py-2" style={{ borderColor: "#334155", background: "#0f172a" }}>
+              <div className="mb-3 flex items-center gap-2 rounded-full border px-3 py-2" style={{ borderColor: "#334155", background: "#0f1614" }}>
                 <IconUsers size={16} />
                 <input
                   type="text"
@@ -454,7 +454,7 @@ export function AdvancedScheduledCallModal({
                   {showReminderDropdown && (
                     <div
                       className="absolute z-20 mt-1 w-full rounded-lg border py-1 shadow-lg"
-                      style={{ borderColor: "#334155", background: "#0f172a" }}
+                      style={{ borderColor: "#334155", background: "#0f1614" }}
                     >
                       {REMINDER_OPTIONS.map((option) => (
                         <button
@@ -613,7 +613,7 @@ export function AdvancedScheduledCallModal({
               {/* Info box */}
               <div
                 className="flex items-start gap-2 rounded-lg px-3 py-2 text-xs"
-                style={{ background: "#0f172a" }}
+                style={{ background: "#0f1614" }}
               >
                 <IconAlertCircle size={16} className="mt-0.5 flex-shrink-0" />
                 <p className="text-gray-400">
@@ -646,7 +646,7 @@ export function AdvancedScheduledCallModal({
 
       <style>{`
         .travello-dark-scrollbar {
-          scrollbar-color: rgba(148, 163, 184, 0.75) #1e2a3a;
+          scrollbar-color: rgba(148, 163, 184, 0.75) #1E293B;
           scrollbar-width: thin;
         }
 
@@ -655,12 +655,12 @@ export function AdvancedScheduledCallModal({
         }
 
         .travello-dark-scrollbar::-webkit-scrollbar-track {
-          background: #1e2a3a;
+          background: #1E293B;
         }
 
         .travello-dark-scrollbar::-webkit-scrollbar-thumb {
           background: rgba(148, 163, 184, 0.75);
-          border: 2px solid #1e2a3a;
+          border: 2px solid #1E293B;
           border-radius: 9999px;
         }
 

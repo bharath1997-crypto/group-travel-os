@@ -10,6 +10,7 @@ from app.models.meet_point import MeetPoint, MeetPointAttendance
 from app.models.destination import Destination
 from app.models.poll import Poll, PollOption, Vote, PollType, PollStatus
 from app.models.booking import Booking, BookingProvider, BookingStatus
+from app.models.flight_booking import FlightBooking, FlightBookingStatus
 from app.models.currency_rate import CurrencyRate
 from app.models.expense import Expense, ExpenseSplit
 from app.models.subscription import Subscription
@@ -29,12 +30,20 @@ from app.models.sos_event import SOSEvent
 from app.models.trip_plan import TripPlan
 from app.models.lounge import LoungeChat, LoungeMember, LoungeDriveSync
 from app.models.cart import TravelCart
-from app.models.wayra import WayraPersonalMemory, WayraGroupSettings, WayraGroupMemory
+from app.models.wayra import (
+    WayraPersonalMemory,
+    WayraGroupSettings,
+    WayraGroupMemory,
+    WayraKnowledgeIntent,
+    WayraKnowledgeUtterance,
+    WayraUnmatchedQuestion,
+)
 from app.models.data_export import DataExportRequest
 from app.models.data_import import DataImportRequest
 from app.models.user_integration import UserIntegration
 from app.models.live_session import LiveSession, LiveMode
 from app.models.road_report import RoadReport, ReportConfirmation, ReportType
+from app.models.live_place_report import LivePlaceReport, LivePlaceReportType
 from app.models.emergency_contact import EmergencyContact
 from app.models.trip_track import TripTrack
 from app.models.spectator_invite import SpectatorInvite
@@ -64,6 +73,8 @@ __all__: list[str] = [
     "Booking",
     "BookingProvider",
     "BookingStatus",
+    "FlightBooking",
+    "FlightBookingStatus",
     "CurrencyRate",
     "Expense",
     "ExpenseSplit",
@@ -90,6 +101,9 @@ __all__: list[str] = [
     "WayraPersonalMemory",
     "WayraGroupSettings",
     "WayraGroupMemory",
+    "WayraKnowledgeIntent",
+    "WayraKnowledgeUtterance",
+    "WayraUnmatchedQuestion",
     "DataExportRequest",
     "DataImportRequest",
     "UserIntegration",
@@ -98,6 +112,8 @@ __all__: list[str] = [
     "RoadReport",
     "ReportConfirmation",
     "ReportType",
+    "LivePlaceReport",
+    "LivePlaceReportType",
     "EmergencyContact",
     "TripTrack",
     "SpectatorInvite",

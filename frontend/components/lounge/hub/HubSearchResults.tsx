@@ -54,7 +54,7 @@ export type HubSearchResultsProps = {
 function useSearchTone(tone: "overlay" | "dock") {
   const isDock = tone === "dock";
   return {
-    section: isDock ? "text-[#0F766E]" : undefined,
+    section: isDock ? "text-primary" : undefined,
     sectionStyle: isDock ? undefined : { color: "#E94560" },
     row: isDock
       ? "mb-1 flex min-h-[56px] items-center gap-3 rounded-lg border border-stone-100 bg-stone-50 px-2 py-2"
@@ -80,7 +80,7 @@ function useSearchTone(tone: "overlay" | "dock") {
       ? "mt-0.5 inline-block rounded bg-stone-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-700"
       : "mt-0.5 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white/90",
     planBadgeStyle: isDock ? undefined : { background: "#334155" },
-    spinnerBorder: isDock ? "border-stone-300 border-t-[#0F766E]" : "border-slate-600 border-t-white",
+    spinnerBorder: isDock ? "border-stone-300 border-t-[#0E6E5C]" : "border-slate-600 border-t-white",
   };
 }
 

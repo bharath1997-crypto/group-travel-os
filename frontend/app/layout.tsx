@@ -1,36 +1,43 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Inter, Outfit } from "next/font/google";
+import { Instrument_Serif, JetBrains_Mono, Schibsted_Grotesk } from "next/font/google";
 import { ClientProviders } from "./client-providers";
 import "./globals.css";
 
-const inter = Inter({
+const schibsted = Schibsted_Grotesk({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-schibsted",
 });
 
-const outfit = Outfit({
+const instrument = Instrument_Serif({
   subsets: ["latin"],
-  variable: "--font-outfit",
+  weight: "400",
+  style: ["normal", "italic"],
+  variable: "--font-instrument",
+});
+
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: 'Rovvy — Roam together',
-    template: '%s | Rovvy',
+    default: "Rovvy — Roam together",
+    template: "%s | Rovvy",
   },
-  description: 'Group travel coordination. Plan trips, coordinate live, split expenses.',
-  applicationName: 'Rovvy',
-  keywords: ['group travel', 'trip planning', 'travel coordination', 'expense splitting'],
+  description: "Group travel coordination. Plan trips, coordinate live, split expenses.",
+  applicationName: "Rovvy",
+  keywords: ["group travel", "trip planning", "travel coordination", "expense splitting"],
   openGraph: {
-    title: 'Rovvy — Roam together',
-    description: 'Group travel made simple.',
-    siteName: 'Rovvy',
-    type: 'website',
+    title: "Rovvy — Roam together",
+    description: "Group travel made simple.",
+    siteName: "Rovvy",
+    type: "website",
   },
   twitter: {
-    card: 'summary',
-    title: 'Rovvy — Roam together',
+    card: "summary",
+    title: "Rovvy — Roam together",
   },
   manifest: "/manifest.json",
 };
@@ -39,7 +46,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#0F766E",
+  themeColor: "#0E6E5C",
 };
 
 export default function RootLayout({
@@ -50,7 +57,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${outfit.variable} h-full antialiased`}
+      className={`${schibsted.variable} ${instrument.variable} ${jetbrains.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>

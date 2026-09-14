@@ -83,7 +83,7 @@ function JoinPageInner() {
             <div className="mt-5 flex flex-col gap-2">
               <Link
                 href={`/login?next=${encodeURIComponent(`/join?code=${encodeURIComponent(code)}`)}`}
-                className="rounded-lg bg-[#0F766E] px-3 py-2.5 text-sm font-semibold text-white hover:bg-[#0D635C]"
+                className="rounded-lg bg-primary px-3 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover"
               >
                 Log in to join
               </Link>

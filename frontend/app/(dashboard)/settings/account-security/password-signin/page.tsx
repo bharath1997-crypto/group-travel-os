@@ -57,7 +57,7 @@ function computeStrength(pw: string): StrengthResult {
     return { level: 2, label: "Fair",   barColor: "bg-amber-400", textColor: "text-amber-600" };
   if (score <= 3)
     return { level: 3, label: "Good",   barColor: "bg-blue-500",  textColor: "text-blue-600"  };
-  return   { level: 4, label: "Strong", barColor: "bg-teal-500",  textColor: "text-teal-600"  };
+  return   { level: 4, label: "Strong", barColor: "bg-primary-soft0",  textColor: "text-primary"  };
 }
 
 // ─────────────────────────────────────────────
@@ -97,7 +97,7 @@ function PasswordInput({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           autoComplete={autoComplete}
-          className={`w-full rounded-lg border px-3 py-2.5 text-sm text-neutral-900 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 pr-10 ${
+          className={`w-full rounded-lg border px-3 py-2.5 text-sm text-neutral-900 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 pr-10 ${
             error ? "border-red-300 bg-red-50" : "border-stone-200 bg-white"
           }`}
         />
@@ -249,8 +249,8 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 
         {status === "success" ? (
           <div className="flex flex-col items-center py-8 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-50">
-              <ShieldCheck size={28} className="text-teal-600" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-soft">
+              <ShieldCheck size={28} className="text-primary" />
             </div>
             <p className="mt-4 text-[16px] font-semibold text-neutral-900">
               Password updated
@@ -260,7 +260,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
             </p>
             <button
               onClick={onClose}
-              className="mt-6 rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+              className="mt-6 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
             >
               Done
             </button>
@@ -316,7 +316,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="flex-1 rounded-xl bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+                className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
               >
                 {status === "loading" ? "Saving…" : "Update Password"}
               </button>
@@ -441,8 +441,8 @@ export default function PasswordSignInPage() {
           onClick={() => setModalOpen(true)}
           className="group flex w-full items-center gap-3.5 border-b border-stone-100 px-4 py-3.5 text-left transition-all duration-150 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-inset"
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
-            <KeyRound size={16} strokeWidth={1.8} className="text-teal-700" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
+            <KeyRound size={16} strokeWidth={1.8} className="text-primary" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[14px] font-medium text-neutral-900">Change Password</p>
@@ -450,15 +450,15 @@ export default function PasswordSignInPage() {
               Update your password to keep your account secure.
             </p>
           </div>
-          <span className="shrink-0 rounded-lg border border-teal-100 bg-teal-50 px-2.5 py-1 text-[12px] font-semibold text-teal-700 transition-colors group-hover:bg-teal-100">
+          <span className="shrink-0 rounded-lg border border-primary/20 bg-primary-soft px-2.5 py-1 text-[12px] font-semibold text-primary transition-colors group-hover:bg-primary-soft">
             Change
           </span>
         </button>
 
         {/* Password strength */}
         <div className="flex items-center gap-3.5 px-4 py-3.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
-            <Lock size={16} strokeWidth={1.8} className="text-teal-700" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
+            <Lock size={16} strokeWidth={1.8} className="text-primary" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[14px] font-medium text-neutral-900">Password Strength</p>
@@ -466,7 +466,7 @@ export default function PasswordSignInPage() {
               Your current password strength indicator.
             </p>
           </div>
-          <span className="shrink-0 rounded-full bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold text-teal-700">
+          <span className="shrink-0 rounded-full bg-primary-soft px-2.5 py-0.5 text-[11px] font-semibold text-primary">
             Strong
           </span>
         </div>
@@ -478,12 +478,12 @@ export default function PasswordSignInPage() {
 
         {/* Email & Password — active */}
         <SignInRow
-          iconContent={<Mail size={15} strokeWidth={1.8} className="text-teal-700" />}
-          iconBg="border-teal-100 bg-teal-50"
+          iconContent={<Mail size={15} strokeWidth={1.8} className="text-primary" />}
+          iconBg="border-primary/20 bg-primary-soft"
           label="Email & Password"
           detail="Email sign-in enabled"
           badge={
-            <span className="shrink-0 rounded-full bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold text-teal-600">
+            <span className="shrink-0 rounded-full bg-primary-soft px-2.5 py-0.5 text-[11px] font-semibold text-primary">
               Active
             </span>
           }
@@ -532,15 +532,15 @@ export default function PasswordSignInPage() {
         {/* Current session card */}
         <div className="border-b border-stone-100 px-4 py-3.5">
           <div className="flex items-start gap-3.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
-              <Monitor size={16} strokeWidth={1.8} className="text-teal-700" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
+              <Monitor size={16} strokeWidth={1.8} className="text-primary" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-[14px] font-medium text-neutral-900">
                   Web browser
                 </p>
-                <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-600">
+                <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary">
                   Current session
                 </span>
               </div>
@@ -585,7 +585,7 @@ export default function PasswordSignInPage() {
           aria-label="Recovery Email — Coming Soon"
           tabIndex={-1}
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
             <Mail size={16} strokeWidth={1.8} className="text-teal-400" />
           </div>
           <div className="min-w-0 flex-1">
@@ -606,7 +606,7 @@ export default function PasswordSignInPage() {
           aria-label="Recovery Phone — Coming Soon"
           tabIndex={-1}
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
             <Phone size={16} strokeWidth={1.8} className="text-teal-400" />
           </div>
           <div className="min-w-0 flex-1">
@@ -622,10 +622,10 @@ export default function PasswordSignInPage() {
       </div>
 
       {/* ── Section 5: Security tips ─────────────────────────────────── */}
-      <div className="mx-3 mt-4 rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50 to-white p-4">
+      <div className="mx-3 mt-4 rounded-2xl border border-primary/20 bg-gradient-to-br from-teal-50 to-white p-4">
         <div className="mb-3 flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-teal-100 bg-white">
-            <Shield size={14} strokeWidth={1.8} className="text-teal-700" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-primary/20 bg-white">
+            <Shield size={14} strokeWidth={1.8} className="text-primary" />
           </div>
           <p className="text-[13px] font-semibold text-teal-800">
             Keep your account safe
@@ -639,10 +639,10 @@ export default function PasswordSignInPage() {
             "Never share your password with anyone.",
           ].map((tip) => (
             <li key={tip} className="flex items-start gap-2">
-              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-700">
+              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-teal-100 text-primary">
                 <ShieldCheck size={10} />
               </span>
-              <p className="text-xs leading-snug text-teal-700">{tip}</p>
+              <p className="text-xs leading-snug text-primary">{tip}</p>
             </li>
           ))}
         </ul>

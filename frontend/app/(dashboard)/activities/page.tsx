@@ -268,8 +268,8 @@ export default function ActivitiesPage() {
   }, [rows, sort, priceLo, priceHi, ratingMin, catFilter]);
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] text-[#0F3460]">
-      <div className="sticky top-0 z-20 -mx-3 border-b border-slate-200/80 bg-[#0F3460] px-3 py-4 text-white shadow-md md:-mx-5 md:px-5">
+    <div className="min-h-[calc(100dvh-80px)] text-navy">
+      <div className="sticky top-0 z-20 -mx-3 border-b border-slate-200/80 bg-navy px-3 py-4 text-white shadow-md md:-mx-5 md:px-5">
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col justify-between gap-3 border-b border-white/10 pb-3 sm:flex-row sm:items-center">
             <div>
@@ -286,7 +286,7 @@ export default function ActivitiesPage() {
                 onClick={() => setActiveTab("search")}
                 className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                   activeTab === "search"
-                    ? "bg-teal-500 text-white shadow"
+                    ? "bg-primary-soft0 text-white shadow"
                     : "text-slate-200 hover:text-white"
                 }`}
               >
@@ -297,7 +297,7 @@ export default function ActivitiesPage() {
                 onClick={() => setActiveTab("partners")}
                 className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                   activeTab === "partners"
-                    ? "bg-teal-500 text-white shadow"
+                    ? "bg-primary-soft0 text-white shadow"
                     : "text-slate-200 hover:text-white"
                 }`}
               >
@@ -316,7 +316,7 @@ export default function ActivitiesPage() {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="e.g. NYC, Miami, Vancouver"
-                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm placeholder:text-slate-400 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300/60"
+                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-navy shadow-sm placeholder:text-slate-400 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300/60"
                 />
               </label>
               <label className="flex flex-col gap-2 lg:col-span-2">
@@ -327,7 +327,7 @@ export default function ActivitiesPage() {
                   type="date"
                   value={day}
                   onChange={(e) => setDay(e.target.value)}
-                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
+                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-navy shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
                 />
               </label>
               <label className="flex flex-col gap-2 lg:col-span-2">
@@ -337,7 +337,7 @@ export default function ActivitiesPage() {
                 <select
                   value={adults}
                   onChange={(e) => setAdults(Number(e.target.value))}
-                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
+                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-navy shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
                 >
                   {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
                     <option key={n} value={n}>
@@ -353,7 +353,7 @@ export default function ActivitiesPage() {
                 <select
                   value={categoryPick}
                   onChange={(e) => setCategoryPick(e.target.value)}
-                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-[#0F3460] shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
+                  className="rounded-lg border border-white/30 bg-white px-3 py-2.5 text-sm text-navy shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
                 >
                   <option value="">All categories</option>
                   {CATEGORIES.filter(Boolean).map((c) => (
@@ -367,7 +367,7 @@ export default function ActivitiesPage() {
                 <button
                   type="button"
                   onClick={() => void runSearch()}
-                  className="w-full rounded-xl bg-teal-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-teal-900/30 transition hover:bg-teal-400"
+                  className="w-full rounded-xl bg-primary-soft0 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-teal-900/30 transition hover:bg-teal-400"
                 >
                   Search
                 </button>
@@ -393,11 +393,11 @@ export default function ActivitiesPage() {
                 Filters
               </p>
               <div className="mt-4">
-                <p className="text-sm font-semibold text-[#0F3460]">Category</p>
+                <p className="text-sm font-semibold text-navy">Category</p>
                 <select
                   value={catFilter}
                   onChange={(e) => setCatFilter(e.target.value)}
-                  className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-[#0F3460]"
+                  className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-navy"
                 >
                   <option value="">Any</option>
                   {CATEGORIES.filter(Boolean).map((c) => (
@@ -408,7 +408,7 @@ export default function ActivitiesPage() {
                 </select>
               </div>
               <div className="mt-5 space-y-2">
-                <p className="text-sm font-semibold text-[#0F3460]">Price</p>
+                <p className="text-sm font-semibold text-navy">Price</p>
                 <div className="flex justify-between text-xs text-slate-600">
                   <span>${pbounds.lo}</span>
                   <span>${pbounds.hi}</span>
@@ -431,7 +431,7 @@ export default function ActivitiesPage() {
                 />
               </div>
               <div className="mt-5">
-                <p className="text-sm font-semibold text-[#0F3460]">Min rating</p>
+                <p className="text-sm font-semibold text-navy">Min rating</p>
                 <input
                   type="range"
                   min={0}
@@ -449,7 +449,7 @@ export default function ActivitiesPage() {
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Presets</p>
                 <div className="mt-3 space-y-3.5">
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-teal-600">US Destinations</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary">US Destinations</span>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {["New York", "Chicago", "Miami", "Los Angeles"].map((city) => (
                         <button
@@ -458,7 +458,7 @@ export default function ActivitiesPage() {
                           onClick={() => handlePresetClick(city)}
                           className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium transition ${
                             location.toLowerCase() === city.toLowerCase()
-                              ? "bg-teal-600 text-white"
+                              ? "bg-primary text-white"
                               : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                           }`}
                         >
@@ -468,7 +468,7 @@ export default function ActivitiesPage() {
                     </div>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-teal-600">Europe Destinations</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Europe Destinations</span>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {["London", "Paris", "Berlin", "Rome"].map((city) => (
                         <button
@@ -477,7 +477,7 @@ export default function ActivitiesPage() {
                           onClick={() => handlePresetClick(city)}
                           className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium transition ${
                             location.toLowerCase() === city.toLowerCase()
-                              ? "bg-teal-600 text-white"
+                              ? "bg-primary text-white"
                               : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                           }`}
                         >
@@ -487,7 +487,7 @@ export default function ActivitiesPage() {
                     </div>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-teal-600">Asia Destinations</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Asia Destinations</span>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {["Hyderabad", "Tokyo", "Singapore", "Bali"].map((city) => (
                         <button
@@ -496,7 +496,7 @@ export default function ActivitiesPage() {
                           onClick={() => handlePresetClick(city)}
                           className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium transition ${
                             location.toLowerCase() === city.toLowerCase()
-                              ? "bg-teal-600 text-white"
+                              ? "bg-primary text-white"
                               : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                           }`}
                         >
@@ -525,7 +525,7 @@ export default function ActivitiesPage() {
                     onClick={() => setSort(v)}
                     className={`rounded-full px-3 py-1 text-xs font-bold ${
                       sort === v
-                        ? "bg-teal-500 text-white"
+                        ? "bg-primary-soft0 text-white"
                         : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
                   >
@@ -595,7 +595,7 @@ export default function ActivitiesPage() {
                             {a.provider}
                           </span>
                         </div>
-                        <h2 className="mt-1 text-lg font-bold text-[#0F3460]">{a.title}</h2>
+                        <h2 className="mt-1 text-lg font-bold text-navy">{a.title}</h2>
                         <p className="mt-1 line-clamp-2 text-sm text-slate-600">
                           {a.description}
                         </p>
@@ -609,7 +609,7 @@ export default function ActivitiesPage() {
                           <p className="text-xs font-semibold uppercase text-slate-500">
                             From
                           </p>
-                          <p className="text-2xl font-extrabold text-teal-600">
+                          <p className="text-2xl font-extrabold text-primary">
                             {a.currency} {a.price.toFixed(0)}
                           </p>
                         </div>
@@ -617,7 +617,7 @@ export default function ActivitiesPage() {
                           href={getCleanBookingUrl(a.booking_url)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex min-w-[112px] items-center justify-center rounded-xl bg-[#0F3460] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0c2d52]"
+                          className="inline-flex min-w-[112px] items-center justify-center rounded-xl bg-navy px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0c2d52]"
                         >
                           Book Now
                         </a>
@@ -628,11 +628,11 @@ export default function ActivitiesPage() {
               </ul>
 
               {/* Viator Affiliate Section */}
-              <div className="mt-8 rounded-2xl border border-teal-500/20 bg-gradient-to-r from-[#0F3460] to-slate-900 p-6 text-white shadow-lg">
+              <div className="mt-8 rounded-2xl border border-teal-500/20 bg-gradient-to-r from-[#0F1614] to-slate-900 p-6 text-white shadow-lg">
                 <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-teal-500/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-400 border border-teal-500/30">
+                      <span className="rounded-full bg-primary-soft0/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-400 border border-teal-500/30">
                         Premium Partner
                       </span>
                       <span className="text-xs text-slate-300">· Earns 8-12% commission per booking</span>
@@ -648,7 +648,7 @@ export default function ActivitiesPage() {
                     href={`https://www.viator.com/searchResults/all?text=${encodeURIComponent(location || "travel")}&pid=P00049707`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-teal-500 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-teal-400 active:scale-95 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary-soft0 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-teal-400 active:scale-95 focus:outline-none focus:ring-2 focus:ring-teal-400"
                   >
                     Browse Viator Activities &rarr;
                   </a>
@@ -663,7 +663,7 @@ export default function ActivitiesPage() {
             <div className="rounded-2xl border border-teal-200 bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-xl">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="space-y-2 max-w-xl">
-                  <span className="rounded-full bg-teal-500/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-400">
+                  <span className="rounded-full bg-primary-soft0/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-400">
                     Interactive Revenue Calculator
                   </span>
                   <h2 className="text-xl font-bold tracking-tight md:text-2xl">
@@ -673,7 +673,7 @@ export default function ActivitiesPage() {
                     Adjust the sliders below to estimate the cash commission Rovvy earns when a group travel coordinator books tickets for their trip buddies.
                   </p>
                 </div>
-                <div className="shrink-0 rounded-2xl bg-teal-500/10 border border-teal-500/30 p-5 text-center min-w-[200px]">
+                <div className="shrink-0 rounded-2xl bg-primary-soft0/10 border border-teal-500/30 p-5 text-center min-w-[200px]">
                   <p className="text-xs font-semibold uppercase tracking-wider text-teal-300">Estimated Commission Payout</p>
                   <p className="mt-1 text-4xl font-extrabold text-teal-400">
                     USD {calcTotalPayout.toFixed(2)}
@@ -736,7 +736,7 @@ export default function ActivitiesPage() {
 
             {/* 1. Revenue Generators */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h3 className="text-lg font-bold text-[#0F3460]">1. The "Revenue Generator" APIs (Affiliate & Metasearch)</h3>
+              <h3 className="text-lg font-bold text-navy">1. The "Revenue Generator" APIs (Affiliate & Metasearch)</h3>
               <p className="mt-1 text-sm text-slate-600">
                 These APIs are completely free to integrate. They carry no monthly platform or token charges, and pay Rovvy high commissions on every booking.
               </p>
@@ -763,9 +763,9 @@ export default function ActivitiesPage() {
                     ].map(([provider, icost, mfee, comm], idx) => (
                       <tr key={idx} className="hover:bg-slate-50/50">
                         <td className="px-4 py-3.5 font-bold text-slate-800">{provider}</td>
-                        <td className="px-4 py-3.5 text-teal-600 font-semibold">{icost}</td>
+                        <td className="px-4 py-3.5 text-primary font-semibold">{icost}</td>
                         <td className="px-4 py-3.5 text-slate-500">{mfee}</td>
-                        <td className="px-4 py-3.5 text-slate-800 font-medium bg-teal-50/10">{comm}</td>
+                        <td className="px-4 py-3.5 text-slate-800 font-medium bg-primary-soft/10">{comm}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -777,7 +777,7 @@ export default function ActivitiesPage() {
             <div className="grid gap-6 md:grid-cols-2">
               {/* Free Search APIs */}
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h3 className="text-lg font-bold text-[#0F3460]">2. The "Free Search" APIs (Open Tiers)</h3>
+                <h3 className="text-lg font-bold text-navy">2. The "Free Search" APIs (Open Tiers)</h3>
                 <p className="mt-1 text-sm text-slate-600">
                   Open developer feeds to populate live schedules and coordinates with exactly $0.00 monthly cost.
                 </p>
@@ -793,7 +793,7 @@ export default function ActivitiesPage() {
                     <div key={idx} className="flex justify-between items-center border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                       <div>
                         <p className="text-sm font-bold text-slate-800">{provider}</p>
-                        <p className="text-xs text-teal-600 font-semibold mt-0.5">{limit}</p>
+                        <p className="text-xs text-primary font-semibold mt-0.5">{limit}</p>
                       </div>
                       <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 px-2 py-1 rounded">
                         {pricing}
@@ -806,7 +806,7 @@ export default function ActivitiesPage() {
               {/* Resale & Secondary Markets */}
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-[#0F3460]">3. Resale & Secondary Ticketing</h3>
+                  <h3 className="text-lg font-bold text-navy">3. Resale & Secondary Ticketing</h3>
                   <p className="mt-1 text-sm text-slate-600">
                     Secondary ticket marketplaces provide robust inventory for sold-out events and sports matches, paying high margins to Rovvy on resale tickets.
                   </p>
@@ -822,7 +822,7 @@ export default function ActivitiesPage() {
                           <p className="text-sm font-bold text-slate-800">{provider}</p>
                           <p className="text-xs text-slate-500 mt-0.5">Monthly Cost: $0.00</p>
                         </div>
-                        <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2.5 py-1 rounded-lg">
+                        <span className="text-xs font-bold text-primary bg-primary-soft px-2.5 py-1 rounded-lg">
                           {comm}
                         </span>
                       </div>

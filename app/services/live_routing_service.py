@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import math
 import httpx
@@ -10,6 +11,7 @@ from app.schemas.live_routing import (
     GeoJSONGeometry,
     RouteManeuverOut,
     BorderCrossingOut,
+    RouteAlternativeOut,
 )
 from app.services.border_crossing_service import BorderCrossingService
 from config import settings
@@ -21,6 +23,10 @@ GOOGLE_ROUTES_URL = "https://routes.googleapis.com/directions/v2:computeRoutes"
 LAST_MILE_THRESHOLD_M = 25.0
 WALKING_SPEED_MPS = 1.3
 APPROX_WALK_MAX_M = 80_000.0
+LOCAL_LIVE_MAX_M = 100 * 1609.34
+CROSS_OCEAN_DIRECT_M = 2_000_000.0
+STRAIGHT_LINE_MAX_POINTS = 4
+STRAIGHT_LINE_MIN_DIRECT_M = 80_000.0
 
 
 def haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -287,6 +293,204 @@ async def fetch_google_walk_route(
         return None
 
 
+def _parse_google_duration_seconds(route: dict) -> float:
+    duration_raw = route.get("duration")
+    if isinstance(duration_raw, str) and duration_raw.endswith("s"):
+        try:
+            return float(duration_raw[:-1])
+        except ValueError:
+            return 0.0
+    return 0.0
+
+
+def _google_route_has_tolls(route: dict) -> bool | None:
+    advisory = route.get("travelAdvisory")
+    if not isinstance(advisory, dict):
+        return None
+    toll = advisory.get("tollInfo")
+    if not isinstance(toll, dict):
+        return None
+    prices = toll.get("estimatedPrice")
+    if isinstance(prices, list) and len(prices) > 0:
+        return True
+    return False
+
+
+def _google_route_geometry(route: dict) -> list[list[float]] | None:
+    polyline = route.get("polyline") or {}
+    geom = polyline.get("geoJsonLinestring") or {}
+    coords = geom.get("coordinates") or []
+    if len(coords) < 2:
+        return None
+    return coords
+
+
+async def fetch_google_drive_route(
+    client: httpx.AsyncClient,
+    origin_lat: float,
+    origin_lng: float,
+    dest_lat: float,
+    dest_lng: float,
+    *,
+    avoid_tolls: bool,
+) -> dict | None:
+    api_key = (settings.google_routes_api_key or "").strip()
+    if not api_key:
+        return None
+    headers = {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": api_key,
+        "X-Goog-FieldMask": (
+            "routes.distanceMeters,routes.duration,routes.polyline.geoJsonLinestring,"
+            "routes.travelAdvisory.tollInfo"
+        ),
+    }
+    body: dict = {
+        "origin": {
+            "location": {"latLng": {"latitude": origin_lat, "longitude": origin_lng}}
+        },
+        "destination": {
+            "location": {"latLng": {"latitude": dest_lat, "longitude": dest_lng}}
+        },
+        "travelMode": "DRIVE",
+        "routingPreference": "TRAFFIC_AWARE",
+        "polylineEncoding": "GEO_JSON_LINESTRING",
+        "units": "METRIC",
+        "extraComputations": ["TOLLS"],
+    }
+    if avoid_tolls:
+        body["routeModifiers"] = {"avoidTolls": True}
+    try:
+        resp = await client.post(GOOGLE_ROUTES_URL, json=body, headers=headers, timeout=25.0)
+        if resp.status_code != 200:
+            logger.debug(
+                "[Rovvy Route Preview Audit] Google drive (avoid_tolls=%s) HTTP %s",
+                avoid_tolls,
+                resp.status_code,
+            )
+            return None
+        routes = resp.json().get("routes", [])
+        if not routes:
+            return None
+        return routes[0]
+    except Exception as exc:
+        logger.debug(
+            "[Rovvy Route Preview Audit] Google drive (avoid_tolls=%s) failed: %s",
+            avoid_tolls,
+            exc,
+        )
+        return None
+
+
+def _coords_signature(coords: list[list[float]]) -> tuple:
+    if len(coords) < 2:
+        return ()
+    return (round(coords[0][0], 4), round(coords[0][1], 4), round(coords[-1][0], 4), round(coords[-1][1], 4), len(coords))
+
+
+async def fetch_google_drive_alternatives(
+    client: httpx.AsyncClient,
+    origin_lat: float,
+    origin_lng: float,
+    dest_lat: float,
+    dest_lng: float,
+) -> list[RouteAlternativeOut]:
+    """Parallel toll + no-toll Google drive routes (Google Maps style)."""
+    default_route, avoid_tolls_route = await asyncio.gather(
+        fetch_google_drive_route(
+            client, origin_lat, origin_lng, dest_lat, dest_lng, avoid_tolls=False
+        ),
+        fetch_google_drive_route(
+            client, origin_lat, origin_lng, dest_lat, dest_lng, avoid_tolls=True
+        ),
+    )
+
+    candidates: list[RouteAlternativeOut] = []
+    if default_route:
+        has_tolls = _google_route_has_tolls(default_route)
+        alt = _alt_from_route(
+            default_route,
+            "with_tolls",
+            "Fastest route",
+            "Tolls likely" if has_tolls else "Tolls possible",
+            has_tolls,
+        )
+        if alt:
+            candidates.append(alt)
+    if avoid_tolls_route:
+        alt = _alt_from_route(
+            avoid_tolls_route,
+            "avoid_tolls",
+            "Avoid tolls",
+            "No tolls",
+            False,
+        )
+        if alt:
+            candidates.append(alt)
+
+    seen: set[tuple] = set()
+    deduped: list[RouteAlternativeOut] = []
+    for item in candidates:
+        if not item.geometry:
+            continue
+        sig = _coords_signature(item.geometry.coordinates)
+        if sig in seen:
+            continue
+        seen.add(sig)
+        deduped.append(item)
+
+    deduped.sort(key=lambda row: float(row.durationSeconds or 999999))
+    return deduped
+
+
+def _alt_from_route(
+    route: dict,
+    alt_id: str,
+    label: str,
+    toll_label: str,
+    has_tolls: bool | None,
+) -> RouteAlternativeOut | None:
+    coords = _google_route_geometry(route)
+    if not coords:
+        return None
+    return RouteAlternativeOut(
+        id=alt_id,
+        label=label,
+        tollLabel=toll_label,
+        hasTolls=has_tolls,
+        distanceMeters=float(route.get("distanceMeters") or 0.0),
+        durationSeconds=_parse_google_duration_seconds(route),
+        geometry=GeoJSONGeometry(type="LineString", coordinates=coords),
+        provider="google",
+    )
+
+
+def build_osrm_alternatives(routes: list[dict], primary_coords: list[list[float]]) -> list[RouteAlternativeOut]:
+    """Label extra OSRM routes when Google is unavailable."""
+    primary_sig = _coords_signature(primary_coords)
+    alts: list[RouteAlternativeOut] = []
+    for idx, route in enumerate(routes[1:3], start=2):
+        geom = route.get("geometry") or {}
+        coords = geom.get("coordinates") or []
+        if len(coords) < 2:
+            continue
+        if _coords_signature(coords) == primary_sig:
+            continue
+        alts.append(
+            RouteAlternativeOut(
+                id=f"osrm_alt_{idx}",
+                label=f"Alternative route {idx - 1}",
+                tollLabel="Toll info unavailable",
+                hasTolls=None,
+                distanceMeters=float(route.get("distance") or 0.0),
+                durationSeconds=float(route.get("duration") or 0.0),
+                geometry=GeoJSONGeometry(type="LineString", coordinates=coords),
+                provider="osrm",
+            )
+        )
+    return alts
+
+
 async def resolve_last_mile_foot_route(
     client: httpx.AsyncClient,
     start_lng: float,
@@ -475,6 +679,50 @@ async def append_last_mile_walk(
     return coords, distance, duration, maneuvers, extras, None
 
 
+def polyline_length_m(coords: list[list[float]]) -> float:
+    total = 0.0
+    for idx in range(1, len(coords)):
+        lng_a, lat_a = coords[idx - 1][0], coords[idx - 1][1]
+        lng_b, lat_b = coords[idx][0], coords[idx][1]
+        total += haversine_m(lat_a, lng_a, lat_b, lng_b)
+    return total
+
+
+def is_land_connected_drive_route(
+    coords: list[list[float]],
+    origin_lat: float,
+    origin_lng: float,
+    dest_lat: float,
+    dest_lng: float,
+) -> bool:
+    if not coords or len(coords) < 2:
+        return False
+
+    direct_m = haversine_m(origin_lat, origin_lng, dest_lat, dest_lng)
+    if direct_m > CROSS_OCEAN_DIRECT_M:
+        return False
+    if len(coords) <= STRAIGHT_LINE_MAX_POINTS and direct_m > STRAIGHT_LINE_MIN_DIRECT_M:
+        return False
+    if direct_m > LOCAL_LIVE_MAX_M:
+        path_m = polyline_length_m(coords)
+        if len(coords) < 8 and path_m < direct_m * 1.08:
+            return False
+    return True
+
+
+def land_route_failure_message(origin_lat: float, origin_lng: float, dest_lat: float, dest_lng: float) -> str:
+    direct_m = haversine_m(origin_lat, origin_lng, dest_lat, dest_lng)
+    if direct_m > CROSS_OCEAN_DIRECT_M:
+        return (
+            "No driveable land route between these locations. "
+            "Plan this as a future trip instead of Solo Live."
+        )
+    return (
+        "No driveable land route to this location. "
+        "It may cross open water — plan it as a future trip."
+    )
+
+
 def build_ready_response(
     coords: list[list[float]],
     distance: float | None,
@@ -484,14 +732,17 @@ def build_ready_response(
     border_crossings: list[BorderCrossingOut] | None = None,
     border_notice: str | None = None,
     walk_start_index: int | None = None,
+    alternatives: list[RouteAlternativeOut] | None = None,
+    provider: str | None = None,
 ) -> RoutePreviewResponse:
+    resolved_provider = provider or (last_mile.provider if last_mile and last_mile.provider else "osrm")
     return RoutePreviewResponse(
         status="ready",
         distanceMeters=distance,
         durationSeconds=duration,
         geometry=GeoJSONGeometry(type="LineString", coordinates=coords),
         maneuvers=maneuvers,
-        provider=last_mile.provider if last_mile and last_mile.provider else "osrm",
+        provider=resolved_provider,
         message=None,
         lastMileMode=last_mile.lastMileMode if last_mile else None,
         lastMileDistanceMeters=last_mile.lastMileDistanceMeters if last_mile else None,
@@ -505,6 +756,7 @@ def build_ready_response(
         lastMileApproximate=last_mile.lastMileApproximate if last_mile else None,
         borderCrossings=border_crossings or None,
         borderNotice=border_notice,
+        alternatives=alternatives or None,
     )
 
 
@@ -560,10 +812,79 @@ class LiveRoutingService:
             request.origin.source,
         )
 
-        async with httpx.AsyncClient(timeout=90.0) as client:
+        async with httpx.AsyncClient(timeout=35.0) as client:
             try:
                 route_origin_lng, route_origin_lat = origin_lng, origin_lat
                 route_dest_lng, route_dest_lat = dest_lng, dest_lat
+                google_alternatives: list[RouteAlternativeOut] = []
+
+                if mode == "Drive" and (settings.google_routes_api_key or "").strip():
+                    google_alternatives = await fetch_google_drive_alternatives(
+                        client,
+                        origin_lat,
+                        origin_lng,
+                        dest_lat,
+                        dest_lng,
+                    )
+                    if google_alternatives:
+                        pick = google_alternatives[0]
+                        coords = list(pick.geometry.coordinates) if pick.geometry else []
+                        distance = pick.distanceMeters
+                        duration = pick.durationSeconds
+                        maneuvers = [
+                            RouteManeuverOut(
+                                instruction="Follow highlighted route",
+                                location=coords[0],
+                            )
+                        ]
+                        (
+                            coords,
+                            distance,
+                            duration,
+                            maneuvers,
+                            last_mile,
+                            walk_start_index,
+                        ) = await append_last_mile_walk(
+                            client,
+                            coords,
+                            distance,
+                            duration,
+                            maneuvers,
+                            dest_lat,
+                            dest_lng,
+                        )
+                        if not is_land_connected_drive_route(
+                            coords, origin_lat, origin_lng, dest_lat, dest_lng
+                        ):
+                            return RoutePreviewResponse(
+                                status="failed",
+                                message=land_route_failure_message(
+                                    origin_lat, origin_lng, dest_lat, dest_lng
+                                ),
+                            )
+                        border_crossings = await BorderCrossingService.detect_crossings(
+                            coords,
+                            request.origin.country,
+                            request.destination.country,
+                        )
+                        border_notice = BorderCrossingService.build_border_notice(
+                            border_crossings
+                        )
+                        return build_ready_response(
+                            coords,
+                            distance,
+                            duration,
+                            maneuvers,
+                            last_mile,
+                            border_crossings,
+                            border_notice,
+                            walk_start_index,
+                            alternatives=google_alternatives
+                            if len(google_alternatives) > 1
+                            else None,
+                            provider="google",
+                        )
+
                 if mode == "Drive":
                     snap_orig = await snap_to_nearest_road(
                         client, profile, origin_lng, origin_lat
@@ -574,12 +895,14 @@ class LiveRoutingService:
                     route_origin_lng, route_origin_lat = snap_orig[0], snap_orig[1]
                     route_dest_lng, route_dest_lat = snap_dest[0], snap_dest[1]
 
-                # overview=full — road-following geometry. simplified can collapse to 2 points (straight line).
+                # overview=full — road-following geometry. alternatives=true for route options.
                 route_url = (
                     f"{OSRM_BASE_URL}/route/v1/{profile}/"
                     f"{route_origin_lng},{route_origin_lat};{route_dest_lng},{route_dest_lat}"
                     f"?overview=full&geometries=geojson&steps=true"
                 )
+                if mode == "Drive":
+                    route_url += "&alternatives=true"
 
                 response = await client.get(route_url)
                 logger.debug(
@@ -599,6 +922,11 @@ class LiveRoutingService:
                         if geom and geom.get("coordinates"):
                             coords = geom.get("coordinates")
                             maneuvers = extract_maneuvers(route)
+                            osrm_alts = (
+                                build_osrm_alternatives(routes, coords)
+                                if mode == "Drive"
+                                else []
+                            )
                             if mode == "Drive":
                                 (
                                     coords,
@@ -632,6 +960,15 @@ class LiveRoutingService:
                             border_notice = BorderCrossingService.build_border_notice(
                                 border_crossings
                             )
+                            if mode == "Drive" and not is_land_connected_drive_route(
+                                coords, origin_lat, origin_lng, dest_lat, dest_lng
+                            ):
+                                return RoutePreviewResponse(
+                                    status="failed",
+                                    message=land_route_failure_message(
+                                        origin_lat, origin_lng, dest_lat, dest_lng
+                                    ),
+                                )
                             return build_ready_response(
                                 coords,
                                 distance,
@@ -641,6 +978,7 @@ class LiveRoutingService:
                                 border_crossings,
                                 border_notice,
                                 walk_start_index,
+                                alternatives=osrm_alts if osrm_alts else None,
                             )
 
                 # Snapping fallback for Drive mode
@@ -734,6 +1072,15 @@ class LiveRoutingService:
                                 border_notice = BorderCrossingService.build_border_notice(
                                     border_crossings
                                 )
+                                if mode == "Drive" and not is_land_connected_drive_route(
+                                    coords, origin_lat, origin_lng, dest_lat, dest_lng
+                                ):
+                                    return RoutePreviewResponse(
+                                        status="failed",
+                                        message=land_route_failure_message(
+                                            origin_lat, origin_lng, dest_lat, dest_lng
+                                        ),
+                                    )
                                 return build_ready_response(
                                     coords,
                                     distance,

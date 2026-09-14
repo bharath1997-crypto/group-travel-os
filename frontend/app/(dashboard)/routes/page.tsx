@@ -1,8 +1,11 @@
 "use client";
 
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { API_BASE, apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import { useCallback, useMemo, useState } from "react";
+import TravelHandoffBanner from "@/components/travel/TravelHandoffBanner";
+import { parseTravelHandoff, travelHandoffSearchLabel } from "@/lib/travel-handoff";
 
 type TransportMode = "flight" | "transit" | "bus" | "train" | "drive";
 type TransportOptionRow = {
@@ -82,6 +85,23 @@ function SkeletonCard() {
 }
 
 export default function RoutesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[calc(100dvh-80px)] bg-app rounded-3xl p-8 flex items-center justify-center text-slate-500">
+          Loading routes…
+        </div>
+      }
+    >
+      <RoutesPageContent />
+    </Suspense>
+  );
+}
+
+function RoutesPageContent() {
+  const searchParams = useSearchParams();
+  const handoff = useMemo(() => parseTravelHandoff(searchParams), [searchParams]);
+
   const [from, setFrom] = useState("ORD");
   const [to, setTo] = useState("JFK");
   const [travelDate, setTravelDate] = useState(todayPlus(7));
@@ -143,15 +163,28 @@ export default function RoutesPage() {
     }
   }, [from, to, travelDate, adults]);
 
+  useEffect(() => {
+    if (!handoff) return;
+    const originLabel = travelHandoffSearchLabel(handoff.origin);
+    const destLabel = travelHandoffSearchLabel(handoff.destination);
+    setFrom(originLabel);
+    setTo(destLabel);
+  }, [handoff]);
+
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
+    <div className="min-h-[calc(100dvh-80px)] bg-app rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
+      {handoff ? (
+        <div className="max-w-6xl mx-auto mb-6">
+          <TravelHandoffBanner handoff={handoff} showSkyscanner={false} />
+        </div>
+      ) : null}
       {/* Search Header */}
       <div className="max-w-6xl mx-auto mb-6">
         <div className="flex items-center gap-3 mb-3">
-          <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center border border-teal-200/60">
+          <div className="h-10 w-10 rounded-xl bg-primary-soft flex items-center justify-center border border-teal-200/60">
             <span className="text-xl">🗺️</span>
           </div>
-          <span className="text-xs font-bold uppercase tracking-widest text-teal-600">Rovvy Routes</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-primary">Rovvy Routes</span>
         </div>
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
           How to get there
@@ -173,7 +206,7 @@ export default function RoutesPage() {
               value={from}
               onChange={(e) => setFrom(e.target.value)}
               placeholder="City or airport (e.g. ORD, Chicago)"
-              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
             />
           </label>
           <label className="flex flex-col gap-2 lg:col-span-3">
@@ -184,7 +217,7 @@ export default function RoutesPage() {
               value={to}
               onChange={(e) => setTo(e.target.value)}
               placeholder="City or airport (e.g. JFK, New York)"
-              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
             />
           </label>
           <label className="flex flex-col gap-2 lg:col-span-2">
@@ -195,7 +228,7 @@ export default function RoutesPage() {
               type="date"
               value={travelDate}
               onChange={(e) => setTravelDate(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
             />
           </label>
           <label className="flex flex-col gap-2 lg:col-span-2">
@@ -205,7 +238,7 @@ export default function RoutesPage() {
             <select
               value={adults}
               onChange={(e) => setAdults(Number(e.target.value))}
-              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
             >
               {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
                 <option key={n} value={n}>
@@ -218,7 +251,7 @@ export default function RoutesPage() {
             <button
               type="button"
               onClick={() => void runSearch()}
-              className="w-full rounded-xl bg-teal-600 hover:bg-teal-700 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/10 transition"
+              className="w-full rounded-xl bg-primary hover:bg-primary-hover py-3 text-sm font-bold text-white shadow-md shadow-teal-600/10 transition"
             >
               Search routes
             </button>
@@ -242,7 +275,7 @@ export default function RoutesPage() {
               onClick={() => setFilter(v)}
               className={`rounded-full px-3 py-1.5 text-xs font-bold md:text-sm transition ${
                 filter === v
-                  ? "bg-teal-600 text-white shadow-sm"
+                  ? "bg-primary text-white shadow-sm"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
@@ -264,7 +297,7 @@ export default function RoutesPage() {
             </p>
             <p className="mt-2 text-slate-600">
               Enter origin and destination, pick a date, then tap{" "}
-              <span className="font-semibold text-teal-600">Search routes</span>.
+              <span className="font-semibold text-primary">Search routes</span>.
               Results are sorted fastest-first.
             </p>
           </div>
@@ -287,7 +320,7 @@ export default function RoutesPage() {
             No options match this filter. Try{" "}
             <button
               type="button"
-              className="font-semibold text-teal-600 underline"
+              className="font-semibold text-primary underline"
               onClick={() => setFilter("all")}
             >
               ALL
@@ -369,7 +402,7 @@ export default function RoutesPage() {
                         Estimate
                       </p>
                       {opt.price_estimate != null && opt.currency ? (
-                        <p className="text-xl font-extrabold text-teal-600">
+                        <p className="text-xl font-extrabold text-primary">
                           {opt.currency}{" "}
                           {Number.isInteger(opt.price_estimate)
                             ? opt.price_estimate.toFixed(0)
@@ -387,7 +420,7 @@ export default function RoutesPage() {
                       rel="noopener noreferrer"
                       className={`inline-flex min-w-[112px] items-center justify-center rounded-xl px-4 py-2 text-sm font-bold text-white transition ${
                         opt.booking_url
-                          ? "bg-teal-600 hover:bg-teal-700 shadow-sm"
+                          ? "bg-primary hover:bg-primary-hover shadow-sm"
                           : "cursor-not-allowed bg-slate-300"
                       }`}
                       onClick={(e) => {

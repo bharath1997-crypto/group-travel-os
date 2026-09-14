@@ -67,7 +67,7 @@ export function CategoryScrollRow({
           <button
             type="button"
             onClick={() => scroll("left")}
-            className="absolute -left-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-600 shadow-md backdrop-blur transition hover:bg-slate-50 hover:text-teal-600 focus:outline-none active:scale-95"
+            className="absolute -left-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-600 shadow-md backdrop-blur transition hover:bg-slate-50 hover:text-primary focus:outline-none active:scale-95"
             aria-label="Scroll left"
           >
             <ChevronLeft size={16} />
@@ -88,7 +88,7 @@ export function CategoryScrollRow({
           <button
             type="button"
             onClick={() => scroll("right")}
-            className="absolute -right-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-600 shadow-md backdrop-blur transition hover:bg-slate-50 hover:text-teal-600 focus:outline-none active:scale-95"
+            className="absolute -right-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-600 shadow-md backdrop-blur transition hover:bg-slate-50 hover:text-primary focus:outline-none active:scale-95"
             aria-label="Scroll right"
           >
             <ChevronRight size={16} />

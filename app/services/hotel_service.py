@@ -12,7 +12,7 @@ from urllib.parse import quote
 
 from fastapi import HTTPException
 
-from app.schemas.hotel import HotelResult
+from app.schemas.hotel import HotelProviderOffer, HotelResult
 from app.utils.exceptions import AppException
 from config import settings
 
@@ -234,11 +234,30 @@ _HOTEL_TEMPLATES: dict[str, list[dict[str, Any]]] = {
 }
 
 
+
 def _agoda_booking_url(city_token: str) -> str:
     m = (settings.travelpayouts_marker or "").strip() or "727732"
     inner = "https://www.agoda.com/search?city=" + city_token
     return (
         f"https://tp.media/r?marker={m}&trs={m}&p=4363&u="
+        + quote(inner, safe="")
+    )
+
+
+def _bookingcom_booking_url(city_token: str) -> str:
+    m = (settings.travelpayouts_marker or "").strip() or "727732"
+    inner = f"https://www.booking.com/searchresults.html?ss={city_token}"
+    return (
+        f"https://tp.media/r?marker={m}&trs={m}&p=1682&u="
+        + quote(inner, safe="")
+    )
+
+
+def _hotellook_booking_url(city_token: str) -> str:
+    m = (settings.travelpayouts_marker or "").strip() or "727732"
+    inner = f"https://hotellook.com/search/{city_token}"
+    return (
+        f"https://tp.media/r?marker={m}&trs={m}&p=4115&u="
         + quote(inner, safe="")
     )
 
@@ -252,28 +271,56 @@ def _canonical_city(location: str) -> str | None:
 
 def _build_hotels(city_key: str) -> list[HotelResult]:
     token = _CITY_SEARCH_PARAM[city_key]
-    booking = _agoda_booking_url(token)
+    agoda_link = _agoda_booking_url(token)
+    booking_link = _bookingcom_booking_url(token)
+    hotellook_link = _hotellook_booking_url(token)
+
     out: list[HotelResult] = []
     for row in _HOTEL_TEMPLATES.get(city_key, []):
         hid = f"{city_key}-{row['slug']}"
+        pn = float(row["pn"])
+
+        offers = [
+            HotelProviderOffer(
+                provider_name="Agoda",
+                price_per_night=pn,
+                currency="USD",
+                booking_url=agoda_link,
+            ),
+            HotelProviderOffer(
+                provider_name="Booking.com",
+                price_per_night=round(pn * 1.03, 2),
+                currency="USD",
+                booking_url=booking_link,
+            ),
+            HotelProviderOffer(
+                provider_name="Hotellook Meta",
+                price_per_night=round(pn * 0.98, 2),
+                currency="USD",
+                booking_url=hotellook_link,
+            ),
+        ]
+
         out.append(
             HotelResult(
                 id=hid,
                 name=row["name"],
                 location=row["loc"],
                 address=row["addr"],
-                price_per_night=float(row["pn"]),
+                price_per_night=pn,
                 currency="USD",
                 rating=float(row["rating"]),
                 review_count=int(row["reviews"]),
                 stars=int(row["stars"]),
                 image_url=None,
                 amenities=list(row["amenities"]),
-                booking_url=booking,
+                booking_url=agoda_link,
                 provider="Agoda",
+                provider_offers=offers,
             ),
         )
     return out
+
 
 
 class HotelService:

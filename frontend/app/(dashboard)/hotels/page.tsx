@@ -140,14 +140,14 @@ export default function HotelsPage() {
   }, [rows, sort, priceLo, priceHi, starsMin, amenPick]);
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
+    <div className="min-h-[calc(100dvh-80px)] bg-app rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
       {/* Search Header */}
       <div className="max-w-6xl mx-auto mb-6">
         <div className="flex items-center gap-3 mb-3">
-          <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center border border-teal-200/60">
+          <div className="h-10 w-10 rounded-xl bg-primary-soft flex items-center justify-center border border-teal-200/60">
             <span className="text-xl">🏨</span>
           </div>
-          <span className="text-xs font-bold uppercase tracking-widest text-teal-600">Rovvy Hotels</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-primary">Rovvy Hotels</span>
         </div>
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
           Hotels
@@ -165,7 +165,7 @@ export default function HotelsPage() {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g. NYC, Miami, Vancouver"
-              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none transition"
             />
           </label>
           <label className="flex flex-col gap-1.5 lg:col-span-2">
@@ -176,7 +176,7 @@ export default function HotelsPage() {
               type="date"
               value={checkIn}
               onChange={(e) => setCheckIn(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-primary focus:bg-white focus:outline-none transition"
             />
           </label>
           <label className="flex flex-col gap-1.5 lg:col-span-2">
@@ -187,7 +187,7 @@ export default function HotelsPage() {
               type="date"
               value={checkOut}
               onChange={(e) => setCheckOut(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 focus:border-primary focus:bg-white focus:outline-none transition"
             />
           </label>
           <label className="flex flex-col gap-1.5 lg:col-span-2">
@@ -197,7 +197,7 @@ export default function HotelsPage() {
             <select
               value={adults}
               onChange={(e) => setAdults(Number(e.target.value))}
-              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-primary focus:bg-white focus:outline-none transition"
             >
               {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
                 <option key={n} value={n}>
@@ -213,7 +213,7 @@ export default function HotelsPage() {
             <select
               value={rooms}
               onChange={(e) => setRooms(Number(e.target.value))}
-              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:bg-white focus:outline-none transition"
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:border-primary focus:bg-white focus:outline-none transition"
             >
               {Array.from({ length: 6 }, (_, i) => i + 1).map((n) => (
                 <option key={n} value={n}>
@@ -226,7 +226,7 @@ export default function HotelsPage() {
             <button
               type="button"
               onClick={() => void runSearch()}
-              className="w-full rounded-xl bg-teal-600 px-4 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/10 hover:bg-teal-700 transition"
+              className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/10 hover:bg-primary-hover transition"
             >
               Search hotels
             </button>
@@ -293,7 +293,7 @@ export default function HotelsPage() {
                           [a]: e.target.checked,
                         }))
                       }
-                      className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                      className="rounded border-slate-300 text-primary focus:ring-primary"
                     />
                     {a}
                   </label>
@@ -318,7 +318,7 @@ export default function HotelsPage() {
                   onClick={() => setSort(v)}
                   className={`rounded-full px-3 py-1 text-xs font-bold transition ${
                     sort === v
-                      ? "bg-teal-600 text-white shadow-sm"
+                      ? "bg-primary text-white shadow-sm"
                       : "bg-slate-100 text-slate-700 hover:bg-slate-205"
                   }`}
                 >
@@ -411,7 +411,7 @@ export default function HotelsPage() {
                         <p className="text-xs font-semibold uppercase text-slate-555">
                           Per night
                         </p>
-                        <p className="text-2xl font-extrabold text-teal-600">
+                        <p className="text-2xl font-extrabold text-primary">
                           {h.currency} {h.price_per_night.toFixed(0)}
                         </p>
                       </div>
@@ -419,7 +419,7 @@ export default function HotelsPage() {
                         href={h.booking_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex min-w-[112px] items-center justify-center rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-teal-700 shadow"
+                        className="inline-flex min-w-[112px] items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-primary-hover shadow"
                       >
                         View Deal
                       </a>

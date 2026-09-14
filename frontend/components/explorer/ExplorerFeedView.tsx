@@ -48,7 +48,7 @@ export function ExplorerFeedView({ lat, lon, radius = 10000 }: ExplorerFeedViewP
   if (loading) {
     return (
       <div className="text-white p-8 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E94560]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         <span className="ml-3">Generating live feed...</span>
       </div>
     );
@@ -72,7 +72,7 @@ export function ExplorerFeedView({ lat, lon, radius = 10000 }: ExplorerFeedViewP
         >
           {moduleCards.map((card) => (
             <div key={card.id} className="min-w-[280px] max-w-[280px] h-full">
-              <div className="bg-[#0d1f33] border border-[#1e4976]/40 rounded-xl p-4 h-full flex flex-col justify-between hover:border-[#E94560]/30 transition-all">
+              <div className="bg-[#0d1f33] border border-[#1E293B]/40 rounded-xl p-4 h-full flex flex-col justify-between hover:border-primary/30 transition-all">
                 <div>
                   {card.images?.[0] && (
                     <div className="relative h-36 w-full mb-3 rounded-lg overflow-hidden">
@@ -89,8 +89,8 @@ export function ExplorerFeedView({ lat, lon, radius = 10000 }: ExplorerFeedViewP
                   )}
                 </div>
                 
-                <div className="mt-4 flex justify-between items-center pt-3 border-t border-[#1e4976]/20">
-                  <span className="text-[10px] text-[#E94560] font-semibold uppercase tracking-wider">
+                <div className="mt-4 flex justify-between items-center pt-3 border-t border-[#1E293B]/20">
+                  <span className="text-[10px] text-primary font-semibold uppercase tracking-wider">
                     {card.type}
                   </span>
                   

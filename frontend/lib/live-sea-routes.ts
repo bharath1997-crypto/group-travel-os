@@ -106,7 +106,7 @@ export function getSeaRouteLayerPaint(
         "line-blur": 0.4,
       },
       core: {
-        "line-color": dark ? "#5EEAD4" : "#0F766E",
+        "line-color": dark ? "#5EEAD4" : "#0E6E5C",
         "line-width": core,
         "line-opacity": 1,
         "line-dasharray": [3, 2],

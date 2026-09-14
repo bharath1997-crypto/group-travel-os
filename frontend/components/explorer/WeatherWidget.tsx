@@ -254,7 +254,7 @@ export function WeatherWidget({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className={`w-full max-w-md overflow-hidden rounded-[2.5rem] shadow-2xl relative border transition-colors duration-700 ${isNight ? 'bg-[#0F172A] border-white/10 text-white' : 'bg-white border-gray-100 text-[#2C3E50]'}`}>
+      <div className={`w-full max-w-md overflow-hidden rounded-[2.5rem] shadow-2xl relative border transition-colors duration-700 ${isNight ? 'bg-navy border-white/10 text-white' : 'bg-white border-gray-100 text-[#2C3E50]'}`}>
         
         {/* Weather Effects Layer */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-40">
@@ -312,7 +312,7 @@ export function WeatherWidget({
             
             <div className="md:text-right">
               <div className="inline-flex items-center gap-2 mb-1">
-                <div className={`h-2 w-2 rounded-full animate-pulse ${isNight ? 'bg-blue-400' : 'bg-[#E94560]'}`} />
+                <div className={`h-2 w-2 rounded-full animate-pulse ${isNight ? 'bg-blue-400' : 'bg-primary'}`} />
                 <h3 className="text-3xl font-black tracking-tight italic uppercase">Weather</h3>
               </div>
               <p className={`text-xl font-bold tracking-tighter ${isNight ? 'text-white' : 'text-[#2C3E50]'}`}>
@@ -320,7 +320,7 @@ export function WeatherWidget({
                 <span className="ml-2 text-[10px] font-medium opacity-40 uppercase tracking-widest">{timezoneName.split('/').pop()?.replace('_', ' ')}</span>
               </p>
               <p className={`text-sm font-semibold ${isNight ? 'text-white/60' : 'text-[#6C757D]'}`}>{currentDay.dayStr}, {currentDay.dateStr}</p>
-              <p className={`text-sm font-bold uppercase tracking-widest ${isNight ? 'text-blue-400' : 'text-[#E94560]'}`}>{currentDay.condition}</p>
+              <p className={`text-sm font-bold uppercase tracking-widest ${isNight ? 'text-blue-400' : 'text-primary'}`}>{currentDay.condition}</p>
               
 
 
@@ -365,15 +365,15 @@ export function WeatherWidget({
                     className="flex items-center gap-1.5 transition-all active:scale-95 group/loc outline-none"
                   >
                     {/* Visual city chip (pure HTML, no nested button) */}
-                    <span className="inline-flex items-center gap-1 rounded-full border border-[#E94560]/75 bg-[#162d4a] px-2.5 py-0.5 text-xs font-semibold text-[#E94560] shadow-sm ring-1 ring-[#1e4976]/80 group-hover/loc:border-[#E94560]">
-                      <svg className="h-3 w-3 shrink-0 text-[#E94560]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-primary/75 bg-[#1E293B] px-2.5 py-0.5 text-xs font-semibold text-primary shadow-sm ring-1 ring-[#1E293B]/80 group-hover/loc:border-primary">
+                      <svg className="h-3 w-3 shrink-0 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                         <circle cx="12" cy="10" r="3" />
                       </svg>
                       <span className="truncate">{currentCity}</span>
                     </span>
                     {showCoordinateSubtitle ? (
-                    <span className={`rounded-full px-2 py-0.5 border border-transparent group-hover/loc:border-[#E94560]/30 transition-colors ${isNight ? 'bg-white/5 text-white/40' : 'bg-gray-100 text-[#6C757D]'}`}>
+                    <span className={`rounded-full px-2 py-0.5 border border-transparent group-hover/loc:border-primary/30 transition-colors ${isNight ? 'bg-white/5 text-white/40' : 'bg-gray-100 text-[#6C757D]'}`}>
                       {currentCity === "Miami" ? "Tropical Pulse" : currentCity === "Guntur" ? "Andhra Pulse" : "Pulse"} ({Math.abs(coords.lat).toFixed(4)}° {coords.lat >= 0 ? 'N' : 'S'}, {Math.abs(coords.lon).toFixed(4)}° {coords.lon >= 0 ? 'E' : 'W'})
                     </span>
                     ) : null}
@@ -411,7 +411,7 @@ export function WeatherWidget({
           {loading && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-[2px] transition-all">
               <div className="flex flex-col items-center gap-3">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#E94560] border-t-transparent" />
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
                 <span className="text-xs font-bold uppercase tracking-widest text-white drop-shadow-md">Updating {currentCity}...</span>
               </div>
             </div>

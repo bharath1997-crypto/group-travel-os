@@ -90,7 +90,7 @@ export function CallOverlay({
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6">
           {/* Hidden element for audio output routing on voice calls */}
           <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#0F766E] text-2xl font-bold">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-2xl font-bold">
             {name.charAt(0)}
           </div>
           <p className="text-lg font-bold">{name}</p>

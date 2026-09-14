@@ -15,14 +15,23 @@ from app.services.wayra_intent import (
 )
 from app.services.wayra_discovery import is_discovery_app_guide_question
 from app.services.wayra_route_feasibility import assess_drive_feasibility, is_drive_navigation_question
-from app.services.wayra_source_intent import extract_place_from_context
-from app.services.wayra_weather_intent import build_weather_reply, classify_weather_sub_intent
+from app.services.wayra_source_intent import extract_place_from_context, is_planning_from_home
+from app.services.wayra_sources_service import build_user_place_distance_block
+from app.services.places_nearby_service import calculate_distance_miles
+from app.services.wayra_weather_intent import (
+    _home_city_weather,
+    build_weather_reply,
+    classify_weather_sub_intent,
+    extract_home_city,
+)
 from app.services.weather_service import WeatherService
 
 _WEATHER_RE = re.compile(
     r"\b(weather|weather like|weather warning|rain|snow|snowing|temperature|"
     r"too hot|too cold|peak season|best time of year|when should i avoid|"
-    r"good to visit right now|season is best|bring an umbrella)\b",
+    r"good to visit right now|season is best|bring an umbrella|"
+    r"comfortable|how (?:am i|will i|do i) (?:going to )?feel|feels like|"
+    r"chilly|humid|jacket|coat)\b",
     re.I,
 )
 
@@ -50,10 +59,58 @@ _LANGUAGE_PHRASE_RE = re.compile(
     re.I,
 )
 
+_HOME_CONTEXT_RE = re.compile(
+    r"\b(for that location )?from my (?:house|home)\b|"
+    r"\bfrom my location to (?:their|this|that|the) location\b|"
+    r"\bcall from my location to\b",
+    re.I,
+)
+
 _NAVIGATION_RE = re.compile(
     r"\b(how do i get to|best route|how long is the drive|is there parking|"
     r"can i walk to|how is traffic|accessible by car|navigate|reroute|"
-    r"start navigation|set .+ as my destination|near a border)\b",
+    r"start navigation|set .+ as my destination|near a border|"
+    r"call from my location|from my location to|how to reach|way to reach|"
+    r"how do i get there|get over there)\b",
+    re.I,
+)
+
+_REACH_QUESTION_RE = re.compile(
+    r"\b(how to reach|way to reach|how do i get there|get over there)\b",
+    re.I,
+)
+
+_WHERE_AM_I_RE = re.compile(
+    r"\b(where am i|where i am|where are we now|where i am right now|where am i right now)\b",
+    re.I,
+)
+
+_TIME_RE = re.compile(
+    r"\b("
+    r"what time|what s the time|whats the time|what is the time|what is time|"
+    r"what time is it|tell me the time|give me the time|"
+    r"local time|current time|clock|"
+    r"time over there|time there|time at|exact time|time exactly|"
+    r"time difference|compare.{0,20}time|same time as me|"
+    r"time zone|timezone|time now|time right now|"
+    r"time at this pin|time at the pin|time in the pin|time at this location|"
+    r"time at this spot|time here|the time at|the time in"
+    r")\b",
+    re.I,
+)
+
+_TIME_EXCLUDE_RE = re.compile(
+    r"\b("
+    r"best time|peak season|opening time|closing time|drive time|travel time|"
+    r"how long|how much time|time to visit|time of year|response time|"
+    r"real.?time traffic|timeline|lifetime|part.?time|full.?time"
+    r")\b",
+    re.I,
+)
+
+_TIME_PIN_CONTEXT_RE = re.compile(
+    r"\b(time|clock)\b.{0,40}\b(pin|location|here|there|this spot|coordinates|exactly)\b|"
+    r"\b(exactly|exact|precise|current)\b.{0,20}\b(time|clock)\b",
     re.I,
 )
 
@@ -134,8 +191,23 @@ def is_language_phrase_question(message: str) -> bool:
     return bool(_LANGUAGE_PHRASE_RE.search(normalize_query(message)))
 
 
+def is_home_context_question(message: str) -> bool:
+    return bool(_HOME_CONTEXT_RE.search(normalize_query(message)))
+
+
 def is_navigation_question(message: str) -> bool:
     return bool(_NAVIGATION_RE.search(normalize_query(message)))
+
+
+def is_local_time_question(message: str) -> bool:
+    q = normalize_query(message)
+    if not q or ("time" not in q and "clock" not in q):
+        return False
+    if _TIME_EXCLUDE_RE.search(q):
+        return False
+    if _TIME_RE.search(q):
+        return True
+    return bool(_TIME_PIN_CONTEXT_RE.search(q))
 
 
 def is_border_question(message: str) -> bool:
@@ -301,7 +373,102 @@ def resolve_weather_reply(message: str, place: dict[str, Any] | None) -> str | N
 
     label = str(place.get("name") or place.get("city") or "this location")
     sub = classify_weather_sub_intent(message)
-    return build_weather_reply(sub_intent=sub, place_label=label, body=body)
+    home_city = extract_home_city(message) if sub == "weather_comfort" else None
+    home_body = _home_city_weather(home_city) if home_city else None
+    return build_weather_reply(
+        sub_intent=sub,
+        place_label=label,
+        body=body,
+        home_city=home_city,
+        home_body=home_body,
+    )
+
+
+def resolve_home_context_reply(
+    message: str,
+    place: dict[str, Any] | None,
+    ctx: dict[str, Any] | None,
+) -> str | None:
+    """Distance + weather comfort from the user's home (userLocation on Live)."""
+    if not place:
+        return None
+    from datetime import date
+
+    parts: list[str] = []
+    dist_block = build_user_place_distance_block(ctx, place)
+    if dist_block:
+        parts.append(dist_block.strip())
+
+    user = (ctx or {}).get("userLocation") if ctx else None
+    home_city = extract_home_city(message)
+    if not home_city and isinstance(user, dict):
+        home_city = str(user.get("city") or user.get("state") or "").strip() or None
+
+    lat, lng = place.get("lat"), place.get("lng")
+    if isinstance(lat, (int, float)) and isinstance(lng, (int, float)):
+        try:
+            body = WeatherService.get_forecast(float(lat), float(lng), date.today())
+            home_body = _home_city_weather(home_city) if home_city else None
+            label = _place_label(place, ctx)
+            sub = classify_weather_sub_intent(message)
+            if sub != "weather_comfort" and is_home_context_question(message):
+                sub = "weather_comfort"
+            parts.append(
+                build_weather_reply(
+                    sub_intent=sub,
+                    place_label=label,
+                    body=body,
+                    home_city=home_city,
+                    home_body=home_body,
+                )
+            )
+        except Exception:  # noqa: BLE001
+            pass
+
+    if not parts:
+        return None
+    return " ".join(parts)
+
+
+def is_where_am_i_question(message: str) -> bool:
+    return bool(_WHERE_AM_I_RE.search(normalize_query(message)))
+
+
+def resolve_where_am_i_reply(
+    message: str,
+    place: dict[str, Any] | None,
+    ctx: dict[str, Any] | None,
+) -> str | None:
+    if not is_where_am_i_question(message):
+        return None
+
+    user = (ctx or {}).get("userLocation")
+    home_label = None
+    if isinstance(user, dict):
+        home_label = str(
+            user.get("city") or user.get("state") or user.get("country") or ""
+        ).strip() or None
+
+    if place and home_label and is_planning_from_home(ctx):
+        dest_label = _place_label(place, ctx)
+        u_lat, u_lng = float(user["lat"]), float(user["lng"])  # type: ignore[index]
+        miles = calculate_distance_miles(u_lat, u_lng, float(place["lat"]), float(place["lng"]))
+        return (
+            f"You're in {home_label} right now. On the Live map you've selected {dest_label} "
+            f"as your planning destination — about {miles:,.0f} mi away. "
+            "Ask me how to get there from home, when to go, or what to budget for the trip."
+        )
+
+    if home_label:
+        return f"You're in {home_label} right now based on your Live location."
+
+    if place:
+        return (
+            f"Your map pin is on {_place_label(place, ctx)}. "
+            "Turn on location if you want me to compare that to where you are physically."
+        )
+
+    return "Turn on location or pick a place on the map, then ask me again."
 
 
 def resolve_navigation_reply(
@@ -314,6 +481,20 @@ def resolve_navigation_reply(
 
     label = _place_label(place, ctx)
     q = normalize_query(message)
+
+    if _REACH_QUESTION_RE.search(q) and is_planning_from_home(ctx):
+        return None
+
+    if re.search(r"\b(call from my location|from my location to)\b", q):
+        feas = assess_drive_feasibility(ctx, place)
+        if not feas.feasible and feas.message:
+            return feas.message
+        dist_block = build_user_place_distance_block(ctx, place)
+        if dist_block:
+            return (
+                f"{dist_block.strip()} "
+                f"{label} may be remote — research flights, boats, or regional transit if a direct drive is unavailable."
+            )
 
     if is_drive_navigation_question(message):
         feas = assess_drive_feasibility(ctx, place)
@@ -369,6 +550,78 @@ def resolve_navigation_reply(
     )
 
 
+def resolve_local_time_reply(
+    message: str,
+    place: dict[str, Any] | None,
+    ctx: dict[str, Any] | None,
+) -> str | None:
+    if not place:
+        return None
+    lat, lng = place.get("lat"), place.get("lng")
+    if not isinstance(lat, (int, float)) or not isinstance(lng, (int, float)):
+        return None
+
+    try:
+        place_clock = WeatherService.get_local_time(float(lat), float(lng))
+    except Exception:  # noqa: BLE001
+        return None
+
+    label = _place_label(place, ctx)
+    tz_name = str(place_clock.get("timezone") or "local time")
+    time_display = str(place_clock.get("time_display") or "")
+    date_display = str(place_clock.get("date_display") or "")
+    if not time_display:
+        return None
+
+    parts = [
+        f"It's {time_display} at {label} ({tz_name.replace('_', ' ')}) on {date_display}."
+    ]
+
+    q = normalize_query(message)
+    wants_compare = bool(
+        re.search(r"\b(compare|difference|with me|same time|vs\.?|versus)\b", q)
+    )
+    user = (ctx or {}).get("userLocation")
+    if wants_compare and isinstance(user, dict):
+        u_lat, u_lng = user.get("lat"), user.get("lng")
+        user_label = (
+            user.get("city")
+            or user.get("state")
+            or user.get("country")
+            or "your location"
+        )
+        user_clock: dict[str, Any] | None = None
+        if isinstance(u_lat, (int, float)) and isinstance(u_lng, (int, float)):
+            try:
+                user_clock = WeatherService.get_local_time(float(u_lat), float(u_lng))
+            except Exception:  # noqa: BLE001
+                user_clock = None
+
+        if user_clock:
+            user_time = str(user_clock.get("time_display") or "")
+            user_tz = str(user_clock.get("timezone") or "")
+            if user_time:
+                parts.append(f"At {user_label}, it's {user_time}.")
+            place_offset = int(place_clock.get("utc_offset_seconds") or 0)
+            user_offset = int(user_clock.get("utc_offset_seconds") or 0)
+            if place_offset == user_offset or tz_name == user_tz:
+                parts.append("You're in the same time zone — the clock reads the same.")
+            else:
+                diff_hours = (place_offset - user_offset) / 3600
+                if abs(diff_hours) < 0.01:
+                    parts.append("You're in the same time zone — the clock reads the same.")
+                elif diff_hours > 0:
+                    h = abs(diff_hours)
+                    label_h = f"{h:g} hour" if h == 1 else f"{h:g} hours"
+                    parts.append(f"{label} is {label_h} ahead of you.")
+                else:
+                    h = abs(diff_hours)
+                    label_h = f"{h:g} hour" if h == 1 else f"{h:g} hours"
+                    parts.append(f"{label} is {label_h} behind you.")
+
+    return " ".join(parts)
+
+
 def try_local_reply(
     message: str,
     page: str,
@@ -408,6 +661,22 @@ def try_local_reply(
         if text:
             return _local_response(text, intent="language")
 
+    if on_live and place and is_where_am_i_question(message):
+        text = resolve_where_am_i_reply(message, place, ctx)
+        if text:
+            return _local_response(text, intent="where_am_i")
+
+    if on_live and place and is_home_context_question(message):
+        text = resolve_home_context_reply(message, place, ctx)
+        if text:
+            source = WayraSource(
+                label="Open-Meteo weather",
+                url="https://open-meteo.com/",
+                source_type="weather",
+                snippet=text[:120],
+            )
+            return _local_response(text, intent="home_context", sources=[source])
+
     if on_live and place and is_weather_question(message):
         text = resolve_weather_reply(message, place)
         if text:
@@ -419,6 +688,17 @@ def try_local_reply(
             )
             sub = classify_weather_sub_intent(message)
             return _local_response(text, intent=sub, sources=[source])
+
+    if on_live and place and is_local_time_question(message):
+        text = resolve_local_time_reply(message, place, ctx)
+        if text:
+            source = WayraSource(
+                label="Open-Meteo local time",
+                url="https://open-meteo.com/",
+                source_type="weather",
+                snippet=text[:120],
+            )
+            return _local_response(text, intent="local_time", sources=[source])
 
     if on_live and place and is_navigation_question(message):
         text = resolve_navigation_reply(message, place, ctx)

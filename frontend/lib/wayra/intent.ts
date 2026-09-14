@@ -69,6 +69,19 @@ export function normalizeQuery(message: string): string {
   return normalizeWayraQuery(message);
 }
 
+const ACTIVITIES_RE =
+  /\b(what can i do|what should i do|what could i do|what can we do|what should we do|what we do|what to do|what do we do|things to do|activities|anything to do|what s there to do|what is there to do|fun things|stuff to do|what should we not miss|not miss here|worth doing|what do you recommend here|what would you do here|suggestions for here)\b/i;
+
+export function isActivitiesQuestion(message: string): boolean {
+  const q = normalizeQuery(message);
+  if (!q) return false;
+  if (ACTIVITIES_RE.test(q)) return true;
+  return (
+    hasAny(q, /\bwhat should we\b/, /\bwhat can we\b/) &&
+    hasAny(q, /\bdo\b/, /\bhere\b/, /\bthere\b/, /\bthis\b/)
+  );
+}
+
 export type LiveSelectedPlaceContext = {
   name?: string | null;
   lat: number;
@@ -84,6 +97,7 @@ export type LiveSelectedPlaceContext = {
 export function isLivePlaceDeepQuestion(message: string): boolean {
   if (isDiscoveryIdentityQuestion(message)) return false;
   if (isDiscoveryLlmQuestion(message)) return true;
+  if (isActivitiesQuestion(message)) return true;
 
   const q = normalizeQuery(message);
   if (!q) return false;
@@ -374,6 +388,8 @@ export function classifyMode(message: string): WayraMode {
   if (discovery === "app_guide") return "app_guide";
   if (discovery === "local" || discovery === "llm") return "travel";
 
+  if (isActivitiesQuestion(message)) return "travel";
+
   if (isPlaceNameLlmQuestion(message)) return "travel";
 
   if (isLiveMapContextQuestion(message)) return "travel";
@@ -405,6 +421,10 @@ export function classifyMode(message: string): WayraMode {
     /\bweekend (trip|getaway|escape)\b/,
     /\bwhere should i (go|travel)\b/,
     /\bthings to do in\b/,
+    /\bthings to do\b/,
+    /\bwhat to do\b/,
+    /\bwhat we do\b/,
+    /\bwhat should we do\b/,
     /\bitinerary\b/,
     /\btravel guide\b/,
     /\bcity break\b/,

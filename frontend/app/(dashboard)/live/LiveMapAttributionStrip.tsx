@@ -185,7 +185,7 @@ export default function LiveMapAttributionStrip({
           onZoomChange={onZoomChange}
         />
         <p
-          className="flex min-w-0 max-w-[42%] shrink-0 items-center truncate px-1.5 text-[9px] font-medium leading-none tracking-tight text-white/88 sm:max-w-[38%] md:max-w-[34%] lg:max-w-none lg:flex-1"
+          className="flex min-w-0 max-w-[42%] shrink-0 items-center truncate px-1.5 text-[11px] font-medium leading-none tracking-tight text-white/88 sm:max-w-[38%] md:max-w-[34%] lg:max-w-none lg:flex-1"
           title={credits}
         >
           {line}

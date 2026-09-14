@@ -145,14 +145,14 @@ function createSearchPin(label: string): HTMLDivElement {
   ring.style.cssText = [
     "position:absolute;bottom:4px;left:50%;transform:translateX(-50%);",
     "width:36px;height:36px;border-radius:50%;",
-    "background:rgba(15,118,110,0.18);",
+    "background:rgba(14,110,92,0.18);",
     "animation:rovvy-search-ring 1.6s ease-out infinite;",
   ].join("");
   wrap.appendChild(ring);
 
   // Teal teardrop SVG
   const pin = document.createElement("div");
-  pin.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="38" height="52" viewBox="0 0 30 42"><path d="M15 0C6.716 0 0 6.716 0 15c0 11.25 15 27 15 27s15-15.75 15-27C30 6.716 23.284 0 15 0z" fill="#0F766E" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/><circle cx="15" cy="15" r="6.5" fill="white"/></svg>`;
+  pin.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="38" height="52" viewBox="0 0 30 42"><path d="M15 0C6.716 0 0 6.716 0 15c0 11.25 15 27 15 27s15-15.75 15-27C30 6.716 23.284 0 15 0z" fill="#0E6E5C" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/><circle cx="15" cy="15" r="6.5" fill="white"/></svg>`;
   wrap.appendChild(pin);
 
   // Label bubble above the pin
@@ -160,7 +160,7 @@ function createSearchPin(label: string): HTMLDivElement {
     const bubble = document.createElement("div");
     bubble.style.cssText = [
       "position:absolute;bottom:56px;left:50%;transform:translateX(-50%);",
-      "background:#0F766E;color:#fff;",
+      "background:#0E6E5C;color:#fff;",
       "padding:4px 10px;border-radius:20px;",
       "font-size:12px;font-weight:600;white-space:nowrap;",
       "box-shadow:0 2px 8px rgba(0,0,0,0.22);",
@@ -368,18 +368,18 @@ export function ExploreMap() {
     el.style.cssText = "position:relative;text-align:center;cursor:pointer;";
     const label = name.split(",")[0] ?? name;
     el.innerHTML = `
-      <div style="background:#0F766E;color:#fff;padding:4px 10px;border-radius:6px;
+      <div style="background:#0E6E5C;color:#fff;padding:4px 10px;border-radius:6px;
         font-size:12px;font-weight:500;white-space:nowrap;max-width:200px;overflow:hidden;
         text-overflow:ellipsis;margin-bottom:4px;box-shadow:0 2px 8px rgba(0,0,0,0.25);">
         ${label}
       </div>
       <svg width="24" height="32" viewBox="0 0 24 32" style="display:block;margin:0 auto;">
         <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20S24 21 24 12C24 5.4 18.6 0 12 0z"
-          fill="#0F766E"/>
+          fill="#0E6E5C"/>
         <circle cx="12" cy="12" r="5" fill="white"/>
       </svg>
       <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);
-        width:16px;height:16px;border-radius:50%;background:rgba(15,118,110,0.25);
+        width:16px;height:16px;border-radius:50%;background:rgba(14,110,92,0.25);
         animation:rovvy-pulse 1.5s ease-out infinite;"></div>
     `;
     searchMarkerRef.current = new maplibregl.Marker({ element: el, anchor: "bottom" })
@@ -483,7 +483,7 @@ export function ExploreMap() {
           source: "places",
           filter: ["has", "point_count"],
           paint: {
-            "circle-color": "#0F766E",
+            "circle-color": "#0E6E5C",
             "circle-radius": ["step", ["get", "point_count"], 20, 10, 30, 50, 40],
             "circle-opacity": 0.9,
           },
@@ -1036,10 +1036,10 @@ export function ExploreMap() {
               placeholder="Search places, cities, addresses…"
               style={{
                 flex: 1, border: "none", outline: "none", background: "transparent",
-                fontSize: "clamp(13px, 1.05vw, 15px)", color: "#0F172A",
+                fontSize: "clamp(13px, 1.05vw, 15px)", color: "#0F1614",
               }}
             />
-            {searchLoading && <Loader2 size={15} style={{ color: "#0F766E", flexShrink: 0 }} className="animate-spin" />}
+            {searchLoading && <Loader2 size={15} style={{ color: "#0E6E5C", flexShrink: 0 }} className="animate-spin" />}
             {searchQuery && !searchLoading && (
               <button
                 type="button"
@@ -1095,7 +1095,7 @@ export function ExploreMap() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                      fontSize: "clamp(12px,1vw,14px)", fontWeight: 600, color: "#0F172A",
+                      fontSize: "clamp(12px,1vw,14px)", fontWeight: 600, color: "#0F1614",
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                     }}>
                       {result.name}
@@ -1198,7 +1198,7 @@ export function ExploreMap() {
           {hasActiveFilter && !loading && countLabel && (
             <div style={{
               flexShrink: 0, whiteSpace: "nowrap",
-              background: "rgba(15,118,110,0.92)", color: "#fff",
+              background: "rgba(14,110,92,0.92)", color: "#fff",
               borderRadius: 20, padding: "clamp(5px,0.45vw,8px) clamp(10px,0.9vw,14px)",
               fontSize: "clamp(11px,0.85vw,13px)", fontWeight: 600,
               boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
@@ -1323,7 +1323,7 @@ export function ExploreMap() {
               fontSize: 13, fontWeight: 500, color: "#475569",
               boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
             }}>
-              <Loader2 size={16} style={{ color: "#0F766E" }} className="animate-spin" />
+              <Loader2 size={16} style={{ color: "#0E6E5C" }} className="animate-spin" />
               Searching…
             </div>
           </div>
@@ -1380,7 +1380,7 @@ export function ExploreMap() {
             <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px 16px" }}>
 
               {/* Name */}
-              <div style={{ fontSize: 17, fontWeight: 700, color: "#0F172A", lineHeight: 1.3, marginBottom: 6 }}>
+              <div style={{ fontSize: 17, fontWeight: 700, color: "#0F1614", lineHeight: 1.3, marginBottom: 6 }}>
                 {selectedPlace.name}
               </div>
 
@@ -1436,7 +1436,7 @@ export function ExploreMap() {
 
               {/* Distance */}
               {selectedPlace.distance_m != null && selectedPlace.distance_m > 0 && (
-                <div style={{ fontSize: 13, color: "#0F766E", fontWeight: 500, marginBottom: 12 }}>
+                <div style={{ fontSize: 13, color: "#0E6E5C", fontWeight: 500, marginBottom: 12 }}>
                   {(selectedPlace.distance_m / 1609.34).toFixed(1)} mi away{referencePoint ? " from pin" : ""}
                 </div>
               )}
@@ -1449,7 +1449,7 @@ export function ExploreMap() {
                   rel="noopener noreferrer"
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 6,
-                    padding: "9px 16px", background: "#0F766E", color: "#fff",
+                    padding: "9px 16px", background: "#0E6E5C", color: "#fff",
                     borderRadius: 10, fontSize: 13, fontWeight: 600, textDecoration: "none",
                   }}
                 >
@@ -1462,7 +1462,7 @@ export function ExploreMap() {
                     rel="noopener noreferrer"
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 6,
-                      padding: "9px 16px", background: "#F1F5F9", color: "#0F172A",
+                      padding: "9px 16px", background: "#F1F5F9", color: "#0F1614",
                       border: "1px solid #E2E8F0", borderRadius: 10,
                       fontSize: 13, fontWeight: 600, textDecoration: "none",
                     }}

@@ -1,4 +1,4 @@
-import type { LiveMapLayer } from "@/lib/map-providers";
+import { isLiveOpenFreeMapBasemapPrimary, type LiveMapLayer } from "@/lib/map-providers";
 import { formatMapCoordinates } from "./live-map-pick-context";
 
 export type LiveMapAttributionFocus = {
@@ -24,7 +24,9 @@ export function getLiveMapDataCredits(layer: LiveMapLayer): string {
       return "© OpenStreetMap · © OpenFreeMap";
     case "street":
     default:
-      return "© OpenStreetMap · © CARTO";
+      return isLiveOpenFreeMapBasemapPrimary()
+        ? "© OpenStreetMap · © OpenFreeMap"
+        : "© OpenStreetMap · © CARTO";
   }
 }
 

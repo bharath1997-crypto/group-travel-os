@@ -6,21 +6,21 @@ import { SettingsBreadcrumb, legalCrumbs } from "@/components/settings/SettingsB
 
 export default function CookiePolicyPage() {
   return (
-    <div className="flex flex-col h-screen bg-white" style={{ color: "#0F172A" }}>
+    <div className="flex flex-col h-screen bg-white" style={{ color: "#0F1614" }}>
       {/* Header */}
       <header className="shrink-0 border-b border-slate-100 bg-white px-6 py-4 z-40">
         <div className="flex items-center justify-between">
           <Link
             href="/settings/support-legal"
             className="flex items-center gap-2.5 rounded-lg px-1 py-1 text-sm font-medium transition-colors hover:bg-stone-50 outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
-            style={{ color: "#0F172A" }}
+            style={{ color: "#0F1614" }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4 shrink-0">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
             <RovvyLogo variant="primary" size="sm" />
           </Link>
-          <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#0F766E" }}>
+          <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#0E6E5C" }}>
             Cookie Policy
           </span>
         </div>
@@ -35,11 +35,11 @@ export default function CookiePolicyPage() {
         <div className="mb-12">
           <div
             className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold mb-5"
-            style={{ background: "#F0FDFA", color: "#0F766E", border: "1px solid #99F6E4" }}
+            style={{ background: "#F0FDFA", color: "#0E6E5C", border: "1px solid #99F6E4" }}
           >
             Last Updated: June 2026 &nbsp;·&nbsp; Version 1.0
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: "#0F172A" }}>
+          <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: "#0F1614" }}>
             Cookie Policy
           </h1>
           <p className="mt-3 text-base" style={{ color: "#6B7280", lineHeight: "1.8" }}>
@@ -51,7 +51,7 @@ export default function CookiePolicyPage() {
 
           {/* 1 — Introduction */}
           <section>
-            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
               <span className="font-mono text-sm">01.</span> Introduction
             </h2>
             <div className="space-y-3">
@@ -63,7 +63,7 @@ export default function CookiePolicyPage() {
               </p>
               <p>
                 If you have questions about this policy or wish to exercise any rights related to your data, please contact us at{" "}
-                <a href="mailto:privacy@rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0F766E" }}>
+                <a href="mailto:privacy@rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0E6E5C" }}>
                   privacy@rovvy.app
                 </a>.
               </p>
@@ -74,7 +74,7 @@ export default function CookiePolicyPage() {
 
           {/* 2 — What Are Cookies? */}
           <section>
-            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
               <span className="font-mono text-sm">02.</span> What Are Cookies?
             </h2>
             <div className="space-y-3">
@@ -94,7 +94,7 @@ export default function CookiePolicyPage() {
 
           {/* 3 — Why We Use Cookies */}
           <section>
-            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
               <span className="font-mono text-sm">03.</span> Why We Use Cookies
             </h2>
             <div className="space-y-3">
@@ -117,7 +117,7 @@ export default function CookiePolicyPage() {
 
           {/* 4 — Types of Cookies We Use */}
           <section>
-            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
               <span className="font-mono text-sm">04.</span> Types of Cookies We Use
             </h2>
             <div className="space-y-4">
@@ -128,7 +128,7 @@ export default function CookiePolicyPage() {
                 },
                 {
                   name: "Functional Cookies",
-                  desc: "These cookies remember your choices and preferences so the Service behaves consistently across visits. Examples include language and region settings, display preferences, and feature configuration. Disabling these may mean you need to reconfigure preferences on each visit.",
+                  desc: "These cookies remember your choices and preferences so the Service behaves consistently across visits. Examples include language and region settings, display preferences, recent airport selections (when you accept preference storage), and feature configuration. If preference storage is declined, Rovvy may still use session-only storage for the current visit.",
                 },
                 {
                   name: "Analytics and Performance Cookies",
@@ -136,11 +136,11 @@ export default function CookiePolicyPage() {
                 },
                 {
                   name: "Local Storage",
-                  desc: "Rovvy uses browser localStorage to store your session token (gt_token), cached map data, device-side search results, and user preferences. This data is stored locally on your device and is not transmitted to third parties for advertising or profiling purposes.",
+                  desc: "Rovvy uses browser localStorage and sessionStorage for your session token (gt_token), cached map data, device-side search results, and optional preference data such as recent airport picks. Preference storage is controlled through the in-app storage banner or Customize settings. This data stays on your device and is not sent to advertising or profiling providers.",
                 },
               ].map(({ name, desc }) => (
                 <div key={name} className="rounded-lg p-4" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
-                  <p className="font-semibold mb-1.5" style={{ color: "#0F172A" }}>{name}</p>
+                  <p className="font-semibold mb-1.5" style={{ color: "#0F1614" }}>{name}</p>
                   <p className="text-sm" style={{ color: "#4B5563", lineHeight: "1.7" }}>{desc}</p>
                 </div>
               ))}
@@ -149,7 +149,7 @@ export default function CookiePolicyPage() {
             {/* No advertising cookies callout */}
             <div
               className="mt-5 rounded-lg p-4 text-sm font-medium"
-              style={{ background: "#F0FDFA", border: "1px solid #99F6E4", color: "#0F766E" }}
+              style={{ background: "#F0FDFA", border: "1px solid #99F6E4", color: "#0E6E5C" }}
             >
               Rovvy does not use advertising cookies, behavioral tracking pixels, or third-party ad network scripts. We do not sell your personal information to advertisers or data brokers. Rovvy is ad-free.
             </div>
@@ -159,7 +159,7 @@ export default function CookiePolicyPage() {
 
           {/* 5 — Third-Party Services */}
           <section>
-            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
               <span className="font-mono text-sm">05.</span> Third-Party Services
             </h2>
             <div className="space-y-3">
@@ -182,7 +182,7 @@ export default function CookiePolicyPage() {
 
           {/* 6 — Affiliate Links and Tracking */}
           <section>
-            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
               <span className="font-mono text-sm">06.</span> Affiliate Links and Tracking
             </h2>
             <div className="space-y-3">
@@ -205,7 +205,7 @@ export default function CookiePolicyPage() {
 
           {/* 7 — Managing Cookies */}
           <section>
-            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
               <span className="font-mono text-sm">07.</span> Managing Cookies
             </h2>
             <div className="space-y-3">
@@ -233,7 +233,7 @@ export default function CookiePolicyPage() {
 
           {/* 8 — Do Not Track */}
           <section>
-            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
               <span className="font-mono text-sm">08.</span> Do Not Track Signals
             </h2>
             <div className="space-y-3">
@@ -253,7 +253,7 @@ export default function CookiePolicyPage() {
 
           {/* 9 — International Users */}
           <section>
-            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
               <span className="font-mono text-sm">09.</span> International Users
             </h2>
             <div className="space-y-3">
@@ -270,7 +270,7 @@ export default function CookiePolicyPage() {
               </p>
               <p>
                 For questions about cross-border data transfers or your rights as an international user, contact us at{" "}
-                <a href="mailto:privacy@rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0F766E" }}>
+                <a href="mailto:privacy@rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0E6E5C" }}>
                   privacy@rovvy.app
                 </a>.
               </p>
@@ -281,7 +281,7 @@ export default function CookiePolicyPage() {
 
           {/* 10 — Changes */}
           <section>
-            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
               <span className="font-mono text-sm">10.</span> Changes to This Cookie Policy
             </h2>
             <div className="space-y-3">
@@ -301,7 +301,7 @@ export default function CookiePolicyPage() {
 
           {/* 11 — Contact */}
           <section>
-            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+            <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
               <span className="font-mono text-sm">11.</span> Contact Information
             </h2>
             <p className="mb-4">
@@ -311,16 +311,16 @@ export default function CookiePolicyPage() {
               className="rounded-lg p-5 space-y-1.5 text-sm"
               style={{ background: "#F0FDFA", border: "1px solid #99F6E4" }}
             >
-              <p className="font-semibold" style={{ color: "#0F172A" }}>Rovvy Privacy Team</p>
+              <p className="font-semibold" style={{ color: "#0F1614" }}>Rovvy Privacy Team</p>
               <p>
                 <span style={{ color: "#6B7280" }}>Email: </span>
-                <a href="mailto:privacy@rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0F766E" }}>
+                <a href="mailto:privacy@rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0E6E5C" }}>
                   privacy@rovvy.app
                 </a>
               </p>
               <p>
                 <span style={{ color: "#6B7280" }}>Website: </span>
-                <a href="https://rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0F766E" }}>
+                <a href="https://rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0E6E5C" }}>
                   https://rovvy.app
                 </a>
               </p>
@@ -339,15 +339,15 @@ export default function CookiePolicyPage() {
         <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="text-xs" style={{ color: "#6B7280" }}>
             Questions?{" "}
-            <a href="mailto:privacy@rovvy.app" className="underline underline-offset-2" style={{ color: "#0F766E" }}>
+            <a href="mailto:privacy@rovvy.app" className="underline underline-offset-2" style={{ color: "#0E6E5C" }}>
               privacy@rovvy.app
             </a>
           </p>
           <div className="flex items-center gap-4 text-xs" style={{ color: "#6B7280" }}>
-            <Link href="/privacy" className="underline underline-offset-2 hover:text-stone-800 transition-colors" style={{ color: "#0F766E" }}>
+            <Link href="/privacy" className="underline underline-offset-2 hover:text-stone-800 transition-colors" style={{ color: "#0E6E5C" }}>
               Privacy Policy
             </Link>
-            <Link href="/terms" className="underline underline-offset-2 hover:text-stone-800 transition-colors" style={{ color: "#0F766E" }}>
+            <Link href="/terms" className="underline underline-offset-2 hover:text-stone-800 transition-colors" style={{ color: "#0E6E5C" }}>
               Terms of Service
             </Link>
           </div>

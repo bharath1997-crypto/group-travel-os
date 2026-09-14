@@ -6,7 +6,7 @@ import { RovvyLogo } from "@/components/RovvyLogo";
 
 export default function GroupsPage() {
   return (
-    <div className="flex min-h-[calc(100vh-80px)] flex-col items-center justify-center bg-[#F8FAFC] px-6 py-12 text-slate-800">
+    <div className="flex min-h-[calc(100vh-80px)] flex-col items-center justify-center bg-app px-6 py-12 text-slate-800">
       <div className="w-full max-w-md text-center">
         {/* Rovvy Logo */}
         <div className="mb-8 flex justify-center">
@@ -14,7 +14,7 @@ export default function GroupsPage() {
         </div>
 
         {/* Decorative Animated Icon */}
-        <div className="relative mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#0F766E] to-[#14B8A6] shadow-lg shadow-[#0F766E]/20">
+        <div className="relative mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#0E6E5C] to-[#14B8A6] shadow-lg shadow-[#0E6E5C]/20">
           <span className="text-3xl" role="img" aria-label="groups">
             👥
           </span>
@@ -36,7 +36,7 @@ export default function GroupsPage() {
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/groups/new"
-            className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#0F766E] to-[#14B8A6] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#0F766E]/20 transition-all hover:brightness-110 active:scale-95"
+            className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#0E6E5C] to-[#14B8A6] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#0E6E5C]/20 transition-all hover:brightness-110 active:scale-95"
           >
             Create a Group
           </Link>
@@ -47,7 +47,7 @@ export default function GroupsPage() {
 
         {/* Quick Help/Feature Info cards */}
         <div className="mt-12 text-left border-t border-slate-200 pt-8">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[#0F766E]">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-primary">
             With Rovvy Groups you can:
           </h3>
           <div className="mt-4 space-y-4">

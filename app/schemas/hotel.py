@@ -3,6 +3,17 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class HotelProviderOffer(BaseModel):
+    """Single booking provider offer for a hotel property."""
+
+    model_config = ConfigDict(from_attributes=False)
+
+    provider_name: str
+    price_per_night: float
+    currency: str = "USD"
+    booking_url: str
+
+
 class HotelResult(BaseModel):
     model_config = ConfigDict(from_attributes=False)
 
@@ -19,3 +30,5 @@ class HotelResult(BaseModel):
     amenities: list[str] = Field(default_factory=list)
     booking_url: str
     provider: str = "Agoda"
+    provider_offers: list[HotelProviderOffer] = Field(default_factory=list)
+

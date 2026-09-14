@@ -129,7 +129,7 @@ export default function LiveMapLocationSheet({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               {manualMode ? (
-                <p className="text-[10px] font-bold uppercase tracking-wide text-[#0F766E]">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-primary">
                   Manual location
                 </p>
               ) : null}
@@ -138,7 +138,7 @@ export default function LiveMapLocationSheet({
                 {loading ? "Looking up address…" : subtitle}
               </p>
               {distanceLine ? (
-                <p className="mt-1 text-[11px] font-semibold text-[#0F766E]">{distanceLine}</p>
+                <p className="mt-1 text-[11px] font-semibold text-primary">{distanceLine}</p>
               ) : null}
             </div>
             <button
@@ -165,7 +165,7 @@ export default function LiveMapLocationSheet({
                 onClick={onClick}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-stone-50"
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E6F7F4] text-[#0F766E]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
                   <Icon className="h-4 w-4" />
                 </span>
                 <span className="min-w-0">

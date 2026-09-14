@@ -6,6 +6,22 @@ import { buildGlobeSunLight } from "./live-globe-sun";
 export const LIVE_GLOBE_VIEW_MAX_ZOOM = 3;
 
 export const LIVE_GLOBE_PROJECTION = { type: "globe" as const };
+export const LIVE_MERCATOR_PROJECTION = { type: "mercator" as const };
+
+/** Use flat mercator when zoomed in so taps match the visible map (globe backside bug on mobile). */
+export function syncLiveMapProjection(map: MaplibreMap, zoom: number): void {
+  if (!map.isStyleLoaded()) return;
+
+  try {
+    map.setProjection(
+      isLiveGlobeViewZoom(zoom) ? LIVE_GLOBE_PROJECTION : LIVE_MERCATOR_PROJECTION,
+    );
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[Rovvy Live Map] projection switch unavailable", err);
+    }
+  }
+}
 
 const LIVE_GLOBE_OCEAN_BG = "#061325";
 const LIVE_MAP_FALLBACK_BG = "#d4dde4";
@@ -91,7 +107,7 @@ export function syncLiveGlobeBackground(map: MaplibreMap): void {
             map.setPaintProperty(layer.id, "background-color", LIVE_GLOBE_OCEAN_BG);
           } else {
             const isDarkStyle = layer.id.includes("dark") || layer.id.includes("night");
-            map.setPaintProperty(layer.id, "background-color", isDarkStyle ? "#0f172a" : "#f8f4f0");
+            map.setPaintProperty(layer.id, "background-color", isDarkStyle ? "#0f1614" : "#f8f4f0");
           }
         }
       }
@@ -140,10 +156,12 @@ export function applyLiveGlobeMode(
   const apply = () => {
     try {
       if (!map.isStyleLoaded()) return;
-      map.setProjection(LIVE_GLOBE_PROJECTION);
-      map.setRenderWorldCopies(false);
-      map.setSky(liveGlobeSkyForLayer(activeLayer));
-      syncGlobeSunLight(map);
+      syncLiveMapProjection(map, map.getZoom());
+      if (isLiveGlobeViewZoom(map.getZoom())) {
+        map.setRenderWorldCopies(false);
+        map.setSky(liveGlobeSkyForLayer(activeLayer));
+        syncGlobeSunLight(map);
+      }
       syncLiveGlobeBackground(map);
     } catch (err) {
       if (process.env.NODE_ENV === "development") {
@@ -170,15 +188,17 @@ export function bindLiveGlobeMode(
   };
 }
 
-/** Keep user on globe when locating from world view; street zoom when already local. */
+/** Target zoom when centering on the user. */
 export function resolveLiveLocateZoom(
   currentZoom: number,
   accuracyMeters: number | null | undefined,
+  options?: { zoomToStreet?: boolean },
 ): number {
-  if (currentZoom <= LIVE_GLOBE_VIEW_MAX_ZOOM) {
+  // Passive updates while still at world zoom can stay on the globe (pan only).
+  if (!options?.zoomToStreet && currentZoom <= LIVE_GLOBE_VIEW_MAX_ZOOM) {
     return 2.2;
   }
-  if (currentZoom <= 8) {
+  if (currentZoom <= 8 || options?.zoomToStreet) {
     return accuracyMeters != null && accuracyMeters > 150 ? 12 : 14;
   }
   return accuracyMeters != null && accuracyMeters > 150 ? 14 : 16;

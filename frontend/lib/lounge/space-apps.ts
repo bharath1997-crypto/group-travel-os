@@ -54,7 +54,7 @@ export function spaceAppStyle(app: SpaceApp): { bg: string; label: string } {
     const s = SPACE_PRESET_STYLE[app.presetKey];
     return { bg: s.bg, label: s.label };
   }
-  return { bg: "#0F766E", label: app.name.charAt(0).toUpperCase() };
+  return { bg: "#0E6E5C", label: app.name.charAt(0).toUpperCase() };
 }
 
 export function readSpaceApps(): SpaceApp[] {

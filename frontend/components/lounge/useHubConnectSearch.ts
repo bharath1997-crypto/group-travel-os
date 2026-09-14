@@ -12,7 +12,7 @@ import {
 } from "react";
 import { onValue, ref, type Database } from "firebase/database";
 
-import { apiFetchWithStatus } from "@/lib/api";
+import { apiFetchWithStatus, optionalSignalInit } from "@/lib/safe-fetch";
 import { normalizeConnectUserSearchQuery } from "@/lib/lounge/hub-utils";
 import type {
   ChatInfo,
@@ -115,9 +115,7 @@ export function useHubConnectSearch({
     void (async () => {
       const r = await apiFetchWithStatus<
         { id: string; sender_id: string; status: string }[]
-      >("/social/friend-requests", {
-        signal: masterAbortRef.current?.signal,
-      });
+      >("/social/friend-requests", optionalSignalInit(masterAbortRef.current?.signal));
       if (r.status === 401) {
         handleUnauthorized();
         return;
@@ -159,17 +157,16 @@ export function useHubConnectSearch({
         setSearchOverlayLoading(true);
         try {
           const reqSignal = masterAbortRef.current?.signal;
+          const reqInit = optionalSignalInit(reqSignal);
           const [connRes, searchRes, groupsParamRes] = await Promise.all([
-            apiFetchWithStatus<UserSearchResultRow[]>("/social/connections", {
-              signal: reqSignal,
-            }),
+            apiFetchWithStatus<UserSearchResultRow[]>("/social/connections", reqInit),
             apiFetchWithStatus<UserSearchResultRow[]>(
               `/users/search?q=${encodeURIComponent(normalizeConnectUserSearchQuery(q))}&limit=20`,
-              { signal: reqSignal },
+              reqInit,
             ),
             apiFetchWithStatus<GroupOut[]>(
               `/groups?search=${encodeURIComponent(q)}`,
-              { signal: reqSignal },
+              reqInit,
             ),
           ]);
           if (userSearchSeq.current !== seq) return;
@@ -202,9 +199,7 @@ export function useHubConnectSearch({
             );
           }
           if (discover.length === 0) {
-            const allRes = await apiFetchWithStatus<GroupOut[]>("/groups", {
-              signal: reqSignal,
-            });
+            const allRes = await apiFetchWithStatus<GroupOut[]>("/groups", reqInit);
             if (userSearchSeq.current !== seq) return;
             if (allRes.status === 401) {
               handleUnauthorized();
@@ -292,7 +287,7 @@ export function useHubConnectSearch({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ receiver_id: row.id }),
-          signal: masterAbortRef.current?.signal,
+          ...optionalSignalInit(masterAbortRef.current?.signal),
         },
       );
       setUserSearchActionId(null);
@@ -400,7 +395,7 @@ export function useHubConnectSearch({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: row.id }),
-        signal: masterAbortRef.current?.signal,
+        ...optionalSignalInit(masterAbortRef.current?.signal),
       });
       if (r.status === 401) {
         handleUnauthorized();
@@ -439,7 +434,7 @@ export function useHubConnectSearch({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ invite_code: String(code).trim() }),
-      signal: masterAbortRef.current?.signal,
+      ...optionalSignalInit(masterAbortRef.current?.signal),
     });
     if (r.status === 401) {
       handleUnauthorized();

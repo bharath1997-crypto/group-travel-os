@@ -67,7 +67,7 @@ function planBadgeStyle(
       className: "bg-rose-50 text-rose-700 border border-rose-200",
     };
   if (p === "pro" || p === "enterprise")
-    return { label: "Pro", className: "bg-teal-50 text-teal-700 border border-teal-250" };
+    return { label: "Pro", className: "bg-primary-soft text-primary border border-teal-250" };
   return { label: p, className: "bg-slate-100 text-slate-700 border border-slate-200" };
 }
 
@@ -314,7 +314,7 @@ export default function BuddiesPage() {
   );
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#F8FAFC] rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
+    <div className="min-h-[calc(100dvh-80px)] bg-app rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-slate-200/80">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
@@ -470,7 +470,7 @@ export default function BuddiesPage() {
                               connectBusy === String(row.id) || requested
                             }
                             onClick={() => void connect(row)}
-                            className="mt-3 w-full rounded-lg bg-teal-600 hover:bg-teal-700 py-2 text-xs font-bold text-white transition shadow-sm disabled:opacity-50"
+                            className="mt-3 w-full rounded-lg bg-primary hover:bg-primary-hover py-2 text-xs font-bold text-white transition shadow-sm disabled:opacity-50"
                           >
                             {requested ? "Requested" : "Connect"}
                           </button>
@@ -524,7 +524,7 @@ export default function BuddiesPage() {
                             type="button"
                             disabled={frBusy === String(fr.id)}
                             onClick={() => void accept(fr)}
-                            className="rounded-lg bg-teal-600 hover:bg-teal-700 px-3 py-1.5 text-xs font-bold text-white transition shadow-sm disabled:opacity-50"
+                            className="rounded-lg bg-primary hover:bg-primary-hover px-3 py-1.5 text-xs font-bold text-white transition shadow-sm disabled:opacity-50"
                           >
                             Accept
                           </button>

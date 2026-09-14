@@ -80,6 +80,8 @@ export function buildWayraSessionGreeting(input: {
   trips?: WayraTripHint[];
   placeLabel?: string | null;
   onLive?: boolean;
+  /** Injectable clock — keeps "this week" assertions deterministic in tests. */
+  now?: Date;
 }): string {
   const honorific = honorificName(input.fullName);
   const lines: string[] = [
@@ -102,7 +104,7 @@ export function buildWayraSessionGreeting(input: {
     );
   }
 
-  const weekTrips = tripsThisWeek(input.trips ?? []);
+  const weekTrips = tripsThisWeek(input.trips ?? [], input.now ?? new Date());
   if (weekTrips.length > 0) {
     const first = weekTrips[0]!;
     const dest = first.destination?.trim();

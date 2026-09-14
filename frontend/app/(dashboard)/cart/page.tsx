@@ -40,7 +40,7 @@ const CartMap = dynamic(() => import("@/components/cart/CartMap"), {
   loading: () => (
     <div className="w-full h-full min-h-[350px] flex items-center justify-center bg-slate-50 border border-slate-200 rounded-2xl">
       <div className="flex flex-col items-center gap-2">
-        <Loader2 className="h-6 w-6 animate-spin text-teal-700" />
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
         <p className="text-xs text-slate-400">Initializing map canvas...</p>
       </div>
     </div>
@@ -169,13 +169,13 @@ export default function CartPage() {
         {loading ? (
           <div className="flex h-96 items-center justify-center bg-white rounded-2xl border border-slate-200">
             <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-8 w-8 animate-spin text-teal-700" />
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="text-sm text-slate-500">Loading your travel cart...</p>
             </div>
           </div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center bg-white rounded-2xl border border-dashed border-slate-300 py-16 px-4 text-center">
-            <div className="rounded-full bg-teal-50 p-4 text-teal-700 mb-4">
+            <div className="rounded-full bg-primary-soft p-4 text-primary mb-4">
               <Compass className="h-8 w-8" />
             </div>
             <h3 className="text-lg font-bold text-slate-900">Your travel cart is empty</h3>
@@ -259,7 +259,7 @@ export default function CartPage() {
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <div className="h-full w-full flex items-center justify-center text-teal-700 bg-teal-50">
+                          <div className="h-full w-full flex items-center justify-center text-primary bg-primary-soft">
                             <MapPin className="h-6 w-6" />
                           </div>
                         )}
@@ -312,7 +312,7 @@ export default function CartPage() {
                               href={item.source_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[9px] font-semibold text-teal-700 hover:underline"
+                              className="text-[9px] font-semibold text-primary hover:underline"
                             >
                               View source
                             </a>

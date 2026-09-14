@@ -189,6 +189,135 @@ def _train_bus_segment(frm: str, to: str, id_prefix: str) -> RouteSegment:
     )
 
 
+def _train_segment(
+    frm: str,
+    to: str,
+    id_prefix: str,
+    *,
+    duration: str = "3–5 hours",
+) -> RouteSegment:
+    return RouteSegment(
+        id=f"{id_prefix}_train_{frm.lower().replace(' ', '_')}_{to.lower().replace(' ', '_')}",
+        type=RouteSegmentType.TRAIN,
+        **{"fromName": frm, "toName": to},
+        title=f"Train: {frm} → {to}",
+        **{"estimatedDuration": duration, "providerStatus": "live_provider_required"},
+        notes=["Check IRCTC or Indian Railways for live schedules and fares."],
+    )
+
+
+def _bus_segment(
+    frm: str,
+    to: str,
+    id_prefix: str,
+    *,
+    duration: str = "1–2 hours",
+) -> RouteSegment:
+    return RouteSegment(
+        id=f"{id_prefix}_bus_{frm.lower().replace(' ', '_')}_{to.lower().replace(' ', '_')}",
+        type=RouteSegmentType.BUS,
+        **{"fromName": frm, "toName": to},
+        title=f"Bus: {frm} → {to}",
+        **{"estimatedDuration": duration, "providerStatus": "live_provider_required"},
+        notes=["Check APSRTC or local operators for village bus timings."],
+    )
+
+
+def _drive_segment(
+    frm: str,
+    to: str,
+    id_prefix: str,
+    *,
+    duration: str = "2–4 hours",
+) -> RouteSegment:
+    return RouteSegment(
+        id=f"{id_prefix}_drive_{frm.lower().replace(' ', '_')}_{to.lower().replace(' ', '_')}",
+        type=RouteSegmentType.DRIVE,
+        **{"fromName": frm, "toName": to},
+        title=f"Private vehicle: {frm} → {to}",
+        **{"estimatedDuration": duration, "providerStatus": "estimated"},
+    )
+
+
+def _matches_ap_village_destination(dest: LocationSummary) -> bool:
+    """Villages and mandals in Guntur / Prakasam districts (Andhra Pradesh)."""
+    if (dest.country or "").strip().lower() not in ("india", "in"):
+        return False
+    blob = dest.name.strip().lower()
+    markers = (
+        "guntur",
+        "prakasam",
+        "prakasam",
+        "pennandipadu",
+        "rajupala",
+        "andhra",
+        "amaravati",
+        "tenali",
+        "ongole",
+        "vijayawada",
+        "mandals",
+        "mandal",
+    )
+    return any(marker in blob for marker in markers)
+
+
+def _ap_village_public_option(
+    origin_city: str,
+    dest_name: str,
+    *,
+    arrival_hub: str = "Hyderabad",
+    prefer_public: bool,
+) -> RouteOption:
+    option_id = "ap_public_transport"
+    return RouteOption(
+        id=option_id,
+        title="Flight + train + bus (public transport)",
+        type=RouteOptionType.FLIGHT_MULTIMODAL,
+        recommended=prefer_public,
+        **{"bestFor": "no private vehicle after landing in India"},
+        **{"estimatedDuration": "24–36 hours total"},
+        **{"providerStatus": "live_provider_required"},
+        segments=[
+            _origin_airport_segment(origin_city, option_id),
+            _flight_segment(origin_city, arrival_hub, option_id),
+            _train_segment(arrival_hub, "Guntur", option_id, duration="4–6 hours"),
+            _bus_segment("Guntur", "Pennandipadu", option_id, duration="1–2 hours"),
+            _bus_segment("Pennandipadu", dest_name, option_id, duration="30–90 min"),
+        ],
+        notes=[
+            "Search international flights on the Travel → Flights tab.",
+            "After Hyderabad, use Indian Railways for Guntur and APSRTC/local buses to the village.",
+        ],
+    )
+
+
+def _ap_village_private_option(
+    origin_city: str,
+    dest_name: str,
+    *,
+    arrival_hub: str = "Hyderabad",
+    prefer_public: bool,
+) -> RouteOption:
+    option_id = "ap_private_vehicle"
+    return RouteOption(
+        id=option_id,
+        title="Flight + private vehicle in India",
+        type=RouteOptionType.PRIVATE_VEHICLE,
+        recommended=not prefer_public,
+        **{"bestFor": "your own car or hired taxi after landing"},
+        **{"estimatedDuration": "22–30 hours total"},
+        **{"providerStatus": "live_provider_required"},
+        segments=[
+            _origin_airport_segment(origin_city, option_id),
+            _flight_segment(origin_city, arrival_hub, option_id),
+            _drive_segment(arrival_hub, dest_name, option_id, duration="4–6 hours"),
+        ],
+        notes=[
+            "Book flights on the Travel → Flights tab, then drive or hire a car from Hyderabad.",
+        ],
+    )
+
+
 def _border_crossing_segment(from_country: str, to_country: str, id_prefix: str) -> RouteSegment:
     return RouteSegment(
         id=f"{id_prefix}_border_{from_country.lower().replace(' ', '_')}",
@@ -307,6 +436,25 @@ class RouteIntelligenceService:
             origin_city = _get_origin_city(origin)
             dest_name = destination.name
             dest_hubs = _get_destination_hubs(destination)
+            prefer_public = (user_preference or "").strip().lower() == "public"
+
+            if is_international and _matches_ap_village_destination(destination):
+                options.append(
+                    _ap_village_public_option(
+                        origin_city,
+                        dest_name,
+                        arrival_hub="Hyderabad",
+                        prefer_public=prefer_public,
+                    )
+                )
+                options.append(
+                    _ap_village_private_option(
+                        origin_city,
+                        dest_name,
+                        arrival_hub="Hyderabad",
+                        prefer_public=prefer_public,
+                    )
+                )
 
             # Check if road crossing international border is involved
             if is_international and distance_km <= INTERNATIONAL_THRESHOLD_KM:

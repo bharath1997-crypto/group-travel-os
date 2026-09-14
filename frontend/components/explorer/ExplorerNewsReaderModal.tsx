@@ -144,19 +144,19 @@ function NewsReaderInner({
       aria-label={iframeTitle}
     >
       {/* ── Browser chrome header ── */}
-      <header className="flex shrink-0 items-center gap-2 border-b border-[#1e4976] bg-[#0F2942] px-3 py-2.5 sm:px-4">
+      <header className="flex shrink-0 items-center gap-2 border-b border-[#1E293B] bg-[#0F2942] px-3 py-2.5 sm:px-4">
         {/* Close (X) button — leftmost, like Instagram */}
         <button
           type="button"
           aria-label="Close"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#1e4976] bg-[#162d4a] text-white/70 hover:text-white hover:border-[#E94560]/50 transition-colors"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#1E293B] bg-[#1E293B] text-white/70 hover:text-white hover:border-primary/50 transition-colors"
           onClick={onClose}
         >
           <X className="h-5 w-5" aria-hidden />
         </button>
 
         {/* URL / domain bar */}
-        <div className="min-w-0 flex-1 rounded-lg border border-[#1e4976]/60 bg-[#071221] px-3 py-1.5">
+        <div className="min-w-0 flex-1 rounded-lg border border-[#1E293B]/60 bg-[#071221] px-3 py-1.5">
           <p className="truncate text-xs font-medium text-gray-300">{label}</p>
           <p className="truncate text-[10px] text-gray-500">{article.url}</p>
         </div>
@@ -175,14 +175,14 @@ function NewsReaderInner({
             aria-expanded={menuOpen}
             aria-haspopup="true"
             aria-label="Options"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#1e4976] bg-[#162d4a] text-gray-200 hover:text-white transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#1E293B] bg-[#1E293B] text-gray-200 hover:text-white transition-colors"
             onClick={() => setMenuOpen((o) => !o)}
           >
             <MoreVertical className="h-5 w-5" aria-hidden />
           </button>
           {menuOpen ? (
             <div
-              className="absolute right-0 top-full z-10 mt-1 min-w-[11rem] overflow-hidden rounded-xl border border-[#1e4976] bg-[#162d4a] py-1 shadow-xl"
+              className="absolute right-0 top-full z-10 mt-1 min-w-[11rem] overflow-hidden rounded-xl border border-[#1E293B] bg-[#1E293B] py-1 shadow-xl"
               role="menu"
             >
               <button
@@ -204,7 +204,7 @@ function NewsReaderInner({
               <button
                 type="button"
                 role="menuitem"
-                className="block w-full px-4 py-2.5 text-left text-sm text-[#E94560] hover:bg-[#1E3A5F] transition-colors"
+                className="block w-full px-4 py-2.5 text-left text-sm text-primary hover:bg-[#1E3A5F] transition-colors"
                 onClick={openExternal}
               >
                 Open in browser
@@ -220,7 +220,7 @@ function NewsReaderInner({
         {iframeLoading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#0B192E]">
             <div className="flex flex-col items-center gap-3">
-              <RefreshCw className="h-8 w-8 animate-spin text-[#E94560]" />
+              <RefreshCw className="h-8 w-8 animate-spin text-primary" />
               <p className="text-sm text-gray-400">Loading {label}…</p>
             </div>
           </div>
@@ -229,8 +229,8 @@ function NewsReaderInner({
         {/* Blocked fallback */}
         {iframeBlocked ? (
           <div className="flex h-full flex-col items-center justify-center gap-5 bg-[#0B192E] px-8 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#1e4976]/40">
-              <ExternalLink className="h-7 w-7 text-[#E94560]" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#1E293B]/40">
+              <ExternalLink className="h-7 w-7 text-primary" />
             </div>
             <div>
               <p className="text-base font-bold text-white">
@@ -244,7 +244,7 @@ function NewsReaderInner({
             <button
               type="button"
               onClick={openExternal}
-              className="flex items-center gap-2 rounded-full bg-[#E94560] px-6 py-3 text-sm font-semibold text-white hover:bg-[#d63851] transition-colors"
+              className="flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-[#d63851] transition-colors"
             >
               <ExternalLink className="h-4 w-4" />
               Open in browser

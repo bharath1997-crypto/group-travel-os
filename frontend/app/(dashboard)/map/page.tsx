@@ -1145,7 +1145,7 @@ out body 20;
       <div className="absolute left-[14px] top-[14px] z-[1000] w-[280px] max-md:w-[calc(100%-90px)]">
         <div className="relative">
           <div className="flex items-center gap-2 rounded-[24px] bg-white py-2.5 pl-4 pr-3 shadow-[0_2px_12px_rgba(0,0,0,0.15)]">
-            <span className="shrink-0 text-[#E94560]" aria-hidden>
+            <span className="shrink-0 text-primary" aria-hidden>
               🔍
             </span>
             <input
@@ -1181,7 +1181,7 @@ out body 20;
                       )
                     }
                   >
-                    <span className="text-[#E94560]">📍</span>
+                    <span className="text-primary">📍</span>
                     <span>{r.display_name}</span>
                   </button>
                 </li>
@@ -1195,11 +1195,11 @@ out body 20;
       {weather ? (
         <div className="absolute right-[14px] top-[14px] z-[1000] flex max-w-[200px] items-center gap-1.5 rounded-[20px] bg-white px-3 py-2 shadow-[0_2px_12px_rgba(0,0,0,0.15)] max-md:w-[70px] max-md:max-w-[70px] max-md:justify-center max-md:gap-1 max-md:px-2">
           <span
-            className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-[#E94560]"
+            className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-primary"
             aria-hidden
           />
           {cityShort ? (
-            <span className="hidden min-w-0 truncate text-xs font-semibold text-[#0F3460] md:inline">
+            <span className="hidden min-w-0 truncate text-xs font-semibold text-navy md:inline">
               {cityShort}
             </span>
           ) : null}
@@ -1209,7 +1209,7 @@ out body 20;
             </span>
           ) : null}
           <span className="text-base leading-none">{wmoEmoji}</span>
-          <span className="text-xs font-bold text-[#0F3460]">
+          <span className="text-xs font-bold text-navy">
             {tempNow != null ? formatTemp(tempNow, tempUnit) : "—"}
           </span>
           <div
@@ -1221,7 +1221,7 @@ out body 20;
               type="button"
               onClick={() => setTempUnit("C")}
               className={
-                tempUnit === "C" ? "font-bold text-[#0F3460]" : ""
+                tempUnit === "C" ? "font-bold text-navy" : ""
               }
             >
               °C
@@ -1230,7 +1230,7 @@ out body 20;
               type="button"
               onClick={() => setTempUnit("F")}
               className={
-                tempUnit === "F" ? "font-bold text-[#0F3460]" : ""
+                tempUnit === "F" ? "font-bold text-navy" : ""
               }
             >
               °F
@@ -1257,7 +1257,7 @@ out body 20;
             className={[
               "shrink-0 whitespace-nowrap rounded-2xl px-2.5 py-1 font-bold max-md:px-2 max-md:py-1 max-md:text-[9px]",
               mapMode === m
-                ? "bg-[#E94560] px-2.5 py-1 text-[10px] text-white max-md:px-2 max-md:text-[9px]"
+                ? "bg-primary px-2.5 py-1 text-[10px] text-white max-md:px-2 max-md:text-[9px]"
                 : "bg-transparent px-2.5 py-1 text-[10px] text-[#6C757D] max-md:px-2 max-md:text-[9px]",
             ].join(" ")}
           >
@@ -1381,7 +1381,7 @@ out body 20;
                     </p>
                     <button
                       type="button"
-                      className="mt-2 w-full rounded-lg bg-[#E94560] py-1.5 text-[11px] font-bold text-white"
+                      className="mt-2 w-full rounded-lg bg-primary py-1.5 text-[11px] font-bold text-white"
                       onClick={() =>
                         openInMaps(pin.latitude, pin.longitude, pin.name)
                       }
@@ -1422,7 +1422,7 @@ out body 20;
                     )}
                     <button
                       type="button"
-                      className="mt-2 w-full rounded-lg bg-[#E94560] py-1.5 text-[11px] font-bold text-white"
+                      className="mt-2 w-full rounded-lg bg-primary py-1.5 text-[11px] font-bold text-white"
                       onClick={() => openInMaps(p.lat, p.lon, p.name)}
                     >
                       📍 Get Directions
@@ -1518,7 +1518,7 @@ out body 20;
           type="button"
           aria-label="Go to current GPS location"
           title="Current location"
-          className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-[#E94560]/30 bg-[#E94560] text-xl text-white shadow-lg ring-2 ring-white"
+          className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-primary/30 bg-primary text-xl text-white shadow-lg ring-2 ring-white"
           onClick={() => handleLiveGps()}
         >
           📍
@@ -1563,7 +1563,7 @@ out body 20;
         <div
           className="absolute bottom-[255px] left-1/2 z-[1000] -translate-x-1/2 rounded-2xl border border-black/10 bg-white px-4 py-2 text-center text-xs shadow-md"
         >
-          <p className="font-bold text-[#E94560]">{routeMeta.km}</p>
+          <p className="font-bold text-primary">{routeMeta.km}</p>
           <p className="text-gray-500">{routeMeta.min}</p>
         </div>
       ) : null}
@@ -1605,15 +1605,15 @@ out body 20;
       <div className="absolute bottom-[205px] left-4 right-4 z-[1000] flex gap-2">
         <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.12)]">
           <span
-            className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-[#E94560]"
+            className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-primary"
             aria-hidden
           />
-          <span className="min-w-0 text-[11px] text-[#0F3460]">
+          <span className="min-w-0 text-[11px] text-navy">
             {savedPins.length} pins · {events.length} events
           </span>
           <button
             type="button"
-            className="ml-auto shrink-0 text-[10px] font-semibold text-[#E94560]"
+            className="ml-auto shrink-0 text-[10px] font-semibold text-primary"
             onClick={() => setActiveTab("events")}
           >
             View all →
@@ -1625,7 +1625,7 @@ out body 20;
           className="flex w-[120px] shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
         >
           <span className="text-base leading-none">{wmoEmoji}</span>
-          <span className="text-[11px] font-medium text-[#0F3460]">
+          <span className="text-[11px] font-medium text-navy">
             Forecast
           </span>
           <span className="text-[11px] text-[#6C757D]" aria-hidden>
@@ -1755,7 +1755,7 @@ out body 20;
               {holidays.slice(0, 3).map((h) => (
                 <div
                   key={h.date + h.name}
-                  className="rounded-lg border border-[#E94560]/30 bg-rose-50 px-2 py-1.5 text-[10px] text-[#E94560]"
+                  className="rounded-lg border border-primary/30 bg-rose-50 px-2 py-1.5 text-[10px] text-primary"
                 >
                   🎉 {h.name} in {h.daysUntil} days — Consider planning a trip!
                 </div>
@@ -2152,14 +2152,14 @@ out body 20;
             </p>
             <button
               type="button"
-              className="mb-2 flex w-full cursor-pointer items-center gap-3 rounded-xl bg-[#F8F9FA] px-4 py-3.5 text-left text-sm font-semibold text-[#0F3460]"
+              className="mb-2 flex w-full cursor-pointer items-center gap-3 rounded-xl bg-[#F8F9FA] px-4 py-3.5 text-left text-sm font-semibold text-navy"
               onClick={() => window.open(mapChooser.urls!.google, "_blank")}
             >
               🗺️ Google Maps
             </button>
             <button
               type="button"
-              className="mb-2 flex w-full cursor-pointer items-center gap-3 rounded-xl bg-[#F8F9FA] px-4 py-3.5 text-left text-sm font-semibold text-[#0F3460]"
+              className="mb-2 flex w-full cursor-pointer items-center gap-3 rounded-xl bg-[#F8F9FA] px-4 py-3.5 text-left text-sm font-semibold text-navy"
               onClick={() => {
                 window.location.href = mapChooser.urls!.apple;
               }}
@@ -2168,14 +2168,14 @@ out body 20;
             </button>
             <button
               type="button"
-              className="mb-2 flex w-full cursor-pointer items-center gap-3 rounded-xl bg-[#F8F9FA] px-4 py-3.5 text-left text-sm font-semibold text-[#0F3460]"
+              className="mb-2 flex w-full cursor-pointer items-center gap-3 rounded-xl bg-[#F8F9FA] px-4 py-3.5 text-left text-sm font-semibold text-navy"
               onClick={() => window.open(mapChooser.urls!.waze, "_blank")}
             >
               🚗 Waze
             </button>
             <button
               type="button"
-              className="mb-2 flex w-full cursor-pointer items-center gap-3 rounded-xl bg-[#F8F9FA] px-4 py-3.5 text-left text-sm font-semibold text-[#0F3460]"
+              className="mb-2 flex w-full cursor-pointer items-center gap-3 rounded-xl bg-[#F8F9FA] px-4 py-3.5 text-left text-sm font-semibold text-navy"
               onClick={() => {
                 window.location.href = mapChooser.urls!.uber;
               }}
@@ -2184,7 +2184,7 @@ out body 20;
             </button>
             <button
               type="button"
-              className="mt-2 w-full cursor-pointer rounded-xl border border-[#E9ECEF] bg-white py-3 text-sm font-semibold text-[#0F3460]"
+              className="mt-2 w-full cursor-pointer rounded-xl border border-[#E9ECEF] bg-white py-3 text-sm font-semibold text-navy"
               onClick={() => setMapChooser({ open: false })}
             >
               Cancel

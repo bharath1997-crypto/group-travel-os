@@ -72,6 +72,8 @@ class Settings(BaseSettings):
         default="deepseek-v4-flash",
         validation_alias="DEEPSEEK_MODEL",
     )
+    # Wayra LLM output caps (tokens) — see app/services/wayra_output_budget.py
+    # WAYRA_OUTPUT_TOKENS_COMPACT=400, STANDARD=800, PLAN=1200, FULL=2048, ORCHESTRATOR=1200
 
     # ── OpenWeatherMap (Phase 3 / travel intel) ────────────────────────────────
     openweather_api_key: str | None = Field(
@@ -167,12 +169,60 @@ class Settings(BaseSettings):
         validation_alias="DUFFEL_API_KEY",
     )
 
+    # duffel = production-safe Duffel-only search (recommended)
+    # discovery = estimates only when ALLOW_ESTIMATED_FLIGHTS=true
+    flight_live_provider: str = Field(
+        default="duffel",
+        validation_alias="FLIGHT_LIVE_PROVIDER",
+    )
+
+    flight_enabled_providers: str = Field(
+        default="duffel",
+        validation_alias="FLIGHT_ENABLED_PROVIDERS",
+        description="Comma-separated authorized flight provider adapters to enable",
+    )
+
+    amadeus_client_id: str | None = Field(
+        default=None,
+        validation_alias="AMADEUS_CLIENT_ID",
+    )
+    amadeus_client_secret: str | None = Field(
+        default=None,
+        validation_alias="AMADEUS_CLIENT_SECRET",
+    )
+    amadeus_environment: str = Field(
+        default="test",
+        validation_alias="AMADEUS_ENVIRONMENT",
+        description="Amadeus Self-Service environment: test or production",
+    )
+    amadeus_base_url: str = Field(
+        default="https://test.api.amadeus.com",
+        validation_alias="AMADEUS_BASE_URL",
+    )
+    amadeus_timeout_seconds: int = Field(
+        default=15,
+        ge=1,
+        le=120,
+        validation_alias="AMADEUS_TIMEOUT_SECONDS",
+    )
+
+    allow_estimated_flights: bool = Field(
+        default=False,
+        validation_alias="ALLOW_ESTIMATED_FLIGHTS",
+        description="When false, discovery/estimated flight results are never returned",
+    )
+
 
 
     # ── Travelpayouts (tp.media affiliate marker / trs) ──────────────────────────
     travelpayouts_marker: str = Field(
         default="727732",
         validation_alias="TRAVELPAYOUTS_MARKER",
+    )
+    travelpayouts_api_token: str | None = Field(
+        default=None,
+        validation_alias="TRAVELPAYOUTS_API_TOKEN",
+        description="Travelpayouts Data API token for Aviasales live/cached prices",
     )
 
     # ── Google Routes API (Directions v2 computeRoutes) ─────────────────────────

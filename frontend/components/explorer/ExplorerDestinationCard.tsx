@@ -16,7 +16,7 @@ export function ExplorerDestinationCard({
   return (
     <button
       onClick={onClick}
-      className="relative w-[180px] h-[220px] rounded-2xl overflow-hidden shrink-0 group shadow-md text-left transition-all duration-300 hover:scale-[1.03] hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E] focus-visible:ring-offset-2"
+      className="relative w-[180px] h-[220px] rounded-2xl overflow-hidden shrink-0 group shadow-md text-left transition-all duration-300 hover:scale-[1.03] hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6E5C] focus-visible:ring-offset-2"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img

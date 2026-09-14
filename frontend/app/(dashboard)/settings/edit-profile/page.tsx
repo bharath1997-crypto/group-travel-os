@@ -22,7 +22,7 @@ type Me = {
 };
 
 const field =
-  "mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#E94560] focus:ring-2 focus:ring-[#E94560]/20";
+  "mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20";
 
 const labelCls =
   "block text-xs font-semibold uppercase tracking-wide text-slate-700";
@@ -98,7 +98,7 @@ export default function EditProfileSettingsPage() {
       <>
         <SettingsScreenHeader title="Personal details" backHref="/settings/account" />
         <div className="flex min-h-[40vh] items-center justify-center text-slate-500">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-[#E94560]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-primary" />
         </div>
       </>
     );
@@ -253,7 +253,7 @@ export default function EditProfileSettingsPage() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full rounded-xl bg-[#E94560] py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-[#c73652] disabled:opacity-60"
+            className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-primary-hover disabled:opacity-60"
           >
             {saving ? "Saving…" : "Save changes"}
           </button>

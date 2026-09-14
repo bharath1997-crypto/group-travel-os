@@ -44,14 +44,14 @@ export default function TermsPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white" style={{ color: "#0F172A" }}>
+    <div className="flex flex-col h-screen bg-white" style={{ color: "#0F1614" }}>
       {/* Header */}
       <header className="shrink-0 border-b border-slate-100 bg-white px-6 py-4 z-40">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2 outline-none">
             <RovvyLogo variant="primary" size="sm" />
           </Link>
-          <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#0F766E" }}>
+          <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#0E6E5C" }}>
             Legal Agreement
           </span>
         </div>
@@ -66,11 +66,11 @@ export default function TermsPage() {
           <div className="mb-12">
             <div
               className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold mb-5"
-              style={{ background: "#F0FDFA", color: "#0F766E", border: "1px solid #99F6E4" }}
+              style={{ background: "#F0FDFA", color: "#0E6E5C", border: "1px solid #99F6E4" }}
             >
               Last Updated: June 2026 &nbsp;·&nbsp; Version 3.0
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: "#0F172A" }}>
+            <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: "#0F1614" }}>
               Terms of Service
             </h1>
             <p className="mt-3 text-base" style={{ color: "#6B7280", lineHeight: "1.8" }}>
@@ -82,7 +82,7 @@ export default function TermsPage() {
 
             {/* 1 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">01.</span> Acceptance of Terms
               </h2>
               <div className="space-y-3">
@@ -117,7 +117,7 @@ export default function TermsPage() {
 
             {/* 2 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">02.</span> Description of the Service
               </h2>
               <div className="space-y-3">
@@ -157,7 +157,7 @@ export default function TermsPage() {
 
             {/* 3 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">03.</span> Eligibility and Age Requirements
               </h2>
               <div className="space-y-3">
@@ -185,7 +185,7 @@ export default function TermsPage() {
 
             {/* 4 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">04.</span> User Accounts and Authentication
               </h2>
               <div className="space-y-3">
@@ -219,7 +219,7 @@ export default function TermsPage() {
 
             {/* 5 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">05.</span> Trip LIVE and Location Services
               </h2>
               <div className="space-y-3">
@@ -250,7 +250,7 @@ export default function TermsPage() {
 
             {/* 6 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">06.</span> User Content and Content License
               </h2>
               <div className="space-y-3">
@@ -277,7 +277,7 @@ export default function TermsPage() {
 
             {/* 7 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">07.</span> Prohibited Conduct
               </h2>
               <p className="mb-3">You agree not to use the Service in a manner that:</p>
@@ -305,7 +305,7 @@ export default function TermsPage() {
 
             {/* 8 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">08.</span> Third-Party Services and Affiliate Links
               </h2>
               <div className="space-y-3">
@@ -332,7 +332,7 @@ export default function TermsPage() {
 
             {/* 9 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">09.</span> Artificial Intelligence Features
               </h2>
               <div className="space-y-3">
@@ -356,7 +356,7 @@ export default function TermsPage() {
 
             {/* 10 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">10.</span> User Interactions and Safety
               </h2>
               <div className="space-y-3">
@@ -376,7 +376,7 @@ export default function TermsPage() {
 
             {/* 11 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">11.</span> Intellectual Property Rights
               </h2>
               <div className="space-y-3">
@@ -391,7 +391,7 @@ export default function TermsPage() {
 
             {/* 12 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">12.</span> Disclaimer of Warranties
               </h2>
               <p
@@ -406,7 +406,7 @@ export default function TermsPage() {
 
             {/* 13 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">13.</span> Limitation of Liability
               </h2>
               <p
@@ -421,7 +421,7 @@ export default function TermsPage() {
 
             {/* 14 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">14.</span> Indemnification
               </h2>
               <p>
@@ -433,7 +433,7 @@ export default function TermsPage() {
 
             {/* 15 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">15.</span> Suspension and Termination
               </h2>
               <div className="space-y-3">
@@ -450,7 +450,7 @@ export default function TermsPage() {
 
             {/* 16 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">16.</span> Governing Law and Dispute Resolution
               </h2>
               <p>
@@ -462,7 +462,7 @@ export default function TermsPage() {
 
             {/* 17 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">17.</span> International Users
               </h2>
               <p>
@@ -474,7 +474,7 @@ export default function TermsPage() {
 
             {/* 18 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">18.</span> Changes to These Terms
               </h2>
               <p>
@@ -486,7 +486,7 @@ export default function TermsPage() {
 
             {/* 19 */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0F766E" }}>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 <span className="font-mono text-sm">19.</span> Contact Information
               </h2>
               <p className="mb-3">For questions, legal notices, or concerns regarding these Terms or the Service, please contact:</p>
@@ -494,16 +494,16 @@ export default function TermsPage() {
                 className="rounded-lg p-5 space-y-1 text-sm"
                 style={{ background: "#F0FDFA", border: "1px solid #99F6E4" }}
               >
-                <p className="font-semibold" style={{ color: "#0F172A" }}>Rovvy Legal Team</p>
+                <p className="font-semibold" style={{ color: "#0F1614" }}>Rovvy Legal Team</p>
                 <p>
                   <span style={{ color: "#6B7280" }}>Email: </span>
-                  <a href="mailto:legal@rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0F766E" }}>
+                  <a href="mailto:legal@rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0E6E5C" }}>
                     legal@rovvy.app
                   </a>
                 </p>
                 <p>
                   <span style={{ color: "#6B7280" }}>Website: </span>
-                  <a href="https://rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0F766E" }}>
+                  <a href="https://rovvy.app" className="font-medium underline underline-offset-2" style={{ color: "#0E6E5C" }}>
                     https://rovvy.app
                   </a>
                 </p>
@@ -531,7 +531,7 @@ export default function TermsPage() {
           {accepted ? (
             <div
               className="flex h-10 items-center gap-2 rounded-lg px-5 text-sm font-semibold whitespace-nowrap"
-              style={{ background: "#F0FDFA", color: "#0F766E", border: "1px solid #99F6E4" }}
+              style={{ background: "#F0FDFA", color: "#0E6E5C", border: "1px solid #99F6E4" }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="h-4 w-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -545,7 +545,7 @@ export default function TermsPage() {
               className="flex h-10 items-center justify-center rounded-lg px-6 text-sm font-semibold transition-all whitespace-nowrap"
               style={
                 reachedBottom
-                  ? { background: "#0F766E", color: "#FFFFFF", cursor: "pointer" }
+                  ? { background: "#0E6E5C", color: "#FFFFFF", cursor: "pointer" }
                   : { background: "#F1F5F9", color: "#94A3B8", cursor: "not-allowed", border: "1px solid #E2E8F0" }
               }
             >

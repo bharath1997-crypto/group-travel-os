@@ -13,7 +13,7 @@ const HUBS = [
   {
     href: "/settings/account-security",
     icon: ShieldCheck,
-    iconBg: "#0F766E",
+    iconBg: "#0E6E5C",
     title: "Account & Security",
     description: "Manage account access, devices, and security",
     count: 8,
@@ -153,7 +153,7 @@ export default function SettingsHubPage() {
                 <span key={kw}>
                   <button
                     type="button"
-                    className="font-medium text-[#0F766E] underline underline-offset-2 hover:text-teal-700"
+                    className="font-medium text-primary underline underline-offset-2 hover:text-primary"
                     onClick={() => setQ(kw)}
                   >
                     {kw}

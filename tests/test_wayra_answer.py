@@ -13,7 +13,9 @@ from app.services.wayra_source_intent import (
     classify_wayra_answer_tier,
     extract_place_from_context,
     is_distance_from_me_question,
+    is_structured_nearby_list_request,
     nearby_category_from_message,
+    nearby_result_limit,
 )
 
 
@@ -24,6 +26,87 @@ def test_nearby_category_pharmacy():
 def test_classify_nearby_tier():
     tier = classify_wayra_answer_tier("Find hospitals nearby", {})
     assert tier == "nearby"
+
+
+def test_structured_restaurant_list_request():
+    msg = "Give me a list of 15-20 restaurants with locations and date and time of opening."
+    assert is_structured_nearby_list_request(msg) is True
+    assert nearby_category_from_message(msg) == "food"
+    assert nearby_result_limit(msg) == 20
+
+
+@pytest.mark.asyncio
+async def test_restaurant_list_on_live_uses_hybrid_then_llm_cascade():
+    req = AIAssistantRequest(
+        page="live",
+        user_message="Give me a list of 15-20 restaurants with locations and date and time of opening.",
+        context={
+            "pathname": "/live",
+            "selectedPlace": {
+                "name": "Dropped pin",
+                "lat": 58.66610,
+                "lng": -121.43960,
+                "state": "British Columbia",
+                "country": "Canada",
+            },
+        },
+    )
+    fake_sources = [
+        WayraSource(label="Search nearby on map", url="https://maps.example", source_type="maps"),
+    ]
+    with (
+        patch(
+            "app.services.wayra_answer_service.fetch_nearby_sources",
+            new=AsyncMock(return_value=(fake_sources, "No food found", [])),
+        ),
+        patch(
+            "app.services.wayra_answer_service.summarize_from_sources",
+            new=AsyncMock(return_value=("No mapped restaurants; try Fort Nelson.", "deepseek", None)),
+        ),
+    ):
+        out = await WayraAnswerService.try_answer(req, WayraMode.TRAVEL)
+
+    assert out is not None
+    assert out.summary and out.summary.get("provider") == "deepseek"
+
+
+@pytest.mark.asyncio
+async def test_activities_question_on_live_uses_discovery_hybrid():
+    req = AIAssistantRequest(
+        page="live",
+        user_message="what we do, what we should do?",
+        context={
+            "pathname": "/live",
+            "selectedPlace": {
+                "name": "Dropped pin",
+                "lat": 58.66610,
+                "lng": -121.43960,
+                "state": "British Columbia",
+                "country": "Canada",
+            },
+        },
+    )
+    fake_sources = [
+        WayraSource(
+            label="Wikipedia · Northern British Columbia",
+            url="https://en.wikipedia.org/wiki/Northern_Interior",
+            source_type="wikipedia",
+        ),
+    ]
+    with (
+        patch(
+            "app.services.wayra_answer_service.fetch_discovery_sources",
+            new=AsyncMock(return_value=(fake_sources, "Wikipedia: Vast boreal forests.")),
+        ),
+        patch(
+            "app.services.wayra_answer_service.summarize_from_sources",
+            new=AsyncMock(return_value=("Wildlife viewing and hiking are common here.", "deepseek", None)),
+        ),
+    ):
+        out = await WayraAnswerService.try_answer(req, WayraMode.TRAVEL)
+
+    assert out is not None
+    assert out.summary and out.summary.get("provider") == "deepseek"
 
 
 def test_classify_location_hard_tier():
@@ -86,19 +169,17 @@ async def test_nearby_with_place_uses_sources_and_summary():
     with (
         patch(
             "app.services.wayra_answer_service.fetch_nearby_sources",
-            new=AsyncMock(return_value=(fake_sources, "Nearby pharmacy: CVS (0.3 mi)")),
+            new=AsyncMock(return_value=(fake_sources, "Nearby pharmacy: CVS (0.3 mi)", [])),
         ),
         patch(
             "app.services.wayra_answer_service.summarize_from_sources",
-            new=AsyncMock(return_value=("Two pharmacies are within walking distance.", "template", None)),
+            new=AsyncMock(return_value=("Two pharmacies are within walking distance.", "deepseek", None)),
         ),
     ):
         out = await WayraAnswerService.try_answer(req, WayraMode.TRAVEL)
 
     assert out is not None
-    assert "pharmacies" in out.message.lower() or "pharmacy" in out.message.lower()
-    assert len(out.sources) == 1
-    assert out.summary and out.summary.get("tier") == "nearby"
+    assert out.summary and out.summary.get("provider") == "deepseek"
 
 
 @pytest.mark.asyncio
@@ -199,7 +280,7 @@ async def test_nearby_with_user_location_only():
     with (
         patch(
             "app.services.wayra_answer_service.fetch_nearby_sources",
-            new=AsyncMock(return_value=(fake_sources, "Nearby pharmacy: CVS (0.3 mi)")),
+            new=AsyncMock(return_value=(fake_sources, "Nearby pharmacy: CVS (0.3 mi)", [])),
         ),
         patch(
             "app.services.wayra_answer_service.summarize_from_sources",

@@ -24,20 +24,20 @@ export type RouteVisualStyle = {
 export function getRouteVisualStyle(layer: LiveMapLayer, active: boolean): RouteVisualStyle {
   if (isLiveMapDarkTintLayer(layer)) {
     return {
-      casingColor: "#0F172A",
+      casingColor: "#0F1614",
       casingOpacity: active ? 0.82 : 0.72,
       coreColor: active ? "#38BDF8" : "#60A5FA",
       coreOpacity: 1,
       arrowColor: "#FFFFFF",
       borderColor: "#FBBF24",
-      borderCasingColor: "#0F172A",
+      borderCasingColor: "#0F1614",
     };
   }
 
   return {
     casingColor: "#FFFFFF",
     casingOpacity: active ? 0.95 : 0.88,
-    coreColor: active ? "#0F766E" : "#14B8A6",
+    coreColor: active ? "#0E6E5C" : "#14B8A6",
     coreOpacity: 1,
     arrowColor: "#FFFFFF",
     borderColor: "#F59E0B",

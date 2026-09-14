@@ -66,7 +66,7 @@ export const LIVE_WAYRA_WIDTH_CLAMP =
 
 export function livePreviewPanelStyle(size: LivePreviewPanelSize): CSSProperties {
   return {
-    [LIVE_PREVIEW_WIDTH_CSS_VAR]: `${size.widthVw}vw`,
+    [LIVE_PREVIEW_WIDTH_CSS_VAR as string]: `${size.widthVw}vw`,
     ["--live-preview-max-height" as string]: `${size.maxHeightVh}dvh`,
     width: `min(${size.widthVw}vw, calc(100vw - 5rem))`,
     maxWidth: `${LIVE_PREVIEW_MAX_WIDTH_VW}rem`,
@@ -97,7 +97,7 @@ export function buildLivePreviewPanelFrameStyle({
 }: PreviewPanelFrameOpts): CSSProperties {
   const base: CSSProperties = {
     position: "fixed",
-    zIndex: 140,
+    zIndex: 250,
     bottom: sheetBottom,
     pointerEvents: "auto",
   };

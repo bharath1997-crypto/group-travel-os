@@ -130,4 +130,18 @@ def build_live_context_block(ctx: dict[str, Any] | None) -> str | None:
             "Treat the user's message as about this pin unless they clearly ask how Rovvy works.",
         ]
     )
+
+    user = ctx.get("userLocation")
+    if isinstance(user, dict):
+        home_parts = [
+            p.strip()
+            for p in (user.get("city"), user.get("state"), user.get("country"))
+            if isinstance(p, str) and p.strip()
+        ]
+        if home_parts:
+            lines.insert(
+                1,
+                f"USER PHYSICAL LOCATION (GPS/home): {', '.join(home_parts)} — where they are NOW, not the pin.",
+            )
+
     return "\n".join(lines)

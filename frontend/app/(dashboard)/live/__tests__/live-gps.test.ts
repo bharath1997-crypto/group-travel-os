@@ -9,6 +9,8 @@ import {
   gpsStatusLabel,
   gpsStatusNeedsHelper,
   isFreshGpsStatus,
+  isGpsLocateButtonActive,
+  isGpsLocateLoading,
   shouldShowGpsDot,
 } from "../live-gps";
 
@@ -60,6 +62,23 @@ describe("isFreshGpsStatus", () => {
     expect(isFreshGpsStatus("timeout")).toBe(false);
     expect(isFreshGpsStatus("stale")).toBe(false);
     expect(isFreshGpsStatus("idle")).toBe(false);
+  });
+});
+
+describe("isGpsLocateLoading", () => {
+  it("shows spinner only while actively requesting a fix", () => {
+    expect(isGpsLocateLoading("requesting")).toBe(true);
+    expect(isGpsLocateLoading("stale")).toBe(false);
+    expect(isGpsLocateLoading("active")).toBe(false);
+  });
+});
+
+describe("isGpsLocateButtonActive", () => {
+  it("highlights the button for fresh fixes only", () => {
+    expect(isGpsLocateButtonActive("active")).toBe(true);
+    expect(isGpsLocateButtonActive("approximate")).toBe(true);
+    expect(isGpsLocateButtonActive("stale")).toBe(false);
+    expect(isGpsLocateButtonActive("requesting")).toBe(false);
   });
 });
 

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 const CATEGORIES = [
-  { label: "Activities", icon: Compass, href: "/explore/activities", color: "bg-teal-50 text-[#0F766E]" },
+  { label: "Activities", icon: Compass, href: "/explore/activities", color: "bg-primary-soft text-primary" },
   { label: "Events", icon: Calendar, href: "/explore/events", color: "bg-violet-50 text-violet-600" },
   { label: "Food", icon: Utensils, href: "/explore/food", color: "bg-orange-50 text-orange-600" },
   { label: "Parks", icon: Trees, href: "/explore/parks", color: "bg-emerald-50 text-emerald-600" },
@@ -50,7 +50,7 @@ export function ExplorerCategoryGrid({ onCategoryClick }: ExplorerCategoryGridPr
             type="button"
             onClick={() => scroll(-1)}
             aria-label="Scroll categories left"
-            className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:border-[#0F766E] hover:text-[#0F766E] transition-colors bg-white shadow-sm"
+            className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:border-primary hover:text-primary transition-colors bg-white shadow-sm"
           >
             <ChevronLeft size={16} />
           </button>
@@ -58,7 +58,7 @@ export function ExplorerCategoryGrid({ onCategoryClick }: ExplorerCategoryGridPr
             type="button"
             onClick={() => scroll(1)}
             aria-label="Scroll categories right"
-            className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:border-[#0F766E] hover:text-[#0F766E] transition-colors bg-white shadow-sm"
+            className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:border-primary hover:text-primary transition-colors bg-white shadow-sm"
           >
             <ChevronRight size={16} />
           </button>
@@ -76,14 +76,14 @@ export function ExplorerCategoryGrid({ onCategoryClick }: ExplorerCategoryGridPr
               key={cat.label}
               href={cat.href}
               onClick={() => onCategoryClick?.(cat.label)}
-              className="group flex shrink-0 flex-col items-center gap-3 min-w-[72px] md:min-w-[80px] text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E] focus-visible:ring-offset-2 rounded-xl"
+              className="group flex shrink-0 flex-col items-center gap-3 min-w-[72px] md:min-w-[80px] text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E6E5C] focus-visible:ring-offset-2 rounded-xl"
             >
               <div
                 className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center ${cat.color} transition-transform duration-200 group-hover:scale-105`}
               >
                 <Icon size={24} strokeWidth={1.75} />
               </div>
-              <span className="text-xs md:text-[13px] font-semibold text-slate-600 group-hover:text-[#0F766E] transition-colors leading-snug max-w-[88px]">
+              <span className="text-xs md:text-[13px] font-semibold text-slate-600 group-hover:text-primary transition-colors leading-snug max-w-[88px]">
                 {cat.label}
               </span>
             </Link>

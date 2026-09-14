@@ -10,6 +10,7 @@ from app.schemas.ai_assistant import AIAssistantRequest
 from app.services.ai_assistant_service import AIAssistantService
 from app.services.wayra_local_replies import (
     is_conversation_question,
+    is_local_time_question,
     is_meta_ai_question,
     is_navigation_question,
     is_weather_question,
@@ -46,6 +47,142 @@ def test_weather_detected():
 
 def test_navigation_detected():
     assert is_navigation_question("How do I get to Red Square?") is True
+
+
+def test_local_time_detected():
+    assert is_local_time_question("what is the time over there?") is True
+    assert is_local_time_question("exact time and compare with me") is True
+    assert is_local_time_question("what is time now?") is True
+    assert is_local_time_question("what is the time now?") is True
+    assert is_local_time_question("The time exactly in the pin location") is True
+    assert is_local_time_question("tell me the current time at the pin") is True
+    assert is_local_time_question("best time to visit") is False
+    assert is_local_time_question("how long is the drive") is False
+    assert is_local_time_question("What's the weather?") is False
+
+
+WISCONSIN_CTX = {
+    "pathname": "/live",
+    "selectedPlace": {
+        "name": "County Highway C",
+        "lat": 42.72456,
+        "lng": -89.71884,
+        "city": "Monticello",
+        "state": "Wisconsin",
+        "country": "United States",
+    },
+    "userLocation": {
+        "lat": 41.91757,
+        "lng": -87.72654,
+        "city": "Chicago",
+        "state": "Illinois",
+        "country": "United States",
+    },
+}
+
+
+@patch(
+    "app.services.wayra_local_replies.WeatherService.get_local_time",
+    side_effect=[
+        {
+            "timezone": "America/Chicago",
+            "timezone_abbreviation": "CDT",
+            "utc_offset_seconds": -18000,
+            "time_display": "4:15 AM CDT",
+            "date_display": "Thursday, July 31",
+        },
+        {
+            "timezone": "America/Chicago",
+            "timezone_abbreviation": "CDT",
+            "utc_offset_seconds": -18000,
+            "time_display": "4:15 AM CDT",
+            "date_display": "Thursday, July 31",
+        },
+    ],
+)
+def test_try_local_time_with_compare(_mock_time):
+    out = try_local_reply("exact time and compare with me", "live", WISCONSIN_CTX)
+    assert out is not None
+    assert out.summary and out.summary.get("intent") == "local_time"
+    assert "4:15 AM" in out.message
+    assert "same time zone" in out.message.lower()
+
+
+@patch(
+    "app.services.wayra_local_replies.WeatherService.get_local_time",
+    return_value={
+        "timezone": "America/Chicago",
+        "timezone_abbreviation": "CDT",
+        "utc_offset_seconds": -18000,
+        "time_display": "4:15 AM CDT",
+        "date_display": "Thursday, July 31",
+    },
+)
+def test_try_local_time_simple(_mock_time):
+    out = try_local_reply("what is the time over there?", "live", WISCONSIN_CTX)
+    assert out is not None
+    assert "County Highway C" in out.message
+    assert "4:15 AM" in out.message
+
+
+ALBERTA_CTX = {
+    "pathname": "/live",
+    "wayraScope": "place_preview",
+    "selectedPlace": {
+        "name": "Mackenzie County",
+        "lat": 58.43,
+        "lng": -117.62,
+        "state": "Alberta",
+        "country": "Canada",
+    },
+}
+
+
+@patch(
+    "app.services.wayra_local_replies.WeatherService.get_local_time",
+    return_value={
+        "timezone": "America/Edmonton",
+        "timezone_abbreviation": "MDT",
+        "utc_offset_seconds": -21600,
+        "time_display": "3:23 AM MDT",
+        "date_display": "Tuesday, August 4",
+    },
+)
+def test_try_local_time_now_phrasing(_mock_time):
+    out = try_local_reply("what is time now?", "live", ALBERTA_CTX)
+    assert out is not None
+    assert out.summary and out.summary.get("intent") == "local_time"
+    assert "Mackenzie County" in out.message
+    assert "3:23 AM" in out.message
+
+
+@patch(
+    "app.services.wayra_local_replies.WeatherService.get_local_time",
+    return_value={
+        "timezone": "America/Fort_Nelson",
+        "timezone_abbreviation": "GMT-7",
+        "utc_offset_seconds": -25200,
+        "time_display": "2:26 AM GMT-7",
+        "date_display": "Tuesday, August 4",
+    },
+)
+def test_try_local_time_pin_location_phrasing(_mock_time):
+    ctx = {
+        "pathname": "/live",
+        "wayraScope": "place_preview",
+        "selectedPlace": {
+            "name": "Dropped pin",
+            "lat": 58.66610,
+            "lng": -121.43960,
+            "state": "British Columbia",
+            "country": "Canada",
+        },
+    }
+    out = try_local_reply("The time exactly in the pin location", "live", ctx)
+    assert out is not None
+    assert out.summary and out.summary.get("intent") == "local_time"
+    assert "2:26 AM" in out.message
+    assert "America/Fort Nelson" in out.message
 
 
 def test_language_reply_russia():

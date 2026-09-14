@@ -64,7 +64,7 @@ function RouteOptionCard({
     <div
       className={`rounded-2xl border transition-all duration-200 ${
         option.recommended
-          ? "border-teal-200 bg-teal-50/60 shadow-sm ring-1 ring-teal-300/40"
+          ? "border-teal-200 bg-primary-soft/60 shadow-sm ring-1 ring-teal-300/40"
           : "border-stone-200/80 bg-white/70"
       }`}
     >
@@ -80,7 +80,7 @@ function RouteOptionCard({
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-stone-900">{option.title}</span>
             {option.recommended && (
-              <span className="rounded-full bg-teal-600 px-2 py-0.5 text-[10px] font-bold text-white">
+              <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">
                 Recommended
               </span>
             )}
@@ -151,7 +151,7 @@ function RouteOptionCard({
             <button
               type="button"
               onClick={onSelect}
-              className="mt-4 w-full rounded-xl bg-[#0F766E] py-2.5 text-center text-sm font-semibold text-white hover:bg-teal-800 transition-colors"
+              className="mt-4 w-full rounded-xl bg-primary py-2.5 text-center text-sm font-semibold text-white hover:bg-teal-800 transition-colors"
             >
               Select this route
             </button>
@@ -167,9 +167,9 @@ function RouteOptionCard({
 function RoviExplanationBlock({ text }: { text: string }) {
   const paragraphs = text.split(/\n\n+/).filter(Boolean);
   return (
-    <div className="rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50/80 to-white/60 p-4">
+    <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-teal-50/80 to-white/60 p-4">
       <div className="flex items-center gap-2 mb-3">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#0F766E]">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary">
           <span className="text-xs font-bold text-white">R</span>
         </div>
         <span className="text-xs font-semibold text-teal-800">Rovi Route Intelligence</span>
@@ -188,7 +188,7 @@ function RoviExplanationBlock({ text }: { text: string }) {
 function LoadingSkeleton() {
   return (
     <div className="space-y-3 animate-pulse">
-      <div className="rounded-2xl border border-teal-100 bg-teal-50/40 p-4">
+      <div className="rounded-2xl border border-primary/20 bg-primary-soft/40 p-4">
         <div className="flex items-center gap-2 mb-3">
           <div className="h-7 w-7 rounded-full bg-teal-200" />
           <div className="h-3 w-40 rounded bg-teal-200" />
@@ -326,14 +326,14 @@ export default function RoviRouteIntelligencePanel({
         <button
           type="button"
           onClick={onPlanTrip}
-          className="flex-1 rounded-xl border border-stone-200 py-2.5 text-sm font-semibold text-stone-700 hover:bg-stone-50 transition-colors"
+          className="flex-1 rounded-xl border border-primary/30 py-2.5 text-sm font-semibold text-primary hover:bg-primary-soft transition-colors"
         >
-          Plan this trip
+          Open Travel tab
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 rounded-xl bg-[#0F766E] py-2.5 text-sm font-semibold text-white hover:bg-teal-800 transition-colors"
+          className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white hover:bg-teal-800 transition-colors"
         >
           Back to map
         </button>

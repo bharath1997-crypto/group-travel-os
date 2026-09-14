@@ -76,7 +76,7 @@ export default function MessagesNotificationsPage() {
       <div className="mx-3 mt-4 rounded-xl border border-stone-100 bg-stone-50 px-4 py-3">
         <p className="text-xs text-stone-500">
           Manage device-level notification permissions in{" "}
-          <Link href="/settings/app-preferences" className="font-medium text-[#0F766E] underline underline-offset-2">
+          <Link href="/settings/app-preferences" className="font-medium text-primary underline underline-offset-2">
             App Preferences → Device Permissions
           </Link>
         </p>

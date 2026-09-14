@@ -9,7 +9,7 @@ import type { ReactNode } from "react";
 // ── Coming Soon badge — hub-tinted Tailwind class strings ────────────────────
 // Full strings so Tailwind's static analyser always detects them.
 const ACCENT_BADGE = {
-  teal:   "bg-teal-50 text-teal-600",
+  teal:   "bg-primary-soft text-primary",
   blue:   "bg-blue-50 text-blue-600",
   purple: "bg-purple-50 text-purple-600",
   green:  "bg-green-50 text-green-600",
@@ -26,8 +26,8 @@ const ACCENT_BADGE = {
 // analyser can always find them — no dynamic class construction anywhere.
 const ACCENT_STYLES = {
   teal: {
-    active:   "bg-teal-50 text-teal-700 border border-teal-100",
-    disabled: "bg-teal-50 text-teal-400 border border-teal-100",
+    active:   "bg-primary-soft text-primary border border-primary/20",
+    disabled: "bg-primary-soft text-teal-400 border border-primary/20",
   },
   blue: {
     active:   "bg-blue-50 text-blue-700 border border-blue-100",
@@ -81,12 +81,12 @@ export function SettingsScreenHeader({
     <header className="sticky top-0 z-20 grid grid-cols-[44px_1fr_44px] items-center border-b border-stone-200 bg-white/95 px-1 py-2.5 backdrop-blur-md">
       <Link
         href={backHref}
-        className="flex h-10 w-10 items-center justify-center rounded-full text-[#1e2a3a] transition-colors hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1"
+        className="flex h-10 w-10 items-center justify-center rounded-full text-[#1E293B] transition-colors hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1"
         aria-label="Back"
       >
         <IconArrowLeft size={20} />
       </Link>
-      <h1 className="truncate text-center text-[16px] font-bold text-[#1e2a3a]">
+      <h1 className="truncate text-center text-[16px] font-bold text-[#1E293B]">
         {title}
       </h1>
       <span aria-hidden className="inline-block w-10" />

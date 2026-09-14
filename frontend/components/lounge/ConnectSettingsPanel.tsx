@@ -414,11 +414,11 @@ export function ConnectSettingsPanel({
           aria-label="Back"
           onClick={headerBack}
         >
-          <ChevronLeft size={isDock ? 18 : 22} className="text-[#1e2a3a]" />
+          <ChevronLeft size={isDock ? 18 : 22} className="text-[#1E293B]" />
         </button>
         <h1
           className={`flex-1 font-bold ${isDock ? "text-sm" : "text-lg"}`}
-          style={{ color: "#1e2a3a" }}
+          style={{ color: "#1E293B" }}
         >
           {headerTitle}
         </h1>
@@ -565,7 +565,7 @@ const SETTINGS_BG = "#ffffff";
 const SETTINGS_HOVER = "rgba(0,0,0,0.03)";
 const SETTINGS_SECTION_BG = "#f1f3f5";
 const SETTINGS_BORDER = "#e5e7eb";
-const SETTINGS_TEXT = "#1e2a3a";
+const SETTINGS_TEXT = "#1E293B";
 const SETTINGS_MUTED = "#6b7280";
 const SETTINGS_ACCENT = "#1d9e75";
 
@@ -902,9 +902,9 @@ function ConnectMainScreen({
         <button
           type="button"
           onClick={handleSignOut}
-          className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-[#E94560] transition-colors hover:bg-red-50"
+          className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-primary transition-colors hover:bg-red-50"
         >
-          <LogOut size={18} className="text-[#E94560]" />
+          <LogOut size={18} className="text-primary" />
           <span className="text-sm font-medium">Sign out</span>
         </button>
       </div>

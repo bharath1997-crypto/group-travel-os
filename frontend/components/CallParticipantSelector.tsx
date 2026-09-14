@@ -93,7 +93,7 @@ export function CallParticipantSelector({
       <div
         className="relative z-10 flex w-full max-w-lg flex-col overflow-hidden"
         style={{
-          background: "#1e2a3a",
+          background: "#1E293B",
           borderRadius: 16,
           maxHeight: "85vh",
         }}
@@ -126,7 +126,7 @@ export function CallParticipantSelector({
 
         {/* Selected chips */}
         {selectedContacts.length > 0 && (
-          <div className="flex flex-wrap gap-2 border-b px-4 py-2" style={{ borderColor: "#334155", background: "#0f172a" }}>
+          <div className="flex flex-wrap gap-2 border-b px-4 py-2" style={{ borderColor: "#334155", background: "#0f1614" }}>
             {selectedContacts.map((contact) => (
               <span
                 key={contact.id}
@@ -149,7 +149,7 @@ export function CallParticipantSelector({
         <div className="px-4 py-3">
           <div
             className="flex items-center gap-2 rounded-full px-3 py-2"
-            style={{ background: "#0f172a" }}
+            style={{ background: "#0f1614" }}
           >
             <IconSearch size={16} />
             <input
@@ -282,7 +282,7 @@ export function CallParticipantSelector({
 
       <style>{`
         .travello-dark-scrollbar {
-          scrollbar-color: rgba(148, 163, 184, 0.75) #1e2a3a;
+          scrollbar-color: rgba(148, 163, 184, 0.75) #1E293B;
           scrollbar-width: thin;
         }
 
@@ -291,12 +291,12 @@ export function CallParticipantSelector({
         }
 
         .travello-dark-scrollbar::-webkit-scrollbar-track {
-          background: #1e2a3a;
+          background: #1E293B;
         }
 
         .travello-dark-scrollbar::-webkit-scrollbar-thumb {
           background: rgba(148, 163, 184, 0.75);
-          border: 2px solid #1e2a3a;
+          border: 2px solid #1E293B;
           border-radius: 9999px;
         }
 

@@ -10,7 +10,8 @@ interface TravelModeChipProps {
   workflowType: "Solo" | "Group Travel" | "Seat Share";
   status: TravelModeStatus;
   onClickEdit: (e: MouseEvent) => void;
-  isOpen: boolean;
+  isOpen?: boolean;
+  variant?: "light" | "dark";
 }
 
 export default function TravelModeChip({
@@ -18,11 +19,18 @@ export default function TravelModeChip({
   workflowType,
   status,
   onClickEdit,
-  isOpen,
+  isOpen = false,
+  variant = "light",
 }: TravelModeChipProps) {
+  const isDark = variant === "dark";
   // Travel mode icon selection
   const renderModeIcon = () => {
-    const sizeClass = status === "live_active" ? "w-4 h-4 text-emerald-600" : "w-4 h-4 text-stone-600";
+    const sizeClass =
+      status === "live_active"
+        ? "w-4 h-4 text-emerald-400"
+        : isDark
+          ? "w-4 h-4 text-white/90"
+          : "w-4 h-4 text-stone-600";
     switch (travelMode) {
       case "Bike":
         return <Bike className={sizeClass} />;
@@ -39,8 +47,10 @@ export default function TravelModeChip({
   // Workflow icon selection
   const renderWorkflowIcon = () => {
     const sizeClass = status === "live_active"
-      ? "w-3.5 h-3.5 text-emerald-600 hover:text-emerald-800 transition-colors"
-      : "w-3.5 h-3.5 text-stone-500 hover:text-stone-700 transition-colors";
+      ? "w-3.5 h-3.5 text-emerald-400 hover:text-emerald-300 transition-colors"
+      : isDark
+        ? "w-3.5 h-3.5 text-white/75 hover:text-white transition-colors"
+        : "w-3.5 h-3.5 text-stone-500 hover:text-stone-700 transition-colors";
     switch (workflowType) {
       case "Group Travel":
         return <Users className={sizeClass} />;
@@ -64,10 +74,16 @@ export default function TravelModeChip({
       <div
         className={`flex h-8 items-center rounded-full border px-2 py-0.5 shadow-sm transition-all duration-200 ${
           status === "live_active"
-            ? "border-emerald-500/30 bg-emerald-50/50"
+            ? isDark
+              ? "border-emerald-400/40 bg-emerald-500/15"
+              : "border-emerald-500/30 bg-emerald-50/50"
             : isOpen
-              ? "border-[#007F73] bg-[#E6F7F4]/30 ring-1 ring-[#007F73]/20"
-              : "border-stone-200 hover:border-[#007F73]/40 hover:bg-stone-50"
+              ? isDark
+                ? "border-white/30 bg-white/15 ring-1 ring-white/20"
+                : "border-primary bg-primary-soft/30 ring-1 ring-[#0E6E5C]/20"
+              : isDark
+                ? "border-white/20 bg-white/10 hover:border-white/30 hover:bg-white/15"
+                : "border-stone-200 hover:border-primary/40 hover:bg-stone-50"
         }`}
       >
         {/* Left half: Mode Icon */}
@@ -76,13 +92,15 @@ export default function TravelModeChip({
         </div>
 
         {/* Vertical Divider */}
-        <div className="mx-0.5 h-3.5 w-[1px] bg-stone-200" />
+        <div className={`mx-0.5 h-3.5 w-[1px] ${isDark ? "bg-white/25" : "bg-stone-200"}`} />
 
         {/* Right half: Edit Button displaying workflow symbol */}
         <button
           type="button"
           onClick={onClickEdit}
-          className="flex w-6 items-center justify-center rounded-full py-1 hover:bg-stone-100 transition-colors"
+          className={`flex w-6 items-center justify-center rounded-full py-1 transition-colors ${
+            isDark ? "hover:bg-white/15" : "hover:bg-stone-100"
+          }`}
           title="Change travel mode or workflow"
           aria-label="Edit travel mode or workflow"
         >
@@ -92,7 +110,9 @@ export default function TravelModeChip({
 
       {/* Small status dot sits on the circle edge */}
       <span
-        className={`absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${dotColorClass} transition-all duration-300`}
+        className={`absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 ${
+          isDark ? "border-slate-950" : "border-white"
+        } ${dotColorClass} transition-all duration-300`}
         title={`Status: ${status}`}
       />
     </div>

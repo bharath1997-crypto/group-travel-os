@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { Mail, Lock, Eye, EyeOff, X } from "lucide-react";
-import { apiFetchWithStatus } from "@/lib/api";
+import { apiFetchWithStatus } from "@/lib/safe-fetch";
 import { saveToken } from "@/lib/auth";
 import { syncLocalProfileCache } from "@/lib/profileCache";
 import { useDashboardUser } from "@/contexts/dashboard-user-context";
@@ -110,7 +110,7 @@ export default function InlineSignInModal({ isOpen, onClose }: InlineSignInModal
             <label htmlFor="inline-email" className="text-xs font-semibold text-stone-600">
               Email address
             </label>
-            <div className="flex h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 shadow-sm transition focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]/15">
+            <div className="flex h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 shadow-sm transition focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/15">
               <Mail className="w-4 h-4 text-stone-400 shrink-0" />
               <input
                 id="inline-email"
@@ -130,7 +130,7 @@ export default function InlineSignInModal({ isOpen, onClose }: InlineSignInModal
             <label htmlFor="inline-password" className="text-xs font-semibold text-stone-600">
               Password
             </label>
-            <div className="flex h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 shadow-sm transition focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]/15">
+            <div className="flex h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 shadow-sm transition focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/15">
               <Lock className="w-4 h-4 text-stone-400 shrink-0" />
               <input
                 id="inline-password"
@@ -165,7 +165,7 @@ export default function InlineSignInModal({ isOpen, onClose }: InlineSignInModal
           <button
             type="submit"
             disabled={loading}
-            className="flex h-10 w-full items-center justify-center rounded-lg bg-[#0F766E] text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0D635C] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-10 w-full items-center justify-center rounded-lg bg-primary text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>

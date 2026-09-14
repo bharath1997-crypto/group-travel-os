@@ -1,6 +1,6 @@
-import { apiFetch, ApiFetchError } from "@/lib/api";
+import { apiFetch, ApiFetchError } from "@/lib/safe-fetch";
 import { logRovvyLiveDebug, logRovvyLiveError, logRovvyLiveWarn } from "./live-gps";
-import type { RouteLine, RouteManeuver, BorderCrossing } from "./live-types";
+import type { RouteLine, RouteManeuver, BorderCrossing, RouteAlternative } from "./live-types";
 
 export function isValidRouteCoordinate(lat: number, lng: number): boolean {
   return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
@@ -12,7 +12,28 @@ export function isValidRouteLine(route: RouteLine | null | undefined): route is 
 
 export interface FetchRouteResult {
   route: RouteLine | null;
+  alternatives?: RouteAlternative[];
   error?: string;
+}
+
+export function routeLineFromAlternative(
+  base: RouteLine,
+  alt: RouteAlternative,
+  usePrimaryGeometry: boolean,
+): RouteLine {
+  if (usePrimaryGeometry) return base;
+  return {
+    ...base,
+    geometry: alt.geometry,
+    distanceMeters: alt.distanceMeters,
+    durationSeconds: alt.durationSeconds,
+    lastMileMode: null,
+    lastMileDistanceMeters: null,
+    lastMileDurationSeconds: null,
+    lastMileNotice: null,
+    walkStartIndex: null,
+    lastMileApproximate: null,
+  };
 }
 
 interface BackendRouteResponse {
@@ -45,6 +66,19 @@ interface BackendRouteResponse {
     highlightGeometry?: [number, number][];
   }[] | null;
   borderNotice?: string | null;
+  alternatives?: {
+    id: string;
+    label: string;
+    tollLabel: string | null;
+    hasTolls: boolean | null;
+    distanceMeters: number | null;
+    durationSeconds: number | null;
+    geometry: {
+      type: "LineString";
+      coordinates: [number, number][];
+    } | null;
+    provider: string;
+  }[] | null;
 }
 
 export type FetchRouteOptions = {
@@ -100,7 +134,7 @@ export async function fetchLiveRoute(
           travelMode,
         }),
       },
-      120_000,
+      45_000,
     );
 
     logRovvyLiveDebug("[Rovvy Route Debug] Backend routing response:", response);
@@ -135,6 +169,23 @@ export async function fetchLiveRoute(
       highlightGeometry: crossing.highlightGeometry ?? undefined,
     }));
 
+    const alternatives: RouteAlternative[] = (response.alternatives || [])
+      .map((alt) => {
+        const coords = alt.geometry?.coordinates;
+        if (!coords || coords.length < 2) return null;
+        return {
+          id: alt.id,
+          label: alt.label,
+          tollLabel: alt.tollLabel ?? null,
+          hasTolls: alt.hasTolls ?? null,
+          distanceMeters: alt.distanceMeters || 0,
+          durationSeconds: alt.durationSeconds || 0,
+          geometry: coords,
+          provider: alt.provider || "osrm",
+        };
+      })
+      .filter((alt): alt is RouteAlternative => alt !== null);
+
     return {
       route: {
         from: origin,
@@ -152,7 +203,8 @@ export async function fetchLiveRoute(
         lastMileApproximate: response.lastMileApproximate ?? null,
         borderCrossings: borderCrossings.length > 0 ? borderCrossings : undefined,
         borderNotice: response.borderNotice ?? null,
-      }
+      },
+      alternatives: alternatives.length > 1 ? alternatives : undefined,
     };
   } catch (err) {
     if (err instanceof ApiFetchError) {

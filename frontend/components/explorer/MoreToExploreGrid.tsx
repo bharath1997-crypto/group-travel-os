@@ -14,7 +14,7 @@ const CARDS = [
       "Create a shared workspace to coordinate flights, stays, activities, and calendars with your whole crew.",
     cta: "Create Trip",
     gradient: "from-teal-50 to-emerald-50",
-    border: "border-teal-100",
+    border: "border-primary/20",
     action: "trip" as const,
   },
   {
@@ -66,7 +66,7 @@ export function MoreToExploreGrid({
           </div>
           <button
             onClick={handlers[card.action]}
-            className="bg-[#0F766E] hover:bg-[#0D635C] text-white text-sm font-bold px-6 py-3 rounded-xl transition-colors mt-6 self-start shadow-sm"
+            className="bg-primary hover:bg-primary-hover text-white text-sm font-bold px-6 py-3 rounded-xl transition-colors mt-6 self-start shadow-sm"
           >
             {card.cta}
           </button>

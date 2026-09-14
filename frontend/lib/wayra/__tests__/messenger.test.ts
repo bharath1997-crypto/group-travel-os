@@ -39,11 +39,22 @@ describe("wayra messenger", () => {
       trips: [{ title: "Chicago weekend", start_date: "2026-07-25", destination: "Chicago" }],
       placeLabel: "Grant Park",
       onLive: true,
+      now: new Date("2026-07-22T12:00:00"),
     });
     expect(text).toContain("Mr. Kumar");
     expect(text).toContain("Grant Park");
     expect(text).toContain("Chicago weekend");
     expect(text).toContain("tap +");
+  });
+
+  it("falls back to a plans prompt when no trip is in the current week", () => {
+    const text = buildWayraSessionGreeting({
+      fullName: "Ram Kumar",
+      trips: [{ title: "Chicago weekend", start_date: "2026-07-25", destination: "Chicago" }],
+      now: new Date("2026-09-01T12:00:00"),
+    });
+    expect(text).not.toContain("Chicago weekend");
+    expect(text).toContain("What are your plans today?");
   });
 
   it("formats same-day message time", () => {

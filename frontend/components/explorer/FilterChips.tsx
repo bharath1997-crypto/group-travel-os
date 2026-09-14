@@ -36,8 +36,8 @@ export function FilterChips({
               className={[
                 "shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition",
                 isActive
-                  ? "border-[#E94560] bg-[#E94560] text-white"
-                  : "border-white/10 bg-[#102f55] text-white/75 hover:border-[#E94560]/60 hover:text-white",
+                  ? "border-primary bg-primary text-white"
+                  : "border-white/10 bg-[#102f55] text-white/75 hover:border-primary/60 hover:text-white",
               ].join(" ")}
             >
               {chip.label}

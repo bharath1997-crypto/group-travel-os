@@ -96,7 +96,7 @@ function OtpBoxes({ value, onChange }: { value: string; onChange: (v: string) =>
           onKeyDown={(e) => handleKey(idx, e)}
           onPaste={handlePaste}
           aria-label={`Digit ${idx + 1}`}
-          className="h-11 w-10 rounded-xl border border-stone-200 bg-white text-center text-[17px] font-semibold text-neutral-900 caret-teal-500 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
+          className="h-11 w-10 rounded-xl border border-stone-200 bg-white text-center text-[17px] font-semibold text-neutral-900 caret-teal-500 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-primary"
         />
       ))}
     </div>
@@ -132,11 +132,11 @@ function PhoneVerifyCard({
   if (step === "idle") return null;
 
   return (
-    <div className="mx-3 mt-3 overflow-hidden rounded-2xl border border-teal-100 bg-white shadow-sm">
+    <div className="mx-3 mt-3 overflow-hidden rounded-2xl border border-primary/20 bg-white shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3">
         <div className="flex items-center gap-2">
-          <Phone size={15} strokeWidth={1.8} className="text-teal-600" />
+          <Phone size={15} strokeWidth={1.8} className="text-primary" />
           <p className="text-[13px] font-semibold text-neutral-900">
             {step === "success" ? "Phone verified" : "Verify phone number"}
           </p>
@@ -155,8 +155,8 @@ function PhoneVerifyCard({
       <div className="px-4 py-4">
         {step === "success" ? (
           <div className="flex flex-col items-center py-4 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-50">
-              <CheckCircle2 size={24} className="text-teal-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft">
+              <CheckCircle2 size={24} className="text-primary" />
             </div>
             <p className="mt-3 text-[14px] font-semibold text-neutral-900">
               Phone number verified!
@@ -166,7 +166,7 @@ function PhoneVerifyCard({
             </p>
             <button
               onClick={onDismiss}
-              className="mt-4 rounded-xl bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+              className="mt-4 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
             >
               Done
             </button>
@@ -187,7 +187,7 @@ function PhoneVerifyCard({
                 onChange={(e) => onPhoneChange(e.target.value)}
                 placeholder="+1 555 000 0000"
                 autoComplete="tel"
-                className="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm text-neutral-900 placeholder:text-stone-300 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm text-neutral-900 placeholder:text-stone-300 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
             {error && (
@@ -198,7 +198,7 @@ function PhoneVerifyCard({
             <button
               onClick={onSend}
               disabled={loading || !phoneInput.trim()}
-              className="w-full rounded-xl bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+              className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
             >
               {loading ? "Sending…" : "Send Code"}
             </button>
@@ -221,7 +221,7 @@ function PhoneVerifyCard({
             <button
               onClick={onVerify}
               disabled={loading || otpInput.replace(/\s/g, "").length < 6}
-              className="w-full rounded-xl bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+              className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
             >
               {loading ? "Verifying…" : "Verify Code"}
             </button>
@@ -229,7 +229,7 @@ function PhoneVerifyCard({
               type="button"
               onClick={() => onSend()}
               disabled={loading}
-              className="w-full text-center text-[12px] text-teal-600 hover:underline disabled:opacity-40"
+              className="w-full text-center text-[12px] text-primary hover:underline disabled:opacity-40"
             >
               Resend code
             </button>
@@ -257,13 +257,13 @@ function SummaryBanner({
 
   if (count === total) {
     return (
-      <div className="mx-3 mt-3 flex items-center gap-3 rounded-2xl border border-teal-100 bg-gradient-to-r from-teal-50 to-white px-4 py-3.5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-teal-100 bg-white">
-          <ShieldCheck size={20} className="text-teal-600" />
+      <div className="mx-3 mt-3 flex items-center gap-3 rounded-2xl border border-primary/20 bg-gradient-to-r from-teal-50 to-white px-4 py-3.5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-white">
+          <ShieldCheck size={20} className="text-primary" />
         </div>
         <div>
           <p className="text-[13px] font-semibold text-teal-800">Fully verified</p>
-          <p className="mt-0.5 text-xs text-teal-600">
+          <p className="mt-0.5 text-xs text-primary">
             All verification steps complete — you are a trusted traveler.
           </p>
         </div>
@@ -294,7 +294,7 @@ function SummaryBanner({
       {/* Progress bar */}
       <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-stone-100">
         <div
-          className="h-full rounded-full bg-teal-500 transition-all duration-500"
+          className="h-full rounded-full bg-primary-soft0 transition-all duration-500"
           style={{ width: `${Math.round((count / total) * 100)}%` }}
           role="progressbar"
           aria-valuenow={count}
@@ -346,13 +346,13 @@ function TierRow({
   const isDisabled = status === "coming-soon";
   const iconCls =
     status === "verified"
-      ? "border-teal-100 bg-teal-50"
+      ? "border-primary/20 bg-primary-soft"
       : isDisabled
-      ? "border-teal-100 bg-teal-50 opacity-70"
+      ? "border-primary/20 bg-primary-soft opacity-70"
       : "border-amber-100 bg-amber-50";
   const iconColor =
     status === "verified"
-      ? "text-teal-700"
+      ? "text-primary"
       : isDisabled
       ? "text-teal-400"
       : "text-amber-600";
@@ -373,7 +373,7 @@ function TierRow({
       </div>
 
       {status === "verified" && (
-        <span className="flex shrink-0 items-center gap-1 rounded-full bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold text-teal-600">
+        <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary-soft px-2.5 py-0.5 text-[11px] font-semibold text-primary">
           <CheckCircle2 size={10} /> Verified
         </span>
       )}
@@ -409,8 +409,8 @@ function BenefitRow({
   return (
     <div className={`px-4 py-3.5 ${last ? "" : "border-b border-stone-100"}`}>
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
-          <Icon size={16} strokeWidth={1.8} className="text-teal-700" />
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
+          <Icon size={16} strokeWidth={1.8} className="text-primary" />
         </div>
         <div>
           <p className="text-[14px] font-medium text-neutral-900">{label}</p>
@@ -582,7 +582,7 @@ export default function VerificationPage() {
                 !phoneVerified && phoneStep === "idle" ? (
                   <button
                     onClick={() => setPhoneStep("enter-phone")}
-                    className="flex shrink-0 items-center gap-1 rounded-full border border-teal-100 bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold text-teal-700 hover:bg-teal-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+                    className="flex shrink-0 items-center gap-1 rounded-full border border-primary/20 bg-primary-soft px-2.5 py-0.5 text-[11px] font-semibold text-primary hover:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
                     aria-label="Add and verify phone number"
                   >
                     Add &amp; Verify <ChevronRight size={10} />
@@ -635,16 +635,16 @@ export default function VerificationPage() {
                   key={label}
                   className={`flex flex-col items-center gap-1.5 rounded-xl border py-3 ${
                     done
-                      ? "border-teal-100 bg-teal-50"
+                      ? "border-primary/20 bg-primary-soft"
                       : "border-stone-100 bg-stone-50"
                   }`}
                 >
                   <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${
-                    done ? "border-teal-100 bg-white" : "border-stone-200 bg-white"
+                    done ? "border-primary/20 bg-white" : "border-stone-200 bg-white"
                   }`}>
-                    <Icon size={15} strokeWidth={1.8} className={done ? "text-teal-600" : "text-stone-300"} />
+                    <Icon size={15} strokeWidth={1.8} className={done ? "text-primary" : "text-stone-300"} />
                   </div>
-                  <span className={`text-[11px] font-semibold ${done ? "text-teal-700" : "text-stone-400"}`}>
+                  <span className={`text-[11px] font-semibold ${done ? "text-primary" : "text-stone-400"}`}>
                     {label}
                   </span>
                   {done ? (
@@ -657,9 +657,9 @@ export default function VerificationPage() {
             </div>
 
             {emailVerified && phoneVerified && idVerified ? (
-              <div className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-teal-100 bg-teal-50 px-4 py-2.5">
-                <Award size={16} className="text-teal-600" />
-                <p className="text-[13px] font-semibold text-teal-700">
+              <div className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary-soft px-4 py-2.5">
+                <Award size={16} className="text-primary" />
+                <p className="text-[13px] font-semibold text-primary">
                   Trusted Traveler badge earned!
                 </p>
               </div>

@@ -77,7 +77,7 @@ export function CartToTripModal({
         </button>
 
         <div className="mb-6 flex items-center gap-2">
-          <div className="rounded-lg bg-teal-50 p-2 text-teal-700">
+          <div className="rounded-lg bg-primary-soft p-2 text-primary">
             <Sparkles className="h-5 w-5" />
           </div>
           <div>
@@ -108,7 +108,7 @@ export function CartToTripModal({
             <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100">
               {selectedItems.map((item) => (
                 <div key={item.id} className="flex items-start gap-3 p-3 bg-slate-50/50">
-                  <div className="mt-0.5 rounded bg-teal-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-teal-700">
+                  <div className="mt-0.5 rounded bg-primary-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
                     {item.item_type}
                   </div>
                   <div className="min-w-0 flex-1">

@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/lib/safe-fetch";
 import type { RoviCompactContext } from "./live-location-context";
 
 export type RoviRiskLevel = "normal" | "far" | "very_far";

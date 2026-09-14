@@ -240,3 +240,57 @@ class WeatherService:
         expires_at = time.time() + TTL_SECONDS
         _forecast_cache[ck] = (expires_at, body)
         return {**body, "cached": False}
+
+    @staticmethod
+    def get_local_time(lat: float, lng: float) -> dict[str, Any]:
+        """Current local clock time at coordinates (Open-Meteo, no API key)."""
+        params = {
+            "latitude": lat,
+            "longitude": lng,
+            "current": "is_day",
+            "timezone": "auto",
+        }
+        timeout = httpx.Timeout(10.0)
+        try:
+            with httpx.Client(timeout=timeout) as client:
+                resp = client.get(OPEN_METEO_URL, params=params)
+        except httpx.HTTPError as exc:
+            raise AppException.bad_gateway("Time lookup unavailable") from exc
+
+        if resp.status_code != 200:
+            raise AppException.bad_gateway("Time lookup unavailable")
+
+        payload = resp.json()
+        current = payload.get("current") or {}
+        iso_local = current.get("time")
+        if not isinstance(iso_local, str) or not iso_local.strip():
+            raise AppException.bad_gateway("Time lookup unavailable")
+
+        tz_name = str(payload.get("timezone") or "local time")
+        tz_abbr = str(payload.get("timezone_abbreviation") or "").strip()
+        offset = payload.get("utc_offset_seconds")
+        try:
+            offset_seconds = int(offset) if offset is not None else 0
+        except (TypeError, ValueError):
+            offset_seconds = 0
+
+        try:
+            dt = datetime.fromisoformat(iso_local.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise AppException.bad_gateway("Time lookup unavailable") from exc
+
+        hour12 = dt.hour % 12 or 12
+        ampm = "AM" if dt.hour < 12 else "PM"
+        time_display = f"{hour12}:{dt.minute:02d} {ampm}"
+        if tz_abbr:
+            time_display = f"{time_display} {tz_abbr}"
+        date_display = f"{dt.strftime('%A, %B')} {dt.day}"
+
+        return {
+            "timezone": tz_name,
+            "timezone_abbreviation": tz_abbr,
+            "utc_offset_seconds": offset_seconds,
+            "iso_local": iso_local,
+            "time_display": time_display,
+            "date_display": date_display,
+        }

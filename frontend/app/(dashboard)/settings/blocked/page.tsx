@@ -52,7 +52,7 @@ export default function SettingsBlockedPage() {
       {err ? <p className="px-4 py-2 text-sm text-red-600">{err}</p> : null}
       {!rows ? (
         <div className="flex justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-[#E94560]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-primary" />
         </div>
       ) : rows.length === 0 ? (
         <p className="px-4 py-6 text-sm text-stone-600">
@@ -77,7 +77,7 @@ export default function SettingsBlockedPage() {
               <button
                 type="button"
                 disabled={busy === u.id}
-                className="shrink-0 rounded-full border border-stone-200 px-3 py-1.5 text-xs font-semibold text-[#E94560] disabled:opacity-50"
+                className="shrink-0 rounded-full border border-stone-200 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50"
                 onClick={() => void unblock(u.id)}
               >
                 Unblock
