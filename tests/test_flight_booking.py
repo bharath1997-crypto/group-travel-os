@@ -44,21 +44,23 @@ def test_flight_book_success(mock_get_offer, mock_create_order, auth_header):
         "live_mode": False,
     }
 
-    res = client.post(
-        "/api/v1/flights/book",
-        json={
-            "offer_id": "off_123",
-            "passengers": [
-                {
-                    "given_name": "Tony",
-                    "family_name": "Stark",
-                    "email": "tony@example.com",
-                    "phone_number": "+14155550100",
-                    "born_on": "1980-07-24",
-                }
-            ],
-        },
-    )
+    with patch("app.services.flight_booking_service.settings") as mocked_settings:
+        mocked_settings.duffel_api_key = "duffel_test_key"
+        res = client.post(
+            "/api/v1/flights/book",
+            json={
+                "offer_id": "off_123",
+                "passengers": [
+                    {
+                        "given_name": "Tony",
+                        "family_name": "Stark",
+                        "email": "tony@example.com",
+                        "phone_number": "+14155550100",
+                        "born_on": "1980-07-24",
+                    }
+                ],
+            },
+        )
     assert res.status_code == 200
     body = res.json()
     assert body["booking_reference"] == "ABC123"
@@ -134,7 +136,9 @@ def test_order_detail_normalizes_duffel_airport_objects(mock_get_order, auth_hea
         "live_mode": False,
     }
 
-    response = client.get("/api/v1/flights/orders/ord_123")
+    with patch("app.services.flight_booking_service.settings") as mocked_settings:
+        mocked_settings.duffel_api_key = "duffel_test_key"
+        response = client.get("/api/v1/flights/orders/ord_123")
 
     assert response.status_code == 200
     body = response.json()

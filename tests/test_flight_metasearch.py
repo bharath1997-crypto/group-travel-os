@@ -127,8 +127,10 @@ def test_coordinator_one_successful_provider():
         offers=[offer],
         status=ProviderStatus(provider_id="duffel", status="ok", environment="test"),
     )
-    with patch.object(DuffelFlightProvider, "search", return_value=fake_result):
-        response = FlightSearchCoordinator.search(_search_body())
+    with patch("app.services.flight_providers.duffel_provider.settings") as mocked_settings:
+        mocked_settings.duffel_api_key = "duffel_test_key"
+        with patch.object(DuffelFlightProvider, "search", return_value=fake_result):
+            response = FlightSearchCoordinator.search(_search_body())
     assert response.providers_requested == 1
     assert response.providers_succeeded == 1
     assert response.providers_failed == 0
@@ -137,12 +139,13 @@ def test_coordinator_one_successful_provider():
 
 
 def test_route_recovery_builds_bounded_honest_alternatives():
+    departure = date.today() + timedelta(days=30)
     body = FlightSearchRequest(
         trip_type="one_way",
         slices=[FlightSearchSliceRequest(
             origin="HLC",
             destination="KHG",
-            departure_date=date(2026, 9, 11),
+            departure_date=departure,
         )],
         passengers=[FlightSearchPassengerRequest(type="adult")],
     )
@@ -157,11 +160,12 @@ def test_route_recovery_builds_bounded_honest_alternatives():
 
 
 def test_route_recovery_does_not_invent_round_trip_combinations():
+    departure = date.today() + timedelta(days=30)
     body = FlightSearchRequest(
         trip_type="round_trip",
         slices=[
-            FlightSearchSliceRequest(origin="HLC", destination="KHG", departure_date=date(2026, 9, 11)),
-            FlightSearchSliceRequest(origin="KHG", destination="HLC", departure_date=date(2026, 9, 20)),
+            FlightSearchSliceRequest(origin="HLC", destination="KHG", departure_date=departure),
+            FlightSearchSliceRequest(origin="KHG", destination="HLC", departure_date=departure + timedelta(days=9)),
         ],
         passengers=[FlightSearchPassengerRequest(type="adult")],
     )
@@ -177,8 +181,10 @@ def test_coordinator_provider_timeout():
             status=ProviderStatus(provider_id="duffel", status="timeout"),
         )
 
-    with patch.object(DuffelFlightProvider, "search", side_effect=_timeout):
-        response = FlightSearchCoordinator.search(_search_body())
+    with patch("app.services.flight_providers.duffel_provider.settings") as mocked_settings:
+        mocked_settings.duffel_api_key = "duffel_test_key"
+        with patch.object(DuffelFlightProvider, "search", side_effect=_timeout):
+            response = FlightSearchCoordinator.search(_search_body())
     assert response.providers_failed == 1
     assert response.journeys == []
 
