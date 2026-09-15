@@ -93,8 +93,8 @@ export function liveMapFloatBtnLight(active = false, isDark = false): string {
   if (active) {
     return `${LIVE_MAP_FLOAT_BTN} ${
       isDark
-        ? "bg-teal-500/25 text-teal-200 ring-1 ring-teal-400/35"
-        : "bg-[#E6F4F2] text-[#0F766E] ring-1 ring-[#0F766E]/20"
+        ? "bg-primary-soft0/25 text-teal-200 ring-1 ring-teal-400/35"
+        : "bg-[#E6F4F2] text-[#0E6E5C] ring-1 ring-[#0E6E5C]/20"
     }`;
   }
   return `${LIVE_MAP_FLOAT_BTN} ${
@@ -106,8 +106,10 @@ export function liveMapFloatBtnLight(active = false, isDark = false): string {
 
 /** Dark floating control (GPS) — Google Maps location pill. */
 export function liveMapFloatBtnDark(active = false): string {
+  const shell =
+    "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-stone-200/50 shadow-[0_2px_12px_rgba(15,23,42,0.10)] backdrop-blur-md transition-all duration-200 focus:outline-none cursor-pointer active:scale-[0.97]";
   if (active) {
-    return `${LIVE_MAP_FLOAT_BTN} bg-[#1A73E8] text-white shadow-[0_1px_6px_rgba(26,115,232,0.45)] hover:bg-[#1967D2]`;
+    return `${shell} !text-white bg-[#1A73E8] shadow-[0_1px_6px_rgba(26,115,232,0.45)] hover:bg-[#1967D2]`;
   }
-  return `${LIVE_MAP_FLOAT_BTN} bg-[rgba(60,64,67,0.94)] text-white hover:bg-[rgba(48,49,52,0.98)]`;
+  return `${shell} !text-white bg-[rgba(60,64,67,0.94)] hover:bg-[rgba(48,49,52,0.98)]`;
 }

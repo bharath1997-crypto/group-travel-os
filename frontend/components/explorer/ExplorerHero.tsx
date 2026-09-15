@@ -97,7 +97,7 @@ export function ExplorerHero({
             <div className="flex items-center gap-2 px-1 pb-1.5 md:pb-0 md:px-0">
               <button
                 onClick={onSearch}
-                className="flex-1 md:flex-none bg-[#0F766E] hover:bg-[#0D635C] text-white font-bold px-5 py-2.5 rounded-xl md:rounded-full transition-colors flex items-center justify-center gap-2 shadow-md text-sm"
+                className="flex-1 md:flex-none bg-primary hover:bg-primary-hover text-white font-bold px-5 py-2.5 rounded-xl md:rounded-full transition-colors flex items-center justify-center gap-2 shadow-md text-sm"
               >
                 <Search size={15} />
                 <span>Search</span>
@@ -107,7 +107,7 @@ export function ExplorerHero({
                 onClick={onNearMe}
                 className="flex-1 md:flex-none bg-white hover:bg-slate-50 text-slate-700 font-semibold px-3 py-2.5 rounded-xl md:rounded-full border border-slate-200 transition-colors flex items-center justify-center gap-1.5 text-sm"
               >
-                <MapPin size={14} className="text-[#0F766E]" />
+                <MapPin size={14} className="text-primary" />
                 Near Me
               </button>
 

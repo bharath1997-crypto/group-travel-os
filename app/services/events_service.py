@@ -171,6 +171,136 @@ def get_events(city: str) -> list[dict[str, Any]]:
         return []
 
 
+_COUNTRY_ISO: dict[str, str] = {
+    "russia": "RU",
+    "united states": "US",
+    "usa": "US",
+    "united kingdom": "GB",
+    "uk": "GB",
+    "france": "FR",
+    "germany": "DE",
+    "italy": "IT",
+    "spain": "ES",
+    "japan": "JP",
+    "china": "CN",
+    "india": "IN",
+    "canada": "CA",
+    "australia": "AU",
+    "mexico": "MX",
+    "brazil": "BR",
+}
+
+
+def _country_iso(country: str | None) -> str | None:
+    if not country or not str(country).strip():
+        return None
+    key = str(country).strip().lower()
+    if len(key) == 2 and key.isalpha():
+        return key.upper()
+    return _COUNTRY_ISO.get(key)
+
+
+def _place_events_cache_key(place: dict[str, Any]) -> str:
+    lat = place.get("lat")
+    lng = place.get("lng")
+    city = str(place.get("city") or "").strip().lower()
+    country = str(place.get("country") or "").strip().lower()
+    if lat is not None and lng is not None:
+        try:
+            return f"geo:{round(float(lat), 3)}:{round(float(lng), 3)}:{country}"
+        except (TypeError, ValueError):
+            pass
+    return f"city:{city}:{country}"
+
+
+def get_events_for_place(
+    place: dict[str, Any],
+    *,
+    limit: int = 5,
+    radius_miles: int = 75,
+) -> list[dict[str, Any]]:
+    """
+    Upcoming events anchored to a map pin (geo search + country validation).
+    Avoids city-name collisions such as Moscow, Idaho vs Moscow, Russia.
+    """
+    if not isinstance(place, dict):
+        return []
+
+    cache_key = _place_events_cache_key(place)
+    now = time.time()
+    cached = _cache.get(cache_key)
+    if cached and now < cached[0]:
+        return list(cached[1][:limit])
+
+    city = str(place.get("city") or "").strip()
+    country = str(place.get("country") or "").strip()
+    expected_cc = _country_iso(country)
+    lat_raw = place.get("lat")
+    lng_raw = place.get("lng")
+
+    raw_events: list[dict[str, Any]] = []
+    lat_f: float | None = None
+    lng_f: float | None = None
+    try:
+        if lat_raw is not None and lng_raw is not None:
+            lat_f = float(lat_raw)
+            lng_f = float(lng_raw)
+    except (TypeError, ValueError):
+        lat_f = lng_f = None
+
+    if lat_f is not None and lng_f is not None:
+        raw_events = _fetch_ticketmaster_events(
+            city,
+            lat=lat_f,
+            lon=lng_f,
+            radius_miles=radius_miles,
+        )
+
+    if not raw_events and city:
+        query_city = f"{city}, {country}" if country else city
+        raw_events = _fetch_ticketmaster_events(query_city)
+
+    if expected_cc:
+        by_country = [
+            ev
+            for ev in raw_events
+            if str(ev.get("country") or "").upper() == expected_cc
+        ]
+        raw_events = by_country
+
+    if lat_f is not None and lng_f is not None:
+        nearby: list[dict[str, Any]] = []
+        max_dist = float(radius_miles) * 2.5
+        for ev in raw_events:
+            vlat = ev.get("venue_lat")
+            vlon = ev.get("venue_lon")
+            if vlat is not None and vlon is not None:
+                try:
+                    dist = _haversine_miles(lat_f, lng_f, float(vlat), float(vlon))
+                    if dist <= max_dist:
+                        nearby.append(ev)
+                except (TypeError, ValueError):
+                    nearby.append(ev)
+            else:
+                nearby.append(ev)
+        raw_events = nearby
+
+    out: list[dict[str, Any]] = []
+    for ev in raw_events[:limit]:
+        out.append(
+            {
+                "name": str(ev.get("name") or "Event"),
+                "date": str(ev.get("date") or ""),
+                "venue": str(ev.get("venue") or ""),
+                "url": str(ev.get("ticket_url") or ev.get("url") or ""),
+                "country": str(ev.get("country") or ""),
+            }
+        )
+
+    _cache[cache_key] = (now + TTL_SECONDS, out)
+    return out
+
+
 def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     r = 3958.8
     p1, p2 = math.radians(lat1), math.radians(lat2)

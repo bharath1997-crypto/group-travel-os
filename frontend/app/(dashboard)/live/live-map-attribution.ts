@@ -1,4 +1,4 @@
-import type { LiveMapLayer } from "@/lib/map-providers";
+import { isLiveOpenFreeMapBasemapPrimary, type LiveMapLayer } from "@/lib/map-providers";
 import { formatMapCoordinates } from "./live-map-pick-context";
 
 export type LiveMapAttributionFocus = {
@@ -24,7 +24,9 @@ export function getLiveMapDataCredits(layer: LiveMapLayer): string {
       return "© OpenStreetMap · © OpenFreeMap";
     case "street":
     default:
-      return "© OpenStreetMap · © CARTO";
+      return isLiveOpenFreeMapBasemapPrimary()
+        ? "© OpenStreetMap · © OpenFreeMap"
+        : "© OpenStreetMap · © CARTO";
   }
 }
 
@@ -101,21 +103,12 @@ export function buildLiveMapAttributionLine(input: {
   refreshedAt: Date;
   zoom?: number;
 }): string {
-  const { layer, focus, zoom } = input;
+  const { layer, focus } = input;
   const credits = getLiveMapDataCredits(layer);
-  const scale =
-    focus && typeof zoom === "number"
-      ? formatMapGroundScaleFeet(zoom, focus.lat)
-      : null;
 
   if (focus) {
     const coords = formatMapCoordinates(focus.lat, focus.lng);
-    if (scale) return `${coords} · ${scale} · ${credits}`;
     return `${coords} · ${credits}`;
-  }
-
-  if (scale) {
-    return `${scale} · ${credits}`;
   }
 
   return credits;

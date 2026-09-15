@@ -3,8 +3,19 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class ProviderOffer(BaseModel):
+    """Single booking seller offer for a flight option."""
+
+    model_config = ConfigDict(from_attributes=False)
+
+    provider_name: str
+    price: float
+    currency: str = "USD"
+    booking_url: str
+
+
 class FlightResult(BaseModel):
-    """One bookable itinerary from the search provider."""
+    """One bookable itinerary from search providers with N seller solutions."""
 
     model_config = ConfigDict(from_attributes=False)
 
@@ -19,3 +30,6 @@ class FlightResult(BaseModel):
     duration_minutes: int = 0
     deep_link: str = ""
     stops: int = 0
+    provider: str = "Aviasales"
+    provider_offers: list[ProviderOffer] = Field(default_factory=list)
+

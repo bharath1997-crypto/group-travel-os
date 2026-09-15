@@ -33,21 +33,21 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
   food: "from-orange-400 to-red-500",
   nightlife: "from-indigo-600 to-violet-700",
   parks: "from-green-500 to-teal-600",
-  outdoor: "from-teal-400 to-emerald-600",
+  outdoor: "from-teal-400 to-primary-light",
   comedy: "from-amber-400 to-orange-500",
   arts: "from-pink-500 to-rose-600",
   experience: "from-teal-500 to-cyan-600",
   landmarks: "from-amber-500 to-orange-600",
   shopping: "from-pink-400 to-rose-500",
-  default: "from-teal-500 to-emerald-600",
+  default: "from-teal-500 to-primary-light",
 };
 
 const SOURCE_BADGE: Record<string, string> = {
   ticketmaster: "bg-blue-600",
   eventbrite: "bg-orange-500",
   yelp: "bg-red-600",
-  osm: "bg-[#0F766E]",
-  rovvy: "bg-[#0F766E]",
+  osm: "bg-primary",
+  rovvy: "bg-primary",
   ai: "bg-violet-600",
   default: "bg-slate-600",
 };
@@ -172,7 +172,7 @@ export function ExplorerExperienceCard({
           onClick={() => onOpen?.(item)}
           className="text-left focus:outline-none group"
         >
-          <h3 className="font-bold text-slate-900 text-[13px] leading-snug line-clamp-2 group-hover:text-[#0F766E] transition-colors">
+          <h3 className="font-bold text-slate-900 text-[13px] leading-snug line-clamp-2 group-hover:text-primary transition-colors">
             {item.title}
           </h3>
         </button>
@@ -211,7 +211,7 @@ export function ExplorerExperienceCard({
             type="button"
             title="Add to trip"
             onClick={(e) => { e.stopPropagation(); onAddToTrip?.(); }}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-[#0F766E] hover:bg-teal-50 transition-colors"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary-soft transition-colors"
           >
             <Plus size={13} />
           </button>
@@ -227,7 +227,7 @@ export function ExplorerExperienceCard({
         <button
           type="button"
           onClick={() => onOpen?.(item)}
-          className="text-[10px] font-bold text-[#0F766E] hover:text-[#0D635C] transition-colors"
+          className="text-[10px] font-bold text-primary hover:text-primary-hover transition-colors"
         >
           View →
         </button>

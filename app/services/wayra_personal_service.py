@@ -6,6 +6,7 @@ import os
 from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 from config import settings
+from app.models.user import User
 from app.models.trip import Trip, TripStatus
 from app.models.trip_roster import TripRoster
 from app.models.cart import TravelCart
@@ -14,6 +15,7 @@ from app.models.location import Location
 from app.models.expense import Expense, ExpenseSplit
 from app.models.lounge import LoungeChat, LoungeMember
 from app.models.wayra import WayraPersonalMemory
+from app.services.gemini_usage import parse_http_usage_metadata, record_gemini_usage
 from app.utils.firebase import get_rtdb
 from app.utils.exceptions import AppException
 from app.services.wayra_rate_limiter import check_personal_limit
@@ -39,6 +41,8 @@ class WayraPersonalService:
         NEVER includes other users' private data.
         NEVER includes messages where wayra_visible=False.
         """
+        user = db.get(User, user_id)
+
         # 1. Trips
         trips_stmt = (
             select(Trip)
@@ -175,6 +179,7 @@ class WayraPersonalService:
         ]
 
         return {
+            "full_name": user.full_name if user else None,
             "trips": trips_data,
             "cart": cart_data,
             "saved_locations": saved_locations,
@@ -236,6 +241,10 @@ class WayraPersonalService:
             },
         }
 
+        response_text = ""
+        suggestions: list[str] = []
+        gemini_usage: dict[str, int] | None = None
+
         try:
             with httpx.Client(timeout=30.0) as client:
                 r = client.post(url, params={"key": key}, json=body)
@@ -243,10 +252,16 @@ class WayraPersonalService:
                 logger.error("Wayra Personal Gemini HTTP %s: %s", r.status_code, r.text)
                 return {
                     "response": "Wayra is temporarily unavailable. Please try again.",
-                    "suggestions": []
+                    "suggestions": [],
                 }
-            
+
             data = r.json()
+            gemini_usage = parse_http_usage_metadata(data)
+            record_gemini_usage(
+                feature="wayra_personal",
+                model="gemini-2.5-flash",
+                usage=gemini_usage,
+            )
             text_response = data["candidates"][0]["content"]["parts"][0]["text"].strip()
             import json
             parsed = json.loads(text_response)
@@ -259,7 +274,10 @@ class WayraPersonalService:
 
         _personal_cache[cache_key] = (response_text, suggestions, now)
 
-        return {"response": response_text, "suggestions": suggestions}
+        payload: dict = {"response": response_text, "suggestions": suggestions}
+        if gemini_usage:
+            payload["gemini_usage"] = gemini_usage
+        return payload
 
     @staticmethod
     def store_memory(

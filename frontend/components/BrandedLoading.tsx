@@ -56,14 +56,14 @@ export default function BrandedLoading({
   }, [isOnline, message]);
 
   const containerClasses = fullScreen
-    ? "fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#F8FAFC]"
+    ? "fixed inset-0 z-50 flex flex-col items-center justify-center bg-app"
     : "flex flex-col items-center justify-center p-8 w-full h-full min-h-[200px]";
 
   return (
     <div className={containerClasses} suppressHydrationWarning>
       <div className="relative flex flex-col items-center">
         {/* Animated outer ring */}
-        <div className="absolute h-20 w-20 animate-spin rounded-full border-2 border-[#CCFBF1] border-t-[#0F766E]" />
+        <div className="absolute h-20 w-20 animate-spin rounded-full border-2 border-[#DCEAE5] border-t-[#0E6E5C]" />
         
         {/* Logo Icon */}
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-sm">

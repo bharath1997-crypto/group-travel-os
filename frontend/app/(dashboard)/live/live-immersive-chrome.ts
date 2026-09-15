@@ -24,7 +24,10 @@ export function setLiveImmersiveChrome(state: LiveImmersiveChromeState): void {
   else delete document.body.dataset[ACTIVE_KEY];
   if (state.darkMap) document.body.dataset[DARK_KEY] = "true";
   else delete document.body.dataset[DARK_KEY];
-  window.dispatchEvent(new CustomEvent("rovvy-live-chrome"));
+  // Defer so LivePage render never synchronously updates DashboardChrome state.
+  queueMicrotask(() => {
+    window.dispatchEvent(new CustomEvent("rovvy-live-chrome"));
+  });
 }
 
 export function clearLiveImmersiveChrome(): void {

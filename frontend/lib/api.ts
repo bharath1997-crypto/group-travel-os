@@ -58,6 +58,16 @@ function installApiRejectionGuard() {
 
 installApiRejectionGuard();
 
+/** Never pass null/undefined/non-object init into fetch or destructure .signal blindly. */
+export function normalizeRequestInit(init?: RequestInit | null): RequestInit {
+  if (init == null || typeof init !== "object") return {};
+  const out: RequestInit = { ...init };
+  if (out.signal === undefined) {
+    delete (out as { signal?: AbortSignal }).signal;
+  }
+  return out;
+}
+
 function networkErrorMessage(url: string, cause: unknown): string {
   let origin = API_BASE;
   try {
@@ -113,15 +123,16 @@ export async function apiFetch<T = unknown>(
   options: RequestInit = {},
   timeoutMs = DEFAULT_TIMEOUT_MS,
 ): Promise<T> {
+  const opts = normalizeRequestInit(options);
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const url = `${API_BASE}${normalized}`;
 
-  const headers = new Headers(options.headers);
-  const method = (options.method ?? "GET").toUpperCase();
+  const headers = new Headers(opts.headers);
+  const method = (opts.method ?? "GET").toUpperCase();
   const hasBody =
-    options.body !== undefined &&
-    options.body !== null &&
-    options.body !== "";
+    opts.body !== undefined &&
+    opts.body !== null &&
+    opts.body !== "";
   if (
     hasBody &&
     !headers.has("Content-Type") &&
@@ -140,7 +151,10 @@ export async function apiFetch<T = unknown>(
 
   let res: Response;
   try {
-    res = await fetch(url, { ...options, headers, signal: controller.signal });
+    res = await fetch(
+      url,
+      normalizeRequestInit({ ...opts, headers, signal: controller.signal }),
+    );
     clearTimeout(timeoutId);
   } catch (e) {
     clearTimeout(timeoutId);
@@ -167,17 +181,18 @@ export async function apiFetchWithStatus<T>(
   options?: RequestInit,
   timeoutMs = DEFAULT_TIMEOUT_MS,
 ): Promise<{ data: T | null; status: number }> {
+  const opts = normalizeRequestInit(options);
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const url = `${API_BASE}${normalized}`;
   const token = getToken();
 
-  const headers = new Headers(options?.headers);
+  const headers = new Headers(opts.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  const method = (options?.method ?? "GET").toUpperCase();
+  const method = (opts.method ?? "GET").toUpperCase();
   const hasBody =
-    options?.body !== undefined &&
-    options?.body !== null &&
-    options?.body !== "";
+    opts.body !== undefined &&
+    opts.body !== null &&
+    opts.body !== "";
   if (
     hasBody &&
     !headers.has("Content-Type") &&
@@ -190,7 +205,10 @@ export async function apiFetchWithStatus<T>(
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const res = await fetch(url, { ...options, headers, signal: controller.signal });
+    const res = await fetch(
+      url,
+      normalizeRequestInit({ ...opts, headers, signal: controller.signal }),
+    );
     clearTimeout(timeoutId);
     if (!res.ok) return { data: null, status: res.status };
     if (res.status === 204) return { data: null, status: res.status };
@@ -214,14 +232,15 @@ export async function apiFetchPublic<T = unknown>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  const opts = normalizeRequestInit(options);
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const url = `${API_BASE}${normalized}`;
-  const headers = new Headers(options.headers);
-  const method = (options.method ?? "GET").toUpperCase();
+  const headers = new Headers(opts.headers);
+  const method = (opts.method ?? "GET").toUpperCase();
   const hasBody =
-    options.body !== undefined &&
-    options.body !== null &&
-    options.body !== "";
+    opts.body !== undefined &&
+    opts.body !== null &&
+    opts.body !== "";
   if (
     hasBody &&
     !headers.has("Content-Type") &&
@@ -235,7 +254,10 @@ export async function apiFetchPublic<T = unknown>(
 
   let res: Response;
   try {
-    res = await fetch(url, { ...options, headers, signal: controller.signal });
+    res = await fetch(
+      url,
+      normalizeRequestInit({ ...opts, headers, signal: controller.signal }),
+    );
     clearTimeout(timeoutId);
   } catch (e) {
     clearTimeout(timeoutId);
@@ -259,9 +281,10 @@ export async function apiFetchPublic<T = unknown>(
 
 export function fetchWithTimeout(
   input: RequestInfo | URL,
-  init: RequestInit = {},
+  init?: RequestInit | null,
 ): Promise<Response> {
-  const { signal: external, ...rest } = init;
+  const safeInit = normalizeRequestInit(init);
+  const external = safeInit.signal;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
   const onExternalAbort = () => {
@@ -276,7 +299,10 @@ export function fetchWithTimeout(
       external.addEventListener("abort", onExternalAbort, { once: true });
     }
   }
-  return fetch(input, { ...rest, signal: controller.signal }).finally(() => {
+  return fetch(
+    input,
+    normalizeRequestInit({ ...safeInit, signal: controller.signal }),
+  ).finally(() => {
     clearTimeout(timeout);
     if (external) {
       external.removeEventListener("abort", onExternalAbort);

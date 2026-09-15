@@ -30,8 +30,8 @@ function InfoRow({
   return (
     <div className="border-b border-stone-100 px-4 py-3.5 last:border-b-0">
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
-          <Icon size={16} className="text-teal-700" strokeWidth={1.8} />
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
+          <Icon size={16} className="text-primary" strokeWidth={1.8} />
         </div>
         <div>
           <p className="text-[14px] font-medium text-neutral-900">{label}</p>
@@ -56,21 +56,21 @@ function MethodRow({
 }) {
   return (
     <div className="flex cursor-default select-none items-center gap-3.5 border-b border-stone-100 px-4 py-3.5 opacity-80 last:border-b-0 pointer-events-none">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
         <Icon size={16} className="text-teal-400" strokeWidth={1.8} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="text-[14px] text-neutral-900">{label}</p>
           {recommended && (
-            <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-600">
+            <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary">
               Recommended
             </span>
           )}
         </div>
         <p className="mt-0.5 text-xs text-stone-400">{sublabel}</p>
       </div>
-      <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-[11px] font-medium text-teal-600">
+      <span className="rounded-full bg-primary-soft px-2.5 py-0.5 text-[11px] font-medium text-primary">
         Coming Soon
       </span>
     </div>
@@ -144,8 +144,8 @@ export default function TwoFactorPage() {
       </div>
 
       {/* Coming soon notice */}
-      <div className="mx-3 mt-4 rounded-xl border border-teal-100 bg-teal-50 px-4 py-3">
-        <p className="text-xs text-teal-700">
+      <div className="mx-3 mt-4 rounded-xl border border-primary/20 bg-primary-soft px-4 py-3">
+        <p className="text-xs text-primary">
           Two-factor authentication is coming to Rovvy soon. You will receive an
           in-app notification when it is ready to enable.
         </p>

@@ -54,30 +54,27 @@ export function SettingsBreadcrumb({ crumbs, className = "" }: SettingsBreadcrum
                 <ChevronRight
                   size={9}
                   strokeWidth={2.5}
-                  className="shrink-0 text-stone-300"
+                  className="shrink-0 text-border"
                   aria-hidden="true"
                 />
               )}
 
-              {/* Last item = current page (no link) */}
               {isLast ? (
                 <span
                   aria-current="page"
-                  className="font-semibold text-neutral-700"
+                  className="font-semibold text-text"
                 >
                   {crumb.label}
                 </span>
               ) : crumb.href ? (
-                /* Clickable ancestor crumb */
                 <Link
                   href={crumb.href}
-                  className="text-stone-400 transition-colors hover:text-stone-600 focus:outline-none focus-visible:underline focus-visible:decoration-stone-400"
+                  className="text-muted transition-colors hover:text-text focus:outline-none focus-visible:underline focus-visible:decoration-primary"
                 >
                   {crumb.label}
                 </Link>
               ) : (
-                /* Non-clickable ancestor crumb (no href) */
-                <span className="text-stone-400">{crumb.label}</span>
+                <span className="text-muted">{crumb.label}</span>
               )}
             </li>
           );

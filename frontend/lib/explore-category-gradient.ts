@@ -7,5 +7,5 @@ export function getCategoryGradient(category?: string): string {
     Comedy: "linear-gradient(160deg,#5c3a1a,#f97316)",
     Festival: "linear-gradient(160deg,#5c4a1a,#eab308)",
   };
-  return map[category || ""] || "linear-gradient(160deg,#1a3a5c,#0f766e)";
+  return map[category || ""] || "linear-gradient(160deg,#1a3a5c,#0e6e5c)";
 }

@@ -15,6 +15,8 @@ import {
   Sparkles,
   Train,
   Users,
+  Bookmark,
+  AlertTriangle,
 } from "lucide-react";
 import { MapLayersIcon } from "@/components/map/MapControlIcons";
 import type { LiveMapLayer } from "@/lib/map-providers";
@@ -63,7 +65,7 @@ const LIVE_MAP_LAYER_OPTIONS = [
     label: "Dark",
     description: "Low-light map",
     icon: "moon" as const,
-    previewClass: "bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#334155]",
+    previewClass: "bg-gradient-to-br from-[#0F1614] via-[#1E293B] to-[#334155]",
   },
 ] as const;
 
@@ -106,7 +108,7 @@ function LayerPreview({ option }: { option: (typeof LIVE_MAP_LAYER_OPTIONS)[numb
           <div className="absolute inset-x-1 top-4 h-px bg-stone-300/50" />
           <div className="absolute inset-y-1.5 left-2.5 w-px bg-stone-300/70" />
           <div className="absolute inset-y-1.5 left-4 w-px bg-stone-300/50" />
-          <div className="absolute bottom-1.5 right-1.5 h-2 w-2 rounded-sm bg-[#0F766E]/35" />
+          <div className="absolute bottom-1.5 right-1.5 h-2 w-2 rounded-sm bg-primary/35" />
           <div className="absolute left-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-amber-400/60" />
         </>
       ) : null}
@@ -154,7 +156,7 @@ function OverlayToggle({ enabled, onChange, title, description, preview }: Overl
       onClick={() => onChange(!enabled)}
       className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors ${
         enabled
-          ? "border border-[#007F73] bg-[#E6F7F4]"
+          ? "border border-primary bg-primary-soft"
           : "border border-transparent hover:bg-stone-50"
       }`}
       aria-pressed={enabled}
@@ -162,14 +164,14 @@ function OverlayToggle({ enabled, onChange, title, description, preview }: Overl
       {preview}
       <div className="min-w-0 flex-1">
         <span
-          className={`text-sm font-semibold ${enabled ? "text-[#007F73]" : "text-stone-800"}`}
+          className={`text-sm font-semibold ${enabled ? "text-primary" : "text-stone-800"}`}
         >
           {title}
         </span>
         <p className="mt-0.5 text-[11px] leading-snug text-stone-500">{description}</p>
       </div>
       {enabled ? (
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#007F73] text-white">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-white">
           <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
         </span>
       ) : (
@@ -192,6 +194,10 @@ type Props = {
   onFootRoutesChange?: (enabled: boolean) => void;
   friendTrackingEnabled?: boolean;
   onFriendTrackingChange?: (enabled: boolean) => void;
+  savedPlacesLayerEnabled?: boolean;
+  onSavedPlacesLayerChange?: (enabled: boolean) => void;
+  reportsLayerEnabled?: boolean;
+  onReportsLayerChange?: (enabled: boolean) => void;
   /** Controlled open state — used when opened from Map Tools. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -224,6 +230,10 @@ export default function LiveMapLayerControl({
   onFootRoutesChange,
   friendTrackingEnabled = true,
   onFriendTrackingChange,
+  savedPlacesLayerEnabled = true,
+  onSavedPlacesLayerChange,
+  reportsLayerEnabled = true,
+  onReportsLayerChange,
   open: openProp,
   onOpenChange,
   showTrigger = true,
@@ -256,8 +266,9 @@ export default function LiveMapLayerControl({
   const selectLayer = useCallback(
     (layer: LiveMapLayer) => {
       onLayerChange(layer);
+      setOpen(false);
     },
-    [onLayerChange],
+    [onLayerChange, setOpen],
   );
 
   useEffect(() => {
@@ -293,7 +304,7 @@ export default function LiveMapLayerControl({
             panelAnchor === "right-rail"
               ? `relative ${liveMapFloatBtnLight(open, false)}`
               : `flex h-11 w-11 items-center justify-center rounded-full bg-white/95 shadow-[0_8px_24px_rgba(15,23,42,0.10)] backdrop-blur-md transition-all hover:bg-white ${
-                  open ? "ring-2 ring-[#007F73]/25" : ""
+                  open ? "ring-2 ring-[#0E6E5C]/25" : ""
                 }`
           }
           data-live-layers-trigger
@@ -308,15 +319,15 @@ export default function LiveMapLayerControl({
             className={
               panelAnchor === "right-rail"
                 ? open
-                  ? "text-[#0F766E]"
+                  ? "text-primary"
                   : "text-[#3C4043]"
                 : open
-                  ? "text-[#007F73]"
+                  ? "text-primary"
                   : "text-stone-500"
             }
           />
           {open && panelAnchor === "right-rail" ? (
-            <span className="absolute top-1 right-1 h-1 w-1 rounded-full bg-[#0f766e]" />
+            <span className="absolute top-1 right-1 h-1 w-1 rounded-full bg-primary" />
           ) : null}
         </button>
       ) : null}
@@ -350,13 +361,13 @@ export default function LiveMapLayerControl({
                     <div
                       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         selected
-                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
                           : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >
                       <LayerPreview option={option} />
                       {selected && (
-                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-1 ring-white">
                           <Check className="h-2 w-2" strokeWidth={4} />
                         </span>
                       )}
@@ -364,7 +375,7 @@ export default function LiveMapLayerControl({
                     {/* Downside: EXACT model/layer name */}
                     <span
                       className={`text-[9px] font-extrabold tracking-wide transition-colors ${
-                        selected ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"
+                        selected ? "text-primary" : "text-stone-500 group-hover:text-stone-700"
                       }`}
                     >
                       {labelText}
@@ -391,19 +402,82 @@ export default function LiveMapLayerControl({
                     <div
                       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         friendTrackingEnabled
-                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
                           : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >
-                      <Users className={`h-4.5 w-4.5 ${friendTrackingEnabled ? "text-[#007F73]" : "text-stone-500"}`} />
+                      <Users className={`h-4.5 w-4.5 ${friendTrackingEnabled ? "text-primary" : "text-stone-500"}`} />
                       {friendTrackingEnabled && (
-                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-1 ring-white">
                           <Check className="h-2 w-2" strokeWidth={4} />
                         </span>
                       )}
                     </div>
-                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${friendTrackingEnabled ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${friendTrackingEnabled ? "text-primary" : "text-stone-500 group-hover:text-stone-700"}`}>
                       Friends
+                    </span>
+                  </button>
+                )}
+
+                {/* Overlay: My saved places (local device only) */}
+                {onSavedPlacesLayerChange && (
+                  <button
+                    type="button"
+                    onClick={() => onSavedPlacesLayerChange(!savedPlacesLayerEnabled)}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
+                    title="Your saved pins — stored on this device only"
+                  >
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        savedPlacesLayerEnabled
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <Bookmark
+                        className={`h-4.5 w-4.5 ${savedPlacesLayerEnabled ? "fill-[#0E6E5C] text-primary" : "text-stone-500"}`}
+                      />
+                      {savedPlacesLayerEnabled && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className={`text-[9px] font-extrabold tracking-wide transition-colors ${savedPlacesLayerEnabled ? "text-primary" : "text-stone-500 group-hover:text-stone-700"}`}
+                    >
+                      My saves
+                    </span>
+                  </button>
+                )}
+
+                {onReportsLayerChange && (
+                  <button
+                    type="button"
+                    onClick={() => onReportsLayerChange(!reportsLayerEnabled)}
+                    className="group flex flex-col items-center gap-0.5 focus:outline-none cursor-pointer shrink-0"
+                    title="Place vibe reports — fade after 2 hours"
+                  >
+                    <div
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        reportsLayerEnabled
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
+                          : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <AlertTriangle
+                        className={`h-4.5 w-4.5 ${reportsLayerEnabled ? "text-primary" : "text-stone-500"}`}
+                      />
+                      {reportsLayerEnabled && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-1 ring-white">
+                          <Check className="h-2 w-2" strokeWidth={4} />
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className={`text-[9px] font-extrabold tracking-wide transition-colors ${reportsLayerEnabled ? "text-primary" : "text-stone-500 group-hover:text-stone-700"}`}
+                    >
+                      Reports
                     </span>
                   </button>
                 )}
@@ -418,18 +492,18 @@ export default function LiveMapLayerControl({
                     <div
                       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         travelLayerEnabled
-                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
                           : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >
-                      <Route className={`h-4.5 w-4.5 ${travelLayerEnabled ? "text-[#007F73]" : "text-stone-500"}`} />
+                      <Route className={`h-4.5 w-4.5 ${travelLayerEnabled ? "text-primary" : "text-stone-500"}`} />
                       {travelLayerEnabled && (
-                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-1 ring-white">
                           <Check className="h-2 w-2" strokeWidth={4} />
                         </span>
                       )}
                     </div>
-                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${travelLayerEnabled ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${travelLayerEnabled ? "text-primary" : "text-stone-500 group-hover:text-stone-700"}`}>
                       Travel
                     </span>
                   </button>
@@ -445,18 +519,18 @@ export default function LiveMapLayerControl({
                     <div
                       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         seaRoutesEnabled
-                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
                           : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >
-                      <Ship className={`h-4.5 w-4.5 ${seaRoutesEnabled ? "text-[#007F73]" : "text-stone-500"}`} />
+                      <Ship className={`h-4.5 w-4.5 ${seaRoutesEnabled ? "text-primary" : "text-stone-500"}`} />
                       {seaRoutesEnabled && (
-                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-1 ring-white">
                           <Check className="h-2 w-2" strokeWidth={4} />
                         </span>
                       )}
                     </div>
-                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${seaRoutesEnabled ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${seaRoutesEnabled ? "text-primary" : "text-stone-500 group-hover:text-stone-700"}`}>
                       Sea
                     </span>
                   </button>
@@ -472,18 +546,18 @@ export default function LiveMapLayerControl({
                     <div
                       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         cruiseRoutesEnabled
-                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
                           : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >
-                      <Sailboat className={`h-4.5 w-4.5 ${cruiseRoutesEnabled ? "text-[#007F73]" : "text-stone-500"}`} />
+                      <Sailboat className={`h-4.5 w-4.5 ${cruiseRoutesEnabled ? "text-primary" : "text-stone-500"}`} />
                       {cruiseRoutesEnabled && (
-                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-1 ring-white">
                           <Check className="h-2 w-2" strokeWidth={4} />
                         </span>
                       )}
                     </div>
-                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${cruiseRoutesEnabled ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${cruiseRoutesEnabled ? "text-primary" : "text-stone-500 group-hover:text-stone-700"}`}>
                       Cruise
                     </span>
                   </button>
@@ -499,18 +573,18 @@ export default function LiveMapLayerControl({
                     <div
                       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         footRoutesEnabled
-                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
                           : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >
-                      <Footprints className={`h-4.5 w-4.5 ${footRoutesEnabled ? "text-[#007F73]" : "text-stone-500"}`} />
+                      <Footprints className={`h-4.5 w-4.5 ${footRoutesEnabled ? "text-primary" : "text-stone-500"}`} />
                       {footRoutesEnabled && (
-                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-1 ring-white">
                           <Check className="h-2 w-2" strokeWidth={4} />
                         </span>
                       )}
                     </div>
-                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${footRoutesEnabled ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${footRoutesEnabled ? "text-primary" : "text-stone-500 group-hover:text-stone-700"}`}>
                       Foot
                     </span>
                   </button>
@@ -526,18 +600,18 @@ export default function LiveMapLayerControl({
                     <div
                       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ${
                         mapViewMode === "3d"
-                          ? "border-[#007F73] bg-[#E6F7F4]/90 shadow-sm ring-1 ring-[#007F73]/20"
+                          ? "border-primary bg-primary-soft/90 shadow-sm ring-1 ring-[#0E6E5C]/20"
                           : "border-stone-200/50 bg-white/60 dark:bg-slate-800/50 hover:bg-white hover:border-stone-300"
                       }`}
                     >
-                      <Mountain className={`h-4.5 w-4.5 ${mapViewMode === "3d" ? "text-[#007F73]" : "text-stone-500"}`} />
+                      <Mountain className={`h-4.5 w-4.5 ${mapViewMode === "3d" ? "text-primary" : "text-stone-500"}`} />
                       {mapViewMode === "3d" && (
-                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#007F73] text-white shadow-sm ring-1 ring-white">
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-1 ring-white">
                           <Check className="h-2 w-2" strokeWidth={4} />
                         </span>
                       )}
                     </div>
-                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${mapViewMode === "3d" ? "text-[#007F73]" : "text-stone-500 group-hover:text-stone-700"}`}>
+                    <span className={`text-[9px] font-extrabold tracking-wide transition-colors ${mapViewMode === "3d" ? "text-primary" : "text-stone-500 group-hover:text-stone-700"}`}>
                       3D View
                     </span>
                   </button>

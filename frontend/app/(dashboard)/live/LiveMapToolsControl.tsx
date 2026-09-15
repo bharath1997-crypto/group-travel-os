@@ -8,7 +8,7 @@ export const LIVE_MAP_CTRL_BTN =
   "flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white text-stone-600 shadow-[0_1px_4px_rgba(0,0,0,0.22)] transition-colors hover:bg-stone-50 hover:text-stone-800 active:bg-stone-100";
 
 export const LIVE_MAP_CTRL_BTN_ACTIVE =
-  "flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#E6F7F4] text-[#007F73] shadow-[0_1px_4px_rgba(0,0,0,0.18)] transition-colors";
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary shadow-[0_1px_4px_rgba(0,0,0,0.18)] transition-colors";
 
 export const LIVE_MAP_CTRL_ICON = "h-4 w-4";
 

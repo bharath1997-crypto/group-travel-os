@@ -350,7 +350,7 @@ function tempBorderColor(celsius: number) {
 function tempTextColor(celsius: number) {
   if (celsius < 0) return "#3B82F6";
   if (celsius < 15) return "#64748B";
-  if (celsius < 25) return "#0F766E";
+  if (celsius < 25) return "#0E6E5C";
   if (celsius < 35) return "#D97706";
   return "#DC2626";
 }
@@ -683,7 +683,7 @@ function createTempIcon(
         background:#FFFFFF;border:0.5px solid ${border};
         border-radius:20px;padding:3px 8px;
         box-shadow:0 2px 8px rgba(0,0,0,0.12);
-        font-family:Inter,system-ui,sans-serif;font-size:11px;font-weight:500;color:#0F172A;
+        font-family:var(--font-schibsted),system-ui,sans-serif;font-size:11px;font-weight:500;color:#0F1614;
         white-space:nowrap;
       ">
         <span style="display:inline-flex;align-items:center;line-height:0;">${iconSvg}</span>
@@ -692,7 +692,7 @@ function createTempIcon(
       ${
         showCityName
           ? `<span style="
-        margin-top:2px;font-family:Inter,system-ui,sans-serif;
+        margin-top:2px;font-family:var(--font-schibsted),system-ui,sans-serif;
         font-size:9px;color:#64748B;white-space:nowrap;
       ">${city.name}</span>`
           : ""
@@ -806,8 +806,8 @@ function PopupContent({
   const kind = wmoToIconKind(weather.weathercode);
   const countryName = COUNTRY_NAMES[city.country] ?? city.country;
   return (
-    <div className="min-w-[160px] font-[Inter,system-ui,sans-serif]">
-      <p className="text-sm font-bold text-[#0F172A]">{city.name}</p>
+    <div className="min-w-[160px] font-sans">
+      <p className="text-sm font-bold text-navy">{city.name}</p>
       <p className="mt-0.5 text-xs text-[#64748B]">
         {countryFlag(city.country)} {countryName}
       </p>
@@ -832,7 +832,7 @@ function PopupContent({
       </p>
       <a
         href={`/weather/${citySlug(city.name)}`}
-        className="mt-3 inline-block text-xs font-semibold text-[#0F766E] hover:underline"
+        className="mt-3 inline-block text-xs font-semibold text-primary hover:underline"
       >
         View forecast →
       </a>
@@ -1020,7 +1020,7 @@ export default function WeatherPage() {
               onClick={() => setMapLayer(layer)}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-colors ${
                 mapLayer === layer
-                  ? "bg-[#0F766E] text-white"
+                  ? "bg-primary text-white"
                   : "text-[#64748B] hover:bg-[#F8F9FA]"
               }`}
             >
@@ -1034,7 +1034,7 @@ export default function WeatherPage() {
       <div className="pointer-events-none absolute left-1/2 top-3 z-[1000] w-[320px] max-w-[calc(100vw-24px)] -translate-x-1/2">
         <FloatingCard className="pointer-events-auto relative p-2">
           <div className="flex items-center gap-2">
-            <Search size={16} className="shrink-0 text-[#94A3B8]" />
+            <Search size={16} className="shrink-0 text-muted" />
             <input
               type="text"
               value={searchQuery}
@@ -1044,7 +1044,7 @@ export default function WeatherPage() {
               }}
               onFocus={() => setSearchOpen(true)}
               placeholder="Search any city for weather..."
-              className="min-w-0 flex-1 bg-transparent text-sm text-[#0F172A] outline-none placeholder:text-[#94A3B8]"
+              className="min-w-0 flex-1 bg-transparent text-sm text-navy outline-none placeholder:text-muted"
             />
             {searchQuery ? (
               <button
@@ -1053,7 +1053,7 @@ export default function WeatherPage() {
                   setSearchQuery("");
                   setSearchResults([]);
                 }}
-                className="text-[#94A3B8] hover:text-[#64748B]"
+                className="text-muted hover:text-[#64748B]"
                 aria-label="Clear"
               >
                 <X size={14} />
@@ -1066,14 +1066,14 @@ export default function WeatherPage() {
                 <li key={r.id}>
                   <button
                     type="button"
-                    className="w-full px-3 py-2 text-left text-sm text-[#0F172A] hover:bg-[#F8F9FA]"
+                    className="w-full px-3 py-2 text-left text-sm text-navy hover:bg-[#F8F9FA]"
                     onClick={() => void selectSearchResult(r)}
                   >
                     <span className="font-medium">{r.name}</span>
                     {r.admin1 ? (
                       <span className="text-[#64748B]">, {r.admin1}</span>
                     ) : null}
-                    <span className="text-[#94A3B8]"> · {r.country}</span>
+                    <span className="text-muted"> · {r.country}</span>
                   </button>
                 </li>
               ))}
@@ -1092,7 +1092,7 @@ export default function WeatherPage() {
               onClick={() => setUnit(u)}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
                 unit === u
-                  ? "bg-[#0F766E] text-white"
+                  ? "bg-primary text-white"
                   : "text-[#64748B] hover:bg-[#F8F9FA]"
               }`}
             >
@@ -1124,7 +1124,7 @@ export default function WeatherPage() {
               }
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                 overlay === mode
-                  ? "bg-[#0F766E] text-white"
+                  ? "bg-primary text-white"
                   : "text-[#64748B] hover:bg-[#F8F9FA]"
               }`}
             >
@@ -1139,11 +1139,11 @@ export default function WeatherPage() {
         {legendOpen ? (
           <FloatingCard className="p-3">
             <div className="mb-2 flex items-center justify-between gap-3">
-              <p className="text-xs font-semibold text-[#0F172A]">Temperature</p>
+              <p className="text-xs font-semibold text-navy">Temperature</p>
               <button
                 type="button"
                 onClick={() => setLegendOpen(false)}
-                className="text-[#94A3B8] hover:text-[#64748B]"
+                className="text-muted hover:text-[#64748B]"
                 aria-label="Hide legend"
               >
                 <ChevronDown size={14} />
@@ -1181,7 +1181,7 @@ export default function WeatherPage() {
           margin: 12px 14px;
         }
         .leaflet-container {
-          font-family: Inter, system-ui, sans-serif;
+          font-family: var(--font-schibsted), system-ui, sans-serif;
           background: #ffffff;
         }
         .weather-map-page .leaflet-control-attribution {

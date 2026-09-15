@@ -90,7 +90,7 @@ export function DropThoughtControl({
           onChange={(e) => setDraft(e.target.value)}
           placeholder="I love my dad, planning Goa…"
           maxLength={139}
-          className="w-full rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-xs outline-none focus:border-[#0F766E]"
+          className="w-full rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-xs outline-none focus:border-primary"
           autoFocus
         />
         <div className="flex justify-end gap-2">
@@ -114,7 +114,7 @@ export function DropThoughtControl({
             type="button"
             onClick={save}
             disabled={!draft.trim()}
-            className="rounded-lg bg-[#0F766E] px-3 py-1 text-[10px] font-bold text-white disabled:opacity-40"
+            className="rounded-lg bg-primary px-3 py-1 text-[10px] font-bold text-white disabled:opacity-40"
           >
             Save
           </button>

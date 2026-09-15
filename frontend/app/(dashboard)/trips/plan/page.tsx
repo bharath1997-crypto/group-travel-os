@@ -56,8 +56,8 @@ const FitBounds = dynamic(
   { ssr: false },
 );
 
-const NAVY = "#0F3460";
-const CORAL = "#E94560";
+const NAVY = "#0F1614";
+const CORAL = "#0E6E5C";
 const BORDER = "#E9ECEF";
 const BG = "#F8F9FA";
 
@@ -171,11 +171,11 @@ function ArrivalDatePicker({
         type="button"
         onClick={openPicker}
         aria-label="Select arrival date from calendar"
-        className="flex w-full items-center gap-2 rounded-lg border bg-white px-3 py-2 text-left text-sm transition hover:border-[#0F766E]/40 hover:bg-[#F8FAFC]"
+        className="flex w-full items-center gap-2 rounded-lg border bg-white px-3 py-2 text-left text-sm transition hover:border-primary/40 hover:bg-app"
         style={{ borderColor: BORDER, color: "#2C3E50" }}
       >
-        <Calendar size={16} className="shrink-0 text-[#0F766E]" strokeWidth={2} />
-        <span className={value ? "text-[#2C3E50]" : "text-[#94A3B8]"}>
+        <Calendar size={16} className="shrink-0 text-primary" strokeWidth={2} />
+        <span className={value ? "text-[#2C3E50]" : "text-muted"}>
           {value ? formatArrivalDate(value) : "Select from calendar"}
         </span>
       </button>
@@ -755,7 +755,7 @@ export default function PlanTripPage() {
         style={{ background: BG }}
       >
         <div
-          className="h-10 w-10 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-[#E94560]"
+          className="h-10 w-10 animate-spin rounded-full border-2 border-[#E9ECEF] border-t-primary"
           aria-hidden
         />
         <p className="text-sm text-[#6C757D]">Loading…</p>
@@ -803,7 +803,7 @@ export default function PlanTripPage() {
                   onClick={() => setTripType(c.k)}
                   className={`rounded-2xl border-2 p-5 text-left transition ${
                     tripType === c.k
-                      ? "border-[#E94560] bg-white shadow-sm"
+                      ? "border-primary bg-white shadow-sm"
                       : "border-[#E9ECEF] bg-white"
                   }`}
                   style={{ borderColor: tripType === c.k ? CORAL : BORDER }}
@@ -823,7 +823,7 @@ export default function PlanTripPage() {
                 value={tripName}
                 onChange={(e) => setTripName(e.target.value)}
                 placeholder="e.g. Coast weekend"
-                className="mt-2 w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#E94560]/30"
+                className="mt-2 w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
                 style={{ borderColor: BORDER, color: "#2C3E50" }}
               />
             </div>
@@ -844,7 +844,7 @@ export default function PlanTripPage() {
                     padding: "10px 32px",
                     borderRadius: 8,
                     border: `0.5px solid ${BORDER}`,
-                    backgroundColor: isGroupTrip === false ? "#0F766E" : "#F8FAFC",
+                    backgroundColor: isGroupTrip === false ? "#0E6E5C" : "#F8FAFC",
                     color: isGroupTrip === false ? "#FFFFFF" : "#64748B",
                   }}
                 >
@@ -862,7 +862,7 @@ export default function PlanTripPage() {
                     padding: "10px 32px",
                     borderRadius: 8,
                     border: `0.5px solid ${BORDER}`,
-                    backgroundColor: isGroupTrip === true ? "#0F766E" : "#F8FAFC",
+                    backgroundColor: isGroupTrip === true ? "#0E6E5C" : "#F8FAFC",
                     color: isGroupTrip === true ? "#FFFFFF" : "#64748B",
                   }}
                 >
@@ -923,7 +923,7 @@ export default function PlanTripPage() {
                         }
                       }}
                       placeholder="Search any address, landmark, factory, area..."
-                      className="min-w-0 flex-1 rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#0F766E]/25"
+                      className="min-w-0 flex-1 rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#0E6E5C]/25"
                       style={{ borderColor: BORDER, color: "#2C3E50" }}
                       autoComplete="off"
                     />
@@ -932,13 +932,13 @@ export default function PlanTripPage() {
                       onClick={() => void handleAddFirst()}
                       disabled={searchLoading || searchText.trim().length < 3}
                       className="shrink-0 rounded-xl px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-                      style={{ background: "#0F766E" }}
+                      style={{ background: "#0E6E5C" }}
                     >
                       Add
                     </button>
                   </div>
                   {searchLoading ? (
-                    <p className="mt-2 text-xs text-[#94A3B8]">Searching…</p>
+                    <p className="mt-2 text-xs text-muted">Searching…</p>
                   ) : null}
                   {searchHits.length > 0 ? (
                     <ul
@@ -953,7 +953,7 @@ export default function PlanTripPage() {
                         <li key={`${h.place_id}-${h.full_address}`}>
                           <button
                             type="button"
-                            className="flex h-12 w-full cursor-pointer items-center gap-2.5 px-3 text-left transition hover:bg-[#F8FAFC]"
+                            className="flex h-12 w-full cursor-pointer items-center gap-2.5 px-3 text-left transition hover:bg-app"
                             onMouseDown={(e) => {
                               e.preventDefault();
                               addStopImmediate(h);
@@ -961,11 +961,11 @@ export default function PlanTripPage() {
                           >
                             <MapPin
                               size={14}
-                              className="shrink-0 text-[#0F766E]"
+                              className="shrink-0 text-primary"
                               strokeWidth={2}
                             />
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate text-xs font-bold text-[#0F172A]">
+                              <span className="block truncate text-xs font-bold text-navy">
                                 {h.place_name}
                               </span>
                               <span className="block truncate text-[11px] text-[#64748B]">
@@ -977,7 +977,7 @@ export default function PlanTripPage() {
                       ))}
                     </ul>
                   ) : searchText.trim().length >= 3 && !searchLoading ? (
-                    <p className="mt-2 text-xs text-[#94A3B8]">
+                    <p className="mt-2 text-xs text-muted">
                       No results — try a different search or paste the full address and click Add.
                     </p>
                   ) : null}
@@ -1005,12 +1005,12 @@ export default function PlanTripPage() {
                     <div className="flex items-start gap-3">
                       <span
                         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                        style={{ background: "#0F766E" }}
+                        style={{ background: "#0E6E5C" }}
                       >
                         {idx + 1}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-bold text-[#0F172A]">
+                        <p className="text-[13px] font-bold text-navy">
                           {loc.place_name}
                         </p>
                         <p className="mt-0.5 text-[11px] text-[#64748B]">
@@ -1078,8 +1078,8 @@ export default function PlanTripPage() {
                     block: "center",
                   });
                 }}
-                className="w-full rounded-xl border border-dashed py-3 text-sm font-semibold text-[#0F766E] transition hover:bg-[#F0FDF9]"
-                style={{ borderColor: "#0F766E" }}
+                className="w-full rounded-xl border border-dashed py-3 text-sm font-semibold text-primary transition hover:bg-[#F0FDF9]"
+                style={{ borderColor: "#0E6E5C" }}
               >
                 + Add another stop
               </button>
@@ -1253,7 +1253,7 @@ export default function PlanTripPage() {
                   <p className="text-sm font-semibold text-[#2C3E50]">
                     {l.arrival_date || "—"} — {l.place_name}
                   </p>
-                  <p className="text-xs text-[#94A3B8]">{l.full_address}</p>
+                  <p className="text-xs text-muted">{l.full_address}</p>
                 </div>
               ))}
             </div>

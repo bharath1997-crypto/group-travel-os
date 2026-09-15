@@ -340,7 +340,7 @@ export function StatsInfoModal({ payload, onClose, onOpenBrowser }: StatsInfoMod
         </div>
 
         {/* Scrollable content */}
-        <div className="overflow-y-auto flex-1 p-5 [scrollbar-width:thin] [scrollbar-color:#1e4976_transparent]">
+        <div className="overflow-y-auto flex-1 p-5 [scrollbar-width:thin] [scrollbar-color:#1E293B_transparent]">
           {isSafety ? (
             <SafetyPanel
               city={(payload as Extract<StatsModalPayload, { type: "safety" }>).city}

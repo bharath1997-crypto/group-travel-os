@@ -11,6 +11,7 @@ from app.services.wayra_intent import (
     WayraMode,
     classify_mode,
     contextual_app_fallback,
+    is_activities_question,
     resolve_app_intent,
     resolve_app_guide_message,
     travel_fallback_message,
@@ -32,6 +33,13 @@ class TestClassifyMode:
 
     def test_japan_places_is_travel(self) -> None:
         assert classify_mode("Best places to visit in Japan") == WayraMode.TRAVEL
+
+    def test_what_we_should_do_is_travel(self) -> None:
+        assert is_activities_question("what we do, what we should do?") is True
+        assert classify_mode("what we do, what we should do?") == WayraMode.TRAVEL
+
+    def test_what_can_i_do_is_travel(self) -> None:
+        assert classify_mode("What can I do around here?") == WayraMode.TRAVEL
 
 
 class TestResolveAppIntent:

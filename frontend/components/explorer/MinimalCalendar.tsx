@@ -136,8 +136,8 @@ export function MinimalCalendar({
   const quickLinkClass = (active: boolean) =>
     `rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
       active
-        ? "bg-teal-600 text-white shadow-sm"
-        : "bg-slate-100 text-slate-600 hover:bg-teal-50 hover:text-teal-700"
+        ? "bg-primary text-white shadow-sm"
+        : "bg-slate-100 text-slate-600 hover:bg-primary-soft hover:text-primary"
     }`;
 
   return (
@@ -151,20 +151,20 @@ export function MinimalCalendar({
             : "w-full px-4 py-2.5 text-sm sm:w-auto"
         } ${
           selectedDate || quickPreset
-            ? "border-teal-500 bg-teal-50/50 font-semibold text-teal-900"
+            ? "border-teal-500 bg-primary-soft/50 font-semibold text-primary-dark"
             : "border-slate-200 bg-white text-slate-700"
         }`}
       >
         <div className="flex items-center gap-1.5">
           <CalendarIcon
             size={compact ? 13 : 15}
-            className={selectedDate || quickPreset ? "text-teal-600" : "text-slate-400"}
+            className={selectedDate || quickPreset ? "text-primary" : "text-slate-400"}
           />
           <span>{getButtonLabel()}</span>
         </div>
         {selectedDate || quickPreset ? (
-          <div onClick={handleClear} className="rounded-full p-0.5 hover:bg-teal-100">
-            <X size={12} className="text-teal-600" />
+          <div onClick={handleClear} className="rounded-full p-0.5 hover:bg-primary-soft">
+            <X size={12} className="text-primary" />
           </div>
         ) : (
           <ChevronRight size={14} className="rotate-90 text-slate-400" />
@@ -209,7 +209,7 @@ export function MinimalCalendar({
                   new Date(currentViewDate.getFullYear(), Number(e.target.value), 1),
                 )
               }
-              className="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-teal-500"
+              className="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-primary"
             >
               {MONTH_NAMES.map((name, idx) => (
                 <option key={name} value={idx}>
@@ -225,7 +225,7 @@ export function MinimalCalendar({
                   new Date(Number(e.target.value), currentViewDate.getMonth(), 1),
                 )
               }
-              className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-teal-500"
+              className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-primary"
             >
               {years.map((y) => (
                 <option key={y} value={y}>
@@ -276,12 +276,12 @@ export function MinimalCalendar({
                     !cell.isCurrentMonth
                       ? "text-slate-300"
                       : isSelected
-                        ? "bg-teal-600 font-bold text-white shadow-sm"
+                        ? "bg-primary font-bold text-white shadow-sm"
                         : inWeekend || inWeek
                           ? "bg-teal-100 font-semibold text-teal-800"
                           : isToday
-                            ? "border border-teal-500 font-semibold text-teal-600"
-                            : "text-slate-600 hover:bg-slate-50 hover:text-teal-600"
+                            ? "border border-teal-500 font-semibold text-primary"
+                            : "text-slate-600 hover:bg-slate-50 hover:text-primary"
                   }`}
                 >
                   {cell.date.getDate()}
@@ -294,7 +294,7 @@ export function MinimalCalendar({
             <button
               type="button"
               onClick={applyToday}
-              className="text-[10px] font-bold text-teal-600 hover:text-teal-700"
+              className="text-[10px] font-bold text-primary hover:text-primary"
             >
               Jump to Today
             </button>

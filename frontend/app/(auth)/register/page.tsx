@@ -31,15 +31,16 @@ import {
   type OauthLoginAlert,
 } from "@/lib/oauthLoginErrors";
 import BrandedLoading from "@/components/BrandedLoading";
+import { authHref, authReturnPathFromParams, rememberAuthReturnPath } from "@/lib/auth-return";
 
 /** Fixed sizing for auth pages only — does not scale with viewport */
 const FIELD_SHELL =
-  "flex h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 shadow-sm transition focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]/15";
+  "flex h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 shadow-sm transition focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/15";
 const FIELD_INPUT =
   "min-w-0 flex-1 bg-transparent text-[13px] font-normal leading-none text-stone-800 outline-none placeholder:text-[12px] placeholder:text-stone-400 [color-scheme:light]";
 const FIELD_LABEL = "mb-1 block text-[12px] font-medium leading-none text-stone-600";
 const PRIMARY_BTN =
-  "flex h-10 w-full shrink-0 items-center justify-center rounded-lg bg-[#0F766E] text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[#0D635C] disabled:cursor-not-allowed disabled:opacity-60";
+  "flex h-10 w-full shrink-0 items-center justify-center rounded-lg bg-primary text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60";
 
 type RegisterResponse = {
   user: {
@@ -85,7 +86,7 @@ function useAuthPageLockScroll() {
 
 function UserIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#0F766E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden className="shrink-0">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#0E6E5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden className="shrink-0">
       <circle cx="12" cy="8" r="4" />
       <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
     </svg>
@@ -94,7 +95,7 @@ function UserIcon() {
 
 function MailIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#0F766E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden className="shrink-0">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#0E6E5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden className="shrink-0">
       <rect x="2" y="4" width="20" height="16" rx="3" />
       <path d="M2 8l10 6 10-6" />
     </svg>
@@ -103,7 +104,7 @@ function MailIcon() {
 
 function LockIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#0F766E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden className="shrink-0">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#0E6E5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden className="shrink-0">
       <rect x="5" y="11" width="14" height="10" rx="2" />
       <path d="M8 11V7a4 4 0 018 0v4" />
     </svg>
@@ -112,7 +113,7 @@ function LockIcon() {
 
 function CalendarIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#0F766E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden className="shrink-0">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#0E6E5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden className="shrink-0">
       <rect x="3" y="5" width="18" height="16" rx="3" />
       <path d="M8 3v4M16 3v4M3 11h18" />
     </svg>
@@ -153,6 +154,7 @@ function RegisterPageInner() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const nextPath = authReturnPathFromParams(searchParams);
   const fromOauth = searchParams.get("from") === "oauth";
   const maxDob = useMemo(() => maxDobFor18Plus(), []);
 
@@ -189,16 +191,16 @@ function RegisterPageInner() {
         const result = await checkSession();
         if (cancelled) return;
         if (result.status === "valid") {
-          router.replace("/explore");
+          router.replace(nextPath);
           return;
         }
         if (result.status === "invalid") {
           clearToken();
         } else {
-          router.replace("/explore");
+          router.replace(nextPath);
         }
       } catch {
-        if (!cancelled) router.replace("/explore");
+        if (!cancelled) router.replace(nextPath);
       } finally {
         if (!cancelled) setCheckingSession(false);
       }
@@ -207,7 +209,7 @@ function RegisterPageInner() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, nextPath]);
 
   useEffect(() => {
     const oauthErr = searchParams.get("oauth_error");
@@ -217,10 +219,11 @@ function RegisterPageInner() {
     const from = searchParams.get("from");
     const qs = new URLSearchParams();
     if (from === "oauth") qs.set("from", "oauth");
+    qs.set("next", nextPath);
     router.replace(qs.toString() ? `/register?${qs.toString()}` : "/register", {
       scroll: false,
     });
-  }, [searchParams, router]);
+  }, [searchParams, router, nextPath]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -298,7 +301,8 @@ function RegisterPageInner() {
         localStorage.setItem("gt_user_name", trimmedUsername);
         syncLocalProfileCache(data.user);
       }
-      router.push("/verify");
+      rememberAuthReturnPath(nextPath);
+      router.push(authHref("/verify", nextPath));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -311,6 +315,7 @@ function RegisterPageInner() {
     setOauthAlert(null);
     setError(null);
     try {
+      rememberAuthReturnPath(nextPath);
       await startGoogleOAuth("signup");
     } catch (err) {
       setOauthBusy(false);
@@ -327,6 +332,7 @@ function RegisterPageInner() {
     setOauthAlert(null);
     setError(null);
     try {
+      rememberAuthReturnPath(nextPath);
       await startFacebookOAuth("signup");
     } catch (err) {
       setOauthBusy(false);
@@ -352,7 +358,7 @@ function RegisterPageInner() {
       footer={
         <>
           Already have an account?{" "}
-          <Link href="/login" className={authLinkClass}>
+          <Link href={authHref("/login", nextPath)} className={authLinkClass}>
             Sign in
           </Link>
         </>
@@ -483,7 +489,7 @@ function RegisterPageInner() {
                 setAgreed(e.target.checked);
                 if (e.target.checked) setAgreeError(null);
               }}
-              className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-stone-300 text-[#0F766E]"
+              className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-stone-300 text-primary"
             />
             <span className="text-[11px] leading-snug text-stone-600">
               I agree to the{" "}

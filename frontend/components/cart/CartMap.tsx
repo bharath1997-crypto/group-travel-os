@@ -18,7 +18,7 @@ type CartItem = {
 // Custom marker icon based on type
 const pinIcon = (type: string) => {
   const colors: Record<string, string> = {
-    activity: "#0F766E", // Teal
+    activity: "#0E6E5C", // Teal
     event: "#3B82F6",    // Blue
     restaurant: "#EF4444", // Red
     hotel: "#8B5CF6",    // Purple
@@ -76,7 +76,7 @@ export default function CartMap({ items }: { items: CartItem[] }) {
           >
             <Popup>
               <div className="p-1 max-w-xs text-xs font-sans">
-                <span className="inline-block rounded px-1.5 py-0.5 mb-1 text-[9px] font-bold uppercase tracking-wider bg-teal-50 text-teal-700">
+                <span className="inline-block rounded px-1.5 py-0.5 mb-1 text-[9px] font-bold uppercase tracking-wider bg-primary-soft text-primary">
                   {item.item_type}
                 </span>
                 <h3 className="font-bold text-slate-900 leading-tight">{item.item_name}</h3>

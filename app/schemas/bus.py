@@ -3,6 +3,17 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class BusProviderOffer(BaseModel):
+    """Single booking operator offer for ground transport."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    provider_name: str
+    price: float
+    currency: str = "USD"
+    booking_url: str
+
+
 class BusResult(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -19,6 +30,8 @@ class BusResult(BaseModel):
     booking_url: str = Field(description="Travelpayouts link")
     provider: str = "Busbud"
     amenities: list[str] = Field(default_factory=list)
+    provider_offers: list[BusProviderOffer] = Field(default_factory=list)
+
 
 
 class BusSearchResponse(BaseModel):

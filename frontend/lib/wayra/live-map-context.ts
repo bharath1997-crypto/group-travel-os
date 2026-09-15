@@ -16,6 +16,7 @@ import {
 } from "@/lib/wayra/intent";
 
 export const WAYRA_PLACE_PICKED_EVENT = "rovvy:wayra-place-picked";
+export const WAYRA_MAP_FOCUS_EVENT = "rovvy:wayra-map-focus";
 
 export type WayraPlacePickedDetail = {
   lat: number;
@@ -25,9 +26,23 @@ export type WayraPlacePickedDetail = {
   autoOpen?: boolean;
 };
 
+export type WayraMapFocusDetail = {
+  lat: number;
+  lng: number;
+  name?: string | null;
+  zoom?: number;
+  /** When true, open the place preview panel on Live. */
+  showPreview?: boolean;
+};
+
 export function emitWayraPlacePicked(detail: WayraPlacePickedDetail): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(WAYRA_PLACE_PICKED_EVENT, { detail }));
+}
+
+export function emitWayraMapFocus(detail: WayraMapFocusDetail): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(WAYRA_MAP_FOCUS_EVENT, { detail }));
 }
 
 /** Short local brief after map tap — no LLM call (zero API cost). */
@@ -60,6 +75,21 @@ export function buildLiveImplicitContextBlock(
     `- Name: ${displayName}`,
     `- Coordinates: ${place.lat.toFixed(5)}, ${place.lng.toFixed(5)}`,
   ];
+
+  const userLoc = context.userLocation;
+  if (userLoc && typeof userLoc === "object") {
+    const u = userLoc as Record<string, unknown>;
+    const homeParts = [u.city, u.state, u.country]
+      .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+      .map((v) => v.trim());
+    if (homeParts.length > 0) {
+      lines.splice(
+        1,
+        0,
+        `USER PHYSICAL LOCATION (GPS/home): ${homeParts.join(", ")} — where they are NOW, not the pin.`,
+      );
+    }
+  }
 
   if (regionLabel && regionLabel !== displayName) {
     lines.push(`- Region: ${regionLabel}`);
@@ -110,7 +140,8 @@ export function buildLiveImplicitContextBlock(
 
   lines.push(
     "Use coordinates and region fields to identify the real-world location even when the pin label is generic.",
-    "Answer culture, language, local activities, and travel prep for this spot directly.",
+    "When USER PHYSICAL LOCATION is present, plan reach/flights/timing/budget FROM home TO the pin.",
+    "Answer on-site weather and activities about the destination pin.",
     "Treat the user's message as about this pin unless they clearly ask how Rovvy works.",
   );
   return lines.join("\n");
@@ -158,12 +189,24 @@ export async function prepareLiveWayraContext(
   page: string,
   context: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
-  if (!isLivePage(page, context) && !isLivePage("", context)) {
-    return context;
+  let next = { ...context };
+
+  if (isLivePage(page, context) || isLivePage("", context)) {
+    next = await enrichSelectedPlaceInContext(next);
+    next = withLiveImplicitContext(page, next);
   }
 
-  const enriched = await enrichSelectedPlaceInContext(context);
-  return withLiveImplicitContext(page, enriched);
+  if (context.chatAttachedLocation) {
+    next.chatAttachedLocation = context.chatAttachedLocation;
+  }
+  if (context.messengerProfile) {
+    next.messengerProfile = context.messengerProfile;
+  }
+  if (context.userLocation) {
+    next.userLocation = context.userLocation;
+  }
+
+  return next;
 }
 
 /** Merge implicit pin context into the payload sent to /ai/assistant. */

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from app.services.wayra_discovery import classify_discovery_expects
+from app.services.wayra_discovery import classify_discovery_expects, has_live_deictic_reference
 from app.services.wayra_intent import (
     WayraMode,
     classify_mode,
@@ -43,6 +43,32 @@ class TestDiscoveryRoutingSamples:
         assert classify_discovery_expects(q) == "app_guide"
         assert classify_mode(q) == WayraMode.APP_GUIDE
         assert resolve_app_intent(q) is not None
+
+    def test_place_name_follow_up_chips_route_llm(self) -> None:
+        place = "Evenkiysky Rayon"
+        for q in (
+            f"What should I pack for {place}?",
+            f"What can I do {place}?",
+            f"Best time of year to visit {place}?",
+            f"Any must-try food {place}?",
+        ):
+            assert classify_discovery_expects(q) == "llm"
+
+    def test_pin_pronoun_land_question_routes_llm(self) -> None:
+        q = "Is it a soil fertile land or what is this?"
+        assert has_live_deictic_reference(q) is True
+        assert classify_discovery_expects(q) == "llm"
+
+    def test_place_name_ui_chips_route_to_llm(self) -> None:
+        assert classify_discovery_expects("What's at Kitikmeot Region?") == "llm"
+        assert classify_discovery_expects("What's at Paris?") == "llm"
+        assert classify_discovery_expects("How far is this from me?") == "llm"
+        assert classify_discovery_expects("Is this family friendly?") == "llm"
+        assert classify_discovery_expects("Is Chicago family friendly?") == "llm"
+        assert classify_mode("What's at Kitikmeot Region?") == WayraMode.TRAVEL
+        assert classify_mode("How far is this from me?") == WayraMode.TRAVEL
+        assert classify_mode("Is this family friendly?") == WayraMode.TRAVEL
+        assert is_live_place_deep_question("What's at Kitikmeot Region?") is True
 
 
 def test_jsonl_expects_all_rows() -> None:

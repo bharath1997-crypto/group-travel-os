@@ -13,9 +13,16 @@ describe("live-map-globe", () => {
     expect(isLiveGlobeViewZoom(5)).toBe(false);
   });
 
-  it("keeps globe zoom when locating from world view", () => {
+  it("keeps globe zoom for passive updates at world view", () => {
     expect(resolveLiveLocateZoom(0, 20)).toBe(2.2);
     expect(resolveLiveLocateZoom(LIVE_GLOBE_VIEW_MAX_ZOOM, 500)).toBe(2.2);
+  });
+
+  it("zooms to street level when user explicitly locates from globe view", () => {
+    expect(resolveLiveLocateZoom(0, 20, { zoomToStreet: true })).toBe(14);
+    expect(resolveLiveLocateZoom(LIVE_GLOBE_VIEW_MAX_ZOOM, 500, { zoomToStreet: true })).toBe(
+      12,
+    );
   });
 
   it("uses street zoom when already zoomed in locally", () => {

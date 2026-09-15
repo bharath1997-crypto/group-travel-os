@@ -70,7 +70,7 @@ export function ExploreV2Card({ place, showDistance }: ExploreV2CardProps) {
             position: "absolute",
             top: "10px",
             left: "10px",
-            background: "rgba(15,118,110,0.9)",
+            background: "rgba(14,110,92,0.9)",
             color: "#fff",
             padding: "3px 8px",
             borderRadius: "6px",
@@ -105,7 +105,7 @@ export function ExploreV2Card({ place, showDistance }: ExploreV2CardProps) {
         <h3 style={{
           fontSize: "14px",
           fontWeight: 600,
-          color: "#0F172A",
+          color: "#0F1614",
           marginBottom: "4px",
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -147,7 +147,7 @@ export function ExploreV2Card({ place, showDistance }: ExploreV2CardProps) {
           justifyContent: "space-between",
         }}>
           {distanceMiles ? (
-            <span style={{ fontSize: "12px", color: "#0F766E", fontWeight: 500 }}>
+            <span style={{ fontSize: "12px", color: "#0E6E5C", fontWeight: 500 }}>
               📍 {distanceMiles} mi away
             </span>
           ) : (
@@ -156,7 +156,7 @@ export function ExploreV2Card({ place, showDistance }: ExploreV2CardProps) {
             </span>
           )}
           <button style={{
-            background: "#0F766E",
+            background: "#0E6E5C",
             color: "#fff",
             border: "none",
             borderRadius: "8px",

@@ -1,13 +1,14 @@
 """
 Rovvy AI assistant service.
 
-Primary engine  : Google Gemini (gemini-2.0-flash via google-generativeai SDK)
-Fallback engine : OpenAI GPT-4o-mini
-Branding rule   : NEVER reveal the underlying model or provider to the user.
-                  All responses must appear as Rovvy's own native AI.
+Wayra cascade (latency + cost):
+  1. Internal — local rules, time/weather/distance (~0 ms)
+  2. Hybrid   — OSM/Wikipedia + DeepSeek summary (~200 ms–1 s)
+  3. DeepSeek — first full LLM when hybrid misses (~0.5–12 s)
+  4. Gemini   — fallback when DeepSeek fails (~1–40 s on complex questions)
+  5. OpenAI   — last resort
 
-The system prompt explicitly forbids the model from mentioning Google, Gemini,
-OpenAI, GPT, or any third-party AI name — the user experience is "Rovvy AI".
+Branding: NEVER reveal underlying model names to the user.
 """
 from __future__ import annotations
 
@@ -17,14 +18,22 @@ import os
 import re
 from typing import Any
 
+from sqlalchemy.orm import Session
+
 from config import settings
+from app.services.gemini_usage import (
+    parse_sdk_usage_metadata,
+    record_gemini_usage,
+)
 from app.schemas.ai_assistant import (
     AIAssistantRequest,
     AIAssistantResponse,
     AISuggestedAction,
 )
+from app.services.wayra_answer_service import WayraAnswerService
 from app.services.wayra_intent import (
     WayraMode,
+    _extract_live_selected_place,
     _is_live_page,
     classify_mode,
     contextual_app_fallback,
@@ -35,6 +44,14 @@ from app.services.wayra_intent import (
     resolve_live_travel_prep_message,
     travel_fallback_message,
 )
+from app.services.wayra_discovery import (
+    is_discovery_app_guide_question,
+    is_place_name_llm_question,
+)
+from app.services.wayra_local_replies import try_local_reply
+from app.services.wayra_llm_providers import generate_wayra_full_response
+from app.services.wayra_output_budget import is_plan_question, resolve_output_budget
+from app.services.wayra_knowledge_service import WayraKnowledgeService
 
 logger = logging.getLogger(__name__)
 
@@ -142,39 +159,21 @@ async def _enrich_live_context(ctx: dict[str, Any] | None) -> dict[str, Any] | N
     updated = {**ctx, "selectedPlace": enriched}
     if region.get("region_label"):
         updated["resolvedMapRegion"] = region["region_label"]
+
+    from app.services.wayra_place_context import build_live_context_block
+
+    live_block = build_live_context_block(updated)
+    if live_block:
+        updated["liveContextBlock"] = live_block
+        updated["implicitLocation"] = True
     return updated
 
 
 # ── Prompt construction ────────────────────────────────────────────────────────
 
-def _build_system_prompt(page: str, active_tab: str | None) -> str:
-    tab = active_tab or "(not specified)"
-    live_rules = ""
-    p = (page or "").lstrip("/").replace("_", "/")
-    if p == "live" or p.startswith("live/"):
-        live_rules = """
-LIVE MAP CONTEXT (critical on /live):
-- The JSON payload may include context.selectedPlace (name, lat, lng, category, address, city, state, country), liveStage, aiSuggestions, routePreview, and resolvedMapRegion.
-- When the user asks about their picked pin, dropped pin, or selected location, answer from context.selectedPlace FIRST.
-- When live_context_block is present, treat it as the active map pin — all answers refer to it unless the user clearly asks about the app UI.
-- When selectedPlace.name is generic ("Dropped pin", "Map pin") or missing, use coordinates plus city/state/country/address/resolvedMapRegion to identify the real-world region.
-- For culture, language, local activities, and "what is this location" questions: answer directly about the inferred region. Use geographic knowledge from lat/lng when needed. Do NOT tell users to pick a landmark or send them to Explore/Plan unless they explicitly ask about those pages.
-- When the user asks how to prepare for a trip, what to know, or references tips/warnings, use aiSuggestions and routePreview from context — do NOT give generic "how to open Live" instructions.
-- State the place name and coordinates clearly. Do NOT explain how to create groups or trips unless they ask.
-- If selectedPlace is missing, tell them to pick a spot on the map first.
-"""
-
-    return f"""You are Wayra, the built-in AI assistant for Rovvy — a group travel planning app.
-You are a native feature of Rovvy, not a third-party service.
-
-IDENTITY RULES (never break):
-- NEVER mention Google, Gemini, OpenAI, GPT, Claude, or any AI provider.
-- If asked what AI you are: "I'm Wayra, Rovvy's built-in travel assistant."
-- Always present yourself as a core part of Rovvy.
-
-The user is currently on page: {page!r} (active tab: {tab!r}).
-
-ROVVY FEATURE KNOWLEDGE — answer ALL these accurately:
+def _app_knowledge_block() -> str:
+    return """
+ROVVY FEATURE KNOWLEDGE — use ONLY when the user asks how the app works:
 
 GROUPS:
 - Create group: Group in left sidebar → Travel Hub → create workspace → name it → share invite link
@@ -236,17 +235,118 @@ PLANS & PRICING:
 
 VERIFICATION:
 - Verify email: Check inbox for OTP code → go to /verify → enter 6-digit code
+"""
 
-RESPONSE RULES:
-- Be friendly, warm, concise — max 2-3 sentences for app questions
-- For travel questions: give specific, helpful suggestions with action steps
-- Always suggest a clear next step the user can take in Rovvy
-- Never say "I don't know" — always give the best available answer
-- You are read-only: do NOT claim to have saved, deleted, or changed anything
 
+def _travel_live_discovery_block() -> str:
+    return """
+TRAVEL DISCOVERY ON LIVE MAP (default for pin questions — priority over app navigation):
+- The user picked a place on the map. Answer about THAT place/region first — not about how Rovvy works.
+- Use context.selectedPlace, live_context_block, resolved_map_region, live_ai_suggestions, and routePreview.
+- When selectedPlace.name is generic ("Dropped pin", "Map pin"), infer the real region from coordinates, city, state, country, and address.
+- Structure satisfying answers:
+  1) One-line snapshot — what/where this place is.
+  2) Two to four concrete highlights — nature, culture, activities, food, or logistics as relevant to the question.
+  3) One practical tip — season, access, safety, border/distance prep, or what to pack when relevant.
+- Write 4 to 8 sentences for discovery questions. Be warm, specific, and useful — not a one-line stub.
+- Do NOT tell users to "open Plan", "use the Plan tab", or "start Solo Live" unless they ask about booking, driving/navigation, or trip logistics.
+- Do NOT explain groups, polls, splits, or Live mechanics unless they explicitly ask how the app works.
+- Do NOT say "pick a landmark" or "search Explore first" — they already picked a pin.
+- Never invent exact business names, prices, phone numbers, or opening hours. Speak in categories ("local markets", "tundra wildlife", "Inuit cultural heritage").
+- For trip-prep / warnings questions: lead with aiSuggestions and routePreview facts (distance, border, far-from-home), then practical prep steps.
+- When chat_attached_location is present, treat it as the user's explicit "I'm here" anchor for nearby POI questions (pharmacies, food, etc.). List categories only — do not invent open hours or business names.
+- When messenger_profile.full_name is present, you may address the user warmly by name.
+- suggested_actions: include 0 to 2 helpful chips when natural:
+  - "Explore Activities" → /explore/activities (things to do)
+  - "Plan a Trip" → /trips/plan (multi-day planning)
+  - "Start Solo Live" → only when navigation or driving is clearly relevant
+"""
+
+
+def _voice_rules_block() -> str:
+    return """
+VOICE MODE (reply will be read aloud):
+- 1 to 3 short sentences, conversational tone for text-to-speech.
+- Lead with the direct answer; no long lists (max 3 items if needed).
+- Plain text only — no markdown, bullet symbols, or URLs.
+- Skip disclaimers and sign-offs unless safety-critical.
+"""
+
+
+def _response_rules_block(mode: WayraMode, *, on_live: bool, voice_mode: bool = False) -> str:
+    if voice_mode:
+        return _voice_rules_block()
+    if mode == WayraMode.TRAVEL and on_live:
+        return """
+RESPONSE RULES (travel discovery on Live):
+- Lead with the place name from context. Plain text only, no markdown.
+- 4 to 8 sentences for "what's here", activities, culture, food, safety, or prep questions.
+- For restaurant or "what to do" lists: give numbered suggestions with area or town names; use pin coordinates and region knowledge; say honestly if the pin is remote.
+- Mention Rovvy features only as optional next steps at the end — never as the main answer.
+- Never say "I don't know" — use geographic knowledge from coordinates and region when needed.
+- You are read-only: do NOT claim to have saved, deleted, or changed anything.
+"""
+    if mode == WayraMode.TRAVEL:
+        return """
+RESPONSE RULES (travel):
+- Give specific destination ideas and practical next steps in 3 to 6 sentences.
+- Plain text only, no markdown.
+- Never say "I don't know" — always give the best available answer.
+- You are read-only: do NOT claim to have saved, deleted, or changed anything.
+"""
+    return """
+RESPONSE RULES (app guide):
+- Be friendly, warm, concise — max 2 to 3 sentences.
+- Give the exact in-app path (sidebar, tab, button) the user should tap.
+- Plain text only, no markdown.
+- You are read-only: do NOT claim to have saved, deleted, or changed anything.
+"""
+
+
+def _generation_temperature(mode: WayraMode, *, on_live: bool) -> float:
+    if mode == WayraMode.TRAVEL and on_live:
+        return 0.55
+    if mode == WayraMode.TRAVEL:
+        return 0.5
+    return 0.35
+
+
+def _build_system_prompt(
+    page: str,
+    active_tab: str | None,
+    *,
+    mode: WayraMode = WayraMode.APP_GUIDE,
+    on_live: bool = False,
+    voice_mode: bool = False,
+) -> str:
+    tab = active_tab or "(not specified)"
+    travel_live = mode == WayraMode.TRAVEL and on_live and not voice_mode
+    char_cap = _message_char_cap("", voice_mode=voice_mode)
+
+    if voice_mode:
+        return f"""You are Wayra, Rovvy's built-in travel assistant.
+Never mention Google, Gemini, DeepSeek, OpenAI, or any AI vendor.
+If asked what you are: "I'm Wayra, Rovvy's built-in travel assistant."
+{_voice_rules_block()}
+The user is on page {page!r} (tab {tab!r}). Mode: {mode.value!r}.
+Reply with JSON only:
+{{"message": "string, spoken answer, <= {char_cap} chars, no markdown"}}
+"""
+
+    priority_block = _travel_live_discovery_block() if travel_live else ""
+
+    # Static identity + knowledge first so DeepSeek can prefix-cache the bulk.
+    return f"""You are Wayra, the built-in AI assistant for Rovvy — a group travel planning app.
+You are a native feature of Rovvy, not a third-party service.
+
+IDENTITY RULES (never break):
+- NEVER mention Google, Gemini, OpenAI, GPT, Claude, or any third-party AI name.
+- If asked what AI you are: "I'm Wayra, Rovvy's built-in travel assistant."
+- Always present yourself as a core part of Rovvy.
+{_app_knowledge_block()}
 Output format — single JSON object only:
 {{
-  "message": "string, plain text, <= 1200 chars, no markdown",
+  "message": "string, plain text, <= {char_cap} chars, no markdown",
   "suggested_actions": [
     {{
       "type": "string",
@@ -256,7 +356,12 @@ Output format — single JSON object only:
     }}
   ],
   "summary": {{}} or null
-}}""" + live_rules
+}}
+
+The user is currently on page: {page!r} (active tab: {tab!r}).
+Wayra mode for this turn: {mode.value!r}.
+{priority_block}
+{_response_rules_block(mode, on_live=on_live, voice_mode=voice_mode)}"""
 
 
 def _extract_city_from_context(ctx: dict[str, Any] | None) -> str | None:
@@ -288,8 +393,48 @@ def _enrich_destination_intel(ctx: dict[str, Any] | None) -> dict[str, Any] | No
     return intel if len(intel) > 1 else None
 
 
-def _build_input_payload(request: AIAssistantRequest) -> str:
+def _slim_selected_place(selected: dict[str, Any]) -> dict[str, Any]:
+    slim: dict[str, Any] = {}
+    for key in ("name", "city", "state", "country", "lat", "lng"):
+        value = selected.get(key)
+        if value is not None and value != "":
+            slim[key] = value
+    return slim
+
+
+def _build_voice_input_payload(request: AIAssistantRequest, *, mode: WayraMode) -> str:
+    """Tiny context for spoken turns — skip route dumps, events, and weather APIs."""
     ctx = request.context if isinstance(request.context, dict) else {}
+    selected = ctx.get("selectedPlace")
+    payload: dict[str, Any] = {
+        "page": request.page,
+        "user_message": request.user_message,
+        "wayra_mode": mode.value,
+        "voice_mode": True,
+    }
+    if isinstance(selected, dict):
+        slim = _slim_selected_place(selected)
+        if slim:
+            payload["selected_place_on_map"] = slim
+    if ctx.get("resolvedMapRegion") is not None:
+        payload["resolved_map_region"] = ctx.get("resolvedMapRegion")
+    live_block = ctx.get("liveContextBlock")
+    if isinstance(live_block, str) and live_block.strip():
+        payload["live_context_block"] = live_block.strip()[:1200]
+    attached = ctx.get("chatAttachedLocation")
+    if isinstance(attached, dict) and attached.get("lat") is not None:
+        payload["chat_attached_location"] = {
+            k: attached.get(k) for k in ("name", "lat", "lng") if attached.get(k) is not None
+        }
+    return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+
+
+def _build_input_payload(request: AIAssistantRequest, *, mode: WayraMode) -> str:
+    if request.voice_mode:
+        return _build_voice_input_payload(request, mode=mode)
+
+    ctx = request.context if isinstance(request.context, dict) else {}
+    on_live = _is_live_page(request.page, ctx)
     payload: dict[str, Any] = {
         "page": request.page,
         "active_tab": request.active_tab,
@@ -297,6 +442,19 @@ def _build_input_payload(request: AIAssistantRequest) -> str:
         "group_id": str(request.group_id) if request.group_id is not None else None,
         "context": request.context,
         "user_message": request.user_message,
+        "wayra_mode": mode.value,
+        "response_style": (
+            "voice_live"
+            if request.voice_mode and on_live
+            else "voice"
+            if request.voice_mode
+            else "travel_discovery_live"
+            if mode == WayraMode.TRAVEL and on_live
+            else "travel"
+            if mode == WayraMode.TRAVEL
+            else "app_guide"
+        ),
+        "voice_mode": request.voice_mode,
     }
     selected = ctx.get("selectedPlace")
     if isinstance(selected, dict):
@@ -307,6 +465,12 @@ def _build_input_payload(request: AIAssistantRequest) -> str:
         payload["live_route_preview"] = ctx.get("routePreview")
     if ctx.get("liveContextBlock") is not None:
         payload["live_context_block"] = ctx.get("liveContextBlock")
+    attached = ctx.get("chatAttachedLocation")
+    if isinstance(attached, dict) and attached.get("lat") is not None:
+        payload["chat_attached_location"] = attached
+    profile = ctx.get("messengerProfile")
+    if isinstance(profile, dict):
+        payload["messenger_profile"] = profile
     if ctx.get("resolvedMapRegion") is not None:
         payload["resolved_map_region"] = ctx.get("resolvedMapRegion")
     if ctx.get("implicitLocation") is True:
@@ -327,8 +491,13 @@ def _gemini_key() -> str:
     ).strip()
 
 
-def _call_gemini(system_prompt: str, user_block: str) -> str:
-    """Call Gemini and return the raw text response. Raises on failure."""
+def _call_gemini(
+    system_prompt: str,
+    user_block: str,
+    *,
+    temperature: float = 0.4,
+) -> tuple[str, dict[str, int] | None]:
+    """Call Gemini and return raw text + token usage. Raises on failure."""
     import google.generativeai as genai  # type: ignore[import-untyped]
 
     key = _gemini_key()
@@ -341,7 +510,7 @@ def _call_gemini(system_prompt: str, user_block: str) -> str:
         system_instruction=system_prompt,
         generation_config=genai.types.GenerationConfig(  # type: ignore[attr-defined]
             max_output_tokens=_MAX_OUTPUT_TOKENS,
-            temperature=0.4,
+            temperature=temperature,
         ),
     )
     prompt = (
@@ -350,7 +519,9 @@ def _call_gemini(system_prompt: str, user_block: str) -> str:
     )
     try:
         response = model.generate_content(prompt)
-        return response.text or ""
+        usage = parse_sdk_usage_metadata(response)
+        record_gemini_usage(feature="wayra_assistant", model=_GEMINI_MODEL, usage=usage)
+        return (response.text or ""), usage
     except Exception as exc:
         logger.error("DEBUG: Gemini generate_content failed inside _call_gemini: %s", exc, exc_info=True)
         raise
@@ -366,7 +537,7 @@ def _openai_key() -> str:
     ).strip()
 
 
-def _call_openai(system_prompt: str, user_block: str) -> str:
+def _call_openai(system_prompt: str, user_block: str, *, temperature: float = 0.4) -> str:
     """Fallback to OpenAI when Gemini is unavailable. Returns raw text."""
     from openai import OpenAI  # type: ignore[import-untyped]
 
@@ -383,6 +554,7 @@ def _call_openai(system_prompt: str, user_block: str) -> str:
             + user_block
         ),
         max_output_tokens=_MAX_OUTPUT_TOKENS,
+        temperature=temperature,
     )
     t = getattr(resp, "output_text", None)
     if isinstance(t, str) and t.strip():
@@ -455,9 +627,33 @@ def _coerce_action(row: object) -> AISuggestedAction | None:
     )
 
 
-def _build_response(data: dict[str, Any] | None, raw: str, user_message: str) -> AIAssistantResponse:
+def _message_char_cap(user_message: str, *, voice_mode: bool = False) -> int:
+    if voice_mode:
+        return resolve_output_budget("voice", user_message, voice_mode=True).max_message_chars
+    style = "plan" if is_plan_question(user_message) else "full"
+    return resolve_output_budget(style, user_message).max_message_chars
+
+
+def _finalize_response(response: AIAssistantResponse, request: AIAssistantRequest) -> AIAssistantResponse:
+    if not request.voice_mode:
+        return response
+    cap = _message_char_cap(request.user_message, voice_mode=True)
+    message = response.message[:cap] if response.message else response.message
+    summary = dict(response.summary) if isinstance(response.summary, dict) else {}
+    summary["voice_mode"] = True
+    return response.model_copy(update={"message": message, "summary": summary})
+
+
+def _build_response(
+    data: dict[str, Any] | None,
+    raw: str,
+    user_message: str,
+    *,
+    voice_mode: bool = False,
+) -> AIAssistantResponse:
+    cap = _message_char_cap(user_message, voice_mode=voice_mode)
     if data is None:
-        clean = _strip_markdown_lite(raw)[:1200]
+        clean = _strip_markdown_lite(raw)[:cap]
         return AIAssistantResponse(
             message=clean or "I couldn't process that right now. Please try again.",
             suggested_actions=[],
@@ -467,7 +663,9 @@ def _build_response(data: dict[str, Any] | None, raw: str, user_message: str) ->
     message = data.get("message", "")
     if not isinstance(message, str):
         message = str(message)
-    message = _strip_markdown_lite(message)[:1200]
+    message = _strip_markdown_lite(message)[:cap]
+    if message.strip() in {"...", "…", ".", ".."} or re.fullmatch(r"[.\u2026\s]+", message.strip()):
+        message = ""
 
     actions: list[AISuggestedAction] = []
     for a in (data.get("suggested_actions") or []):
@@ -513,11 +711,27 @@ def _fallback_response(
 
 class AIAssistantService:
     @staticmethod
-    async def respond(request: AIAssistantRequest) -> AIAssistantResponse:
+    async def respond(
+        request: AIAssistantRequest,
+        db: Session | None = None,
+    ) -> AIAssistantResponse:
         mode = classify_mode(request.user_message)
         ctx = request.context if isinstance(request.context, dict) else None
         ctx = await _enrich_live_context(ctx)
         request = request.model_copy(update={"context": ctx})
+
+        if _is_live_page(request.page, ctx) and is_place_name_llm_question(request.user_message):
+            mode = WayraMode.TRAVEL
+
+        # Live pin bound: keep place talk on travel hybrid, not app-guide Gemini.
+        if (
+            mode == WayraMode.APP_GUIDE
+            and _is_live_page(request.page, ctx)
+            and _extract_live_selected_place(ctx)
+            and not is_discovery_app_guide_question(request.user_message)
+            and not is_app_how_to_question(request.user_message)
+        ):
+            mode = WayraMode.TRAVEL
 
         live_map = resolve_live_map_context_message(
             request.user_message,
@@ -525,68 +739,131 @@ class AIAssistantService:
             ctx,
         )
         if live_map:
-            return AIAssistantResponse(
-                message=live_map[:1200],
-                suggested_actions=[],
-                summary={"intent": "live_map_context", "local": True},
+            return _finalize_response(
+                AIAssistantResponse(
+                    message=live_map[:1200],
+                    suggested_actions=[],
+                    summary={"intent": "live_map_context", "local": True},
+                ),
+                request,
             )
+
+        live_prep = resolve_live_travel_prep_message(
+            request.user_message,
+            request.page,
+            ctx,
+        )
+        if live_prep:
+            return _finalize_response(
+                AIAssistantResponse(
+                    message=live_prep[:1200],
+                    suggested_actions=[],
+                    summary={"intent": "live_travel_prep", "local": True},
+                ),
+                request,
+            )
+
+        local = try_local_reply(request.user_message, request.page, ctx)
+        if local is not None:
+            return _finalize_response(local, request)
+
+        # Canonical knowledge: exact variants + DeepSeek intent resolve.
+        # Runs after deterministic local replies (weather/safety/nav) and before LLM.
+        knowledge = await WayraKnowledgeService.try_answer(db, request)
+        if knowledge is not None:
+            return _finalize_response(knowledge, request)
 
         # Reliable App Guide: answer locally for known product intents (no LLM latency).
         if mode == WayraMode.APP_GUIDE:
             on_live = _is_live_page(request.page, ctx)
-            allow_app_local = not on_live or is_app_how_to_question(request.user_message)
+            allow_app_local = (
+                not on_live
+                or is_app_how_to_question(request.user_message)
+                or is_discovery_app_guide_question(request.user_message)
+            )
             if allow_app_local:
                 local_app = resolve_app_guide_message(request.user_message, request.page)
                 if local_app:
-                    return AIAssistantResponse(
-                        message=local_app,
-                        suggested_actions=[],
-                        summary={"intent": "app_guide", "local": True},
+                    return _finalize_response(
+                        AIAssistantResponse(
+                            message=local_app,
+                            suggested_actions=[],
+                            summary={"intent": "app_guide", "local": True},
+                        ),
+                        request,
                     )
 
-        system_prompt = _build_system_prompt(request.page, request.active_tab)
-        user_block = _build_input_payload(request)
+        # Perplexity-style travel answers: OSM/Wikipedia sources + compact cheap LLM.
+        if mode == WayraMode.TRAVEL:
+            hybrid = await WayraAnswerService.try_answer(request, mode)
+            if hybrid is not None:
+                return _finalize_response(hybrid, request)
+
+        system_prompt = _build_system_prompt(
+            request.page,
+            request.active_tab,
+            mode=mode,
+            on_live=_is_live_page(request.page, ctx),
+            voice_mode=request.voice_mode,
+        )
+        user_block = _build_input_payload(request, mode=mode)
+        temperature = _generation_temperature(mode, on_live=_is_live_page(request.page, ctx))
 
         raw_text = ""
+        llm_provider = "none"
+        llm_usage: dict[str, int] | None = None
 
-        # 1. Try Gemini first
-        if _gemini_key():
-            try:
-                raw_text = _call_gemini(system_prompt, user_block)
-                logger.debug("Rovvy AI (primary) responded OK")
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Rovvy AI primary call failed: %s", exc, exc_info=False)
-                raw_text = ""
-
-        # 2. Fall back to OpenAI if Gemini failed or key missing
-        if not raw_text and _openai_key():
-            try:
-                raw_text = _call_openai(system_prompt, user_block)
-                logger.debug("Rovvy AI (secondary) responded OK")
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Rovvy AI secondary call failed: %s", exc, exc_info=False)
-                raw_text = ""
+        raw_text, llm_provider, llm_usage = await generate_wayra_full_response(
+            system_prompt=system_prompt,
+            user_block=user_block,
+            user_message=request.user_message,
+            temperature=temperature,
+            voice_mode=request.voice_mode,
+        )
 
         if not raw_text:
             prefer_travel = mode == WayraMode.TRAVEL
             if prefer_travel:
                 travel_local = travel_fallback_message(request.user_message, ctx)
                 if travel_local:
-                    return AIAssistantResponse(
-                        message=travel_local[:1200],
-                        suggested_actions=[],
-                        summary={"fallback": True, "local": True, "mode": "travel"},
+                    return _finalize_response(
+                        AIAssistantResponse(
+                            message=travel_local[:1200],
+                            suggested_actions=[],
+                            summary={"fallback": True, "local": True, "mode": "travel"},
+                        ),
+                        request,
                     )
             if mode == WayraMode.APP_GUIDE:
-                return AIAssistantResponse(
-                    message=contextual_app_fallback(request.page, request.active_tab)[:1200],
-                    suggested_actions=[],
-                    summary={"fallback": True, "local": True, "mode": "app_guide"},
+                return _finalize_response(
+                    AIAssistantResponse(
+                        message=contextual_app_fallback(request.page, request.active_tab)[:1200],
+                        suggested_actions=[],
+                        summary={"fallback": True, "local": True, "mode": "app_guide"},
+                    ),
+                    request,
                 )
-            return _fallback_response(request, prefer_travel=prefer_travel)
+            return _finalize_response(
+                _fallback_response(request, prefer_travel=prefer_travel),
+                request,
+            )
 
         data = _parse_model_json(raw_text)
-        return _build_response(data, raw_text, request.user_message)
+        response = _build_response(
+            data,
+            raw_text,
+            request.user_message,
+            voice_mode=request.voice_mode,
+        )
+        if isinstance(response.summary, dict):
+            response.summary = {
+                **response.summary,
+                "provider": llm_provider,
+                **({"llm_usage": llm_usage} if llm_usage else {}),
+            }
+        elif llm_usage or llm_provider != "none":
+            response.summary = {"provider": llm_provider, **({"llm_usage": llm_usage} if llm_usage else {})}
+        return _finalize_response(response, request)
 
 
 class AwaitableString(str):

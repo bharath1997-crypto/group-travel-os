@@ -2,7 +2,7 @@
 
 import type { PlacePreviewData } from "./PlacePreviewCard";
 import type { LiveStage, TripStatus, RouteLine } from "./live-types";
-import { estimateDriveEta, formatDistanceMiles } from "./live-types";
+import { estimateDriveEta, formatDistanceMiles, isActiveNavigationStage } from "./live-types";
 import { LIVE_PANEL_MAX_WIDTH, LIVE_PANEL_RIGHT_INSET } from "./live-layout";
 
 const TRIP_STATUSES: { key: TripStatus; label: string }[] = [
@@ -57,7 +57,7 @@ export default function SoloLiveActivePanel({
   onAddStop,
   routeLine,
 }: Props) {
-  const navigating = liveStage === "solo_drive_navigation";
+  const navigating = isActiveNavigationStage(liveStage);
   const activeStatus = TRIP_STATUSES.find((s) => s.key === tripStatus);
 
   return (
@@ -90,7 +90,7 @@ export default function SoloLiveActivePanel({
             <button
               type="button"
               onClick={onSetStartingPoint}
-              className="mt-2 w-full rounded-lg bg-[#0F766E] px-3 py-2 text-xs font-semibold text-white hover:opacity-90"
+              className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:opacity-90"
             >
               Set starting point
             </button>

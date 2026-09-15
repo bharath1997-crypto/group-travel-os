@@ -5,7 +5,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from duffel_api import Duffel
+from app.services.duffel_client import get_offer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -30,9 +30,8 @@ def _resolve_duffel_offer(provider_reference: str) -> str:
     if not api_key:
         AppException.service_unavailable("Flight booking is not configured")
 
-    client = Duffel(access_token=api_key)
     try:
-        client.offers.get(provider_reference)
+        get_offer(provider_reference)
     except Exception as exc:
         logger.warning("Duffel offer lookup failed for %s: %s", provider_reference, exc)
         AppException.bad_request("Invalid or expired flight offer")

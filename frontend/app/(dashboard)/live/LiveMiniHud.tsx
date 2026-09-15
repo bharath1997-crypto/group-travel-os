@@ -38,7 +38,7 @@ export default function LiveMiniHud({
   const movementColors = {
     idle: { dot: "bg-stone-400", bg: "bg-stone-100", text: "text-stone-600", label: "Idle / Stopped" },
     slow: { dot: "bg-amber-500 animate-pulse", bg: "bg-amber-50", text: "text-amber-700", label: "Slow Movement" },
-    moving: { dot: "bg-[#007F73]", bg: "bg-[#E6F7F4]", text: "text-[#007F73]", label: "Active Movement" },
+    moving: { dot: "bg-primary", bg: "bg-primary-soft", text: "text-primary", label: "Active Movement" },
   };
 
   const currentMovement = movementColors[movementState];
@@ -46,14 +46,14 @@ export default function LiveMiniHud({
   const renderModeIcon = (size = "w-4 h-4") => {
     switch (travelMode) {
       case "Bike":
-        return <Bike className={`${size} text-[#007F73]`} />;
+        return <Bike className={`${size} text-primary`} />;
       case "Trek":
-        return <Compass className={`${size} text-[#007F73]`} />;
+        return <Compass className={`${size} text-primary`} />;
       case "Walk":
-        return <User className={`${size} text-[#007F73]`} />;
+        return <User className={`${size} text-primary`} />;
       case "Drive":
       default:
-        return <Car className={`${size} text-[#007F73]`} />;
+        return <Car className={`${size} text-primary`} />;
     }
   };
 
@@ -131,7 +131,7 @@ export default function LiveMiniHud({
         <div className="flex flex-col p-2.5 rounded-xl bg-stone-50 border border-stone-100">
           <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Rem. Time</span>
           <div className="flex items-center gap-1 mt-1 text-stone-800 font-bold text-sm">
-            <Clock className="w-3.5 h-3.5 text-[#007F73]" />
+            <Clock className="w-3.5 h-3.5 text-primary" />
             <span>
               {durationSeconds !== null
                 ? formatRouteDuration(durationSeconds)

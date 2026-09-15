@@ -2,6 +2,7 @@
 
 import { AlertTriangle, X } from "lucide-react";
 import type { PlacePreviewData } from "./PlacePreviewCard";
+import { LiveDataTrustBadge, LiveDataTrustFooter } from "./LiveDataTrustBadge";
 import RoviPlaceExplanationBlock from "./RoviPlaceExplanationBlock";
 import { LIVE_PANEL_RIGHT_INSET } from "./live-layout";
 import type { LiveLocationContext } from "./live-location-context";
@@ -50,6 +51,7 @@ export default function FarAwayPlacePanel({
               <AlertTriangle className="h-5 w-5 text-amber-700" />
             </div>
             <div className="min-w-0">
+              <LiveDataTrustBadge variant="area" className="mb-1.5" />
               <h3 className="text-lg font-bold leading-tight text-stone-900">
                 {locationContext.template.summary}
               </h3>
@@ -69,6 +71,7 @@ export default function FarAwayPlacePanel({
         </div>
 
         <div className="mt-4 rounded-xl border border-stone-100 bg-stone-50/80 p-4">
+          <LiveDataTrustBadge variant="verified" className="mb-2" />
           <p className="text-base font-semibold text-stone-900">{place.name}</p>
           <p className="mt-1 text-sm text-stone-600">{place.address}</p>
           {place.distanceM != null ? (
@@ -78,19 +81,24 @@ export default function FarAwayPlacePanel({
           ) : null}
         </div>
 
-        <RoviPlaceExplanationBlock
-          showAskButton={showAskRovi}
-          showSafetyActions={!locationContext.liveSafe}
-          template={null}
-          loading={roviLoading}
-          explanation={roviExplanation}
-          error={roviError}
-          onAskRovi={onAskRovi}
-          onSearchNearMe={onSearchNearMe}
-          onChangeDestination={onChangeDestination}
-          onPlanTrip={onPlanTrip}
-          onContinueAnyway={onContinueAnyway}
-        />
+        <div className="mt-4 space-y-2">
+          <LiveDataTrustBadge variant="ai" />
+          <RoviPlaceExplanationBlock
+            showAskButton={showAskRovi}
+            showSafetyActions={!locationContext.liveSafe}
+            template={null}
+            loading={roviLoading}
+            explanation={roviExplanation}
+            error={roviError}
+            onAskRovi={onAskRovi}
+            onSearchNearMe={onSearchNearMe}
+            onChangeDestination={onChangeDestination}
+            onPlanTrip={onPlanTrip}
+            onContinueAnyway={onContinueAnyway}
+          />
+        </div>
+
+        <LiveDataTrustFooter showWayraNote className="mt-4" />
       </div>
     </div>
   );

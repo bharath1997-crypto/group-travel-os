@@ -42,6 +42,15 @@ export function isFreshGpsStatus(status: GpsStatus): boolean {
   return status === "active" || status === "approximate";
 }
 
+/** True while the locate button should show a loading spinner (not stale re-acquire). */
+export function isGpsLocateLoading(status: GpsStatus): boolean {
+  return status === "requesting";
+}
+
+export function isGpsLocateButtonActive(status: GpsStatus): boolean {
+  return status === "active" || status === "approximate";
+}
+
 export function gpsStatusFromGeolocationError(code: number): GpsStatus {
   if (code === 1) return "denied";
   if (code === 3) return "timeout";

@@ -7,6 +7,8 @@ import {
   classifyDiscoveryExpects,
   isDiscoveryIdentityQuestion,
   isDiscoveryLlmQuestion,
+  isPlaceNameLlmQuestion,
+  normalizeWayraQuery,
 } from "@/lib/wayra/discovery";
 import { resolvePlaceDisplayName } from "@/lib/wayra/place-region";
 
@@ -64,11 +66,20 @@ function hasAny(q: string, ...patterns: RegExp[]): boolean {
 }
 
 export function normalizeQuery(message: string): string {
-  return message
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s'-]/g, " ")
-    .replace(/\s+/g, " ");
+  return normalizeWayraQuery(message);
+}
+
+const ACTIVITIES_RE =
+  /\b(what can i do|what should i do|what could i do|what can we do|what should we do|what we do|what to do|what do we do|things to do|activities|anything to do|what s there to do|what is there to do|fun things|stuff to do|what should we not miss|not miss here|worth doing|what do you recommend here|what would you do here|suggestions for here)\b/i;
+
+export function isActivitiesQuestion(message: string): boolean {
+  const q = normalizeQuery(message);
+  if (!q) return false;
+  if (ACTIVITIES_RE.test(q)) return true;
+  return (
+    hasAny(q, /\bwhat should we\b/, /\bwhat can we\b/) &&
+    hasAny(q, /\bdo\b/, /\bhere\b/, /\bthere\b/, /\bthis\b/)
+  );
 }
 
 export type LiveSelectedPlaceContext = {
@@ -86,6 +97,7 @@ export type LiveSelectedPlaceContext = {
 export function isLivePlaceDeepQuestion(message: string): boolean {
   if (isDiscoveryIdentityQuestion(message)) return false;
   if (isDiscoveryLlmQuestion(message)) return true;
+  if (isActivitiesQuestion(message)) return true;
 
   const q = normalizeQuery(message);
   if (!q) return false;
@@ -376,9 +388,28 @@ export function classifyMode(message: string): WayraMode {
   if (discovery === "app_guide") return "app_guide";
   if (discovery === "local" || discovery === "llm") return "travel";
 
+  if (isActivitiesQuestion(message)) return "travel";
+
+  if (isPlaceNameLlmQuestion(message)) return "travel";
+
   if (isLiveMapContextQuestion(message)) return "travel";
 
   if (isLiveTravelPrepQuestion(message)) return "travel";
+
+  if (
+    hasAny(
+      q,
+      /\bwhat is this\b/,
+      /\bwhat is it\b/,
+      /\bwhat s this\b/,
+      /\bwhat s it\b/,
+      /\bis it a\b/,
+      /\bis this a\b/,
+    ) &&
+    !hasAny(q, /\bthis app\b/, /\bthe app\b/, /\bwayra\b/, /\bplan page\b/)
+  ) {
+    return "travel";
+  }
 
   const travelStrong = hasAny(
     q,
@@ -390,6 +421,10 @@ export function classifyMode(message: string): WayraMode {
     /\bweekend (trip|getaway|escape)\b/,
     /\bwhere should i (go|travel)\b/,
     /\bthings to do in\b/,
+    /\bthings to do\b/,
+    /\bwhat to do\b/,
+    /\bwhat we do\b/,
+    /\bwhat should we do\b/,
     /\bitinerary\b/,
     /\btravel guide\b/,
     /\bcity break\b/,
@@ -434,6 +469,8 @@ export function classifyMode(message: string): WayraMode {
       /\b(japan|tokyo|kyoto|europe|beach|mountain|abroad)\b/,
       /\bdestination\b/,
       /\bgetaway\b/,
+      /\bfamily friendly\b/,
+      /\bworth the trip\b/,
     ) &&
     !hasAny(q, /\b(create|delete|invite|notification|poll|split|setting|profile)\b/)
   ) {

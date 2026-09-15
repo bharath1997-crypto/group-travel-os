@@ -23,19 +23,19 @@ export function GuestSignInCard({ title, description }: GuestSignInCardProps) {
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         <Link
           href={loginHref}
-          className="rounded-xl border border-stone-200 bg-white px-5 py-2.5 text-sm font-semibold text-stone-700 transition hover:border-[#0F766E]/30 hover:text-[#0F766E]"
+          className="rounded-xl border border-stone-200 bg-white px-5 py-2.5 text-sm font-semibold text-stone-700 transition hover:border-primary/30 hover:text-primary"
         >
           Log in
         </Link>
         <Link
           href="/register"
-          className="rounded-xl bg-[#0F766E] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0D635C]"
+          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
         >
           Sign up
         </Link>
         <Link
           href="/explore"
-          className="px-2 py-2.5 text-sm font-semibold text-stone-500 transition hover:text-[#0F766E]"
+          className="px-2 py-2.5 text-sm font-semibold text-stone-500 transition hover:text-primary"
         >
           Back to Explore
         </Link>

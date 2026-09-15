@@ -1,3 +1,32 @@
+import {
+  Anchor,
+  Banknote,
+  Building2,
+  Bus,
+  Church,
+  Coffee,
+  Dumbbell,
+  Film,
+  Fuel,
+  GraduationCap,
+  Hospital,
+  Hotel,
+  Landmark,
+  Library,
+  MapPin,
+  Mountain,
+  Palmtree,
+  ParkingCircle,
+  Plane,
+  ShoppingBag,
+  Store,
+  Trees,
+  Trophy,
+  Utensils,
+  Waves,
+  Wine,
+  type LucideIcon,
+} from "lucide-react";
 import { normalizePlaceCategory } from "./live-geocoding";
 
 export type PoiMapPlace = {
@@ -66,6 +95,67 @@ const CATEGORY_ICON_MAP: Record<string, string> = {
   Address: "📌",
   Building: "🏠",
   Place: "📍",
+};
+
+const CATEGORY_LUCIDE_MAP: Record<string, LucideIcon> = {
+  "Gas station": Fuel,
+  Restaurant: Utensils,
+  "Fast food": Utensils,
+  "Liquor store": Wine,
+  "Beverage store": Wine,
+  Cafe: Coffee,
+  "Coffee shop": Coffee,
+  Bar: Wine,
+  Pub: Wine,
+  Church: Church,
+  Mosque: Church,
+  Synagogue: Church,
+  Temple: Church,
+  "Place of worship": Church,
+  Library: Library,
+  School: GraduationCap,
+  College: GraduationCap,
+  University: GraduationCap,
+  Park: Trees,
+  Playground: Trees,
+  Museum: Landmark,
+  Gallery: Landmark,
+  Attraction: Landmark,
+  Monument: Landmark,
+  Memorial: Landmark,
+  Viewpoint: Landmark,
+  Hotel: Hotel,
+  Motel: Hotel,
+  Hospital: Hospital,
+  Clinic: Hospital,
+  Pharmacy: Building2,
+  Parking: ParkingCircle,
+  Restroom: Building2,
+  ATM: Banknote,
+  Bank: Banknote,
+  "Bus stop": Bus,
+  "Transit stop": Bus,
+  Waterfall: Waves,
+  Mountain: Mountain,
+  Forest: Trees,
+  Beach: Palmtree,
+  Lake: Waves,
+  River: Waves,
+  Port: Anchor,
+  Marina: Anchor,
+  "Ferry terminal": Anchor,
+  Airport: Plane,
+  Helipad: Plane,
+  Cinema: Film,
+  Stadium: Trophy,
+  "Fitness center": Dumbbell,
+  "Sports center": Trophy,
+  "Convenience store": Store,
+  Supermarket: ShoppingBag,
+  Shop: ShoppingBag,
+  Address: MapPin,
+  Building: Building2,
+  Place: MapPin,
 };
 
 const LANDMARK_CATEGORIES = new Set([
@@ -143,6 +233,36 @@ export function resolvePoiMapIcon(place: PoiMapPlace): string {
   return "📍";
 }
 
+export function resolvePoiRowLucideIcon(place: PoiMapPlace): LucideIcon {
+  const label = resolvePlaceCategoryLabel(place);
+  if (CATEGORY_LUCIDE_MAP[label]) return CATEGORY_LUCIDE_MAP[label];
+
+  const lower = label.toLowerCase();
+  for (const [key, icon] of Object.entries(CATEGORY_LUCIDE_MAP)) {
+    if (lower.includes(key.toLowerCase())) return icon;
+  }
+
+  const tags = place.tags || {};
+  const historic = tags.historic;
+  if (typeof historic === "string" && LANDMARK_TAG_HINTS.has(historic)) {
+    return Landmark;
+  }
+
+  const tourism = tags.tourism;
+  if (typeof tourism === "string") {
+    if (tourism === "museum" || tourism === "gallery" || tourism === "attraction") return Landmark;
+    if (tourism === "viewpoint") return Landmark;
+    if (tourism === "artwork") return Landmark;
+  }
+
+  const amenity = tags.amenity;
+  if (typeof amenity === "string") {
+    return CATEGORY_LUCIDE_MAP[titleCase(amenity)] ?? MapPin;
+  }
+
+  return MapPin;
+}
+
 export function isLandmarkPlace(place: PoiMapPlace): boolean {
   const label = resolvePlaceCategoryLabel(place);
   if (LANDMARK_CATEGORIES.has(label)) return true;
@@ -174,7 +294,7 @@ export function getPoiMarkerPresentation(place: PoiMapPlace): {
   const landmark = isLandmarkPlace(place);
   return {
     icon: resolvePoiMapIcon(place),
-    background: landmark ? "#D97706" : "#0F766E",
+    background: landmark ? "#D97706" : "#0E6E5C",
     size: landmark ? 26 : 22,
     landmark,
   };

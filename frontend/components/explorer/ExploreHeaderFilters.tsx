@@ -175,7 +175,7 @@ export function ExploreHeaderFilters({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 shadow-sm placeholder-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/20"
+          className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 shadow-sm placeholder-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20"
         />
       </div>
 
@@ -187,7 +187,7 @@ export function ExploreHeaderFilters({
           className="flex w-full items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm hover:border-teal-400 sm:w-auto"
         >
           <div className="flex items-center gap-1.5">
-            <MapPin size={15} className="text-teal-600" />
+            <MapPin size={15} className="text-primary" />
             <span className="font-semibold text-slate-900">{dropdownCityLabel}</span>
           </div>
           <ChevronDown size={14} className="text-slate-400" />
@@ -206,7 +206,7 @@ export function ExploreHeaderFilters({
                 placeholder="City name or lat, lon..."
                 value={citySearch}
                 onChange={(e) => setCitySearch(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 py-1.5 pl-8 pr-3 text-xs text-slate-900 placeholder-slate-400 focus:border-teal-500 focus:outline-none"
+                className="w-full rounded-lg border border-slate-200 py-1.5 pl-8 pr-3 text-xs text-slate-900 placeholder-slate-400 focus:border-primary focus:outline-none"
               />
             </div>
 
@@ -239,7 +239,7 @@ export function ExploreHeaderFilters({
             <button
               type="button"
               onClick={detectGPSCity}
-              className="mt-1 flex w-full items-center gap-1.5 border-t border-slate-100 px-2 py-2 text-left text-xs font-bold text-teal-600 hover:bg-slate-50"
+              className="mt-1 flex w-full items-center gap-1.5 border-t border-slate-100 px-2 py-2 text-left text-xs font-bold text-primary hover:bg-slate-50"
             >
               <Navigation size={11} />
               Use current location

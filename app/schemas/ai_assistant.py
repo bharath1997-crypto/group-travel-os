@@ -18,6 +18,7 @@ class AIAssistantRequest(BaseModel):
     group_id: UUID | None = None
     active_tab: str | None = None
     context: dict[str, Any] = Field(default_factory=dict)
+    voice_mode: bool = False
 
 
 class AISuggestedAction(BaseModel):
@@ -29,9 +30,42 @@ class AISuggestedAction(BaseModel):
     payload: dict[str, Any] | None = None
 
 
+class WayraSource(BaseModel):
+    model_config = ConfigDict()
+
+    label: str
+    url: str
+    source_type: str
+    snippet: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+
+
 class AIAssistantResponse(BaseModel):
     model_config = ConfigDict()
 
     message: str
     suggested_actions: list[AISuggestedAction] = Field(default_factory=list)
+    sources: list[WayraSource] = Field(default_factory=list)
     summary: dict[str, Any] | None = None
+
+
+class WayraUnmatchedQuestionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    sanitized_text: str
+    page_category: str | None = None
+    proposed_intent_key: str | None = None
+    proposed_confidence: float | None = None
+    occurrence_count: int
+    first_seen_at: Any
+    last_seen_at: Any
+
+
+class WayraUnmatchedQuestionList(BaseModel):
+    model_config = ConfigDict()
+
+    items: list[WayraUnmatchedQuestionOut]
+    limit: int
+    offset: int

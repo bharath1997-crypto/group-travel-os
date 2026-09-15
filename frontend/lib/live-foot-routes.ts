@@ -3,12 +3,19 @@
  * Budget: $0 (OpenFreeMap + OpenStreetMap contributors).
  */
 import type { ExpressionSpecification, LineLayerSpecification } from "maplibre-gl";
-import type { LiveMapLayer } from "@/lib/map-providers";
+import {
+  resolveOpenFreeMapVectorTilesUrl,
+  type LiveMapLayer,
+} from "@/lib/map-providers";
 
 export const FOOT_ROUTES_VECTOR_SOURCE = "openmaptiles";
 
-export const FOOT_ROUTES_VECTOR_TILES =
-  "https://tiles.openfreemap.org/planet/{z}/{x}/{y}.pbf";
+export function resolveFootRoutesVectorTilesUrl(): string {
+  return resolveOpenFreeMapVectorTilesUrl();
+}
+
+/** @deprecated Prefer resolveFootRoutesVectorTilesUrl() */
+export const FOOT_ROUTES_VECTOR_TILES = resolveOpenFreeMapVectorTilesUrl();
 
 export const FOOT_ROUTES_VECTOR_MAX_ZOOM = 14;
 

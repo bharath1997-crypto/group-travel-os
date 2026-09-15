@@ -74,13 +74,13 @@ function completionPercent(filled: number, total: number) {
 function StandingBanner({ active }: { active: boolean }) {
   if (active) {
     return (
-      <div className="mx-3 mt-3 flex items-center gap-3 rounded-2xl border border-teal-100 bg-gradient-to-r from-teal-50 to-white px-4 py-3.5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-teal-100 bg-white">
-          <ShieldCheck size={20} className="text-teal-600" />
+      <div className="mx-3 mt-3 flex items-center gap-3 rounded-2xl border border-primary/20 bg-gradient-to-r from-teal-50 to-white px-4 py-3.5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-white">
+          <ShieldCheck size={20} className="text-primary" />
         </div>
         <div>
           <p className="text-[13px] font-semibold text-teal-800">Account in good standing</p>
-          <p className="mt-0.5 text-xs text-teal-600">
+          <p className="mt-0.5 text-xs text-primary">
             No restrictions · All features enabled
           </p>
         </div>
@@ -122,8 +122,8 @@ function StatusRow({
     <div
       className={`flex items-center gap-3.5 px-4 py-3.5 ${last ? "" : "border-b border-stone-100"}`}
     >
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
-        <Icon size={16} strokeWidth={1.8} className="text-teal-700" />
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
+        <Icon size={16} strokeWidth={1.8} className="text-primary" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[14px] font-medium text-neutral-900">{label}</p>
@@ -139,7 +139,7 @@ function StatusRow({
 // ─────────────────────────────────────────────
 function VerifiedBadge() {
   return (
-    <span className="flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold text-teal-600">
+    <span className="flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-0.5 text-[11px] font-semibold text-primary">
       <CheckCircle2 size={10} />
       Verified
     </span>
@@ -168,7 +168,7 @@ function MissingBadge() {
 function CompletenessBar({ filled, total }: { filled: number; total: number }) {
   const pct = completionPercent(filled, total);
   const color =
-    pct >= 80 ? "bg-teal-500"
+    pct >= 80 ? "bg-primary-soft0"
     : pct >= 50 ? "bg-amber-400"
     : "bg-red-400";
   const label =
@@ -176,7 +176,7 @@ function CompletenessBar({ filled, total }: { filled: number; total: number }) {
     : pct >= 50 ? "Partial"
     : "Incomplete";
   const textColor =
-    pct >= 80 ? "text-teal-600"
+    pct >= 80 ? "text-primary"
     : pct >= 50 ? "text-amber-600"
     : "text-red-600";
 
@@ -184,8 +184,8 @@ function CompletenessBar({ filled, total }: { filled: number; total: number }) {
     <div className="px-4 py-3.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50">
-            <User size={16} strokeWidth={1.8} className="text-teal-700" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-soft">
+            <User size={16} strokeWidth={1.8} className="text-primary" />
           </div>
           <div>
             <p className="text-[14px] font-medium text-neutral-900">Profile completeness</p>
@@ -234,19 +234,19 @@ function BadgeCard({
     <div
       className={`flex flex-col items-center rounded-2xl border p-4 text-center transition-all ${
         earned
-          ? "border-teal-100 bg-teal-50"
+          ? "border-primary/20 bg-primary-soft"
           : "border-stone-100 bg-stone-50 opacity-50"
       }`}
     >
       <div
         className={`flex h-10 w-10 items-center justify-center rounded-xl border ${
-          earned ? "border-teal-100 bg-white" : "border-stone-200 bg-white"
+          earned ? "border-primary/20 bg-white" : "border-stone-200 bg-white"
         }`}
       >
         <Icon
           size={18}
           strokeWidth={1.8}
-          className={earned ? "text-teal-600" : "text-stone-400"}
+          className={earned ? "text-primary" : "text-stone-400"}
         />
       </div>
       <p className={`mt-2 text-[12px] font-semibold ${earned ? "text-teal-800" : "text-stone-500"}`}>
@@ -254,7 +254,7 @@ function BadgeCard({
       </p>
       <p className="mt-0.5 text-[11px] leading-snug text-stone-400">{body}</p>
       {earned && (
-        <span className="mt-2 rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-700">
+        <span className="mt-2 rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-primary">
           Earned
         </span>
       )}
@@ -481,7 +481,7 @@ export default function AccountStatusPage() {
             {user.profile_completion_filled < user.profile_completion_total && (
               <a
                 href="/settings/edit-profile"
-                className="mt-3 block text-center text-xs font-semibold text-teal-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 rounded"
+                className="mt-3 block text-center text-xs font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 rounded"
               >
                 Complete your profile →
               </a>

@@ -45,7 +45,7 @@ export default function SettingsAccountCenterPage() {
       {err ? <p className="px-4 py-3 text-sm text-red-600">{err}</p> : null}
       {!bundle ? (
         <div className="flex justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-[#E94560]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-primary" />
         </div>
       ) : (
         <>

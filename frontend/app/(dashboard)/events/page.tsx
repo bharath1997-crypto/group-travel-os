@@ -192,7 +192,7 @@ function EventCard({ event, userCity, onOpen }: EventCardProps) {
             <span className="text-sm text-slate-400">No image</span>
           </div>
         )}
-        <span className="absolute left-2 top-2 rounded-md bg-teal-600 px-2 py-1 text-xs font-medium text-white">
+        <span className="absolute left-2 top-2 rounded-md bg-primary px-2 py-1 text-xs font-medium text-white">
           {event.category || "Event"}
         </span>
         {event.price_min != null && (
@@ -227,7 +227,7 @@ function EventCard({ event, userCity, onOpen }: EventCardProps) {
         </div>
 
         <div className="mb-1 flex items-center gap-1">
-          <MapPin size={12} className="shrink-0 text-[#94A3B8]" />
+          <MapPin size={12} className="shrink-0 text-muted" />
           <span className="truncate text-xs text-[#475569]">
             {event.venue || event.city}
             {event.city ? ` · ${event.city}` : ""}
@@ -236,7 +236,7 @@ function EventCard({ event, userCity, onOpen }: EventCardProps) {
 
         {event.date && (
           <div className="mb-1 flex items-center gap-1">
-            <Calendar size={12} className="shrink-0 text-[#94A3B8]" />
+            <Calendar size={12} className="shrink-0 text-muted" />
             <span className="text-xs text-[#475569]">
               {formatDate(event.date)}
               {event.time ? ` · ${event.time}` : ""}
@@ -245,13 +245,13 @@ function EventCard({ event, userCity, onOpen }: EventCardProps) {
         )}
 
         <div className="mb-1 flex items-center gap-1">
-          <Navigation size={12} className="shrink-0 text-[#94A3B8]" />
+          <Navigation size={12} className="shrink-0 text-muted" />
           <span className="text-xs text-[#475569]">{distanceLabel}</span>
         </div>
 
         <div className="flex items-center gap-1">
-          <Clock size={12} className="shrink-0 text-[#94A3B8]" />
-          <span className="text-xs text-[#94A3B8]">{availabilityLabel(event)}</span>
+          <Clock size={12} className="shrink-0 text-muted" />
+          <span className="text-xs text-muted">{availabilityLabel(event)}</span>
         </div>
       </div>
     </div>
@@ -457,7 +457,7 @@ function EventsSearchContent() {
         <button
           type="button"
           onClick={() => router.push("/explore")}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#E2E8F0] bg-white text-[#475569] shadow-sm transition hover:border-teal-500 hover:text-teal-600"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#E2E8F0] bg-white text-[#475569] shadow-sm transition hover:border-teal-500 hover:text-primary"
           title="Back to Explore"
         >
           <ChevronLeft size={18} />
@@ -495,7 +495,7 @@ function EventsSearchContent() {
                 placeholder="Search any city..."
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#1E293B] focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-lg border border-[#E2E8F0] bg-app px-3 py-2.5 text-sm text-[#1E293B] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
@@ -511,7 +511,7 @@ function EventsSearchContent() {
                 id="dateFrom"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#1E293B] focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-lg border border-[#E2E8F0] bg-app px-3 py-2.5 text-sm text-[#1E293B] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
@@ -527,7 +527,7 @@ function EventsSearchContent() {
                 id="dateTo"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#1E293B] focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-lg border border-[#E2E8F0] bg-app px-3 py-2.5 text-sm text-[#1E293B] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
@@ -542,7 +542,7 @@ function EventsSearchContent() {
                 id="category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#1E293B] focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-lg border border-[#E2E8F0] bg-app px-3 py-2.5 text-sm text-[#1E293B] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 <option value="All">All Categories</option>
                 <option value="Activities">Activities</option>
@@ -558,14 +558,14 @@ function EventsSearchContent() {
 
           <div className="flex flex-col gap-4 border-t border-[#E2E8F0] pt-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-medium text-[#94A3B8]">Popular:</span>
+              <span className="text-xs font-medium text-muted">Popular:</span>
               {["Chicago", "New York", "Los Angeles", "Miami", "Austin", "Seattle"].map(
                 (c) => (
                   <button
                     key={c}
                     type="button"
                     onClick={() => handleChipClick(c)}
-                    className="rounded-full border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-1 text-xs font-medium text-[#475569] transition hover:border-teal-500 hover:text-teal-600"
+                    className="rounded-full border border-[#E2E8F0] bg-app px-3 py-1 text-xs font-medium text-[#475569] transition hover:border-teal-500 hover:text-primary"
                   >
                     {c}
                   </button>
@@ -575,7 +575,7 @@ function EventsSearchContent() {
             <button
               type="submit"
               disabled={loading}
-              className="rounded-lg bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:opacity-50"
+              className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover disabled:opacity-50"
             >
               {loading ? "Searching..." : "Search"}
             </button>
@@ -603,7 +603,7 @@ function EventsSearchContent() {
                   {totalCount.toLocaleString()}
                 </span>{" "}
                 events in{" "}
-                <span className="font-semibold text-teal-600">{cityLabel(city)}</span>
+                <span className="font-semibold text-primary">{cityLabel(city)}</span>
               </>
             ) : (
               <>No events found in {cityLabel(city)}</>
@@ -611,14 +611,14 @@ function EventsSearchContent() {
           </p>
 
           <div className="flex items-center gap-2">
-            <label htmlFor="perPage" className="text-xs font-medium text-[#94A3B8]">
+            <label htmlFor="perPage" className="text-xs font-medium text-muted">
               Per page:
             </label>
             <select
               id="perPage"
               value={perPage}
               onChange={(e) => handlePerPageChange(parseInt(e.target.value, 10))}
-              className="rounded-lg border border-[#E2E8F0] bg-white px-2 py-1.5 text-sm text-[#1E293B] focus:border-teal-500 focus:outline-none"
+              className="rounded-lg border border-[#E2E8F0] bg-white px-2 py-1.5 text-sm text-[#1E293B] focus:border-primary focus:outline-none"
             >
               {PAGE_SIZE_OPTIONS.map((size) => (
                 <option key={size} value={size}>
@@ -641,7 +641,7 @@ function EventsSearchContent() {
       {!loading && searched && events.length === 0 && !errorMsg && (
         <div className="rounded-xl border border-dashed border-[#E2E8F0] bg-white p-12 text-center">
           <p className="text-lg font-semibold text-[#1E293B]">No events found</p>
-          <p className="mt-2 text-sm text-[#94A3B8]">
+          <p className="mt-2 text-sm text-muted">
             Try a different city, category, or date range.
           </p>
         </div>
@@ -669,7 +669,7 @@ function EventsSearchContent() {
             type="button"
             onClick={() => handlePageChange(page - 1)}
             disabled={page <= 1}
-            className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#E2E8F0] bg-white px-3 text-sm font-medium text-[#475569] transition hover:border-teal-500 hover:text-teal-600 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#E2E8F0] bg-white px-3 text-sm font-medium text-[#475569] transition hover:border-teal-500 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ChevronLeft size={16} />
             Prev
@@ -679,7 +679,7 @@ function EventsSearchContent() {
             p === "ellipsis" ? (
               <span
                 key={`ellipsis-${idx}`}
-                className="px-2 text-sm text-[#94A3B8]"
+                className="px-2 text-sm text-muted"
               >
                 …
               </span>
@@ -691,8 +691,8 @@ function EventsSearchContent() {
                 aria-current={p === page ? "page" : undefined}
                 className={`inline-flex h-9 min-w-[2.25rem] items-center justify-center rounded-lg border px-3 text-sm font-medium transition ${
                   p === page
-                    ? "border-teal-600 bg-teal-600 text-white"
-                    : "border-[#E2E8F0] bg-white text-[#475569] hover:border-teal-500 hover:text-teal-600"
+                    ? "border-teal-600 bg-primary text-white"
+                    : "border-[#E2E8F0] bg-white text-[#475569] hover:border-teal-500 hover:text-primary"
                 }`}
               >
                 {p}
@@ -704,7 +704,7 @@ function EventsSearchContent() {
             type="button"
             onClick={() => handlePageChange(page + 1)}
             disabled={page >= totalPages}
-            className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#E2E8F0] bg-white px-3 text-sm font-medium text-[#475569] transition hover:border-teal-500 hover:text-teal-600 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#E2E8F0] bg-white px-3 text-sm font-medium text-[#475569] transition hover:border-teal-500 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
           >
             Next
             <ChevronRight size={16} />
@@ -717,7 +717,7 @@ function EventsSearchContent() {
 
 export default function EventsPage() {
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-6">
+    <div className="min-h-screen bg-app p-4 md:p-6">
       <Suspense
         fallback={
           <div className="mx-auto max-w-[1440px]">

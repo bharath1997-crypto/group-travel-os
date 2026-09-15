@@ -41,7 +41,7 @@ export function SplitExpenseModal({
             step="0.01"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm outline-none focus:border-[#0F766E]"
+            className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm outline-none focus:border-primary"
             placeholder="0.00"
           />
         </div>
@@ -67,7 +67,7 @@ export function SplitExpenseModal({
               setAmount("");
               onClose();
             }}
-            className="rounded-lg bg-[#0F766E] px-3 py-1.5 text-xs font-bold text-white"
+            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white"
           >
             Add Split
           </button>

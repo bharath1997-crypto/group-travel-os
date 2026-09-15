@@ -101,7 +101,7 @@ export default function SettingsLocalePage() {
       </div>
       {loading ? (
         <div className="flex justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-[#E94560]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-primary" />
         </div>
       ) : (
         <>
@@ -152,7 +152,7 @@ export default function SettingsLocalePage() {
               type="button"
               disabled={saving}
               onClick={() => void save()}
-              className="w-full rounded-xl bg-[#E94560] py-3 text-sm font-semibold text-white disabled:opacity-60"
+              className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save preferences"}
             </button>

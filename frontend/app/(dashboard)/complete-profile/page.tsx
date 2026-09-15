@@ -1,10 +1,11 @@
 "use client";
 
 import { type FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { apiFetch } from "@/lib/api";
 import { useDashboardUser } from "@/contexts/dashboard-user-context";
+import { authHref, authReturnPathFromParams, recalledAuthReturnPath } from "@/lib/auth-return";
 
 type Me = {
   email: string;
@@ -25,6 +26,8 @@ const field =
 export default function CompleteProfilePage() {
   const { refreshUser } = useDashboardUser();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = authReturnPathFromParams(searchParams);
   const [me, setMe] = useState<Me | null>(null);
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
@@ -50,7 +53,7 @@ export default function CompleteProfilePage() {
       if (typeof window !== "undefined") {
         localStorage.setItem("rovvy_pending_email", me.email.trim());
       }
-      router.push("/verify");
+      router.push(authHref("/verify", nextPath));
     } catch (err) {
       setToastMsg("Too many resend attempts. Please wait before trying again.");
       setTimeout(() => setToastMsg(null), 3000);
@@ -101,7 +104,7 @@ export default function CompleteProfilePage() {
       });
       setMe(u);
       await refreshUser();
-      router.replace("/explore");
+      router.replace(recalledAuthReturnPath(nextPath, true));
     } catch (err) {
       setMsg(err instanceof Error ? err.message : "Could not save profile");
     } finally {

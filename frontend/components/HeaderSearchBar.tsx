@@ -157,13 +157,13 @@ export function HeaderSearchBar() {
           aria-label="Ask Wayra"
           title="Ask Wayra"
         >
-          <WayraIcon state="flying" size={0.28} variant="raw" animate />
+          <WayraIcon state="flying" size={0.72} variant="launcher" animate={false} />
         </button>
 
         <button
           type="button"
           onClick={submitSearch}
-          className="shrink-0 rounded-full p-1.5 text-stone-500 transition-colors hover:bg-stone-100 hover:text-[#0F766E]"
+          className="shrink-0 rounded-full p-1.5 text-stone-500 transition-colors hover:bg-stone-100 hover:text-primary"
           aria-label="Search"
           title="Search"
         >

@@ -55,7 +55,7 @@ function ExploreCard({
         category={item.category}
         placeId={item.id}
       >
-        <span className="absolute left-3 top-3 rounded-lg bg-white/95 px-2 py-0.5 text-[9px] font-semibold text-teal-700 shadow-sm backdrop-blur">
+        <span className="absolute left-3 top-3 rounded-lg bg-white/95 px-2 py-0.5 text-[9px] font-semibold text-primary shadow-sm backdrop-blur">
           {item.category || "Sports"}
         </span>
         <span className={`absolute right-3 top-3 rounded-lg px-2 py-0.5 text-[9px] font-semibold text-white backdrop-blur ${isPlaceholder ? 'bg-amber-600/90' : 'bg-[#1E293B]/85'}`}>
@@ -64,7 +64,7 @@ function ExploreCard({
       </ExploreCardImage>
 
       <div className="flex flex-1 flex-col p-3">
-        <h3 className="mb-1 line-clamp-1 text-[13px] font-bold leading-snug text-[#1E293B] group-hover:text-teal-700">
+        <h3 className="mb-1 line-clamp-1 text-[13px] font-bold leading-snug text-[#1E293B] group-hover:text-primary">
           {item.name}
         </h3>
 
@@ -89,18 +89,18 @@ function ExploreCard({
 
         <div className="mt-auto space-y-1">
           <div className="flex items-start gap-1">
-            <MapPin size={11} className="mt-0.5 shrink-0 text-[#94A3B8]" />
+            <MapPin size={11} className="mt-0.5 shrink-0 text-muted" />
             <div className="min-w-0">
               <p className="truncate text-[10px] font-medium text-[#475569]">
                 {location.primary}
               </p>
-              <p className="truncate text-[9px] text-[#94A3B8]">
+              <p className="truncate text-[9px] text-muted">
                 {location.secondary}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <Calendar size={11} className="shrink-0 text-[#94A3B8]" />
+            <Calendar size={11} className="shrink-0 text-muted" />
             <span className="truncate text-[9px] text-[#64748B]">
               {item.date ? formatDateTime(item as ExploreEvent) : "Open daily"}
             </span>
@@ -344,7 +344,7 @@ export default function SeeAllSportsPage() {
           <p className="text-sm text-slate-500">No sports found for {city}. Try selecting a different location.</p>
           <Link
             href="/explore"
-            className="mt-4 inline-flex items-center justify-center rounded-xl bg-teal-600 px-4 py-2 text-xs font-bold text-white hover:bg-teal-700 shadow"
+            className="mt-4 inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white hover:bg-primary-hover shadow"
           >
             Change Location
           </Link>

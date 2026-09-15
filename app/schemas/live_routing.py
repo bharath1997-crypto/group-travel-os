@@ -77,3 +77,17 @@ class RoutePreviewResponse(BaseModel):
     lastMileApproximate: bool | None = None
     borderCrossings: list[BorderCrossingOut] | None = None
     borderNotice: str | None = None
+    alternatives: list["RouteAlternativeOut"] | None = None
+
+
+class RouteAlternativeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    label: str
+    tollLabel: str | None = None
+    hasTolls: bool | None = None
+    distanceMeters: float | None = None
+    durationSeconds: float | None = None
+    geometry: GeoJSONGeometry | None = None
+    provider: str = "osrm"

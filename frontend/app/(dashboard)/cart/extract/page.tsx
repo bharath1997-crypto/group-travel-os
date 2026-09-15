@@ -128,7 +128,7 @@ export default function VideoExtractPage() {
         {/* Header */}
         <div className="border-b border-slate-200 pb-5 mb-6">
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-teal-700" />
+            <Sparkles className="h-6 w-6 text-primary" />
             Social Location Extractor
           </h1>
           <p className="text-xs text-slate-500 mt-1">
@@ -137,7 +137,7 @@ export default function VideoExtractPage() {
         </div>
 
         {fromShare && loading ? (
-          <div className="flex items-center gap-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 mb-6 text-sm font-medium text-teal-800">
+          <div className="flex items-center gap-2 rounded-2xl border border-teal-200 bg-primary-soft px-4 py-3 mb-6 text-sm font-medium text-teal-800">
             <Loader2 className="h-4 w-4 animate-spin shrink-0" />
             Extracting location from shared link...
           </div>
@@ -204,10 +204,10 @@ export default function VideoExtractPage() {
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
             <div className="bg-slate-50 border-b border-slate-200 px-5 py-4 flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <Video className="h-4 w-4 text-teal-700" />
+                <Video className="h-4 w-4 text-primary" />
                 Parsed Metadata
               </span>
-              <span className="rounded bg-teal-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-teal-700">
+              <span className="rounded bg-primary-soft px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-primary">
                 {result.platform}
               </span>
             </div>
@@ -243,7 +243,7 @@ export default function VideoExtractPage() {
                 {result.extracted_place ? (
                   <div className="space-y-4">
                     <div className="flex items-start gap-3">
-                      <div className="rounded-full bg-teal-50 p-2 text-teal-700 shrink-0">
+                      <div className="rounded-full bg-primary-soft p-2 text-primary shrink-0">
                         <MapPin className="h-5 w-5" />
                       </div>
                       <div className="min-w-0 flex-1">

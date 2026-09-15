@@ -336,6 +336,8 @@ function isFutureTripCandidate(
 function isLiveSafe(classification: LocationClassification, built: BuiltSlice): boolean {
   if (built.countryMismatch) return false;
   if (classification === "country_mismatch") return false;
+  if (classification === "far_destination") return false;
+  if (built.distanceMiles != null && built.distanceMiles > LOCAL_DISTANCE_MILES) return false;
   return true;
 }
 
