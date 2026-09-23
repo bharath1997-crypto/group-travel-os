@@ -224,3 +224,19 @@ async def test_robots_parser_denies_when_fetch_fails_or_non_200() -> None:
     with patch("httpx.AsyncClient.get", AsyncMock(return_value=non_200_response)):
         parser_on_non_200 = await scraper._get_robots_parser(robots_url, user_agent)
     assert parser_on_non_200.can_fetch(user_agent, target_url) is False
+
+
+@pytest.mark.anyio
+async def test_robots_parser_cache_separates_entries_by_user_agent() -> None:
+    scraper = GenericEventScraper()
+    robots_url = "https://events.example.com/robots.txt"
+    response = MagicMock(status_code=200, text="User-agent: *\nAllow: /")
+
+    with patch("httpx.AsyncClient.get", AsyncMock(return_value=response)) as get_mock:
+        parser_a = await scraper._get_robots_parser(robots_url, "AgentA/1.0")
+        parser_b = await scraper._get_robots_parser(robots_url, "AgentB/1.0")
+
+    assert get_mock.await_count == 2
+    assert parser_a is not parser_b
+    assert (robots_url, "AgentA/1.0") in scraper._robots_cache
+    assert (robots_url, "AgentB/1.0") in scraper._robots_cache

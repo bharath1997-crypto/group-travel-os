@@ -1,5 +1,4 @@
 """Standalone generic, config-driven event scraper.
-
 This module supports source configuration entries that define URL templates and
 optional selector overrides. It prioritizes JSON-LD schema.org Event parsing,
 then falls back to generic HTML card/link scraping when JSON-LD is unavailable.
@@ -68,7 +67,7 @@ class GenericEventScraper:
         self.retry_attempts = retry_attempts
         self.retry_backoff_seconds = retry_backoff_seconds
         self.user_agents = user_agents or _DEFAULT_USER_AGENTS
-        self._robots_cache: dict[str, tuple[float, RobotFileParser]] = {}
+        self._robots_cache: dict[tuple[str, str], tuple[float, RobotFileParser]] = {}
         self._last_request_time_by_source: dict[str, float] = {}
 
     async def scrape_source(
@@ -88,7 +87,7 @@ class GenericEventScraper:
         if not url_template:
             return []
 
-        target_url = url_template.format(city=chosen_city, city_slug=city_slug)
+        target_url = url_template.replace("{city_slug}", city_slug).replace("{city}", chosen_city)
         selected_user_agent = random.choice(self.user_agents)
         try:
             if not await self._is_allowed_by_robots(target_url, selected_user_agent):
@@ -166,7 +165,8 @@ class GenericEventScraper:
 
     async def _get_robots_parser(self, robots_url: str, user_agent: str) -> RobotFileParser:
         now = time.time()
-        cached = self._robots_cache.get(robots_url)
+        cache_key = (robots_url, user_agent)
+        cached = self._robots_cache.get(cache_key)
         if cached and now - cached[0] < _ROBOTS_CACHE_TTL_SECONDS:
             return cached[1]
 
@@ -182,7 +182,7 @@ class GenericEventScraper:
         except Exception:
             parser.parse(["User-agent: *", "Disallow: /"])
 
-        self._robots_cache[robots_url] = (now, parser)
+        self._robots_cache[cache_key] = (now, parser)
         return parser
 
     async def _respect_rate_limit(self, source: dict[str, Any]) -> None:
@@ -510,3 +510,4 @@ class GenericEventScraper:
             db.rollback()
         finally:
             db.close()
+ 
