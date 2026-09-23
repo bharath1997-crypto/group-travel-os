@@ -89,12 +89,13 @@ class GenericEventScraper:
             return []
 
         target_url = url_template.format(city=chosen_city, city_slug=city_slug)
+        selected_user_agent = random.choice(self.user_agents)
         try:
-            if not await self._is_allowed_by_robots(target_url):
+            if not await self._is_allowed_by_robots(target_url, selected_user_agent):
                 logger.info("Robots disallowed scraping for provider=%s url=%s", provider, target_url)
                 return []
 
-            html = await self._fetch_page(provider, target_url, source)
+            html = await self._fetch_page(provider, target_url, source, selected_user_agent)
             parsed = self.parse_events(
                 html=html,
                 source=source,
@@ -132,13 +133,14 @@ class GenericEventScraper:
         provider: str,
         url: str,
         source: dict[str, Any],
+        user_agent: str,
     ) -> str:
         for attempt in range(1, self.retry_attempts + 1):
             await self._respect_rate_limit(source)
             headers = {
                 "Accept": "text/html,application/xhtml+xml",
                 "Accept-Language": "en-US,en;q=0.9",
-                "User-Agent": random.choice(self.user_agents),
+                "User-Agent": user_agent,
             }
             try:
                 async with httpx.AsyncClient(timeout=self.timeout_seconds, follow_redirects=True) as client:
@@ -154,22 +156,22 @@ class GenericEventScraper:
                 await asyncio.sleep(self.retry_backoff_seconds * attempt)
         raise RuntimeError("unreachable fetch retry state")
 
-    async def _is_allowed_by_robots(self, target_url: str) -> bool:
+    async def _is_allowed_by_robots(self, target_url: str, user_agent: str) -> bool:
         parsed = urlparse(target_url)
         if not parsed.scheme or not parsed.netloc:
             return False
         robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
-        parser = await self._get_robots_parser(robots_url)
-        return parser.can_fetch("*", target_url)
+        parser = await self._get_robots_parser(robots_url, user_agent)
+        return parser.can_fetch(user_agent, target_url)
 
-    async def _get_robots_parser(self, robots_url: str) -> RobotFileParser:
+    async def _get_robots_parser(self, robots_url: str, user_agent: str) -> RobotFileParser:
         now = time.time()
         cached = self._robots_cache.get(robots_url)
         if cached and now - cached[0] < _ROBOTS_CACHE_TTL_SECONDS:
             return cached[1]
 
         parser = RobotFileParser()
-        headers = {"User-Agent": random.choice(self.user_agents)}
+        headers = {"User-Agent": user_agent}
         try:
             async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
                 resp = await client.get(robots_url, headers=headers)
@@ -357,15 +359,19 @@ class GenericEventScraper:
         for event in events:
             normalized_url = self._normalize_url(str(event.get("url") or ""))
             provider_event_id = str(event.get("provider_event_id") or "")
-            dedupe_key = normalized_url or provider_event_id
+            if normalized_url:
+                dedupe_key = f"{normalized_url}::{provider_event_id}" if provider_event_id else normalized_url
+            else:
+                dedupe_key = provider_event_id
             if not dedupe_key:
-                dedupe_key = hashlib.sha256(normalized_url.encode()).hexdigest()[:16]
+                dedupe_key = hashlib.sha256((event.get("title") or "").encode()).hexdigest()[:16]
                 event["provider_event_id"] = dedupe_key
             if dedupe_key in seen_keys:
                 continue
             seen_keys.add(dedupe_key)
             if not event.get("provider_event_id"):
-                event["provider_event_id"] = hashlib.sha256(normalized_url.encode()).hexdigest()[:16]
+                seed = normalized_url or str(event.get("title") or "")
+                event["provider_event_id"] = hashlib.sha256(seed.encode()).hexdigest()[:16]
             deduped.append(event)
         return deduped
 

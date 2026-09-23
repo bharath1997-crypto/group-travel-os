@@ -2,7 +2,7 @@
 
 The generic scraper is a standalone, config-driven module at:
 
-- `/home/runner/work/group-travel-os/group-travel-os/app/services/generic_scraper/scraper.py`
+- `app/services/generic_scraper/scraper.py`
 
 ## What it does
 
@@ -42,7 +42,7 @@ The generic scraper is a standalone, config-driven module at:
 
 ## Add a new source (config-only)
 
-1. Copy `/home/runner/work/group-travel-os/group-travel-os/app/services/generic_scraper/sources.example.json`.
+1. Copy `app/services/generic_scraper/sources.example.json`.
 2. Add a new object in `sources`:
    - define `name`, `url`, `default_city`
    - optionally define `selectors` and `link_pattern`

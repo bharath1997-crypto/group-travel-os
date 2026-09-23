@@ -116,7 +116,7 @@ def test_dedup_by_normalized_url() -> None:
             "category": "event",
         },
         {
-            "provider_event_id": "bbb",
+            "provider_event_id": "aaa",
             "title": "Event One Duplicate",
             "url": "https://events.example.com/a",
             "start_datetime": None,
@@ -133,6 +133,42 @@ def test_dedup_by_normalized_url() -> None:
     deduped = scraper._dedupe_events(events)
     assert len(deduped) == 1
     assert deduped[0]["url"].startswith("https://events.example.com/a")
+
+
+def test_dedup_retains_same_url_with_different_provider_event_ids() -> None:
+    scraper = GenericEventScraper()
+    events = [
+        {
+            "provider_event_id": "aaa",
+            "title": "Event One",
+            "url": "https://events.example.com/a/",
+            "start_datetime": None,
+            "venue_name": None,
+            "venue_city": "Austin",
+            "image_url": None,
+            "price_min": None,
+            "price_max": None,
+            "currency": "USD",
+            "category": "event",
+        },
+        {
+            "provider_event_id": "bbb",
+            "title": "Event One Duplicate Provider",
+            "url": "https://events.example.com/a",
+            "start_datetime": None,
+            "venue_name": None,
+            "venue_city": "Austin",
+            "image_url": None,
+            "price_min": None,
+            "price_max": None,
+            "currency": "USD",
+            "category": "event",
+        },
+    ]
+
+    deduped = scraper._dedupe_events(events)
+    assert len(deduped) == 2
+    assert {event["provider_event_id"] for event in deduped} == {"aaa", "bbb"}
 
 
 @pytest.mark.anyio
