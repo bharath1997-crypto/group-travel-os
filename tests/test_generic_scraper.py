@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import httpx
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -135,7 +136,7 @@ def test_dedup_by_normalized_url() -> None:
     assert deduped[0]["url"].startswith("https://events.example.com/a")
 
 
-def test_dedup_retains_same_url_with_different_provider_event_ids() -> None:
+def test_dedup_drops_same_url_with_different_provider_event_ids() -> None:
     scraper = GenericEventScraper()
     events = [
         {
@@ -167,8 +168,8 @@ def test_dedup_retains_same_url_with_different_provider_event_ids() -> None:
     ]
 
     deduped = scraper._dedupe_events(events)
-    assert len(deduped) == 2
-    assert {event["provider_event_id"] for event in deduped} == {"aaa", "bbb"}
+    assert len(deduped) == 1
+    assert deduped[0]["provider_event_id"] == "aaa"
 
 
 @pytest.mark.anyio
@@ -205,3 +206,21 @@ async def test_robots_gating_disallowed_and_allowed() -> None:
         allowed_events = await scraper.scrape_source(source, city="Austin")
 
     assert len(allowed_events) == 1
+
+
+@pytest.mark.anyio
+async def test_robots_parser_denies_when_fetch_fails_or_non_200() -> None:
+    scraper = GenericEventScraper()
+    robots_url = "https://events.example.com/robots.txt"
+    target_url = "https://events.example.com/events/test"
+    user_agent = "TestBot/1.0"
+
+    with patch("httpx.AsyncClient.get", AsyncMock(side_effect=httpx.HTTPError("boom"))):
+        parser_on_error = await scraper._get_robots_parser(robots_url, user_agent)
+    assert parser_on_error.can_fetch(user_agent, target_url) is False
+
+    scraper._robots_cache.clear()
+    non_200_response = MagicMock(status_code=403, text="forbidden")
+    with patch("httpx.AsyncClient.get", AsyncMock(return_value=non_200_response)):
+        parser_on_non_200 = await scraper._get_robots_parser(robots_url, user_agent)
+    assert parser_on_non_200.can_fetch(user_agent, target_url) is False

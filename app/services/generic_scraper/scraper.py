@@ -178,9 +178,9 @@ class GenericEventScraper:
             if resp.status_code == 200:
                 parser.parse(resp.text.splitlines())
             else:
-                parser.parse(["User-agent: *", "Allow: /"])
+                parser.parse(["User-agent: *", "Disallow: /"])
         except Exception:
-            parser.parse(["User-agent: *", "Allow: /"])
+            parser.parse(["User-agent: *", "Disallow: /"])
 
         self._robots_cache[robots_url] = (now, parser)
         return parser
@@ -360,17 +360,29 @@ class GenericEventScraper:
             normalized_url = self._normalize_url(str(event.get("url") or ""))
             provider_event_id = str(event.get("provider_event_id") or "")
             if normalized_url:
-                dedupe_key = f"{normalized_url}::{provider_event_id}" if provider_event_id else normalized_url
+                dedupe_key = normalized_url
+            elif provider_event_id:
+                dedupe_key = f"provider:{provider_event_id}"
             else:
-                dedupe_key = provider_event_id
+                seed_parts = [
+                    str(event.get("url") or ""),
+                    str(event.get("title") or ""),
+                    str(event.get("start_datetime") or ""),
+                    str(event.get("venue_name") or ""),
+                    str(event.get("venue_city") or ""),
+                    str(event.get("category") or ""),
+                ]
+                dedupe_key = hashlib.sha256("|".join(seed_parts).encode()).hexdigest()[:16]
             if not dedupe_key:
-                dedupe_key = hashlib.sha256((event.get("title") or "").encode()).hexdigest()[:16]
+                dedupe_key = hashlib.sha256(
+                    str(event.get("title") or event.get("start_datetime") or "").encode()
+                ).hexdigest()[:16]
                 event["provider_event_id"] = dedupe_key
             if dedupe_key in seen_keys:
                 continue
             seen_keys.add(dedupe_key)
             if not event.get("provider_event_id"):
-                seed = normalized_url or str(event.get("title") or "")
+                seed = normalized_url or dedupe_key or str(event.get("title") or "")
                 event["provider_event_id"] = hashlib.sha256(seed.encode()).hexdigest()[:16]
             deduped.append(event)
         return deduped
