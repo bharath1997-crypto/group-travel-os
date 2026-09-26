@@ -1,8 +1,13 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "geocoding_live: live Nominatim geocoding battery (slow; opt-in)",
+    "seats_postgres: Seats integration tests requiring PostgreSQL + PostGIS",
+    "scaper_postgres: Scaper ingest tests; opt-in via SCAPER_PG_TEST_URL (rolled back)",
+]
 
 [tool.pyright]
-include = ["app", "tests", "alembic", "config.py", "run.py"]
+include = ["app", "scaper", "tests", "alembic", "config.py", "run.py"]
 venvPath = "."
 venv = ".venv"

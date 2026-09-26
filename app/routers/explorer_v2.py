@@ -349,11 +349,14 @@ def get_events(
             "limit": limit,
         }
     else:
-        # PostgreSQL PostGIS query
+        # PostgreSQL PostGIS query. Rows are written by Scaper (migrations/008):
+        # in-progress events stay visible until expires_at; cancelled/completed
+        # and provider-delisted (expires_at = fetch time) rows drop out.
         query = text("""
             SELECT id, title, start_time, end_time, ticket_url, price_min, price_max, category, lat, lng
             FROM events
-            WHERE start_time > :now
+            WHERE COALESCE(expires_at, end_time, start_time) > :now
+              AND status IN ('scheduled', 'sold_out', 'postponed')
               AND ST_DWithin(
                   geom::geography,
                   ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
