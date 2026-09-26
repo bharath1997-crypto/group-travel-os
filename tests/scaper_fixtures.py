@@ -64,3 +64,64 @@ def eventbrite_page(events: list[dict[str, Any]], *, continuation: str | None = 
         },
         "events": events,
     }
+
+
+# Ticketmaster Discovery v2 /events.json shape (live sample 2026-09-26, values synthetic).
+_TM_EVENT: dict[str, Any] = {
+    "id": "tmEvent0001",
+    "name": "Indie Night Live",
+    "type": "event",
+    "test": False,
+    "url": "https://www.ticketmaster.com/event/tmEvent0001",
+    "info": "All ages.",
+    "distance": 1.84,
+    "units": "KILOMETERS",
+    "_links": {"self": {"href": "/discovery/v2/events/tmEvent0001"}},
+    "images": [
+        {"ratio": "3_2", "url": "https://s1.ticketm.net/small.jpg", "width": 305, "fallback": False},
+        {"ratio": "16_9", "url": "https://s1.ticketm.net/wide.jpg", "width": 1024, "fallback": False},
+        {"ratio": "16_9", "url": "https://s1.ticketm.net/fallback.jpg", "width": 2048, "fallback": True},
+    ],
+    "dates": {
+        "start": {"localDate": "2026-10-02", "localTime": "20:00:00", "dateTime": "2026-10-03T00:00:00Z"},
+        "end": {"approximate": False, "noSpecificTime": False},
+        "timezone": "America/New_York",
+        "status": {"code": "onsale"},
+    },
+    "priceRanges": [
+        {"type": "standard", "currency": "USD", "min": 20.0, "max": 45.5},
+        {"type": "standard including fees", "currency": "USD", "min": 24.1, "max": 52.0},
+    ],
+    "classifications": [
+        {"primary": False, "segment": {"name": "Sports"}},
+        {"primary": True, "segment": {"name": "Music"}, "genre": {"name": "Rock"}},
+    ],
+    "_embedded": {
+        "venues": [
+            {
+                "id": "tmVenue0001",
+                "name": "Mills Ave Hall",
+                "timezone": "America/New_York",
+                "location": {"longitude": "-81.3647185", "latitude": "28.5598651"},
+                "address": {"line1": "1042 N Mills Ave"},
+                "city": {"name": "Orlando"},
+                "state": {"name": "Florida", "stateCode": "FL"},
+                "postalCode": "32803",
+                "country": {"name": "United States Of America", "countryCode": "US"},
+            }
+        ]
+    },
+}
+
+
+def ticketmaster_event(**overrides: Any) -> dict[str, Any]:
+    event = copy.deepcopy(_TM_EVENT)
+    event.update(overrides)
+    return event
+
+
+def ticketmaster_page(events: list[dict[str, Any]], *, number: int, total_pages: int, total: int) -> dict[str, Any]:
+    body: dict[str, Any] = {"page": {"size": 200, "totalElements": total, "totalPages": total_pages, "number": number}}
+    if events:
+        body["_embedded"] = {"events": events}
+    return body

@@ -55,7 +55,7 @@ python -m scaper run-due        # schedule this (Cloud Run job / cron), e.g. eve
 | Connector | Status | Note |
 |---|---|---|
 | Eventbrite | Built | Needs a curated organizer/venue list per city. That list is ongoing ops work. |
-| Ticketmaster Discovery | Next | Best free geo-search source (`latlong` + `radius`). The app already uses it via the v1 path. |
+| Ticketmaster Discovery | Built, preview-verified | Geo source (point + radius + window). Complete only when there are ≤ 1000 results. No cross-provider dedup with Eventbrite yet. |
 | Meetup | Verify | GraphQL API access has required a Meetup Pro subscription, so it may not be $0. |
 | Yelp Fusion | Verify | Plans have moved to paid tiers and the ToS limits caching. It likely cannot be stored into `places`. |
 | Google Places | Verify | ToS forbids caching content beyond `place_id`. Store links, not data. |

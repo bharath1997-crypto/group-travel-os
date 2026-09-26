@@ -13,3 +13,4 @@ class ScaperSettings(BaseSettings):
         validation_alias=AliasChoices("SCAPER_DATABASE_URL", "DATABASE_URL"),
     )
     eventbrite_token: str = Field(default="", validation_alias="EVENTBRITE_TOKEN")
+    ticketmaster_api_key: str = Field(default="", validation_alias="TICKETMASTER_API_KEY")

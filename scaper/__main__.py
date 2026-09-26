@@ -77,6 +77,8 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    # httpx logs full request URLs at INFO; Ticketmaster carries its API key in the query string.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     settings = ScaperSettings()
 
     if args.command == "preview":
