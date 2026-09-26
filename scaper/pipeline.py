@@ -22,6 +22,7 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
     - Vanished events are expired only after a complete, error-free fetch.
     - Past Scaper events (ended, or started 6h+ ago with no end) are deleted
       after any run whose fetch succeeded; never after a failed fetch.
+    - Then the source's city is re-deduplicated (duplicate_of), after purge.
     """
     if source.connector != connector.name:
         raise ValueError(f"source {source.name} is for {source.connector}, not {connector.name}")
@@ -79,11 +80,18 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
     # Purge only after a successful fetch, so a provider outage never empties Explorer.
     if fetch_error is None:
         try:
-            stats.purged = store.purge_past_events()
+            stats.purged = store.purge_past_events(source.id)
         except Exception:
             logger.exception("scaper purge failed after %s", source.name)
         if stats.purged:
             logger.info("scaper %s: purged %d past events", source.name, stats.purged)
+
+    # Dedup after purge: a purged canonical frees its duplicates, which get re-clustered here.
+    if source.city_slug:
+        try:
+            stats.deduped = store.dedupe_city(source.city_slug)
+        except Exception:
+            logger.exception("scaper dedup failed for %s", source.city_slug)
 
     status: RunStatus
     if fetch_error:
@@ -97,13 +105,21 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
     return RunReport(run_id=run.id, source=source.name, status=status, stats=stats, error_summary=error)
 
 
-def run_due(store: Store, connector_for: Callable[[str], Connector]) -> list[RunReport]:
+def run_due(
+    store: Store, connector_for: Callable[[str], Connector], *, city_slug: str | None = None
+) -> list[RunReport]:
     reports: list[RunReport] = []
+    failures = 0
     for source in store.due_sources():
+        if city_slug is not None and source.city_slug != city_slug:
+            continue
         try:
             reports.append(run_source(store, connector_for(source.connector), source))
         except RunInProgress:
             logger.info("scaper %s already running; skipped", source.name)
         except Exception:
             logger.exception("scaper could not run %s", source.name)
+            failures += 1
+    if failures:
+        raise RuntimeError(f"{failures} scheduled Scaper source(s) could not run")
     return reports

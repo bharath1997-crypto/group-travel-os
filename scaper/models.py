@@ -103,6 +103,7 @@ class RunStats(BaseModel):
     rejected: int = 0
     failed: int = 0
     purged: int = 0
+    deduped: int = 0
 
 
 class RunReport(BaseModel):

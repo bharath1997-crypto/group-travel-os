@@ -7,6 +7,7 @@ Scaper CLI.
   python -m scaper list-sources
   python -m scaper run --source eventbrite:org:123
   python -m scaper run-due            # cron entrypoint
+  python -m scaper relink-venues      # backfill after venue-matching changes
 
 `preview` hits the provider but never touches the database.
 """
@@ -73,7 +74,15 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("run", help="run one source now")
     p.add_argument("--source", required=True)
 
-    sub.add_parser("run-due", help="run every enabled source whose interval has elapsed")
+    p = sub.add_parser("run-due", help="run enabled sources whose interval has elapsed")
+    p.add_argument("--city-slug", help="limit to one configured city, e.g. orlando")
+
+    p = sub.add_parser("set-city-interval", help="set enabled source intervals for a city")
+    p.add_argument("--city-slug", required=True)
+    p.add_argument("--minutes", type=int, default=60)
+
+    p = sub.add_parser("relink-venues", help="re-match Scaper-created places against widened venue rules")
+    p.add_argument("--city-slug")
 
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -101,6 +110,10 @@ def main(argv: list[str] | None = None) -> int:
         for source in store.list_sources():
             print(source.model_dump_json())
         return 0
+    if args.command == "set-city-interval":
+        count = store.set_city_interval(args.city_slug, args.minutes)
+        print(json.dumps({"city_slug": args.city_slug, "interval_minutes": args.minutes, "updated_sources": count}))
+        return 0
     if args.command == "run":
         source = store.get_source(args.source)
         if source is None:
@@ -108,8 +121,11 @@ def main(argv: list[str] | None = None) -> int:
         report = run_source(store, build_connector(source.connector, settings), source)
         print(report.model_dump_json())
         return 0 if report.status in ("succeeded", "partial") else 1
+    if args.command == "relink-venues":
+        print(json.dumps({"relinked": store.relink_created_places(args.city_slug)}))
+        return 0
     if args.command == "run-due":
-        reports = run_due(store, lambda name: build_connector(name, settings))
+        reports = run_due(store, lambda name: build_connector(name, settings), city_slug=args.city_slug)
         for report in reports:
             print(report.model_dump_json())
         return 1 if any(r.status == "failed" for r in reports) else 0

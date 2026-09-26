@@ -7,15 +7,20 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal, Protocol
 
-from sqlalchemy import Engine, text
+from sqlalchemy import Connection, Engine, text
 from sqlalchemy.exc import IntegrityError
 
+from scaper.dedup import EventRow, norm_postcode, plan_duplicates, same_venue_address, same_venue_name
 from scaper.models import EventRecord, RawItem, RunStats, RunStatus, Source, VenueRecord
 
 # Venue -> places matching thresholds. Conservative: a wrong link attaches an
 # event to the wrong venue, a missed link only creates a duplicate place row.
 MATCH_RADIUS_M = 100.0
 MATCH_MIN_SIMILARITY = 0.45
+# Tier A2: wider radius, but only for names equal after normalization (dedup spec §3).
+WIDE_MATCH_RADIUS_M = 250.0
+# Tier A3: providers scatter one venue's pin by hundreds of metres; require name + street + postcode.
+ADDRESS_MATCH_RADIUS_M = 500.0
 # Stale 'running' rows older than this are treated as crashed workers.
 RUN_LEASE = "2 hours"
 
@@ -43,7 +48,8 @@ class Store(Protocol):
         self, connector: str, source: Source, raw_id: int, event: EventRecord, place_id: uuid.UUID | None
     ) -> Literal["inserted", "updated"]: ...
     def expire_unseen(self, source: Source, run: RunHandle) -> int: ...
-    def purge_past_events(self) -> int: ...
+    def purge_past_events(self, source_id: uuid.UUID) -> int: ...
+    def dedupe_city(self, city_slug: str) -> int: ...
 
 
 _SOURCE_COLUMNS = "id, connector, name, config, city_slug, enabled, interval_minutes, last_run_at"
@@ -103,6 +109,19 @@ class PostgresStore:
             ).mappings().all()
         return [Source.model_validate(dict(r)) for r in rows]
 
+    def set_city_interval(self, city_slug: str, minutes: int) -> int:
+        if minutes < 60:
+            raise ValueError("Scaper source interval must be at least 60 minutes")
+        with self.engine.begin() as conn:
+            result = conn.execute(
+                text("""
+                    UPDATE ingest.sources SET interval_minutes = :minutes, updated_at = now()
+                    WHERE city_slug = :city AND enabled
+                """),
+                {"minutes": minutes, "city": city_slug},
+            )
+        return result.rowcount
+
     def due_sources(self) -> list[Source]:
         with self.engine.connect() as conn:
             rows = conn.execute(
@@ -157,7 +176,7 @@ class PostgresStore:
                       status = :status, finished_at = now(), error_summary = :error,
                       fetched = :fetched, unchanged = :unchanged, inserted = :inserted,
                       updated = :updated, rejected = :rejected, failed = :failed,
-                      purged = :purged
+                      purged = :purged, deduped = :deduped
                     WHERE id = :id
                     RETURNING source_id
                     """
@@ -235,22 +254,12 @@ class PostgresStore:
                 return linked
 
             point = {"lat": venue.lat, "lng": venue.lng, "name": venue.name}
-            match = conn.execute(
-                text(
-                    """
-                    SELECT id, similarity(name, :name) AS score
-                    FROM places
-                    WHERE ST_DWithin(geog, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography, :radius)
-                      AND similarity(name, :name) >= :min_sim
-                    ORDER BY score DESC,
-                             ST_Distance(geog, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography)
-                    LIMIT 1
-                    """
-                ),
-                {**point, "radius": MATCH_RADIUS_M, "min_sim": MATCH_MIN_SIMILARITY},
-            ).first()
+            match = _match_place(
+                conn, venue.name, venue.lat, venue.lng, city_slug,
+                street=venue.freeform, postcode=venue.postcode,
+            )
             if match:
-                place_id, method, score = match.id, "geo_name", float(match.score)
+                place_id, method, score = match
             else:
                 # gers_id stays NULL: the Overture hot index (gers_id IS NOT NULL)
                 # never mixes these rows into place listings.
@@ -385,16 +394,201 @@ class PostgresStore:
             )
         return result.rowcount or 0
 
-    def purge_past_events(self) -> int:
-        """Delete finished Scaper events. source_id is set only by Scaper, so other writers' rows are untouched."""
+    def purge_past_events(self, source_id: uuid.UUID) -> int:
+        """Delete only this source's finished events and attribute its run count accurately."""
         with self.engine.begin() as conn:
             result = conn.execute(
                 text(
                     """
                     DELETE FROM public.events
-                    WHERE source_id IS NOT NULL
+                    WHERE source_id = :sid
                       AND COALESCE(end_time, start_time + interval '6 hours') < now()
-                    """
-                )
+                    """),
+                {"sid": source_id},
             )
         return result.rowcount or 0
+
+    def relink_created_places(self, city_slug: str | None = None) -> int:
+        """
+        Backfill for widened venue matching: re-match every place Scaper created.
+        On a match, all links and events pointing at the created place move to
+        the match and the orphaned created place is deleted. Returns relinked count.
+        """
+        relinked = 0
+        for _ in range(3):  # chains (created -> created -> Overture) settle within a few passes
+            with self.engine.connect() as conn:
+                created = conn.execute(
+                    text(
+                        """
+                        SELECT DISTINCT p.id, p.name, p.city_slug,
+                               p.address->>'freeform' AS street, p.address->>'postcode' AS postcode,
+                               ST_Y(p.geog::geometry) AS lat, ST_X(p.geog::geometry) AS lng
+                        FROM ingest.place_links l JOIN places p ON p.id = l.place_id
+                        WHERE l.method = 'created'
+                          AND (CAST(:city AS text) IS NULL OR p.city_slug = :city)
+                        """
+                    ),
+                    {"city": city_slug},
+                ).all()
+            changed = 0
+            for row in created:
+                with self.engine.begin() as conn:
+                    match = _match_place(
+                        conn, row.name, row.lat, row.lng, row.city_slug,
+                        street=row.street, postcode=row.postcode, exclude_id=row.id,
+                    )
+                    if not match:
+                        continue
+                    target, method, score = match
+                    conn.execute(
+                        text(
+                            """
+                            UPDATE ingest.place_links SET place_id = :target,
+                              method = CASE WHEN method = 'created' THEN :method ELSE method END,
+                              score = COALESCE(score, :score)
+                            WHERE place_id = :old
+                            """
+                        ),
+                        {"target": target, "method": method, "score": score, "old": row.id},
+                    )
+                    conn.execute(
+                        text("UPDATE public.events SET venue_place_id = :target WHERE venue_place_id = :old"),
+                        {"target": target, "old": row.id},
+                    )
+                    conn.execute(
+                        text(
+                            """
+                            DELETE FROM places p WHERE p.id = :old AND p.gers_id IS NULL
+                              AND NOT EXISTS (SELECT 1 FROM ingest.place_links WHERE place_id = :old)
+                              AND NOT EXISTS (SELECT 1 FROM public.events WHERE venue_place_id = :old)
+                            """
+                        ),
+                        {"old": row.id},
+                    )
+                    changed += 1
+            relinked += changed
+            if not changed:
+                break
+        return relinked
+
+    def dedupe_city(self, city_slug: str) -> int:
+        """Recompute duplicate_of for this city's current Scaper events. Returns rows newly hidden."""
+        with self.engine.begin() as conn:
+            rows = conn.execute(
+                text(
+                    """
+                    SELECT id, provider, title, venue_name, venue_place_id, lat, lng, start_time,
+                           end_time, price_min, image_url, first_seen_at, status, duplicate_of
+                    FROM public.events
+                    WHERE source_id IS NOT NULL AND city_slug = :city
+                      AND COALESCE(expires_at, end_time, start_time) > now()
+                    FOR UPDATE
+                    """
+                ),
+                {"city": city_slug},
+            ).mappings().all()
+            events = [
+                EventRow(
+                    id=r["id"],
+                    provider=r["provider"],
+                    title=r["title"] or "",
+                    venue_name=r["venue_name"],
+                    venue_place_id=r["venue_place_id"],
+                    lat=r["lat"],
+                    lng=r["lng"],
+                    start_time=r["start_time"],
+                    end_time=r["end_time"],
+                    price_min=float(r["price_min"]) if r["price_min"] is not None else None,
+                    image_url=r["image_url"],
+                    first_seen_at=r["first_seen_at"],
+                    status=r["status"],
+                )
+                for r in rows
+            ]
+            plan = plan_duplicates(events, city_slug)
+            current = {r["id"]: r["duplicate_of"] for r in rows}
+            newly_hidden = 0
+            for event_id, dup_of in plan.items():
+                if current[event_id] == dup_of:
+                    continue
+                if dup_of is not None and current[event_id] is None:
+                    newly_hidden += 1
+                conn.execute(
+                    text("UPDATE public.events SET duplicate_of = :dup, updated_at = now() WHERE id = :id"),
+                    {"dup": dup_of, "id": event_id},
+                )
+        return newly_hidden
+
+
+def _match_place(
+    conn: Connection,
+    name: str,
+    lat: float,
+    lng: float,
+    city_slug: str | None,
+    *,
+    street: str | None = None,
+    postcode: str | None = None,
+    exclude_id: uuid.UUID | None = None,
+) -> tuple[uuid.UUID, str, float | None] | None:
+    """
+    Tier A1 (100 m + trigram), A2 (250 m + normalized name), then A3 (500 m +
+    normalized name + street + postcode all equal). Overture rows win ties.
+    """
+    params = {"name": name, "lat": lat, "lng": lng, "exclude": exclude_id}
+    tight = conn.execute(
+        text(
+            """
+            SELECT id, similarity(name, :name) AS score
+            FROM places
+            WHERE ST_DWithin(geog, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography, :radius)
+              AND similarity(name, :name) >= :min_sim
+              AND (CAST(:exclude AS uuid) IS NULL OR id <> CAST(:exclude AS uuid))
+            ORDER BY score DESC, gers_id IS NULL,
+                     ST_Distance(geog, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography)
+            LIMIT 1
+            """
+        ),
+        {**params, "radius": MATCH_RADIUS_M, "min_sim": MATCH_MIN_SIMILARITY},
+    ).first()
+    if tight:
+        return tight.id, "geo_name", float(tight.score)
+    wide = conn.execute(
+        text(
+            """
+            SELECT id, name
+            FROM places
+            WHERE ST_DWithin(geog, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography, :radius)
+              AND (CAST(:exclude AS uuid) IS NULL OR id <> CAST(:exclude AS uuid))
+            ORDER BY gers_id IS NULL,
+                     ST_Distance(geog, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography)
+            LIMIT 300
+            """
+        ),
+        {**params, "radius": WIDE_MATCH_RADIUS_M},
+    ).all()
+    for candidate in wide:
+        if same_venue_name(name, candidate.name, city_slug):
+            return candidate.id, "geo_name_wide", None
+    zip5 = norm_postcode(postcode)
+    if not street or not zip5:
+        return None
+    by_address = conn.execute(
+        text(
+            """
+            SELECT id, name, address->>'freeform' AS street, address->>'postcode' AS postcode
+            FROM places
+            WHERE ST_DWithin(geog, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography, :radius)
+              AND left(replace(upper(address->>'postcode'), ' ', ''), 5) = left(:zip, 5)
+              AND (CAST(:exclude AS uuid) IS NULL OR id <> CAST(:exclude AS uuid))
+            ORDER BY gers_id IS NULL,
+                     ST_Distance(geog, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography)
+            LIMIT 300
+            """
+        ),
+        {**params, "radius": ADDRESS_MATCH_RADIUS_M, "zip": zip5},
+    ).all()
+    for candidate in by_address:
+        if same_venue_address(name, street, postcode, candidate.name, candidate.street, candidate.postcode, city_slug):
+            return candidate.id, "geo_address", None
+    return None

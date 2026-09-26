@@ -26,6 +26,7 @@ class MemoryStore:
         self.events: dict[tuple[str, str], dict[str, Any]] = {}
         self.links: dict[tuple[str, str], uuid.UUID] = {}
         self.clock = 0
+        self.deduped_cities: list[str] = []
 
     def _tick(self) -> int:
         self.clock += 1
@@ -82,9 +83,16 @@ class MemoryStore:
         }
         return "updated" if existed else "inserted"
 
-    def purge_past_events(self) -> int:
+    def dedupe_city(self, city_slug: str) -> int:
+        self.deduped_cities.append(city_slug)
+        return 0
+
+    def purge_past_events(self, source_id: uuid.UUID) -> int:
         now = datetime.now(timezone.utc)
-        past = [k for k, e in self.events.items() if (e["event"].ends_at or e["event"].starts_at) < now]
+        past = [
+            k for k, e in self.events.items()
+            if e["source"] == source_id and (e["event"].ends_at or e["event"].starts_at) < now
+        ]
         for k in past:
             del self.events[k]
         return len(past)
@@ -141,7 +149,7 @@ def test_first_run_inserts_and_links_venue() -> None:
 
     assert report.status == "succeeded"
     assert report.stats.model_dump() == {
-        "fetched": 2, "unchanged": 0, "inserted": 2, "updated": 0, "rejected": 0, "failed": 0, "purged": 0,
+        "fetched": 2, "unchanged": 0, "inserted": 2, "updated": 0, "rejected": 0, "failed": 0, "purged": 0, "deduped": 0,
     }
     place_ids = {e["place_id"] for e in store.events.values()}
     assert place_ids == {store.links[("eventbrite", "7770001")]}
@@ -244,6 +252,17 @@ def test_run_due_skips_source_already_running() -> None:
     store.start_run(busy)
     reports = run_due(store, lambda name: ListConnector([eventbrite_event(id="1")]))
     assert [r.source for r in reports] == ["idle"]
+
+
+def test_run_due_can_refresh_only_orlando() -> None:
+    orlando = _source(name="orlando").model_copy(update={"city_slug": "orlando"})
+    chicago = _source(name="chicago").model_copy(update={"city_slug": "chicago"})
+    store = MemoryStore([orlando, chicago])
+    reports = run_due(
+        store, lambda name: ListConnector([eventbrite_event(id="1")]), city_slug="orlando"
+    )
+    assert [r.source for r in reports] == ["orlando"]
+    assert len(store.runs) == 1
 
 
 PAST = {"utc": "2020-01-01T00:00:00Z", "timezone": "UTC"}

@@ -26,7 +26,10 @@ from tests.test_scaper_pipeline import ListConnector
 
 pytestmark = pytest.mark.scaper_postgres
 
-MIGRATION = Path(__file__).resolve().parents[1] / "migrations" / "008_scaper_ingest.sql"
+MIGRATIONS = [
+    Path(__file__).resolve().parents[1] / "migrations" / name
+    for name in ("008_scaper_ingest.sql", "009_scaper_dedup.sql")
+]
 # Open ocean, so no Overture place can match by accident.
 OCEAN = {"lat": "0.5000", "lng": "-150.5000"}
 
@@ -57,9 +60,9 @@ def pg() -> Iterator[tuple[PostgresStore, Connection]]:
     outer = conn.begin()
     try:
         conn.exec_driver_sql("SET LOCAL lock_timeout = '5s'")
-        sql = MIGRATION.read_text(encoding="utf-8")
-        conn.exec_driver_sql(sql)
-        conn.exec_driver_sql(sql)  # idempotent
+        for _ in range(2):  # idempotent
+            for migration in MIGRATIONS:
+                conn.exec_driver_sql(migration.read_text(encoding="utf-8"))
         yield PostgresStore(_TxEngine(conn)), conn  # type: ignore[arg-type]
     finally:
         outer.rollback()
@@ -193,3 +196,87 @@ def test_purge_deletes_only_past_scaper_events(pg) -> None:
     assert conn.execute(text("SELECT count(*) FROM events WHERE external_id = 'scaper-it-foreign'")).scalar_one() == 1
     logged = conn.execute(text("SELECT purged FROM ingest.runs WHERE id = :id"), {"id": report.run_id}).scalar_one()
     assert logged == report.stats.purged
+
+
+# ── 009 dedup ─────────────────────────────────────────────────────────────
+
+FUTURE = {"utc": "2099-01-01T00:00:00Z", "timezone": "UTC"}
+
+
+def _visible(conn: Connection, source: Source) -> set[str]:
+    return {
+        r.external_id
+        for r in conn.execute(
+            text(
+                "SELECT external_id FROM events WHERE source_id = :sid AND duplicate_of IS NULL "
+                "AND status IN ('scheduled', 'sold_out', 'postponed')"
+            ),
+            {"sid": source.id},
+        )
+    }
+
+
+def test_duplicate_hidden_distinct_kept_and_canonical_purge_frees_duplicate(pg) -> None:
+    store, conn = pg
+    source = _add_source(store)
+    events = [
+        _ocean_event("joey-a", name={"text": 'Joey Cash "Poser Tour"'}, start=FUTURE, end=None),
+        _ocean_event("joey-b", name={"text": "Joey Cash at Scaper IT Hall"}, start=FUTURE, end=None, logo=None),
+        _ocean_event("omri", name={"text": "OMRI. @ Scaper IT Hall"}, start=FUTURE, end=None),
+        _ocean_event("mash", name={"text": "MashBit @ Scaper IT Hall ROOFTOP"}, start=FUTURE, end=None),
+    ]
+    report = run_source(store, ListConnector(events), source)
+
+    assert report.stats.deduped == 1
+    assert _visible(conn, source) == {"joey-a", "omri", "mash"}  # joey-a has the image -> canonical
+    assert conn.execute(text("SELECT deduped FROM ingest.runs WHERE id = :id"), {"id": report.run_id}).scalar_one() == 1
+
+    again = run_source(store, ListConnector(events), source)
+    assert again.stats.deduped == 0  # idempotent
+
+    conn.execute(text("DELETE FROM events WHERE external_id = 'joey-a' AND source_id = :sid"), {"sid": source.id})
+    assert "joey-b" in _visible(conn, source)  # ON DELETE SET NULL resurfaces it
+
+
+def test_wide_venue_match_and_relink_backfill(pg) -> None:
+    store, conn = pg
+    source = _add_source(store)
+    run_source(store, ListConnector([_ocean_event("it-1", start=FUTURE, end=None)]), source)
+    created = conn.execute(
+        text("SELECT place_id FROM ingest.place_links WHERE external_id = 'scaper-it-venue' AND method = 'created'")
+    ).scalar_one()
+
+    # An Overture row ~180 m away with the same normalized name ("scaper it hall" minus city tokens).
+    overture = conn.execute(
+        text(
+            "INSERT INTO places (gers_id, name, geog) VALUES ('scaper-it-gers', 'The Scaper IT Hall', "
+            "ST_SetSRID(ST_MakePoint(-150.5, 0.5016), 4326)::geography) RETURNING id"
+        )
+    ).scalar_one()
+    assert store.relink_created_places("scaper-it") == 1
+
+    link = conn.execute(text("SELECT place_id, method FROM ingest.place_links WHERE external_id = 'scaper-it-venue'")).one()
+    assert (link.place_id, link.method) == (overture, "geo_name_wide")
+    assert conn.execute(text("SELECT venue_place_id FROM events WHERE external_id = 'it-1'")).scalar_one() == overture
+    assert conn.execute(text("SELECT count(*) FROM places WHERE id = :id"), {"id": created}).scalar_one() == 0
+
+
+def test_address_tier_matches_beyond_wide_radius_only_on_same_street(pg) -> None:
+    store, conn = pg
+    source = _add_source(store)
+    run_source(store, ListConnector([_ocean_event("it-1", start=FUTURE, end=None)]), source)  # venue: 100 W Wacker Dr, 60601
+
+    insert = text(
+        "INSERT INTO places (gers_id, name, geog, address) VALUES (:gers, 'The Scaper IT Hall', "
+        "ST_SetSRID(ST_MakePoint(-150.5, :lat), 4326)::geography, CAST(:address AS jsonb)) RETURNING id"
+    )
+    # ~300 m, same name and postcode, different street: must not match.
+    conn.execute(insert, {"gers": "scaper-it-decoy", "lat": 0.5027, "address": '{"freeform": "200 W Wacker Dr", "postcode": "60601"}'})
+    # ~400 m, same name, same street spelled out, ZIP+4: tier A3 match.
+    target = conn.execute(
+        insert, {"gers": "scaper-it-a3", "lat": 0.5036, "address": '{"freeform": "100 West Wacker Drive", "postcode": "60601-1234"}'}
+    ).scalar_one()
+
+    assert store.relink_created_places("scaper-it") == 1
+    link = conn.execute(text("SELECT place_id, method FROM ingest.place_links WHERE external_id = 'scaper-it-venue'")).one()
+    assert (link.place_id, link.method) == (target, "geo_address")
