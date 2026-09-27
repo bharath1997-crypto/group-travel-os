@@ -111,7 +111,9 @@ class _FakeProvider:
 def test_registry_enables_only_configured_ids():
     with patch("app.services.flight_providers.registry.settings") as mocked:
         mocked.flight_enabled_providers = "duffel"
-        providers = enabled_providers()
+        with patch("app.services.flight_providers.duffel_provider.settings") as duffel_settings:
+            duffel_settings.duffel_api_key = "duffel_test_key"
+            providers = enabled_providers()
     assert [provider.provider_id for provider in providers] == ["duffel"]
 
 
@@ -211,4 +213,3 @@ def test_coordinator_mixed_environments_are_not_mislabeled():
     assert response.environment is None
     assert response.live_mode is None
     assert {status.environment for status in response.provider_statuses} == {"test", "live"}
-

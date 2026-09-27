@@ -572,9 +572,12 @@ def test_provider_directory_sandbox_only_when_configured(monkeypatch):
 def test_unconfigured_amadeus_skipped_for_search():
     with patch("app.services.flight_providers.registry.settings") as mocked:
         mocked.flight_enabled_providers = "duffel,amadeus"
-        with patch("app.services.flight_providers.amadeus_provider.settings") as amadeus_settings:
+        with patch("app.services.flight_providers.amadeus_provider.settings") as amadeus_settings, patch(
+            "app.services.flight_providers.duffel_provider.settings"
+        ) as duffel_settings:
             amadeus_settings.amadeus_client_id = ""
             amadeus_settings.amadeus_client_secret = ""
+            duffel_settings.duffel_api_key = "duffel_test_key"
             providers = enabled_providers()
     assert [provider.provider_id for provider in providers] == ["duffel"]
 
