@@ -41,6 +41,8 @@ const CATEGORIES = [
   { id: "Shopping", label: "Shopping", icon: "🛍️" },
 ];
 
+const EVENTS_PAGE_SIZE = 8;
+
 const TOP_CITIES = [
   { name: "Chicago", state: "IL", emoji: "🏙️", count: "2,400+" },
   { name: "New York", state: "NY", emoji: "🗽", count: "4,200+" },
@@ -77,6 +79,8 @@ export default function ExploreV2Page() {
   const [dateFilter, setDateFilter] = useState<"any" | "today" | "weekend">("any");
   const [showDateDropdown, setShowDateDropdown] = useState(false);
   const [activeCategory, setActiveCategory] = useState("All");
+  const [eventsCursor, setEventsCursor] = useState<string | null>(null);
+  const [loadingMoreEvents, setLoadingMoreEvents] = useState(false);
 
   const [sections, setSections] = useState<SectionsData>({
     activities: [],
@@ -92,7 +96,7 @@ export default function ExploreV2Page() {
     shopping: [],
   });
 
-  const fetchV2 = async <T,>(path: string, params: Record<string, any>) => {
+  const fetchV2Response = async (path: string, params: Record<string, any>) => {
     const token = getToken();
     if (!token) {
       throw new Error("Unauthorized");
@@ -123,7 +127,40 @@ export default function ExploreV2Page() {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
 
-    return res.json() as Promise<T>;
+    return res;
+  };
+
+  const fetchV2 = async <T,>(path: string, params: Record<string, any>) =>
+    (await fetchV2Response(path, params)).json() as Promise<T>;
+
+  // Events are keyset-paginated: the body is a plain list and the next cursor
+  // arrives in the X-Next-Cursor header; send it back as after_id.
+  const fetchEventsPage = async (latitude: number, longitude: number, afterId?: string) => {
+    const res = await fetchV2Response("/events", {
+      lat: latitude,
+      lng: longitude,
+      radius_m: 50000,
+      limit: EVENTS_PAGE_SIZE,
+      after_id: afterId,
+    });
+    return {
+      events: (await res.json()) as ExploreEventV2[],
+      nextCursor: res.headers.get("X-Next-Cursor"),
+    };
+  };
+
+  const loadMoreEvents = async () => {
+    if (!eventsCursor || loadingMoreEvents) return;
+    setLoadingMoreEvents(true);
+    try {
+      const page = await fetchEventsPage(lat, lng, eventsCursor);
+      setSections((prev) => ({ ...prev, events: [...prev.events, ...page.events] }));
+      setEventsCursor(page.nextCursor);
+    } catch (err) {
+      console.error("Failed to load more events:", err);
+    } finally {
+      setLoadingMoreEvents(false);
+    }
   };
 
   const loadData = async (latitude: number, longitude: number) => {
@@ -158,7 +195,7 @@ export default function ExploreV2Page() {
         shoppingRes,
       ] = await Promise.all([
         fetchV2<{ places: ExplorePlace[] }>("/nearby", { lat: latitude, lng: longitude, limit: 5 }).catch(() => ({ places: [] })),
-        fetchV2<ExploreEventV2[]>("/events", { lat: latitude, lng: longitude, radius_m: 50000, limit: 8 }).catch(() => []),
+        fetchEventsPage(latitude, longitude).catch(() => ({ events: [] as ExploreEventV2[], nextCursor: null })),
         fetchV2<{ places: ExplorePlace[] }>("/nearby", { lat: latitude, lng: longitude, limit: 5, categories: ["landmark", "sightseeing", "monument"] }).catch(() => ({ places: [] })),
         fetchV2<{ places: ExplorePlace[] }>("/nearby", { lat: latitude, lng: longitude, limit: 5, categories: ["nature", "trail", "viewpoint"] }).catch(() => ({ places: [] })),
         fetchV2<{ places: ExplorePlace[] }>("/nearby", { lat: latitude, lng: longitude, limit: 5, categories: ["gaming"] }).catch(() => ({ places: [] })),
@@ -172,7 +209,7 @@ export default function ExploreV2Page() {
 
       setSections({
         activities: activitiesRes.places || [],
-        events: eventsRes || [],
+        events: eventsRes.events,
         landmarks: landmarksRes.places || [],
         trekking: trekkingRes.places || [],
         gaming: gamingRes.places || [],
@@ -183,6 +220,7 @@ export default function ExploreV2Page() {
         sports: sportsRes.places || [],
         shopping: shoppingRes.places || [],
       });
+      setEventsCursor(eventsRes.nextCursor);
     } catch (error) {
       console.error("Failed to load explorer data:", error);
     } finally {
@@ -570,6 +608,18 @@ export default function ExploreV2Page() {
                     <ExploreV2EventCard key={event.id} event={event} />
                   ))}
                 </ExploreV2Section>
+                {eventsCursor && (
+                  <div className="mt-3 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={loadMoreEvents}
+                      disabled={loadingMoreEvents}
+                      className="rounded-full border border-gray-200 px-4 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                    >
+                      {loadingMoreEvents ? "Loading…" : "Load more events"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

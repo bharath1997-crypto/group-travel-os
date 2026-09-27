@@ -165,6 +165,8 @@ def _add_middleware(app: FastAPI) -> None:
         "allow_credentials": True,
         "allow_methods": ["*"],
         "allow_headers": ["*"],
+        # Browsers hide non-safelisted response headers unless exposed.
+        "expose_headers": ["X-Next-Cursor"],
     }
     env = (settings.ENVIRONMENT or "").strip().lower()
     if settings.DEBUG or env in ("development", "dev", "local"):
