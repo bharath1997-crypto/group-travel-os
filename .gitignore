@@ -100,6 +100,10 @@ firebase-credentials.json
 # ---------------------------------------------------------------------------
 # OSM ETL local data (large; download separately)
 # ---------------------------------------------------------------------------
+data/raw.geojson
+data/raw.geojson.state
+data/usa/
+data/filtered.csv
 scripts/*.pbf
 scripts/*.osm.pbf
 scripts/tiger/
