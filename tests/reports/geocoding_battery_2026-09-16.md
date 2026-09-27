@@ -1,0 +1,113 @@
+# Geocoding remote battery report
+
+- Generated: 2026-09-17T09:13:10.347271+00:00
+- Base URL: http://127.0.0.1:8000/api/v1
+- Total cases: 1015
+- Success: **772** / 1015 (76.06%)
+- Failed: **243**
+- With country: 626
+- With state/province: 530
+- With city: 145
+- Avg latency: 84347 ms
+
+## Failures (first 15)
+
+- `anchor-001` (65.43711, -44.69036) — Greenland: empty_body
+- `anchor-003` (-78.5255, -85.6171) — Antarctica: empty_body
+- `anchor-004` (16.76659, -3.00256) — Mali: empty_body
+- `anchor-005` (72.4, 126.7) — Russia: empty_body
+- `anchor-006` (-25.8, 131.2) — Australia: empty_body
+- `anchor-007` (-49.2, -73.5) — Chile: empty_body
+- `anchor-008` (45.2, 103.8) — Mongolia: None
+- `anchor-009` (-24.5, 15.3) — Namibia: empty_body
+- `anchor-010` (64.8, -136.2) — Canada: empty_body
+- `anchor-011` (68.5, -150.2) — United States: empty_body
+- `anchor-012` (-20.2, -67.5) — Bolivia: empty_body
+- `anchor-013` (33.5, 88.0) — China: empty_body
+- `anchor-014` (47.5, 67.0) — Kazakhstan: empty_body
+- `anchor-015` (21.5, 98.2) — Myanmar: empty_body
+- `remote-01-001` (69.67312, -119.12462) — Canadian Arctic: empty_body
+
+## Successes (first 15)
+
+- `anchor-002` (66.01268, -105.93853) → **Kitikmeot Region**, Nunavut, Canada
+- `remote-01-027` (65.20373, -87.21709) → **Canada**, —, Canada
+- `remote-01-028` (69.77642, -98.68041) → **Kitikmeot Region**, Nunavut, Canada
+- `remote-01-029` (64.05366, -94.48056) → **Kivalliq Region**, Nunavut, Canada
+- `remote-01-030` (63.96083, -106.71906) → **North Slave Region**, Northwest Territories, Canada
+- `remote-01-031` (73.87428, -97.60001) → **Qikiqtaaluk Region**, Nunavut, Canada
+- `remote-01-032` (68.6834, -96.0385) → **Kitikmeot Region**, Nunavut, Canada
+- `remote-01-033` (72.11422, -92.84) → **Qikiqtaaluk Region**, Nunavut, Canada
+- `remote-01-034` (64.74858, -118.87649) → **North Slave Region**, Northwest Territories, Canada
+- `remote-01-035` (65.78544, -110.62907) → **Kitikmeot Region**, Nunavut, Canada
+- `remote-02-001` (63.37573, -23.71271) → **Address**, —, —
+- `remote-02-002` (74.02188, -42.55966) → **Greenland**, —, Greenland
+- `remote-02-003` (70.48702, -40.13104) → **Sermersooq**, —, Greenland
+- `remote-02-004` (74.63276, -38.23444) → **Greenland**, —, Greenland
+- `remote-02-005` (64.23808, -44.60117) → **Sermersooq**, —, Greenland
+
+## By region
+
+- Alaska interior: 35/35 ok (100.0%)
+- Altiplano: 20/20 ok (100.0%)
+- Amazon remote: 25/25 ok (100.0%)
+- Anatolian plateau: 9/12 ok (75.0%)
+- Antarctica: 0/1 ok (0.0%)
+- Antarctica coast: 18/18 ok (100.0%)
+- Antarctica interior: 15/15 ok (100.0%)
+- Australia: 0/1 ok (0.0%)
+- Australian outback: 1/30 ok (3.3%)
+- Bolivia: 0/1 ok (0.0%)
+- Borneo interior: 0/12 ok (0.0%)
+- Brazilian cerrado: 18/18 ok (100.0%)
+- Canada: 1/2 ok (50.0%)
+- Canadian Arctic: 9/35 ok (25.7%)
+- Central Asian steppe: 22/22 ok (100.0%)
+- Chile: 0/1 ok (0.0%)
+- China: 0/1 ok (0.0%)
+- Congo basin: 18/18 ok (100.0%)
+- Empty Quarter: 22/22 ok (100.0%)
+- Ethiopian highlands: 15/15 ok (100.0%)
+- Faroe Islands: 8/8 ok (100.0%)
+- Gibson desert: 0/15 ok (0.0%)
+- Global sparse grid: 93/110 ok (84.5%)
+- Greenland: 30/31 ok (96.8%)
+- Hokkaido interior: 12/12 ok (100.0%)
+- Horn of Africa interior: 18/18 ok (100.0%)
+- Hudson Bay lowlands: 15/15 ok (100.0%)
+- Iceland interior: 10/10 ok (100.0%)
+- Iranian plateau: 18/18 ok (100.0%)
+- Kalahari: 18/18 ok (100.0%)
+- Kamchatka: 12/12 ok (100.0%)
+- Kazakhstan: 0/1 ok (0.0%)
+- Labrador remote: 15/15 ok (100.0%)
+- Lapland: 0/15 ok (0.0%)
+- Madagascar interior: 15/15 ok (100.0%)
+- Mali: 0/1 ok (0.0%)
+- Mediterranean islands interior: 10/10 ok (100.0%)
+- Mongolia: 0/1 ok (0.0%)
+- Mongolia Gobi: 0/22 ok (0.0%)
+- Myanmar: 0/1 ok (0.0%)
+- Namibia: 0/1 ok (0.0%)
+- NE India hills: 12/12 ok (100.0%)
+- NZ South Island alps: 0/12 ok (0.0%)
+- Pacific atolls (land): 10/20 ok (50.0%)
+- Patagonia: 28/28 ok (100.0%)
+- PNG highlands: 0/12 ok (0.0%)
+- Rajasthan desert: 12/12 ok (100.0%)
+- Russia: 0/1 ok (0.0%)
+- Russian Far East: 16/22 ok (72.7%)
+- Sahara central: 22/22 ok (100.0%)
+- Sahara west: 22/22 ok (100.0%)
+- Sahel: 18/18 ok (100.0%)
+- Scottish Highlands: 0/12 ok (0.0%)
+- Siberia taiga: 32/32 ok (100.0%)
+- Sonoran desert: 18/18 ok (100.0%)
+- Svalbard: 12/12 ok (100.0%)
+- Taiwan central mountains: 10/10 ok (100.0%)
+- Tibet plateau: 0/18 ok (0.0%)
+- United States: 0/1 ok (0.0%)
+- US Great Basin: 22/22 ok (100.0%)
+- US Montana badlands: 18/18 ok (100.0%)
+- Western China desert: 0/20 ok (0.0%)
+- Yukon wilderness: 18/18 ok (100.0%)

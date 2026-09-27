@@ -1,0 +1,31 @@
+/** Shared place pick / preview row — map taps, search, saved places. */
+export type PlacePreviewData = {
+  name: string;
+  categoryLabel: string;
+  address: string;
+  phone: string | null;
+  lat: number;
+  lng: number;
+  distanceM: number | null;
+  openingHours: string | null;
+  openStatus: string | null;
+  placeKey?: string;
+  osmType?: string | null;
+  osmId?: number | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  postcode?: string | null;
+  continent?: string | null;
+  district?: string | null;
+  localityType?: string | null;
+  localityName?: string | null;
+  terrainHint?: string | null;
+  mapPresenceNote?: string | null;
+  coordinatesLabel?: string | null;
+  source?: string;
+  tags?: Record<string, unknown>;
+  nameOriginal?: string | null;
+  nameSourceLanguage?: string | null;
+  nameTranslated?: boolean;
+};

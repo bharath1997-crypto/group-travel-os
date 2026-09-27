@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.services.geocoding_service import clear_geocoding_cache_for_tests
+from app.services.geocoding_service import GeocodingService, clear_geocoding_cache_for_tests
 
 client = TestClient(app)
 
@@ -108,6 +108,44 @@ def test_geocoding_reverse_upstream_failure_returns_empty_object():
     assert res.json() == {}
 
 
+def test_geocoding_reverse_retries_after_rate_limit():
+    rate_limited = MagicMock()
+    rate_limited.status_code = 429
+    rate_limited.json.return_value = {"error": "rate limited"}
+
+    success = MagicMock()
+    success.status_code = 200
+    success.json.return_value = {
+        "display_name": "Greenland",
+        "name": "Greenland",
+        "address": {"country": "Greenland", "country_code": "gl"},
+        "type": "country",
+        "class": "place",
+    }
+
+    mock_client = AsyncMock()
+    mock_client.get = AsyncMock(side_effect=[rate_limited, success])
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with (
+        patch(
+            "app.services.geocoding_service.httpx.AsyncClient",
+            return_value=mock_client,
+        ),
+        patch("app.services.geocoding_service.asyncio.sleep", new=AsyncMock()),
+    ):
+        res = client.get(
+            "/api/v1/geocoding/reverse",
+            params={"lat": 65.43711, "lng": -44.69036},
+        )
+
+    assert res.status_code == 200
+    body = res.json()
+    assert body["country"] == "Greenland"
+    assert mock_client.get.await_count >= 2
+
+
 def test_geocoding_reverse_invalid_lat_returns_422():
     res = client.get(
         "/api/v1/geocoding/reverse",
@@ -157,3 +195,55 @@ def test_geocoding_search_with_location_bias():
 def test_geocoding_search_validation_error_returns_422():
     res = client.get("/api/v1/geocoding/search", params={"q": ""})
     assert res.status_code == 422
+
+
+def test_geocoding_reverse_falls_back_to_photon_when_nominatim_unavailable():
+    photon_response = MagicMock()
+    photon_response.status_code = 200
+    photon_response.json.return_value = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {
+                    "housenumber": "2929",
+                    "street": "West Armitage Avenue",
+                    "city": "Chicago",
+                    "state": "Illinois",
+                    "country": "United States",
+                    "postcode": "60647",
+                    "osm_type": "W",
+                    "osm_id": 209406736,
+                    "type": "house",
+                    "osm_key": "building",
+                },
+            }
+        ],
+    }
+
+    mock_client = AsyncMock()
+    mock_client.get = AsyncMock(return_value=photon_response)
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with (
+        patch.object(
+            GeocodingService,
+            "reverse_geocode",
+            new=AsyncMock(return_value=None),
+        ),
+        patch(
+            "app.services.geocoding_service.httpx.AsyncClient",
+            return_value=mock_client,
+        ),
+    ):
+        res = client.get(
+            "/api/v1/geocoding/reverse",
+            params={"lat": 41.91725, "lng": -87.70087},
+        )
+
+    assert res.status_code == 200
+    body = res.json()
+    assert body["address"]["house_number"] == "2929"
+    assert body["address"]["road"] == "West Armitage Avenue"
+    assert body["source"] == "photon"

@@ -27,9 +27,13 @@ from app.services.duffel_client import (
 )
 from app.services.flight_offer_service import parse_duffel_slices
 from app.utils.exceptions import AppException
-from config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def _raise_if_unconfigured(exc: Exception) -> None:
+    if isinstance(exc, ValueError) and "not configured" in str(exc).lower():
+        AppException.service_unavailable("Flight booking is not configured")
 
 
 def _booking_reference(order: dict[str, Any]) -> str:
@@ -46,16 +50,16 @@ def _booking_reference(order: dict[str, Any]) -> str:
 class FlightBookingService:
     @staticmethod
     def book_offer(data: FlightBookRequest) -> FlightBookResponse:
-        api_key = (settings.duffel_api_key or "").strip()
-        if not api_key:
-            AppException.service_unavailable("Flight booking is not configured")
-
         offer_id = data.offer_id.strip()
         if not offer_id.startswith("off_"):
             AppException.bad_request("Invalid flight offer id")
 
         try:
             offer = get_offer(offer_id)
+        except ValueError as exc:
+            _raise_if_unconfigured(exc)
+            logger.warning("Duffel offer fetch error: %s", exc)
+            AppException.bad_request("Could not load flight offer")
         except httpx.HTTPStatusError as exc:
             logger.warning("Duffel offer fetch failed for booking: %s", exc)
             AppException.bad_request("This flight offer expired — search again")
@@ -103,6 +107,10 @@ class FlightBookingService:
                 amount=amount,
                 currency=currency,
             )
+        except ValueError as exc:
+            _raise_if_unconfigured(exc)
+            logger.warning("Duffel order error: %s", exc)
+            AppException.bad_request("Booking failed")
         except httpx.HTTPStatusError as exc:
             logger.warning("Duffel order failed: %s", exc.response.text[:300])
             AppException.bad_request("Booking failed — offer may have expired. Search again.")
@@ -129,16 +137,16 @@ class FlightBookingService:
 
     @staticmethod
     def get_order_detail(order_id: str) -> FlightOrderResponse:
-        api_key = (settings.duffel_api_key or "").strip()
-        if not api_key:
-            AppException.service_unavailable("Flight booking is not configured")
-
         oid = order_id.strip()
         if not oid.startswith("ord_"):
             AppException.bad_request("Invalid flight order id")
 
         try:
             order = get_order(oid)
+        except ValueError as exc:
+            _raise_if_unconfigured(exc)
+            logger.warning("Duffel order lookup error: %s", exc)
+            AppException.bad_request("Could not load flight booking status")
         except httpx.HTTPStatusError as exc:
             logger.warning("Duffel order lookup failed: %s", exc)
             AppException.not_found("Flight booking order not found")
@@ -190,16 +198,16 @@ class FlightBookingService:
 
     @staticmethod
     def cancel_quote(order_id: str) -> FlightCancelQuoteResponse:
-        api_key = (settings.duffel_api_key or "").strip()
-        if not api_key:
-            AppException.service_unavailable("Flight booking is not configured")
-
         oid = order_id.strip()
         if not oid.startswith("ord_"):
             AppException.bad_request("Invalid flight order id")
 
         try:
             quote = create_cancellation_quote(oid)
+        except ValueError as exc:
+            _raise_if_unconfigured(exc)
+            logger.warning("Duffel cancellation quote error: %s", exc)
+            AppException.bad_request("Failed to create cancellation quote")
         except httpx.HTTPStatusError as exc:
             logger.warning("Duffel cancellation quote failed: %s", exc)
             AppException.bad_request("This order cannot be cancelled online via API.")
@@ -218,16 +226,16 @@ class FlightBookingService:
 
     @staticmethod
     def confirm_cancel(order_id: str, cancellation_id: str) -> FlightCancelConfirmResponse:
-        api_key = (settings.duffel_api_key or "").strip()
-        if not api_key:
-            AppException.service_unavailable("Flight booking is not configured")
-
         cid = cancellation_id.strip()
         if not cid.startswith("noc_"):
             AppException.bad_request("Invalid cancellation id")
 
         try:
             result = confirm_cancellation(cid)
+        except ValueError as exc:
+            _raise_if_unconfigured(exc)
+            logger.warning("Duffel confirm cancellation error: %s", exc)
+            AppException.bad_request("Could not confirm cancellation")
         except httpx.HTTPStatusError as exc:
             logger.warning("Duffel confirm cancellation failed: %s", exc)
             AppException.bad_request("Cancellation confirmation failed or quote expired.")

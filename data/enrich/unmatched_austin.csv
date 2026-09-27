@@ -1,0 +1,173 @@
+reason,wikidata_qid,wikidata_name,overture_gers_id,overture_name,distance_m,score
+rejected,Q42305380,Flix Brewhouse,c99d64b6-9fb3-4edc-9fb2-d0f58bcb0b52,Chuys,98.7,31.6
+rejected,Q42305391,Showplace Cinema,60dd6400-fd39-4593-a7a0-ef80c41b3d09,Chit House,131.8,46.2
+rejected,Q42305395,Texas Music Theater,f96f85de-951b-469b-b47d-4773fb186443,Austin Street Tavern Llc Dba Aquabrew,79.5,42.9
+rejected,Q42305393,Spot Theatre,9d90396d-2428-4443-817b-e0b07aeffd0b,The SPOT,11.1,50.0
+rejected,Q42305502,Colonial Theatre,aae22dfd-fc5b-4258-8517-914fa5e8bc1b,Howard Theatre,66.9,66.7
+rejected,Q42305505,Howard Theatre,64c14202-b220-4b70-bd59-85d6e075c91c,Second Street Station,144.8,45.7
+rejected,Q49479442,Comal Park,c92c48c1-7c42-4ba7-ad69-b6d002251503,Comal Pocket Park,23.5,74.1
+rejected,Q49480682,Covert Park,a7a9cfd2-607c-478f-aadc-d6d7a02e8edf,Covert Park at Mount Bonnell,66.1,56.4
+rejected,Q49482421,Deep Eddy Park,edb14b2e-a79d-4547-b02d-093804201773,Deep Eddy Cabaret,135.4,58.1
+rejected,Q49483200,Dick Nichols Park,9ac9de73-8715-4ede-9e25-594ed7fc5005,Dick Nichols District Park,132.4,79.1
+rejected,Q5289588,Dolph Briscoe Center for American History,f2d36948-ed68-4c0d-8e69-2788982b337e,Lyndon Baines Johnson Library and Museum,25.2,37.0
+rejected,Q5545947,George Washington Carver Museum and Cultural Center,0929cd2d-9ef1-429a-b9d9-fd80b4fbf7e6,Anything's Baked Potato,81.0,29.7
+rejected,Q5675001,Hartman Prehistoric Garden,140791be-19e1-4788-957f-54bc59a08645,Isamu Taniguchi Oriental Garden,133.3,52.6
+rejected,Q6541868,Liberty Lunch,d8d6a459-0f46-4be2-9824-20a5b51ad884,Goldie's Sunken Bar,97.5,42.9
+rejected,Q6672445,Long Center for the Performing Arts,a27fc7dc-f865-4100-84c4-bc05c326cb88,Austin Symphony At The Long Center,11.2,66.7
+rejected,Q34910509,Bustin Memorial Park,44d2909b-d2f6-4d2e-b40a-6f5aa15249c3,Old Settlers Park,136.7,37.8
+rejected,Q34927273,Civitan Park,5eb6db19-6d8a-46c6-ad66-127ab9cb4843,Civitan Neighborhood Park,19.6,64.9
+rejected,Q42298366,Alamo Drafthouse Cinema Downtown,904f5301-fc51-4697-8006-80242c9ef019,Traphouse Caribbean,120.6,51.0
+rejected,Q42298369,Alamo Drafthouse Slaughter Lane,454b697a-822d-4d23-9d5a-f97e9ae6ccbd,North By Northwest Restaurant & Brewery - Slaughter,69.8,48.7
+rejected,Q42298382,Alamo Drafthouse South Lamar,dcb70f85-978b-42a5-9611-ea24c80a9d30,Casa Garcia's #2,45.1,37.2
+rejected,Q42298460,Northcross 6 Theatre,f6e7d987-e327-4335-991e-6bf7f03bb59a,"Asian Inspired Ventures, Llc",136.6,38.3
+rejected,Q42298461,AMC Barton Creek Square 14,bcf81d93-746e-4b83-b3d0-40baf443a34e,Pogue Mahone Pickles,148.1,43.5
+rejected,Q42298379,Alamo Drafthouse Lakeline,997ba038-9eac-4836-b015-a906c0d9c67d,la Madeleine,90.9,54.1
+rejected,Q42298376,Alamo Drafthouse Village,bbcf79d7-3954-4156-822a-aba39163f939,La Bella Azteca,91.6,35.9
+rejected,Q42298483,Studio IV,c1ae75d9-cea1-4eb0-854b-1bc0b2868ff1,Tumi's Tacos,149.1,47.6
+rejected,Q42298480,Iris Theatre,3b62856a-4e95-4c82-b9b4-db405d699155,Shakespeare's,25.5,56.0
+rejected,Q42298481,Queen Theater,8b9eef16-a7aa-46d2-83b5-13251658f2d6,Paramount Theatre,81.7,60.0
+rejected,Q34854401,Bobcat Baseball Field,93c4a3f8-548e-4c95-ba46-eaea7ab3c155,Texas State Softball,76.4,48.8
+rejected,Q34854450,Bobcat Softball Field,93c4a3f8-548e-4c95-ba46-eaea7ab3c155,Texas State Softball,49.7,39.0
+rejected,Q34865315,Burger Stadium - Austin Independent School District,0ecc63d9-f2b7-401f-8548-3f603a24ea58,Wanderlust Ice Cream & Sorbet,35.7,36.8
+rejected,Q34867542,Butler Park,1d62d05c-87e6-4783-a345-88e7d1f8799d,Town Lake Park,101.8,56.0
+rejected,Q34870552,Canyon Vista Pool,52037303-7790-4989-8650-0b4372a47e29,Canyon Vista Theatre,30.4,70.3
+rejected,Q34873534,Cavalier Stadium at Lake Travis,dfb92ba1-4900-4350-864d-ef7147ca43d0,Cavalier Baseball Field At Lake Travis High School,122.9,61.7
+rejected,Q34893739,Barrow Preserve,7f598346-ced5-4832-a7a4-b3e909cb1fe9,Barrow Nature Preserve,78.7,81.1
+rejected,Q34893815,Bartholomew Park,cfd26fb0-869f-4533-9bf3-b2de95c20522,Bartholomew District Park,38.4,78.0
+rejected,Q34898992,Big Stacy Park,5ad6fe91-798d-4d3a-9304-4f1379f8ef55,Little Stacy Park,10.6,77.4
+rejected,Q34905528,Brentwood Park,8ddefb98-7081-43cd-9ec8-db9206f54fcf,Brentwood Neighborhood Park,52.8,68.3
+rejected,Q49483334,Disch-Falk Field - University of Texas,a5598642-812a-4e12-aa3b-2ceae657dcfc,Amy’s Ice Creams,72.4,34.6
+rejected,Q49484134,Downs Park,da53075b-0e74-4485-ba19-c2a5832db68c,Downs Field,59.0,57.1
+rejected,Q49484487,Duncan Park,35ce8264-e7e1-4802-ac41-bebdb67120c4,Duncan Neighborhood Park,86.7,62.9
+rejected,Q49486016,Egger Park,7a972fe1-c62e-4350-afde-18c3d4d90f3d,Mama Hono Tropical foods & beverages,73.7,27.3
+rejected,Q49488548,Fascholz-Keller Baseball Complex,67acec4b-86d1-47ae-ab72-59bafb901a63,Panjabi Swag Austin,94.9,23.5
+rejected,Q49488988,Fiesta Gardens,edd66b5c-8fe2-4740-8c8c-44101178d2a5,Fiesta Gardens Building,114.3,75.7
+rejected,Q49493828,Gillis Park,9b9f2aae-4de7-427b-adb1-ca88327e06c7,Kelly's Irish Pub,115.6,35.7
+rejected,Q49494819,Govalle Playground,07ccbe83-a878-4bd0-b45f-c0e54dcd3dd4,Govalle Neighborhood Park,44.9,55.8
+rejected,Q49547882,Ramon Lucio Memorial Park,278cc3f5-a0ae-4840-8476-47faf41ef5e0,Ramon Lucio Park,52.1,78.0
+rejected,Q49547947,Ramsey Playground,f2c24433-a43b-46c0-bb51-15a68ff64ab8,Ramsey Park Calisthenics Gym,88.0,44.4
+rejected,Q49554400,Round Rock High School Softball Field,44d2909b-d2f6-4d2e-b40a-6f5aa15249c3,Old Settlers Park,95.3,33.3
+rejected,Q49554735,Rudolph Gamblin Field,d0d43131-f43c-4ad5-9544-8a579729beef,Mark's Cafe,109.6,14.8
+rejected,Q49555699,Saint Edwards University Soccer Field,29d061ea-cc2c-4347-ab99-1f98e8956b76,Jo's Coffee Shop,78.8,26.4
+rejected,Q49503414,House Park,f2f4e3ad-204f-4123-afac-17de4939c546,Aisd House Park,33.8,80.0
+rejected,Q49508884,Joslin Park,bab16064-e256-4680-8465-acc243983bd4,Joslin Neighborhood Park,48.5,62.9
+rejected,Q49509608,Kealing Park,e7c538df-5436-40a0-b40d-89e3097f7443,Kealing School Park,68.0,77.4
+rejected,Q49510171,Kinningham Park,e81f832c-60f2-4aa4-9eca-d51c11487267,Promise Pizza,112.7,35.7
+rejected,Q49514226,Lamar Beach,374fcb8f-3b78-484e-a866-27f8a82fcb3a,WAYA Chalmers Field,90.1,40.0
+rejected,Q49518249,Little Stacy Park,9aa9262e-a6a8-4520-9735-415554587bb6,Big Stacy Pool,8.3,58.1
+rejected,Q49518532,Lockhart City Park,1e27c933-ad44-4723-bbd9-b65a3b57e434,Lockhart Youth Sports Complex,102.4,55.3
+rejected,Q49519127,Longview Park,8f924059-9cbd-4f85-a516-eec72a4bb74b,Longview Neighborhood Park,148.2,66.7
+rejected,Q49519498,Lott Park,3155aa59-6efd-461a-bff3-89057d5b48f9,Lott Pocket Park,13.0,72.0
+rejected,Q49520401,Mable Davis Park,d8308d7d-c50a-41e2-a97b-1fcad9cbb19c,Mabel Davis District Park,24.4,73.2
+rejected,Q49521151,Manchaca Optimist Youth Sports Complex,60086a32-c280-409f-8199-83635ed2f59e,Beaux Seafood,145.7,23.5
+rejected,Q49523000,Mayfield Park,94f7797c-9be4-4013-af6f-4dec21f54180,Mayfield Park and Nature Preserve,99.2,56.5
+rejected,Q49523941,McMasters Athletics Complex,48eb7ac8-dd15-4add-a381-a14d008ddbd3,Sunken Garden,114.3,25.0
+rejected,Q49532325,North Creek Park,cd8a40f5-204a-47f5-ab54-4ab941eb0fdf,Willow Bend Park,131.6,43.8
+rejected,Q49533483,Northwest Park,fb61f145-6bea-4c2d-888f-01afb0481f00,Beverly S. Sheffield Northwest District Park,98.8,49.1
+rejected,Q49534722,Odom Park,3ebdcd14-62e4-4b5a-8d71-0356c1b6238e,Odom School Park,119.6,72.0
+rejected,Q49537168,Palm Playground,0178d1cd-75be-47e5-8454-c29c9bd0791c,Sir Svante Palm Park,121.4,51.4
+rejected,Q49537365,Pan American Playground,b93c72aa-b437-41a7-8940-78f98f3a7132,Pan American Park Courts,80.3,68.1
+rejected,Q49540797,Pecan Park,e0f213eb-9960-4866-92b3-c8f73a41f2b0,Mr Gatti's Pizza,105.3,38.5
+rejected,Q49541098,Penick-Allison Tennis Center,d6adaafb-38c7-4b91-af51-c1dae66baa39,Hdcb Scholz Mgmt Llc,102.2,25.0
+rejected,Q42298463,Arbor 8 Cinema,fee3ec90-53d5-42e3-a8e4-b64a19df372b,Sbc Arbor Llc,110.1,51.9
+rejected,Q42298466,Cinema West,c4173329-3d4e-4f37-bd2f-ea03b71b481e,Vinaigrette,128.1,45.5
+rejected,Q42298467,Harlem Theater,9b943cea-7740-4385-bda7-e341bb88f02e,Outer Heaven,46.4,53.8
+rejected,Q42298475,IMAX at Bullock Texas State History Museum,6230935f-50e3-4220-ac84-73075fb4e4b6,Texas State History Museum Foundation,119.0,75.9
+rejected,Q42298473,Discount Cinema 8,b9a2df4a-3cd6-49c8-8c3f-98cf187bce9e,Dollar Cinema 8,14.8,68.8
+rejected,Q42298478,Carver Theatre,10bc9a69-f32f-4ceb-9b62-21b9570a4d42,The Creek & The Cave,137.5,64.3
+rejected,Q42298479,Crescent Theater,baf5e3bc-d3e7-453a-a978-99de18a4b419,Joe B. Hogsett Theater,95.6,59.5
+rejected,Q42298476,Capitol Theater,d29475ca-7f0e-4dde-a4b7-bb4bea4ca482,Headliners Club,119.3,53.3
+rejected,Q42298482,State Theater,8b9eef16-a7aa-46d2-83b5-13251658f2d6,Paramount Theatre,21.8,60.0
+rejected,Q42298465,Barton Creek Cinema 5,22f508ef-5a8e-4ea9-8ca6-a3e99fe3b6cf,Oniisan,50.3,28.6
+rejected,Q42298471,Cinemark Southpark Meadows 14,b4ecfa9c-5883-4816-90d4-dafc3b92cdcd,The Green Mesquite Bbq,48.4,34.0
+rejected,Q42298474,Bell Airdome,c29c389c-554b-4be2-a38d-729847c19952,"Et Bakery, Llc",140.9,48.0
+rejected,Q42298507,Lakehills Cinema 4,c6175120-7ed9-42a9-9359-208e6cabe94e,Outback Steakhouse - CLOSED,141.0,37.2
+rejected,Q42298510,Westgate 3,d143f982-85aa-4f3b-9d50-c9338f84692b,Regal Westgate,125.4,75.0
+rejected,Q42298511,Regal Westgate,e33641cf-6c7f-4570-b661-dc434085572f,Westgate Stadium 11,147.8,60.6
+rejected,Q42298508,Southwood Theatre,1f5fc9ff-234a-4e4b-b562-f7ef5855604e,Blazer Tag Adventure Center,69.4,27.3
+rejected,Q42298514,Varsity Theater,de02449d-e496-46bb-935f-56e796d4e32b,Texas Union Theater,88.7,52.9
+rejected,Q42298515,Capital Plaza Theater,5a7b26af-47f2-4950-b45b-ca0289b9c99c,Meat Your Heart,149.4,38.9
+rejected,Q42298512,Dobie Theatre,fc2675d8-b236-42ea-a30b-3999c806529a,Thai Spice,71.2,52.2
+rejected,Q42298513,Texas Theater,3d9a566d-6904-4c73-a08e-1d384665d544,Kebab Time,85.6,43.5
+rejected,Q42303650,City Lights Theatres Georgetown 12,682e2422-0898-429e-ae83-fdc3c72a778c,City Lights,9.7,48.9
+rejected,Q42304203,King Drive-In,f8fb973d-7865-4b94-af88-9e9842b5078b,Texas Roadhouse,135.0,21.4
+rejected,Q42304519,Lost Pines 8 Movie-Grill-Bowl,b8a966a2-aaec-4f48-abdd-8e62f94135fc,"Third Down & Third, Llc",101.8,40.8
+rejected,Q42304521,Tower Theatre,eba8cd64-57ca-42f1-8822-c22289038ae7,Bastrop Opera House,121.6,50.0
+rejected,Q42304661,AMC Lakeline 9,4a429d38-6da1-4d16-9fe4-bf843c4c5b63,Smoothies Paradise at Lakeline Mall,142.7,40.8
+rejected,Q42305040,EVO Entertainment,f4d3e7c4-5737-43e1-a4f7-fd94b948fee0,EVO Entertainment + EVX + IMAX - Kyle,29.6,70.8
+rejected,Q42305090,Hometown Cinemas,70a28521-a90c-421b-ab3e-9978e099e1ec,Garcia's Mexican Food,130.4,37.8
+rejected,Q42305091,Pix Theatre,f50c5723-f229-447c-b019-34c3a6116b7d,Gaslight Baker Theatre,115.3,54.5
+rejected,Q42305295,Cinemark Tinseltown 20 & XD,e602968a-e200-4a44-a291-4e7ed49a8daa,Tinseltown USA Pflugerville,115.6,53.8
+rejected,Q42305296,Stone Hill Towne Center 9,e38717b1-e11b-4f4b-af14-91908bb82655,Cinemark Stone Hill Town Center,44.1,78.6
+rejected,Q42298486,Gateway Stadium 16,8e767774-b659-4269-b429-3cdf4b2ccf41,Regal Gateway,18.5,58.1
+rejected,Q42298490,Highland 10,a1cafc35-0696-4a5e-b79f-8e694e116ee5,Alabao Latin Lounge,134.1,34.8
+rejected,Q42298488,Showtown USA Drive-In,8e82c97c-8248-46b9-9ab7-ad1303482b99,Walnut Creek Office Park,139.0,35.6
+rejected,Q42298489,Fox Theatre,1a8d4464-edfb-4e59-95c3-61dc402488d9,Atx Market And Bar,129.1,40.0
+rejected,Q42298498,Regal Riverside 8,e4cd2184-5fad-44ec-9b5b-6fcaea243894,Pueblo Viejo Riverside,90.6,61.5
+rejected,Q42298496,Southpark 3,01cb7130-9f71-4a93-bbfd-970960a5799c,Wythe Solutions Llc,85.7,40.0
+rejected,Q42298494,Moviehouse & Eatery Austin,38c70f4a-d090-4d51-974f-c79c9e02190a,ThunderCloud Subs,117.0,39.0
+rejected,Q42298497,Aquarius Theatres IV,b560163e-1d81-4f4b-a543-7b21403216f5,Carnitas Santa Rosa,142.0,41.0
+rejected,Q42298502,Millennium Theater,d9930f8a-d7e7-4652-a543-68a2bcb39db5,Eastside Cinema Austin,87.8,45.0
+rejected,Q42298503,Southwest Twin Drive-In,1569d4f2-d8f3-45da-99e9-76bd11208733,Rug Doctor,0.0,24.2
+rejected,Q42298500,Americana Theatre,cf41c303-7225-4b92-8947-5f442e166fe9,La Mancha Tex Mex Tavern,71.0,48.8
+rejected,Q2872127,The Contemporary Austin,4a2afa87-3c55-42b4-a265-5635eca4c8a3,Austin Museum of Art,18.1,51.3
+rejected,Q4820014,Auditorium Shores,22ff4438-567c-4c16-978d-ed5096901102,Doug Sahm Hill,109.7,38.7
+rejected,Q4865688,Barton Springs Pool,5930b639-e539-4871-837e-b168d53dc8ce,Barton Springs,87.8,84.8
+rejected,Q42298505,Monarch Event Center,e53ed578-81f2-4376-9cf3-5930f93288f9,Another Broken Egg Cafe,132.8,42.1
+rejected,Q1052519,Cedar Park Center,42a44cf6-bf62-4940-bb5b-4026917807ae,Cedar Park - Crown Royal Bar,21.3,66.7
+rejected,Q2872112,Austin Convention Center,db3faac2-4dc1-4060-ba6a-076091af08b2,Corinne Austin,134.1,57.9
+rejected,Q78614830,Flix Brewhouse Round Rock,964503bc-6be9-4ff9-85c1-88b8c9996957,Flix Brewhouse,10.9,71.8
+rejected,Q80928321,Moviehouse & Eatery Lantana Place,b8b5446d-0f02-458f-ac2c-6ef2c2fe83e7,Moviehouse & Eatery by Cinépolis,26.1,55.7
+rejected,Q81229863,Bob Bullock IMAX,f879bca7-12b4-42e2-9d5e-558a817a6048,Bullock Museum IMAX Theatre,39.8,55.8
+rejected,Q85796613,Republic Square,de38805a-2ff6-458b-813a-5aa645907608,Perfect Strangers,135.8,43.8
+rejected,Q49556950,San Gabriel Park,48eb7ac8-dd15-4add-a381-a14d008ddbd3,Sunken Garden,92.9,48.3
+rejected,Q49557049,San Marcos City Park,5deef909-cca1-4684-92e5-1b700e4a06c1,San Marcos Recreation Center,55.3,62.5
+rejected,Q49558678,Schroeter Park,a1ea126f-f1a4-49ba-ae8b-05687be2a491,Hubert C. Schroeter Neighborhood Park,82.0,56.0
+rejected,Q49561285,Shipe Playground,5da27272-bf1c-4797-ab5e-28ea1953c387,Shipe Park,95.2,69.2
+rejected,Q49561339,Shoal Beach,d61f027e-88a2-4ba4-96eb-3c0d0daa5723,City Hall Plaza,103.1,38.5
+rejected,Q60742232,Blue Hole Park,0b1cce66-abd8-412a-aecb-bb0137d1df81,Blue Hole,23.8,78.3
+rejected,Q78189858,Sky Cinemas Dripping Springs,d0f7eacc-c56c-4d8f-a045-65e35ebca094,Tangerine Cooking Company Llc,53.7,42.1
+rejected,Q104833688,Magnolia Cafe,5c8456fc-29fb-4dbb-b525-cdaa0dfc245b,Magnolia Cafe South,42.4,59.3
+rejected,Q105965249,Pioneer Town Opera House,d9008bba-65fc-49b9-9629-a73302173061,Cowboy Museum,17.0,21.6
+rejected,Q107317429,Palmer Events Center,b6fde797-382b-4db2-bd20-cf18325785d4,Long Center,139.8,51.6
+rejected,Q107317450,Texas Federation of Women's Clubs Building,fba91c94-2bdc-47a3-af80-ee25bde72675,Poncho’s Authentic Mexican Eatery,57.0,37.3
+rejected,Q7336901,Ritz,4a5968fa-427d-4285-be9b-e099006def5f,Lit Lounge,125.0,57.1
+rejected,Q7373677,Royal Arch Masonic Lodge,f65479c7-8adb-4871-994a-811daa819e2d,Austin Ale House,109.1,45.0
+rejected,Q7566082,South Austin Museum of Popular Culture,cb3d49ab-a12d-46dd-b66e-fd0aba356d9e,Sweet Frida Artisan Italian Ice,141.3,40.6
+rejected,Q7570793,Southgate-Lewis House,bc1a2cc5-d0a6-4d29-b93b-8d74e41a0627,Cinema East,103.4,31.2
+rejected,Q31530795,Springdale Park,2515a80f-41ae-49b6-b53b-b631b92931d0,Springdale Neighborhood Park,47.3,69.8
+rejected,Q31560329,Travis County Softball Field Complex,89e1373e-79d9-450e-8426-e5a4d2816578,Del Valle Adult Softball Fields,143.1,56.7
+rejected,Q31572131,Veterans of Foreign Wars Park,1c64e516-4224-4bba-8c85-66c460caf71c,VFW Park,44.2,37.8
+rejected,Q6704103,Lundberg Bakery,bd369091-76f5-4173-ba05-38480e22ffb0,Muscle Maker Grill,97.8,51.9
+rejected,Q6801971,McKinney Falls State Park,422f82cb-bb6f-42d8-b2b7-56ae5c1ff808,Interpretive Center,36.1,36.4
+rejected,Q6859447,Millett Opera House,baf5e3bc-d3e7-453a-a978-99de18a4b419,Joe B. Hogsett Theater,68.4,50.0
+rejected,Q6989547,Neill-Cochran House,fd0cd009-afc6-4093-9bdd-8a535ba99ef3,Neill-Cochran House Museum,29.0,84.4
+rejected,Q7074427,Oasis Restaurant,33aa52f6-78ac-4bbe-8006-c30c36208c45,Oasis The,82.2,71.4
+rejected,Q7762125,The Salt Lick,762ee81c-e91b-4215-a272-783b7870bd1c,Salt Lick Cellars,22.3,69.2
+rejected,Q7876695,Uchi,276f18cc-ae13-41ef-9de9-f3036fefbe4e,Uchi Austin,20.1,53.3
+rejected,Q7896439,University of Texas Performing Arts Center,be7df556-2755-4e7e-81f6-37e4c8d7d140,Performing Arts Center,0.1,68.8
+rejected,Q8071899,Zilker Park,05ca516d-fdfa-4982-b61c-42c8261c5bee,Shadow Lawn Historic District,0.0,20.0
+rejected,Q10858643,Bullock Texas State History Museum,6230935f-50e3-4220-ac84-73075fb4e4b6,Texas State History Museum Foundation,115.9,81.7
+rejected,Q31583662,Westenfield Park,4ddcb604-f8e4-4072-b754-070bb99a8d53,West Enfield Park,107.0,54.5
+rejected,Q31596337,Zargosa Park,05f0749d-0129-45ea-aaca-6fc38ba3d54f,Amigos de Parque Zaragoza,73.7,54.1
+rejected,Q34806397,Adams Park,53870907-4f58-4f6a-a512-319df8de14f6,Amy's Ice Cream,105.6,32.0
+rejected,Q34808254,Alamo Park,b1198058-27b1-4d69-81dd-ca7526a2a35b,Alamo Dog Park,32.5,83.3
+rejected,Q34809862,Allen Memorial County Park,e9b305f4-fc46-484d-b19e-3838588cbac6,Allen Park,124.7,55.6
+rejected,Q34830779,Bar K Park,c5563ac5-7e24-49a6-9dc4-22ba3b8c67aa,Bar-K Park Point Pavilion,89.9,57.1
+rejected,Q34831448,Bastrop Erhard Field,f6d77782-2aaf-4431-9b84-e895bf1c7421,Bastrop Performing Arts Center,138.1,52.0
+rejected,Q34831981,Battle Bend Park,777a087e-c9b5-41ab-829b-5e149580cada,MediaTech Institute,131.5,40.0
+rejected,Q130313843,Chili's at 45th and Lamar,382637dd-1b10-4319-a241-9c392814b8f8,Chili's Grill & Bar,5.7,43.8
+rejected,Q131127340,Pioneer Farms,27207f90-3823-478c-8bda-5fc81e810552,Jourdan-Bachman Pioneer Farms,5.7,61.9
+rejected,Q131480870,Stubb's BBQ,9d157d5b-7083-4517-8338-2132c230ea5a,The Mims Supper Club,84.4,44.4
+rejected,Q131735947,Comadre Panadería,83e0915b-7f95-49f0-a5ee-f8f6437c637a,Nixta Taqueria,40.0,38.7
+rejected,Q133571403,The William J. Battle collection of Plaster Casts,9eb7c118-ab47-4b3f-87ba-b9288e3ad9fb,Austin Building by Ellsworth Kelly,79.3,38.5
+rejected,Q136534426,Original Hoffbrau Steakhouse,4ac6eeee-dc44-40b1-a68c-cc893382e793,The Hoffbrau,4.9,44.4
+rejected,Q138520649,Buford's Backyard Beer Garden,c0492aac-0cf3-4242-92ee-91c3a2cb0f82,J Black's Feel Good Lounge,46.4,54.2
+rejected,Q139594975,Café Crème (Austin),aa668d82-a3c1-48d4-a990-e9fe9da98a7b,Jack in the Box,111.6,37.5
+rejected,Q113412927,Dirty Dog Bar,e00b8c7b-5382-4aea-8f5d-05475ff2a7d6,The Dizzy Rooster,106.9,45.5
+rejected,Q113412949,Sledge Hammer On Sixth,3d7a9a0d-d8aa-49c9-968d-985a90d5e67d,Fifth Street Diner,75.1,50.0
+rejected,Q14711311,Scholz Garten,d6adaafb-38c7-4b91-af51-c1dae66baa39,Hdcb Scholz Mgmt Llc,8.4,54.5
+rejected,Q16894284,Lockhart State Park,f4cf9843-62a9-4f77-92cf-5d9ce7b7afe2,Lockhart State Park - Texas Parks and Wildlife,12.2,60.3
+rejected,Q16985375,Hyde Park Theatre,775cd782-5407-4a52-9440-ba4e5f086270,The Parlor,58.6,34.8
+rejected,Q18351651,Dick's Classic Garage,bafeeb43-ee9e-4902-b58e-497b08bd7ad0,New Braunfels Brewing Company,82.2,28.0
+rejected,Q29470856,Bull Creek District Park,d058a28c-b2b9-48d8-81b8-72055c7a9a1a,West Bull Creek Greenbelt,122.3,57.1

@@ -1,0 +1,149 @@
+"use client";
+
+import { Users } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+
+import { OpenLoungeButton } from "@/components/lounge/OpenLoungeButton";
+import type { AppPreferences } from "@/lib/app-settings";
+import { fetchAppSettings, patchAppSettings, prefSection } from "@/lib/app-settings";
+
+import {
+  SettingsLinkRow,
+  SettingsScreenHeader,
+  SettingsSectionTitle,
+  SettingsToggleRow,
+} from "../_components";
+import { SettingsBreadcrumb, settingsSubCrumbs } from "@/components/settings/SettingsBreadcrumb";
+
+const EMPTY_PREFS: AppPreferences = {};
+
+export default function SettingsGeneralPage() {
+  const [prefs, setPrefs] = useState<AppPreferences>(EMPTY_PREFS);
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const b = await fetchAppSettings();
+      setPrefs(b.preferences);
+    } catch {
+      // Backend unavailable — render with default prefs
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    const id = window.location.hash.replace("#", "");
+    if (id) {
+      window.requestAnimationFrame(() =>
+        document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }),
+      );
+    }
+  }, [prefs]);
+
+  async function merge(patch: AppPreferences) {
+    setBusy(true);
+    try {
+      const b = await patchAppSettings(patch);
+      setPrefs(b.preferences);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!loaded) {
+    return (
+      <>
+        <SettingsScreenHeader title="General" backHref="/settings" />
+        <div className="flex justify-center py-16">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-primary" />
+        </div>
+      </>
+    );
+  }
+
+  const g = prefSection<Record<string, unknown>>(prefs, "general");
+  const cross = Boolean(g.crossposting_enabled);
+  const actFriends = Boolean(g.activity_in_friends_tab);
+  const loc = String(g.story_live_location_sharing ?? "friends_only");
+
+  return (
+    <>
+      <SettingsScreenHeader title="General" backHref="/settings" />
+      <SettingsBreadcrumb crumbs={settingsSubCrumbs("General")} />
+      <div id="close-friends" className="scroll-mt-16">
+        <SettingsSectionTitle>Close friends</SettingsSectionTitle>
+        <div className="border-b border-stone-100 px-4 py-3 text-sm text-stone-600">
+          Favorite people for trip updates and map highlights. Manage the list from
+          your travel hub connections — counts sync in Settings home.
+        </div>
+        <OpenLoungeButton className="flex w-full items-center gap-3 border-b border-stone-100 px-4 py-3.5 text-left hover:bg-stone-50">
+          <Users className="h-5 w-5 shrink-0 text-stone-700" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium text-stone-900">
+              Manage connections
+            </span>
+            <span className="block text-xs text-stone-500">
+              Add or remove travelers you trust most
+            </span>
+          </span>
+        </OpenLoungeButton>
+      </div>
+      <div id="crosspost" className="scroll-mt-16">
+        <SettingsToggleRow
+          label="Crossposting"
+          sublabel="Share Group Travel highlights to linked apps when you choose"
+          checked={cross}
+          busy={busy}
+          onToggle={(v) => void merge({ general: { crossposting_enabled: v } })}
+        />
+      </div>
+      <div id="story-location" className="scroll-mt-16">
+        <SettingsSectionTitle>Story, live &amp; location</SettingsSectionTitle>
+        <p className="px-4 pb-2 text-xs text-stone-500">
+          Who can see live trip check-ins and location on the map
+        </p>
+        <div className="flex flex-wrap gap-2 px-4 pb-3">
+          {(
+            [
+              ["off", "Off"],
+              ["friends_only", "Friends only"],
+              ["everyone", "Everyone"],
+            ] as const
+          ).map(([k, lab]) => (
+            <button
+              key={k}
+              type="button"
+              disabled={busy}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                loc === k
+                  ? "bg-primary text-white"
+                  : "bg-stone-100 text-stone-700"
+              }`}
+              onClick={() =>
+                void merge({ general: { story_live_location_sharing: k } })
+              }
+            >
+              {lab}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div id="activity-friends" className="scroll-mt-16">
+        <SettingsToggleRow
+          label="Activity in Friends tab"
+          sublabel="Show your trip pulse to accepted connections"
+          checked={actFriends}
+          busy={busy}
+          onToggle={(v) => void merge({ general: { activity_in_friends_tab: v } })}
+        />
+      </div>
+    </>
+  );
+}

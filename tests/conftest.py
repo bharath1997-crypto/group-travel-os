@@ -6,6 +6,7 @@ No need to import conftest — pytest discovers it automatically.
 """
 from __future__ import annotations
 
+import os
 import uuid
 from unittest.mock import MagicMock
 
@@ -40,6 +41,8 @@ def sqlite_create_explorer_events_table() -> None:
     from app.models.trip_roster import TripRoster
     from app.models.cart import TravelCart
     from app.models.saved_pin import SavedPin
+    from app.models.user_collection import UserCollection
+    from app.models.collection_item import CollectionItem
     from app.models.location import Location
     from app.models.expense import Expense, ExpenseSplit
     from app.models.lounge import LoungeChat, LoungeMember
@@ -71,6 +74,8 @@ def sqlite_create_explorer_events_table() -> None:
         Trip.__table__,
         TravelCart.__table__,
         SavedPin.__table__,
+        UserCollection.__table__,
+        CollectionItem.__table__,
         Location.__table__,
         Expense.__table__,
         ExpenseSplit.__table__,
@@ -183,3 +188,24 @@ def mock_user():
     user.otp_expires_at = None
     user.cover_url = None
     return user
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """Skip live Nominatim battery unless explicitly selected."""
+    run_live = config.getoption("-m", default="") and "geocoding_live" in config.getoption("-m")
+    if run_live or os.getenv("ROVVY_GEOCODING_LIVE") == "1":
+        pass
+    else:
+        skip_live = pytest.mark.skip(reason="live Nominatim test — run pytest -m geocoding_live")
+        for item in items:
+            if "geocoding_live" in item.keywords:
+                item.add_marker(skip_live)
+
+    from config import settings
+
+    url = (settings.DATABASE_URL or "").lower()
+    if "sqlite" in url and "seats_postgres" not in (config.getoption("-m", default="") or ""):
+        skip_pg = pytest.mark.skip(reason="Seats integration requires PostgreSQL + PostGIS")
+        for item in items:
+            if "seats_postgres" in item.keywords:
+                item.add_marker(skip_pg)

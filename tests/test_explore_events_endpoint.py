@@ -1,15 +1,18 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+from types import SimpleNamespace
+
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
+from app.services.explore_editorial_inventory import is_generated_explore_event_row
 
 client = TestClient(app)
 
+
 def test_explore_events_endpoint_ticketmaster(monkeypatch):
-    """
-    Verify /api/v1/explore/events successfully queries and returns events from Ticketmaster.
-    """
+    """Verify /api/v1/explore/events returns mocked Ticketmaster rows."""
     mock_event = {
         "id": "e1",
         "title": "Concert",
@@ -18,13 +21,12 @@ def test_explore_events_endpoint_ticketmaster(monkeypatch):
         "start_date": "2026-06-01",
         "venue": "Grand Hall",
         "category": "Music",
-        "sourceType": "ticketmaster"
+        "sourceType": "ticketmaster",
     }
 
-    # Mock get_ticketmaster_cached in app.routes.explore
     monkeypatch.setattr(
         "app.routes.explore.get_ticketmaster_cached",
-        lambda db, city, start_date, end_date, lat, lon, radius: [mock_event]
+        lambda db, city, start_date, end_date, lat, lon, radius: [mock_event],
     )
 
     response = client.get("/api/v1/explore/events?city=Chicago")
@@ -34,61 +36,279 @@ def test_explore_events_endpoint_ticketmaster(monkeypatch):
     assert len(data["events"]) == 1
     assert data["events"][0]["title"] == "Concert"
     assert data["events"][0]["category"] == "Music"
+    assert data["events"][0].get("sourceType") != "ai_fallback"
+    assert data["events"][0].get("source") != "ai_fallback"
 
 
-@pytest.mark.anyio
-async def test_explore_events_endpoint_ai_fallback(monkeypatch):
-    """
-    Verify /api/v1/explore/events gracefully falls back to AI suggested seasonal events when Ticketmaster is empty.
-    """
-    mock_ai_event = {
-        "title": "Ubud Festival",
-        "emoji": "🎨",
-        "description": "Art festival in Ubud",
-        "location": "Ubud Art Center",
-        "time": "Throughout the month"
-    }
+def test_explore_events_empty_inventory_no_ai_fallback(monkeypatch):
+    """Empty provider inventory stays empty; AI seasonal must not run."""
+    ai_called = {"value": False}
 
-    # Mock get_ticketmaster_cached to return empty list
+    async def fail_if_ai_called(city: str):
+        ai_called["value"] = True
+        return [{"title": "Should not appear"}]
+
     monkeypatch.setattr(
         "app.routes.explore.get_ticketmaster_cached",
-        lambda db, city, start_date, end_date, lat, lon, radius: []
+        lambda db, city, start_date, end_date, lat, lon, radius: [],
     )
-
-    # Mock get_ai_seasonal_events to return the mock AI event
-    async def mock_get_ai_seasonal_events(city: str):
-        return [mock_ai_event]
-
     monkeypatch.setattr(
         "app.services.explore_city_extended_service.get_ai_seasonal_events",
-        mock_get_ai_seasonal_events
+        fail_if_ai_called,
     )
 
     response = client.get("/api/v1/explore/events?city=Bali")
     assert response.status_code == 200
     data = response.json()
     assert data["city"] == "Bali"
-    assert len(data["events"]) == 1
-    
-    event = data["events"][0]
-    assert "🎨 Ubud Festival" in event["title"]
-    assert "Ubud Art Center" in event["venue"]
-    assert event["sourceType"] == "ai_fallback"
+    assert data["events"] == []
+    assert data["total"] == 0
+    assert ai_called["value"] is False
+    for key in ("trending", "weekend", "popular", "events"):
+        for ev in data.get(key) or []:
+            assert ev.get("source") != "ai_fallback"
+            assert ev.get("sourceType") != "ai_fallback"
+            assert ev.get("time") != "12:00"
+            assert ev.get("price_min") != 0.0 or ev.get("price_max") != 0.0
 
 
-def test_get_explore_event_detail():
-    """
-    Verify GET /api/v1/explore/events/{event_id} returns detail for mock events or 404 for unknown ones.
-    """
-    response = client.get("/api/v1/explore/events/mock-12345")
+def _future_event_day() -> str:
+    from datetime import date, timedelta
+
+    return (date.today() + timedelta(days=2)).isoformat()
+
+
+def _legacy_mixed_events(day: str) -> list[dict]:
+    return [
+        {
+            "id": "tm-real-1",
+            "name": "Verified Concert",
+            "category": "Music",
+            "date": day,
+            "venue": "Main Hall",
+            "city": "Chicago",
+            "image_url": "https://example.com/tm.jpg",
+            "ticket_url": "https://ticketmaster.com/tm-real-1",
+            "source": "ticketmaster",
+        },
+        {
+            "id": "ai-ev-0",
+            "name": "Legacy AI Row",
+            "category": "Festival",
+            "date": day,
+            "venue": "Park",
+            "city": "Chicago",
+            "image_url": "https://example.com/ai.jpg",
+            "ticket_url": "https://example.com/ai",
+            "source": "ai_fallback",
+            "sourceType": "ai_fallback",
+        },
+        {
+            "id": "editorial-0",
+            "name": "Legacy Editorial Row",
+            "category": "Festival",
+            "date": day,
+            "venue": "River",
+            "city": "Chicago",
+            "image_url": "https://example.com/ed.jpg",
+            "ticket_url": "https://example.com/ed",
+            "source": "ai_seasonal",
+        },
+    ]
+
+
+def test_explore_events_strips_legacy_generated_rows_hub(monkeypatch):
+    """Cached/search payloads with ai_fallback rows return verified inventory only."""
+    day = _future_event_day()
+    mixed = _legacy_mixed_events(day)
+
+    def fake_search(*args, **kwargs):
+        return {
+            "events": mixed,
+            "total": len(mixed),
+            "display_city": "Chicago",
+            "nearest_metro": None,
+            "fetch_mode": "cache",
+            "radius_used": 200,
+            "nearby_cities": [],
+            "freshness": {"refreshed_at": None, "cache_status": "ready"},
+        }
+
+    monkeypatch.setattr("app.services.events_service.search_events_extended", fake_search)
+
+    response = client.get("/api/v1/explore/events?city=Chicago")
     assert response.status_code == 200
     data = response.json()
-    assert data["id"] == "mock-12345"
-    assert data["title"] == "Local Experience"
-    assert data["category"] == "Festival"
-    
-    response_nf = client.get("/api/v1/explore/events/unknown-event-id")
-    assert response_nf.status_code == 404
+    assert data["total"] == 1
+    assert len(data["events"]) == 1
+    assert data["events"][0]["id"] == "tm-real-1"
+    for section in ("trending", "weekend", "popular"):
+        for ev in data.get(section) or []:
+            assert ev.get("source") != "ai_fallback"
+            assert not str(ev.get("id", "")).startswith("ai-ev-")
+            assert not str(ev.get("id", "")).startswith("editorial-")
+
+
+def _verified_event_row(index: int, day: str) -> dict:
+    return {
+        "id": f"tm-{index}",
+        "name": f"Verified {index}",
+        "category": "Music",
+        "date": day,
+        "venue": "Main Hall",
+        "city": "Chicago",
+        "image_url": "https://example.com/tm.jpg",
+        "ticket_url": f"https://ticketmaster.com/tm-{index}",
+        "source": "ticketmaster",
+    }
+
+
+def _cache_pagination_fixture(monkeypatch, cached_rows: list[dict]) -> None:
+    row_mock = SimpleNamespace(fetched_at=datetime.now(timezone.utc), data=cached_rows)
+
+    monkeypatch.setattr(
+        "app.services.events_service._get_fresh_cached_events",
+        lambda db, key: list(cached_rows),
+    )
+    monkeypatch.setattr(
+        "app.services.events_service._get_row",
+        lambda db, key, ct: row_mock,
+    )
+
+
+def test_generated_predicate_keeps_ticketmaster():
+    assert is_generated_explore_event_row({"id": "tm-1", "source": "ticketmaster"}) is False
+    assert is_generated_explore_event_row({"id": "tm-1", "source": "eventbrite"}) is False
+    assert is_generated_explore_event_row({"id": "ai-ev-1", "source": "ticketmaster"}) is True
+    assert is_generated_explore_event_row({"id": "tm-1", "source": "ai_fallback"}) is True
+    assert is_generated_explore_event_row({"id": "tm-1", "source": "ai"}) is True
+
+
+def test_list_mode_pagination_total_45_verified(monkeypatch):
+    day = _future_event_day()
+    verified = [_verified_event_row(i, day) for i in range(45)]
+    generated = [_legacy_mixed_events(day)[1], _legacy_mixed_events(day)[2]]
+    cached = generated + verified
+
+    _cache_pagination_fixture(monkeypatch, cached)
+
+    response = client.get("/api/v1/explore/events?city=Chicago&view=list&page=1&per_page=20")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["events"]) == 20
+    assert data["total"] == 45
+    assert all(ev["id"].startswith("tm-") for ev in data["events"])
+
+    page2 = client.get("/api/v1/explore/events?city=Chicago&view=list&page=2&per_page=20")
+    assert page2.status_code == 200
+    data2 = page2.json()
+    assert len(data2["events"]) == 20
+    assert data2["total"] == 45
+
+
+def test_generated_rows_removed_before_pagination(monkeypatch):
+    day = _future_event_day()
+    verified = [_verified_event_row(i, day) for i in range(25)]
+    generated_front = [_legacy_mixed_events(day)[1] for _ in range(10)]
+    cached = generated_front + verified
+
+    _cache_pagination_fixture(monkeypatch, cached)
+
+    response = client.get("/api/v1/explore/events?city=Chicago&view=list&page=1&per_page=20")
+    data = response.json()
+    assert len(data["events"]) == 20
+    assert data["total"] == 25
+    assert all(ev["source"] == "ticketmaster" for ev in data["events"])
+
+
+def test_hub_return_all_excludes_generated_with_correct_total(monkeypatch):
+    day = _future_event_day()
+    verified = [_verified_event_row(i, day) for i in range(8)]
+    cached = [_legacy_mixed_events(day)[1], *verified, _legacy_mixed_events(day)[2]]
+
+    _cache_pagination_fixture(monkeypatch, cached)
+
+    response = client.get("/api/v1/explore/events?city=Chicago")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 8
+    assert len(data["events"]) == 8
+    for key in ("events", "trending", "weekend", "popular"):
+        for ev in data.get(key) or []:
+            assert not is_generated_explore_event_row(ev)
+
+
+def test_explore_events_strips_legacy_generated_rows_list_mode(monkeypatch):
+    day = _future_event_day()
+    mixed = _legacy_mixed_events(day)
+
+    monkeypatch.setattr(
+        "app.services.events_service.search_events_extended",
+        lambda *args, **kwargs: {
+            "events": mixed,
+            "total": len(mixed),
+            "display_city": "Chicago",
+            "nearest_metro": None,
+            "fetch_mode": "cache",
+            "radius_used": 200,
+            "nearby_cities": [],
+            "freshness": {"refreshed_at": None, "cache_status": "ready"},
+        },
+    )
+
+    response = client.get("/api/v1/explore/events?city=Chicago&view=list")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 1
+    assert [ev["id"] for ev in data["events"]] == ["tm-real-1"]
+
+
+def test_explore_events_empty_via_search_extended(monkeypatch):
+    """Non-mocked path returns honest empty totals without AI injection."""
+    ai_called = {"value": False}
+
+    async def fail_if_ai_called(city: str):
+        ai_called["value"] = True
+        return []
+
+    empty_result = {
+        "events": [],
+        "total": 0,
+        "display_city": "Denver",
+        "nearest_metro": None,
+        "fetch_mode": "cache",
+        "radius_used": 200,
+        "nearby_cities": [],
+        "freshness": {"refreshed_at": None, "cache_status": "empty"},
+    }
+
+    monkeypatch.setattr(
+        "app.services.events_service.search_events_extended",
+        lambda *args, **kwargs: empty_result,
+    )
+    monkeypatch.setattr(
+        "app.services.explore_city_extended_service.get_ai_seasonal_events",
+        fail_if_ai_called,
+    )
+
+    response = client.get("/api/v1/explore/events?city=Denver")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["events"] == []
+    assert data["total"] == 0
+    assert ai_called["value"] is False
+
+
+@pytest.mark.parametrize("event_id", ["mock-12345", "ai-ev-0", "ai-ev-99"])
+def test_get_explore_event_detail_unknown_editorial_ids_404(event_id: str):
+    """Removed editorial/mock detail stubs must not return bookable-looking rows."""
+    response = client.get(f"/api/v1/explore/events/{event_id}")
+    assert response.status_code == 404
+
+
+def test_get_explore_event_detail_unknown_id_404():
+    response = client.get("/api/v1/explore/events/unknown-event-id")
+    assert response.status_code == 404
 
 
 def test_get_explore_event_detail_ticketmaster_row():
@@ -139,6 +359,41 @@ def test_get_explore_event_detail_ticketmaster_row():
         db.execute(delete(ExploreContent).where(ExploreContent.event_id == "tm_detail_test_1"))
         db.commit()
         db.close()
+
+
+@pytest.mark.anyio
+async def test_seasonal_events_ai_editorial_contract(monkeypatch):
+    """Editorial endpoint is isolated from verified inventory."""
+    async def mock_ai(city: str):
+        return [
+            {
+                "title": "Harvest fair",
+                "emoji": "🍂",
+                "description": "Seasonal market vibe",
+                "location": "Riverfront",
+                "time": "Autumn weekends",
+            }
+        ]
+
+    monkeypatch.setattr(
+        "app.services.explore_city_extended_service.get_ai_seasonal_events",
+        mock_ai,
+    )
+
+    response = client.get("/api/v1/explore/seasonal-events-ai?city=Portland")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["kind"] == "editorial_suggestions"
+    assert data["verified_inventory"] is False
+    assert "events" not in data
+    assert isinstance(data["suggestions"], list)
+    assert len(data["suggestions"]) == 1
+    suggestion = data["suggestions"][0]
+    assert suggestion["title"] == "Harvest fair"
+    assert "date" not in suggestion
+    assert "ticket_url" not in suggestion
+    assert "price_min" not in suggestion
+    assert suggestion["id"].startswith("editorial-")
 
 
 def test_get_similar_explore_events():
@@ -242,4 +497,3 @@ def test_get_similar_explore_events():
         db.execute(delete(ExploreContent).where(ExploreContent.event_id.in_(ids)))
         db.commit()
         db.close()
-

@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.core.api_limits import API_TIMEOUT_SECONDS
 from app.models.explore_content import ExploreContent
+from app.services.explore_cache_freshness import explore_freshness_meta
 from app.utils.foursquare_auth import FOURSQUARE_PLACES_URL, foursquare_headers, normalize_foursquare_api_key
 from config import settings
 
@@ -113,6 +114,42 @@ def _upsert_list(
     db.commit()
 
 
+def _get_cached_list_with_meta(
+    db: Session,
+    *,
+    city: str,
+    content_type: str,
+    ttl_hours: float,
+    fetch_fn: Callable[[], list[dict[str, Any]]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    c = city.strip()
+    row = _get_row(db, c, content_type)
+    now = _now()
+    if row and row.data is not None:
+        fetched = _aware(row.fetched_at)
+        if now - fetched <= timedelta(hours=ttl_hours):
+            meta = explore_freshness_meta(refreshed_at=row.fetched_at, cache_status="fresh_cache")
+            return list(row.data), meta
+
+    try:
+        data = fetch_fn()
+        if not isinstance(data, list):
+            data = []
+        data_dicts = [d for d in data if isinstance(d, dict)]
+        _upsert_list(db, city=c, content_type=content_type, data=data_dicts)
+        row_after = _get_row(db, c, content_type)
+        ts = row_after.fetched_at if row_after else now
+        status = "empty" if not data_dicts else "provider_refresh"
+        meta = explore_freshness_meta(refreshed_at=ts, cache_status=status)
+        return data_dicts, meta
+    except Exception as exc:
+        logger.warning("%s fetch failed for city=%s: %s", content_type, c, exc)
+        if row and row.data is not None:
+            meta = explore_freshness_meta(refreshed_at=row.fetched_at, cache_status="stale_fallback")
+            return list(row.data), meta
+        return [], explore_freshness_meta(refreshed_at=None, cache_status="unavailable")
+
+
 def _get_cached_list(
     db: Session,
     *,
@@ -121,26 +158,34 @@ def _get_cached_list(
     ttl_hours: float,
     fetch_fn: Callable[[], list[dict[str, Any]]],
 ) -> list[dict[str, Any]]:
-    c = city.strip()
-    row = _get_row(db, c, content_type)
-    now = _now()
-    if row and row.data is not None:
-        fetched = _aware(row.fetched_at)
-        if now - fetched <= timedelta(hours=ttl_hours):
-            return list(row.data)
+    data, _meta = _get_cached_list_with_meta(
+        db,
+        city=city,
+        content_type=content_type,
+        ttl_hours=ttl_hours,
+        fetch_fn=fetch_fn,
+    )
+    return data
 
-    try:
-        data = fetch_fn()
-        if not isinstance(data, list):
-            data = []
-        data_dicts = [d for d in data if isinstance(d, dict)]
-        _upsert_list(db, city=c, content_type=content_type, data=data_dicts)
-        return data_dicts
-    except Exception as exc:
-        logger.warning("%s fetch failed for city=%s: %s", content_type, c, exc)
-        if row and row.data:
-            return list(row.data)
-        return []
+
+def get_places_cached_with_meta(
+    db: Session, city: str, category: str
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    cat = category.strip().lower()
+    if cat == "attractions":
+        ct = CONTENT_PLACES_ATTRACTIONS
+    elif cat == "restaurants":
+        ct = CONTENT_PLACES_RESTAURANTS
+    else:
+        return [], explore_freshness_meta(refreshed_at=None, cache_status="unavailable")
+
+    return _get_cached_list_with_meta(
+        db,
+        city=city,
+        content_type=ct,
+        ttl_hours=TTL_DEFAULT_HOURS,
+        fetch_fn=lambda: _fetch_places(city, cat),
+    )
 
 
 def _unsplash_photo_for_query(query: str) -> str | None:
@@ -436,6 +481,7 @@ def _foursquare_search(
                 lat = main.get("latitude")
                 lng = main.get("longitude")
         img = _unsplash_photo_for_query(f"{nm} {city_q}") or ""
+        website = str(p.get("website") or "").strip()
         out.append(
             {
                 "id": pid or nm[:32],
@@ -445,43 +491,58 @@ def _foursquare_search(
                 "lat": lat,
                 "lng": lng,
                 "image_url": img,
+                "source": "foursquare",
+                "url": website if website.startswith("http") else "",
             }
         )
     return out
 
 
+def opening_hours_from_osm_tags(tags: dict[str, Any]) -> tuple[str | None, str | None]:
+    """Return raw OSM opening_hours and hours_source when present — not parsed open-now."""
+    raw = tags.get("opening_hours")
+    if raw is None:
+        return None, None
+    hours = str(raw).strip()
+    if not hours:
+        return None, None
+    return hours, "openstreetmap"
+
+
 def _fetch_osm_places(city: str, category: str) -> list[dict[str, Any]]:
     """Direct Rescue fetcher using OpenStreetMap (Overpass API). Global & Keyless."""
     try:
-        # 1. Geocode city to get lat/lon
         geo_url = f"https://nominatim.openstreetmap.org/search?q={city.strip()}&format=json&limit=1"
-        with httpx.Client(timeout=10.0, headers={"User-Agent": "GroupTravelOS/1.0"}) as client:
+        overpass_url = "https://overpass-api.de/api/interpreter"
+        if category == "attractions":
+            tag_key = "tourism"
+            values = "museum|attraction|viewpoint|gallery|theme_park|zoo|artwork|information"
+        else:
+            tag_key = "amenity"
+            values = "restaurant|cafe|bar|pub|fast_food|food_court"
+
+        with httpx.Client(timeout=30.0, headers={"User-Agent": "GroupTravelOS/1.0"}) as client:
             geo_res = client.get(geo_url)
             if geo_res.status_code != 200 or not geo_res.json():
                 return []
             loc = geo_res.json()[0]
             lat, lon = float(loc["lat"]), float(loc["lon"])
 
-        # 2. Query Overpass for features (Direct Global Data)
-        # Expanded tags for better coverage
-        values = "museum|tourist_attraction|viewpoint|gallery|theme_park|zoo|attraction" if category == "attractions" else "restaurant|cafe|bar|pub|fast_food|food_court"
-        
-        overpass_query = f"""
-        [out:json][timeout:30];
-        (
-          node["{tag}"~"{values}"](around:20000,{lat},{lon});
-          way["{tag}"~"{values}"](around:20000,{lat},{lon});
-          node["leisure"~"park|garden"](around:20000,{lat},{lon});
-          node["historic"](around:20000,{lat},{lon});
-        );
-        out body qt 15;
-        """
-        overpass_url = "https://overpass-api.de/api/interpreter"
-        overpass_res = client.post(overpass_url, data={"data": overpass_query})
-        if overpass_res.status_code != 200:
-            return []
-        
-        data = overpass_res.json()
+            overpass_query = f"""
+            [out:json][timeout:30];
+            (
+              node["{tag_key}"~"{values}"](around:20000,{lat},{lon});
+              way["{tag_key}"~"{values}"](around:20000,{lat},{lon});
+              node["leisure"~"park|garden"](around:20000,{lat},{lon});
+              node["historic"](around:20000,{lat},{lon});
+            );
+            out body qt 15;
+            """
+            overpass_res = client.post(overpass_url, data={"data": overpass_query})
+            if overpass_res.status_code != 200:
+                return []
+
+            data = overpass_res.json()
         elements = data.get("elements", [])
         out = []
         for el in elements[:12]:
@@ -490,19 +551,29 @@ def _fetch_osm_places(city: str, category: str) -> list[dict[str, Any]]:
             addr = tags.get("addr:street", "")
             if tags.get("addr:housenumber"):
                 addr = f"{tags.get('addr:housenumber')} {addr}"
-            
-            # Use a generic image search or placeholder
+
             img = _unsplash_photo_for_query(f"{name} {city}") or ""
-            
-            out.append({
-                "id": f"osm-{el.get('id')}",
+            osm_id = el.get("id")
+            osm_type = el.get("type") or "node"
+            cat_raw = tags.get(tag_key) or tags.get("leisure") or tags.get("historic") or category
+            cat_label = str(cat_raw).replace("_", " ").capitalize()
+
+            row: dict[str, Any] = {
+                "id": f"osm-{osm_id}",
                 "name": name,
                 "address": addr or f"Near {city}",
-                "category": tags.get(tag, category).replace("_", " ").capitalize(),
+                "category": cat_label,
                 "lat": el.get("lat") or el.get("center", {}).get("lat"),
                 "lng": el.get("lon") or el.get("center", {}).get("lon"),
-                "image_url": img
-            })
+                "image_url": img,
+                "source": "openstreetmap",
+                "url": f"https://www.openstreetmap.org/{osm_type}/{osm_id}",
+            }
+            opening_hours, hours_source = opening_hours_from_osm_tags(tags)
+            if opening_hours:
+                row["opening_hours"] = opening_hours
+                row["hours_source"] = hours_source
+            out.append(row)
         return out
     except Exception as e:
         logger.warning(f"OSM Rescue failed for {city}: {e}")

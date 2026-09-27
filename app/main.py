@@ -317,6 +317,10 @@ def _register_routes(app: FastAPI) -> None:
     app.include_router(live_place_reports_router, prefix="/api/v1")
     app.include_router(live_group_router, prefix="/api/v1")
 
+    from app.routes.live_map_layer import router as live_map_layer_router
+
+    app.include_router(live_map_layer_router, prefix="/api/v1")
+
     from app.routes.travel_intel import router as travel_intel_router
 
     app.include_router(travel_intel_router, prefix="/api/v1")
@@ -360,6 +364,14 @@ def _register_routes(app: FastAPI) -> None:
     from app.routes.pins import router as pins_router
 
     app.include_router(pins_router, prefix="/api/v1")
+
+    from app.routes.collection import router as collection_router
+
+    app.include_router(collection_router, prefix="/api/v1")
+
+    from app.routes.seats import seats_router
+
+    app.include_router(seats_router, prefix="/api/v1")
 
     from app.routes.ai_assistant import router as ai_assistant_router
 

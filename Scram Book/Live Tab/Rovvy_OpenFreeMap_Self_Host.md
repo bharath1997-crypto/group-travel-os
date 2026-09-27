@@ -4,6 +4,8 @@
 
 **Date:** 2026-09-14
 
+**Budget gate (2026-09-19):** Approved infra for spine + map hosting is **USD $15–20/month** (Postgres size/tier + light R2 PMTiles). Full http-host VM (~300 GB) is **deferred** until budget increases; production/dev use **public OpenFreeMap** (or existing CDN) + **Rovvy spine PMTiles overlay** when built.
+
 ---
 
 ## Why this path

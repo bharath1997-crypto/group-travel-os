@@ -5,6 +5,7 @@ from app.services.live_search_taxonomy_service import (
     get_category_by_key,
     is_exact_category_query,
     load_taxonomy,
+    merged_osm_queries_for_category,
     resolve_category_from_query,
     taxonomy_for_api,
 )
@@ -62,6 +63,9 @@ def test_resolve_civic_categories():
     assert resolve_category_from_query("landmark")["key"] == "landmarks"
     assert resolve_category_from_query("monument")["key"] == "landmarks"
     assert resolve_category_from_query("park")["key"] == "parks"
+    assert resolve_category_from_query("historic")["key"] == "historic_sites"
+    assert resolve_category_from_query("ruins")["key"] == "historic_sites"
+    assert resolve_category_from_query("overlook")["key"] == "scenic_drives"
 
 
 def test_osm_queries_present_for_new_categories():
@@ -77,7 +81,12 @@ def test_osm_queries_present_for_new_categories():
     assert "churches" in queries
     assert "libraries" in queries
     assert "schools" in queries
-    assert "landmarks" in queries
+    assert "landmarks" not in queries
+    assert "historic_sites" in queries
+    assert "monuments" in queries
+    assert "scenic_drives" in queries
+    assert "capitals" in queries
+    assert "national_parks" in queries
     assert len(queries["ports"]) >= 10
     assert any("ferry_terminal" in q for q in queries["ports"])
     assert any("industrial" in q for q in queries["ports"])
@@ -96,6 +105,14 @@ def test_get_category_by_key():
     cat = get_category_by_key("parks")
     assert cat is not None
     assert cat["label"] == "Parks nearby"
+
+
+def test_landmarks_union_merges_queries_without_duplicating_monument_line():
+    merged = merged_osm_queries_for_category("landmarks")
+    monument_only = merged_osm_queries_for_category("monuments")
+    assert len(merged) >= len(monument_only)
+    assert any("historic\"=\"monument\"" in q for q in merged)
+    assert any("historic\"=\"castle\"" in q for q in merged)
 
 
 def test_taxonomy_api_shape():

@@ -13,7 +13,7 @@ import math
 import os
 import threading
 import time
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import urlencode
 import concurrent.futures
@@ -25,6 +25,8 @@ from sqlalchemy.orm import Session
 from app.models.explore_content import ExploreContent
 
 from app.core.api_limits import API_TIMEOUT_SECONDS
+from app.services.explore_cache_freshness import explore_freshness_meta
+from app.services.explore_editorial_inventory import filter_verified_explore_event_rows
 from app.services.explore_city_extended_service import _aware, _get_row, _now, _upsert_list
 from app.utils.database import SessionLocal
 from config import settings
@@ -1369,6 +1371,59 @@ def _get_fresh_cached_events(db: Session, cache_key: str) -> list[dict[str, Any]
     return None
 
 
+def _haversine_events_max_fetched_at(
+    db: Session,
+    lat: float,
+    lon: float,
+    radius_miles: float,
+) -> datetime | None:
+    """Latest cache write time among geo-scoped explore_contents event rows."""
+    from datetime import date
+    from sqlalchemy import text
+
+    today_str = date.today().strftime("%Y-%m-%d")
+    lat_delta = float(radius_miles) / 69.0
+    lon_delta = float(radius_miles) / (
+        69.0 * max(abs(math.cos(math.radians(lat))), 1e-6)
+    )
+    sql = text(
+        """
+        SELECT MAX(fetched_at) AS max_fetched
+        FROM explore_contents
+        WHERE content_type IN ('ticketmaster_event', 'osm_place')
+          AND (content_type = 'osm_place' OR start_date >= :today)
+          AND venue_lat IS NOT NULL
+          AND venue_lon IS NOT NULL
+          AND venue_lat BETWEEN :lat_min AND :lat_max
+          AND venue_lon BETWEEN :lon_min AND :lon_max
+          AND (
+            3959 * acos(
+              cos(radians(:lat)) * cos(radians(venue_lat)) *
+              cos(radians(venue_lon) - radians(:lon)) +
+              sin(radians(:lat)) * sin(radians(venue_lat))
+            )
+          ) <= :radius
+        """
+    )
+    params = {
+        "lat": lat,
+        "lon": lon,
+        "today": today_str,
+        "radius": float(radius_miles),
+        "lat_min": lat - lat_delta,
+        "lat_max": lat + lat_delta,
+        "lon_min": lon - lon_delta,
+        "lon_max": lon + lon_delta,
+    }
+    try:
+        row = db.execute(sql, params).first()
+        if row and row.max_fetched:
+            return _aware(row.max_fetched)
+    except Exception as exc:
+        logger.warning("haversine max fetched_at failed: %s", exc)
+    return None
+
+
 def _paginate_events(
     events: list[dict[str, Any]],
     city: str,
@@ -1862,8 +1917,16 @@ def search_events_extended(
                 break
 
         if db_events:
+            db_events = filter_verified_explore_event_rows(db_events)
             # We got local events! Return them with zero Ticketmaster API calls.
             display_city = _resolve_geo_display_city(city, lat, lon, db_events)
+            max_fetched = _haversine_events_max_fetched_at(db, lat, lon, radius_used_db)
+            if max_fetched:
+                freshness = explore_freshness_meta(
+                    refreshed_at=max_fetched, cache_status="fresh_cache"
+                )
+            else:
+                freshness = explore_freshness_meta(refreshed_at=None, cache_status="unavailable")
 
             if return_all:
                 res = {
@@ -1883,6 +1946,7 @@ def search_events_extended(
             res["display_city"] = display_city
             res["fetch_mode"] = "local_db"
             res["section_titles"] = geo_section_titles(display_city, radius_used_db)
+            res["freshness"] = freshness
             return res
 
     # Fallback to cache / live API search if not geo_search or if DB returned 0 results
@@ -1896,25 +1960,48 @@ def search_events_extended(
         None if geo_search else radius_miles,
     )
 
+    row = _get_row(db, cache_key, CONTENT_EVENTS_AGGREGATED)
     cached = _get_fresh_cached_events(db, cache_key)
     fetch_meta: dict[str, Any] = {
         "display_city": city.split(",")[0].strip(),
         "fetch_mode": "cache" if cached else None,
         "radius_used": None,
     }
+    freshness: dict[str, Any]
 
-    if cached:
+    if cached is not None:
         all_events = cached
-    else:
-        fetched = _fetch_ticketmaster_only(
-            city, cat, date_from, date_to, lat, lon, radius_miles
+        freshness = explore_freshness_meta(
+            refreshed_at=row.fetched_at if row else None,
+            cache_status="fresh_cache",
         )
-        all_events = fetched["events"]
-        fetch_meta["display_city"] = fetched.get("display_city") or fetch_meta["display_city"]
-        fetch_meta["fetch_mode"] = fetched.get("fetch_mode")
-        fetch_meta["radius_used"] = fetched.get("radius_used")
-        _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=all_events)
-        _maybe_start_background_instagram(city)
+    else:
+        try:
+            fetched = _fetch_ticketmaster_only(
+                city, cat, date_from, date_to, lat, lon, radius_miles
+            )
+            all_events = fetched["events"]
+            fetch_meta["display_city"] = fetched.get("display_city") or fetch_meta["display_city"]
+            fetch_meta["fetch_mode"] = fetched.get("fetch_mode")
+            fetch_meta["radius_used"] = fetched.get("radius_used")
+            _upsert_list(db, city=cache_key, content_type=CONTENT_EVENTS_AGGREGATED, data=all_events)
+            _maybe_start_background_instagram(city)
+            row_after = _get_row(db, cache_key, CONTENT_EVENTS_AGGREGATED)
+            ts = row_after.fetched_at if row_after else _now()
+            status = "empty" if not all_events else "provider_refresh"
+            freshness = explore_freshness_meta(refreshed_at=ts, cache_status=status)
+        except Exception as exc:
+            logger.warning("events aggregated fetch failed cache_key=%s: %s", cache_key, exc)
+            if row and row.data is not None:
+                all_events = list(row.data)
+                freshness = explore_freshness_meta(
+                    refreshed_at=row.fetched_at, cache_status="stale_fallback"
+                )
+            else:
+                all_events = []
+                freshness = explore_freshness_meta(refreshed_at=None, cache_status="unavailable")
+
+    all_events = filter_verified_explore_event_rows(all_events)
 
     if return_all:
         result: dict[str, Any] = {
@@ -1952,5 +2039,6 @@ def search_events_extended(
     else:
         result["display_city"] = fetch_meta["display_city"]
 
+    result["freshness"] = freshness
     return result
 

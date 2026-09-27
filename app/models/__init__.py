@@ -25,6 +25,8 @@ from app.models.explorer_cache import ExplorerCache
 from app.models.imported_short import ImportedShort
 from app.models.location_hashtag import LocationHashtag
 from app.models.saved_pin import SavedPin
+from app.models.user_collection import UserCollection
+from app.models.collection_item import CollectionItem
 from app.models.buddy_trip import BuddyJoinRequest, BuddyTrip
 from app.models.sos_event import SOSEvent
 from app.models.trip_plan import TripPlan
@@ -79,6 +81,8 @@ __all__: list[str] = [
     "Expense",
     "ExpenseSplit",
     "SavedPin",
+    "UserCollection",
+    "CollectionItem",
     "Subscription",
     "GroupInvitation",
     "Notification",

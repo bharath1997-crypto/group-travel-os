@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Optional
-from fastapi import APIRouter, Depends, Query, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Query, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.models.explore_content import ExploreContent
@@ -15,10 +15,14 @@ from app.utils.auth import get_current_user, get_current_user_optional
 from app.utils.exceptions import AppException
 
 from app.services.explore_content_service import get_cached_explore_content
+from app.services.explore_cache_freshness import explore_freshness_meta
+from app.services.explore_editorial_inventory import (
+    explore_list_total_after_defensive_filter,
+    filter_verified_explore_event_rows,
+)
 from app.services.explore_city_extended_service import (
     get_gnews_cached,
     get_hero_photo_cached,
-    get_places_cached,
     get_ticketmaster_cached,
     get_travel_tips_cached,
     get_safety_cached,
@@ -268,14 +272,34 @@ async def explore_events(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """
-    Fetches events near the city or coordinates using Ticketmaster,
-    supporting pagination, filtering, and AI-generated seasonal fallback if empty.
+    Fetches verified events near the city or coordinates from provider/cache search.
+    Returns an honest empty payload when inventory is sparse; does not inject AI or editorial rows.
     """
     city_strip = (city or "").strip()
     if not city_strip and lat is None and lon is None:
         city_strip = "Chicago"
     d_from = date_from or start_date
     d_to = date_to or end_date
+    # Orlando's curated Eventbrite/Ticketmaster sources live in public.events.
+    # The city stamp defines this feed; GPS and radius do not truncate it.
+    if city_strip.split(",")[0].strip().lower() == "orlando":
+        from app.services.explore_scaper_events import scaper_events_for_city
+
+        try:
+            return scaper_events_for_city(
+                db,
+                city="Orlando",
+                category=category,
+                date_from=d_from,
+                date_to=d_to,
+                page=page,
+                per_page=per_page,
+            )
+        except (ValueError, TypeError) as exc:
+            raise HTTPException(status_code=422, detail="Invalid event date filter") from exc
+        except Exception as exc:
+            logger.exception("Scaper events unavailable for Orlando")
+            raise HTTPException(status_code=503, detail="Orlando event index unavailable") from exc
     geo_search = lat is not None and lon is not None
     nearby_cities: list[dict[str, Any]] = []
     display_city = city_strip.split(",")[0].strip()
@@ -323,6 +347,7 @@ async def explore_events(
                     "start_date": date_str,
                     "sourceType": source
                 })
+            events = filter_verified_explore_event_rows(events)
             total = len(events)
         else:
             events = []
@@ -345,8 +370,13 @@ async def explore_events(
                 lon=lon,
                 radius_miles=radius,
             )
-            events = result.get("events", [])
-            total = result.get("total", 0)
+            raw_page_events = result.get("events", [])
+            events = filter_verified_explore_event_rows(raw_page_events)
+            total = explore_list_total_after_defensive_filter(
+                raw_page_events,
+                events,
+                int(result.get("total") or 0),
+            )
             nearby_cities = result.get("nearby_cities", [])
             for ev in events:
                 ev["title"] = ev["name"]
@@ -373,6 +403,8 @@ async def explore_events(
                 "radius_miles": result.get("radius_used") if geo_search else None,
                 "radius_used": result.get("radius_used") if geo_search else None,
                 "nearby_cities": nearby_cities,
+                "freshness": result.get("freshness")
+                or explore_freshness_meta(refreshed_at=None, cache_status="unavailable"),
             }
 
         result = search_events_extended(
@@ -388,8 +420,9 @@ async def explore_events(
             pool_limit=per_page,
         )
         
-        events = result.get("events", [])
-        total = result.get("total", 0)
+        raw_events = result.get("events", [])
+        events = filter_verified_explore_event_rows(raw_events)
+        total = len(events)
         nearby_cities = result.get("nearby_cities", [])
         display_city = result.get("display_city") or city_strip.split(",")[0].strip()
         nearest_metro = result.get("nearest_metro")
@@ -404,51 +437,6 @@ async def explore_events(
             ev["start_date"] = ev["date"]
             ev["sourceType"] = ev["source"]
     
-    if not events:
-        try:
-            from app.services.explore_city_extended_service import get_ai_seasonal_events
-            from datetime import datetime
-            import urllib.parse
-            
-            ai_events = await get_ai_seasonal_events(city_strip)
-            if ai_events:
-                # Map to standard event dict format
-                for idx, ev in enumerate(ai_events):
-                    title = ev.get("title", "Local Festival")
-                    emoji = ev.get("emoji", "🎉")
-                    desc = ev.get("description", "A vibrant seasonal event.")
-                    location_name = ev.get("location", f"Various locations, {city_strip}")
-                    time_info = ev.get("time", "This month")
-                    
-                    # Generate search query URL for user convenience
-                    search_url = f"https://www.google.com/search?q={urllib.parse.quote_plus(f'{city_strip} {title} event')}"
-                    
-                    events.append({
-                        "id": f"ai-ev-{idx}",
-                        "name": f"{emoji} {title}",
-                        "category": "Festival",
-                        "date": d_from or datetime.now().strftime("%Y-%m-%d"),
-                        "time": "12:00",
-                        "venue": f"{location_name} - {desc}",
-                        "city": city_strip,
-                        "country": "US",
-                        "image_url": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400",
-                        "ticket_url": search_url,
-                        "price_min": 0.0,
-                        "price_max": 0.0,
-                        "source": "ai_fallback",
-                        
-                        # Test compatibility fields
-                        "title": f"{emoji} {title}",
-                        "imageUrl": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400",
-                        "url": search_url,
-                        "start_date": d_from or datetime.now().strftime("%Y-%m-%d"),
-                        "sourceType": "ai_fallback",
-                    })
-                total = len(events)
-        except Exception as exc:
-            logger.warning("AI fallback events generation failed: %s", exc)
-
     # Section-splitting logic
     import hashlib
     from datetime import datetime, date, timedelta
@@ -599,6 +587,9 @@ async def explore_events(
         "radius_miles": radius_used if geo_search else None,
         "radius_used": radius_used if geo_search else None,
         "nearby_cities": nearby_cities if geo_search else [],
+        "freshness": result.get("freshness")
+        if not is_mocked
+        else explore_freshness_meta(refreshed_at=None, cache_status="unavailable"),
     }
 
 
@@ -773,6 +764,17 @@ def get_explore_event(
     lookup_id = unquote(event_id).strip()
     if not lookup_id:
         AppException.not_found("Event not found")
+    if lookup_id.startswith("scaper:"):
+        from app.services.explore_scaper_events import scaper_event_detail
+
+        try:
+            detail = scaper_event_detail(db, lookup_id)
+        except Exception as exc:
+            logger.exception("Scaper event detail unavailable")
+            raise HTTPException(status_code=503, detail="Event index unavailable") from exc
+        if detail is None:
+            AppException.not_found("Event not found")
+        return detail
 
     # Primary: bulk Ticketmaster rows saved by daily fetch job
     tm_row = (
@@ -867,23 +869,6 @@ def get_explore_event(
                 source=ev.get("source") or ev.get("sourceType") or "ticketmaster",
             )
 
-    if lookup_id.startswith("mock-") or lookup_id.startswith("ai-ev-"):
-        return _event_detail_response(
-            event_id=lookup_id,
-            title="Local Experience",
-            category="Festival",
-            venue="Downtown Park Venue",
-            city="Chicago",
-            state="Illinois",
-            start_date="2026-06-15",
-            start_time="19:00",
-            price_min=10.0,
-            price_max=50.0,
-            image_url="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400",
-            ticket_url="https://www.google.com",
-            source="ai_fallback",
-        )
-
     AppException.not_found("Event not found")
 
 
@@ -925,14 +910,64 @@ async def enrich_explore_place(
 def explore_places(
     city: str = Query("Chicago", max_length=120),
     category: str = Query("attractions", max_length=40),
+    lat: float | None = Query(None, ge=-90, le=90),
+    lon: float | None = Query(None, ge=-180, le=180),
+    radius_m: float | None = Query(None, gt=0),
+    limit: int | None = Query(None, ge=1, le=100),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
+    from app.services.explore_place_spine_service import (
+        ExplorePlaceSpineService,
+        ExplorePlacesSpineUnavailable,
+        spine_database_ready,
+    )
+    from app.services.place_ingest_run_service import explore_places_freshness_meta
+    from app.utils.exceptions import AppException
+
     city_strip = city.strip()
     cat = category.strip().lower()
     if cat not in ("attractions", "restaurants"):
-        return {"city": city_strip, "category": cat, "places": []}
-    places = get_places_cached(db, city_strip, cat)
-    return {"city": city_strip, "category": cat, "places": places}
+        AppException.bad_request("category must be attractions or restaurants")
+    if not spine_database_ready(db):
+        AppException.service_unavailable("Places index unavailable on this database")
+    try:
+        places = ExplorePlaceSpineService.search_places(
+            db,
+            city=city_strip,
+            category=cat,  # type: ignore[arg-type]
+            lat=lat,
+            lon=lon,
+            radius_m=radius_m,
+            limit=limit,
+        )
+    except HTTPException:
+        raise
+    except ExplorePlacesSpineUnavailable:
+        AppException.service_unavailable("Places index unavailable on this database")
+    except Exception:
+        logger.exception("explore places spine search failed for city=%s category=%s", city_strip, cat)
+        AppException.service_unavailable("Places search failed")
+    source_status = "empty" if len(places) == 0 else "ready"
+    try:
+        freshness = explore_places_freshness_meta(
+            db,
+            city=city_strip,
+            hot_index_empty=len(places) == 0,
+        )
+    except Exception:
+        logger.warning(
+            "explore places freshness lookup failed for city=%s",
+            city_strip,
+            exc_info=True,
+        )
+        freshness = explore_freshness_meta(refreshed_at=None, cache_status="unavailable")
+    return {
+        "city": city_strip,
+        "category": cat,
+        "places": places,
+        "source_status": source_status,
+        "freshness": freshness,
+    }
 
 
 @router.get("/gnews", status_code=status.HTTP_200_OK)
@@ -1087,14 +1122,42 @@ def explore_eventbrite(
     return {"city": city_strip, "events": events}
 
 
+def _editorial_suggestions_from_ai_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Map raw model rows to editorial suggestion cards (not verified inventory)."""
+    out: list[dict[str, Any]] = []
+    for idx, ev in enumerate(rows):
+        title = str(ev.get("title") or "Local activity idea").strip()
+        out.append(
+            {
+                "id": f"editorial-{idx}",
+                "title": title,
+                "emoji": str(ev.get("emoji") or "").strip() or None,
+                "summary": str(ev.get("description") or "").strip() or None,
+                "area_hint": str(ev.get("location") or "").strip() or None,
+                "season_hint": str(ev.get("time") or "").strip() or None,
+            }
+        )
+    return out
+
+
 @router.get("/seasonal-events-ai", status_code=status.HTTP_200_OK)
 async def explore_seasonal_events_ai(
     city: str = Query(..., max_length=120),
 ) -> dict[str, Any]:
-    """Generates AI-suggested seasonal events when live APIs are sparse."""
+    """
+    Editorial discovery only — seasonal activity ideas, not verified ticket inventory.
+    No production Explore inventory page should merge these into provider event feeds.
+    """
     from app.services.explore_city_extended_service import get_ai_seasonal_events
-    events = await get_ai_seasonal_events(city.strip())
-    return {"city": city.strip(), "events": events}
+
+    city_strip = city.strip()
+    raw = await get_ai_seasonal_events(city_strip)
+    return {
+        "city": city_strip,
+        "kind": "editorial_suggestions",
+        "verified_inventory": False,
+        "suggestions": _editorial_suggestions_from_ai_rows(raw if isinstance(raw, list) else []),
+    }
 
 
 @router.get("/transport", status_code=status.HTTP_200_OK)

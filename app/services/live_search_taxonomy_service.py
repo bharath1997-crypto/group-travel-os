@@ -104,6 +104,37 @@ def category_osm_queries() -> dict[str, list[str]]:
     return out
 
 
+def overpass_keys_for_category(key: str) -> list[str]:
+    """Resolve a taxonomy key to one or more keys that carry osm_queries (union aliases)."""
+    clean = key.strip().lower()
+    cat = get_category_by_key(clean)
+    if not cat:
+        return [clean] if clean in category_osm_queries() else []
+    union = cat.get("union_keys")
+    if union:
+        keys: list[str] = []
+        for part in union:
+            part_key = str(part).strip().lower()
+            if part_key and part_key not in keys:
+                keys.append(part_key)
+        return keys
+    if cat.get("osm_queries"):
+        return [clean]
+    return []
+
+
+def merged_osm_queries_for_category(key: str) -> list[str]:
+    """All Overpass subqueries for a category (deduped), including union aliases."""
+    seen: set[str] = set()
+    merged: list[str] = []
+    for part_key in overpass_keys_for_category(key):
+        for query in category_osm_queries().get(part_key, []):
+            if query not in seen:
+                seen.add(query)
+                merged.append(query)
+    return merged
+
+
 def taxonomy_for_api() -> dict[str, Any]:
     data = load_taxonomy()
     return {
